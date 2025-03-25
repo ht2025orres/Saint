@@ -1,0 +1,634 @@
+<app-loading *ngIf="loading"></app-loading>
+
+<!-- ============================================================== -->
+<!-- Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{title}}
+            <span class="badge badge-success small"
+                *ngIf="this.statusSearch == 'TERMINADO'">{{this.statusSearch}}
+            </span>
+            <span class="badge badge-danger small"
+                *ngIf="this.statusSearch == 'PRIMERA REVISION'">{{this.statusSearch}}
+            </span>
+            <span class="badge badge-warning small"
+                *ngIf="this.statusSearch == 'SEGUNDA REVISION'">{{this.statusSearch}}
+            </span>
+            <span class="badge bg-dark small"
+                *ngIf="this.statusSearch == 'CALIDAD'">{{this.statusSearch}}
+            </span>
+            <span class="badge badge-info small"
+                *ngIf="this.statusSearch == 'DESARROLLO'">{{this.statusSearch}}
+            </span>
+        </h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">paginas</li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </div>
+</div>
+<!-- ============================================================== -->
+<!-- End Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="table-responsive mt-2">
+            <div id="example23_wrapper" class="dataTables_wrapper">
+
+                <div class="dataTables_length responsive-text" id="myTable_length">
+                    <label>Mostrar
+                        <select name="myTable_length" aria-controls="myTable" class=""
+                            (change)="listBySize($event.target.value)">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                        </select> entradas</label>
+                </div>
+
+                <div id="example23_filter" class="dataTables_filter mb-3">
+                    <label class="fw-bold responsive-text">Buscar:
+                        <input type="search" class="" placeholder="" aria-controls="example23"
+                            (keyup)="searchTechnicalDataSheet(txtWord.value)" #txtWord>
+                    </label>
+                </div>
+
+
+                <table id="example23" class="table table-hover table-striped align-middle sombra-buttoms"
+                    role="grid" aria-describedby="example23_info">
+                    <thead>
+                        <tr role="row">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" aria-sort="ascending"
+                                aria-label="Name: activate to sort column descending" class="text-center sorting_asc"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Código ítem CFIP
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" aria-sort="ascending"
+                                aria-label="Name: activate to sort column descending" class="text-center sorting_asc"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Tipo ítem
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                aria-label="Position: activate to sort column ascending" class="text-center sorting"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Descripción ítem
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                aria-label="Age: activate to sort column ascending" class="text-center sorting"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Cliente
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                aria-label="Start date: activate to sort column ascending" class="text-center sorting"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Fecha
+                                modificación
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                aria-label="Salary: activate to sort column ascending" class="text-center sorting"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Estado
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                aria-label="Salary: activate to sort column ascending" class="text-center sorting"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Acción
+                            </th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr style="background: rgba(75,197,232,0.07)">
+
+                            <th rowspan="1" colspan="1" class="text-center">Código ítem CFIP</th>
+                            <th rowspan="1" colspan="1" class="text-center">Tipo ficha</th>
+                            <th rowspan="1" colspan="1" class="text-center">Descripción ítem</th>
+                            <th rowspan="1" colspan="1" class="text-center">Cliente</th>
+                            <th rowspan="1" colspan="1" class="text-center">Fecha modificación</th>
+                            <th rowspan="1" colspan="1" class="text-center">Estado</th>
+                            <th rowspan="1" colspan="1" class="text-center">Acción</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        <tr role="row" class="odd" *ngFor="let ficha of listaTechnicalDataSheet">
+
+                            <td class="sorting_1 small responsive-text vertical-center">{{ficha.idItem}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.technicalDataSheetType}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.itemDescription}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.companyName}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.dateCreation | date: 'longDate'}}
+                            </td>
+                            <td class="d-flex align-items-center">
+                                <div class="col-md-5 d-flex text-center">
+                                    <span class="badge badge-danger small"
+                                        *ngIf="ficha.status == 'PRIMERA REVISION'">{{ficha.status}}
+                                    </span>
+                                    <span class="badge badge-warning small"
+                                        *ngIf="ficha.status == 'SEGUNDA REVISION'">{{ficha.status}}
+                                    </span>
+                                    <span class="badge badge-info small"
+                                        *ngIf="ficha.status == 'DESARROLLO'">{{ficha.status}}
+                                    </span>
+                                    <span class="badge badge-success small"
+                                        *ngIf="ficha.status == 'TERMINADO'">{{ficha.status}}
+                                    </span>
+                                    <span class="badge bg-dark small"
+                                        *ngIf="this.statusSearch == 'CALIDAD'">{{this.statusSearch}}
+                                    </span>
+                                </div>
+
+                            </td>
+                            <td class="d-flex align-items-center">
+                                <div class="col-md-7 d-flex" style="padding-right: 0!important;">
+
+                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor justify-content-center align-items-center sombra-buttoms"
+                                        *ngIf="this.statusSearch != 'TERMINADO' && this.statusSearch != 'CALIDAD' || !authService.hasRole('Consulta')"    
+                                        [routerLink]="['/createTechnicalDataSheet', ficha.id, 'edit']">
+                                        <i class="fa fa-pencil text-white fa-1"></i>
+                                    </a>
+
+                                    <a (click)="prepareDownloadTechnicalDataSheet(ficha.id)" type="button"
+                                        data-toggle="modal" data-target="#exampleModal"
+                                        class="nav-link mx-1 btn btn-cicle-sheet btn-warning justify-content-center align-items-center sombra-buttoms">
+                                        <i class="fa fa-print text-white fa-1x"></i>
+                                    </a>
+
+                                    <a class="nav-link ml-1 btn btn-cicle-sheet btn-secondary justify-content-center align-items-center sombra-buttoms"
+                                        *ngIf="this.statusSearch != 'TERMINADO' && this.statusSearch != 'CALIDAD' || !authService.hasRole('Consulta')"    
+                                        [routerLink]="['/createTechnicalDataSheet', ficha.id, 'duplicate']">
+                                        <i class="fa fa-clone text-dark fa-1x"></i>
+                                    </a>
+
+                                    <a class="nav-link ml-1 btn btn-cicle-sheet btn-danger justify-content-center align-items-center sombra-buttoms"
+                                        [routerLink]="['/viewTechnicalDataSheet', ficha.id]">
+                                        <i class="fa fa-search text-white fa-1x"></i>
+                                    </a>
+
+
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+
+                <!--                PAGINADOR-->
+                <app-paginador *ngIf="paginator" [paginator]="paginator"></app-paginador>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PRINT PDF -->
+<div id="print" class="print">
+    <div style="background-color: #3F51B5 !important;">
+        <div class="container">
+            <div class="py-2 text-center">
+                <h1 class="mb-3 text-white font-weight-bold mt-3">FICHA TÉCNICA DE PRODUCTO 
+                    <span
+                        class="badge badge-secondary" *ngIf="this.downloadCompleteFile">PLANTA
+                    </span>
+                    <span class="badge badge-danger small"
+                        *ngIf="this.statusSearch == 'PRIMERA REVISION'">{{this.statusSearch}}
+                    </span>
+                    <span class="badge badge-warning small"
+                        *ngIf="this.statusSearch == 'SEGUNDA REVISION'">{{this.statusSearch}}
+                    </span>
+                    <span class="badge badge-info small"
+                        *ngIf="this.statusSearch == 'DESARROLLO'">{{this.statusSearch}}
+                    </span>
+                    <span class="badge bg-dark small"
+                        *ngIf="this.statusSearch == 'CALIDAD'">{{this.statusSearch}}
+                    </span>
+                </h1>
+                <h1 class="mb-3 text-white font-weight-bold">
+                    ITEM: {{this.technicalDataSheetCurrent.idItem}} - {{this.technicalDataSheetCurrent.itemDescription | uppercase}}
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-outline-primary mt-5">
+        <div class="card-header" style="background-color: grey !important;">
+            <h4 class="m-b-0 text-white">ESPECIFICACIONES</h4>
+        </div>
+        <div class="card-body text-justify" style="background: #ebefef">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="col-md-12">
+                        <p class="card-text"><b>Código ítem CFIP:
+                            </b>{{this.technicalDataSheetCurrent.idItem}}</p>
+                    </div>
+                    <div class="col-md-12">
+                        <p class="card-text"><b>Código ítem Cliente:
+                            </b>{{this.technicalDataSheetCurrent.idItemCustomer}}</p>
+                    </div>
+                    <div class="col-md-12">
+                        <p class="card-text"><b>Descripción ítem:
+                            </b>{{this.technicalDataSheetCurrent.itemDescription}}</p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.productCategory">
+                        <p class="card-text">
+                            <b>Categoria: </b>{{this.technicalDataSheetCurrent.productCategory.description.toUpperCase()}}
+                        </p>
+                    </div>                   
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.gender">
+                        <p class="card-text">
+                            <b>Genero: </b>{{this.technicalDataSheetCurrent.gender}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.mainFabric">
+                        <p class="card-text">
+                            <b>Tela principal: </b>{{this.technicalDataSheetCurrent.mainFabric}}
+                        </p>
+                    </div>
+                    <div class="col-md-12"
+                        *ngIf="this.technicalDataSheetCurrent.contrastFabric && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Tela contraste: </b>{{this.technicalDataSheetCurrent.contrastFabric}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.waistband && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Pretina: </b>{{this.technicalDataSheetCurrent.waistband}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.button && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Boton: </b>{{this.technicalDataSheetCurrent.button}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.zipper && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Cierre: </b>{{this.technicalDataSheetCurrent.zipper}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.figured && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Figurado: </b>{{this.technicalDataSheetCurrent.figured}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.pins && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Pasadores: </b>{{this.technicalDataSheetCurrent.pins}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.sidePulls && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Tiros: </b>{{this.technicalDataSheetCurrent.sidePulls}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.purses && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Carteras: </b>{{this.technicalDataSheetCurrent.purses}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.shoulderUnion && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Union de los hombros: </b>{{this.technicalDataSheetCurrent.shoulderUnion}}
+                        </p>
+                    </div>
+                    <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.lining && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Forro: </b>{{this.technicalDataSheetCurrent.lining}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.shirtCollar && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Cuello: </b>{{this.technicalDataSheetCurrent.shirtCollar}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.cuffs && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Puños: </b>{{this.technicalDataSheetCurrent.cuffs}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.pockets && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Bolsillos: </b>{{this.technicalDataSheetCurrent.pockets}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.busybody && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Cotilla: </b>{{this.technicalDataSheetCurrent.busybody}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.sleeves && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Mangas: </b>{{this.technicalDataSheetCurrent.sleeves}}
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    
+                    <div class="col-md-12">
+                        <p class="card-text"><b>Nit cliente:
+                            </b>{{this.technicalDataSheetCurrent.idCompany}}</p>
+                    </div>
+                    <div class="col-md-12">
+                        <p class="card-text"><b>Razón social cliente:
+                            </b>{{this.technicalDataSheetCurrent.companyName}}</p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.back && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Espalda: </b>{{this.technicalDataSheetCurrent.back}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.shoulders && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Hombros: </b>{{this.technicalDataSheetCurrent.shoulders}}
+                        </p>
+                    </div>
+                    <div class="col-md-12"
+                        *ngIf="this.technicalDataSheetCurrent.sleeveConnection && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Union de las Mangas: </b>{{this.technicalDataSheetCurrent.sleeveConnection}}
+                        </p>
+                    </div>
+                    <div class="col-md-12"
+                        *ngIf="this.technicalDataSheetCurrent.frontAdjustment && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Ajuste del frente: </b>{{this.technicalDataSheetCurrent.frontAdjustment}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.neckline && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Escote: </b>{{this.technicalDataSheetCurrent.neckline}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.finished && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Terminado: </b>{{this.technicalDataSheetCurrent.finished}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.darts && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Pinzas: </b>{{this.technicalDataSheetCurrent.darts}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.opening && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Aberturas: </b>{{this.technicalDataSheetCurrent.opening}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.straps && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Tiras: </b>{{this.technicalDataSheetCurrent.straps}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.cuts && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Cortes: </b>{{this.technicalDataSheetCurrent.cuts}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.closedSides && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Cerrado de los Costados: </b>{{this.technicalDataSheetCurrent.closedSides}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.hem && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Dobladillo: </b>{{this.technicalDataSheetCurrent.hem}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.hood && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Capucha: </b>{{this.technicalDataSheetCurrent.hood}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.crotch && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Entrepierna: </b>{{this.technicalDataSheetCurrent.crotch}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.reflective && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Reflectivo: </b>{{this.technicalDataSheetCurrent.reflective}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.boot && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Bota: </b>{{this.technicalDataSheetCurrent.boot}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.additional && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Adicionales: </b>{{this.technicalDataSheetCurrent.additional}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.composition && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Composición: </b>{{this.technicalDataSheetCurrent.composition}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.buttonhole && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Ojal: </b>{{this.technicalDataSheetCurrent.buttonhole}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.loops && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Presillas: </b>{{this.technicalDataSheetCurrent.loops}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.stitches && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Puntadas: </b>{{this.technicalDataSheetCurrent.stitches}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.prewash && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Prelavado: </b>{{this.technicalDataSheetCurrent.prewash}}
+                        </p>
+                    </div>
+                    <div class="col-md-12"
+                        *ngIf="this.technicalDataSheetCurrent.criticalPoints && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Puntos Criticos: </b>{{this.technicalDataSheetCurrent.criticalPoints}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.stitching && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Pespuntes: </b>{{this.technicalDataSheetCurrent.stitching}}
+                        </p>
+                    </div>
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.ironing && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Planchado: </b>{{this.technicalDataSheetCurrent.ironing}}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.embroidery && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Descripción bordado: </b>{{this.technicalDataSheetCurrent.embroidery}}
+                            <em>
+                                (La información del bordado
+                                debe ser validada con la planilla de producción, ya que se puede presentar
+                                modificaciones en cada pedido)
+                            </em>
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.stamped && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Descripción del estampado: </b>{{this.technicalDataSheetCurrent.stamped}}
+                            <em>(La información del estampado
+                                debe ser validada con la planilla de producción, ya que se puede presentar
+                                modificaciones en cada pedido)</em>
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.packaging && this.downloadCompleteFile">
+                        <p class="card-text">
+                            <b>Descripcion del empaque: </b>{{this.technicalDataSheetCurrent.packaging}}
+                            <em>(Consultar el tipo de empaque en la PV asignada para cada OC)</em>
+                        </p>
+                    </div>
+
+                    <br>
+
+                    <div class="col-md-12" *ngIf="this.technicalDataSheetCurrent.customerDescription">
+                        <p class="card-text">
+                            <b>Descripcion cliente: </b>{{this.technicalDataSheetCurrent.customerDescription}}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-outline-primary mt-5">
+        <div class="card-body text-justify" style="background: #ebefef">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="col-md-12">
+                        <p class="card-text">
+                            <b>Aux. ficha técnica: </b>{{this.technicalDataSheetCurrent.userCreated}}
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <p class="card-text">
+                            <b>Diseñador(a): </b>{{this.technicalDataSheetCurrent.userValidation}}
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <p class="card-text">
+                            <b>Jefe ing. producto: </b>{{this.technicalDataSheetCurrent.userApproved}}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-outline-primary mt-5" *ngIf="this.technicalDataSheetCurrent.measurementTable">
+        <div class="card-header" style="background-color: grey !important;">
+            <h4 class="m-b-0 text-white">TABLA DE MEDIDAS</h4>
+        </div>
+
+        <table class="table table-striped thead-dark" [innerHTML]="this.technicalDataSheetCurrent.measurementTable">
+        </table>
+
+        <div class="container-fluid">
+            <p><strong>TOLERANCIA +/- 1 CM</strong></p>  
+        </div>
+    </div>
+
+    <div class="card card-outline-primary mt-5" *ngIf="this.technicalDataSheetCurrent.productImage1">
+        <div class="card-header" style="background-color: grey !important;" >
+            <h4 class="m-b-0 text-white">IMAGENES DEL PRODUCTO</h4>
+        </div>
+
+        <div class="card-group">
+            <div class="row text-center">
+                <div class="col-md-6 my-auto" *ngIf="this.technicalDataSheetCurrent.productImage1">
+                    <img class="text-center m-1" src="{{this.technicalDataSheetCurrent.productImage1}}" alt="image1"
+                        width="100%">
+                </div>
+
+                <div class="col-md-6 my-auto" *ngIf="this.technicalDataSheetCurrent.productImage2">
+                    <img class="text-center m-1" src="{{this.technicalDataSheetCurrent.productImage2}}" alt="image2"
+                        width="100%">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-outline-primary mt-5" *ngIf="this.technicalDataSheetCurrent.characteristicImage1">
+        <div class="card-header" style="background-color: grey !important;">
+            <h4 class="m-b-0 text-white">IMAGENES DE CARACTERÍSTICAS DEL PRODUCTO</h4>
+        </div>
+
+        <div class="row text-center">
+            <div class="col-md-6 my-auto" *ngIf="this.technicalDataSheetCurrent.characteristicImage1">
+                <img class="text-center m-2" width="100%"
+                    src="{{this.technicalDataSheetCurrent.characteristicImage1}}" alt="characteristicImage1">
+            </div>
+
+            <div class="col-md-6 my-auto" *ngIf="this.technicalDataSheetCurrent.characteristicImage2">
+                <img class="text-center m-2" width="100%"
+                    src="{{this.technicalDataSheetCurrent.characteristicImage2}}" alt="characteristicImage2">
+            </div>
+       
+        </div>
+    </div>
+
+    <div class="card card-outline-primary" *ngIf="this.technicalDataSheetCurrent.characteristicImage1">
+        <div class="row text-center">
+            <div class="col-md-6 my-auto" *ngIf="this.technicalDataSheetCurrent.characteristicImage3">
+                <img class="text-center m-2" width="100%"
+                    src="{{this.technicalDataSheetCurrent.characteristicImage3}}" alt="characteristicImage3">
+            </div>
+    
+            <div class="col-md-6 my-auto" *ngIf="this.technicalDataSheetCurrent.characteristicImage4">
+                <img class="text-center m-2" width="100%"
+                    src="{{this.technicalDataSheetCurrent.characteristicImage4}}" alt="characteristicImage4">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Print -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Impresión de fichas técnicas </h5>
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-dismiss="modal" aria-label="Close">
+                    <!-- <span aria-hidden="true">&times;</span> -->
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <button type="button" class="btn btn-themecolor justify-content-center"
+                    (click)="downloadTechnicalDataSheet(true)" data-dismiss="modal">Imprimir ficha técnica
+                    completa</button>
+
+                <button type="button" class="btn btn-themecolor justify-content-center mt-3"
+                    (click)="downloadTechnicalDataSheet(false)" data-dismiss="modal">Imprimir ficha técnica
+                    clientes</button>
+
+                <button type="button" class="btn btn-themecolor justify-content-center mt-3"
+                    (click)="downloadLogoTechnicalDataSheet()" data-dismiss="modal">Imprimir ficha técnica
+                    bordado</button>
+            </div>
+        </div>
+    </div>
+</div>

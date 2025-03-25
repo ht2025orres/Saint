@@ -1,0 +1,50 @@
+<div class="dataTables_info" id="info" role="status" aria-live="polite">
+    <p class="responsive-text">
+        Mostrando del 1 al {{paginator.numberOfElements}} de {{paginator.totalElements}}
+        entrada(s)
+    </p>
+</div>
+
+<div class="dataTables_paginate paging_simple_numbers responsive-text" id="paginate" *ngIf="pages?.length > 0">
+    <a
+            class="paginate_button previous"
+            aria-controls="paginate"
+            data-dt-idx="0"
+            tabindex="0"
+            id="previous"
+            *ngIf="paginator.number > 0"
+            [routerLink]="['/listTechnicalDataSheet/page/', paginator.number-1, status]"
+    >
+        Anterior
+    </a>
+
+    <span>
+        <span *ngFor="let pagina of pages" >
+            <span *ngIf="pagina-1 === paginator.number"
+                  [ngClass]="pagina-1 === paginator.number? 'current' : '' "
+                  class="paginate_button"
+                  aria-controls="paginate" data-dt-idx="1"
+                  tabindex="0">{{pagina}}
+            </span>
+
+            <a *ngIf="pagina-1 !== paginator.number"
+               [routerLink]="['/listTechnicalDataSheet/page/', pagina-1, status]"
+               [ngClass]="pagina-1 === paginator.number? 'current' : '' "
+               class="paginate_button"
+               aria-controls="paginate" data-dt-idx="1"
+               tabindex="0">{{pagina}}
+            </a>
+        </span>
+
+    </span>
+
+    <a *ngIf="paginator.number < paginator.totalPages-1"
+            [routerLink]="['/listTechnicalDataSheet/page/', paginator.number+1, status]"
+            class="paginate_button next"
+            aria-controls="next"
+            data-dt-idx="7"
+            tabindex="0"
+            id="next">
+        Siguiente
+    </a>
+</div>

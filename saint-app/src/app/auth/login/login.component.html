@@ -1,0 +1,73 @@
+<!-- ============================================================== -->
+<!-- Main wrapper - style you can find in pages.scss -->
+<!-- ============================================================== -->
+<section id="wrapper">
+  <div class="login-register" style="background-image:url(../../../assets/images/loginBackground.jpg);">
+
+    <div class="card login-box">
+      <div class="card-body">
+
+        <form class="form-control-line"
+              [formGroup]="formGr"
+              (ngSubmit)="login()">
+          <div>
+            <img src="../../../assets/images/logo.png" class="img-responsive">
+          </div>
+
+          <div class="form-group" [class.has-danger]="emailNoValid">
+            <div class="col-xs-12">
+              <label
+                      class="form-control-label"
+                      *ngIf="emailNoValid"
+              >
+                Ingresa un correo valido
+              </label>
+              <input
+                      class="form-control form-control-danger"
+                      type="text"
+                      formControlName="email"
+                      [class.form-control-danger]="emailNoValid"
+                      placeholder="Correo"
+              >
+            </div>
+          </div>
+
+          <div class="form-group"  [class.has-danger]="passwordNoValid">
+            <div class="col-xs-12">
+              <label
+                      class="form-control-label"
+                      *ngIf="passwordNoValid"
+              >
+                Ingresa una contraseña valida
+              </label>
+              <input
+                      class="form-control form-control-danger"
+                      type="password"
+                      formControlName="password"
+                      placeholder="Contraseña"
+                      minlength="4"
+                      [class.form-control-danger]="passwordNoValid"
+              >
+            </div>
+          </div>
+
+          <div class="form-group text-center">
+            <div class="col-xs-12 pt-3">
+              <button class="btn btn-block btn-lg btn-themecolor btn-rounded"
+                      type="submit"
+                      [disabled]="formGr.invalid"
+                      [style.cursor]="validateCursor()"
+                      style="opacity: .65; width: 100%;"
+              >Acceder
+              </button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ============================================================== -->
+<!-- End Wrapper -->
+<!-- ============================================================== -->
