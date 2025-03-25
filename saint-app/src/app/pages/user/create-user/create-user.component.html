@@ -1,0 +1,189 @@
+<app-loading *ngIf="loading"></app-loading>
+<!-- ============================================================== -->
+<!-- Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{title}}</h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">paginas</li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </div>
+</div>
+<!-- ============================================================== -->
+<!-- End Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form class="form-horizontal p-t-20" [formGroup]="formGr" (ngSubmit)="saveInfo()" autocomplete="off">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group" [class.has-danger]="nombreNoValid"
+                                [class.has-success]="!nombreNoValid && formGr.get('nombre').touched">
+                                <label class="col-sm-3 control-label">Nombre*</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Digita el nombre"
+                                            formControlName="nombre" [class.form-control-danger]="nombreNoValid"
+                                            [class.form-control-success]="!nombreNoValid && formGr.get('nombre').touched">
+                                        <div class="input-group-addon"><i class="ti-user"></i></div>
+                                    </div>
+                                    <div class="form-control-feedback" *ngIf="nombreNoValid">
+                                        El nombre es requerido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group" [class.has-danger]="apellidoNoValid"
+                                [class.has-success]="!apellidoNoValid && formGr.get('apellido').touched">
+                                <label class="col-sm-3 control-label">Apellido*</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Digita el apellido"
+                                            formControlName="apellido" [class.form-control-danger]="apellidoNoValid"
+                                            [class.form-control-success]="!apellidoNoValid && formGr.get('apellido').touched">
+                                        <div class="input-group-addon"><i class="ti-user"></i></div>
+                                    </div>
+                                    <div class="form-control-feedback" *ngIf="apellidoNoValid">
+                                        El apellido es requerido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="authService.hasRole('Administrador del sistema')">
+                        <div class="col-md-6">
+                            <div class="form-group" [class.has-danger]="emailNoValid"
+                                [class.has-success]="!emailNoValid && formGr.get('email').touched">
+                                <label class="col-sm-3 control-label">Email*</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group">
+                                        <input type="email" class="form-control" placeholder="Digita el email"
+                                            formControlName="email" autocomplete="disabled"
+                                            [class.form-control-danger]="emailNoValid"
+                                            [class.form-control-success]="!emailNoValid && formGr.get('email').touched">
+                                        <div class="input-group-addon"><i class="ti-email"></i></div>
+                                    </div>
+                                    <div class="form-control-feedback" *ngIf="emailNoValid">
+                                        El email debe ser valido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group" [class.has-danger]="pass1NoValid"
+                                [class.has-success]="!pass1NoValid && formGr.get('password').touched">
+                                <label class="col-sm-5 control-label">Password*</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" placeholder="Digita el password"
+                                            formControlName="password" autocomplete="new-password"
+                                            [class.form-control-danger]="pass1NoValid"
+                                            [class.form-control-success]="!pass1NoValid && formGr.get('password').touched">
+                                        <div class="input-group-addon" data-toggle="tooltip" data-placement="right"
+                                            title="Cambiar password" data-original-title="Cambiar password"
+                                            [style.cursor]="modifyPassword" [class.bg-info]="modifyPassword==='pointer'"
+                                            (click)="enablePasswordFields()">
+                                            <i class="ti-lock" [class.text-white]="modifyPassword==='pointer'"></i>
+                                        </div>
+                                    </div>
+                                    <div class="form-control-feedback" *ngIf="pass1NoValid">
+                                        La contraseña es requerida
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group" [class.has-danger]="pass2NoValid" [class.has-success]="!pass2NoValid && formGr.get('repassword').touched
+                                                        && (formGr.get('password').value.trim().length > 0
+                                                        && formGr.get('repassword').value.trim().length > 0)">
+                                <label class="col-sm-5 control-label">Repite el Password*</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control"
+                                            placeholder="Digita nuevamente el password" formControlName="repassword"
+                                            [class.form-control-danger]="pass2NoValid"
+                                            [class.form-control-success]="!pass2NoValid && formGr.get('repassword').touched
+                                            && (formGr.get('password').value.trim().length > 0  && formGr.get('repassword').value.trim().length > 0)">
+                                        <div class="input-group-addon"><i class="ti-lock"></i></div>
+                                    </div>
+                                    <div class="form-control-feedback" *ngIf="pass2NoValid">
+                                        Las contraseñas no coinciden
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="authService.hasRole('Administrador del sistema')">
+                        <div class="col-md-6">
+                            <div class="form-group" [class.has-danger]="roleNovalid"
+                                [class.has-success]="!roleNovalid && formGr.get('role').touched">
+                                <label class="col-sm-12">Asignar roles*</label>
+                                <div class="col-sm-9">
+                                    <select class="form-control form-control-line" formControlName="role" multiple>
+                                        <option *ngFor="let item of roles" [value]="item">{{item.name}}</option>
+                                    </select>
+                                    <div class="form-control-feedback" *ngIf="roleNovalid">
+                                        Debes seleccionar al menos un rol valido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" *ngIf="authService.hasRole('Administrador del sistema') || this.userCurrent.id != null">
+                        <div class="col-md-6">
+                            <div class="form-group" >
+                                <label class="col-sm-12">Roles actuales</label>
+                                <div class="col-sm-9">
+                                    <span *ngFor="let role of this.userCurrent.roles">
+                                        <span
+                                            [ngClass]="role.id==1? 'badge badge-success mx-1 text-dark' : 'badge badge-warning mx-1 text-dark'">
+                                            {{role.name}}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="form-group row m-b-0">
+                        <div class="offset-sm-3 col-sm-9 ">
+                            <button type="submit" class="btn btn-themecolor waves-effect waves-light btn-rounded"
+                                [disabled]="formGr.invalid || pass2NoValid"
+                                [style.cursor]="cursorValidationItem()">Aceptar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+</div>
