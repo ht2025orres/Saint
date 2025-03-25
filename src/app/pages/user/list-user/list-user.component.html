@@ -1,0 +1,118 @@
+<!-- ============================================================== -->
+<!-- Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{title}}</h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">paginas</li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </div>
+</div>
+<!-- ============================================================== -->
+<!-- End Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="pt-3">
+            <button class="btn btn-themecolor btn-rounded" [routerLink]="['/createUser', 'nuevo']">
+                Crear Usuario
+            </button>
+        </div>
+
+        <div class="table-responsive mt-2">
+            <div id="example23_wrapper" class="dataTables_wrapper" style="color: #67757c;">
+
+                <div class="dataTables_length responsive-text" id="myTable_length">
+                    <label>Mostrar
+                        <select name="myTable_length" aria-controls="myTable" class=""
+                            (change)="listBySize($event.target.value)">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                        </select> entradas</label>
+                </div>
+
+                <div id="example23_filter" class="dataTables_filter mb-3">
+                    <label class="fw-bold responsive-text">Buscar:
+                        <input type="search" class="" placeholder="" aria-controls="example23"
+                            (keyup)="searchUser(txtWord.value)" #txtWord>
+                    </label>
+                </div>
+
+
+                <table id="example23" class="table table-hover table-striped align-middle sombra-buttoms"
+                    role="grid" aria-describedby="example23_info">
+                    <thead>
+                        <tr role="row">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Nombre
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Apellido
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Email
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Roles
+                            </th>
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr style="background: rgba(75,197,232,0.07)">
+                            <th rowspan="1" colspan="1" class="text-center">Nombre</th>
+                            <th rowspan="1" colspan="1" class="text-center">Apellido</th>
+                            <th rowspan="1" colspan="1" class="text-center">Email</th>
+                            <th rowspan="1" colspan="1" class="text-center">Roles</th>
+                            <th rowspan="1" colspan="1" class="text-center">Acciones</th>
+                        </tr>
+                    </tfoot>
+                    <tbody>
+                        <tr role="row" class="odd" *ngFor="let user of listUser">
+                            <td class="small responsive-text vertical-center">{{user.firstName}}</td>
+                            <td class="small responsive-text vertical-center">{{user.lastName}}</td>
+                            <td class="small responsive-text vertical-center">{{user.email}}</td>
+                            <td class="small vertical-center" [width]="300">
+                                <span *ngFor="let role of user.roles">
+                                    <span
+                                        [ngClass]="role.id==1? 'badge badge-success mx-1 text-dark' : 'badge badge-warning mx-1 text-dark'">
+                                        {{role.name}}
+                                    </span>
+                                </span>
+                            </td>
+                            <td class="d-flex align-items-center justify-content-center">
+                                <div class="d-flex" style="padding-right: 0!important;">
+
+                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor justify-content-center align-items-center sombra-buttoms"
+                                        [routerLink]="['/createUser', user.id]">
+                                        <i class="fa fa-pencil fa-3x text-white"></i>
+                                    </a>
+
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+
+                <!--                PAGINADOR-->
+                <app-paginador *ngIf="paginator" [paginator]="paginator"></app-paginador>
+
+            </div>
+        </div>
+    </div>
+</div>

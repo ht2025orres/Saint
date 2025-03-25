@@ -1,0 +1,1596 @@
+<app-loading *ngIf="loading"></app-loading>
+<!-- ============================================================== -->
+<!-- Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{title}}</h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">paginas</li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </div>
+</div>
+<!-- ============================================================== -->
+<!-- End Bread crumb and right sidebar toggle -->
+<!-- ============================================================== -->
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body wizard-content">
+
+                <form [formGroup]="formGr" (ngSubmit)="saveInfo()" class="tab-wizard wizard-circle wizard clearfix"
+                    enctype="multipart/form-data">
+                    <div class="steps clearfix">
+
+                        <ul role="tablist">
+                            <li role="tab" class="" aria-disabled="false" aria-selected="true" [ngClass]="stateOne">
+                                <a id="steps-uid-0-t-0" href="#steps-uid-0-h-0" aria-controls="steps-uid-0-p-0" class="text-decoration-none">
+                                    <span class="step">1</span> Información ítem
+                                </a>
+                            </li>
+
+                            <li role="tab" class="disabled" aria-disabled="false" aria-selected="false"
+                                [ngClass]="stateTwo">
+                                <a id="steps-uid-0-t-1" href="#steps-uid-0-h-1" aria-controls="steps-uid-0-p-1" class="text-decoration-none">
+                                    <span class="step done">2</span> Cargar imágenes de producto
+                                </a>
+                            </li>
+
+                            <li role="tab" class="disabled" aria-disabled="false" aria-selected="false"
+                                [ngClass]="stateThree">
+                                <a id="steps-uid-0-t-2" href="#steps-uid-0-h-2" aria-controls="steps-uid-0-p-2" class="text-decoration-none">
+                                    <span class="step done">3</span> Cargar imágenes características
+                                </a>
+                            </li>
+
+                            <li role="tab" class="disabled" aria-disabled="false" aria-selected="false"
+                                [ngClass]="stateThree">
+                                <a id="steps-uid-0-t-3" href="#steps-uid-0-h-3" aria-controls="steps-uid-0-p-3" class="text-decoration-none">
+                                    <span class="step done">4</span> Cargar ficha bordado
+                                </a>
+                            </li>
+
+
+                            <li role="tab" class="disabled" aria-disabled="false" aria-selected="false"
+                                [ngClass]="stateFour">
+                                <a id="steps-uid-0-t-4" href="#steps-uid-0-h-4" aria-controls="steps-uid-0-p-4" class="text-decoration-none">
+                                    <span class="step">5</span> Datos guardados
+                                </a>
+                            </li>
+                        </ul>
+
+                    </div>
+
+                    <div class="content clearfix" style="color: #67757c;">
+                        <!-- Step 1 -->
+                        <h6 id="steps-uid-0-h-0" tabindex="-1" class="title ">Datos de la ficha técnica</h6>
+                        <section id="steps-uid-0-p-0" role="tabpanel" aria-labelledby="steps-uid-0-h-0" class="body "
+                            aria-hidden="true" [ngStyle]="{ display: visibilityOne }">
+
+                            <hr>
+
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="control-label text-right col-md-3">Tipo de ficha técnica:</label>
+                                        <div class="col-md-8">
+                                            <select name="technicalDataSheetTypes"
+                                                class="text-left form-control"
+                                                formControlName="technicalDataSheetTypesSelect" 
+                                                (change)="assingTechnicalDataSheetType($event.target)">
+
+                                                <option value="FICHA TECNICA" selected>FICHA TECNICA</option>
+                                                <option value="OPM">OPM</option>
+
+                                            </select>
+
+                                            
+                                            <i class="fa fa-chevron-down" style="position: absolute;left: 30.6vw;top: 4.7vh;pointer-events: none;"></i>
+
+                                            <datalist id="technicalDataSheetTypes"
+                                                style="max-height: 5.1em; overflow: hidden">
+                                                <option *ngFor="let type of technicalDataSheetTypes" [value]="type"
+                                                    data-value="{{type}}">
+                                                </option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="control-label text-right col-md-3">Categoria:</label>
+                                        <div class="col-md-8">
+                                            <input list="productCategories" name="productCategories"
+                                                class="text-left form-control"
+                                                [placeholder]="technicalDataSheetCurrent.productCategory==null? 'Busqueda rápida' : technicalDataSheetCurrent.productCategory.description"
+                                                formControlName="productCategorySelect" 
+                                                (change)="assingValueProductCategory($event.target)">
+
+                                            <i class="fa fa-chevron-down" style="position: absolute;right: 68px;top: 42px;pointer-events: none;"></i>
+
+                                            <datalist id="productCategories"
+                                                style="max-height: 5.1em; overflow: hidden">
+                                                <option *ngFor="let productCategory of productCategories"
+                                                    [value]="this.productCategory.description"
+                                                    data-value="{{this.productCategory.idProductCategory}}">
+                                                </option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="control-label text-right col-md-3">Compañia existente:</label>
+                                        <div class="col-md-8">
+                                            <input list="encodings" name="encodings" class="text-left form-control"
+                                                formControlName="companySearch"
+                                                autocomplete="off" placeholder="Busqueda rápida"
+                                                (change)="assingCustomerValues($event.target)"
+                                                (keyup)="searchCustomer($event.target)">
+
+                                            <datalist id="encodings" style="max-height: 5.1em; overflow: hidden">
+                                                <option *ngFor="let customer of customers"
+                                                    [value]="this.customer.customerName"
+                                                    data-value="{{this.customer.customerId}}">
+                                                </option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="form-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group row" [class.has-danger]="codigoCompaniaNoValid">
+                                            <label class="control-label text-right col-md-3">Nit de compañia:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="idCompany">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row" [class.has-danger]="descripcionCompaniaNoValid">
+                                            <label class="control-label text-right col-md-3">Descripción
+                                                compañia:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="companyName"
+                                                    [class.form-control-danger]="descripcionCompaniaNoValid">
+                                                <div class="form-control-feedback" *ngIf="descripcionCompaniaNoValid">
+                                                    Nombre de
+                                                    la compañia es requerido
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+
+                                <div class="row">
+                                    <div class="col-md-6">
+
+                                        <div class="form-group row" [class.has-danger]="codigoItemNoValid">
+                                            <label class="control-label text-right col-md-3"
+                                                *ngIf="technicalDataSheetCurrent.technicalDataSheetType === 'OPM'">OPM:</label>
+                                            <label class="control-label text-right col-md-3"
+                                                *ngIf="technicalDataSheetCurrent.technicalDataSheetType != 'OPM'">Código de ítem CFIP:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="idItem"
+                                                    [class.form-control-danger]="codigoItemNoValid">
+                                                <div class="form-control-feedback" *ngIf="codigoItemNoValid">Código de
+                                                    Código del ítem es requerido
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3" >Código de ítem Cliente:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="idItemCustomer">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row" [class.has-danger]="descripcionItemNoValid">
+                                            <label class="control-label text-right col-md-3">Descripción ítem:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="itemDescription"
+                                                    [class.form-control-danger]="descripcionItemNoValid">
+                                                <div class="form-control-feedback" *ngIf="descripcionItemNoValid">
+                                                    Descripción del ítem es requerido
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--inicio nuevos campos -->
+                                <div class="row">
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 10 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 19 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 11 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Genero:</label>
+                                            <div class="col-md-8">
+                                                <input list="genderTypes" name="gender"
+                                                    class="text-left form-control"
+                                                    [placeholder]="technicalDataSheetCurrent.gender || 'Busqueda rápida'"
+                                                    (change)="assingGenderType($event.target)">
+    
+                                                <datalist id="genderTypes"
+                                                    style="max-height: 5.1em; overflow: hidden">
+                                                    <option *ngFor="let type of genderTypes" [value]="type"
+                                                        data-value="{{type}}">
+                                                    </option>
+                                                </datalist>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Tela principal:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="mainFabric">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Tela contraste:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="contrastFabric">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                    technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                    technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                    technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                    technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                    technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                    technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Pretina:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="waistband">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Boton:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="button">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Cierre:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="zipper">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Figurado:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="figured">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Pasadores:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="pins">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6"
+                                        *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Tiros:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="sidePulls">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 22" >
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Carteras:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="purses">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Union de los
+                                                hombros:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="shoulderUnion">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group row"
+                                            *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                            technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                            <label class="control-label text-right col-md-3">Forro:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="lining">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Cuello:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="shirtCollar">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Puños:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="cuffs">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Bolsillos:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="pockets">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Cotilla:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="busybody">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Mangas:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="sleeves">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Espalda:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="back">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Hombros:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="shoulders">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Union de las
+                                                Mangas:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="sleeveConnection">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Ajuste del frente:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="frontAdjustment">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6"
+                                        *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Escote:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="neckline">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6"
+                                        *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Terminado:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="finished">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Pinzas:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="darts">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Aberturas:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="opening">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Tiras:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="straps">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                            <label class="control-label text-right col-md-3">Cortes:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="cuts">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Cerrado costados:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="closedSides">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Dobladillo:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="hem">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Capucha:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="hood">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                                technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                            <label class="control-label text-right col-md-3">Entrepierna:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="crotch">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Reflectivo:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="reflective">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Bota:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="boot">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 10 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 11 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 19 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Adicionales:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="additional">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Composición:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="composition">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Ojal:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="buttonhole">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 10 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 11 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 19 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Presillas:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="loops">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 2 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 4 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 5 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 7 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 9 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 10 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 11 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 12 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 14 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 16 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 19 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 21 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Puntadas:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="stitches">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 1 || 
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 6 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 8 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 13 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 15 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 17 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 18 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22 ">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Prelavado:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="prewash">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6" *ngIf="technicalDataSheetCurrent.productCategory.idProductCategory === 11 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 10 || 
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 19 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 20 ||
+                                        technicalDataSheetCurrent.productCategory.idProductCategory === 22">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Pespuntes:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="stitching">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Descripción del
+                                                estampado:</label>
+                                            <div class="col-md-8">
+                                                <textarea type="text" rows="5" class="form-control" placeholder=""
+                                                    formControlName="stamped"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Planchado:</label>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" placeholder=""
+                                                    formControlName="ironing">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Descripcion del
+                                                empaque:</label>
+                                            <div class="col-md-8">
+                                                <textarea type="text" rows="5" class="form-control" placeholder=""
+                                                    formControlName="packaging"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Puntos Criticos:</label>
+                                            <div class="col-md-8">
+                                                <textarea type="text" rows="5" class="form-control" placeholder=""
+                                                    formControlName="criticalPoints"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Descripción
+                                                bordado:</label>
+                                            <div class="col-md-8">
+                                                <textarea type="text" rows="5" class="form-control" placeholder=""
+                                                    formControlName="embroidery"></textarea>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-3">Descripcion
+                                                cliente:</label>
+                                            <div class="col-md-8">
+                                                <textarea type="text" rows="5" class="form-control" placeholder=""
+                                                    formControlName="customerDescription"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <div class="form-group row">
+                                            <label class="control-label text-right col-md-1">Tabla de medidas:</label>
+                                            <div class="col-md-11">
+                                                <angular-editor formControlName="measurementTable"
+                                                    [config]="formEditorConfig"></angular-editor>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                
+
+                                <!--/row-->
+                            </div>
+                        </section>
+
+                        <!-- Step 2 -->
+                        <section id="steps-uid-0-p-1" role="tabpanel" aria-labelledby="steps-uid-0-h-1"
+                            class="body current" aria-hidden="false" [ngStyle]="{ display: visibilityTwo }">
+
+
+                            <hr>
+
+                            <div *ngFor="let progressInfo of progressInfos" class="mb-4 text-center">
+                                <span>{{ progressInfo.fileName }}</span>
+
+                                <div class="text-center d-flex justify-content-center">
+                                    <div class="progress w-50">
+                                        <div class="progress-bar progress-bar-info progress-bar-striped"
+                                            role="progressbar" attr.aria-valuenow="{{ progressInfo.percentage }}"
+                                            aria-valuemin="0" aria-valuemax="100"
+                                            [ngStyle]="{ width: progressInfo.percentage + '%' }">
+                                            {{ progressInfo.percentage }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="box text-center">
+                                <input type="file" accept="image/*" class="inputfile inputfile-4"
+                                    (change)="selectFiles($event, 2, 'image/*')" multiple style="display: none" #loadImage
+                                    id="product-img" />
+                                <label class="p-4" for="product-img">
+                                    <figure>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="17"
+                                            viewBox="0 0 20 17">
+                                            <path
+                                                d="M10 0l-5.2 4.9h3.3v5.1h3.8v-5.1h3.3l-5.2-4.9zm9.3 11.5l-3.2-2.1h-2l3.4 2.6h-3.5c-.1 0-.2.1-.2.1l-.8 2.3h-6l-.8-2.2c-.1-.1-.1-.2-.2-.2h-3.6l3.4-2.6h-2l-3.2 2.1c-.4.3-.7 1-.6 1.5l.6 3.1c.1.5.7.9 1.2.9h16.3c.6 0 1.1-.4 1.3-.9l.6-3.1c.1-.5-.2-1.2-.7-1.5z" />
+                                        </svg>
+                                    </figure>
+                                    <span>Seleccionar</span>
+                                </label>
+                            </div>
+                        </section>
+
+
+                        <!-- Step 3 -->
+                        <section id="steps-uid-0-p-2" role="tabpanel" aria-labelledby="steps-uid-0-h-2"
+                            class="body current" aria-hidden="false" [ngStyle]="{ display: visibilityThree }">
+
+
+                            <hr>
+
+                            <div *ngFor="let progressInfo of progressInfos" class="mb-4 text-center">
+                                <span>{{ progressInfo.fileName }}</span>
+
+                                <div class="text-center d-flex justify-content-center">
+                                    <div class="progress w-50">
+                                        <div class="progress-bar progress-bar-info progress-bar-striped"
+                                            role="progressbar" attr.aria-valuenow="{{ progressInfo.percentage }}"
+                                            aria-valuemin="0" aria-valuemax="100"
+                                            [ngStyle]="{ width: progressInfo.percentage + '%' }">
+                                            {{ progressInfo.percentage }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="box text-center">
+                                <input type="file" accept="image/*" class="inputfile inputfile-4"
+                                    (change)="selectFiles($event, 4, 'image/*')" multiple style="display: none" #loadImage
+                                    id="characteristic-img" />
+                                <label class="p-4" for="characteristic-img">
+                                    <figure>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="17"
+                                            viewBox="0 0 20 17">
+                                            <path
+                                                d="M10 0l-5.2 4.9h3.3v5.1h3.8v-5.1h3.3l-5.2-4.9zm9.3 11.5l-3.2-2.1h-2l3.4 2.6h-3.5c-.1 0-.2.1-.2.1l-.8 2.3h-6l-.8-2.2c-.1-.1-.1-.2-.2-.2h-3.6l3.4-2.6h-2l-3.2 2.1c-.4.3-.7 1-.6 1.5l.6 3.1c.1.5.7.9 1.2.9h16.3c.6 0 1.1-.4 1.3-.9l.6-3.1c.1-.5-.2-1.2-.7-1.5z" />
+                                        </svg>
+                                    </figure>
+                                    <span>Seleccionar</span>
+                                </label>
+                            </div>
+                        </section>
+
+
+                         <!-- Step 4 -->
+                         <section id="steps-uid-0-p-3" role="tabpanel" aria-labelledby="steps-uid-0-h-3"
+                            class="body current" aria-hidden="false" [ngStyle]="{ display: visibilityFour }">
+
+
+                            <hr>
+
+                            <div *ngFor="let progressInfo of progressInfos" class="mb-4 text-center">
+                                <span>{{ progressInfo.fileName }}</span>
+
+                                <div class="text-center d-flex justify-content-center">
+                                    <div class="progress w-50">
+                                        <div class="progress-bar progress-bar-info progress-bar-striped"
+                                            role="progressbar" attr.aria-valuenow="{{ progressInfo.percentage }}"
+                                            aria-valuemin="0" aria-valuemax="100"
+                                            [ngStyle]="{ width: progressInfo.percentage + '%' }">
+                                            {{ progressInfo.percentage }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="box text-center">
+                                <input type="file" accept="application/pdf" class="inputfile inputfile-4"
+                                    (change)="selectFiles($event, 1, 'application/pdf')" multiple style="display: none" #loadImage
+                                    id="embroidery-file" />
+                                <label class="p-4" for="embroidery-file">
+                                    <figure>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="17"
+                                            viewBox="0 0 20 17">
+                                            <path
+                                                d="M10 0l-5.2 4.9h3.3v5.1h3.8v-5.1h3.3l-5.2-4.9zm9.3 11.5l-3.2-2.1h-2l3.4 2.6h-3.5c-.1 0-.2.1-.2.1l-.8 2.3h-6l-.8-2.2c-.1-.1-.1-.2-.2-.2h-3.6l3.4-2.6h-2l-3.2 2.1c-.4.3-.7 1-.6 1.5l.6 3.1c.1.5.7.9 1.2.9h16.3c.6 0 1.1-.4 1.3-.9l.6-3.1c.1-.5-.2-1.2-.7-1.5z" />
+                                        </svg>
+                                    </figure>
+                                    <span>Seleccionar</span>
+                                </label>
+                            </div>
+                        </section>
+
+                        <!-- Step 5 -->
+                        <section id="steps-uid-0-p-4" role="tabpanel" aria-labelledby="steps-uid-0-h-4" class="body"
+                            aria-hidden="true" [ngStyle]="{ display: visibilityFive }">
+
+
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="card-title text-center font-weight-bold">ESPECIFICACIONES</h4>
+                                    <h6 class="card-subtitle mb-5 text-muted text-center">ID FICHA :
+                                        {{this.technicalDataSheetCurrent.id}}</h6>
+
+                                    <div class="row mt-4 text-justify">
+                                        <div class="col-md-6">
+                                            <p class="card-text"><b>Código ítem CFIP:
+                                                </b>{{this.technicalDataSheetCurrent.idItem}}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text"><b>Código ítem Cliente:
+                                                </b>{{this.technicalDataSheetCurrent.idItemCustomer}}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text"><b>Descripción ítem:
+                                                </b>{{this.technicalDataSheetCurrent.itemDescription}}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text"><b>Nit cliente:
+                                                </b>{{this.technicalDataSheetCurrent.idCompany}}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text"><b>Razón social cliente:
+                                                </b>{{this.technicalDataSheetCurrent.companyName}}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text"><b>Categoria:
+                                                </b>{{this.technicalDataSheetCurrent.productCategory.description}}</p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.gender">
+                                            <p class="card-text">
+                                                <b>Genero: </b>{{this.technicalDataSheetCurrent.gender}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text" *ngIf="this.technicalDataSheetCurrent.mainFabric">
+                                                <b>Tela principal: </b>{{this.technicalDataSheetCurrent.mainFabric}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.contrastFabric">
+                                            <p class="card-text">
+                                                <b>Tela contraste: </b>{{this.technicalDataSheetCurrent.contrastFabric}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.waistband">
+                                            <p class="card-text">
+                                                <b>Pretina: </b>{{this.technicalDataSheetCurrent.waistband}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.button">
+                                            <p class="card-text">
+                                                <b>Boton: </b>{{this.technicalDataSheetCurrent.button}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.zipper">
+                                            <p class="card-text">
+                                                <b>Cierre: </b>{{this.technicalDataSheetCurrent.zipper}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.figured">
+                                            <p class="card-text">
+                                                <b>Figurado: </b>{{this.technicalDataSheetCurrent.figured}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.pins">
+                                            <p class="card-text">
+                                                <b>Pasadores: </b>{{this.technicalDataSheetCurrent.pins}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.sidePulls">
+                                            <p class="card-text">
+                                                <b>Tiros: </b>{{this.technicalDataSheetCurrent.sidePulls}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.purses">
+                                            <p class="card-text">
+                                                <b>Carteras: </b>{{this.technicalDataSheetCurrent.purses}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.shoulderUnion">
+                                            <p class="card-text">
+                                                <b>Union de los hombros:
+                                                </b>{{this.technicalDataSheetCurrent.shoulderUnion}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.lining">
+                                            <p class="card-text">
+                                                <b>Forro: </b>{{this.technicalDataSheetCurrent.lining}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.shirtCollar">
+                                            <p class="card-text">
+                                                <b>Cuello: </b>{{this.technicalDataSheetCurrent.shirtCollar}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.cuffs">
+                                            <p class="card-text">
+                                                <b>Puños: </b>{{this.technicalDataSheetCurrent.cuffs}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.pockets">
+                                            <p class="card-text">
+                                                <b>Bolsillos: </b>{{this.technicalDataSheetCurrent.pockets}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.busybody">
+                                            <p class="card-text">
+                                                <b>Cotilla: </b>{{this.technicalDataSheetCurrent.busybody}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.sleeves">
+                                            <p class="card-text">
+                                                <b>Mangas: </b>{{this.technicalDataSheetCurrent.sleeves}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.back">
+                                            <p class="card-text">
+                                                <b>Espalda: </b>{{this.technicalDataSheetCurrent.back}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.shoulders">
+                                            <p class="card-text">
+                                                <b>Hombros: </b>{{this.technicalDataSheetCurrent.shoulders}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.sleeveConnection">
+                                            <p class="card-text">
+                                                <b>Union de las Mangas:
+                                                </b>{{this.technicalDataSheetCurrent.sleeveConnection}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.frontAdjustment">
+                                            <p class="card-text">
+                                                <b>Ajuste del frente:
+                                                </b>{{this.technicalDataSheetCurrent.frontAdjustment}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.neckline">
+                                            <p class="card-text">
+                                                <b>Escote: </b>{{this.technicalDataSheetCurrent.neckline}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="card-text" *ngIf="this.technicalDataSheetCurrent.finished">
+                                                <b>Terminado: </b>{{this.technicalDataSheetCurrent.finished}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.darts">
+                                            <p class="card-text">
+                                                <b>Pinzas: </b>{{this.technicalDataSheetCurrent.darts}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.opening">
+                                            <p class="card-text">
+                                                <b>Aberturas: </b>{{this.technicalDataSheetCurrent.opening}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.straps">
+                                            <p class="card-text">
+                                                <b>Tiras: </b>{{this.technicalDataSheetCurrent.straps}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.cuts">
+                                            <p class="card-text">
+                                                <b>Cortes: </b>{{this.technicalDataSheetCurrent.cuts}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.closedSides">
+                                            <p class="card-text">
+                                                <b>Cerrado costados:
+                                                </b>{{this.technicalDataSheetCurrent.closedSides}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.hem">
+                                            <p class="card-text">
+                                                <b>Dobladillo: </b>{{this.technicalDataSheetCurrent.hem}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.hood">
+                                            <p class="card-text">
+                                                <b>Capucha: </b>{{this.technicalDataSheetCurrent.hood}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.crotch">
+                                            <p class="card-text">
+                                                <b>Entrepierna: </b>{{this.technicalDataSheetCurrent.crotch}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.reflective">
+                                            <p class="card-text">
+                                                <b>Reflectivo: </b>{{this.technicalDataSheetCurrent.reflective}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.boot">
+                                            <p class="card-text">
+                                                <b>Bota: </b>{{this.technicalDataSheetCurrent.boot}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.additional">
+                                            <p class="card-text">
+                                                <b>Adicionales: </b>{{this.technicalDataSheetCurrent.additional}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.composition">
+                                            <p class="card-text">
+                                                <b>Composición: </b>{{this.technicalDataSheetCurrent.composition}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.buttonhole">
+                                            <p class="card-text">
+                                                <b>Ojal: </b>{{this.technicalDataSheetCurrent.buttonhole}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.loops">
+                                            <p class="card-text">
+                                                <b>Presillas: </b>{{this.technicalDataSheetCurrent.loops}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.stitches">
+                                            <p class="card-text">
+                                                <b>Puntadas: </b>{{this.technicalDataSheetCurrent.stitches}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.prewash">
+                                            <p class="card-text">
+                                                <b>Prelavado: </b>{{this.technicalDataSheetCurrent.prewash}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.embroidery">
+                                            <p class="card-text">
+                                                <b>Descripción bordado:
+                                                </b>{{this.technicalDataSheetCurrent.embroidery}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.stamped">
+                                            <p class="card-text">
+                                                <b>Descripción del estampado:
+                                                </b>{{this.technicalDataSheetCurrent.stamped}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.ironing">
+                                            <p class="card-text">
+                                                <b>Descripción del planchado:
+                                                </b>{{this.technicalDataSheetCurrent.ironing}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.packaging">
+                                            <p class="card-text">
+                                                <b>Descripcion del empaque:
+                                                </b>{{this.technicalDataSheetCurrent.packaging}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.stitching">
+                                            <p class="card-text">
+                                                <b>Pespuntes: </b>{{this.technicalDataSheetCurrent.stitching}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6" *ngIf="this.technicalDataSheetCurrent.criticalPoints">
+                                            <p class="card-text">
+                                                <b>Puntos Criticos:
+                                                </b>{{this.technicalDataSheetCurrent.criticalPoints}}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-12"
+                                            *ngIf="this.technicalDataSheetCurrent.customerDescription">
+                                            <p class="card-text">
+                                                <b>Descripcion cliente:
+                                                </b>{{this.technicalDataSheetCurrent.customerDescription}}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="card-body">
+                                <h4><i class="fa fa-paperclip m-r-10 m-b-10"></i> MEDIDAS BÁSICAS </h4>
+                                <div class="col-md-12">
+                                    <table class="table table-striped thead-dark"
+                                        [innerHTML]="this.technicalDataSheetCurrent.measurementTable">
+                                    </table>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="card-body">
+                                <h4><i class="fa fa-paperclip m-r-10 m-b-10"></i> IMÁGENES DEL PRODUCTO </h4>
+                                <div class="row">
+                                    <div class="col-md-4" *ngIf="technicalDataSheetCurrent.productImage1">
+                                        <ngx-panzoom 
+                                        [zoomLevels]="panzoomConfig.zoomLevels"
+                                        [scalePerZoomLevel]="panzoomConfig.scalePerZoomLevel"
+                                        [zoomStepDuration]="panzoomConfig.zoomStepDuration"
+                                        [freeMouseWheel]="panzoomConfig.freeMouseWheel">
+                                            <img class="img-thumbnail img-responsive"
+                                                 [src]="technicalDataSheetCurrent.productImage1"
+                                                 width="200px" />
+                                        </ngx-panzoom>
+                                    </div>
+                                    <div class="col-md-4" *ngIf="technicalDataSheetCurrent.productImage2">
+                                        <ngx-panzoom 
+                                        [zoomLevels]="panzoomConfig.zoomLevels"
+                                        [scalePerZoomLevel]="panzoomConfig.scalePerZoomLevel"
+                                        [zoomStepDuration]="panzoomConfig.zoomStepDuration"
+                                        [freeMouseWheel]="panzoomConfig.freeMouseWheel">
+                                            <img class="img-thumbnail img-responsive"
+                                                 [src]="technicalDataSheetCurrent.productImage2"
+                                                 width="200px" />
+                                        </ngx-panzoom>
+                                    </div>
+                                </div>
+                            </div>                            
+
+                            <hr>
+
+                            <div class="card-body">
+                                <h4><i class="fa fa-paperclip m-r-10 m-b-10"></i> IMAGENES DE CARACTERÍSTICAS DEL PRODUCTO </h4>
+                                <div class="row">
+                                    <div class="col-md-4" *ngIf="technicalDataSheetCurrent.characteristicImage1">
+                                            <ngx-panzoom 
+                                            [zoomLevels]="panzoomConfig.zoomLevels"
+                                            [scalePerZoomLevel]="panzoomConfig.scalePerZoomLevel"
+                                            [zoomStepDuration]="panzoomConfig.zoomStepDuration"
+                                            [freeMouseWheel]="panzoomConfig.freeMouseWheel">
+                                            <img class="img-thumbnail img-responsive"
+                                                 [src]="technicalDataSheetCurrent.characteristicImage1"
+                                                 width="200px" />
+                                        </ngx-panzoom>
+                                    </div>
+                                    <div class="col-md-4" *ngIf="technicalDataSheetCurrent.characteristicImage2">
+                                            <ngx-panzoom 
+                                            [zoomLevels]="panzoomConfig.zoomLevels"
+                                            [scalePerZoomLevel]="panzoomConfig.scalePerZoomLevel"
+                                            [zoomStepDuration]="panzoomConfig.zoomStepDuration"
+                                            [freeMouseWheel]="panzoomConfig.freeMouseWheel">
+                                            <img class="img-thumbnail img-responsive"
+                                                 [src]="technicalDataSheetCurrent.characteristicImage2"
+                                                 width="200px" />
+                                        </ngx-panzoom>
+                                    </div>
+                                    <div class="col-md-4" *ngIf="technicalDataSheetCurrent.characteristicImage3">
+                                            <ngx-panzoom 
+                                            [zoomLevels]="panzoomConfig.zoomLevels"
+                                            [scalePerZoomLevel]="panzoomConfig.scalePerZoomLevel"
+                                            [zoomStepDuration]="panzoomConfig.zoomStepDuration"
+                                            [freeMouseWheel]="panzoomConfig.freeMouseWheel">
+                                            <img class="img-thumbnail img-responsive"
+                                                 [src]="technicalDataSheetCurrent.characteristicImage3"
+                                                 width="200px" />
+                                        </ngx-panzoom>
+                                    </div>
+                                    <div class="col-md-4" *ngIf="technicalDataSheetCurrent.characteristicImage4">
+                                            <ngx-panzoom 
+                                            [zoomLevels]="panzoomConfig.zoomLevels"
+                                            [scalePerZoomLevel]="panzoomConfig.scalePerZoomLevel"
+                                            [zoomStepDuration]="panzoomConfig.zoomStepDuration"
+                                            [freeMouseWheel]="panzoomConfig.freeMouseWheel">
+                                            <img class="img-thumbnail img-responsive"
+                                                 [src]="technicalDataSheetCurrent.characteristicImage4"
+                                                 width="200px" />
+                                        </ngx-panzoom>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="actions clearfix">
+                        <ul role="menu" aria-label="Pagination">
+                            <li aria-hidden="false" aria-disabled="false" class=""
+                                [ngStyle]="{ display: visibilityOne }">
+                                <button class=" btn-themecolor btn-rounded" role="button" [disabled]="formGr.invalid"
+                                    [style.cursor]="cursorValidationItem()">
+                                    Siguiente
+                                </button>
+                            </li>
+
+                            <li aria-hidden="false" aria-disabled="false" class=""
+                                [ngStyle]="{ display: visibilityTwo }">
+                                <button class="btn btn-themecolor btn-rounded" role="button"
+                                    [disabled]="this.formData == null || this.selectedFiles.length==0"
+                                    [style.cursor]="cursorValidationImage()" (click)="saveProductImages()">
+                                    Siguiente
+                                </button>
+                            </li>
+
+                            <li aria-hidden="false" aria-disabled="false" class=""
+                                [ngStyle]="{ display: visibilityThree }">
+                                <button class="btn btn-themecolor btn-rounded" role="button"
+                                    [disabled]="this.formData == null || this.selectedFiles.length==0"
+                                    [style.cursor]="cursorValidationImage()" (click)="saveCharacteristicImages()">
+                                    Siguiente
+                                </button>
+                            </li>
+
+                            <li aria-hidden="false" aria-disabled="false" class=""
+                                [ngStyle]="{ display: visibilityFour }">
+                                <button class="btn btn-themecolor btn-rounded" role="button"
+                                    [disabled]="this.formData == null || this.selectedFiles.length==0"
+                                    [style.cursor]="cursorValidationImage()" (click)="saveLogoTechnicalDataSheetFile()">
+                                    Siguiente
+                                </button>
+                            </li>
+
+                            <li aria-hidden="false" aria-disabled="false" class=""
+                                [ngStyle]="{ display: visibilityFive }">
+                                <button class="btn btn-themecolor btn-rounded" role="button"
+                                    [style.cursor]="cursorValidationImage()" (click)="updateStatus('DESARROLLO')">
+                                    Guardar
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

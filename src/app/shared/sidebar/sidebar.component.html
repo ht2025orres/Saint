@@ -1,0 +1,66 @@
+<aside class="left-sidebar">
+    <div class="scroll-sidebar">
+        <nav class="sidebar-nav">
+            <ul id="sidebarnav">
+                <li>
+                    <a class="waves-effect waves-dark" routerLink="/dashboard" aria-expanded="false" class="text-decoration-none">
+                        <i class="mdi mdi-gauge"></i>
+                        <span class="hide-menu mt-5 pt-15">Dashboard <span
+                                class="label label-rouded label-themecolor pull-right">4
+                            </span></span>
+                    </a>
+                </li>
+
+                <li>
+                    <a class="waves-effect waves-dark" routerLink="/technical-data-sheets-report" aria-expanded="false" class="text-decoration-none">
+                        <i class="mdi mdi-gauge"></i>
+                        <span class="hide-menu mt-5 pt-15">Reporte de Fichas <span
+                                class="label label-rouded label-themecolor pull-right">4
+                            </span></span>
+                    </a>
+                </li>
+
+                <li *ngIf="authService.hasRole('Administrador del sistema')">
+                    <a class=" waves-effect waves-dark" [routerLink]="['/users/page/0']" aria-expanded="false" class="text-decoration-none"><i
+                            class="mdi mdi-account">
+                        </i><span class="hide-menu">Administrar usuarios </span></a>
+                </li>
+
+                <li> <a class="has-arrow waves-effect waves-dark" href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark"><i
+                            class="mdi mdi-file"></i><span class="hide-menu">Gestión de fichas </span></a>
+                    <ul aria-expanded="false" class="collapse">
+                        <li
+                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            <a [routerLink]="['/createTechnicalDataSheet', 'new', 'create']" class="text-decoration-none">Crear ficha técnica</a>
+                        </li>
+                        <li>
+                            <a [routerLink]="['/listTechnicalDataSheet/page/', 0, 'TERMINADO']" class="text-decoration-none">fichas técnicas
+                                terminadas</a>
+                        </li>
+                        <li
+                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Aprobacion ficha tecnica (primera revision)')">
+                            <a [routerLink]="['/listTechnicalDataSheet/page/', 0, 'PRIMERA REVISION']" class="text-decoration-none">fichas técnicas
+                                primera revisión</a>
+                        </li>
+                        <li
+                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Aprobacion ficha tecnica (Segunda revision)')">
+                            <a [routerLink]="['/listTechnicalDataSheet/page/', 0, 'SEGUNDA REVISION']" class="text-decoration-none">fichas técnicas
+                                segunda revisión</a>
+                        </li>
+                        <li
+                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Calidad ficha tecnica')">
+                            <a [routerLink]="['/listTechnicalDataSheet/page/', 0, 'CALIDAD']" class="text-decoration-none">fichas técnicas en proceso
+                                de calidad</a>
+                        </li>
+                        <li
+                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            <a [routerLink]="['/listTechnicalDataSheet/page/', 0, 'DESARROLLO']" class="text-decoration-none">fichas técnicas en
+                                desarrollo</a>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+        </nav>
+    </div>
+</aside>
