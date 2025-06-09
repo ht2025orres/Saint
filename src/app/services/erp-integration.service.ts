@@ -9,11 +9,10 @@ import {Observable} from 'rxjs';
 })
 export class ErpIntegrationService {
 
-  private urlEndPoint = `${environment.URL_ERP_INTEGRATION}/v1/customers/`;
+  private urlEndPoint = 'https://colegioprovidencia.edu.co/Sdp/app/api/clientes.php';
   constructor(private http: HttpClient) { }
-  
 
   searchCustomer(word: string): Observable<Customer[]> {
-    return this.http.get<Customer[]>(`${this.urlEndPoint}/${word}`);
+    return this.http.get<Customer[]>(`${this.urlEndPoint}?term=${word}`);
   }
 }

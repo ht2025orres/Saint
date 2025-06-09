@@ -432,7 +432,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
     }
 
     searchCustomer(content) {
-        if (content.value.trim().length > 3) {
+        if (content.value.trim().length > 2) {
             this.erpIntegrationService.searchCustomer(content.value).subscribe(resp => {
                 this.customers = resp as Customer[];
             });

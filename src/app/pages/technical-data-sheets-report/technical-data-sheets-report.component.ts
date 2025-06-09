@@ -91,7 +91,9 @@ export class TechnicalDataSheetsReportComponent {
   
   filterByMonth(): void {
     if (!this.selectedMonth || !this.selectedYear) return;
-  
+    console.log(this.datos_table);
+
+    
     this.filterGrafi = this.datos_table.filter(item => {
     if (!item.date_creation) return false;
     
