@@ -1,50 +1,92 @@
 <div class="dataTables_info" id="info" role="status" aria-live="polite">
     <p class="responsive-text">
-        Mostrando del 1 al {{paginator.numberOfElements}} de {{paginator.totalElements}}
-        entrada(s)
+        Mostrando del {{(paginator.number * paginator.size) + 1}} al 
+        {{Math.min((paginator.number * paginator.size) + paginator.numberOfElements, paginator.totalElements)}} de 
+        {{paginator.totalElements}} entrada(s)
     </p>
 </div>
 
-<div class="dataTables_paginate paging_simple_numbers responsive-text" id="paginate" *ngIf="pages?.length > 0">
-    <a
-            class="paginate_button previous"
-            aria-controls="paginate"
-            data-dt-idx="0"
-            tabindex="0"
-            id="previous"
-            *ngIf="paginator.number > 0"
-            [routerLink]="['/listTechnicalDataSheet/page/', paginator.number-1, status]"
-    >
+<div class="dataTables_paginate paging_simple_numbers responsive-text" 
+     id="paginate" 
+     *ngIf="pages?.length > 0 && paginator.totalPages > 1">
+    
+    <!-- Botón Primera Página -->
+    <a class="paginate_button first" 
+       aria-controls="paginate"
+       tabindex="0"
+       *ngIf="paginator.number > 0"
+       (click)="goToFirst($event)"
+       style="cursor: pointer;"
+       title="Primera página">
+        ««
+    </a>
+
+    <!-- Botón Anterior -->
+    <a class="paginate_button previous"
+       aria-controls="paginate"
+       tabindex="0"
+       *ngIf="paginator.number > 0"
+       (click)="goToPrevious($event)"
+       style="cursor: pointer;"
+       title="Página anterior">
         Anterior
     </a>
 
+    <!-- Números de página -->
     <span>
-        <span *ngFor="let pagina of pages" >
+        <span *ngFor="let pagina of pages">
+            <!-- Página actual (sin clic) -->
             <span *ngIf="pagina-1 === paginator.number"
-                  [ngClass]="pagina-1 === paginator.number? 'current' : '' "
-                  class="paginate_button"
-                  aria-controls="paginate" data-dt-idx="1"
-                  tabindex="0">{{pagina}}
+                  class="paginate_button current"
+                  aria-controls="paginate"
+                  tabindex="0"
+                  [attr.aria-label]="'Página ' + pagina + ' (actual)'">
+                {{pagina}}
             </span>
 
+            <!-- Otras páginas (con clic) -->
             <a *ngIf="pagina-1 !== paginator.number"
-               [routerLink]="['/listTechnicalDataSheet/page/', pagina-1, status]"
-               [ngClass]="pagina-1 === paginator.number? 'current' : '' "
+               (click)="onPageClick(pagina-1, $event)"
                class="paginate_button"
-               aria-controls="paginate" data-dt-idx="1"
-               tabindex="0">{{pagina}}
+               aria-controls="paginate"
+               tabindex="0"
+               style="cursor: pointer;"
+               [attr.aria-label]="'Ir a página ' + pagina"
+               [attr.title]="'Página ' + pagina">
+                {{pagina}}
             </a>
         </span>
-
     </span>
 
+    <!-- Botón Siguiente -->
     <a *ngIf="paginator.number < paginator.totalPages-1"
-            [routerLink]="['/listTechnicalDataSheet/page/', paginator.number+1, status]"
-            class="paginate_button next"
-            aria-controls="next"
-            data-dt-idx="7"
-            tabindex="0"
-            id="next">
+       (click)="goToNext($event)"
+       class="paginate_button next"
+       aria-controls="paginate"
+       tabindex="0"
+       style="cursor: pointer;"
+       title="Página siguiente">
         Siguiente
     </a>
+
+    <!-- Botón Última Página -->
+    <a class="paginate_button last"
+       aria-controls="paginate"
+       tabindex="0"
+       *ngIf="paginator.number < paginator.totalPages-1"
+       (click)="goToLast($event)"
+       style="cursor: pointer;"
+       title="Última página">
+        »»
+    </a>
+</div>
+
+<!-- Información adicional de paginación -->
+<div class="pagination-info mt-2" *ngIf="paginator.totalPages > 1">
+    <small class="text-muted">
+        Página {{paginator.number + 1}} de {{paginator.totalPages}}
+        <span *ngIf="paginator.totalElements > 0">
+            | Total: {{paginator.totalElements}} registro(s)
+        </span>
+    </small>
 </div>

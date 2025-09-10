@@ -11,10 +11,31 @@ import {catchError, map, tap} from 'rxjs/operators';
 export class TechnicalSheetService {
 
     private urlEndPoint = `${environment.URL_TECHNICAL_DATA_SHEET}/v1/technical/data/sheet`;
-
+    private urlEndPointSaint = `${environment.URL_SAINT_BACKEND_API}`;
     constructor(private http: HttpClient) {
     }
 
+    saveDocumentsTechnicalDataSheet(id: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('id_register_item_document', id.toString());
+    formData.append('documento', file);
+
+    return this.http.post(`${this.urlEndPointSaint}/document/save`, formData);
+    }
+
+    getDocumentByidregister(id: number): Observable<string> {
+    return this.http.get<{ url: string }>(`${this.urlEndPointSaint}/get-document-technical-data-sheet/${id}`)
+        .pipe(map(response => response.url));
+    }
+
+    // Obtener historial completo de versiones por ID
+    getLastVersions(id: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.urlEndPointSaint}/document/last-versions/${id}`);
+    }
+
+    getAlldb(status: string): Observable<any> {
+        return this.http.post(`${this.urlEndPointSaint}/technicaldatasheet/list`, {status});
+    }
     getAll(page: number, status: string): Observable<TechnicalDataSheet[]> {
         return this.http.get(`${this.urlEndPoint}/page/${page}/status/${status}`)
             .pipe(

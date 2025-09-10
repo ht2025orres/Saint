@@ -1,4 +1,29 @@
-<app-loading *ngIf="loading"></app-loading>
+<!-- Indicador de progreso compacto en la esquina -->
+<div *ngIf="!loadingProgress.isComplete && loadingProgress.total > 0" 
+     class="progress-indicator">
+    <div class="progress-content">
+        <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <div class="progress-info">
+                <small>
+                    <strong>Cargando:</strong> {{loadingProgress.percentage}}%
+                    <br>
+                    <span class="text-muted">
+                        {{allTechnicalDataSheet.length}} de {{loadingProgress.total * 10}} fichas
+                    </span>
+                </small>
+            </div>
+        </div>
+        <div class="progress mt-1" style="height: 4px;">
+            <div class="progress-bar progress-bar-animated" 
+                 role="progressbar" 
+                 [style.width.%]="loadingProgress.percentage">
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ============================================================== -->
 <!-- Bread crumb and right sidebar toggle -->
@@ -37,31 +62,58 @@
 <!-- End Bread crumb and right sidebar toggle -->
 <!-- ============================================================== -->
 
-
 <div class="card">
     <div class="card-body">
-
+        
         <div class="table-responsive mt-2">
             <div id="example23_wrapper" class="dataTables_wrapper">
+                
+                <div class="alert alert-success mb-3" *ngIf="loadingProgress.isComplete">
+                    <i class="fa fa-check-circle"></i>
+                    <strong>Datos completos:</strong> 
+                    Se han cargado todas las {{allTechnicalDataSheet.length}} fichas técnicas. 
+                    Todos los filtros están disponibles.
+                </div>
+                
+                <!-- Información adicional sobre el estado de carga -->
+                <div class="alert alert-info mb-3" *ngIf="!loadingProgress.isComplete && allTechnicalDataSheet.length > 0">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Datos actualizándose:</strong> 
+                    Mostrando {{allTechnicalDataSheet.length}} fichas cargadas. 
+                    Los resultados se actualizan automáticamente mientras se cargan más datos.
+                    <span *ngIf="currentSearchTerm">
+                        <br><small class="text-muted">
+                            Los resultados de búsqueda se actualizan en tiempo real.
+                        </small>
+                    </span>
+                </div>
 
                 <div class="dataTables_length responsive-text" id="myTable_length">
                     <label>Mostrar
                         <select name="myTable_length" aria-controls="myTable" class=""
-                            (change)="listBySize($event.target.value)">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="30">30</option>
-                            <option value="50">50</option>
+                            (change)="listBySize(+$event.target.value)">
+                            <option value="10" [selected]="currentPageSize === 10">10</option>
+                            <option value="20" [selected]="currentPageSize === 20">20</option>
+                            <option value="30" [selected]="currentPageSize === 30">30</option>
+                            <option value="50" [selected]="currentPageSize === 50">50</option>
+                            <option value="100" [selected]="currentPageSize === 100">100</option>
                         </select> entradas</label>
                 </div>
 
                 <div id="example23_filter" class="dataTables_filter mb-3">
                     <label class="fw-bold responsive-text">Buscar:
-                        <input type="search" class="" placeholder="" aria-controls="example23"
-                            (keyup)="searchTechnicalDataSheet(txtWord.value)" #txtWord>
+                        <input type="search" 
+                               class="" 
+                               placeholder="Buscar por código, descripción, cliente..." 
+                               aria-controls="example23"
+                               [value]="currentSearchTerm"
+                               (keyup)="searchTechnicalDataSheet($event.target.value)" 
+                               #txtWord>
                     </label>
+                    <small class="text-muted d-block mt-1" *ngIf="currentSearchTerm">
+                        Mostrando resultados para: "{{currentSearchTerm}}"
+                    </small>
                 </div>
-
 
                 <table id="example23" class="table table-hover table-striped align-middle sombra-buttoms"
                     role="grid" aria-describedby="example23_info">
@@ -107,7 +159,6 @@
                     </thead>
                     <tfoot>
                         <tr style="background: rgba(75,197,232,0.07)">
-
                             <th rowspan="1" colspan="1" class="text-center">Código ítem CFIP</th>
                             <th rowspan="1" colspan="1" class="text-center">Tipo ficha</th>
                             <th rowspan="1" colspan="1" class="text-center">Descripción ítem</th>
@@ -118,15 +169,13 @@
                         </tr>
                     </tfoot>
                     <tbody>
-                        <tr role="row" class="odd" *ngFor="let ficha of listaTechnicalDataSheet">
-
-                            <td class="sorting_1 small responsive-text vertical-center">{{ficha.idItem}}</td>
-                            <td class="small responsive-text vertical-center">{{ficha.technicalDataSheetType}}</td>
-                            <td class="small responsive-text vertical-center">{{ficha.itemDescription}}</td>
-                            <td class="small responsive-text vertical-center">{{ficha.companyName}}</td>
-                            <td class="small responsive-text vertical-center">{{ficha.dateCreation | date: 'longDate'}}
-                            </td>
-                            <td class="d-flex align-items-center">
+                        <tr role="row" class="odd text-center" *ngFor="let ficha of listaTechnicalDataSheet">
+                            <td class="sorting_1 small responsive-text vertical-center">{{ficha.id_item}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.technical_data_sheet_type}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.item_description}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.company_name}}</td>
+                            <td class="small responsive-text vertical-center">{{ficha.date_creation | date: 'longDate'}}</td>
+                            <td class="small responsive-text vertical-center">
                                 <div class="col-md-5 d-flex text-center">
                                     <span class="badge badge-danger small"
                                         *ngIf="ficha.status == 'PRIMERA REVISION'">{{ficha.status}}
@@ -144,7 +193,6 @@
                                         *ngIf="this.statusSearch == 'CALIDAD'">{{this.statusSearch}}
                                     </span>
                                 </div>
-
                             </td>
                             <td class="small responsive-text vertical-center">
                                 <div class="col-md-7 d-flex" style="padding-right: 0!important;">
@@ -172,20 +220,63 @@
                                         <i class="fa fa-search text-white fa-1x"></i>
                                     </a>
 
+                                    <ng-container  *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                                        <!-- Botón para seleccionar y subir documento -->
+                                        
+                                        <input type="file" hidden #fileInput accept="application/pdf" (change)="onFileSelected($event, ficha.id)" />
 
+                                        <button class="nav-link ml-1 btn btn-success sombra-buttoms" (click)="fileInput.click()">
+                                            <i class="fa fa-upload text-white"></i>
+                                        </button>
+                                    </ng-container >
+                                    
+                                     <!-- Botón con menú de opciones para visualizar los documentos de la ficha tecnica-->
+                                        <button class="nav-link ml-1 btn btn-danger sombra-buttoms"
+                                                (click)="mostrarOpcionesDocumento(ficha.id)">
+                                        <i class="fa fa-file-pdf-o text-white"></i>
+                                        </button>
                                 </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Mensaje cuando no hay resultados -->
+                        <tr *ngIf="listaTechnicalDataSheet.length === 0">
+                            <td colspan="7" class="text-center py-4">
+                                <div *ngIf="currentSearchTerm; else noDataTemplate">
+                                    <i class="fa fa-search fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-1">No se encontraron fichas que coincidan con "{{currentSearchTerm}}"</p>
+                                    <small class="text-muted" *ngIf="!loadingProgress.isComplete">
+                                        Buscando en {{allTechnicalDataSheet.length}} fichas cargadas...
+                                        <br>Es posible que aparezcan más resultados mientras se cargan los datos restantes.
+                                    </small>
+                                </div>
+                                <ng-template #noDataTemplate>
+                                    <div *ngIf="allTechnicalDataSheet.length === 0 && !loadingProgress.isComplete">
+                                        <div class="spinner-border text-muted mb-2" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <p class="text-muted mb-0">Cargando fichas técnicas...</p>
+                                    </div>
+                                    <div *ngIf="allTechnicalDataSheet.length === 0 && loadingProgress.isComplete">
+                                        <i class="fa fa-file-o fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">No hay fichas técnicas disponibles</p>
+                                    </div>
+                                </ng-template>
                             </td>
                         </tr>
                     </tbody>
                 </table>
 
-
-                <!--                PAGINADOR-->
-                <app-paginador *ngIf="paginator" [paginator]="paginator"></app-paginador>
+                <!--PAGINADOR MEJORADO-->
+                <app-paginador 
+                    *ngIf="paginator && paginator.totalPages > 0" 
+                    [paginator]="paginator"
+                    (pageChange)="onPageChange($event)">
+                </app-paginador>
 
             </div>
         </div>
-    </div>
+    </div>
 </div>
 
 <!-- PRINT PDF -->
