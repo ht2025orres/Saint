@@ -1,0 +1,83 @@
+<!-- bodega-list.component.html -->
+<div class="container py-4">
+  <h2 class="mb-4 display-6">Búsqueda de Bodega</h2>
+
+  <!-- Barra de búsqueda -->
+  <div class="mb-3" *ngIf="bodegas?.length > 0">
+    <input type="text"
+           class="form-control"
+           placeholder="Buscar bodega..."
+           [(ngModel)]="filters.busqueda"
+           (input)="applyFilters()">
+  </div>
+
+  <!-- Lista de bodegas -->
+  <div *ngIf="currentBodegas?.length > 0; else sinBodegas">
+    <div *ngFor="let bodega of currentBodegas" class="card mb-3 shadow-sm border-light">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <!-- Código de bodega -->
+          <div class="col-md-2">
+            <h5 class="mb-0">{{ bodega.codigo }}</h5>
+          </div>
+
+          <!-- Información de la bodega -->
+          <div class="col-md-7">
+            <div class="row text-center">
+              <div class="col-4">
+                <small class="text-muted d-block">ítems:</small>
+                <strong>{{ bodega.total_items || 0 }}</strong>
+              </div>
+              <div class="col-4">
+                <small class="text-muted d-block">existencias:</small>
+                <strong>{{ bodega.total_existencias || 0 }}</strong>
+              </div>
+              <div class="col-4">
+                <small class="text-muted d-block">Sin zona:</small>
+                <strong>{{ bodega.items_sin_zona || 0 }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón de acción -->
+          <div class="col-md-3 text-end">
+            <button type="button" 
+                    class="btn btn-outline-primary"
+                    (click)="verItemsDeBodega(bodega.codigo)"
+                    title="Ver ítems de la bodega">
+              <i class="bi bi-list-ul me-2"></i>
+              Ver ítems
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información de total -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <small class="text-muted">
+        Total recibido: Mostrando del {{ getStartIndex() }} al {{ getEndIndex() }} de {{ totalBodegas }} entrada(s)
+      </small>
+    </div>
+
+    <!-- Paginación -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginatorId)"
+      [instanceId]="paginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25, 50]">
+    </app-shared-paginator>
+  </div>
+
+  <!-- Sin bodegas -->
+  <ng-template #sinBodegas>
+    <div class="alert alert-info mt-4 text-center" role="alert">
+      <span *ngIf="filters.busqueda && bodegas?.length > 0; else noBodegasMessage">
+        No se encontraron bodegas que coincidan con la búsqueda "{{ filters.busqueda }}".
+      </span>
+      <ng-template #noBodegasMessage>
+        No hay bodegas disponibles para mostrar.
+      </ng-template>
+    </div>
+  </ng-template>
+</div>

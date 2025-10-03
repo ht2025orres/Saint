@@ -1,0 +1,165 @@
+<div class="row page-titles mt-3">
+  <div class="col-md-5 align-self-center">
+    <h3 class="text-themecolor">{{ title }}</h3>
+  </div>
+  <div class="col-md-7 align-self-center">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a routerLink="/dashboard">Inicio</a>
+      </li>
+      <li class="breadcrumb-item">Inconsistencias</li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card mx-auto table-container">
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+      <!-- Búsqueda -->
+      <div class="col-md-4">
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="Buscar..." 
+          [value]="filters.busqueda" 
+          (input)="onSearchInput($event)" 
+        />
+      </div>
+
+      <!-- Filtro por estado consumo -->
+      <div class="col-md-3">
+        <select class="form-select" [value]="filters.estadoConsumo" (change)="onEstadoConsumoChange($event)">
+          <option value="">Todos los consumos</option>
+          <option value="CONSUMIDO">Consumido</option>
+          <option value="POR CONSUMIR">Por consumir</option>
+        </select>
+      </div>
+
+      <!-- Filtro por etapa -->
+      <div class="col-md-3">
+        <select class="form-select" [value]="filters.etapa" (change)="onEtapaChange($event)">
+          <option value="">Todas las etapas</option>
+          <option value="terminada">Terminada</option>
+          <option value="espera">En espera</option>
+        </select>
+      </div>
+
+    <!-- Tabla -->
+    <div class="card-body" style="overflow: auto;" *ngIf="!loading">
+      <table class="table table-hover table-striped align-middle sombra-buttoms" *ngIf="currentData.length > 0; else sinDatos">
+        <thead>
+          <tr>
+            <th class="text-center">Consecutivo</th>
+            <th class="text-center">Fecha Aprobado</th>
+            <th class="text-center">Cliente</th>
+            <th class="text-center">Solicitante</th>
+            <th class="text-center">Tipo</th>
+            <th class="text-center">Acción</th>
+            <th class="text-center">Etapa</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Consumo</th>
+            <th class="text-center">Precio Total</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody style="text-align: center;">
+          <tr *ngFor="let item of currentData">
+            <td>{{ item?.id_inconsistencia || 'N/A' }}</td>
+            <td>{{ item?.fecha_logistica || item?.fecha_espera }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ item?.Cliente || 'N/A' }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ item?.nombre_solicitante || 'N/A' }}</td>
+            <td>{{ tipos[item?.tipo_inconsistencia] || item?.tipo_inconsistencia || 'N/A' }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ item?.accion_inconsistencia || 'N/A' }}</td>
+            <td>
+              <span class="badge bg-{{ getColorEtapa(item?.etapa) }}">
+                {{ (item?.etapa || 'N/A').toUpperCase() }}
+              </span>
+            </td>
+            <td>{{ item?.estado_inconsistencia || 'N/A' }}</td>
+            <td>
+              <span class="badge bg-{{ getColorConsumo(item?.estado_consumo) }}">
+                {{ item?.estado_consumo || 'N/A' }}
+              </span>
+            </td>
+            <td>{{ item?.precio_total_inconsistencia | currency:'COP' }}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <button 
+                  class="btn btn-sm btn-info" 
+                  (click)="verDetalles(item)"
+                  [disabled]="!item"
+                  title="Ver detalles">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button 
+                  *ngIf="puedeConsumir(item)" 
+                  class="btn btn-sm btn-success" 
+                  (click)="consumirInconsistencia(item)"
+                  title="Consumir inconsistencia">
+                  <i class="fas fa-check"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #sinDatos>
+        <div class="text-center py-4">
+          <div class="text-muted">
+            <i class="fas fa-inbox fa-2x mb-2"></i>
+            <p class="mb-0">No hay inconsistencias registradas.</p>
+            <small *ngIf="filters.busqueda || filters.estadoConsumo || filters.etapa">
+              Intenta cambiar los criterios de búsqueda.
+            </small>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- Paginador -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginatorId) && !loading"
+      [instanceId]="paginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25, 50, 100]"
+      [noDataMessage]="'No se encontraron registros'">
+    </app-shared-paginator>
+  </div>
+</div>
+
+<!-- Modal Detalles -->
+<ng-template #modalDetalles>
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+      <i class="fas fa-info-circle me-2"></i>
+      Detalles de la inconsistencia
+    </h5>
+    <button 
+      type="button" 
+      class="btn-close btn-close-white" 
+      aria-label="Close" 
+      (click)="modalRef?.hide()">
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="table-responsive">
+      <table class="table table-striped table-sm">
+        <tbody>
+          <tr *ngFor="let detalle of detallesSeleccionados">
+            <td class="fw-bold" style="width: 40%;">{{ detalle.label }}:</td>
+            <td>{{ detalle.value }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" (click)="modalRef?.hide()">
+      Cerrar
+    </button>
+  </div>
+</ng-template>

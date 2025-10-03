@@ -1,0 +1,120 @@
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{ title }}</h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">Inconsistencias</li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </div>
+</div>
+
+<div class="container">
+  <div class="card mx-auto table-container">
+    
+    <!-- Filtro solo visible para ciertos líderes -->
+    <div class="row mb-3">
+        <!-- Barra de búsqueda -->
+        <div class="col-md-6">
+            <input type="text"
+                class="form-control"
+                placeholder="Buscar..."
+                [(ngModel)]="filters.busqueda"
+                (input)="applyFilters()">
+        </div>
+    </div>
+
+    <div class="card-body" style="overflow: auto;">
+      <table class="table table-hover table-striped align-middle sombra-buttoms" *ngIf="inconsistencias.length > 0; else sinDatos">
+        <thead>
+          <tr>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Fecha</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cliente</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Consecutivo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Solicitante</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarDepartamento">Departamento</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Tipo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Solicitada</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Inconsistencia</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Ítem</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">OP/OPR/OPM</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Unitario</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Total</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Situación</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Estado</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Acción a tomar</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Evidencias</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody style="text-align: center;">
+          <tr *ngFor="let inco of currentData">
+            <td>{{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.Cliente }}</td>
+            <td>{{ inco.id_inconsistencia }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120" >{{ inco.nombre_solicitante }}</td>
+            <td *ngIf="mostrarDepartamento">{{ inco.nombre_departamento }}</td>
+            <td>{{ tipos_inco[inco.tipo_inconsistencia] }}</td>
+            <td>{{ inco.cantidad_solicitada_op }}</td>
+            <td>{{ inco.cantidad_inconsistencia }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.item || 'N/A' }}</td>
+            <td>{{ inco.tipo_de_orden }}</td>
+            <td>{{ inco.precio_unitario | currency:'COP' }}</td>
+            <td>{{ inco.precio_total_inconsistencia | currency:'COP' }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.descripcion_inconsistencia || 'N/A' }}</td>
+            <td *ngIf="mostrarEstado">{{ inco.estado_inconsistencia || 'Pendiente' }}</td>
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120" *ngIf="mostrarEstado">{{ inco.accion_inconsistencia || 'N/A' }}</td>
+            <td>
+              <button class="btn btn-link p-0" (click)="verEvidencias(inco)">
+                <i class="fa-regular fa-image text-success" style="font-size: 20px;"></i>
+              </button>
+            </td>
+            <td class="d-flex flex-column gap-1">
+              <button class="btn btn-success btn-sm" (click)="aceptarInconsistencia(inco)">✔ Aceptar</button>
+              <button class="btn btn-danger btn-sm" (click)="denegarInconsistencia(inco)"><strong>X</strong> Denegar</button>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Fecha</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cliente</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Consecutivo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Solicitante</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarDepartamento">Departamento</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Tipo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Solicitada</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Inconsistencia</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Ítem</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">OP/OPR/OPM</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Unitario</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Total</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Situación</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Estado</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Acción a tomar</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Evidencias</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Acciones</th>
+          </tr>
+        </tfoot>
+      </table>
+
+      <ng-template #sinDatos>
+        <div class="text-center py-3">
+          <p class="mb-0">No hay inconsistencias pendientes.</p>
+        </div>
+      </ng-template>
+
+    </div>
+    <app-shared-paginator
+    *ngIf="paginationService.getPaginatorState(paginatorId)"
+    [instanceId]="paginatorId"
+    [showPageSizeSelector]="true"
+    [pageSizeOptions]="[5, 10, 25, 50, 100]"
+    [noDataMessage]="'No se encontraron registros'">
+    </app-shared-paginator>
+  </div>
+</div>

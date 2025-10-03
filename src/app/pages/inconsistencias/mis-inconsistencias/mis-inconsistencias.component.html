@@ -1,0 +1,178 @@
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{ title }}</h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">Inconsistencias</li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </div>
+</div>
+
+<div class="container">
+  <div class="card mx-auto table-container">
+    <div class="row mb-3">
+        <!-- Barra de búsqueda -->
+        <div class="col-md-6">
+            <input type="text"
+                class="form-control"
+                placeholder="Buscar..."
+                [(ngModel)]="filters.busqueda"
+                (input)="applyFilters()">
+        </div>
+
+        <!-- Filtro por estado -->
+        <div class="col-md-6">
+            <select class="form-select"
+                    [(ngModel)]="filters.estado"
+                    (change)="applyFilters()">
+                <option value="todos">Todos los estados</option>
+                <option value="pendientes">Pendientes</option>
+                <option value="terminadas">Terminadas</option>
+                <option value="anuladas">Anuladas</option>
+            </select>
+        </div>
+    </div>
+    <div class="card-body">
+      <table class="table table-hover table-striped align-middle sombra-buttoms">
+        <thead>
+          <tr>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Fecha</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Consecutivo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cliente</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Tipo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Solicitada</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Inconsistencia</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Ítem</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">OP/OPR/OPM</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Situación</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Aprobación</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Evidencia</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Acción</th>
+          </tr>
+        </thead>
+        <tbody *ngIf="inconsistencias.length > 0; else sinDatos" style="text-align: center;">
+          <tr *ngFor="let inco of currentData">
+            <!-- Fecha -->
+            <td>{{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}</td>
+            
+            <!-- Consecutivo -->
+            <td>{{ inco.id_inconsistencia }}</td>
+            
+            <!-- Cliente -->
+            <td appAutoExpand [maxLength]="15" [maxWidth]="120">
+              {{ inco.Cliente }}
+            </td>
+            
+            <!-- Tipo -->
+            <td>
+            {{ tipos[inco.tipo_inconsistencia] }}
+            </td>
+            
+            <!-- Cantidades -->
+            <td>{{ inco.cantidad_solicitada_op }}</td>
+            <td>{{ inco.cantidad_inconsistencia }}</td>
+            
+            <!-- Ítem -->
+            <td appAutoExpand [maxLength]="20" [maxWidth]="150">
+              {{ inco.item }}
+            </td>
+            
+            <td>
+            <span appAutoExpand [maxLength]="10" [maxWidth]="120">
+                {{ inco.tipo_de_orden }}
+            </span>
+            </td>
+
+            <td class="text-start">
+            <span appAutoExpand [maxLength]="30" [maxWidth]="200">
+                {{ inco.descripcion_inconsistencia }}
+            </span>
+            </td>
+            
+            <!-- Aprobación -->
+            <td>
+              <button *ngIf="inco.etapa === 'espera'" 
+                      class="btn btn-info btn-sm py-0"
+                      (click)="verObservacion(inco.observacion_logistica)">
+                {{ inco.etapa }}
+              </button>
+              <button *ngIf="inco.etapa !== 'espera'" 
+                      class="btn btn-warning btn-sm py-0">
+                {{ inco.etapa }}
+              </button>
+            </td>
+            
+            <!-- Evidencia -->
+            <td>
+              <button class="btn btn-link p-0" (click)="verEvidencias(inco)">
+                <i class="fas" [ngClass]="{
+                  'fa-image text-success': tieneImagen(inco),
+                  'fa-file-pdf text-danger': tienePdf(inco),
+                  'fa-ban text-muted': !tieneEvidencia(inco)
+                }"></i>
+              </button>
+            </td>
+            
+            <!-- Acción -->
+            <td>
+              <button *ngIf="!inco.razon_anulacion"
+                      class="btn btn-danger btn-sm py-0"
+                      (click)="abrirAnular(inco)">
+                Anular
+              </button>
+              <button *ngIf="inco.razon_anulacion"
+                      class="btn btn-secondary btn-sm py-0"
+                      (click)="verRazonAnulacion(inco)">
+                Anulada
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <ng-template #sinDatos>
+          <tr><td colspan="12" class="text-center py-3">No hay inconsistencias registradas.</td></tr>
+        </ng-template>
+        <tfoot>
+          <tr>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Fecha</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Consecutivo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cliente</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Tipo</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Solicitada</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Inconsistencia</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Ítem</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">OP/OPR/OPM</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Situación</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Aprobación</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Evidencia</th>
+            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Acción</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+</div>
+<app-shared-paginator
+  *ngIf="paginationService.getPaginatorState(paginatorId)"
+  [instanceId]="paginatorId"
+  [showPageSizeSelector]="true"
+  [pageSizeOptions]="[5, 10, 25, 50, 100]"
+  [noDataMessage]="'No se encontraron registros'">
+</app-shared-paginator>
+</div>
+
+<ng-template #modalTexto let-data>
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">{{ data.titulo }}</h5>
+    <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="modalRef?.close()"></button>
+  </div>
+  <div class="modal-body">
+    <p class="mb-0">{{ data.contenido }}</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" (click)="modalRef?.close()">Cerrar</button>
+  </div>
+</ng-template>
