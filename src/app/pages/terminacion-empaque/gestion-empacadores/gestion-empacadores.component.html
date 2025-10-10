@@ -1,0 +1,131 @@
+<div class="container mt-4">
+  <h2 class="mb-4">Gestión de Empacadores</h2>
+
+  <!-- 🔹 SECCIÓN 1: EMPACADORES DISPONIBLES -->
+  <div class="card shadow mb-5">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <strong>Empacadores disponibles</strong>
+      <input type="text" class="form-control w-50"
+             placeholder="Buscar empacador..."
+             [(ngModel)]="filtersDisponibles.busqueda"
+             (input)="applyFiltersDisponibles()">
+    </div>
+
+    <div class="card-body table-responsive p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th>
+            <th style="width: 150px;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="currentDisponibles.length === 0">
+            <td colspan="2" class="text-center py-4">No se encontraron empacadores.</td>
+          </tr>
+          <tr *ngFor="let emp of currentDisponibles">
+            <td>{{ emp.firstName }} {{ emp.lastName }}</td>
+            <td>
+              <button class="btn btn-sm btn-success w-100"
+                      (click)="asignarPV(emp)">
+                ➕ Asignar PV
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginadorDisponibles)"
+      [instanceId]="paginadorDisponibles"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25]">
+    </app-shared-paginator>
+  </div>
+
+  <!-- 🔸 SECCIÓN 2: EMPACADORES CON PVs ASIGNADAS -->
+  <div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <strong>Empacadores con PVs asignadas</strong>
+      <input type="text" class="form-control w-50"
+             placeholder="Buscar empacador o PV…"
+             [(ngModel)]="filtersAsignados.busqueda"
+             (input)="applyFiltersAsignados()">
+    </div>
+
+    <div class="card-body table-responsive p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Empacador</th>
+            <th style="min-width: 240px;">PVs asignadas / Progreso</th>
+            <th class="text-center">Avance total</th>
+            <th style="width: 150px;">Acción</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngIf="currentAsignados.length === 0">
+            <td colspan="4" class="text-center py-4">No hay empacadores con PVs asignadas.</td>
+          </tr>
+          <tr *ngFor="let emp of currentAsignados">
+            <td>{{ emp.firstName }} {{ emp.lastName }}</td>
+
+          <td>
+            <ul class="list-unstyled mb-0">
+              <li *ngFor="let pv of emp.pvs" class="mb-1">
+                <strong>{{ pv.codigo }}</strong>
+                
+                <span class="small text-muted ms-1">
+                  ({{ pv.asignado }}/{{ pv.teorico }})
+                </span>
+                
+                <!-- Mostrar indicador PT solo si existe -->
+                <span *ngIf="pv.pt" class="small text-primary ms-1">
+                  PT: {{ pv.pt }}
+                </span>
+
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar"
+                      [style.width.%]="pv.teorico ? (pv.asignado / pv.teorico * 100) : 0">
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </td>
+
+            <td class="text-center">
+              {{ emp.total_asignado }} / {{ emp.total_teorico }}
+              <div class="progress mt-1" style="height: 6px;">
+                <div class="progress-bar bg-success"
+                     [style.width.%]="(emp.total_teorico ? (emp.total_asignado / emp.total_teorico * 100) : 0)">
+                </div>
+              </div>
+            </td>
+            <td class="d-flex flex-column gap-1">
+              <button class="btn btn-sm btn-primary w-100"
+                      (click)="asignarPV(emp)">
+                ➕ Asignar PV
+              </button>
+
+              <ng-container *ngFor="let pv of emp.pvs">
+                <button class="btn btn-outline-danger btn-sm w-100"
+                        (click)="desasignarPV(emp.id, pv.codigo)">
+                  ❌ Desasignar {{ pv.codigo }}
+                </button>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginadorAsignados)"
+      [instanceId]="paginadorAsignados"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25]">
+    </app-shared-paginator>
+  </div>
+</div>

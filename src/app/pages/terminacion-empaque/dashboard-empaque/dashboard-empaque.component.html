@@ -1,0 +1,960 @@
+<div class="container mt-4">
+  <h2 class="mb-4">Dashboard - Terminación y Empaque</h2>
+
+  <!-- Pestañas -->
+  <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="empaque-tab" data-bs-toggle="tab" data-bs-target="#empaque-panel" 
+              type="button" role="tab" aria-controls="empaque-panel" aria-selected="true">
+        <i class="bi bi-box"></i> Dashboard Empaque
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="ops-tab" data-bs-toggle="tab" data-bs-target="#ops-panel" 
+              type="button" role="tab" aria-controls="ops-panel" aria-selected="false">
+        <i class="bi bi-list-task"></i> Dashboard OPs
+      </button>
+    </li>
+  </ul>
+
+  <!-- Contenido de las pestañas -->
+  <div class="tab-content" id="dashboardTabsContent">
+    
+    <!-- Panel de Empaque -->
+    <div class="tab-pane fade show active" id="empaque-panel" role="tabpanel" aria-labelledby="empaque-tab">
+      
+      <!-- Filtros para Empaque -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <label for="fechaInicio" class="form-label">Fecha inicio</label>
+              <input type="date" id="fechaInicio" [(ngModel)]="fechaInicio" class="form-control">
+            </div>
+
+            <div class="col-md-4">
+              <label for="fechaFin" class="form-label">Fecha fin</label>
+              <input type="date" id="fechaFin" [(ngModel)]="fechaFin" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label for="filtroEmpacador" class="form-label">Filtrar por empacador</label>
+              <select id="filtroEmpacador" [(ngModel)]="empacadorFiltro" class="form-select">
+                <option value="">Todos los empacadores</option>
+                <option *ngFor="let empacador of empacadoresList" [value]="empacador.id">
+                  {{ empacador.nombre_completo }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <button class="btn btn-primary w-100" (click)="aplicarFiltros()">
+                <i class="bi bi-funnel"></i> Aplicar filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card text-white bg-primary">
+            <div class="card-body">
+              <h5 class="card-title">PVs</h5>
+              <p class="card-text display-4">{{ kpis.total_pvs || 0 }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card text-white bg-success">
+            <div class="card-body">
+              <h5 class="card-title">OPs</h5>
+              <p class="card-text display-4">{{ kpis.total_ops || 0 }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card text-white bg-info">
+            <div class="card-body">
+              <h5 class="card-title">Ítems Empacados</h5>
+              <p class="card-text display-4">{{ kpis.total_items || 0 }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card text-white bg-warning">
+            <div class="card-body">
+              <h5 class="card-title">Empacadores</h5>
+              <p class="card-text display-4">{{ kpis.total_empacadores || 0 }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Actividad del mes</h5>
+              <canvas baseChart
+                      [data]="barChartData"
+                      [type]="barChartType"
+                      [options]="barChartOptions">
+              </canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Distribución por Empacador</h5>
+              <canvas baseChart
+                      [data]="pieChartData"
+                      [type]="pieChartType"
+                      [options]="pieChartOptions">
+              </canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen por Empacador -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Desempeño por Empacador</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Empacador</th>
+                  <th>OPs</th>
+                  <th>PVs</th>
+                  <th>Ítems</th>
+                  <th>Eficiencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let emp of empacadoresData">
+                  <td>{{ getNombreEmpacador(emp.empacador_id) }}</td>
+                  <td>{{ emp.total_ops }}</td>
+                  <td>{{ emp.total_pvs }}</td>
+                  <td>{{ emp.total_items }}</td>
+                  <td>
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar" 
+                          [ngClass]="{'bg-success': (emp.total_items/kpis.total_items) > 0.3,
+                                      'bg-warning': (emp.total_items/kpis.total_items) <= 0.3}"
+                          [style.width]="(emp.total_items/kpis.total_items)*100 + '%'">
+                        {{ (emp.total_items/kpis.total_items)*100 | number:'1.0-0' }}%
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registros detallados -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Registros Recientes</h5>
+          <small>Últimos 50 registros</small>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>OP</th>
+                  <th>PV</th>
+                  <th>Item</th>
+                  <th>Empacador</th>
+                  <th>Cantidad</th>
+                  <th>Fecha</th>
+                  <th>Empaque</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let reg of registros">
+                  <td>OP-{{ reg.op_id }}</td>
+                  <td>{{ reg.pv_id }}</td>
+                  <td>{{ reg.descripcion }} {{ reg.id_talla }}</td>
+                  <td>{{ getNombreEmpacador(reg.empacador_id) }}</td>
+                  <td>{{ reg.cantidad }}</td>
+                  <td>{{ reg.fecha_empaque | date:'short' }}</td>
+                  <td>{{ reg.tipo_empaque }} - {{reg.numero_empaque}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de OPs -->
+    <div class="tab-pane fade" id="ops-panel" role="tabpanel" aria-labelledby="ops-tab">
+      
+      <!-- Filtros para OPs -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <label for="filtroFechaOP" class="form-label">Filtrar por fecha</label>
+              <input type="date" id="filtroFechaOP" [(ngModel)]="fechaFiltroOP" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label for="filtroEstadoOP" class="form-label">Estado OP</label>
+              <select id="filtroEstadoOP" [(ngModel)]="estadoFiltroOP" class="form-select">
+                <option value="">Todos los estados</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="en_proceso">En Proceso</option>
+                <option value="completada">Completada</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="filtroNumeroOP" class="form-label">Número OP</label>
+              <input type="text" id="filtroNumeroOP" [(ngModel)]="numeroOPFiltro" 
+                    class="form-control" placeholder="Ej: OP-123">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button class="btn btn-primary w-100" (click)="aplicarFiltrosOP()">
+                <i class="bi bi-funnel"></i> Aplicar filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs de OPs -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card text-white bg-primary">
+            <div class="card-body">
+              <h5 class="card-title">Total OPs</h5>
+              <p class="card-text display-4">{{ kpisOP.total_ops || 0 }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-white bg-success">
+            <div class="card-body">
+              <h5 class="card-title">OPs Completadas</h5>
+              <p class="card-text display-4">{{ kpisOP.ops_completadas || 0 }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-white bg-warning">
+            <div class="card-body">
+              <h5 class="card-title">En Proceso</h5>
+              <p class="card-text display-4">{{ kpisOP.ops_en_proceso || 0 }}</p>
+            </div>
+          </div>
+        </div>
+        <!-- <div class="col-md-3">
+          <div class="card text-white bg-danger">
+            <div class="card-body">
+              <h5 class="card-title">Pendientes</h5>
+              <p class="card-text display-4">{{ kpisOP.ops_pendientes || 0 }}</p>
+            </div>
+          </div>
+        </div> -->
+      </div>
+
+      <!-- Barra de búsqueda y paginación -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Buscar OP, PV, PT, item..." 
+                      [(ngModel)]="searchTerm" (input)="applyFilter()">
+              </div>
+            </div>
+            <div class="col-md-6 d-flex justify-content-end align-items-center">
+              <label class="me-2">Mostrar:</label>
+              <select class="form-select form-select-sm me-2" style="width: auto;" 
+                      [(ngModel)]="pageSize" (change)="setPageSize($event)">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span>registros</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listado de OPs con estructura expandible -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Órdenes de Producción</h5>
+          <button class="btn btn-success btn-sm" (click)="exportarQRs()">
+            <i class="bi bi-qr-code"></i> Exportar QRs
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 40px;"></th>
+                  <th>OP</th>
+                  <th>Estado</th>
+                  <th>Fecha Creación</th>
+                  <th>Cantidad Total</th>
+                  <th>Progreso</th>
+                  <th>PVs/PTs</th>
+                  <th>Costo</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let op of paginatedOPs">
+                  <!-- Fila principal de OP -->
+                  <tr>
+                    <td>
+                      <button class="btn btn-sm btn-link p-0" (click)="toggleOP(op.codigo)">
+                        <i class="bi" [class.bi-chevron-down]="expandedOPs.has(op.codigo)" 
+                          [class.bi-chevron-right]="!expandedOPs.has(op.codigo)"></i>
+                      </button>
+                    </td>
+                    <td class="fw-bold">OP-{{ op.codigo }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="{
+                        'bg-success': op.estado === 'completada',
+                        'bg-warning': op.estado === 'en_proceso' || op.estado === 'activo',
+                        'bg-secondary': op.estado === 'pendiente'
+                      }">
+                        {{ op.estado | titlecase }}
+                      </span>
+                    </td>
+                    <td>{{ op.fecha_creacion | date:'short' }}</td>
+                    <td>{{ op.cantidad_total }}</td>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                          <div class="progress-bar" 
+                              [ngClass]="{
+                                'bg-success': op.progreso === 100,
+                                'bg-warning': op.progreso > 0 && op.progreso < 100,
+                                'bg-secondary': op.progreso === 0
+                              }"
+                              [style.width]="op.progreso + '%'"></div>
+                        </div>
+                        <span class="text-nowrap">{{ op.progreso | number:'1.0-1' }}%</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-info">
+                          <i class="bi bi-box me-1"></i>{{ op.pvs?.length || 0 }} PVs
+                        </span>
+                        <span class="badge bg-secondary" *ngIf="getTotalPTs(op) > 0">
+                          <i class="bi bi-boxes me-1"></i>{{ getTotalPTs(op) }} PTs
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="text-start">
+                        <div class="small">
+                          <span class="text-muted">Total:</span> 
+                          <span class="fw-bold">{{ op.costo_total | currency:'':'symbol':'1.0-0' }}</span>
+                          <span class="text-muted" *ngIf="getOPTotalPTsCost(op) > 0">
+                            ({{ (op.costo_total + getOPTotalPTsCost(op)) | currency:'':'symbol':'1.0-0' }})
+                          </span>
+                        </div>
+                        <div class="small">
+                          <span class="text-muted">Real:</span> 
+                          <span class="text-success">{{ op.costo_real | currency:'':'symbol':'1.0-0' }}</span>
+                          <span class="text-muted" *ngIf="getOPRealPTsCost(op) > 0">
+                            ({{ (op.costo_real + getOPRealPTsCost(op)) | currency:'':'symbol':'1.0-0' }})
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" (click)="verDetalleOP(op, 'OP')" 
+                                data-bs-toggle="tooltip" title="Ver detalle">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                        <!-- <button class="btn btn-outline-success" (click)="generarQR(op, 'OP')" 
+                                data-bs-toggle="tooltip" title="Generar QR">
+                          <i class="bi bi-qr-code"></i>
+                        </button>
+                        <button class="btn btn-outline-info" (click)="imprimirEtiqueta(op, 'OP')" 
+                                data-bs-toggle="tooltip" title="Imprimir etiqueta">
+                          <i class="bi bi-printer"></i>
+                        </button> -->
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Filas expandidas para PVs -->
+                  <tr *ngIf="expandedOPs.has(op.codigo)" class="bg-light">
+                    <td colspan="9" class="p-0">
+                      <div class="p-3">
+                        <div *ngFor="let pv of op.pvs" class="mb-3 border-start border-3 border-primary ps-3">
+                          <div class="d-flex align-items-center mb-2">
+                            <button class="btn btn-sm btn-link p-0 me-2" (click)="togglePV(pv.codigo)">
+                              <i class="bi" [class.bi-chevron-down]="expandedPVs.has(pv.codigo)" 
+                                [class.bi-chevron-right]="!expandedPVs.has(pv.codigo)"></i>
+                            </button>
+                            <span class="fw-bold me-2">PV: {{ pv.codigo }}</span>
+                            <span class="badge bg-info me-2">{{ pv.items?.length || 0 }} items</span>
+                            <span class="badge bg-secondary me-2" *ngIf="pv.pts?.length > 0">{{ pv.pts?.length }} PTs</span>
+                            
+                            <!-- Costo para PV -->
+                            <div class="me-3">
+                              <div class="small text-nowrap">
+                                <span class="text-muted">Total:</span> 
+                                <span class="fw-bold">{{ pv.costo_total | currency:'':'symbol':'1.0-0' }}</span>
+                                <span class="text-muted" *ngIf="getPVTotalPTsCost(pv) > 0">
+                                  ({{ (pv.costo_total + getPVTotalPTsCost(pv)) | currency:'':'symbol':'1.0-0' }})
+                                </span>
+                                <span class="text-muted ms-2">Real:</span>
+                                <span class="text-success">{{ pv.costo_real | currency:'':'symbol':'1.0-0' }}</span>
+                                <span class="text-muted" *ngIf="getPVRealPTsCost(pv) > 0">
+                                  {{ getCostoTotal(pv) | currency:'':'symbol':'1.0-0' }}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <!-- Botones para PV -->
+                            <div class="ms-auto btn-group btn-group-sm">
+                              <button class="btn btn-outline-primary" (click)="verDetallePV(pv, 'PV', op.codigo)" 
+                                      data-bs-toggle="tooltip" title="Ver detalle PV">
+                                <i class="bi bi-eye"></i>
+                              </button>
+                              <!-- <button class="btn btn-outline-success" (click)="generarQRPV(pv, 'PV', op.codigo)"  
+                                      data-bs-toggle="tooltip" title="Generar QR PV">
+                                <i class="bi bi-qr-code"></i>
+                              </button>
+                              <button class="btn btn-outline-info" (click)="imprimirEtiquetaPV(pv, 'PV')" 
+                                      data-bs-toggle="tooltip" title="Imprimir etiqueta PV">
+                                <i class="bi bi-printer"></i>
+                              </button> -->
+                            </div>
+                          </div>
+                          
+                          <!-- Contenido expandido de PV -->
+                          <div *ngIf="expandedPVs.has(pv.codigo)" class="ms-4">
+                            <!-- Items del PV -->
+                            <div *ngIf="pv.items && pv.items.length > 0" class="mb-3">
+                              <h6 class="fw-bold">Items de PV:</h6>
+                              <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                  <thead class="table-light">
+                                    <tr>
+                                      <th>Ítem</th>
+                                      <th>Referencia</th>
+                                      <th>Descripción</th>
+                                      <th>Talla</th>
+                                      <th>Cantidad</th>
+                                      <th>Empacado</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr *ngFor="let item of pv.items">
+                                      <td>{{ item.id_item }}</td>
+                                      <td>{{ item.referencia }}</td>
+                                      <td>{{ item.descripcion }}</td>
+                                      <td>{{ item.id_talla }}</td>
+                                      <td>{{ item.cantidad_teorica }}</td>
+                                      <td>{{ item.cantidad_empacada }}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                            
+                            <!-- PTs del PV -->
+                            <div *ngIf="pv.pts && pv.pts.length > 0">
+                              <h6 class="fw-bold">PTs de esta PV:</h6>
+                              <div *ngFor="let pt of pv.pts" class="card mb-2">
+                                <div class="card-body">
+                                  <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-box text-secondary me-2"></i>
+                                    <span class="fw-bold me-2">PT: {{ pt.pt_codigo }}</span>
+                                    <span class="badge bg-success me-2">{{ pt.ubicacion }}</span>
+                                    
+                                    <!-- Costo para PT -->
+                                    <div class="ms-auto">
+                                      <div class="small text-nowrap">
+                                        <span class="text-muted">Total:</span> 
+                                        <span class="fw-bold text-primary">{{ pt.costo_total | currency:'':'symbol':'1.0-0' }}</span>
+                                        <span class="text-muted ms-2">Real:</span>
+                                        <span class="text-info">{{ pt.costo_real | currency:'':'symbol':'1.0-0' }}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div class="table-responsive">
+                                    <table class="table table-sm">
+                                      <thead>
+                                        <tr>
+                                          <th>Ítem</th>
+                                          <th>Referencia</th>
+                                          <th>Descripción</th>
+                                          <th>Talla</th>
+                                          <th>Cantidad</th>
+                                          <th>Recibido</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <tr *ngFor="let items_pt of pt.items">
+                                          <td>{{ items_pt.id_item }}</td>
+                                          <td>{{ items_pt.referencia }}</td>
+                                          <td>{{ items_pt.descripcion }}</td>
+                                          <td>{{ items_pt.id_talla }}</td>
+                                          <td>{{ items_pt.cantidad_teorica }}</td>
+                                          <td>{{ items_pt.cantidad_recibida }}</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+                
+                <tr *ngIf="filteredOPs.length === 0">
+                  <td colspan="9" class="text-center py-4">
+                    No se encontraron OPs que coincidan con los criterios de búsqueda
+                  </td>
+                  </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      
+        <!-- Paginación -->
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <div>
+            Mostrando {{ ((currentPage - 1) * pageSize) + 1 }} a 
+            {{ Math.min(currentPage * pageSize, filteredOPs.length) }} de 
+            {{ filteredOPs.length }} registros
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-primary me-1" 
+                    (click)="changePage(currentPage - 1)" 
+                    [disabled]="currentPage === 1">
+              Anterior
+            </button>
+            
+            <ng-container *ngFor="let page of getPages()">
+              <button class="btn btn-sm me-1" 
+                      [class.btn-primary]="currentPage === page"
+                      [class.btn-outline-primary]="currentPage !== page"
+                      (click)="changePage(page)">
+                {{ page }}
+              </button>
+            </ng-container>
+            
+            <button class="btn btn-sm btn-outline-primary ms-1" 
+                    (click)="changePage(currentPage + 1)" 
+                    [disabled]="currentPage === totalPages">
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal unificado para mostrar detalle de OP o PV -->
+<!-- Modal unificado para mostrar detalle de OP o PV -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #4F45B1;">
+        <h5 class="modal-title" id="detailModalLabel" style="color: white;">
+          {{ getSelectedItemInfo().title }}
+          <small class="ms-2 badge bg-light text-dark">{{ getSelectedItemInfo().subtitle }}</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedItem">
+          <!-- Información básica en dos columnas -->
+          <div class="row mb-4">
+            <div class="col-md-6" *ngFor="let detail of getSelectedItemInfo().details.slice(0, Math.ceil(getSelectedItemInfo().details.length/2))">
+              <p><strong>{{ detail.label }}:</strong> {{ detail.value }}</p>
+            </div>
+            <div class="col-md-6" *ngFor="let detail of getSelectedItemInfo().details.slice(Math.ceil(getSelectedItemInfo().details.length/2))">
+              <p><strong>{{ detail.label }}:</strong> {{ detail.value }}</p>
+            </div>
+          </div>
+
+          <!-- Contenido específico para OPs -->
+          <div *ngIf="selectedItemType === 'OP'" class="mt-4">
+            <h6 class="fw-bold">Pedidos de Venta (PVs):</h6>
+            <div *ngIf="selectedItem.pvs && selectedItem.pvs.length > 0; else noPVs">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Código PV</th>
+                      <th>Items</th>
+                      <th>PTs</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let pv of selectedItem.pvs">
+                      <td>{{ pv.codigo }}</td>
+                      <td>{{ pv.items?.length || 0 }}</td>
+                      <td>{{ pv.pts?.length || 0 }}</td>
+                      <td>
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-success" (click)="generarQRPV(pv, 'PV', selectedItem.codigo)" 
+                                  data-bs-toggle="tooltip" title="Generar QR PV">
+                            <i class="bi bi-qr-code"></i>
+                          </button>
+                          <button class="btn btn-outline-info" (click)="imprimirEtiquetaPV(pv, 'PV')" 
+                                  data-bs-toggle="tooltip" title="Imprimir etiqueta PV">
+                            <i class="bi bi-printer"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <ng-template #noPVs>
+              <p class="text-muted">No hay PVs asociados a esta OP.</p>
+            </ng-template>
+          </div>
+
+          <!-- Contenido específico para PVs con Toggle -->
+          <div *ngIf="selectedItemType === 'PV'" class="mt-4">
+            <!-- Toggle Button para modo PV -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold mb-0">Detalle del PV:</h6>
+              <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="modoPV" id="modoRecepcionado" 
+                       [checked]="modoDetallePV === 'recepcionado'" 
+                       (change)="cambiarModoDetallePV('recepcionado')">
+                <label class="btn btn-outline-primary btn-sm" for="modoRecepcionado">
+                  <i class="bi bi-inbox"></i> Recepcionado
+                </label>
+                
+                <input type="radio" class="btn-check" name="modoPV" id="modoEmpacado" 
+                       [checked]="modoDetallePV === 'empacado'" 
+                       (change)="cambiarModoDetallePV('empacado')">
+                <label class="btn btn-outline-success btn-sm" for="modoEmpacado">
+                  <i class="bi bi-box-seam"></i> Empacado
+                </label>
+              </div>
+            </div>
+
+            <!-- Modo Recepcionado (contenido original) -->
+            <div *ngIf="modoDetallePV === 'recepcionado'">
+              <!-- Items del PV -->
+              <div *ngIf="selectedItem.items && selectedItem.items.length > 0" class="mb-4">
+                <h6 class="fw-bold">Items del PV:</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Referencia</th>
+                        <th>Descripción</th>
+                        <th>Talla</th>
+                        <th>Cantidad Teórica</th>
+                        <th>Cantidad Empacada</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of selectedItem.items">
+                        <td>{{ item.referencia }}</td>
+                        <td>{{ item.descripcion }}</td>
+                        <td>{{ item.id_talla }}</td>
+                        <td>{{ item.cantidad_teorica }}</td>
+                        <td>{{ item.cantidad_empacada || 0 }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- PTs del PV -->
+              <div *ngIf="selectedItem?.pvs?.[0]?.pts?.length > 0" class="mb-4">
+                <h6 class="fw-bold">PTs asociados:</h6>
+                <div *ngFor="let pt of selectedItem.pvs[0].pts" class="card mb-2">
+                  <div class="card-body py-2">
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-box text-secondary me-2"></i>
+                      <span class="fw-bold me-2">PT: {{ pt.pt_codigo }}</span>
+                    </div>
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <small><strong>Referencia:</strong> {{ pt.referencia }}</small>
+                      </div>
+                      <div class="col-md-4">
+                        <small><strong>Descripción:</strong> {{ pt.descripcion }}</small>
+                      </div>
+                      <div class="col-md-2">
+                        <small><strong>Talla:</strong> {{ pt.id_talla }}</small>
+                      </div>
+                      <div class="col-md-3">
+                        <small><strong>Cantidad:</strong> {{ pt.cantidad_teorica }} / {{ pt.cantidad_recibida || 0 }}</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modo Empacado (nuevo contenido) -->
+            <div *ngIf="modoDetallePV === 'empacado'">
+              <div *ngIf="empaquesPVDetalle.length > 0; else noEmpaques">
+                <h6 class="fw-bold mb-3">
+                  <i class="bi bi-box-seam text-success me-2"></i>
+                  Empaques registrados ({{ empaquesPVDetalle.length }})
+                </h6>
+                
+                <div class="table-responsive">
+                  <table class="table table-bordered table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Número Empaque</th>
+                        <th>Tipo</th>
+                        <th>Cantidad Items</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <ng-container *ngFor="let empaque of empaquesPVDetalle">
+                        <!-- Fila principal de empaque -->
+                        <tr>
+                          <td>
+                            <button class="btn btn-sm btn-link p-0" 
+                                    (click)="toggleEmpaqueDetalle(empaque.numero_empaque)">
+                              <i class="bi"
+                                 [class.bi-chevron-down]="expandedEmpaquesDetalle.has(empaque.numero_empaque)"
+                                 [class.bi-chevron-right]="!expandedEmpaquesDetalle.has(empaque.numero_empaque)">
+                              </i>
+                            </button>
+                          </td>
+                          <td>
+                            <!-- Edición inline del código -->
+                            <div *ngIf="!editandoCodigo[empaque.numero_empaque]" 
+                                 class="d-flex align-items-center">
+                              <span class="fw-bold me-2">{{ empaque.numero_empaque }}</span>
+                              <button class="btn btn-sm btn-outline-secondary" 
+                                      (click)="iniciarEdicionCodigo(empaque.numero_empaque)"
+                                      title="Editar código">
+                                <i class="bi bi-pencil"></i>
+                              </button>
+                            </div>
+                            <div *ngIf="editandoCodigo[empaque.numero_empaque]" class="d-flex">
+                              <input type="text" 
+                                     class="form-control form-control-sm me-2"
+                                     [(ngModel)]="codigosEditados[empaque.numero_empaque]"
+                                     [placeholder]="empaque.numero_empaque">
+                              <button class="btn btn-sm btn-success me-1" 
+                                      (click)="guardarCodigoEmpaque(empaque, codigosEditados[empaque.numero_empaque])"
+                                      title="Guardar">
+                                <i class="bi bi-check"></i>
+                              </button>
+                              <button class="btn btn-sm btn-secondary" 
+                                      (click)="cancelarEdicionCodigo(empaque.numero_empaque)"
+                                      title="Cancelar">
+                                <i class="bi bi-x"></i>
+                              </button>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="badge bg-info">{{ empaque.tipo_empaque }}</span>
+                          </td>
+                          <td>
+                            <span class="badge bg-secondary">{{ empaque.items?.length || 0 }} items</span>
+                          </td>
+                          <td>
+                            <div class="btn-group btn-group-sm">
+                              <button class="btn btn-outline-success" 
+                                      (click)="generarQREmpaque(empaque)"
+                                      title="Generar QR del empaque">
+                                <i class="bi bi-qr-code"></i>
+                              </button>
+                              <!-- <button class="btn btn-outline-info" 
+                                      (click)="imprimirEtiquetaEmpaque(empaque)"
+                                      title="Imprimir etiqueta">
+                                <i class="bi bi-printer"></i>
+                              </button> -->
+                            </div>
+                          </td>
+                        </tr>
+
+                        <!-- Fila expandida con items del empaque -->
+                        <tr *ngIf="expandedEmpaquesDetalle.has(empaque.numero_empaque)" class="bg-light">
+                          <td colspan="5" class="p-0">
+                            <div class="p-3">
+                              <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                  <thead class="table-secondary">
+                                    <tr>
+                                      <th>Ítem</th>
+                                      <th>Descripción</th>
+                                      <th>Talla</th>
+                                      <th>Cantidad</th>
+                                      <th>Fecha Empaque</th>
+                                      <th>Comentario</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr *ngFor="let item of empaque.items">
+                                      <td>
+                                        <span class="small">{{ item.item_id }} - {{ item.id_color }} - {{ item.id_talla }}</span>
+                                      </td>
+                                      <td>{{ item.descripcion }}</td>
+                                      <td>
+                                        <span class="badge bg-light text-dark">{{ item.id_talla }}</span>
+                                      </td>
+                                      <td>
+                                        <span class="fw-bold text-primary">{{ item.cantidad }}</span>
+                                      </td>
+                                      <td>
+                                        <small class="text-muted">{{ item.fecha_empaque | date:'dd/MM/yyyy HH:mm' }}</small>
+                                      </td>
+                                      <td>
+                                        <small>{{ item.comentario || '-' }}</small>
+                                      </td>
+                                    </tr>
+                                    <tr *ngIf="empaque.items.length === 0">
+                                      <td colspan="6" class="text-center text-muted">Sin items registrados</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </ng-container>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <ng-template #noEmpaques>
+                <div class="text-center py-5">
+                  <i class="bi bi-box-seam display-1 text-muted"></i>
+                  <h5 class="text-muted mt-3">No hay empaques registrados</h5>
+                  <p class="text-muted">Esta PV aún no tiene empaques registrados.</p>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <div class="btn-group">
+          <button type="button" class="btn btn-success" (click)="generarQRUnificado(selectedItem, selectedItemType)">
+            <i class="bi bi-qr-code"></i> Generar QR
+          </button>
+          <button type="button" class="btn btn-info" (click)="imprimirEtiquetaUnificada(selectedItem, selectedItemType)">
+            <i class="bi bi-printer"></i> Imprimir Etiqueta
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QR (reutilizable) -->
+<div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #4F45B1;">
+        <h5 class="modal-title" id="qrModalLabel" style="color: white;">
+          Código QR - {{ qrTitle }}
+          <small class="ms-2 badge bg-light text-dark">{{ qrSubtitle }}</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6 text-center">
+            <img *ngIf="qrImageUrl" [src]="qrImageUrl" class="mb-3" style="max-width: 100%;"/>
+            <div class="alert alert-info small">
+              <strong>Tipo:</strong> {{ qrType }} | <strong>Código:</strong> {{ qrCode }}
+            </div>
+            <div class="alert alert-info small">
+              <strong>Cliente:</strong> {{ qrCliente }} | <strong>Empacador:</strong> {{ qrEmpacador }}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6>Datos del QR:</h6>
+            <div class="bg-light p-3 rounded">
+              <pre class="small mb-0">{{ qrData | json }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" (click)="descargarQR()">
+          <i class="bi bi-download"></i> Descargar
+        </button>
+        <button type="button" class="btn btn-success" (click)="imprimirQR()">
+          <i class="bi bi-printer"></i> Imprimir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para mostrar QR (actualizado) -->
+<div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #4F45B1;">
+        <h5 class="modal-title" id="qrModalLabel" style="color: white;">
+          Código QR - <span id="qrTitle"></span>
+          <small class="ms-2 badge bg-light text-dark" id="qrSubtitle"></small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6 text-center">
+            <div id="qrcode" class="mb-3"></div>
+            <div class="alert alert-info">
+              <small>
+                <strong>Tipo:</strong> <span id="qrType"></span> | 
+                <strong>Código:</strong> <span id="qrCode"></span>
+              </small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6>Datos del QR:</h6>
+            <div class="qr-data-container">
+              <pre id="qrDataDisplay"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="descargarQR()">
+          <i class="bi bi-download"></i> Descargar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
