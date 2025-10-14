@@ -1,0 +1,247 @@
+<!-- user-activity-log.component.html -->
+<div class="activity-log-container">
+  <!-- Controles superiores -->
+  <div class="controls-container">
+    <!-- Selector de elementos por página -->
+    <div class="items-per-page">
+      <label for="cantidad">Mostrar:</label>
+      <select name="cantidad" id="cantidad" [(ngModel)]="itemsPerPage" (change)="currentPage = 1">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+      </select>
+      <span>elementos</span>
+    </div>
+    <!-- Buscador -->
+    <div class="search-container">
+      <input type="text" [(ngModel)]="searchText" (input)="onSearchChange()"
+        placeholder="Buscar usuario, acción o documento..." class="search-input" id="search_input">
+    </div>
+  </div>
+  <!-- Tabla -->
+  <div class="table-container">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+         
+          <th>Acción</th>
+          <th>Documento</th>
+          <th>Fecha acción</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let actividad of paginatedActividades">
+        <td>{{ actividad.firts_name }} {{ actividad.last_name }}</td>
+          <td>{{ actividad.accion }}</td>
+          <td>{{ actividad.num_recepcion}}</td>
+          <td>{{ actividad.fecha_accion | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+            <button *ngIf="actividad.accion === 'Editó'" (click)="openModal(actividad)" class="edit-button">
+              <i class="mdi mdi-history"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="paginatedActividades.length === 0">
+          <td colspan="6" class="no-data">No se encontraron registros</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- Paginación -->
+  <div class="pagination-container">
+    <button (click)="prevPage()" [disabled]="currentPage === 1" class="pagination-btn">
+      Anterior
+    </button>
+    <span class="pagination-info">
+      Página {{ currentPage }} de {{ totalPages }}
+      ({{ filteredActividades.length }} registros)
+    </span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="pagination-btn">
+      Siguiente
+    </button>
+  </div>
+</div>
+
+<!-- Modal mejorado -->
+<div *ngIf="isModalOpen" class="modal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Historial de Cambios del Documento</h2>
+      <span class="close" (click)="closeModal()">&times;</span>
+    </div>
+
+    <div class="modal-body">
+      <!-- Información del documento -->
+      <div class="document-info">
+        <div class="info-card">
+          <div class="info-header">
+            <i class="mdi mdi-file-document"></i>
+            <span>Información del Documento</span>
+          </div>
+          <div class="info-content">
+            <div class="info-row">
+              <span class="info-label">Documento:</span>
+              <span class="info-value">{{ selectedActividad?.num_recepcion }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Última modificación:</span>
+              <span class="info-value">{{ selectedActividad?.fecha_accion | date:'dd/MM/yyyy'}}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Modificado por:</span>
+              <span class="info-value">{{ selectedActividad?.firts_name }} {{ selectedActividad?.last_name }}</span>
+            </div>
+            <div class="info-row" *ngIf="selectedActividad?.descripcion">
+              <span class="info-label">Descripción:</span>
+              <span class="info-value">{{ selectedActividad?.descripcion }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+
+      <ng-template #loadingVersion>
+        <div class="loading-version">
+          <div class="loading-spinner"></div>
+          <span>Cargando versión actual...</span>
+        </div>
+      </ng-template>
+
+      <!-- Historial de versiones -->
+      <div class="versions-section"
+        *ngIf="versionActual || (selectedActividad?.versiones?.length > 0); else noVersiones">
+        <div class="versions-header">
+          <h3>
+            <i class="mdi mdi-history"></i>
+            Historial de Versiones
+          </h3>
+          <span class="versions-count">
+            {{ (selectedActividad?.versiones?.length || 0) + 1 }} versión<span
+              *ngIf="(selectedActividad?.versiones?.length || 0) + 1 > 1">es</span>
+          </span>
+        </div>
+
+        <!-- Versión actual -->
+        <div *ngIf="versionActual" class="version-item current-version">
+          <div class="version-indicator">
+            <div class="version-number">Actual</div>
+          </div>
+
+          <div class="version-content">
+            <div class="version-header">
+              <span class="version-date">{{ versionActual.fecha_version | date:'dd/MM/yyyy' }}</span>
+              <span class="version-status">Versión Actual</span>
+              <!-- Botón para mostrar comentario de la versión actual -->
+              <button *ngIf="versionActual.comentario" class="comment-btn"
+                (click)="mostrarComentario(versionActual.comentario)" title="Ver comentario">
+                <i class="mdi mdi-comment-text-outline"></i>
+              </button>
+            </div>
+
+            <div class="version-changes">
+              <div class="change-item" *ngIf="versionActual.cant_relacionada !== undefined">
+
+                <div class="change-label">
+                  <i class="mdi mdi-database"></i>
+                  Cantidad Relacional
+                </div>
+                <div class="change-value">{{ versionActual.cant_relacionada}}</div>
+              </div>
+
+              <div class="change-item" *ngIf="versionActual.cantidad_fisico !== undefined">
+                <div class="change-label">
+                  <i class="mdi mdi-package-variant"></i>
+                  Cantidad Físico
+                </div>
+                <div class="change-value">{{ versionActual.cantidad_fisico }}</div>
+              </div>
+
+              <div class="change-item" *ngIf="versionActual.diferencia_reportada !== undefined">
+                <div class="change-label">
+                  <i class="mdi mdi-chart-line-variant"></i>
+                  Diferencia Reportada
+                </div>
+                <div class="change-value">{{ versionActual.diferencia_reportada }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Versiones anteriores -->
+        <div class="versions-timeline">
+          <div *ngFor="let version of selectedActividad.versiones; let i = index" class="version-item">
+            <div class="version-indicator">
+              <div class="version-number">{{ selectedActividad.versiones.length - i }}</div>
+              <div class="version-line" *ngIf="i < selectedActividad.versiones.length - 1"></div>
+            </div>
+
+            <div class="version-content">
+              <div class="version-header">
+                <span class="version-date">{{ version.fecha_version | date:'dd/MM/yyyy' }}</span>
+                <span class="version-status">Versión Anterior</span>
+                <!-- Botón para mostrar comentario de versiones anteriores -->
+                <button *ngIf="version.comentario" class="comment-btn" (click)="mostrarComentario(version.comentario)"
+                  title="Ver comentario">
+                  <i class="mdi mdi-comment-text-outline"></i>
+                </button>
+              </div>
+
+              <div class="version-changes">
+                <div class="change-item" *ngIf="version.old_cantidad_relacional !== undefined">
+                  <div class="change-label">
+                    <i class="mdi mdi-database"></i>
+                    Cantidad Relacional
+                  </div>
+                  <div class="change-value">{{ version.old_cantidad_relacional }}</div>
+                </div>
+
+                <div class="change-item" *ngIf="version.old_cantidad_fisico !== undefined">
+                  <div class="change-label">
+                    <i class="mdi mdi-package-variant"></i>
+                    Cantidad Físico
+                  </div>
+                  <div class="change-value">{{ version.old_cantidad_fisico }}</div>
+                </div>
+
+                <div class="change-item" *ngIf="version.old_diferencia_reportada !== undefined">
+                  <div class="change-label">
+                    <i class="mdi mdi-chart-line-variant"></i>
+                    Diferencia Reportada
+                  </div>
+                  <div class="change-value">{{ version.old_diferencia_reportada }}</div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensaje cuando no hay versiones -->
+      <ng-template #noVersiones>
+        <div class="no-versions">
+          <div class="no-versions-icon">
+            <i class="mdi mdi-information-outline"></i>
+          </div>
+          <div class="no-versions-content">
+            <h4>Sin historial de versiones</h4>
+            <p>Este documento aún no tiene versiones anteriores registradas.</p>
+            <p class="suggestion">Los cambios futuros aparecerán aquí automáticamente.</p>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal()">
+        <i class="mdi mdi-close"></i>
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

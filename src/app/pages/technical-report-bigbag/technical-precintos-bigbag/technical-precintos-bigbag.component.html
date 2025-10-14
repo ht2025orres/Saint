@@ -1,0 +1,492 @@
+<!-- Header Section -->
+
+<div id="header_exp">
+    <div class="tlo">
+        <i class="mdi mdi-arrow-left icon-volver" (click)="volver()"></i>
+        <h1>Entrega precintos proceso Renueva</h1>
+
+    </div>
+
+
+
+    <div id="btn_exportar">
+        <button class="btn-exportar" (click)="exportarAExcel()"
+            [disabled]="exportandoExcel || precintosFiltrados.length === 0">
+            <i class="mdi" [ngClass]="exportandoExcel ? 'mdi-loading mdi-spin' : 'mdi mdi-microsoft-excel'"></i>
+            {{ exportandoExcel ? 'Exportando...' : 'Exportar Excel' }}
+        </button>
+    </div>
+</div>
+
+
+
+
+<!-- Botón de exportar -->
+
+
+<!-- resto del código de filtros... -->
+
+<!-- Main Form Container -->
+<div class="form-container">
+    <!-- Document Information Section -->
+    <div class="section">
+        <h3 class="section-title">
+            Información del Documento <strong>{{numRecepcion}}</strong>
+        </h3>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Fecha Llegada:</label>
+                <input type="date" [value]="fechaRecepcion" class="readonly" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Remisión o Guía:</label>
+                <input type="text" [value]="numRemision" class="readonly" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Planta:</label>
+                <input type="text" [value]="Planta" class="readonly" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Cliente:</label>
+                <input type="text" [value]="cliente" class="readonly" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Cantidad Remisión:</label>
+                <input type="number" [value]="cantidadRelacionada" class="readonly" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Cantidad Física:</label>
+                <input type="number" [value]="cantidad_fisico" class="readonly" readonly>
+            </div>
+
+            <div class="form-group">
+                <label>Diferencia:</label>
+                <input type="text" [value]="diferencia_reportada" class="readonly" readonly>
+            </div>
+        </div>
+
+        <button class="btn-precinto" (click)="abrirModal()">
+            Repartir precintos
+        </button>
+    </div>
+
+
+
+
+
+    <!-- Modal: Register Precinto -->
+    <div class="modal fade show d-block" *ngIf="mostrarModal" tabindex="-1" role="dialog"
+        style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h3>Registrar Entrega de Precinto</h3>
+                    <button type="button" class="close" (click)="cerrarModal()">&times;</button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="modal-body">
+                    <form class="modal-form" (ngSubmit)="guardarPrecinto()" #precintoForm="ngForm">
+                        <!-- First Row: Area and Responsible Name -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Proceso <span class="text-required">*</span></label>
+                                <select name="area" [(ngModel)]="formularioPrecinto.area" required>
+                                    <option value="" disabled>Seleccione proceso</option>
+                                    <option value="revisada">Revisada</option>
+                                    <option value="reparacion">Reparación</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Nombre Responsable <span class="text-required">*</span></label>
+                                <input type="text" name="nombre" [(ngModel)]="formularioPrecinto.nombre"
+                                    (ngModelChange)="onNombreChange()" list="operarios-list" required
+                                    placeholder="Seleccione o escriba el nombre" autocomplete="off">
+
+                                <!-- Datalist con los operarios -->
+                                <datalist id="operarios-list">
+                                    <option *ngFor="let operario of operarios" [value]="operario.nombre_completo">
+                                </datalist>
+
+                                <!-- Advertencia si el nombre no coincide -->
+                                <small *ngIf="formularioPrecinto.nombre && !formularioPrecinto.id_operario"
+                                    class="form-text text-warning">
+                                    <i class="mdi mdi-alert-circle"></i>
+                                    Debe seleccionar un operario de la lista
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Second Row: ID and Quantity -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Cédula <span class="text-required">*</span></label>
+                                <input type="text" name="cedula" [(ngModel)]="formularioPrecinto.cedula" required
+                                    placeholder="Número de cédula">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Cantidad <span class="text-required">*</span></label>
+                                <input type="number" name="cantidad" [(ngModel)]="formularioPrecinto.cantidad"
+                                    (ngModelChange)="onCantidadChange()" required min="1" [max]="cantidadDisponible"
+                                    placeholder="Cantidad de precintos">
+
+                                <!-- Validation Alert -->
+                                <div *ngIf="mostrarAlerta" class="alert alert-warning">
+                                    {{ mensajeAlerta }}
+                                </div>
+
+                                <!-- Quantity Information -->
+                                <div class="cantidad-info">
+                                    <small class="text-muted">
+                                        <i class="mdi mdi-package-variant-closed"></i> Total físico: {{ cantidad_fisico
+                                        }} |
+                                        <i class="mdi mdi-check-circle"></i> Distribuidos: {{ precintosDistribuidos }} |
+                                        <i class="mdi mdi-numeric"></i> Disponibles: {{ cantidadDisponible }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Third Row: Delivery Date and Precinto Range -->
+                          <div class="form-group">
+                            <label>Color / consecutivo <span class="text-required">*</span></label>
+                            <select [(ngModel)]="formularioPrecinto.color_consecutivo" (ngModelChange)="onColorChange()"
+                                name="color" class="form-control" required>
+                                <option value="">Seleccione un color</option>
+                                <option *ngFor="let color of coloresConsecutivos" [value]="color.color">
+                                    {{ color.color }} ({{ color.numero_actual }})
+                                </option>
+                            </select>
+
+                            <!-- Debug: mostrar valor seleccionado -->
+                            <small class="text-muted" *ngIf="formularioPrecinto.color_consecutivo">
+                                Color seleccionado: "{{ formularioPrecinto.color_consecutivo }}"
+                            </small>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fecha Entrega <span class="text-required">*</span></label>
+                                <input type="date" name="fechaEntrega" [(ngModel)]="formularioPrecinto.fechaEntrega"
+                                    required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Rango de Precintos</label>
+                                <input type="text" name="rangoPrecintos" [(ngModel)]="formularioPrecinto.rango" readonly
+                                    class="form-control-readonly" placeholder="Se genera automáticamente...">
+                                <small class="form-text text-muted">
+                                    Rango desde el número base hasta el número base + cantidad
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Color/Consecutive and Precinto Number -->
+                       
+
+                        <div class="form-group">
+                            <label>Número de Precinto <span class="text-required">*</span></label>
+                            <input type="text" name="numeroPrecinto" [(ngModel)]="formularioPrecinto.numeroPrecinto"
+                                required readonly class="form-control-readonly"
+                                placeholder="Se genera automáticamente...">
+                            <small class="form-text text-muted">
+                                El número se genera automáticamente basado en el color y cantidad seleccionados
+                            </small>
+                        </div>
+
+                        <!-- Observations -->
+                        <div class="form-group">
+                            <label>Observaciones</label>
+                            <textarea name="observaciones" [(ngModel)]="formularioPrecinto.observaciones"
+                                placeholder="Observaciones adicionales..." class="textarea"></textarea>
+                        </div>
+
+                        <!-- Modal Actions -->
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" [disabled]="!precintoForm.valid">
+                                Guardar Precinto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Complete Distribution -->
+    <div class="modal fade show d-block" *ngIf="mostrarModalCompleto" tabindex="-1" role="dialog"
+        style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header modal-header-success">
+                    <h3><i class="mdi mdi-check-circle"></i> Distribución Completa</h3>
+                    <button type="button" class="close" (click)="cerrarModalCompleto()">&times;</button>
+                </div>
+
+                <div class="modal-body text-center">
+                    <div class="success-icon">
+                        <i class="mdi mdi-bullseye"></i>
+                    </div>
+
+                    <h4>¡Los precintos han sido distribuidos!</h4>
+
+                    <p class="mb-3">
+                        Se han distribuido exitosamente <strong>{{ precintosDistribuidos }}</strong>
+                        precintos a los empaques
+                    </p>
+
+                    <div class="distribucion-summary">
+                        <div class="summary-item">
+                            <span class="label"><i class="mdi mdi-package"></i> Cantidad Física Total:</span>
+                            <span class="value">{{ cantidad_fisico }}</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="label"><i class="mdi mdi-check"></i> Precintos Distribuidos:</span>
+                            <span class="value">{{ precintosDistribuidos }}</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="label"><i class="mdi mdi-numeric"></i> Precintos Disponibles:</span>
+                            <span class="value">{{ cantidadDisponible }}</span>
+                        </div>
+                    </div>
+
+                    <p class="text-muted mt-3">
+                        La distribución para el documento <strong>{{ numRecepcion }}</strong>
+                        ha sido completada.
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success btn-block" (click)="cerrarModalCompleto()">
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filtros-container mt-4">
+    <h4 class="filtros-title">
+        <i class="mdi mdi-filter-variant"></i>
+        Filtros de Búsqueda
+        <button class="boton-filtro" (click)="limpiarFiltros()">
+            <i class="mdi mdi-filter-remove"></i> Limpiar
+        </button>
+    </h4>
+
+    <div class="filtro_row">
+        <!-- Filtro por rango de fechas -->
+        <div class="filtro-precintos">
+            <div class="form-group">
+                <label>Fecha Desde:</label>
+                <input type="date" [(ngModel)]="filtros.fechaDesde" (ngModelChange)="aplicarFiltros()"
+                    class="form-control">
+            </div>
+        </div>
+
+        <div class="filtro-precintos">
+            <div class="form-group">
+                <label>Fecha Hasta:</label>
+                <input type="date" [(ngModel)]="filtros.fechaHasta" (ngModelChange)="aplicarFiltros()"
+                    class="form-control">
+            </div>
+        </div>
+
+        <!-- Filtro por nombre -->
+        <div class="filtro-precintos">
+            <div class="form-group">
+                <label>Responsable:</label>
+                <input type="text" [(ngModel)]="filtros.nombre" (ngModelChange)="aplicarFiltros()"
+                    placeholder="Buscar por nombre..." class="form-control">
+            </div>
+        </div>
+
+        <!-- Filtro por color -->
+        <div class="filtro-precintos">
+            <div class="form-group">
+                <label>Color:</label>
+                <select [(ngModel)]="filtros.color" (ngModelChange)="aplicarFiltros()" class="form-control">
+                    <option value="">Todos los colores</option>
+                    <option *ngFor="let color of coloresFiltro" [value]="color">
+                        {{ color | titlecase }}
+                    </option>
+                </select>
+
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicador de resultados -->
+    <div class="filtros-info mt-2" *ngIf="precintosFiltrados.length !== precintos.length">
+        <small class="text-muted">
+            <i class="mdi mdi-information"></i>
+            Mostrando {{ precintosFiltrados.length }} de {{ precintos.length }} precintos
+        </small>
+    </div>
+</div>
+
+<div id="cont_tabla_precinto">
+<!-- Precintos Table -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Fecha Entrega</th>
+            <th>Responsable</th>
+            <th>Cédula</th>
+            <th>Cantidad</th>
+            <th>N° precinto</th>
+            <th>Rango</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <!-- Estado de carga -->
+        <tr *ngIf="cargandoPrecintos">
+            <td colspan="7" class="text-center py-4">
+                <div class="spinner-border text-primary mb-2" role="status">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <div class="text-muted">Cargando precintos...</div>
+            </td>
+        </tr>
+
+        <!-- Datos de precintos -->
+        <tr *ngFor="let precinto of precintosFiltrados; trackBy: trackByPrecintoId" [hidden]="cargandoPrecintos">
+            <td>{{ precinto.fecha_entrega }}</td>
+            <td>{{ precinto.nombre_responsable }}</td>
+            <td>{{ precinto.cedula }}</td>
+            <td>{{ precinto.cantidad }}</td>
+            <td>{{ precinto.numero_precinto }}</td>
+            <td>{{ precinto.rango_precintos }}</td>
+            <td>
+                <div class="botones-precinto">
+                    <button (click)="obtenerFirmaPorPrecinto(precinto.id)" class="button-circular ver"
+                        [attr.aria-label]="'Ver firma del precinto ' + precinto.numero_precinto">
+                        <i class="mdi mdi-eye-outline"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Estados vacíos (solo se muestran si no está cargando) -->
+        <tr *ngIf="!cargandoPrecintos && precintosFiltrados.length === 0 && precintos.length > 0">
+            <td colspan="7" class="text-center text-muted py-4">
+                <i class="mdi mdi-filter-remove"></i>
+                No se encontraron precintos con los filtros aplicados
+            </td>
+        </tr>
+
+        <tr *ngIf="!cargandoPrecintos && precintos.length === 0">
+            <td colspan="7" class="text-center text-muted py-4">
+                <i class="mdi mdi-package-variant-closed"></i>
+                No hay precintos registrados
+            </td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<!-- Modal: Ver Firma y Novedades -->
+<div class="modal fade show d-block" *ngIf="mostrarModalFirma" tabindex="-1" role="dialog"
+    style="background: rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header" [ngClass]="{
+                'modal-header-success': datosFirma && !errorCargandoFirma,
+                'modal-header-warning': errorCargandoFirma,
+                'modal-header-info': cargandoFirma
+            }">
+                <h3>
+                    <i class="mdi" [ngClass]="{
+                        'mdi-signature': datosFirma && !errorCargandoFirma,
+                        'mdi-alert-circle': errorCargandoFirma,
+                        'mdi-loading mdi-spin': cargandoFirma
+                    }"></i>
+                    {{ getModalFirmaTitle() }}
+                </h3>
+                <button type="button" class="close" (click)="cerrarModalFirma()" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <!-- Loading State -->
+                <div *ngIf="cargandoFirma" class="text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="sr-only">Cargando...</span>
+                    </div>
+                    <p class="text-muted">Obteniendo información del precinto...</p>
+                </div>
+
+                <!-- Error State - Precinto no firmado -->
+                <div *ngIf="errorCargandoFirma && !cargandoFirma" class="text-center py-4">
+                    <div class="error-icon mb-3">
+                        <i class="mdi mdi-signature-text" style="font-size: 4rem; color: #ffc107;"></i>
+                    </div>
+
+                    <h4 class="mb-3">Precinto No Firmado</h4>
+
+                    <p class="text-muted mt-3">
+                        Este precinto aún no tienes observaciones del operario responsable.
+                    </p>
+                </div>
+
+                <!-- Success State - Firma encontrada -->
+                <div *ngIf="datosFirma && !errorCargandoFirma && !cargandoFirma">
+                    <!-- Novedades -->
+                    <div class="novedades-section mb-4">
+                        <h5><i class="mdi mdi-note-text"></i> Novedades Reportadas</h5>
+                        <div class="alert alert-info">
+                            <i class="mdi mdi-information"></i>
+                            {{ datosFirma.novedades }}
+                        </div>
+                    </div>
+
+                    <!-- Firma Digital -->
+                    <div class="firma-section">
+                        <h5><i class="mdi mdi-signature"></i> Firma Digital</h5>
+                        <div class="firma-container text-center">
+                            <div class="card">
+                                <div class="card-body">
+                                    <img [src]="datosFirma.url" alt="Firma digital del precinto"
+                                        class="img-fluid firma-image" (error)="onImagenError($event)"
+                                        style="max-height: 300px; border: 1px solid #dee2e6; border-radius: 4px;">
+
+                                    <div class="mt-3">
+                                        <small class="text-muted">
+                                            <i class="mdi mdi-check-circle text-success"></i>
+                                            Firma verificada y procesada correctamente
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" (click)="cerrarModalFirma()">
+                    <i class="mdi mdi-close"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
