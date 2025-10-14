@@ -1,8 +1,7 @@
-import { Component, OnInit } from '@angular/core';
 import { TerminacionEmpaqueService } from 'src/app/services/terminacion-empaque.service';
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
 import { AuthService } from './../../../services/auth.service';
-import md5 from 'blueimp-md5';
+import { Component, OnInit } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -16,6 +15,7 @@ interface UbicacionDistinta {
   cantidad: number;
   comentario?: string;
   fecha?: Date;
+  esNueva?: boolean;
 }
 
 interface ItemRecepcion {
@@ -36,7 +36,7 @@ interface ItemRecepcion {
 }
 
 interface ModalUbicacionData {
-  item: ItemRecepcion;
+  item: ItemRecepcion | null;
   cantidad: number;
   mostrar: boolean;
   ubicacionSeleccionada: string;
@@ -44,7 +44,7 @@ interface ModalUbicacionData {
 }
 
 interface ModalVerUbicacionesData {
-  item: ItemRecepcion;
+  item: ItemRecepcion | null;
   mostrar: boolean;
 }
 
@@ -108,6 +108,7 @@ export class RecepcionOpComponent implements OnInit {
   };
 
   ubicacionesDisponibles = [
+    { value: 'Empaque', label: 'Empaque' },
     { value: 'Terminacion', label: 'Terminación' },
     { value: 'Bordado', label: 'Bordado' },
     { value: 'Estampado', label: 'Estampado' }
@@ -116,7 +117,7 @@ export class RecepcionOpComponent implements OnInit {
   constructor(
     private terminacionEmpaqueService: TerminacionEmpaqueService,
     public paginationService: PaginationService,
-    private authService: AuthService    
+    public authService: AuthService    
   ) {}
 
   ngOnInit(): void {
@@ -133,11 +134,11 @@ export class RecepcionOpComponent implements OnInit {
     });
   }
 
-  esDistribuidor(): boolean {
-    const roles = (this.authService.user.roles || []).map((role: any) => typeof role === 'string' ? role : role.name || role);
-    console.log(roles);
-    return roles.includes('Distribuidor PV (Terminación y Empaque)');
-  }
+  // esDistribuidor(): boolean {
+  //   const roles = (this.authService.user.roles || []).map((role: any) => typeof role === 'string' ? role : role.name || role);
+  //   console.log(roles);
+  //   return roles.includes('Distribuidor PV (Terminación y Empaque)');
+  // }
 
   buscarPVs(): void {
     this.busquedaIniciada = true;
@@ -213,33 +214,34 @@ export class RecepcionOpComponent implements OnInit {
 
                 this.terminacionEmpaqueService
                   .obtenerCantidadRecibida(this.opSeleccionada!.codigo, hashes)
-                  .subscribe({
-                    next: (response) => {
-                      hashes.forEach(hash => {
-                        const itemData = response['data'][hash];
-                        if (itemData !== undefined) {
-                          itemsUnificados[hash].cantidad_recibida_total = itemData.cantidad_recibida_total || 0;
-                          if (itemData.ubicaciones_distintas) {
-                            itemsUnificados[hash].ubicaciones_distintas = itemData.ubicaciones_distintas;
-                          }
+                  .subscribe((response: { [hash: string]: any }) => {
+                    hashes.forEach(hash => {
+                      const itemData = response['data'][hash];
+                      if (itemData !== undefined) {
+                        itemsUnificados[hash].cantidad_recibida_total = itemData.cantidad_recibida_total || 0;
+                        if (itemData.ubicaciones_distintas) {
+                          // ← Marcar como NO nuevas las que vienen de BD
+                          itemsUnificados[hash].ubicaciones_distintas = itemData.ubicaciones_distintas.map((ub: UbicacionDistinta) => ({
+                            ...ub,
+                            esNueva: false
+                          }));
                         }
-                      });
+                      }
+                    });
 
-                      this.items = Object.values(itemsUnificados);
+                    this.items = Object.values(itemsUnificados);
 
-                      this.paginationService.initializePaginator(
-                        this.paginatorId,
-                        this.items,
-                        10,
-                        this.filters,
-                        this.filterFunction
-                      ).subscribe(state => this.currentItems = state.currentData);
-                      this.cargando = false;
-                    },
-                    error: () => {
-                      this.cargando = false;
-                      Swal.fire('Error', 'No se pudo cargar cantidades recibidas locales', 'error');
-                    }
+                    this.paginationService.initializePaginator(
+                      this.paginatorId,
+                      this.items,
+                      10,
+                      this.filters,
+                      this.filterFunction
+                    ).subscribe(state => this.currentItems = state.currentData);
+                    this.cargando = false;
+                  }, () => {
+                    this.cargando = false;
+                    Swal.fire('Error', 'No se pudo cargar cantidades recibidas locales', 'error');
                   });
               });
           },
@@ -371,17 +373,21 @@ export class RecepcionOpComponent implements OnInit {
             // ====== Consultar cantidades recibidas acumuladas ======
             this.terminacionEmpaqueService
               .obtenerCantidadRecibidaPT(pt, hashes)
-              .subscribe({
-                next: (response) => {
+              .subscribe(
+                (response: { [hash: string]: any }) => {
                   hashes.forEach(hash => {
-                    const itemData = response['data'][hash];
+                    const itemData = response[hash];
                     if (itemData !== undefined) {
                       itemsUnificados[hash].cantidad_recibida_total =
                         itemData.cantidad_recibida_total || 0;
 
                       if (itemData.ubicaciones_distintas) {
+                        // ← Marcar como NO nuevas
                         itemsUnificados[hash].ubicaciones_distintas =
-                          itemData.ubicaciones_distintas;
+                          itemData.ubicaciones_distintas.map((ub: UbicacionDistinta) => ({
+                            ...ub,
+                            esNueva: false
+                          }));
                       }
                     }
                   });
@@ -399,11 +405,11 @@ export class RecepcionOpComponent implements OnInit {
 
                   this.modalRecepcionPTs.cargando = false;
                 },
-                error: () => {
+                () => {
                   this.modalRecepcionPTs.cargando = false;
                   Swal.fire('Error', 'No se pudo cargar cantidades recibidas locales', 'error');
                 }
-              });
+              );
           },
           error: () => {
             this.modalRecepcionPTs.cargando = false;
@@ -608,25 +614,33 @@ export class RecepcionOpComponent implements OnInit {
     }
 
     const item = this.modalUbicacion.item;
+    if (!item) {
+      Swal.fire('Error', 'No se ha seleccionado un ítem válido', 'error');
+      return;
+    }
     if (!item.ubicaciones_distintas) {
       item.ubicaciones_distintas = [];
     }
 
+    // *** SOLO buscar entre ubicaciones NUEVAS ***
     const ubicacionExistente = item.ubicaciones_distintas.find(
-      u => u.ubicacion === this.modalUbicacion.ubicacionSeleccionada
+      u => u.ubicacion === this.modalUbicacion.ubicacionSeleccionada && u.esNueva === true
     );
 
     if (ubicacionExistente) {
+      // Si ya existe una ubicación nueva en esta sesión, sumar
       ubicacionExistente.cantidad += this.modalUbicacion.cantidad;
       if (this.modalUbicacion.comentario.trim()) {
         ubicacionExistente.comentario = this.modalUbicacion.comentario;
       }
     } else {
+      // Crear nueva ubicación y marcarla como NUEVA
       item.ubicaciones_distintas.push({
         ubicacion: this.modalUbicacion.ubicacionSeleccionada,
         cantidad: this.modalUbicacion.cantidad,
         comentario: this.modalUbicacion.comentario || '',
-        fecha: new Date()
+        fecha: new Date(),
+        esNueva: true // ← MARCAR COMO NUEVA
       });
     }
 
@@ -650,75 +664,76 @@ export class RecepcionOpComponent implements OnInit {
     this.modalVerUbicaciones.mostrar = false;
   }
 
-cambiarUbicacion(item: any, ubicacionDistinta: UbicacionDistinta, nuevaUbicacion: string): void {
-  Swal.fire({
-    title: '¿Cambiar ubicación?',
-    text: `¿Desea mover ${ubicacionDistinta.cantidad} unidades de ${ubicacionDistinta.ubicacion} a ${nuevaUbicacion}?`,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Sí, cambiar',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      if ((nuevaUbicacion === 'Bordado' || nuevaUbicacion === 'Estampado') && !ubicacionDistinta.comentario) {
-        Swal.fire({
-          title: 'Comentario requerido',
-          input: 'textarea',
-          html: '<label>Ingrese el motivo del cambio:</label>',
-          inputPlaceholder: 'Escriba aquí el motivo...',
-          showCancelButton: true,
-          confirmButtonText: 'Guardar',
-          cancelButtonText: 'Cancelar'
-        }).then((comentarioResult) => {
-          if (comentarioResult.isConfirmed && comentarioResult.value) {
-            this.guardarCambioUbicacion(item, ubicacionDistinta, nuevaUbicacion, comentarioResult.value);
-          }
-        });
-      } else {
-        this.guardarCambioUbicacion(item, ubicacionDistinta, nuevaUbicacion, ubicacionDistinta.comentario);
+  cambiarUbicacion(item: any, ubicacionDistinta: UbicacionDistinta, nuevaUbicacion: string): void {
+    Swal.fire({
+      title: '¿Cambiar ubicación?',
+      text: `¿Desea mover ${ubicacionDistinta.cantidad} unidades de ${ubicacionDistinta.ubicacion} a ${nuevaUbicacion}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if ((nuevaUbicacion === 'Bordado' || nuevaUbicacion === 'Estampado') && !ubicacionDistinta.comentario) {
+          Swal.fire({
+            title: 'Comentario requerido',
+            input: 'textarea',
+            html: '<label>Ingrese el motivo del cambio:</label>',
+            inputPlaceholder: 'Escriba aquí el motivo...',
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar'
+          }).then((comentarioResult) => {
+            if (comentarioResult.isConfirmed && comentarioResult.value) {
+              this.guardarCambioUbicacion(item, ubicacionDistinta, nuevaUbicacion, comentarioResult.value);
+            }
+          });
+        } else {
+          this.guardarCambioUbicacion(item, ubicacionDistinta, nuevaUbicacion, ubicacionDistinta.comentario);
+        }
       }
-    }
-  });
-}
+    });
+  }
 
-private guardarCambioUbicacion(
-  item: any,
-  ubicacionDistinta: UbicacionDistinta,
-  nuevaUbicacion: string,
-  comentario?: string
-) {
-  const payload = {
-    op_codigo: this.opSeleccionada!.codigo,
-    item_hash: item.hash,
-    referencia: item.codigo,
-    id_item: item.f120_id,
-    descripcion: item.descripcion,
-    id_color: item.id_color,
-    id_talla: item.id_talla,
-    cantidad_recibida: ubicacionDistinta.cantidad, // la cantidad que se mueve
-    precio_unitario: item.precio_unitario,
-    usuario: this.authService.user.id, // <- asegúrate de tener este valor en tu componente
-    ubicacion_actual: ubicacionDistinta.ubicacion,
-    ubicacion: nuevaUbicacion,
-    comentario: comentario ?? ''
-  };
+  private guardarCambioUbicacion(
+    item: any,
+    ubicacionDistinta: UbicacionDistinta,
+    nuevaUbicacion: string,
+    comentario?: string
+  ) {
+    const payload = {
+      op_codigo: this.opSeleccionada!.codigo,
+      item_hash: item.hash,
+      referencia: item.codigo,
+      id_item: item.f120_id,
+      descripcion: item.descripcion,
+      id_color: item.id_color,
+      id_talla: item.id_talla,
+      cantidad_recibida: ubicacionDistinta.cantidad, // la cantidad que se mueve
+      precio_unitario: item.precio_unitario,
+      usuario: this.authService.user.id, // <- asegúrate de tener este valor en tu componente
+      ubicacion_actual: ubicacionDistinta.ubicacion,
+      ubicacion: nuevaUbicacion,
+      comentario: comentario ?? ''
+    };
 
-  this.terminacionEmpaqueService.actualizarUbicacion(payload).subscribe({
-    next: (res) => {
-      ubicacionDistinta.ubicacion = nuevaUbicacion;
-      ubicacionDistinta.fecha = new Date();
-      ubicacionDistinta.comentario = comentario ?? '';
-      Swal.fire('Éxito', 'Ubicación cambiada correctamente', 'success');
-    },
-    error: () => {
-      Swal.fire('Error', 'No se pudo actualizar la ubicación', 'error');
-    }
-  });
-}
+    this.terminacionEmpaqueService.actualizarUbicacion(payload).subscribe({
+      next: (res) => {
+        ubicacionDistinta.ubicacion = nuevaUbicacion;
+        ubicacionDistinta.fecha = new Date();
+        ubicacionDistinta.comentario = comentario ?? '';
+        Swal.fire('Éxito', 'Ubicación cambiada correctamente', 'success');
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudo actualizar la ubicación', 'error');
+      }
+    });
+  }
 
   // Verificar si el item tiene ubicaciones distintas
   tieneUbicacionesDistintas(item: ItemRecepcion): boolean {
-    return item.ubicaciones_distintas && item.ubicaciones_distintas.length > 0;
+    console.log('Verificando ubicaciones distintas para item:', item);
+    return !!(item.ubicaciones_distintas && item.ubicaciones_distintas.length > 0);
   }
 
   // Obtener total de cantidades en ubicaciones distintas
@@ -766,17 +781,19 @@ private guardarCambioUbicacion(
     const itemsUbicacionesDistintas = this.items
       .filter(i => this.tieneUbicacionesDistintas(i))
       .map(i => 
-        i.ubicaciones_distintas!.map(ub => ({
-          f120_id: i.f120_id,
-          codigo: i.codigo,
-          descripcion: i.descripcion,
-          id_color: i.id_color,
-          id_talla: i.id_talla,
-          cantidad_recibida: ub.cantidad,
-          precio_unitario: i.precio_unitario || 0,
-          ubicacion: ub.ubicacion,
-          comentario: ub.comentario
-        }))
+        i.ubicaciones_distintas!
+          .filter(ub => ub.esNueva === true) // ← FILTRAR SOLO NUEVAS
+          .map(ub => ({
+            f120_id: i.f120_id,
+            codigo: i.codigo,
+            descripcion: i.descripcion,
+            id_color: i.id_color,
+            id_talla: i.id_talla,
+            cantidad_recibida: ub.cantidad,
+            precio_unitario: i.precio_unitario || 0,
+            ubicacion: ub.ubicacion,
+            comentario: ub.comentario
+          }))
       )
       .reduce((acc, val) => acc.concat(val), []);
 
@@ -807,11 +824,29 @@ private guardarCambioUbicacion(
           .subscribe({
             next: () => {
               Swal.fire('Éxito', 'Recepción guardada', 'success');
+              
               this.items.forEach(i => {
-                i.cantidad_recibida_total += i.cantidad_recibida;
+                // Sumar cantidades normales
+                if (i.cantidad_recibida > 0) {
+                  i.cantidad_recibida_total += i.cantidad_recibida;
+                }
+                
+                // Sumar y marcar ubicaciones distintas como guardadas
+                if (i.ubicaciones_distintas && i.ubicaciones_distintas.length > 0) {
+                  i.ubicaciones_distintas.forEach(ub => {
+                    if (ub.esNueva) {
+                      i.cantidad_recibida_total += ub.cantidad;
+                      ub.esNueva = false; // ← Marcar como guardada
+                    }
+                  });
+                }
+                
+                // Limpiar solo cantidad normal
                 i.cantidad_recibida = 0;
-                i.ubicaciones_distintas = [];
+                
+                // *** NO limpiar ubicaciones_distintas, solo las marcamos como guardadas ***
               });
+              
               this.applyFilters();
             },
             error: () => Swal.fire('Error', 'No se pudo guardar', 'error')

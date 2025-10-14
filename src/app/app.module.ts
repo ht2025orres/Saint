@@ -7,6 +7,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { MetricCardComponent } from './pages/dashboard/components/metric-card/metric-card.component';
 import { PagesComponent } from './pages/pages.component';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { TokenInterceptor } from './interceptors/tokenInterceptor';
@@ -42,12 +43,14 @@ import { RegistrarEmpaqueModule } from './pages/terminacion-empaque/registrar-em
 import { DashboardEmpaqueModule } from './pages/terminacion-empaque/dashboard-empaque/dashboard-empaque.module';
 import { DistribucionPvModule } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.module';
 import { BodegasModule } from './pages/inventario/bodegas/bodegas.module';
+import { ZonasModule } from './pages/inventario/zonas/zonas.module';
 
 registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({ declarations: [
         AppComponent,
         DashboardComponent,
+        MetricCardComponent,
         PagesComponent,
         CreateTechnicalSheetComponent,
         ListTechnicalSheetComponent,
@@ -86,6 +89,7 @@ registerLocaleData(localeEs, 'es-CO');
         DistribucionPvModule,
         /* Inventario */
         BodegasModule,
+        ZonasModule,
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

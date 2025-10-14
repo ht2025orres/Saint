@@ -1,0 +1,165 @@
+<!-- zonas.component.html -->
+<div class="container py-4">
+  <h2 class="mb-4 display-6">Gestión de Zonas</h2>
+
+  <!-- Indicador de carga -->
+  <ng-container *ngIf="isLoadingZonas; else zonasContent">
+    <div class="alert alert-secondary text-center mt-4">
+      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+      Cargando zonas, por favor espere...
+    </div>
+  </ng-container>
+
+  <ng-template #zonasContent>
+    <!-- Botón crear zona -->
+    <div class="mb-3">
+      <button class="btn btn-success" (click)="abrirModalCrear()">
+        <i class="bi bi-plus-circle me-2"></i>
+        Nueva Zona
+      </button>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="mb-3" *ngIf="zonas?.length > 0">
+      <input type="text"
+            class="form-control"
+            placeholder="Buscar zona..."
+            [(ngModel)]="filters.busqueda"
+            (input)="applyFilters()">
+    </div>
+
+    <!-- Lista de zonas -->
+    <div *ngIf="currentZonas?.length > 0; else sinZonas">
+      <div *ngFor="let zona of currentZonas" class="card mb-3 shadow-sm border-light">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <!-- ID y Nombre -->
+            <div class="col-md-4">
+              <h5 class="mb-1">
+                <i class="bi bi-geo-alt-fill text-primary me-2"></i>
+                {{ zona.nombre }}
+              </h5>
+              <small class="text-muted">ID: {{ zona.id }}</small>
+            </div>
+
+            <!-- Descripción -->
+            <div class="col-md-5">
+              <small class="text-muted d-block">Descripción:</small>
+              <p class="mb-0">{{ zona.descripcion || 'Sin descripción' }}</p>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="col-md-2 text-center">
+              <small class="text-muted d-block">Ítems asignados:</small>
+              <strong class="text-primary">{{ zona.total_items || 0 }}</strong>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="col-md-1 text-end">
+              <div class="btn-group-vertical btn-group-sm" role="group">
+                <button type="button" 
+                        class="btn btn-outline-primary mb-1"
+                        (click)="abrirModalEditar(zona)"
+                        title="Editar zona">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" 
+                        class="btn btn-outline-danger"
+                        (click)="eliminarZona(zona)"
+                        title="Eliminar zona">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de total -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <small class="text-muted">
+          Mostrando del {{ getStartIndex() }} al {{ getEndIndex() }} de {{ totalZonas }} zona(s)
+        </small>
+      </div>
+
+      <!-- Paginación -->
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(paginatorId)"
+        [instanceId]="paginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25, 50]">
+      </app-shared-paginator>
+    </div>
+
+    <!-- Sin zonas -->
+    <ng-template #sinZonas>
+      <div class="alert alert-info mt-4 text-center" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        <span *ngIf="filters.busqueda && zonas?.length > 0; else noZonasMessage">
+          No se encontraron zonas que coincidan con la búsqueda "{{ filters.busqueda }}".
+        </span>
+        <ng-template #noZonasMessage>
+          No hay zonas disponibles. Crea una nueva zona para comenzar.
+        </ng-template>
+      </div>
+    </ng-template>
+  </ng-template>
+
+  <!-- Modal Crear/Editar Zona -->
+  <div class="modal-overlay" *ngIf="mostrarModal">
+    <div class="modal-container">
+      <h3>{{ modoEdicion ? 'Editar Zona' : 'Nueva Zona' }}</h3>
+      
+      <form>
+        <!-- Nombre -->
+        <div class="form-group mb-3">
+          <label for="nombreZona">Nombre de la zona <span class="text-danger">*</span></label>
+          <input type="text" 
+                 id="nombreZona"
+                 class="form-control" 
+                 [(ngModel)]="zonaForm.nombre"
+                 name="nombre"
+                 placeholder="Ej: Zona A, Pasillo 1, etc."
+                 [class.is-invalid]="validarCampo('nombre')"
+                 maxlength="50">
+          <div class="invalid-feedback" *ngIf="validarCampo('nombre')">
+            El nombre es obligatorio
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group mb-3">
+          <label for="descripcionZona">Descripción</label>
+          <textarea id="descripcionZona"
+                    class="form-control" 
+                    [(ngModel)]="zonaForm.descripcion"
+                    name="descripcion"
+                    rows="3"
+                    placeholder="Descripción de la zona (opcional)"
+                    maxlength="255"></textarea>
+          <small class="text-muted">Opcional - Máximo 255 caracteres</small>
+        </div>
+
+        <!-- Información adicional si estamos editando -->
+        <div class="alert alert-info small" *ngIf="modoEdicion">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>Nota:</strong> Esta zona tiene {{ zonaForm.total_items || 0 }} ítem(s) asignado(s).
+        </div>
+
+        <!-- Botones -->
+        <div class="mt-4 text-end">
+          <button type="button" class="btn btn-secondary me-2" (click)="cerrarModal()">
+            Cancelar
+          </button>
+          <button type="button" 
+                  class="btn btn-primary" 
+                  (click)="guardarZona()"
+                  [disabled]="!formularioValido()">
+            <i class="bi" [ngClass]="modoEdicion ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+            {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

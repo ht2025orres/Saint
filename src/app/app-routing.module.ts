@@ -25,6 +25,7 @@ import { RegistrarEmpaqueComponent } from './pages/terminacion-empaque/registrar
 import { DashboardEmpaqueComponent } from './pages/terminacion-empaque/dashboard-empaque/dashboard-empaque.component';
 import { DistribucionPvComponent } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.component';
 import { BodegasComponent } from './pages/inventario/bodegas/bodegas.component';
+import { ZonasComponent } from './pages/inventario/zonas/zonas.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -50,6 +51,7 @@ const routes: Routes = [
       { path: 'dashboard-empaque', component: DashboardEmpaqueComponent, title: 'Dashboard de empaque' },
       { path: 'distribucion-pv', component: DistribucionPvComponent, title: 'Distribución de PV' },
       { path: 'bodegas', component: BodegasComponent, title: 'Bodegas' },
+      { path: 'zonas', component: ZonasComponent, title: 'Zonas' },
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

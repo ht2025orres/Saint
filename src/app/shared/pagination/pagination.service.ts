@@ -80,7 +80,7 @@ export class PaginationService {
 
     // Aplicar filtros si existen
     let filteredData = data;
-    if (filters && filterFunction) {
+    if (filters && filterFunction) {  
       filteredData = data.filter(item => filterFunction(item, filters));
     }
 
