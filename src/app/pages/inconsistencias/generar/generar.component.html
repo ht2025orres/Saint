@@ -1,0 +1,164 @@
+<div class="row page-titles mt-3">
+    <div class="col-md-5 align-self-center">
+        <h3 class="text-themecolor">{{ title }}</h3>
+    </div>
+    <div class="col-md-7 align-self-center">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a routerLink="/dashboard">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">Inconsistencias</li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </div>
+</div>
+
+<div class="container mt-4">
+
+  <form [formGroup]="inconsistenciaForm" (ngSubmit)="enviar()" enctype="multipart/form-data">
+
+    <div class="row">
+        <div class="col-md-3">
+            <label><strong>Fecha:</strong></label>
+            <input type="date" class="form-control" formControlName="fecha" disabled>
+        </div>
+
+        <div class="col-md-4">
+            <label><strong>Cliente:</strong></label>
+            <input
+                list="clientes"
+                class="form-control"
+                id="cliente"
+                formControlName="cliente"
+                autocomplete="off"
+                placeholder="Buscar cliente..."
+                (change)="assingCustomerValues($event.target)"
+                (keyup)="searchCustomer($event.target)"
+            />
+
+            <datalist id="clientes">
+                <option *ngFor="let customer of customers" [value]="customer.customerName"></option>
+            </datalist>
+        </div>
+
+        <input type="hidden" formControlName="id_cliente">
+
+        <div class="col-md-3">
+            <label><strong>Proceso:</strong></label>
+            <input type="text" class="form-control" formControlName="nombre_proceso" readonly>
+        </div>
+
+        <div class="col-md-2 no-border">
+            <label><strong>Consecutivo:</strong></label>
+            <input type="text" class="form-control no-border" formControlName="codigo_inconsistencia" readonly>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row">
+      <div class="col-md-5">
+        <label><strong>Tipo Inconsistencia:</strong></label>
+        <select class="form-select" formControlName="inconsistencia">
+            <option value="" hidden>Seleccione</option>
+            <option *ngFor="let key of tipos | keyvalue" [value]="key.key">
+                {{ key.value }}
+            </option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label><strong>Cantidad OP:</strong></label>
+        <input type="texts" class="form-control" formControlName="cantidad_solicitada_op" (input)="formatearMiles($event)">
+      </div>
+
+        <div class="col-md-4">
+            <label><strong>Cantidad:</strong></label>
+            <div class="d-flex gap-2">
+                <input
+                type="text"
+                formControlName="cantidad_inco"
+                class="form-control"
+                (input)="formatearMiles($event)"
+                />
+                <select
+                formControlName="unidad_medida"
+                class="no-border"
+                >
+                <option value="unidades">Unidades</option>
+                <option value="metros">Metros</option>
+                <option value="centimetros">Centímetros</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-8">
+            <label><strong>Descripción Ítem:</strong></label>
+            <textarea class="form-control" formControlName="item"></textarea>
+        </div>
+
+        <div class="col-md-3">
+            <label><strong>Tipo:</strong></label>
+            <select
+            class="form-select"
+            formControlName="tipo_inco"
+            [ngClass]="{ 'no-border': inconsistenciaForm.get('tipo_inco')?.value }"
+            >
+            <option value="" disabled selected hidden>Seleccione tipo</option>
+            <option value="OP">OP</option>
+            <option value="OPR">OPR</option>
+            <option value="OPM">OPM</option>
+            </select>
+            <input type="text" class="form-control" formControlName="codigo">
+        </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-3">
+        <label><strong>Precio Unitario:</strong></label>
+        <input type="text" class="form-control" formControlName="precio_unitario" (input)="formatearMiles($event)">
+      </div>
+
+      <div class="col-md-3">
+        <label><strong>Precio Total:</strong></label>
+        <input type="text" class="form-control" formControlName="precio_total" readonly>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <label><strong>Descripción de la Situación:</strong></label>
+      <textarea class="form-control" formControlName="situacion" rows="3"></textarea>
+    </div>
+
+    <div *ngIf="mostrarTablaAccion" class="mt-4">
+        <label><strong>Acción a tomar:</strong></label>
+        <textarea rows="3" class="form-control" formControlName="accion" 
+                [attr.required]="accionObligatoria ? '' : null"></textarea>
+    </div>
+
+    <div *ngIf="mostrarGrupoImagenes" id="grupoImagenes" class="mt-3">
+    <label id="labelImagenes" class="form-label">
+        <strong>
+        Adjuntar Imágenes 
+        <span *ngIf="imagenesObligatorias" style="color:red;">(obligatorio)</span>
+        <span *ngIf="!imagenesObligatorias">(opcional)</span>
+        </strong>
+    </label>
+    <input 
+        type="file"
+        class="form-control"
+        [attr.required]="imagenesObligatorias ? '' : null"
+        (change)="onFileChange($event)"
+        multiple
+    />
+    </div>
+
+    <div class="text-center mt-5">
+        <button class="btn btn-primary px-4" type="submit">
+            Enviar Reporte de Inconsistencia
+        </button>
+    </div>
+  </form>
+</div>

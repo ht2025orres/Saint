@@ -1,0 +1,265 @@
+<h1>Recepcionar llegada de empaque big bag</h1>
+
+<div id="cont_recepcion_bigbag">
+    <div id="cont_pasos" [ngClass]="'step-' + currentStep">
+        <div id="cont_paso1" [class.active]="currentStep === 1" [class.completed]="stepStates[1].completed"
+            (click)="irAPaso(1)">
+            <div class="paso">1</div>
+            <div class="titulo-paso">Información Inicial</div>
+        </div>
+
+        <div id="cont_paso2" [class.active]="currentStep === 2" [class.completed]="stepStates[2].completed"
+            (click)="irAPaso(2)">
+            <div class="paso">2</div>
+            <div class="titulo-paso">Información Adicional</div>
+        </div>
+
+        <div id="cont_paso3" [class.active]="currentStep === 3" [class.completed]="stepStates[3].completed"
+            (click)="irAPaso(3)">
+            <div class="paso">3</div>
+            <div class="titulo-paso">Datos Físicos</div>
+        </div>
+    </div>
+
+    <div id="separacion"></div>
+
+    <div id="cont_input">
+        <form [formGroup]="bigbagForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+
+            <!-- Paso 1: Información Inicial -->
+            <div id="step-content-1" class="step-content" [style.display]="currentStep === 1 ? 'block' : 'none'">
+                <div class="form-container">
+                    <div class="form-group">
+                        <label for="fecha-ingreso">Fecha de Ingreso *</label>
+                        <input type="date" id="fecha-ingreso" formControlName="fechaIngreso"
+                            [class.error]="isFieldInvalid('fechaIngreso')">
+                        <div *ngIf="isFieldInvalid('fechaIngreso')" class="error-message">
+                            {{ getFieldError('fechaIngreso') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hora-ingreso">Hora de Llegada *</label>
+                        <input type="time" id="hora-ingreso" formControlName="horaIngreso"
+                            [class.error]="isFieldInvalid('horaIngreso')">
+                        <div *ngIf="isFieldInvalid('horaIngreso')" class="error-message">
+                            {{ getFieldError('horaIngreso') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="planta">Planta *</label>
+                        <input list="plantas" type="text" id="planta" formControlName="planta"
+                            placeholder="Seleccione o escriba el nombre de la planta"
+                            [class.error]="isFieldInvalid('planta')" (change)="assignPlantaValues($event.target)"
+                            autocomplete="off">
+                        <datalist id="plantas">
+                            <option *ngFor="let planta of plantas" [value]="planta"></option>
+                        </datalist>
+                        <div *ngIf="isFieldInvalid('planta')" class="error-message">
+                            {{ getFieldError('planta') }}
+                        </div>
+                    </div>
+
+
+
+                  <div class="form-group">
+    <label for="cliente">Cliente *</label>
+    <input list="clientes-completos" 
+           class="form-control" 
+           id="cliente" 
+           formControlName="cliente"
+           autocomplete="off" 
+           placeholder="Seleccione cliente o buscar..."
+           (change)="assingCustomerValues($event.target)" 
+           (keyup)="searchCustomer($event.target)" />
+    <datalist id="clientes-completos">
+        <!-- Clientes estáticos -->
+        <option *ngFor="let cliente of clientesEstaticos" [value]="cliente"></option>
+        <!-- Clientes dinámicos del ERP -->
+        <!-- <option *ngFor="let customer of customers" [value]="customer.customerName"></option> -->
+    </datalist>
+    <div *ngIf="isFieldInvalid('cliente')" class="error-message">
+        {{ getFieldError('cliente') }}
+    </div>
+</div>
+
+
+
+                    <div class="form-group">
+                        <label for="remision">No. Remisión *</label>
+                        <input type="text" id="remision" formControlName="remision"
+                            [class.error]="isFieldInvalid('remision')">
+                        <div *ngIf="isFieldInvalid('remision')" class="error-message">
+                            {{ getFieldError('remision') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cantidad_relacionada">Cantidad Relacionada *</label>
+                        <input type="number" id="cantidad_relacionada" formControlName="cantidadRelacionada"
+                            [class.error]="isFieldInvalid('cantidadRelacionada')">
+                        <div *ngIf="isFieldInvalid('cantidadRelacionada')" class="error-message">
+                            {{ getFieldError('cantidadRelacionada') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nom_operario">Nombre del Operario que Recibe *</label>
+                        <input type="text" formControlName="nomOperario" [readonly]="true" />
+
+                        <div *ngIf="isFieldInvalid('nomOperario')" class="error-message">
+                            {{ getFieldError('nomOperario') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="firma">Firma de quien Recibe</label>
+                        <app-signature-pad (signatureData)="onSignatureData($event)"></app-signature-pad>
+                        <div *ngIf="isFieldInvalid('firma')" class="error-message">
+                            {{ getFieldError('firma') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="observaciones">Observaciones *</label>
+                        <textarea id="observaciones" formControlName="observaciones"
+                            placeholder="Observaciones adicionales..."
+                            [class.error]="isFieldInvalid('observaciones')"></textarea>
+                        <div *ngIf="isFieldInvalid('observaciones')" class="error-message">
+                            {{ getFieldError('observaciones') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 2: Información Adicional -->
+            <div id="step-content-2" class="step-content" [style.display]="currentStep === 2 ? 'block' : 'none'">
+                <div class="form-container">
+                    <div class="form-group">
+                        <label for="nom_conductor">Nombre Del Conductor *</label>
+                        <input type="text" id="nom_conductor" formControlName="nomConductor"
+                            [class.error]="isFieldInvalid('nomConductor')">
+                        <div *ngIf="isFieldInvalid('nomConductor')" class="error-message">
+                            {{ getFieldError('nomConductor') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="placa_vehiculo">Placa del Vehículo *</label>
+                        <input type="text" id="placa_vehiculo" formControlName="placaVehiculo"
+                            [class.error]="isFieldInvalid('placaVehiculo')">
+                        <div *ngIf="isFieldInvalid('placaVehiculo')" class="error-message">
+                            {{ getFieldError('placaVehiculo') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="empresa_transporte">Nombre Transportadora *</label>
+                        <input type="text" id="empresa_transporte" formControlName="empresaTransporte"
+                            [class.error]="isFieldInvalid('empresaTransporte')">
+                        <div *ngIf="isFieldInvalid('empresaTransporte')" class="error-message">
+                            {{ getFieldError('empresaTransporte') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="firma_conductor">Firma del Conductor</label>
+                        <app-signature-pad (signatureData)="onConductorSignatureData($event)"></app-signature-pad>
+                        <div *ngIf="isFieldInvalid('firmaConductor')" class="error-message">
+                            {{ getFieldError('firmaConductor') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paso 3: Datos Físicos -->
+            <div id="step-content-3" class="step-content" [style.display]="currentStep === 3 ? 'block' : 'none'">
+                <div class="form-container">
+                    <div class="form-group">
+                        <label for="cantidadFisico">Cantidad Física *</label>
+                        <input type="number" id="cantidadFisico" formControlName="cantidadFisico"
+                            [class.error]="isFieldInvalid('cantidadFisico')">
+                        <div *ngIf="isFieldInvalid('cantidadFisico')" class="error-message">
+                            {{ getFieldError('cantidadFisico') }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="diferenciaReportada">Diferencia Reportada</label>
+                        <input readonly class="readonly-field"
+                            [value]="bigbagForm.get('diferenciaReportada')?.value || ''">
+                        <div class="info-message">
+                            <small>Este campo se calcula automáticamente basado en la cantidad relacionada y cantidad
+                                física</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de navegación -->
+            <div class="btn-container">
+                <button type="button" class="btn btn-secondary" *ngIf="currentStep > 1" (click)="pasoAnterior()">
+                    ← Anterior
+                </button>
+
+                <button type="button" class="btn btn-primary" *ngIf="currentStep < totalSteps"
+                    (click)="siguientePaso()">
+                    Siguiente →
+                </button>
+
+                <button type="submit" class="btn btn-success" *ngIf="currentStep === totalSteps"
+                    [disabled]="isSubmitting">
+                    <span *ngIf="isSubmitting">Enviando...</span>
+                    <span *ngIf="!isSubmitting">Enviar Formulario</span>
+                </button>
+            </div>
+
+            <!-- Mensaje de error -->
+            <div *ngIf="submitError" class="error-container">
+                <div class="error-message">{{ submitError }}</div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Éxito -->
+<div class="modal-backdrop" *ngIf="showSuccessModal" (click)="onModalBackdropClick($event)">
+    <div class="modal-container">
+        <div class="modal-header">
+            <div class="modal-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <path d="M9 11l3 3L22 4"></path>
+                </svg>
+            </div>
+            <h2 class="modal-title">¡Recepción Exitosa!</h2>
+        </div>
+
+        <div class="modal-body">
+            <p class="modal-message">
+                La recepción ha sido guardada exitosamente en el sistema.
+            </p>
+            <div class="modal-details">
+                <div class="detail-item">
+                    <strong>Número de Recepción:</strong>
+                    <span class="reception-number">{{ numeroRecepcion }}</span>
+                </div>
+                <div class="detail-item">
+                    <strong>Fecha:</strong>
+                    <span>{{ bigbagForm.get('fechaIngreso')?.value | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="detail-item">
+                    <strong>Planta:</strong>
+                    <span>{{ bigbagForm.get('planta')?.value }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" (click)="closeSuccessModal()">
+                Aceptar
+            </button>
+        </div>
+    </div>
+</div>
