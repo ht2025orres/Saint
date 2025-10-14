@@ -27,6 +27,12 @@ import { DistribucionPvComponent } from './pages/terminacion-empaque/distribucio
 import { BodegasComponent } from './pages/inventario/bodegas/bodegas.component';
 import { ZonasComponent } from './pages/inventario/zonas/zonas.component';
 
+import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
+import { TechnicalPrecintosBigbagComponent } from './pages/technical-report-bigbag/technical-precintos-bigbag/technical-precintos-bigbag.component';
+import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
+import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
+import { ViewPrecintoBigbagComponent } from './pages/technical-report-bigbag/view-precinto-bigbag/view-precinto-bigbag.component';
+
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
   {
@@ -35,7 +41,7 @@ const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent, title: 'Inicio' },
       { path: 'createTechnicalDataSheet/:id/:operation', component: CreateTechnicalSheetComponent, title: 'Crear ficha técnica' },
       { path: 'viewTechnicalDataSheet/:id', component: ViewTechnicalSheetComponent, title: 'Ver ficha técnica' },
-      { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas'},
+      { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas' },
       { path: 'listTechnicalDataSheet/page/:page/:status', component: ListTechnicalSheetComponent, title: 'Listar fichas técnicas' },
       { path: 'users/page/:page', component: ListUserComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Listar usuarios' },
       { path: 'createUser/:id', component: CreateUserComponent, title: 'Crear usuario' },
@@ -52,6 +58,11 @@ const routes: Routes = [
       { path: 'distribucion-pv', component: DistribucionPvComponent, title: 'Distribución de PV' },
       { path: 'bodegas', component: BodegasComponent, title: 'Bodegas' },
       { path: 'zonas', component: ZonasComponent, title: 'Zonas' },
+      { path: 'technical-report-bigbag', component: TechnicalReportBigbagComponent, title: 'Reportes de llegada de big bag' },
+      { path: 'technical-precintos-bigbag', component: TechnicalPrecintosBigbagComponent, title: 'Precintos | Renueva' },
+      { path: 'view-report-bigbag', component: ViewReportBigbagComponent, title: 'Vista documento bigbag' },
+      { path: 'view-precinto-bigbag', component: ViewPrecintoBigbagComponent, title: 'Vista precintos asignados' },
+      { path: 'dashboard-bigbag', component: DashboardBigbagComponent, title: 'Dashboard Renueva' },
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }
