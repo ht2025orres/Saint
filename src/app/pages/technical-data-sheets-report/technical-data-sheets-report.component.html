@@ -1,0 +1,149 @@
+<!-- Filtro para la grafica -->
+<div class="filter-container">
+    <label for="monthFilter">Filtrar por mes:</label>
+    <select id="monthFilter" [(ngModel)]="selectedMonth" (change)="filterByMonth()">
+      <option *ngFor="let month of months" [value]="month.value">{{ month.name }}</option>
+    </select>
+  
+    <label for="yearFilter">Año:</label>
+    <select id="yearFilter" [(ngModel)]="selectedYear" (change)="filterByMonth()">
+      <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+    </select>
+  
+    <button class="reset-button" (click)="resetFilters()">Limpiar</button>
+  </div>
+  
+  
+  
+  <div class="chart-container" style="width: 80%; border: solid 1px #3F51B5; margin: 0 auto 50px;">
+    <canvas id="MyChart" style="padding: 25px;">{{ chart }}</canvas>
+  </div>
+  
+    <!-- modal comentado para descargar en exel y PDF  se agrega donde esta el boton de descarga-->
+        <!-- 
+        <button (click)="openModal()" class="btn btn-info" style="margin: 10px;">Descargar Reporte</button>
+    
+        <div *ngIf="isModalOpen" class="modal-overlay">
+          <div class="modal-content">
+            <h3>Seleccione el formato de descarga</h3>
+            <p>Elija el formato en el que desea descargar los datos:</p>
+            <div class="modal-buttons">
+              <button class="btn btn-primary" (click)="download('excel')">Descargar Excel</button>
+              <button class="btn btn-secondary" (click)="download('pdf')">Descargar PDF <i style="height: 20px; width: 20px;"><img src="/src/assets/images/icon/download-pdf.png" alt=""></i></button>
+              
+            </div>
+            <button class="btn btn-danger modal-close" (click)="closeModal()">Cerrar</button>
+          </div>
+        </div> -->
+  
+  <div class="card-body">
+  
+    <div class="table-responsive mt-2">
+      <div id="example23_wrapper" class="dataTables_wrapper">
+  
+        
+        <!--  Filtro para la tabla de datos-->
+        <div class="filtro-container"
+          style="width: 80%; margin: 20px auto; padding: 15px; background-color: #FFFFFF; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+  
+                <input type="text" class="form-control" [(ngModel)]="textoFiltro" (input)="aplicarFiltro()"
+                  placeholder="Buscar en la tabla..." [disabled]="loading">
+  
+              </div>
+            </div>
+  
+            <div class="col-md-3">
+              <select class="form-control" [(ngModel)]="tipoFiltro" (change)="aplicarFiltro()" [disabled]="loading">
+                <option value="todos">Buscar en todos los campos</option>
+                <option value="codigoItem">Código ítem CFIP</option>
+                <option value="tipo">Tipo</option>
+                <option value="fecha">Última modificación</option>
+                <option value="estado">Estado</option>
+              </select>
+            </div>
+  
+            <div class="col-md-3">
+              <button class="btn btn-secondary" style="width: fit-content !important;" (click)="limpiarFiltro()"
+                [disabled]="loading || (!textoFiltro && tipoFiltro === 'todos')">
+                <span *ngIf="!loading" >Limpiar filtro</span>
+                <span *ngIf="loading">Cargando...</span>
+              </button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-info" style=" width: fit-content !important; font-size: 14px; color: #FFFFFF;" (click)="exportToExcel()">Descargar Reporte</button>
+            </div>
+          </div>
+        </div>
+  
+  
+        <table class="table"
+          style="border: solid 1px #393635; width: 80%; padding: 20px; margin-top: 50px; position: relative; margin: 20px auto;">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Código ítem CFIP</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Fecha de Creación</th>
+              <th scope="col">Última modificación</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody *ngIf="filteredTable.length > 0; else noData">
+            <!-- Mostrar datos filtrados -->
+            <tr *ngFor="let item of filteredTable; let i = index">
+              <th scope="row">{{ i + 1 }}</th>
+              <td>{{ item.id_item }}</td>
+              <td>{{ item.technical_data_sheet_type }}</td>
+              <td>{{ item.date_creation | date: 'longDate' }}</td>
+              <td>{{ item.last_update | date: 'longDate' }}</td>
+              <td>{{ item.status }}</td>
+            </tr>
+          </tbody>
+          <!-- Mensaje cuando no se encuentran resultados -->
+          <ng-template #noData>
+            <tr>
+              <td colspan="5" style="text-align: center;">No se encontraron resultados</td>
+            </tr>
+          </ng-template>
+        </table>
+        <!--                PAGINADOR -->
+        <div class="row" *ngIf="paginator">
+          <div>
+            <div class="dataTables_info" id="info" role="status" aria-live="polite">
+              <p class="responsive-text">
+                Mostrando del {{getStartIndex()}} al {{getEndIndex()}} de {{paginator.totalElements}} entrada(s)
+              </p>
+            </div>
+          </div>
+          <div>
+            <div class="dataTables_paginate paging_simple_numbers responsive-text" *ngIf="pages?.length > 0">
+                <a class="paginate_button previous" aria-controls="paginate" data-dt-idx="0" tabindex="0" id="previous"
+                  *ngIf="paginator.number > 0" (click)="changePage(paginator.number - 1)">
+                  Anterior
+                </a>
+              
+                <span>
+                  <span *ngFor="let pagina of getVisiblePages()">
+                    <span *ngIf="pagina-1 === paginator.number" class="paginate_button current" aria-controls="paginate"
+                      data-dt-idx="1" tabindex="0">
+                      {{pagina}}
+                    </span>
+              
+                    <a *ngIf="pagina-1 !== paginator.number" (click)="changePage(pagina-1)" class="paginate_button"
+                      aria-controls="paginate" data-dt-idx="1" tabindex="0">
+                      {{pagina}}
+                    </a>
+                  </span>
+                </span>
+              
+                <a *ngIf="paginator.number < paginator.totalPages-1" (click)="changePage(paginator.number + 1)"
+                  class="paginate_button next" aria-controls="next" data-dt-idx="7" tabindex="0" id="next">
+                  Siguiente
+                </a>
+              </div>              
+          </div>
+        </div>
+      </div>
