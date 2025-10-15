@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MetricsService } from 'src/app/services/metrics.service';
 import { ProcessMetric } from 'src/app/models/process-metric.model';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -9,18 +10,32 @@ import { ProcessMetric } from 'src/app/models/process-metric.model';
 })
 export class DashboardComponent implements OnInit {
   metrics: ProcessMetric[] = [];
+  showAdminPanel: boolean = false;
 
-  constructor(private metricsService: MetricsService) {}
+  constructor(
+    private metricsService: MetricsService,
+    public authService: AuthService
+  ) {}
 
   ngOnInit(): void {
-    this.metricsService.getProcessMetrics().subscribe(data => {
-      // this.metrics = [
-      //   { title: 'Nuevos', value: 120, icon: 'fas fa-inbox', color: '#4caf50', percentage: 30 },
-      //   { title: 'En progreso', value: 80, icon: 'fas fa-spinner', color: '#ff9800', percentage: 20 },
-      //   { title: 'Completados', value: 200, icon: 'fas fa-check-circle', color: '#2196f3', percentage: 50 }
-      // ];
-      this.metrics = data;
+    // Si el usuario es administrador, mostrar el panel por defecto
+    if (this.authService.hasRole('Administrador del sistema')) {
+      this.showAdminPanel = true;
+      this.loadMetrics();
+    }
+  }
 
+  loadMetrics(): void {
+    this.metricsService.getProcessMetrics().subscribe(data => {
+      this.metrics = data;
     });
+  }
+
+  toggleAdminView(): void {
+    this.showAdminPanel = !this.showAdminPanel;
+
+    if (this.showAdminPanel && this.metrics.length === 0) {
+      this.loadMetrics();
+    }
   }
 }

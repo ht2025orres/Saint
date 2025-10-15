@@ -187,11 +187,11 @@ export class BodegasComponent implements OnInit {
 
   toggleItem(item: any) {
     if (item.seleccionado) {
-      if (!this.selectedItems.find(i => i.id_item === item.id_item)) {
+      if (!this.selectedItems.find(i => i.id_f400 === item.id_f400)) {
         this.selectedItems.push(item);
       }
     } else {
-      this.selectedItems = this.selectedItems.filter(i => i.id_item !== item.id_item);
+      this.selectedItems = this.selectedItems.filter(i => i.id_f400 !== item.id_f400);
     }
   }
 
@@ -199,6 +199,7 @@ export class BodegasComponent implements OnInit {
     const payload = this.selectedItems.map(i => ({
       codigo_item: i.id_item,
       codigo_bodega: this.codigoBodega,
+      id_f400: i.id_f400,
       id_zona: zonaId
     }));
 
@@ -256,7 +257,7 @@ export class BodegasComponent implements OnInit {
   }
 
   get selectedCodigos(): string {
-    return this.selectedItems.map(i => i.id_item).join(', ');
+    return this.selectedItems.map(i => i.id_f400).join(', ');
   }
 
   getZonasNombres(zonas: any[]): string {

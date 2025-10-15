@@ -45,7 +45,7 @@ export class InventarioService {
     return this.http.get<any[]>(`${this.apiLaravelUrl}/bodegas/${codigoBodega}/items`);
   }
 
-  asignarZonaItems(payload: { codigo_bodega: string; codigo_item: string; id_zona: number }[]): Observable<any> {
+  asignarZonaItems(payload: { codigo_bodega: string; codigo_item: string; id_f400: string; id_zona: number }[]): Observable<any> {
     return this.http.post<any>(`${this.apiLaravelUrl}/inventario/asignar-zona-items`, payload);
   }
 
