@@ -156,7 +156,7 @@ export class RecepcionOpComponent implements OnInit {
     .listarPVsPorOPDesdeApiLaravel(opEncontrada.id)
     .subscribe({
       next: (respuesta) => {
-        const cadenaPVs: string = respuesta[0]?.pvs || '';
+        const cadenaPVs: string = respuesta['pvs'] || '';
         const numerosPV = cadenaPVs.match(/\d+/g) || [];
 
         if (numerosPV.length === 0) {

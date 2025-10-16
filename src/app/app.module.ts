@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { DEFAULT_CURRENCY_CODE, LOCALE_ID, NgModule } from '@angular/core';
+import { SignaturePadComponent } from '../app/pages/technical-report-bigbag/create-report-bigbag/signature-pad/signature-pad.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -45,6 +46,10 @@ import { DistribucionPvModule } from './pages/terminacion-empaque/distribucion-p
 import { BodegasModule } from './pages/inventario/bodegas/bodegas.module';
 import { ZonasModule } from './pages/inventario/zonas/zonas.module';
 
+import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
+import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
+import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
+
 registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({ declarations: [
@@ -60,6 +65,10 @@ registerLocaleData(localeEs, 'es-CO');
         NopagefoundComponent,
         ListUserComponent,
         CreateUserComponent,
+        SignaturePadComponent,
+        TechnicalReportBigbagComponent,
+        ViewReportBigbagComponent,
+        DashboardBigbagComponent
     ],
     bootstrap: [AppComponent], 
     imports: [

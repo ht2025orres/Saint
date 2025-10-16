@@ -26,6 +26,11 @@ import { DashboardEmpaqueComponent } from './pages/terminacion-empaque/dashboard
 import { DistribucionPvComponent } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.component';
 import { BodegasComponent } from './pages/inventario/bodegas/bodegas.component';
 import { ZonasComponent } from './pages/inventario/zonas/zonas.component';
+import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
+import { TechnicalPrecintosBigbagComponent } from './pages/technical-report-bigbag/technical-precintos-bigbag/technical-precintos-bigbag.component';
+import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
+import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
+import { ViewPrecintoBigbagComponent } from './pages/technical-report-bigbag/view-precinto-bigbag/view-precinto-bigbag.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -52,6 +57,11 @@ const routes: Routes = [
       { path: 'distribucion-pv', component: DistribucionPvComponent, title: 'Distribución de PV' },
       { path: 'bodegas', component: BodegasComponent, title: 'Bodegas' },
       { path: 'zonas', component: ZonasComponent, title: 'Zonas' },
+      { path: 'dashboard-bigbag', component: DashboardBigbagComponent, title: 'Dashboard BigBag' },
+      { path: 'technical-precintos-bigbag', component: TechnicalPrecintosBigbagComponent, title: 'Precintos BigBag' },
+      { path: 'technical-report-bigbag', component: TechnicalReportBigbagComponent, title: 'Crear reporte BigBag' },
+      { path: 'view-report-bigbag', component: ViewReportBigbagComponent, title: 'Ver reporte BigBag' },
+      { path: 'view-precinto-bigbag', component: ViewPrecintoBigbagComponent, title: 'Ver precinto BigBag' }
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

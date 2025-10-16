@@ -128,16 +128,54 @@
                     </ul>
                 </li>
 
-                <li *ngIf="authService.hasRole('Administrador del sistema')">
+                <!--  Big bag -->
+                <li
+                    *ngIf=" authService.hasRole('Administrador del sistema') || authService.hasRole('Auxiliar (renueva)') || authService.hasRole('Operario (renueva)')  || authService.hasRole('Jefe Renueva')">
+                    <a class="has-arrow waves-effect waves-dark text-decoration-none" href="#" aria-expanded="false">
+                        <i class="mdi mdi-truck-delivery"></i>
+                        <span class="hide-menu">Gestión Big bag</span>
+                    </a>
+                    <ul aria-expanded="false" class="collapse">
+
+
+                        <li
+                            *ngIf=" authService.hasRole('Administrador del sistema') || authService.hasRole('Jefe Renueva') || authService.hasRole('Auxiliar (renueva)')">
+                            <a routerLink="/dashboard-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Dashboard</a>
+                        </li>
+
+
+                        <li><a routerLink="/technical-report-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Ingreso Bigbag</a></li>
+
+                        <li><a routerLink="/view-report-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Ver llegada empaques</a></li>
+
+                        <li
+                            *ngIf=" authService.hasRole('Administrador del sistema') || authService.hasRole('Operario (renueva)')">
+                            <a routerLink="/view-precinto-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Precintos<span></span></a>
+                        </li>
+                    </ul>
+
+                </li>
+
+                <li *ngIf="authService.hasAnyRole([
+                    'Administrador del sistema',
+                    'Gestor de bodega (MP001)',
+                    'Gestor de bodega (MP003)',
+                    'Gestor de bodega (BT001)',
+                    'Admin (inventario)'
+                    ])">
                     <a href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark">
                         <i class="mdi mdi-store"></i>
                         <span class="hide-menu">Inventario</span>
                     </a>
                     <ul aria-expanded="false" class="collapse">
-                        <li *ngIf="authService.hasRole('Administrador del sistema')">
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)') || authService.hasRole('Gestor de bodega (MP001)') || authService.hasRole('Gestor de bodega (MP003)') || authService.hasRole('Gestor de bodega (BT001)')">
                             <a [routerLink]="['/bodegas']" class="text-decoration-none">Bodegas</a>
                         </li>
-                        <li *ngIf="authService.hasRole('Administrador del sistema')">
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
                             <a [routerLink]="['/zonas']" class="text-decoration-none">Zonas</a>
                         </li>
                         <li *ngIf="authService.hasRole('Administrador del sistema')">
