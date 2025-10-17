@@ -20,7 +20,7 @@
   <button class="btn btn-secondary mb-3" (click)="buscarPVs()">Buscar items de OP</button>
 
   <!-- Botón para abrir modal de recepción de PTs -->
-  <button *ngIf="esDistribuidor()" class="btn btn-primary mb-3 ms-2" (click)="abrirModalRecepcionPTs()">
+  <button *ngIf="authService.hasRole('Distribuidor PV (Terminación y Empaque)')" class="btn btn-primary mb-3 ms-2" (click)="abrirModalRecepcionPTs()">
     Recibir PTs
   </button>
   
@@ -78,7 +78,7 @@
               </button>
             </td>
             <td>
-              <div class="d-flex align-items-center">
+              <div class="d-flex align-items-center justify-content-center">
                 <input 
                   type="number" 
                   class="form-control me-2" 
@@ -87,15 +87,15 @@
                     'is-valid': item.cantidad_recibida > 0 && item.cantidad_recibida <= item.cantidad_teorica_total
                   }"
                   [(ngModel)]="item.cantidad_recibida" 
-                  min="0">
-                
-                <!-- Icono de exclamación para asignar ubicación distinta -->
+                  min="0"
+                  *ngIf="authService.hasRole('Distribuidor PV (Terminación y Empaque)')">
+
                 <button
                   type="button"
                   class="btn btn-link p-0"
                   (click)="abrirModalUbicacion(item)"
                   title="Asignar ubicación distinta">
-                  <i class="fas fa-exclamation-circle text-primary"></i>
+                  <i class="fas fa-exchange-alt text-primary"></i>
                 </button>
               </div>
             </td>

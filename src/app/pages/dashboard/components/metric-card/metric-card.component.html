@@ -1,0 +1,26 @@
+<div class="process-card">
+  <div class="card-header" [style.borderTopColor]="metric.color">
+    <i [class]="metric.icono"></i>
+    <h3>{{ metric.proceso }}</h3>
+  </div>
+
+  <div class="card-body">
+    <div *ngIf="metric.entrada !== undefined" class="metric-row">
+      <span>Entradas:</span>
+      <strong>{{ metric.entrada | number }}</strong>
+    </div>
+
+    <div *ngIf="metric.salida !== undefined" class="metric-row">
+      <span>Salidas:</span>
+      <strong>{{ metric.salida | number }}</strong>
+    </div>
+
+    <div class="progress-bar" *ngIf="metric.porcentajeAvance">
+      <div class="bar" [style.width.%]="metric.porcentajeAvance" [style.background]="metric.color"></div>
+    </div>
+
+    <div *ngIf="metric.porcentajeAvance" class="progress-text">
+      {{ metric.porcentajeAvance }}% completado
+    </div>
+  </div>
+</div>

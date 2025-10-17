@@ -1,0 +1,201 @@
+<h3>Precintos asignados</h3>
+
+<div class="controls">
+    <div class="filters">
+        <div class="filter-group">
+            <label>Color</label>
+            <select id="filtroColor" [(ngModel)]="filtros.color" (change)="aplicarFiltros()">
+                <option value="">Todos los colores</option>
+                <option value="azul">Azul</option>
+                <option value="verde">Verde</option>
+                <option value="blanco">Blanco</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Buscar</label>
+            <input type="text" 
+                   id="buscarId" 
+                   placeholder="Buscar precinto" 
+                   [(ngModel)]="filtros.busqueda"
+                   (input)="aplicarFiltros()">
+        </div>
+
+        <!-- Nuevo filtro de fecha desde -->
+        <div class="filter-group">
+            <label>Fecha desde</label>
+            <input type="date" 
+                   id="fechaDesde" 
+                   [(ngModel)]="filtros.fechaDesde"
+                   (change)="aplicarFiltros()">
+        </div>
+
+        <!-- Nuevo filtro de fecha hasta -->
+        <div class="filter-group">
+            <label>Fecha hasta</label>
+            <input type="date" 
+                   id="fechaHasta" 
+                   [(ngModel)]="filtros.fechaHasta"
+                   (change)="aplicarFiltros()">
+        </div>
+
+        <div class="filter-group">
+            <button class="btn-clear" (click)="limpiarFiltros()"><i class="mdi mdi-filter-remove"></i> Limpiar filtros</button>
+        </div>
+
+        <div class="pagination-config">
+            <label>Mostrar:</label>
+            <select [(ngModel)]="paginacion.itemsPorPagina" (change)="cambiarItemsPorPagina()">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+            </select>
+            <span>registros por página</span>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container">
+        <div class="table-header">
+            <h2 class="table-title">Tus precintos asignados</h2>
+            <div class="header-actions">
+                <span class="results-count">
+                    {{ precintosFiltrados.length }} de {{ precintos.length }} registros encontrados
+                </span>
+                <button class="btn-export" (click)="exportarAExcel()" [disabled]="precintosFiltrados.length === 0">
+                    <i class="mdi mdi-microsoft-excel"></i>
+                    Exportar a Excel
+                </button>
+            </div>
+        </div>
+        <div id="cont_tabla_precintos">
+        <table class="data-table" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Doc recepción</th>
+                    <th>Num precinto</th>
+                    <th>Fecha Entrega</th>
+                    <th>Cantidad</th>
+                    <th>Rango</th>
+                    <th>Color</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let precinto of precintosPaginados">
+                    <td>{{ precinto.num_recepcion }}</td>
+                    <td>{{ precinto.numero_precinto }}</td>
+                    <td>{{ precinto.fecha_entrega | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ precinto.cantidad }}</td>
+                    <td>{{ precinto.rango_precintos }}</td>
+                    <td>
+                        <span class="color-badge" [ngClass]="'color-' + precinto.color_consecutivo?.toLowerCase()">
+                            {{ precinto.color_consecutivo }}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="circular-button" (click)="abrirModalFirma(precinto)">
+                            <i class="mdi mdi-clipboard-text-outline"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+
+        <!-- Mensaje cuando no hay datos -->
+        <div *ngIf="precintosFiltrados.length === 0" class="no-data">
+            <p>No se encontraron precintos que coincidan con los filtros aplicados.</p>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination-container" *ngIf="precintosFiltrados.length > 0">
+            <div class="pagination-controls">
+                <button class="btn-pagination" 
+                        [disabled]="paginacion.paginaActual === 1" 
+                        (click)="irAPagina(paginacion.paginaActual - 1)">
+                    Anterior
+                </button>
+                
+                <span class="pagination-numbers">
+                   <div class="pagination-info">
+                        Mostrando {{ paginacion.inicio + 1 }} - {{ paginacion.fin }} de {{ precintosFiltrados.length }} registros
+                   </div>
+                </span>
+                
+                <button class="btn-pagination" 
+                        [disabled]="paginacion.paginaActual === paginacion.totalPaginas" 
+                        (click)="irAPagina(paginacion.paginaActual + 1)">
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL Firma y Novedades -->
+<div class="modal-backdrop" *ngIf="modalAbierto">
+  <div class="modal-container">
+    <h2>{{ mostrarFormulario ? 'Agregar Novedad y Firma' : 'Información del Precinto' }}</h2>
+    <p><strong>Precinto:</strong> {{ precintoSeleccionado?.numero_precinto }}</p>
+    
+    <!-- Mostrar formulario cuando no hay datos registrados -->
+    <div *ngIf="mostrarFormulario">
+      <div class="form-group">
+        <label for="novedad">Novedad:</label>
+        <textarea
+          id="novedad"
+          [(ngModel)]="novedad"
+          placeholder="Por favor, describa aquí la novedad..."
+          rows="4"
+          class="form-control"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label>Firma Digital:</label>
+        <div class="firma-container">
+          <app-firma-digital (signatureData)="onFirmaGuardada($event)"></app-firma-digital>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" (click)="guardarFirmaYnov()">Guardar</button>
+        <button class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+      </div>
+    </div>
+    
+    <!-- Mostrar información cuando ya hay datos registrados -->
+    <div *ngIf="!mostrarFormulario" class="info-registrado">
+      <div class="alert alert-info">
+        <h3>✓ Registro Completado</h3>
+        <p>La novedad ya ha sido registrada y la firma digital ya ha sido realizada para este precinto.</p>
+      </div>
+      
+      <div class="datos-existentes">
+        <div class="form-group">
+          <label><strong>Novedad registrada:</strong></label>
+          <div class="novedad-display">
+            {{ precintoSeleccionado?.novedades_precintos }}
+          </div>
+        </div>
+        
+        <div class="form-group" *ngIf="precintoSeleccionado.firmado_por && firmaUrl">
+            <label><strong>Firma digital:</strong></label>
+            <div class="firma-display">
+                <img [src]="firmaUrl" alt="Firma digital" width="300" style="max-width: 100%; height: auto;" />
+            </div>
+        </div>
+
+        <div class="form-group" *ngIf="precintoSeleccionado.firmado_por && !firmaUrl">
+            <label><strong>Firma:</strong></label>
+            <div class="firma-display">
+                <p>Cargando firma...</p>
+            </div>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

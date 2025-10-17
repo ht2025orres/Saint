@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { DEFAULT_CURRENCY_CODE, LOCALE_ID, NgModule } from '@angular/core';
+import { SignaturePadComponent } from '../app/pages/technical-report-bigbag/create-report-bigbag/signature-pad/signature-pad.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -7,6 +8,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { MetricCardComponent } from './pages/dashboard/components/metric-card/metric-card.component';
 import { PagesComponent } from './pages/pages.component';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { TokenInterceptor } from './interceptors/tokenInterceptor';
@@ -42,12 +44,18 @@ import { RegistrarEmpaqueModule } from './pages/terminacion-empaque/registrar-em
 import { DashboardEmpaqueModule } from './pages/terminacion-empaque/dashboard-empaque/dashboard-empaque.module';
 import { DistribucionPvModule } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.module';
 import { BodegasModule } from './pages/inventario/bodegas/bodegas.module';
+import { ZonasModule } from './pages/inventario/zonas/zonas.module';
+
+import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
+import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
+import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
 
 registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({ declarations: [
         AppComponent,
         DashboardComponent,
+        MetricCardComponent,
         PagesComponent,
         CreateTechnicalSheetComponent,
         ListTechnicalSheetComponent,
@@ -57,6 +65,10 @@ registerLocaleData(localeEs, 'es-CO');
         NopagefoundComponent,
         ListUserComponent,
         CreateUserComponent,
+        SignaturePadComponent,
+        TechnicalReportBigbagComponent,
+        ViewReportBigbagComponent,
+        DashboardBigbagComponent
     ],
     bootstrap: [AppComponent], 
     imports: [
@@ -86,6 +98,7 @@ registerLocaleData(localeEs, 'es-CO');
         DistribucionPvModule,
         /* Inventario */
         BodegasModule,
+        ZonasModule,
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

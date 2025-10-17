@@ -13,7 +13,7 @@
 
                 <li>
                     <a class="waves-effect waves-dark" routerLink="/technical-data-sheets-report" aria-expanded="false" class="text-decoration-none">
-                        <i class="mdi mdi-gauge"></i>
+                        <i class="mdi mdi-file-chart"></i>
                         <span class="hide-menu mt-5 pt-15">Reporte de Fichas <span
                                 class="label label-rouded label-themecolor pull-right">4
                             </span></span>
@@ -27,7 +27,7 @@
                 </li>
 
                 <li> <a class="has-arrow waves-effect waves-dark" href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark"><i
-                            class="mdi mdi-file"></i><span class="hide-menu">Gestión de fichas </span></a>
+                            class="fa-solid fa-pen-ruler"></i><span class="hide-menu">Gestión de fichas </span></a>
                     <ul aria-expanded="false" class="collapse">
                         <li
                             *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
@@ -59,31 +59,32 @@
                         </li>
                     </ul>
                 </li>
-                <li *ngIf="authService.hasRole('Administrador del sistema')"> <a class="has-arrow waves-effect waves-dark" href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark"><i
-                        class="mdi mdi-file"></i><span class="hide-menu">Inconsistencias </span></a>
+                <li *ngIf="authService.hasRole('Administrador del sistema')"> <a class="has-arrow waves-effect waves-dark" href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark">
+                    <i class="mdi mdi-clipboard-alert"></i>
+                    <span class="hide-menu">Inconsistencias </span></a>
                     <ul aria-expanded="false" class="collapse">
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/mis-inconsistencias']" class="text-decoration-none">Mis Inconsistencias</a>
                         </li>
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/generar-inconsistencias']" class="text-decoration-none">Generar Inconsistencias</a>
                         </li>
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/aprobar-inconsistencias']" class="text-decoration-none">Aprobar Inconsistencias</a>
                         </li>
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/historico-inconsistencias']" class="text-decoration-none">Historico Inconsistencias</a>
                         </li>
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/revision-consumo']" class="text-decoration-none">Revision de Consumo</a>
                         </li>
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/reporte-inconsistencias']" class="text-decoration-none">Reporte de Inconsistencias</a>
                     </ul>
                 </li>
@@ -127,25 +128,62 @@
                     </ul>
                 </li>
 
-                <li *ngIf="authService.hasRole('Administrador del sistema')"> <a class="has-arrow waves-effect waves-dark" href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark">
-                    <i class="mdi mdi-warehouse"></i><span class="hide-menu">Inventario</span></a>
+                <!--  Big bag -->
+                <li
+                    *ngIf=" authService.hasRole('Administrador del sistema') || authService.hasRole('Auxiliar (renueva)') || authService.hasRole('Operario (renueva)')  || authService.hasRole('Jefe Renueva')">
+                    <a class="has-arrow waves-effect waves-dark text-decoration-none" href="#" aria-expanded="false">
+                        <i class="mdi mdi-truck-delivery"></i>
+                        <span class="hide-menu">Gestión Big bag</span>
+                    </a>
                     <ul aria-expanded="false" class="collapse">
 
+
                         <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                            *ngIf=" authService.hasRole('Administrador del sistema') || authService.hasRole('Jefe Renueva') || authService.hasRole('Auxiliar (renueva)')">
+                            <a routerLink="/dashboard-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Dashboard</a>
+                        </li>
+
+
+                        <li><a routerLink="/technical-report-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Ingreso Bigbag</a></li>
+
+                        <li><a routerLink="/view-report-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Ver llegada empaques</a></li>
+
+                        <li
+                            *ngIf=" authService.hasRole('Administrador del sistema') || authService.hasRole('Operario (renueva)')">
+                            <a routerLink="/view-precinto-bigbag" aria-expanded="false" class="text-decoration-none">
+                                Precintos<span></span></a>
+                        </li>
+                    </ul>
+
+                </li>
+
+                <li *ngIf="authService.hasAnyRole([
+                    'Administrador del sistema',
+                    'Gestor de bodega (MP001)',
+                    'Gestor de bodega (MP003)',
+                    'Gestor de bodega (BT001)',
+                    'Admin (inventario)'
+                    ])">
+                    <a href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark">
+                        <i class="mdi mdi-store"></i>
+                        <span class="hide-menu">Inventario</span>
+                    </a>
+                    <ul aria-expanded="false" class="collapse">
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)') || authService.hasRole('Gestor de bodega (MP001)') || authService.hasRole('Gestor de bodega (MP003)') || authService.hasRole('Gestor de bodega (BT001)')">
                             <a [routerLink]="['/bodegas']" class="text-decoration-none">Bodegas</a>
                         </li>
-
-                        <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
+                            <a [routerLink]="['/zonas']" class="text-decoration-none">Zonas</a>
+                        </li>
+                        <li *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/items']" class="text-decoration-none">Ítems</a>
                         </li>
-
-                        <li
-                            *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                        <li *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/movimientos-inventario']" class="text-decoration-none">Movimientos de inventario</a>
                         </li>
-
                     </ul>
                 </li>
             </ul>

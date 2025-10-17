@@ -1,0 +1,866 @@
+<h1>Estado documentos</h1>
+
+<div id="cont_paginacion">
+  <div id="mostrar_paginacion">
+    <label for="cantidad">Mostrar</label>
+    <select name="cantidad" id="catidad" [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()">
+      <option value="10">10</option>
+      <option value="20">20</option>
+      <option value="30">30</option>
+    </select>
+    <label for="cantidad">Entradas</label>
+  </div>
+
+ 
+</div>
+<!-- SECCIÓN DE EXPORTACIÓN (sin cambios) -->
+<div class="export-section">
+  <div class="export-buttons">
+    <h3 class="export-title">
+      <i class="mdi mdi-microsoft-excel"></i>
+      Exportar a Excel
+    </h3>
+
+    <div class="export-options">
+      <button class="btn-export btn-export-page" (click)="exportarPaginaActual()"
+        [disabled]="paginatedDocumentos.length === 0">
+        <i class="mdi mdi-file-export"></i>
+        <span class="btn-text">
+          <strong>Página Actual</strong>
+          <small>{{ paginatedDocumentos.length }} registros</small>
+        </span>
+      </button>
+    </div>
+
+    <div class="export-info" *ngIf="filteredDocumentos.length > 0">
+      <div class="info-item" *ngIf="searchText">
+        <i class="mdi mdi-filter"></i>
+        <span>Filtro activo: "{{ searchText }}"</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- NUEVO: Filtros avanzados -->
+<div class="filtros-avanzados">
+  <div class="filtros-header">
+    <h3 class="filtros-titulo">
+      <i class="mdi mdi-filter-variant"></i>
+      Filtros Avanzados
+    </h3>
+    
+  </div>
+
+  <div class="filtros-content" [class.expanded]="mostrarFiltrosAvanzados">
+    <div class="filtros-grid">
+      <!-- Filtro por rango de fechas -->
+      <div class="filtro-grupo">
+        <label class="filtro-label">
+          <i class="mdi mdi-calendar-range"></i>
+          Rango de Fechas
+        </label>
+        <div class="fecha-inputs">
+          <div class="fecha-item">
+
+            <input type="date" id="fechaInicio" [(ngModel)]="filtroFechaInicio" (change)="aplicarFiltros()"
+              class="fecha-input">
+          </div>
+          <div class="fecha-item">
+
+            <input type="date" id="fechaFin" [(ngModel)]="filtroFechaFin" (change)="aplicarFiltros()"
+              class="fecha-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro por cliente -->
+      <div class="filtro-grupo">
+        <label for="filtroCliente" class="filtro-label">
+          <i class="mdi mdi-account-group"></i>
+          Cliente
+        </label>
+        <select id="filtroCliente" [(ngModel)]="filtroCliente" (change)="aplicarFiltros()" class="filtro-select">
+          <option value="">Todos los clientes</option>
+          <option *ngFor="let cliente of clientesUnicos" [value]="cliente">{{ cliente }}</option>
+        </select>
+      </div>
+
+      <!-- Filtro por estado -->
+      <!-- <div class="filtro-grupo">
+        <label for="filtroEstado" class="filtro-label">
+          <i class="mdi mdi-check-circle"></i>
+          Estado
+        </label>
+        <select 
+          id="filtroEstado"
+          [(ngModel)]="filtroEstado"
+          (change)="aplicarFiltros()"
+          class="filtro-select">
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="cerrado">Cerrado</option>
+        </select>
+      </div> -->
+
+      <!-- Filtro por planta -->
+      <div class="filtro-grupo">
+        <label for="filtroPlanta" class="filtro-label">
+          <i class="mdi mdi-factory"></i>
+          Planta
+        </label>
+        <select id="filtroPlanta" [(ngModel)]="filtroPlanta" (change)="aplicarFiltros()" class="filtro-select">
+          <option value="">Todas las plantas</option>
+          <option *ngFor="let planta of plantasUnicas" [value]="planta">{{ planta }}</option>
+        </select>
+      </div>
+
+      <!-- Filtro por diferencias -->
+      <div class="filtro-grupo">
+        <label for="filtroDiferencia" class="filtro-label">
+          <i class="mdi mdi-scale-balance"></i>
+          Diferencias
+        </label>
+        <select id="filtroDiferencia" [(ngModel)]="filtroDiferencia" (change)="aplicarFiltros()" class="filtro-select">
+          <option value="">Todas las diferencias</option>
+          <option value="coinciden">Sin diferencias</option>
+          <option value="faltantes">Con faltantes</option>
+          <option value="sobrantes">Con sobrantes</option>
+        </select>
+      </div>
+
+          <!-- Campo de búsqueda mejorado -->
+  <div class="filtro-grupo">
+  <label for="search_input" class="filtro-label">
+    <i class="mdi mdi-magnify"></i>
+    Buscar:
+  </label>
+  <input 
+    type="text" 
+    id="search_input"
+    [(ngModel)]="searchText" 
+    (input)="onSearchChange()" 
+    class="input-select"
+    placeholder="Buscar por número, planta, estado, etc.">
+</div>
+    </div>
+ 
+
+    <!-- Botones de acción de filtros -->
+    <div class="filtros-acciones">
+      <button type="button" class="btn-limpiar-filtros" (click)="limpiarTodosFiltros()"
+        [disabled]="!tienesFiltrosActivos()">
+        <i class="mdi mdi-filter-remove"></i>
+        Limpiar Filtros
+      </button>
+
+      <div class="filtros-info">
+        <!-- <span class="filtros-contador">
+          Mostrando {{ filteredDocumentos.length }} de {{ documentos.length }} documentos
+        </span> -->
+        <span class="filtros-activos" *ngIf="tienesFiltrosActivos()">
+          <i class="mdi mdi-filter"></i>
+          Filtros activos
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tabla_responsive">
+<!-- Tabla para mostrar los documentos -->
+<table>
+  <thead>
+    <tr>
+      <th>Numero recepcion</th>
+      <th>Cliente</th>
+      <th>Planta</th>
+      <th>Numero remision</th>
+      <th>Fecha ingreso</th>
+      <th>Hora llegada</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let doc of paginatedDocumentos">
+      <td>{{ doc.num_recepcion }}</td>
+      <td>{{ doc.cliente }}</td>
+      <td>{{ doc.planta }}</td>
+      <td>{{ doc.num_remision }}</td>
+      <td>{{ doc.fecha_ingreso }}</td>
+      <td>{{ doc.hora_llegada }}</td>
+      
+      <td class="botones">
+        <div class="veamijo">
+        <button class="icon-button primary" (click)="verDocumento(doc)">
+          <i class="mdi mdi-eye-outline"></i>
+        </button>
+        <button class="icon-button accent" (click)="editarDocumento(doc)">
+          <i class="mdi mdi-pencil"></i>
+        </button>
+        <button (click)="irADetalle(doc)" class="icon-button info"
+          *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Auxiliar (renueva)')">
+          <i class="mdi mdi-package-variant"></i>
+        </button>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<!-- Paginación -->
+<div class="pagination">
+  <button (click)="prevPage()" [disabled]="currentPage === 1">Anterior</button>
+  <span>Página {{ currentPage }} de {{ totalPages }}</span>
+  <button (click)="nextPage()" [disabled]="currentPage === totalPages">Siguiente</button>
+</div>
+
+<!-- RESTO DE MODALES (sin cambios en la funcionalidad) -->
+<!-- Modal para mostrar detalles del documento -->
+<div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+  <div class="modal-content modal-detalles" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <i class="mdi mdi-file-document"></i>
+        </div>
+        <div class="header-text">
+          <h2>Detalles del Documento</h2>
+          <p class="header-subtitle">Información completa de la recepción</p>
+        </div>
+      </div>
+      <button class="close-button" (click)="cerrarModal()">
+        <i class="mdi mdi-close"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="documentoSeleccionado">
+      <!-- Información principal destacada -->
+      <div class="info-destacada">
+        <div class="info-card primary">
+          <div class="info-icon">
+            <i class="mdi mdi-receipt"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Número de Recepción</span>
+            <span class="info-value">{{ documentoSeleccionado.num_recepcion }}</span>
+          </div>
+        </div>
+
+        <div class="info-card secondary">
+          <div class="info-icon">
+            <i class="mdi mdi-calendar"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Fecha de llegada del vehiculo</span>
+            <span class="info-value">{{ documentoSeleccionado.fecha_ingreso }}</span>
+          </div>
+        </div>
+
+        <div class="info-card accent">
+          <div class="info-icon">
+            <i class="mdi mdi-clock"></i>
+
+          </div>
+          <div class="info-content">
+            <span class="info-label">Hora de Llegada Vehiculo</span>
+            <span class="info-value">{{ documentoSeleccionado.hora_llegada }}</span>
+          </div>
+        </div>
+
+        <div class="info-card recep">
+          <div class="info-icon">
+            <i class="mdi mdi-clock"></i>
+
+          </div>
+          <div class="info-content">
+            <span class="info-label">Hora Creacion Recepcion</span>
+            <span class="info-value">{{ documentoSeleccionado.hora_creacion }}</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="info_procesamiento" class="info_procesamiento">
+        <div class="info-card secondary">
+          <div class="info-icon">
+            <i class="mdi mdi-calendar"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Tiempo de registro</span>
+            <span class="info-value">{{ calcularTiempoProcesamiento(documentoSeleccionado.fecha_ingreso,
+              documentoSeleccionado.hora_llegada, documentoSeleccionado.fecha_creacion,
+              documentoSeleccionado.hora_creacion) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secciones organizadas -->
+      <div class="secciones-container">
+        <!-- Información de Remisión -->
+        <div class="seccion">
+          <div class="seccion-header">
+            <i class="mdi mdi-package-variant"></i>
+            <h3>Información de Remisión</h3>
+          </div>
+          <div class="seccion-content">
+            <div class="detalle-row">
+              <span class="detalle-label">cliente:</span>
+              <span class="detalle-value">{{ documentoSeleccionado.cliente }}</span>
+            </div>
+            <div class="detalle-row">
+              <span class="detalle-label">Planta:</span>
+              <span class="detalle-value">{{ documentoSeleccionado.planta }}</span>
+            </div>
+            <div class="detalle-row">
+              <span class="detalle-label">Número de Remisión:</span>
+              <span class="detalle-value highlight">{{ documentoSeleccionado.num_remision }}</span>
+            </div>
+            <div class="detalle-row">
+              <span class="detalle-label">Cantidad Relacionada:</span>
+              <span class="detalle-value">{{ documentoSeleccionado.cant_relacionada }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información del Operario -->
+        <div class="seccion">
+          <div class="seccion-header">
+            <i class="mdi mdi-pencil-box-outline"></i>
+
+            <h3>Información del Operario</h3>
+          </div>
+          <div class="seccion-content">
+            <div class="detalle-row">
+              <span class="detalle-label">Nombre del Operario:</span>
+              <span class="detalle-value">{{ documentoSeleccionado.nom_operario }}</span>
+            </div>
+            <div class="detalle-row signature-row">
+              <span class="detalle-label">Firma del Operario:</span>
+              <button class="btn-firma" (click)="verFirma('operario')" [disabled]="cargandoFirma">
+                <i class="mdi"
+                  [ngClass]="cargandoFirma && tipoFirmaActual === 'operario' ? 'mdi-loading mdi-spin' : 'mdi-pen'"></i>
+                <span *ngIf="cargandoFirma && tipoFirmaActual === 'operario'">Cargando...</span>
+                <span *ngIf="!(cargandoFirma && tipoFirmaActual === 'operario')">Ver Firma</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información del Transporte -->
+        <div class="seccion">
+          <div class="seccion-header">
+            <i class="mdi mdi-truck"></i>
+            <h3>Información del Transporte</h3>
+          </div>
+          <div class="seccion-content">
+            <div class="detalle-row">
+              <span class="detalle-label">Nombre del Conductor:</span>
+              <span class="detalle-value">{{ documentoSeleccionado.nom_conductor }}</span>
+            </div>
+            <div class="detalle-row">
+              <span class="detalle-label">Placa del Vehículo:</span>
+              <span class="detalle-value highlight">{{ documentoSeleccionado.placa_vehiculo }}</span>
+            </div>
+            <div class="detalle-row">
+              <span class="detalle-label">Nombre del Transportador:</span>
+              <span class="detalle-value">{{ documentoSeleccionado.nom_transportador }}</span>
+            </div>
+            <div class="detalle-row signature-row">
+              <span class="detalle-label">Firma del Conductor:</span>
+              <button class="btn-firma" (click)="verFirma('conductor')" [disabled]="cargandoFirma">
+                <i class="mdi"
+                  [ngClass]="cargandoFirma && tipoFirmaActual === 'conductor' ? 'mdi-loading mdi-spin' : 'mdi-pen'"></i>
+                <span *ngIf="cargandoFirma && tipoFirmaActual === 'conductor'">Cargando...</span>
+                <span *ngIf="!(cargandoFirma && tipoFirmaActual === 'conductor')">Ver Firma</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de Cantidades -->
+        <div class="seccion">
+          <div class="seccion-header">
+            <i class="mdi mdi-scale-balance"></i>
+            <h3>Control de Cantidades</h3>
+          </div>
+          <div class="seccion-content">
+            <div class="cantidades-grid">
+              <div class="cantidad-item">
+                <span class="cantidad-label">Cantidad Relacional</span>
+                <span class="cantidad-value fisico">{{ documentoSeleccionado.cant_relacionada }}</span>
+              </div>
+              <div class="cantidad-item">
+                <span class="cantidad-label">Cantidad Física</span>
+                <span class="cantidad-value fisico">{{ documentoSeleccionado.cantidad_fisico }}</span>
+              </div>
+              <div class="cantidad-item">
+                <span class="cantidad-label">Diferencia Reportada</span>
+                <span class="cantidad-value diferencia"
+                  [ngClass]="getDiferenciaClass(documentoSeleccionado.diferencia_reportada)">
+                  {{ documentoSeleccionado.diferencia_reportada }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="historial-section">
+          <div class="historial-header">
+            <i class="mdi mdi-history"></i>
+            <span class="historial-titulo">Historial de Cambios</span>
+          </div>
+          <button type="button" class="btn-ver-historial" (click)="verHistorialCambios()">
+            <i class="mdi mdi-clock-outline"></i>
+            Ver Historial de Modificaciones
+          </button>
+        </div>
+
+        <!-- Estado y Observaciones -->
+        <div class="seccion">
+          <div class="seccion-header">
+            <i class="mdi mdi-information-outline"></i>
+            <h3>Estado y Observaciones</h3>
+          </div>
+          <div class="seccion-content">
+            <div class="estado-container">
+              <span class="estado-label">Estado:</span>
+              <span class="estado-badge" [ngClass]="'estado-' + documentoSeleccionado.estado?.toLowerCase()">
+                <i class="mdi" [ngClass]="getEstadoIcon(documentoSeleccionado.estado)"></i>
+                {{ documentoSeleccionado.estado }}
+              </span>
+            </div>
+            <div class="observaciones-container">
+              <span class="observaciones-label">Observaciones:</span>
+              <div class="observaciones-content">
+                {{ documentoSeleccionado.observaciones || 'Sin observaciones registradas' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="cerrarModal()">
+        <i class="mdi mdi-close"></i>
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para editar cantidades -->
+
+<div class="modal-overlay" *ngIf="mostrarModalEdicion" (click)="cerrarModalEdicion()">
+  <div class="modal-content modal-edicion-mejorada" (click)="$event.stopPropagation()">
+    <!-- Header mejorado -->
+    <div class="modal-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <i class="mdi mdi-pencil-outline"></i>
+        </div>
+        <div class="header-text">
+          <h2>Actualizar control de inventario</h2>
+
+        </div>
+      </div>
+      <button class="close-button" (click)="cerrarModalEdicion()">
+        <i class="mdi mdi-close"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="documentoEditar">
+      <!-- Información del documento destacada -->
+      <div class="documento-info-destacada">
+        <div class="info-card primary">
+          <div class="info-icon">
+            <i class="mdi mdi-receipt"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Número de Recepción</span>
+            <span class="info-value">{{ documentoEditar.num_recepcion }}</span>
+          </div>
+        </div>
+
+        <div class="info-card secondary">
+          <div class="info-icon">
+            <i class="mdi mdi-package-variant"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Número de Remisión</span>
+            <span class="info-value">{{ documentoEditar.num_remision }}</span>
+          </div>
+        </div>
+
+        <div class="info-card accent">
+          <div class="info-icon">
+            <i class="mdi mdi-factory"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Planta</span>
+            <span class="info-value">{{ documentoEditar.planta }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de edición -->
+      <div class="seccion-edicion">
+        <div class="seccion-header">
+          <i class="mdi mdi-scale-balance"></i>
+          <h3>Control de Cantidades</h3>
+        </div>
+
+        <div class="seccion-content">
+          <form class="form-edicion-mejorada" (ngSubmit)="guardarCambios()">
+            <!-- Grid de campos de entrada -->
+            <div class="campos-grid">
+              <div class="campo-grupo"
+                *ngIf="authService.hasRole('Lider Aprobador (inconsistencias)') || authService.hasRole('Matriz de remplazo (inconsistencias)'); else otroContenido ">
+                <label for="cant_relacionada" class="campo-label">
+                  <i class="mdi mdi-clipboard-list-outline"></i>
+                  Cantidad Relacionada
+                </label>
+                <div class="input-container">
+                  <input type="number" id="cant_relacionada" [(ngModel)]="formEdicion.cant_relacionada"
+                    name="cant_relacionada" class="form-control-mejorado" min="0" step="0.01" placeholder="0.00"
+                    required />
+                  <span class="input-unit">unidades</span>
+                </div>
+              </div>
+
+              <ng-template #otroContenido>
+                <div class="campo-grupo">
+                  <label for="cant_relacionada" class="campo-label">
+                    <i class="mdi mdi-clipboard-list-outline"></i>
+                    Cantidad Relacionada
+                  </label>
+                  <div class="input-container">
+                    <input type="number" id="cant_relacionada" [(ngModel)]="formEdicion.cant_relacionada"
+                      name="cant_relacionada" class="form-control-mejorado" placeholder="0" readonly />
+                    <span class="input-unit">unidades</span>
+                  </div>
+                </div>
+              </ng-template>
+
+
+
+              <div class="campo-grupo">
+                <label for="cantidad_fisico" class="campo-label">
+                  <i class="mdi mdi-cube-outline"></i>
+                  Cantidad Física
+                </label>
+                <div class="input-container">
+                  <input type="number" id="cantidad_fisico" [(ngModel)]="formEdicion.cantidad_fisico"
+                    name="cantidad_fisico" class="form-control-mejorado" min="0" step="0.01" placeholder="0.00"
+                    required />
+                  <span class="input-unit">unidades</span>
+                </div>
+              </div>
+
+
+            </div>
+
+            <!-- Diferencia calculada mejorada -->
+            <div class="diferencia-resultado" [ngClass]="obtenerClaseDiferencia()">
+              <div class="diferencia-header">
+                <i class="mdi mdi-calculator"></i>
+                <span class="diferencia-titulo">Diferencia Reportada</span>
+              </div>
+              <div class="diferencia-valor">
+                {{ obtenerMensajeDiferencia() }}
+              </div>
+              <div class="diferencia-explicacion">
+                <small>
+                  Diferencia = Cantidad Relacionada - Cantidad Física
+                </small>
+              </div>
+            </div>
+            <div class="campo-grupo-justificacion">
+              <label for="justificacion" class="campo-label-justificacion">
+                <i class="mdi mdi-format-align-justify"></i>
+                Comentarios
+                <span class="campo-requerido">(Requerido)</span>
+              </label>
+              <div class="justificacion-container">
+                <textarea id="justificacion" [(ngModel)]="formEdicion.justificacion" name="justificacion"
+                  class="justificacion-textarea"
+                  placeholder="Redacta el motivo de la modificación de cantidades. Incluye información relevante como diferencias encontradas, errores de conteo, daños en mercancía, etc."
+                  required></textarea>
+
+              </div>
+
+            </div>
+            <!-- Mensajes de estado mejorados -->
+            <div class="mensajes-estado-mejorados">
+              <div *ngIf="errorActualizacion" class="mensaje error-message-mejorado">
+                <i class="mdi mdi-alert-circle-outline"></i>
+                <span>{{ errorActualizacion }}</span>
+              </div>
+
+              <div *ngIf="exitoActualizacion" class="mensaje success-message-mejorado">
+                <i class="mdi mdi-check-circle-outline"></i>
+                <span>¡Cantidades actualizadas exitosamente!</span>
+              </div>
+
+              <div *ngIf="cargandoActualizacion" class="mensaje loading-message">
+                <i class="mdi mdi-loading mdi-spin"></i>
+                <span>Procesando actualización...</span>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer mejorado -->
+    <div class="modal-footer">
+      <button type="button" class="btn-cancelar" (click)="cerrarModalEdicion()" [disabled]="cargandoActualizacion">
+        <i class="mdi mdi-close"></i>
+        Cancelar
+      </button>
+      <button type="button" class="btn-guardar" (click)="guardarCambios()" [disabled]="cargandoActualizacion">
+        <i class="mdi" [ngClass]="cargandoActualizacion ? 'mdi-loading mdi-spin' : 'mdi-content-save'"></i>
+        <span *ngIf="cargandoActualizacion">Guardando...</span>
+        <span *ngIf="!cargandoActualizacion">Guardar Cambios</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" *ngIf="mostrarModalHistorial" (click)="cerrarModalHistorial()">
+  <div class="modal-content modal-historial" (click)="$event.stopPropagation()">
+    <!-- Header del modal historial -->
+    <div class="modal-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <i class="mdi mdi-history"></i>
+        </div>
+        <div class="header-text">
+          <h2>Historial de Cambios</h2>
+          <p class="header-subtitle" *ngIf="documentoEditar">
+            Documento: {{ documentoEditar.num_recepcion }}
+          </p>
+        </div>
+      </div>
+      <button class="close-button" (click)="cerrarModalHistorial()">
+        <i class="mdi mdi-close"></i>
+      </button>
+    </div>
+
+    <!-- Body del modal historial -->
+    <div class="modal-body">
+      <!-- Información del documento -->
+      <div class="documento-info-historial" *ngIf="documentoEditar">
+        <div class="info-card primary">
+          <div class="info-icon">
+            <i class="mdi mdi-receipt"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Número de Recepción</span>
+            <span class="info-value">{{ documentoEditar.num_recepcion }}</span>
+          </div>
+        </div>
+        <div class="info-card secondary">
+          <div class="info-icon">
+            <i class="mdi mdi-package-variant"></i>
+          </div>
+          <div class="info-content">
+            <span class="info-label">Número de Remisión</span>
+            <span class="info-value">{{ documentoEditar.num_remision }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de historial -->
+      <div class="historial-container">
+        <div class="historial-stats">
+          <div class="stat-item">
+            <i class="mdi mdi-counter"></i>
+            <span class="stat-label">Total de Cambios:</span>
+            <span class="stat-value">{{ historialCambios.length }}</span>
+          </div>
+        </div>
+
+        <!-- Estado de carga -->
+        <div class="loading-container" *ngIf="cargandoHistorial">
+          <i class="mdi mdi-loading mdi-spin"></i>
+          <p>Cargando historial...</p>
+        </div>
+
+        <!-- Timeline item section - place this inside your existing timeline container -->
+        <div class="timeline-item" *ngFor="let cambio of historialCambios; let i = index"
+          [class.timeline-first]="i === 0">
+
+          <!-- Indicador de línea temporal -->
+          <div class="timeline-indicator">
+            <div class="timeline-dot">
+              <i class="mdi mdi-pencil"></i>
+            </div>
+            <div class="timeline-line" *ngIf="i < historialCambios.length - 1"></div>
+          </div>
+
+          <!-- Contenido del cambio -->
+          <div class="timeline-content">
+            <div class="cambio-header">
+              <div class="cambio-titulo">
+                <h4>Modificación #{{ historialCambios.length - i }}</h4>
+              </div>
+              <div class="cambio-fecha">
+                <i class="mdi mdi-calendar"></i>
+                <span>{{ cambio.fecha_modificacion || cambio.fecha_version || 'Fecha no disponible' }}</span>
+                <i class="mdi mdi-clock"></i>
+                <span>{{ cambio.hora_modificacion || cambio.hora_version || '00:00:00' }}</span>
+              </div>
+            </div>
+
+            <div class="cambio-detalles">
+              <div class="detalle-usuario" *ngIf="cambio.usuario_modificacion">
+                <i class="mdi mdi-account"></i>
+                <strong>Usuario:</strong> {{ cambio.usuario_modificacion }}
+              </div>
+
+              <!-- COMPARACIÓN DE CANTIDADES CON VALORES ANTERIORES Y NUEVOS -->
+              <div class="cantidades-comparacion">
+                <div class="cantidad-grupo">
+                  <span class="cantidad-label">Cantidad Relacionada:</span>
+                  <div class="cantidad-cambio">
+                    <span class="cantidad-anterior">
+                      {{ cambio.old_cantidad_relacional || 'N/A' }}
+                    </span>
+                    <i class="mdi mdi-arrow-right cambio-flecha"></i>
+                    <span class="cantidad-nueva" [ngClass]="obtenerClaseCambioCantidad(
+                    cambio.old_cantidad_relacional, 
+                    cambio.new_cantidad_relacional
+                  )">
+                      {{ cambio.new_cantidad_relacional || 'N/A' }}
+                    </span>
+                    <span class="diferencia-cambio"
+                      *ngIf="cambio.old_cantidad_relacional && cambio.new_cantidad_relacional">
+                      ({{ calcularDiferenciaCambio(cambio.old_cantidad_relacional, cambio.new_cantidad_relacional) }})
+                    </span>
+                  </div>
+                </div>
+
+                <div class="cantidad-grupo">
+                  <span class="cantidad-label">Cantidad Física:</span>
+                  <div class="cantidad-cambio">
+                    <span class="cantidad-anterior">
+                      {{ cambio.old_cantidad_fisico || 'N/A' }}
+                    </span>
+                    <i class="mdi mdi-arrow-right cambio-flecha"></i>
+                    <span class="cantidad-nueva" [ngClass]="obtenerClaseCambioCantidad(
+                    cambio.old_cantidad_fisico, 
+                    cambio.new_cantidad_fisico
+                  )">
+                      {{ cambio.new_cantidad_fisico || 'N/A' }}
+                    </span>
+                    <span class="diferencia-cambio" *ngIf="cambio.old_cantidad_fisico && cambio.new_cantidad_fisico">
+                      ({{ calcularDiferenciaCambio(cambio.old_cantidad_fisico, cambio.new_cantidad_fisico) }})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- COMPARACIÓN DE DIFERENCIA REPORTADA -->
+              <div class="diferencia-historial">
+                <i class="mdi mdi-scale-balance"></i>
+                <strong>Diferencia Reportada:</strong>
+                <div class="diferencia-cambio-completa">
+                  <span class="diferencia-anterior" [ngClass]="getDiferenciaClass(cambio.old_diferencia_reportada)">
+                    {{ cambio.old_diferencia_reportada || 'N/A' }}
+                  </span>
+                  <i class="mdi mdi-arrow-right cambio-flecha"
+                    *ngIf="cambio.old_diferencia_reportada !== cambio.new_diferencia_reportada"></i>
+                  <span class="diferencia-nueva"
+                    *ngIf="cambio.old_diferencia_reportada !== cambio.new_diferencia_reportada"
+                    [ngClass]="getDiferenciaClass(cambio.new_diferencia_reportada)">
+                    {{ cambio.new_diferencia_reportada || 'N/A' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="justificacion-historial" *ngIf="cambio.justificacion || cambio.comentario">
+                <div class="justificacion-header">
+                  <i class="mdi mdi-format-align-justify"></i>
+                  <strong>Motivo de la modificación:</strong>
+                </div>
+                <p class="justificacion-texto">{{ cambio.justificacion || cambio.comentario }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado vacío -->
+        <!-- Estado vacío -->
+        <div class="historial-vacio" *ngIf="historialCambios.length === 0 && !cargandoHistorial">
+          <div class="vacio-icon">
+            <i class="mdi mdi-history"></i>
+          </div>
+          <h3>Este documento no tiene modificaciones registradas</h3>
+
+        </div>
+
+        <!-- Footer del modal historial -->
+        <div class="modal-footer">
+          <button type="button" class="btn-regresar" (click)="cerrarModalHistorial()">
+            <i class="mdi mdi-arrow-left"></i>
+            volver
+          </button>
+          <div class="historial-info">
+            <small class="info-text">
+              <i class="mdi mdi-information-outline"></i>
+              Historial ordenado del más reciente al más antiguo
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Modal para mostrar firma -->
+    <div class="modal-overlay" *ngIf="mostrarModalFirma" (click)="cerrarModalFirma()">
+      <div class="modal-content modal-firma" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="header-content">
+            <div class="header-icon">
+              <i class="mdi mdi-pen"></i>
+            </div>
+            <div class="header-text">
+              <h2>Firma Digital</h2>
+              <p class="header-subtitle">
+                Firma del {{ tipoFirmaActual === 'operario' ? 'Operario' : 'Conductor' }}
+              </p>
+            </div>
+          </div>
+          <button class="close-button" (click)="cerrarModalFirma()">
+            <i class="mdi mdi-close"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="firma-container" *ngIf="firmaUrl">
+            <img [src]="firmaUrl" alt="Firma digital" class="firma-image" />
+          </div>
+
+          <div class="loading-container" *ngIf="cargandoFirma">
+            <i class="mdi mdi-loading mdi-spin"></i>
+            <p>Cargando firma...</p>
+          </div>
+
+          <div class="error-container" *ngIf="errorFirma">
+            <i class="mdi mdi-alert-circle"></i>
+            <p>{{ errorFirma }}</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cerrarModalFirma()">
+            <i class="mdi mdi-close"></i>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
