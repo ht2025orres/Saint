@@ -78,9 +78,9 @@ export class InventarioService {
     });
   }
 
-  eliminarZonaItem(codigoItem: string, codigoBodega: string, idZona: number): Observable<any> {
+  eliminarZonaItem(codigoItem: string, codigoBodega: string, idZona: number, id_f400: string): Observable<any> {
     return this.http.delete(`${this.apiLaravelUrl}/inventario/eliminar-zona-item`, {
-      body: { codigo_item: codigoItem, codigo_bodega: codigoBodega, id_zona: idZona, usuario_id: this.getUsuarioActual() }
+      body: { codigo_item: codigoItem, codigo_bodega: codigoBodega, id_zona: idZona, id_f400, usuario_id: this.getUsuarioActual() }
     });
   }
 

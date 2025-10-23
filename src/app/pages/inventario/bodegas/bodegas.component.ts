@@ -261,7 +261,8 @@ export class BodegasComponent implements OnInit {
         this.inventarioService.eliminarZonaItem(
           item.id_item,
           this.codigoBodega!,
-          zona.id
+          zona.id,
+          item.id_f400
         ).subscribe({
           next: () => {
             Swal.fire('¡Eliminado!', 'Zona eliminada correctamente.', 'success');
