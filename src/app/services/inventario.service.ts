@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../services/auth.service'; // ✅ asegúrate de importar tu AuthService
 
 export interface ResumenBodega {
   codigo_bodega: string;
@@ -16,68 +17,103 @@ export interface ResumenBodega {
 export class InventarioService {
   private apiLaravelUrl = environment.URL_API_LARAVEL;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
+
+  private getUsuarioActual(): number {
+    return this.authService.user?.id || 0;
+  }
 
   /**
-  * Trae todas las bodegas con su conteo de ítems y existencias
-  */
+   * ================================
+   *        ZONAS
+   * ================================
+   */
   obtenerZonas(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/zonas`);
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/zonas`, {
+      params: { usuario: this.getUsuarioActual() }
+    });
   }
 
   crearZona(zona: any): Observable<any> {
-    return this.http.post<any>(`${this.apiLaravelUrl}/crear/zonas`, zona);
+    return this.http.post<any>(`${this.apiLaravelUrl}/crear/zonas`, {
+      ...zona,
+      usuario: this.getUsuarioActual()
+    });
   }
 
   actualizarZona(id: number, zona: any): Observable<any> {
-    return this.http.put<any>(`${this.apiLaravelUrl}/zonas/${id}`, zona);
+    return this.http.put<any>(`${this.apiLaravelUrl}/zonas/${id}`, {
+      ...zona,
+      usuario: this.getUsuarioActual()
+    });
   }
 
   eliminarZona(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiLaravelUrl}/zonas/${id}`);
-  }
-
-  obtenerResumenBodegas(): Observable<ResumenBodega[]> {
-    return this.http.get<ResumenBodega[]>(`${this.apiLaravelUrl}/inventario/resumen-bodegas`);
-  }
-
-  obtenerItemsPorBodega(codigoBodega: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/bodegas/${codigoBodega}/items`);
-  }
-
-  asignarZonaItems(payload: { codigo_bodega: string; codigo_item: string; id_zona: number }[]): Observable<any> {
-    return this.http.post<any>(`${this.apiLaravelUrl}/inventario/asignar-zona-items`, payload);
-  }
-
-  eliminarZonaItem(codigoItem: string, codigoBodega: string, idZona: number) {
-    return this.http.delete(`${this.apiLaravelUrl}/inventario/eliminar-zona-item`, {
-      body: { codigo_item: codigoItem, codigo_bodega: codigoBodega, id_zona: idZona }
+    return this.http.delete<any>(`${this.apiLaravelUrl}/zonas/${id}`, {
+      body: { usuario: this.getUsuarioActual() }
     });
   }
 
   /**
    * ================================
-   *        BODEGAS
+   *        INVENTARIO / BODEGAS
    * ================================
    */
+  obtenerResumenBodegas(): Observable<ResumenBodega[]> {
+    return this.http.get<ResumenBodega[]>(`${this.apiLaravelUrl}/inventario/resumen-bodegas`, {
+      params: { usuario: this.getUsuarioActual() }
+    });
+  }
+
+  obtenerItemsPorBodega(codigoBodega: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/bodegas/${codigoBodega}/items`, {
+      params: { usuario: this.getUsuarioActual() }
+    });
+  }
+
+  asignarZonaItems(payload: { codigo_bodega: string; codigo_item: string; id_f400: string; id_zona: number }[]): Observable<any> {
+    return this.http.post<any>(`${this.apiLaravelUrl}/inventario/asignar-zona-items`, {
+      items: payload,
+      usuario: this.getUsuarioActual()
+    });
+  }
+
+  eliminarZonaItem(codigoItem: string, codigoBodega: string, idZona: number): Observable<any> {
+    return this.http.delete(`${this.apiLaravelUrl}/inventario/eliminar-zona-item`, {
+      body: { codigo_item: codigoItem, codigo_bodega: codigoBodega, id_zona: idZona, usuario: this.getUsuarioActual() }
+    });
+  }
+
   listarBodegas(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/bodegas`);
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/bodegas`, {
+      params: { usuario: this.getUsuarioActual() }
+    });
   }
 
   obtenerBodega(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiLaravelUrl}/bodegas/${id}`);
+    return this.http.get<any>(`${this.apiLaravelUrl}/bodegas/${id}`, {
+      params: { usuario: this.getUsuarioActual() }
+    });
   }
 
   crearBodega(bodega: any): Observable<any> {
-    return this.http.post<any>(`${this.apiLaravelUrl}/bodegas`, bodega);
+    return this.http.post<any>(`${this.apiLaravelUrl}/bodegas`, {
+      ...bodega,
+      usuario: this.getUsuarioActual()
+    });
   }
 
   actualizarBodega(id: number, bodega: any): Observable<any> {
-    return this.http.put<any>(`${this.apiLaravelUrl}/bodegas/${id}`, bodega);
+    return this.http.put<any>(`${this.apiLaravelUrl}/bodegas/${id}`, {
+      ...bodega,
+      usuario: this.getUsuarioActual()
+    });
   }
 
   eliminarBodega(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiLaravelUrl}/bodegas/${id}`);
+    return this.http.delete<any>(`${this.apiLaravelUrl}/bodegas/${id}`, {
+      body: { usuario: this.getUsuarioActual() }
+    });
   }
 
   /**

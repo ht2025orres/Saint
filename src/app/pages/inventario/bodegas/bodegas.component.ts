@@ -1,5 +1,6 @@
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
 import { InventarioService } from 'src/app/services/inventario.service';
+import { AuthService } from 'src/app/services/auth.service';
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 
@@ -41,7 +42,8 @@ export class BodegasComponent implements OnInit {
 
   constructor(
     public paginationService: PaginationService,
-    private inventarioService: InventarioService
+    private inventarioService: InventarioService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -70,10 +72,43 @@ export class BodegasComponent implements OnInit {
    ------------------------- */
   cargarBodegas(): void {
     this.isLoadingBodegas = true;
+
     this.inventarioService.obtenerResumenBodegas().subscribe({
       next: (res) => {
-        this.bodegas = res['data'] || [];
-        this.totalBodegas = this.bodegas.length;
+        let bodegas = res['data'] || [];
+
+        // Si el usuario NO es admin, aplicamos filtrado por roles de gestor
+        if (!this.authService.hasAnyRole(['Admin (inventario)', 'Administrador del sistema'])) {
+
+          // Lista de roles posibles de gestor
+          const rolesGestores = [
+            'Gestor de bodega (MP001)',
+            'Gestor de bodega (MP003)',
+            'Gestor de bodega (BT001)'
+          ];
+
+          // Obtener todos los códigos de bodegas a las que tiene acceso
+          const codigosPermitidos: string[] = [];
+
+          rolesGestores.forEach(rol => {
+            if (this.authService.hasRole(rol)) {
+              const match = rol.match(/\((.*?)\)/);
+              const codigo = match ? match[1] : null;
+              if (codigo) codigosPermitidos.push(codigo);
+            }
+          });
+
+          // Filtrar bodegas si tiene algún rol válido
+          if (codigosPermitidos.length > 0) {
+            bodegas = bodegas.filter((b: any) => codigosPermitidos.includes(b.codigo));
+          } else {
+            // Si no tiene permisos sobre ninguna bodega
+            bodegas = [];
+          }
+        }
+
+        this.bodegas = bodegas;
+        this.totalBodegas = bodegas.length;
         this.inicializarPaginacionBodegas();
       },
       error: () => {
@@ -187,11 +222,11 @@ export class BodegasComponent implements OnInit {
 
   toggleItem(item: any) {
     if (item.seleccionado) {
-      if (!this.selectedItems.find(i => i.id_item === item.id_item)) {
+      if (!this.selectedItems.find(i => i.id_f400 === item.id_f400)) {
         this.selectedItems.push(item);
       }
     } else {
-      this.selectedItems = this.selectedItems.filter(i => i.id_item !== item.id_item);
+      this.selectedItems = this.selectedItems.filter(i => i.id_f400 !== item.id_f400);
     }
   }
 
@@ -199,6 +234,7 @@ export class BodegasComponent implements OnInit {
     const payload = this.selectedItems.map(i => ({
       codigo_item: i.id_item,
       codigo_bodega: this.codigoBodega,
+      id_f400: i.id_f400,
       id_zona: zonaId
     }));
 
@@ -256,7 +292,7 @@ export class BodegasComponent implements OnInit {
   }
 
   get selectedCodigos(): string {
-    return this.selectedItems.map(i => i.id_item).join(', ');
+    return this.selectedItems.map(i => i.id_f400).join(', ');
   }
 
   getZonasNombres(zonas: any[]): string {
