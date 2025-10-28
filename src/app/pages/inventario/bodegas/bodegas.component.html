@@ -14,14 +14,46 @@
 
     
     <ng-template #bodegasContent>
-      <!-- Barra de búsqueda -->
+      <!-- 🆕 Barra de búsqueda con selector de búsqueda exacta -->
       <div class="mb-3" *ngIf="bodegas?.length > 0">
-        <input type="text"
-              class="form-control"
-              placeholder="Buscar bodega..."
-              [(ngModel)]="filters.busqueda"
-              (input)="applyFilters()">
+        <div class="row g-2">
+          <div class="col-md-9">
+            <input type="text"
+                  class="form-control"
+                  placeholder="Buscar bodega..."
+                  [(ngModel)]="filters.busqueda"
+                  (input)="applyFilters()">
+          </div>
+          <div class="col-md-2">
+            <div class="form-check form-switch d-flex align-items-center h-100 ps-4">
+              <input class="form-check-input me-2" 
+                    type="checkbox" 
+                    id="exactaBodegas"
+                    [(ngModel)]="filters.busquedaExacta"
+                    (change)="applyFilters()"
+                    style="cursor: pointer;">
+              <label class="form-check-label" 
+                    for="exactaBodegas" 
+                    style="cursor: pointer;">
+                <i class="bi bi-bullseye me-1"></i>
+                Búsqueda exacta
+              </label>
+            </div>
+          </div>
+          <div class="col-md-1">
+            <button class="btn btn-primary w-100 h-100" 
+                    (click)="sincronizarBodegas()"
+                    [disabled]="sincronizando"
+                    title="Sincronizar con SIESA">
+              <i class="bi" 
+                [class.bi-arrow-repeat]="!sincronizando"
+                [class.bi-arrow-clockwise]="sincronizando"
+                [class.spin-animation]="sincronizando"></i>
+            </button>
+          </div>
+        </div>
       </div>
+      
       <!-- Lista de bodegas -->
       <div *ngIf="currentBodegas?.length > 0; else sinBodegas"> 
         <div *ngFor="let bodega of currentBodegas" class="card mb-3 shadow-sm border-light">
@@ -104,7 +136,8 @@
       <ng-template #sinBodegas>
         <div class="alert alert-info mt-4 text-center" role="alert">
           <span *ngIf="filters.busqueda && bodegas?.length > 0; else noBodegasMessage">
-            No se encontraron bodegas que coincidan con la búsqueda "{{ filters.busqueda }}".
+            No se encontraron bodegas que coincidan con la búsqueda "{{ filters.busqueda }}"
+            <span *ngIf="filters.busquedaExacta"> (exacta)</span>.
           </span>
           <ng-template #noBodegasMessage>
             No hay bodegas disponibles para mostrar.
@@ -141,13 +174,43 @@
 
     <ng-template #itemsContent>
 
-      <!-- Barra de búsqueda -->
+      <!-- 🆕 Barra de búsqueda con selector de búsqueda exacta para ítems -->
       <div class="mb-3" *ngIf="items?.length > 0">
-        <input type="text"
-        class="form-control"
-        placeholder="Buscar ítem..."
-        [(ngModel)]="filters.busqueda"
-        (input)="applyFilters()">
+        <div class="row g-2">
+          <div class="col-md-9">
+            <input type="text"
+                  class="form-control"
+                  placeholder="Buscar ítem por código, descripción, cantidad o zona..."
+                  [(ngModel)]="filters.busqueda"
+                  (input)="applyFilters()">
+          </div>
+          <div class="col-md-3">
+            <div class="form-check form-switch d-flex align-items-center h-100 ps-4">
+              <input class="form-check-input me-2" 
+                     type="checkbox" 
+                     id="exactaItems"
+                     [(ngModel)]="filters.busquedaExacta"
+                     (change)="applyFilters()"
+                     style="cursor: pointer;">
+              <label class="form-check-label" 
+                     for="exactaItems" 
+                     style="cursor: pointer;">
+                <i class="bi bi-bullseye me-1"></i>
+                Búsqueda exacta
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- 🆕 Texto informativo -->
+        <small class="text-muted ms-1">
+          <i class="bi bi-info-circle me-1"></i>
+          <span *ngIf="!filters.busquedaExacta">
+            Buscando coincidencias parciales en código, descripción, cantidad y zonas.
+          </span>
+          <span *ngIf="filters.busquedaExacta">
+            Búsqueda exacta activada: solo resultados que coincidan completamente.
+          </span>
+        </small>
       </div>
 
       <!-- Lista de ítems -->
@@ -173,7 +236,7 @@
               <!-- Código -->
               <div class="col-md-3">
                 <h6 class="mb-1">{{ item.id_item }}</h6>
-                <small class="text-muted">{{ item.descripcion }} - {{ item.id_talla }} - {{ item.color }}</small>
+                <small class="text-muted">{{ item.descripcion }} - {{ item.id_talla }} - {{ item.id_color }}</small>
               </div>
 
               <!-- Datos -->
@@ -189,7 +252,7 @@
                   </div>
                   <div class="col-4">
                     <small class="text-muted d-block">Ubicaciones:</small>
-                    <!-- 🆕 Mostrar múltiples zonas -->
+                    <!-- Mostrar múltiples zonas -->
                     <div *ngIf="item.zonas && item.zonas.length > 0">
                       <span *ngFor="let zona of item.zonas; let last = last" 
                             class="badge" 
@@ -233,7 +296,8 @@
       <ng-template #sinItems>
         <div class="alert alert-info mt-4 text-center">
           <span *ngIf="filters.busqueda && items?.length > 0; else noItemsMessage">
-            No se encontraron ítems que coincidan con la búsqueda "{{ filters.busqueda }}".
+            No se encontraron ítems que coincidan con la búsqueda "{{ filters.busqueda }}"
+            <span *ngIf="filters.busquedaExacta"> (exacta)</span>.
           </span>
           <ng-template #noItemsMessage>
             No hay ítems disponibles en esta bodega.

@@ -116,6 +116,10 @@ export class InventarioService {
     });
   }
 
+  sincronizarExistencias(): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/inventario/sincronizar`, {});
+  }
+
   /**
    * ================================
    *        ÍTEMS
