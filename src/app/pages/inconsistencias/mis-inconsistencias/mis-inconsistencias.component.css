@@ -1,13 +1,589 @@
-.auto-expand-tooltip {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  padding: 8px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  max-width: 300px;
+/* ===================================
+   VARIABLES CSS (Mobile First)
+   =================================== */
+.table-container {
+  --color-primary: #4bc5e8;
+  --color-primary-light: rgba(75, 197, 232, 0.07);
+  --color-text-primary: #67757c;
+  --color-text-secondary: #6c757d;
+  --color-success: #28a745;
+  --color-danger: #dc3545;
+  --color-warning: #ffc107;
+  --color-info: #17a2b8;
+  --color-border: #dee2e6;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --border-radius: 0.375rem;
+  --transition-speed: 0.2s;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+}
+
+/* ===================================
+   UTILIDADES DE ACCESIBILIDAD
+   =================================== */
+.visually-hidden-focusable:not(:focus):not(:focus-within) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--border-radius);
+}
+
+/* ===================================
+   LAYOUT PRINCIPAL (Mobile First)
+   =================================== */
+.page-titles {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+
+
+.table-container {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  transform: scale(1); /* Valor por defecto */
+}
+
+/* ===================================
+   FILTROS (Mobile First)
+   =================================== */
+.card-header {
+  padding: var(--spacing-lg);
+}
+
+.filters-form .form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.filters-form .form-control,
+.filters-form .form-select {
+  border: 2px solid var(--color-border);
+  transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+  min-height: 44px;
+}
+
+.filters-form .form-control:focus,
+.filters-form .form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(75, 197, 232, 0.25);
+}
+
+.input-group-text {
+  background-color: var(--color-primary-light);
+  border: 2px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+.form-text {
+  font-size: 0.75rem;
+  margin-top: var(--spacing-xs);
+}
+
+.results-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+}
+
+/* ===================================
+   TABLA ESCRITORIO
+   =================================== */
+.table-responsive {
+  border-radius: var(--border-radius);
+}
+
+.table {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+}
+
+.table-header-custom {
+  background-color: var(--color-primary-light);
+  color: var(--color-text-primary);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-header-custom th {
+  font-weight: 600;
+  padding: var(--spacing-sm);
+  vertical-align: middle;
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  transition: background-color var(--transition-speed);
+}
+
+.table tbody tr:hover {
+  background-color: rgba(75, 197, 232, 0.05);
+}
+
+.table td {
+  padding: var(--spacing-sm);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Elementos de tabla */
+.table time {
+  font-variant-numeric: tabular-nums;
+}
+
+.table abbr {
+  text-decoration: none;
+  border-bottom: 1px dotted var(--color-text-secondary);
+  cursor: help;
+}
+
+/* ===================================
+   CARDS MÓVILES
+   =================================== */
+.card-inconsistencia {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  transition: box-shadow var(--transition-speed);
+}
+
+.card-inconsistencia:hover,
+.card-inconsistencia:focus-within {
+  box-shadow: 0 4px 12px var(--color-shadow);
+}
+
+.card-inconsistencia h3 {
+  margin-bottom: var(--spacing-xs);
+}
+
+.card-inconsistencia dl {
+  font-size: 0.875rem;
+}
+
+.card-inconsistencia dt {
+  font-weight: 600;
+}
+
+.card-inconsistencia dd {
   word-break: break-word;
 }
 
+/* ===================================
+   BOTONES Y ACCIONES
+   =================================== */
+.btn {
+  min-height: 34px;
+  padding: 0.375rem 0.75rem;
+  font-weight: 500;
+  transition: all var(--transition-speed);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+}
+
+.btn-sm {
+  min-height: 30px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-evidence {
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-evidence:hover {
+  background-color: var(--color-primary-light);
+  text-decoration: none;
+}
+
+/* Estados de botones */
+.btn-info {
+  background-color: var(--color-info);
+  border-color: var(--color-info);
+  color: #ffffff;
+}
+
+.btn-info:hover,
+.btn-info:focus {
+  background-color: #138496;
+  border-color: #117a8b;
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+/* ===================================
+   BADGES Y ESTADOS
+   =================================== */
+.badge {
+  padding: 0.375rem 0.625rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.025em;
+}
+
+/* Contraste mejorado para badges */
+.badge.bg-light {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+  border: 1px solid var(--color-border);
+}
+
+.badge.bg-warning {
+  background-color: var(--color-warning) !important;
+  color: #212529 !important;
+}
+
+/* ===================================
+   ESTADO VACÍO
+   =================================== */
+.empty-state {
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.empty-state i {
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ===================================
+   MODAL
+   =================================== */
+.modal-header {
+  padding: var(--spacing-md);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.modal-title {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.modal-body {
+  padding: var(--spacing-md);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  padding: var(--spacing-md);
+  border-top: 2px solid var(--color-border);
+}
+
+.btn-close {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* ===================================
+   PAGINADOR
+   =================================== */
+.card-footer {
+  padding: var(--spacing-md);
+}
+
+app-shared-paginator {
+  display: block;
+}
+
+/* ===================================
+   TOOLTIP EXPANDIBLE
+   =================================== */
+.auto-expand-tooltip {
+  background-color: #ffffff;
+  border: 2px solid var(--color-border);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px var(--color-shadow);
+  max-width: 280px;
+  word-break: break-word;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  z-index: 1050;
+}
+
+/* ===================================
+   OVERFLOW Y SCROLL
+   =================================== */
 .card-body {
-    overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Estilizar scrollbar (webkit) */
+.card-body::-webkit-scrollbar {
+  height: 6px;
+}
+
+.card-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: var(--border-radius);
+}
+
+.card-body::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: var(--border-radius);
+}
+
+.card-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ===================================
+   MEJORAS DE TIPOGRAFÍA
+   =================================== */
+strong,
+.fw-semibold {
+  font-weight: 600;
+}
+
+time {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+/* ===================================
+   UTILIDADES RESPONSIVAS
+   =================================== */
+.gap-2 > * + * {
+  margin-left: var(--spacing-sm);
+}
+
+.gap-3 > * + * {
+  margin-left: var(--spacing-md);
+}
+
+/* ===================================
+   TABLET (768px+)
+   =================================== */
+@media (min-width: 768px) {
+  .container-fluid {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+  }
+
+  .page-titles {
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .filters-form .row {
+    align-items: end;
+  }
+
+  .card-header {
+    padding: var(--spacing-md);
+  }
+
+  .results-summary {
+    justify-content: flex-start;
+    padding-left: var(--spacing-md);
+  }
+}
+
+/* ===================================
+   DESKTOP (992px+)
+   =================================== */
+@media (min-width: 992px) {
+ 
+
+  .table {
+    font-size: 0.85rem;
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  /* Ancho óptimo para columnas específicas */
+  .table th:nth-child(1),
+  .table td:nth-child(1) {
+    min-width: 90px;
+  }
+
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    min-width: 80px;
+  }
+
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    min-width: 120px;
+  }
+
+  .table th:nth-child(7),
+  .table td:nth-child(7) {
+    min-width: 150px;
+  }
+
+  .table th:nth-child(9),
+  .table td:nth-child(9) {
+    min-width: 160px;
+  }
+}
+
+/* ===================================
+   DESKTOP GRANDE (1200px+)
+   =================================== */
+@media (min-width: 1200px) {
+  .table {
+    font-size: 0.9rem;
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+}
+
+/* ===================================
+   MODO OSCURO (Preferencia del usuario)
+   =================================== */
+@media (prefers-color-scheme: dark) {
+  .table-container {
+    --color-border: #495057;
+    --color-shadow: rgba(0, 0, 0, 0.3);
+    --color-text-primary: #adb5bd;
+    --color-text-secondary: #868e96;
+  }
+
+  .table-container,
+  .card-inconsistencia,
+  .card-header,
+  .card-footer {
+    background-color: #212529;
+    color: #f8f9fa;
+  }
+
+  .table tbody tr:hover {
+    background-color: rgba(75, 197, 232, 0.1);
+  }
+
+  .form-control,
+  .form-select {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-color: var(--color-border);
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    background-color: #343a40;
+    color: #f8f9fa;
+  }
+
+  .badge.bg-light {
+    background-color: #343a40 !important;
+    color: #f8f9fa !important;
+  }
+
+  .auto-expand-tooltip {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-color: var(--color-border);
+  }
+}
+
+/* ===================================
+   REDUCCIÓN DE MOVIMIENTO (A11Y)
+   =================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===================================
+   IMPRESIÓN
+   =================================== */
+@media print {
+  .card-header,
+  .card-footer,
+  .btn,
+  .breadcrumb,
+  app-shared-paginator {
+    display: none !important;
+  }
+
+  .table-container {
+    box-shadow: none;
+    border: 1px solid #000;
+    transform: none;
+  }
+
+  .table {
+    font-size: 9pt;
+  }
+
+  .table th,
+  .table td {
+    padding: 3pt;
+  }
+
+  .d-none.d-lg-block {
+    display: block !important;
+  }
+
+  .d-lg-none {
+    display: none !important;
+  }
 }

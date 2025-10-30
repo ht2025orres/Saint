@@ -155,10 +155,12 @@ export class TechnicalReportBigbagComponent implements OnInit {
       password: '',
       enable: true,
       roles: [],
-      id_Sdp: this.authService.user.id_Sdp ,
+      id_Sdp: this.authService.user.id_Sdp,
       nombre_departamento_Sdp: this.authService.user.nombre_departamento_Sdp ?? '',
       id_departamento_Sdp: this.authService.user.id_departamento_Sdp,
-      nombre_completo: `${this.authService.user.firstName} ${this.authService.user.lastName}`
+      nombre_completo: `${this.authService.user.firstName} ${this.authService.user.lastName}`,
+      id_lider: this.authService.user.id_lider,
+      lider_nombre: this.authService.user.lider_nombre
     };
 
     // Establecer el nombre del operario

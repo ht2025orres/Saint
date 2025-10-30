@@ -63,11 +63,14 @@ export class AuthService {
     this._user.email = payload.email;
     this._user.roles = payload.authorities;  /* Nombre athoriries que genera sprint security oauth2*/
     this._user.id = payload.id;
+    console.log(payload);
     this.inconsistenciasService.info(payload.email).subscribe({
       next: (res) => {
         this._user.nombre_departamento_Sdp = res.info['nombre_departamento'];
         this._user.id_departamento_Sdp = res.info['id_departamento'];
         this._user.id_Sdp = res.info['id_usuario'];
+        this._user.id_lider = res.info['lider_id'];
+        this._user.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
         sessionStorage.setItem('user', JSON.stringify(this._user)); /* Se convierte el objeto pages a string con JSON.stringify */
       },
       error: (err) => {

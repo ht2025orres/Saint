@@ -1,29 +1,27 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { Role } from '../models/Role';
 
+
 @Injectable({
-  providedIn: 'root'
+    providedIn: 'root'
 })
 export class InconsistenciaService {
-  private baseUrl = `${environment.URL_C_PANEL}`;
+    private baseUrl = `${environment.URL_C_PANEL}`;
+    private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
+    private q = 'http://127.0.0.1:8000/api';
 
-  constructor(
-    private authService: AuthService,
-    private http: HttpClient
+    constructor(
+        private authService: AuthService,
+        private http: HttpClient
 
-  ) {}
+    ) { }
 
-    registrarInconsistencia(data: FormData): Observable<any> {
-        return this.http.post(`${this.baseUrl}/app/controller/InconsistenciasController.php`, data);
-    }
 
-    obtenerUltimoCodigo(): Observable<{ codigo: string }> {
-        return this.http.get<{codigo: string}>(`${this.baseUrl}/app/controller/InconsistenciasController.php?action=obtenerUltimoCodigo`);
-    }
+
 
     info(correo: string): Observable<{ info: Array<string> }> {
         const formData = new FormData();
@@ -36,35 +34,8 @@ export class InconsistenciaService {
         );
     }
 
-    listarPorUsuario(correo: string): Observable<any[]> {
-        const formData = new FormData();
-        formData.append('action', 'listar_por_usuario');
-        // formData.append('correo', correo);
-        formData.append('correo', 'ysierra@protejer.com');
-        return this.http.post<any[]>(`${this.baseUrl}/app/controller/InconsistenciasController.php`, formData)
-    }
 
-    aprobarInconsistencia(id_inco: string, id_usuario: string, tipo_inco: string, etapa: string, espera: boolean = false, observacion_logistica: string = null): Observable<any> {
-        const formData = new FormData();
-        formData.append('action', 'aprobar');
-        formData.append('id_inconsistencia', id_inco);
-        formData.append('id_usuario', id_usuario);
-        formData.append('tipo_inconsistencia', tipo_inco);
-        formData.append('etapa', etapa);
-        formData.append('espera', espera.toString());
-        formData.append('observacion_logistica', observacion_logistica || '');
 
-        return this.http.post<any>(`${this.baseUrl}/app/controller/InconsistenciasController.php`, formData);
-    }
-
-    anularInconsistencia(id: string, motivo: string): Observable<any> {
-        const formData = new FormData();
-        formData.append('action', 'anular');
-        formData.append('id', id);            
-        formData.append('motivo', motivo);
-
-        return this.http.post<any>(`${this.baseUrl}/app/controller/InconsistenciasController.php`, formData);
-    }
 
     listarInconsistenciasPorRol(roles: Role[], id_Sdp: string): Observable<any[]> {
         const formData = new FormData();
@@ -75,10 +46,142 @@ export class InconsistenciaService {
         return this.http.post<any[]>(`${this.baseUrl}/app/controller/InconsistenciasController.php`, formData);
     }
 
-    listarHistorico(id_departamento_Sdp: string): Observable<any[]> {
-        const formData = new FormData();
-        formData.append('action', 'listar_historico');
-        formData.append('proceso', id_departamento_Sdp);
-        return this.http.post<any[]>(`${this.baseUrl}/app/controller/InconsistenciasController.php`, formData);
+
+
+
+
+
+
+
+
+    //jorge
+
+    // obtenerItemsClienteOrden(cliente: string, tipoOrden: string): Observable<any> {
+    //     const params = new HttpParams()
+    //         .set('cliente', cliente)
+    //         .set('tipoOrden', tipoOrden);
+
+    //     return this.http.get(`${this.baseUrl}/items_cliente_orden`, { params });
+    // }
+
+
+
+
+    //rutas - formulario generar inconsistencia//
+
+
+    obtenerCodigoOrden(data: { orden_compra: string }): Observable<any> {
+        return this.http.post(`${this.baseURllocal}/codigo_orden`, data);
     }
+
+    obtenerUltimoCodigo(): Observable<{ codigo: string }> {
+        const url = `${this.baseURllocal}/ultimo_codigo`;
+        return this.http.get<{ codigo: string }>(url);
+    }
+
+
+    consultarItem(codigo: string, cliente: string): Observable<any> {
+        return this.http.post(`${this.baseURllocal}/consultar-item`, {
+            codigo,
+            cliente
+        });
+    }
+
+    generarInconsistencia(data: FormData): Observable<any> {
+        return this.http.post(`${this.baseURllocal}/generar_inconsistencia`, data);
+    }
+
+    //rutas - ver mis inconsistencia//
+
+
+    listarPorUsuario(idUsuario: number): Observable<any[]> {
+        return this.http.get<{ success: boolean, data: any[] }>(`${this.baseURllocal}/usuario/${idUsuario}`)
+            .pipe(
+                map(response => response.data || [])
+            );
+    }
+
+    anularInconsistencia(id_inco: string, razon_anulacion: string, id_usuario: string): Observable<any> {
+        return this.http.post<any>(`${this.baseURllocal}/anular_inconsistencia`, {
+            id_inco,
+            razon_anulacion,
+            id_usuario
+        });
+    }
+
+    listarInconsistenciasPorDepartamento(rol: string) {
+        // ✅ Solo enviar el rol como query param
+        const params = new HttpParams().set('rol', rol);
+
+        return this.http.get(`${this.baseURllocal}/listar_inconsistencias_departamento`, { params });
+    }
+
+
+
+    aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string): Observable<any> {
+        const body = {
+            id_inconsistencia,
+            id_Sdp,
+            tipo_inconsistencia,
+            accion: 'aprobar'
+        };
+        return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
+    }
+
+    denegarInconsistencia(id_inconsistencia: number, id_Sdp: number, motivo: string): Observable<any> {
+        const body = {
+            id_inconsistencia,
+            id_Sdp,
+            accion: 'denegar',
+            motivo
+        };
+        return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
+    }
+
+
+
+    //Historico inconsistencias //
+
+    /**
+    * Obtiene los tiempos de proceso de una inconsistencia específica
+    */
+
+    listarHistorico(mes: number, year?: number): Observable<any> {
+        const params = new HttpParams()
+            .set('mes', mes.toString())
+            .set('year', (year || new Date().getFullYear()).toString());
+
+        // ✅ Paréntesis normales con template string dentro
+        return this.http.get(`${this.baseURllocal}/historico`, { params });
+    }
+
+
+    /**
+     * Obtiene los tiempos de proceso de una inconsistencia específica
+     */
+    obtenerTiemposProceso(idInconsistencia: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseURllocal}/${idInconsistencia}/tiempos-proceso`);
+    }
+
+
+
+    //CONSUMIR INCONSISTENCIAS//
+
+    obtenerInconsistenciasListasParaConsumir(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseURllocal}/listas-consumo`);
+    }
+
+   consumirInconsistencia(idInconsistencia: number, datos: any): Observable<any> {
+  return this.http.post(`${this.baseURllocal}/consumir`, {
+    id_inconsistencia: idInconsistencia,
+    tipo_consumo: datos.tipo,
+    ...(datos.tipo === 'consumo' 
+      ? { codigo_trn: datos.codigoTrn, codigo_consumo: datos.codigoConsumo }
+      : { codigo_validacion: datos.codigo }
+    )
+  });
+}
+
+
+
 }

@@ -17,36 +17,46 @@
   <div class="card mx-auto table-container">
 
     <!-- Filtros -->
-    <div class="row mb-3">
-      <!-- Búsqueda -->
-      <div class="col-md-4">
-        <input type="text" class="form-control" placeholder="Buscar..." [(ngModel)]="filters.busqueda" (input)="applyFilters()" />
-      </div>
+    <div class="card-body">
+      <div class="row mb-3 align-items-end">
+        <!-- Búsqueda -->
+        <div class="col-md-4 mb-2">
+          <label class="form-label">Búsqueda</label>
+          <input type="text" class="form-control" placeholder="Buscar por cliente, código, descripción..."
+            [(ngModel)]="filters.busqueda" (input)="applyFilters()" />
+        </div>
 
-      <!-- Filtro por mes -->
-      <div class="col-md-3">
-        <input type="month" class="form-control" [(ngModel)]="filters.mes" (change)="applyFilters()" />
-      </div>
+        <!-- Filtro por estado -->
+        <div class="col-md-3 mb-2">
+          <label class="form-label">Estado</label>
+          <select class="form-select" [(ngModel)]="filters.estado" (change)="applyFilters()">
+            <option value="">Todos los estados</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="terminada">Terminado</option>
+            <option value="anulado">Anulado</option>
+          </select>
+        </div>
 
-      <!-- Filtro por rango -->
-      <div class="col-md-5 d-flex gap-2">
-        <input type="date" class="form-control" [(ngModel)]="filters.fechaInicio" (change)="applyFilters()" placeholder="Desde" />
-        <input type="date" class="form-control" [(ngModel)]="filters.fechaFin" (change)="applyFilters()" placeholder="Hasta" />
-      </div>
+        <!-- Filtro por mes -->
+        <div class="col-md-3 mb-2">
+          <label class="form-label">Mes</label>
+          <input type="month" class="form-control" [(ngModel)]="filters.mes" (change)="applyFilters()" />
+        </div>
 
-      <!-- Filtro de anuladas -->
-      <div class="col-md-3 mt-2 mt-md-0">
-        <select class="form-select" [(ngModel)]="filters.anuladas" (change)="applyFilters()">
-          <option value="">Todas</option>
-          <option value="true">Solo anuladas</option>
-          <option value="false">No anuladas</option>
-        </select>
+        <!-- Botón limpiar filtros -->
+        <div class="col-md-2 mb-2">
+          <button class="btn btn-outline-secondary w-100"
+            (click)="filters = {busqueda: '', estado: '', mes: ''}; applyFilters()">
+            <i class="fa fa-times"></i> Limpiar
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Tabla -->
     <div class="card-body" style="overflow: auto;">
-      <table class="table table-hover table-striped align-middle sombra-buttoms" *ngIf="inconsistencias.length > 0; else sinDatos">
+      <table class="table table-hover table-striped align-middle sombra-buttoms"
+        *ngIf="inconsistencias.length > 0; else sinDatos">
         <thead>
           <tr>
             <th class="text-center">Fecha</th>
@@ -62,9 +72,10 @@
             <th class="text-center">Precio Unitario</th>
             <th class="text-center">Precio Total</th>
             <th class="text-center">Descrip. Situación</th>
-            <th class="text-center">Etapa</th>
+            <th class="text-center">Estado</th>
             <th class="text-center">Acción a tomar</th>
             <th class="text-center">Evidencias</th>
+            <th class="text-center">Tiempos</th>
           </tr>
         </thead>
         <tbody style="text-align: center;">
@@ -72,36 +83,37 @@
             <td>{{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}</td>
             <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.Cliente }}</td>
             <td>{{ inco.id_inconsistencia }}</td>
-            <td>{{ inco.nombre_solicitante }}</td>
+            <td>{{ inco.nombre_solicitante }} {{ inco.apellido_solicitante }}</td>
             <td *ngIf="mostrarDepartamento">{{ inco.nombre_departamento }}</td>
             <td>{{ tipos_inco[inco.tipo_inconsistencia] }}</td>
             <td>{{ inco.cantidad_solicitada_op }}</td>
             <td>{{ inco.cantidad_inconsistencia }}</td>
             <td appAutoExpand [maxLength]="15" [maxWidth]="120">
-              <!-- <button class="btn btn-sm btn-primary" (click)="verDetalle(inco.item, 'Item')">
-                <i class="fa-regular fa-file-lines"></i>
-              </button> -->
               {{ inco.item }}
             </td>
             <td>{{ inco.tipo_de_orden }}</td>
-            <td>{{ inco.precio_unitario | currency:'COP' }}</td>
-            <td>{{ inco.precio_total_inconsistencia | currency:'COP' }}</td>
+            <td>{{ inco.precio_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+            <td>{{ inco.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
             <td appAutoExpand [maxLength]="15" [maxWidth]="120">
-              <!-- <button class="btn btn-sm btn-primary" (click)="verDetalle(inco.descripcion_inconsistencia, 'Situación')">
-                <i class="fa-regular fa-file-lines"></i>
-              </button> -->
               {{ inco.descripcion_inconsistencia }}
             </td>
-            <td>{{ inco.etapa || 'Pendiente' }}</td>
+            <td>
+              <span [ngClass]="getEstadoClass(inco.estado)">
+                {{ getEstadoLabel(inco.estado) }}
+              </span>
+            </td>
             <td appAutoExpand [maxLength]="15" [maxWidth]="120">
-              <!-- <button class="btn btn-sm btn-primary" (click)="verDetalle(inco.accion_inconsistencia, 'Acción a tomar')">
-                <i class="fa-regular fa-file-lines"></i>
-              </button> -->
               {{ inco.accion_inconsistencia || 'N/A' }}
             </td>
             <td>
-              <button class="btn btn-link p-0" (click)="verEvidencias(inco)">
+              <button class="btn btn-link p-0" (click)="verEvidencias(inco)" title="Ver evidencias">
                 <i class="fa-regular fa-image text-success" style="font-size: 20px;"></i>
+              </button>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-info text-white" (click)="verTiemposProceso(inco)"
+                title="Ver tiempos de proceso">
+                <i class="fa fa-clock"></i> Ver tiempos
               </button>
             </td>
           </tr>
@@ -116,26 +128,89 @@
     </div>
 
     <!-- Paginador -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(paginatorId)"
-      [instanceId]="paginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25, 50, 100]"
+    <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)" [instanceId]="paginatorId"
+      [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50, 100]"
       [noDataMessage]="'No se encontraron registros'">
     </app-shared-paginator>
   </div>
 </div>
 
-<!-- Modal Detalle -->
-<ng-template #modalTexto let-data>
-  <div class="modal-header bg-primary text-white">
-    <h5 class="modal-title">{{ data.titulo }}</h5>
+<!-- Modal Tiempos de Proceso -->
+<ng-template #modalTiempos>
+  <div class="modal-header bg-info text-white">
+    <h5 class="modal-title">
+      <i class="fa fa-clock me-2"></i>
+      Tiempos de Proceso - Inconsistencia #{{ modalRef?.content?.inconsistencia?.id_inconsistencia }}
+    </h5>
     <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="modalRef?.hide()"></button>
   </div>
   <div class="modal-body">
-    <p class="mb-0">{{ data.contenido }}</p>
+    <div *ngIf="cargandoTiempos" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2">Cargando tiempos de proceso...</p>
+    </div>
+
+    <div *ngIf="!cargandoTiempos && tiemposProceso.length === 0" class="alert alert-warning">
+      <i class="fa fa-exclamation-triangle me-2"></i>
+      No hay registros de tiempos de proceso para esta inconsistencia.
+    </div>
+
+    <div *ngIf="!cargandoTiempos && tiemposProceso.length > 0">
+      <!-- Resumen -->
+      <!-- <div class="alert alert-info mb-3">
+        <strong>Tiempo total del proceso:</strong> {{ calcularTiempoTotal() }}
+      </div> -->
+
+      <!-- Tabla de tiempos -->
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Etapa</th>
+              <th>Responsable</th>
+              <th>Fecha Inicio</th>
+              <th>Fecha Fin</th>
+              <th class="text-end">Tiempo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let tiempo of tiemposProceso">
+              <td>
+                <strong>{{ tiempo.etapa }}</strong>
+              </td>
+              <td>{{ tiempo.responsable || 'N/A' }}</td>
+              <td>{{ tiempo.fecha_inicio | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span *ngIf="tiempo.fecha_fin">{{ tiempo.fecha_fin | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span *ngIf="!tiempo.fecha_fin" class="badge bg-warning text-dark">En proceso</span>
+              </td>
+              <td class="text-end">
+                <span *ngIf="tiempo.tiempo_minutos" class="badge bg-secondary">
+                  {{ tiempo.tiempo_dias > 0 ? tiempo.tiempo_dias + 'd ' : '' }}
+                  {{ tiempo.tiempo_horas > 0 ? tiempo.tiempo_horas + 'h ' : '' }}
+                  {{ tiempo.tiempo_minutos_restantes }}m
+                </span>
+                <span *ngIf="!tiempo.tiempo_minutos" class="text-muted">-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Observaciones si existen -->
+      <!-- <div *ngIf="tiemposProceso.some(t => t.observaciones)" class="mt-3">
+        <h6>Observaciones:</h6>
+        <div *ngFor="let tiempo of tiemposProceso">
+          <div *ngIf="tiempo.observaciones" class="alert alert-light mb-2">
+            <strong>{{ tiempo.etapa }}:</strong> {{ tiempo.observaciones }}
+          </div>
+        </div>
+      </div> -->
+    </div>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-primary" (click)="modalRef?.hide()">Cerrar</button>
+    <button type="button" class="btn btn-secondary" (click)="modalRef?.hide()">Cerrar</button>
   </div>
 </ng-template>

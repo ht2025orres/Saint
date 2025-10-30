@@ -11,5 +11,7 @@ export class User {
   public id_Sdp: string;
   public nombre_departamento_Sdp: string;
   public id_departamento_Sdp: string;
+  id_lider: number;
+  lider_nombre: string;
   nombre_completo: string;
 }

@@ -17,11 +17,9 @@ export class AprobacionComponent implements OnInit {
   tipos_inco: { [key: string]: string } = {};
 
   inconsistencias: any[] = [];
-  currentData: any[] = []; // Datos actuales de la página
+  currentData: any[] = [];
 
-  // Filtros (personaliza según tu interfaz)
   filters = {
-    // Define aquí los filtros específicos de tu interfaz
     busqueda: ''
   };
 
@@ -29,19 +27,14 @@ export class AprobacionComponent implements OnInit {
 
   mostrarDepartamento = true;
   mostrarEstado = true;
-  
-  estadoSeleccionado: string = 'pendientes';
+
   loading: boolean = false;
-
-  estadoFiltro: string = 'pendientes'; // Para el filtro por estado
-
-  modalRef: any; // Para el modal bootstrap o ng-bootstrap
 
   constructor(
     private inconsistenciasService: InconsistenciaService,
     public authService: AuthService,
     public paginationService: PaginationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.cargarInconsistencias();
@@ -54,120 +47,185 @@ export class AprobacionComponent implements OnInit {
       .then(json => this.tipos_inco = json);
   }
 
-  cargarInconsistencias(): void {
-    this.loading = true;
-    // this.inconsistenciasService.listarInconsistenciasPorRol(this.authService.user.roles, this.authService.user.id_Sdp)
-    //   .subscribe({
-    //     next: (res) => {
-    //       this.inconsistencias = res;
-    //       this.loading = false;
-    //     },
-    //     error: (err) => {
-    //       console.error('Error al cargar inconsistencias:', err);
-    //       this.loading = false;
-    //       Swal.fire('Error', 'No se pudieron cargar las inconsistencias', 'error');
-    //     }
-    //   });
-    this.subscription.add(
-      this.inconsistenciasService.listarInconsistenciasPorRol(this.authService.user.roles, this.authService.user.id_Sdp).pipe(
-        tap(res => this.inconsistencias = res),
-        switchMap(() => this.paginationService.initializePaginator(this.paginatorId, this.inconsistencias, 10))
-      ).subscribe(state => {
-        this.currentData = state.currentData;
+cargarInconsistencias(): void {
+  this.loading = true;
+
+  // ✅ 1. Obtener y filtrar los roles del usuario relacionados con inconsistencias
+  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
+  const rolesInconsistencias = rolesUsuario.filter(rol =>
+    rol.toLowerCase().includes('(inconsistencias)')
+  );
+
+  // Si no tiene ningún rol de inconsistencias, detener la carga
+  if (rolesInconsistencias.length === 0) {
+    console.warn('El usuario no tiene roles asociados a inconsistencias.');
+    this.loading = false;
+    this.inconsistencias = [];
+    this.currentData = [];
+    return;
+  }
+
+  // ✅ 2. Tomar el primer rol de inconsistencias
+  const rolInconsistencia = rolesInconsistencias[0];
+
+  // ✅ 3. Llamar al servicio SIN id_departamento
+  this.subscription.add(
+    this.inconsistenciasService
+      .listarInconsistenciasPorDepartamento(rolInconsistencia) // 👈 Solo el rol
+      .subscribe({
+        next: (res: any) => {
+          console.log(rolInconsistencia);
+          console.log('Respuesta del backend:', res); // 👈 DEBUG
+
+          if (res && res.success && Array.isArray(res.data)) {
+            this.inconsistencias = res.data;
+          } else if (Array.isArray(res)) {
+            this.inconsistencias = res;
+          } else {
+            this.inconsistencias = [];
+          }
+
+          this.loading = false;
+
+          this.paginationService.initializePaginator(
+            this.paginatorId,
+            this.inconsistencias,
+            10
+          ).subscribe({
+            next: (state) => {
+              this.currentData = state.currentData;
+            },
+            error: (err) => {
+              console.error('Error al inicializar paginador:', err);
+              this.currentData = [];
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Error al cargar inconsistencias:', err);
+          this.loading = false;
+          this.inconsistencias = [];
+          this.currentData = [];
+        }
       })
-    );
-  }
+  );
+}
 
-  cambiarEstadoFiltro(): void {
-    this.cargarInconsistencias();
-  }
+verEvidencias(inco: any): void {
+  // Primero intenta obtener evidencias_urls (que vienen del backend ya parseadas)
+  let archivos = inco.evidencias_urls;
 
-  verEvidencias(inco: any): void {
-    const evidencias: string[] = JSON.parse(inco.evidencias || '[]');
-    if (!evidencias.length) {
-      Swal.fire('Sin evidencias', 'No hay archivos adjuntos.', 'info');
-      return;
-    }
+  // Si no existen evidencias_urls, intenta parsear evidencias (formato antiguo)
+  if (!archivos || archivos.length === 0) {
+    try {
+      const evidenciasParsed = JSON.parse(inco.evidencias || '[]');
+      // Convierte las rutas relativas a URLs completas
+      archivos = evidenciasParsed.map((ruta: string) => {
+        // Usa el dominio actual de la app (útil en desarrollo y producción)
+        const baseUrl = 'http://localhost:8000';
 
-    const baseUrl = 'https://colegioprovidencia.edu.co';
-
-    const urls = evidencias.map(file => 
-      file.startsWith('http') ? file : `${baseUrl}${file}`
-    );
-
-    const imagenes = urls.filter(file =>
-      /\.(jpe?g|png|gif|bmp|webp|svg)$/i.test(file)
-    );
-    const pdfs = urls.filter(file =>
-      /\.pdf$/i.test(file)
-    );
-
-    // Abrir PDFs en nueva pestaña
-    pdfs.forEach(pdf => {
-      window.open(pdf, '_blank');
-    });
-
-    // Mostrar imágenes con SweetAlert2
-    if (imagenes.length === 1) {
-      Swal.fire({
-        title: 'Evidencia',
-        imageUrl: imagenes[0],
-        imageAlt: 'Evidencia',
-        confirmButtonText: 'Cerrar'
+        return `${baseUrl}/${ruta}`;
       });
-    } else if (imagenes.length > 1) {
-      let index = 0;
-
-      const showImage = (i: number) => {
-        Swal.fire({
-          title: `Evidencia ${i + 1} de ${imagenes.length}`,
-          imageUrl: imagenes[i],
-          imageAlt: `Evidencia ${i + 1}`,
-          showCancelButton: i < imagenes.length - 1,
-          showConfirmButton: i > 0,
-          confirmButtonText: i > 0 ? 'Anterior' : 'Cerrar',
-          cancelButtonText: i < imagenes.length - 1 ? 'Siguiente' : 'Cerrar'
-        }).then((result) => {
-          if (result.isConfirmed && i > 0) {
-            showImage(i - 1);
-          } else if (result.dismiss === Swal.DismissReason.cancel && i < imagenes.length - 1) {
-            showImage(i + 1);
-          }
-        });
-      };
-
-      showImage(index);
+    } catch (error) {
+      archivos = [];
     }
   }
 
-  aceptarInconsistencia(inco: any): void {
+  if (!archivos || archivos.length === 0) {
     Swal.fire({
-      title: '¿Deseas aceptar esta inconsistencia?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, aceptar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
-      if (result.isConfirmed) {
-        const idInconsistencia = inco.id;
-        const idUsuario = this.authService.user.id_Sdp;
-        const tipoInconsistencia = inco.tipo_inco;
-        const etapa = inco.etapa
-
-        this.inconsistenciasService.aprobarInconsistencia(idInconsistencia, idUsuario, tipoInconsistencia, etapa).subscribe({
-          next: (res) => {
-            Swal.fire('Éxito', 'Inconsistencia aceptada correctamente.', 'success');
-            // Recargar la lista o actualizar la tabla
-            this.cargarInconsistencias(); 
-          },
-          error: (err) => {
-            console.error(err);
-            Swal.fire('Error', 'No se pudo aceptar la inconsistencia.', 'error');
-          }
-        });
-      }
+      icon: 'info',
+      title: 'Sin evidencia',
+      text: 'Esta inconsistencia no tiene evidencias adjuntas.',
+      confirmButtonText: 'Entendido'
     });
+    return;
   }
+
+  // Construye el HTML para mostrar imágenes o PDF igual que en MisInconsistenciasComponent
+  const evidenciasHtml = archivos.map((url: string) => {
+    const extension = url.split('.').pop()?.toLowerCase();
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+      return `
+        <div class="mb-3">
+          <img src="${url}" 
+               alt="Evidencia" 
+               class="img-fluid rounded shadow-sm"
+               style="max-width: 100%; max-height: 70vh; width: auto; cursor: pointer;"
+               onclick="window.open('${url}', '_blank')">
+        </div>
+      `;
+    } else if (extension === 'pdf') {
+      return `
+        <div class="mb-3">
+          <a href="${url}" target="_blank" class="btn btn-danger btn-lg">
+            <i class="fas fa-file-pdf me-2"></i>Abrir PDF
+          </a>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="mb-3">
+          <a href="${url}" target="_blank" class="btn btn-secondary btn-lg">
+            <i class="fas fa-file me-2"></i>Abrir archivo
+          </a>
+        </div>
+      `;
+    }
+  }).join('');
+
+  Swal.fire({
+    title: 'Evidencias',
+    html: `
+      <div class="text-center">
+        ${evidenciasHtml}
+      </div>
+    `,
+    width: '40%',
+    showCloseButton: true,
+    showConfirmButton: false,
+    customClass: {
+      popup: 'p-4'
+    }
+  });
+}
+
+ aprobarInconsistencia(inco: any): void {
+  Swal.fire({
+    title: '¿Aprobar inconsistencia?',
+    text: `¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, aprobar',
+    cancelButtonText: 'Cancelar'
+  }).then(result => {
+    if (result.isConfirmed) {
+      this.loading = true;
+      this.inconsistenciasService.aprobarInconsistencia(
+        inco.id_inconsistencia,
+        +this.authService.user.id_Sdp,
+        inco.tipo_inconsistencia  // Agregado: envío del tipo de inconsistencia
+      ).subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          if (res.success) {
+            Swal.fire('Aprobada', 'La inconsistencia ha sido aprobada correctamente.', 'success');
+            this.inconsistencias = this.inconsistencias.filter(i => i.id_inconsistencia !== inco.id_inconsistencia);
+            this.applyFilters();
+          } else {
+            Swal.fire('Error', res.message || 'No se pudo aprobar la inconsistencia.', 'error');
+          }
+        },
+        error: (err) => {
+          this.loading = false;
+          console.error('Error al aprobar:', err);
+          Swal.fire('Error', 'Ocurrió un error al aprobar.', 'error');
+        }
+      });
+    }
+  });
+}
+
 
   denegarInconsistencia(inco: any): void {
     Swal.fire({
@@ -187,12 +245,31 @@ export class AprobacionComponent implements OnInit {
     }).then(result => {
       if (result.isConfirmed) {
         const motivo = result.value;
-        console.log('Denegada', { inco, motivo });
-        // Aquí llamarías al servicio para denegar
+        this.loading = true;
+        this.inconsistenciasService.denegarInconsistencia(
+          inco.id_inconsistencia,
+          +this.authService.user.id_Sdp,
+          motivo
+        ).subscribe({
+          next: (res: any) => {
+            this.loading = false;
+            if (res.success) {
+              Swal.fire('Denegada', 'La inconsistencia fue denegada correctamente.', 'success');
+              this.inconsistencias = this.inconsistencias.filter(i => i.id_inconsistencia !== inco.id_inconsistencia);
+              this.applyFilters();
+            } else {
+              Swal.fire('Error', res.message || 'No se pudo denegar la inconsistencia.', 'error');
+            }
+          },
+          error: (err) => {
+            this.loading = false;
+            console.error('Error al denegar:', err);
+            Swal.fire('Error', 'Ocurrió un error al denegar.', 'error');
+          }
+        });
       }
     });
   }
-
   filterFunction: FilterFunction = (item, filtros) => {
     const texto = filtros.busqueda.toLowerCase();
 
@@ -215,5 +292,9 @@ export class AprobacionComponent implements OnInit {
     );
     const state = this.paginationService.getPaginatorState(this.paginatorId);
     this.currentData = state?.currentData || [];
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 }
