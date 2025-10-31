@@ -118,15 +118,16 @@ export class InconsistenciaService {
 
 
 
-    aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string): Observable<any> {
-        const body = {
-            id_inconsistencia,
-            id_Sdp,
-            tipo_inconsistencia,
-            accion: 'aprobar'
-        };
-        return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
-    }
+   aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string, accionTomar?: string | null): Observable<any> {
+    const body = {
+        id_inconsistencia,
+        id_Sdp,
+        tipo_inconsistencia,
+        accion: 'aprobar',
+        accion_tomar: accionTomar  // ✅ Cambiado a snake_case
+    };
+    return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
+}
 
     denegarInconsistencia(id_inconsistencia: number, id_Sdp: number, motivo: string): Observable<any> {
         const body = {

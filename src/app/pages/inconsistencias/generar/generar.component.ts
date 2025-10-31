@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { InconsistenciaService } from '../../../services/inconsistencia.service';
 import { AuthService } from '../../../services/auth.service';
 import { debounceTime } from 'rxjs/operators';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 @Component({
   selector: 'app-generar',
@@ -40,6 +41,26 @@ export class GenerarComponent implements OnInit {
   mostrarTablaAccion = false;
   accionObligatoria = false;
 
+
+  cantidadInconsistenciaValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.parent) {
+      return null;
+    }
+
+    const cantidadInco = parseFloat(control.value?.toString().replace(/,/g, '') || '0');
+    const cantidadSolicitada = parseFloat(
+      control.parent.get('cantidad_solicitada_op')?.value?.toString().replace(/,/g, '') || '0'
+    );
+
+    if (cantidadInco > cantidadSolicitada && cantidadSolicitada > 0) {
+      return { cantidadExcedida: true };
+    }
+
+    return null;
+  };
+}
+
   constructor(
     private fb: FormBuilder,
     private inconsistenciasService: InconsistenciaService,
@@ -48,28 +69,28 @@ export class GenerarComponent implements OnInit {
     private authService: AuthService,
   ) {
     this.inconsistenciaForm = this.fb.group({
-      fecha: [{ value: new Date().toISOString().split('T')[0], disabled: true }, Validators.required],
-      cliente: ['', Validators.required],
-      nombre_proceso: [this.authService.user.nombre_departamento_Sdp, Validators.required],
-      jefe_inmediato: [this.authService.user.id_lider, Validators.required],
-      lider_nombre: [this.authService.user.lider_nombre, Validators.required],
-      id_departamento: [this.authService.user.id_departamento_Sdp, Validators.required],
-      id_solicitante: [this.authService.user.id_Sdp, Validators.required],
-      codigo_inconsistencia: ['', Validators.required],
-      correo_solicitante: [this.authService.user.email, Validators.required],
-      inconsistencia: ['', Validators.required],
-      cantidad_solicitada_op: ['', Validators.required],
-      cantidad_inco: ['', Validators.required],
-      unidad_medida: ['unidades', Validators.required],
-      item: ['', Validators.required],
-      tipo_inco: ['', Validators.required],
-      codigo: ['', Validators.required],
-      precio_unitario: ['', Validators.required],
-      precio_total: [{ value: '', disabled: true }],
-      situacion: ['', Validators.required],
-      accion: [''],
-      imagenes: [null]
-    });
+  fecha: [{ value: new Date().toISOString().split('T')[0], disabled: true }, Validators.required],
+  cliente: ['', Validators.required],
+  nombre_proceso: [this.authService.user.nombre_departamento_Sdp, Validators.required],
+  jefe_inmediato: [this.authService.user.id_lider, Validators.required],
+  lider_nombre: [this.authService.user.lider_nombre, Validators.required],
+  id_departamento: [this.authService.user.id_departamento_Sdp, Validators.required],
+  id_solicitante: [this.authService.user.id_Sdp, Validators.required],
+  codigo_inconsistencia: ['', Validators.required],
+  correo_solicitante: [this.authService.user.email, Validators.required],
+  inconsistencia: ['', Validators.required],
+  cantidad_solicitada_op: ['', Validators.required],
+  cantidad_inco: ['', [Validators.required, this.cantidadInconsistenciaValidator()]], // 👈 Agregar validador aquí
+  unidad_medida: ['unidades', Validators.required],
+  item: ['', Validators.required],
+  tipo_inco: ['', Validators.required],
+  codigo: ['', Validators.required],
+  precio_unitario: ['', Validators.required],
+  precio_total: [{ value: '', disabled: true }],
+  situacion: ['', Validators.required],
+  accion: [''],
+  imagenes: [null]
+});
   }
 
   ngOnInit(): void {
@@ -269,34 +290,53 @@ export class GenerarComponent implements OnInit {
     }
   }
   onItemSelect(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const f120IdSeleccionado = input.value.trim();
+  const input = event.target as HTMLInputElement;
+  const f120IdSeleccionado = input.value.trim();
 
-    if (!f120IdSeleccionado) return;
+  if (!f120IdSeleccionado) return;
 
-    // Buscar el item seleccionado en el array
-    const itemEncontrado = this.itemsDisponibles.find(
-      item => item.f120_id === f120IdSeleccionado
-    );
+  // Buscar el item seleccionado en el array
+  const itemEncontrado = this.itemsDisponibles.find(
+    item => item.f120_id === f120IdSeleccionado
+  );
 
-    if (itemEncontrado) {
-      // Rellenar automáticamente los campos del formulario
-      this.inconsistenciaForm.patchValue({
-        nombre_item: itemEncontrado.f120_id,
-        item: [itemEncontrado.descripcion, itemEncontrado.id_color, itemEncontrado.id_talla]
-          .filter(Boolean)
-          .join(' - '),
+  if (itemEncontrado) {
+    const precioUnitario = parseFloat(itemEncontrado.precio_unitario) || 0;
+    
+    // Rellenar automáticamente los campos del formulario
+    this.inconsistenciaForm.patchValue({
+      nombre_item: itemEncontrado.f120_id,
+      item: [itemEncontrado.descripcion, itemEncontrado.id_color, itemEncontrado.id_talla]
+        .filter(Boolean)
+        .join(' - '),
+      cantidad_solicitada_op: this.formatNumber(itemEncontrado.cantidad),
+      precio_unitario: precioUnitario > 0 ? this.formatNumber(precioUnitario) : ''
+    });
 
-        cantidad_solicitada_op: this.formatNumber(itemEncontrado.cantidad),
-        precio_unitario: this.formatNumber(itemEncontrado.precio_unitario)
+    // 👇 Validar si el precio es cero y mostrar alerta
+    if (precioUnitario === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Precio no disponible',
+        text: 'Este ítem no tiene precio unitario registrado. Por favor, ingrese el precio manualmente.',
+        confirmButtonText: 'Entendido'
       });
-
-      // Calcular el total automáticamente
+      
+      // Hacer foco en el campo de precio unitario
+      setTimeout(() => {
+        const precioInput = document.getElementById('precio_unitario') as HTMLInputElement;
+        if (precioInput) {
+          precioInput.focus();
+        }
+      }, 500);
+    } else {
+      // Calcular el total automáticamente solo si hay precio
       this.calcularTotal();
-
-      console.log('Item seleccionado:', itemEncontrado);
     }
+
+    console.log('Item seleccionado:', itemEncontrado);
   }
+}
 
   onFileChange(event: any): void {
     const files = event.target.files;
@@ -304,18 +344,22 @@ export class GenerarComponent implements OnInit {
       this.inconsistenciaForm.patchValue({ imagenes: files });
     }
   }
+formatearMiles(event: Event) {
+  const input = event.target as HTMLInputElement;
+  let valor = input.value.replace(/,/g, '');
+  if (isNaN(+valor)) return;
 
-  formatearMiles(event: Event) {
-    const input = event.target as HTMLInputElement;
-    let valor = input.value.replace(/,/g, '');
-    if (isNaN(+valor)) return;
+  let partes = valor.split('.');
+  partes[0] = parseInt(partes[0] || '0', 10).toLocaleString('en-US');
+  input.value = partes.join('.');
 
-    let partes = valor.split('.');
-    partes[0] = parseInt(partes[0] || '0', 10).toLocaleString('en-US');
-    input.value = partes.join('.');
-
-    this.calcularTotal();
+  // Revalidar cantidad_inco cuando cambie cualquier cantidad
+  if (input.id === 'cantidad_solicitada_op' || input.id === 'cantidad_inco') {
+    this.inconsistenciaForm.get('cantidad_inco')?.updateValueAndValidity();
   }
+
+  this.calcularTotal();
+}
 
   calcularTotal(): void {
     const precioRaw = this.inconsistenciaForm.get('precio_unitario')?.value || '0';

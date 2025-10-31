@@ -23,6 +23,8 @@ export class AprobacionComponent implements OnInit {
     busqueda: ''
   };
 
+  mostrarAccionTomar = false;
+
   private subscription = new Subscription();
 
   mostrarDepartamento = true;
@@ -39,6 +41,7 @@ export class AprobacionComponent implements OnInit {
   ngOnInit(): void {
     this.cargarInconsistencias();
     this.obtenerTipos();
+     this.verificarRolLogistica(); // 👈 Agregar esta línea
   }
 
   obtenerTipos() {
@@ -110,6 +113,25 @@ cargarInconsistencias(): void {
       })
   );
 }
+
+
+
+verificarRolLogistica(): void {
+  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
+  
+  // DEBUG: Ver qué roles tiene el usuario
+  console.log(' Verificando rol  - Roles del usuario:', rolesUsuario);
+  
+  this.mostrarAccionTomar = rolesUsuario.some(rol => {
+    const rolLower = rol.toLowerCase();
+    const esLogistica = rolLower === 'logisitica (inconsistencias)'; 
+    console.log(` Comparando: "${rolLower}" === "logisitica (inconsistencias)"`, esLogistica);
+    return esLogistica;
+  });
+  
+  console.log(' ¿Mostrar columna Acción a tomar?:', this.mostrarAccionTomar);
+}
+
 
 verEvidencias(inco: any): void {
   // Primero intenta obtener evidencias_urls (que vienen del backend ya parseadas)
@@ -190,21 +212,59 @@ verEvidencias(inco: any): void {
   });
 }
 
- aprobarInconsistencia(inco: any): void {
-  Swal.fire({
+aprobarInconsistencia(inco: any): void {
+  // Verificar si el usuario tiene el rol de Calidad
+  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
+
+  const esRolCalidad = rolesUsuario.some(rol => rol.toLowerCase() === 'calidad (inconsistencias)');
+
+  // Configurar el modal según el rol
+  const modalConfig: any = {
     title: '¿Aprobar inconsistencia?',
     text: `¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?`,
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Sí, aprobar',
     cancelButtonText: 'Cancelar'
-  }).then(result => {
+  };
+
+  // Si es rol Calidad, agregar input de acción
+  if (esRolCalidad) {
+    modalConfig.html = `
+      <p>¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?</p>
+      <div class="mt-3">
+        <label for="accion-tomar" class="form-label fw-bold">Acción a tomar:</label>
+        <textarea 
+          id="accion-tomar" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Describe la acción correctiva o preventiva a implementar..."
+        ></textarea>
+      </div>
+    `;
+    delete modalConfig.text;
+
+    modalConfig.preConfirm = () => {
+      const accion = (document.getElementById('accion-tomar') as HTMLTextAreaElement)?.value;
+      if (!accion || accion.trim() === '') {
+        Swal.showValidationMessage('La acción a tomar es obligatoria');
+        return false;
+      }
+      return accion;
+    };
+  }
+
+  Swal.fire(modalConfig).then(result => {
     if (result.isConfirmed) {
       this.loading = true;
+
+      const accionTomar = esRolCalidad ? result.value : null;
+
       this.inconsistenciasService.aprobarInconsistencia(
         inco.id_inconsistencia,
         +this.authService.user.id_Sdp,
-        inco.tipo_inconsistencia  // Agregado: envío del tipo de inconsistencia
+        inco.tipo_inconsistencia,
+        accionTomar
       ).subscribe({
         next: (res: any) => {
           this.loading = false;
