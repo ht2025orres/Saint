@@ -1,463 +1,598 @@
-<!-- Encabezado con breadcrumb mejorado -->
-<div class="row page-titles mt-3" role="banner">
-    <div class="col-md-5 align-self-center">
-        <h1 class="text-themecolor h3" id="page-title">{{ title }}</h1>
-    </div>
-    <div class="col-md-7 align-self-center">
-        <nav aria-label="Navegación de ruta (breadcrumb)">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item">
-                    <a routerLink="/dashboard" aria-label="Ir a Inicio">Inicio</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <span>Inconsistencias</span>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+<div class="contenedor-principal">
+  <!-- Header -->
+  <header class="header">
+    <h1 class="titulo-principal">Mis Inconsistencias</h1>
+    <p class="subtitulo">Seguimiento y trazabilidad completa</p>
+  </header>
 
-<!-- Contenedor principal -->
-<div class="container-fluid px-3 px-md-4">
-    <div class="card mx-auto table-container shadow-sm">
+  <!-- Filtros Colapsables (Mobile First) -->
+  <section class="seccion-filtros" aria-label="Filtros de búsqueda">
+    <!-- Toggle solo visible en móvil -->
+    <button 
+      type="button"
+      class="filtros-toggle"
+      [attr.aria-expanded]="filtrosExpandidos"
+      (click)="toggleFiltros()"
+      aria-controls="filtros-panel">
+      <span class="filtros-toggle-texto">
+        <svg class="icono-filtro-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        Filtros
+        <span *ngIf="contarFiltrosActivos() > 0" class="badge badge-estado">
+          {{ contarFiltrosActivos() }}
+        </span>
+      </span>
+      <svg class="icono-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+
+    <div 
+      id="filtros-panel"
+      class="filtros-contenedor" 
+      [class.expandido]="filtrosExpandidos"
+      role="region"
+      [attr.aria-hidden]="!filtrosExpandidos">
+      
+      <!-- Búsqueda general -->
+      <div class="campo-filtro campo-busqueda">
+        <label for="busqueda" class="etiqueta-filtro">
+          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          Buscar
+        </label>
+        <input 
+          type="search" 
+          id="busqueda" 
+          class="input-filtro"
+          [(ngModel)]="busqueda"
+          (input)="aplicarFiltros()"
+          placeholder="ID, Cliente, Item..."
+          aria-label="Buscar por ID, cliente o item">
+      </div>
+
+      <!-- Estado -->
+      <div class="campo-filtro">
+        <label for="filtro-estado" class="etiqueta-filtro">
+          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+          Estado
+        </label>
+        <select 
+          id="filtro-estado" 
+          class="select-filtro"
+          [(ngModel)]="filtroEstado"
+          (change)="aplicarFiltros()"
+          aria-label="Filtrar por estado">
+          <option value="">Todos los estados</option>
+          <option *ngFor="let estado of estados" [value]="estado">{{ estado }}</option>
+        </select>
+      </div>
+
+      <!-- Etapa -->
+      <div class="campo-filtro">
+        <label for="filtro-etapa" class="etiqueta-filtro">
+          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Etapa
+        </label>
+        <select 
+          id="filtro-etapa" 
+          class="select-filtro"
+          [(ngModel)]="filtroEtapa"
+          (change)="aplicarFiltros()"
+          aria-label="Filtrar por etapa">
+          <option value="">Todas las etapas</option>
+          <option *ngFor="let etapa of etapas" [value]="etapa">{{ traducirEtapa(etapa) }}</option>
+        </select>
+      </div>
+
+      <!-- Tipo -->
+      <div class="campo-filtro">
+        <label for="filtro-tipo" class="etiqueta-filtro">
+          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          Tipo
+        </label>
+        <select 
+          id="filtro-tipo" 
+          class="select-filtro"
+          [(ngModel)]="filtroTipo"
+          (change)="aplicarFiltros()"
+          aria-label="Filtrar por tipo de inconsistencia">
+          <option value="">Todos los tipos</option>
+          <option *ngFor="let tipo of tiposInconsistencia" [value]="tipo">{{ traducirTipoInconsistencia(tipo) }}</option>
+        </select>
+      </div>
+
+      <!-- Fecha desde -->
+      <div class="campo-filtro">
+        <label for="filtro-fecha-desde" class="etiqueta-filtro">
+          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Fecha desde
+        </label>
+        <input 
+          type="date" 
+          id="filtro-fecha-desde" 
+          class="input-filtro"
+          [(ngModel)]="filtroFechaDesde"
+          (change)="aplicarFiltros()"
+          aria-label="Filtrar desde fecha">
+      </div>
+
+      <!-- Fecha hasta -->
+      <div class="campo-filtro">
+        <label for="filtro-fecha-hasta" class="etiqueta-filtro">
+          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Fecha hasta
+        </label>
+        <input 
+          type="date" 
+          id="filtro-fecha-hasta" 
+          class="input-filtro"
+          [(ngModel)]="filtroFechaHasta"
+          (change)="aplicarFiltros()"
+          aria-label="Filtrar hasta fecha">
+      </div>
+
+      <!-- Botón limpiar -->
+      <button 
+        type="button"
+        class="boton-limpiar"
+        (click)="limpiarFiltros()"
+        [disabled]="contarFiltrosActivos() === 0"
+        aria-label="Limpiar todos los filtros">
+        <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Limpiar filtros
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="estado-carga" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Cargando inconsistencias...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !cargando" class="mensaje-error" role="alert" aria-live="assertive">
+    <svg class="icono-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <p><strong>Error al cargar:</strong> {{ error }}</p>
+  </div>
+
+  <!-- Lista de inconsistencias -->
+  <section class="seccion-lista" *ngIf="!cargando && !error" aria-label="Lista de inconsistencias">
+    
+    <!-- Info de resultados y filtros activos -->
+    <div class="info-resultados">
+      <p class="contador-resultados" aria-live="polite" aria-atomic="true">
+        <strong>{{ inconsistenciasFiltradas.length }}</strong> 
+        {{ inconsistenciasFiltradas.length === 1 ? 'inconsistencia' : 'inconsistencias' }}
+      </p>
+      
+      <!-- Chips de filtros activos -->
+      <div class="filtros-activos" *ngIf="contarFiltrosActivos() > 0">
+        <span class="chip-filtro-activo" *ngIf="filtroEstado">
+          Estado: {{ filtroEstado }}
+        </span>
+        <span class="chip-filtro-activo" *ngIf="filtroEtapa">
+          Etapa: {{ traducirEtapa(filtroEtapa) }}
+        </span>
+        <span class="chip-filtro-activo" *ngIf="filtroTipo">
+          Tipo: {{ traducirTipoInconsistencia(filtroTipo) }}
+        </span>
+        <span class="chip-filtro-activo" *ngIf="filtroFechaDesde">
+          Desde: {{ filtroFechaDesde }}
+        </span>
+        <span class="chip-filtro-activo" *ngIf="filtroFechaHasta">
+          Hasta: {{ filtroFechaHasta }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Sin resultados -->
+    <div *ngIf="inconsistenciasFiltradas.length === 0" class="sin-resultados">
+      <svg class="icono-sin-resultados" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="8" y1="15" x2="16" y2="15"></line>
+        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+      </svg>
+      <p>No se encontraron inconsistencias con los filtros aplicados</p>
+      <button 
+        type="button"
+        class="boton-limpiar"
+        (click)="limpiarFiltros()"
+        style="max-width: 200px; margin-top: 1rem;">
+        Limpiar filtros
+      </button>
+    </div>
+
+    <!-- Lista compacta tipo tabla (sin tarjetas) -->
+    <div 
+      class="grid-inconsistencias" 
+      role="list"
+      *ngIf="inconsistenciasFiltradas.length > 0">
+      
+      <article 
+        *ngFor="let inconsistencia of inconsistenciasFiltradas; trackBy: trackByInconsistencia" 
+        class="tarjeta-inconsistencia"
+        role="listitem"
+        tabindex="0"
+        (click)="abrirModalDetalles(inconsistencia)"
+        (keydown.enter)="abrirModalDetalles(inconsistencia)"
+        (keydown.space)="abrirModalDetalles(inconsistencia); $event.preventDefault()"
+        [attr.aria-label]="'Inconsistencia ' + inconsistencia.id_inconsistencia + ', estado ' + inconsistencia.estado_inconsistencia">
         
-        <!-- Panel de filtros accesible -->
-        <div class="card-header bg-white border-bottom">
-            <h2 class="h5 mb-3" id="filters-heading">Filtros de búsqueda</h2>
-            
-            <form role="search" aria-labelledby="filters-heading" class="filters-form">
-                <div class="row g-3">
-                    
-                    <!-- Búsqueda con label visible -->
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <label for="search-input" class="form-label visually-hidden-focusable">
-                            Buscar por cliente, ítem o consecutivo
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text" aria-hidden="true">
-                                <i class="fas fa-search"></i>
-                            </span>
-                            <input 
-                                type="search"
-                                id="search-input"
-                                class="form-control"
-                                placeholder="Buscar..."
-                                [(ngModel)]="filters.busqueda"
-                                (input)="applyFilters()"
-                                aria-describedby="search-help"
-                                autocomplete="off">
-                        </div>
-                        <small id="search-help" class="form-text text-muted d-block mt-1">
-                            Ingrese texto para filtrar resultados
-                        </small>
-                    </div>
-
-                    <!-- Filtro de estado con label visible -->
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <label for="status-filter" class="form-label">
-                            Estado de inconsistencia
-                        </label>
-                        <select 
-                            id="status-filter"
-                            class="form-select"
-                            [(ngModel)]="filters.estado"
-                            (change)="applyFilters()"
-                            aria-describedby="status-help">
-                            <option value="todos">Todos los estados</option>
-                            <option value="pendientes">Pendientes</option>
-                            <option value="terminadas">Terminadas</option>
-                            <option value="anuladas">Anuladas</option>
-                        </select>
-                        <small id="status-help" class="form-text text-muted d-block mt-1">
-                            Filtre por estado actual
-                        </small>
-                    </div>
-
-                    <!-- Contador de resultados (feedback)
-                    <div class="col-12 col-lg-4 d-flex align-items-end">
-                        <div class="results-summary p-2 bg-light rounded w-100" 
-                             role="status" 
-                             aria-live="polite" 
-                             aria-atomic="true">
-                            <strong>{{ filteredData?.length || 0 }}</strong> 
-                            <span class="text-muted">
-                                {{ (filteredData?.length === 1) ? 'resultado encontrado' : 'resultados encontrados' }}
-                            </span>
-                        </div>
-                    </div> -->
-                    
-                </div>
-            </form>
+        <!-- Header: ID + Badges -->
+        <div class="tarjeta-header">
+          <div class="info-principal">
+            <a 
+              class="id-inconsistencia"
+              [href]="'#inconsistencia-' + inconsistencia.id_inconsistencia"
+              (click)="$event.preventDefault(); abrirModalDetalles(inconsistencia)"
+              [attr.aria-label]="'Ver detalles de inconsistencia ' + inconsistencia.id_inconsistencia">
+              {{ inconsistencia.id_inconsistencia }}
+            </a>
+            <time class="fecha-inconsistencia" [attr.datetime]="inconsistencia.fecha_inconsistencia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="width: 0.75rem; height: 0.75rem; stroke-width: 2;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              {{ formatearFecha(inconsistencia.fecha_inconsistencia) }}
+            </time>
+          </div>
+          
+          <div class="badges">
+            <span 
+              class="badge badge-estado"
+              [ngClass]="obtenerClaseEstado(inconsistencia.estado_inconsistencia)"
+              [attr.aria-label]="'Estado: ' + inconsistencia.estado_inconsistencia">
+              {{ inconsistencia.estado_inconsistencia || 'Sin estado' }}
+            </span>
+            <span 
+              class="badge badge-etapa"
+              [ngClass]="obtenerClaseEtapa(inconsistencia.etapa)"
+              [attr.aria-label]="'Etapa: ' + traducirEtapa(inconsistencia.etapa)">
+              {{ traducirEtapa(inconsistencia.etapa) }}
+            </span>
+            <span 
+              *ngIf="inconsistencia.estado_consumo"
+              class="badge"
+              [ngClass]="inconsistencia.estado_consumo === 'CONSUMIDO' ? 'badge-consumido' : 'badge-por-consumir'"
+              [attr.aria-label]="'Estado de consumo: ' + inconsistencia.estado_consumo">
+              {{ inconsistencia.estado_consumo }}
+            </span>
+          </div>
         </div>
 
-        <!-- Contenedor responsivo de tabla -->
-        <div class="card-body p-0">
-            
-            <!-- Vista de tabla para escritorio -->
-            <div class="table-responsive d-none d-lg-block">
-                <table 
-                    class="table table-hover table-striped align-middle mb-0"
-                    aria-labelledby="page-title"
-                    aria-describedby="table-description">
-                    
-                    <caption id="table-description" class="visually-hidden">
-                        Listado de inconsistencias con información de fecha, cliente, tipo, cantidades, 
-                        estado de aprobación y acciones disponibles. Use los controles de paginación 
-                        al final de la tabla para navegar entre páginas.
-                    </caption>
-                    
-                    <thead class="table-header-custom">
-                        <tr>
-                            <th scope="col" class="text-center">
-                                <span class="d-flex align-items-center justify-content-center gap-1">
-                                    Fecha
-                                    <i class="fas fa-sort text-muted small" aria-hidden="true"></i>
-                                </span>
-                            </th>
-                            <th scope="col" class="text-center">Consecutivo</th>
-                            <th scope="col" class="text-center">Cliente</th>
-                            <th scope="col" class="text-center">Tipo</th>
-                            <th scope="col" class="text-center">
-                                <abbr title="Cantidad Solicitada">Cant. Solicitada</abbr>
-                            </th>
-                            <th scope="col" class="text-center">
-                                <abbr title="Cantidad Inconsistencia">Cant. Inconsistencia</abbr>
-                            </th>
-                            <th scope="col" class="text-center">Ítem</th>
-                            <th scope="col" class="text-center">
-                                <abbr title="Orden de Producción / Orden de Producción Reproceso / Orden de Producción Mantenimiento">
-                                    OP/OPR/OPM
-                                </abbr>
-                            </th>
-                            <th scope="col" class="text-center">Situación</th>
-                            <th scope="col" class="text-center">Aprobación</th>
-                            <th scope="col" class="text-center">Evidencia</th>
-                            <th scope="col" class="text-center">Acción</th>
-                        </tr>
-                    </thead>
-                    
-                    <tbody *ngIf="inconsistencias.length > 0; else sinDatos">
-                        <tr *ngFor="let inco of currentData; let i = index">
-                            
-                            <!-- Fecha -->
-                            <td class="text-center">
-                                <time [attr.datetime]="inco.fecha_inconsistencia">
-                                    {{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}
-                                </time>
-                            </td>
-                            
-                            <!-- Consecutivo -->
-                            <td class="text-center">
-                                <strong>{{ inco.id_inconsistencia }}</strong>
-                            </td>
-                            
-                            <!-- Cliente -->
-                            <td class="text-center">
-                                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
-                                    {{ inco.Cliente }}
-                                </span>
-                            </td>
-                            
-                            <!-- Tipo -->
-                            <td class="text-center">
-                                <span class="badge bg-light text-dark border">
-                                    {{ tipos[inco.tipo_inconsistencia] }}
-                                </span>
-                            </td>
-                            
-                            <!-- Cantidades -->
-                            <td class="text-center">
-                                <span class="fw-semibold">{{ inco.cantidad_solicitada_op }}</span>
-                            </td>
-                            <td class="text-center">
-                                <span class="text-danger fw-semibold">{{ inco.cantidad_inconsistencia }}</span>
-                            </td>
-                            
-                            <!-- Ítem -->
-                            <td class="text-start">
-                                <span appAutoExpand [maxLength]="20" [maxWidth]="150">
-                                    {{ inco.item }}
-                                </span>
-                            </td>
-                            
-                            <!-- Tipo de orden -->
-                            <td class="text-center">
-                                <span appAutoExpand [maxLength]="10" [maxWidth]="120">
-                                    {{ inco.tipo_de_orden }}
-                                </span>
-                            </td>
+        <!-- Contenido principal en líneas -->
+        <div class="tarjeta-contenido">
+          <div class="linea-info" *ngIf="inconsistencia.Cliente">
+            <span class="linea-info-label">Cliente:</span>
+            <span class="linea-info-valor">{{ inconsistencia.Cliente }}</span>
+          </div>
 
-                            <!-- Situación -->
-                            <td class="text-start">
-                                <span appAutoExpand [maxLength]="30" [maxWidth]="200">
-                                    {{ inco.descripcion_inconsistencia }}
-                                </span>
-                            </td>
-                            
-                            <!-- Aprobación -->
-                            <td class="text-center">
-                                <button 
-                                    *ngIf="inco.etapa === 'espera'" 
-                                    type="button"
-                                    class="btn btn-info btn-sm"
-                                    (click)="verObservacion(inco.observacion_logistica)"
-                                    [attr.aria-label]="'Ver observación de inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas fa-clock me-1" aria-hidden="true"></i>
-                                    En espera
-                                </button>
-                                <span 
-                                    *ngIf="inco.etapa !== 'espera'" 
-                                    class="badge bg-warning text-dark"
-                                    [attr.aria-label]="'Estado: ' + inco.etapa">
-                                    {{ inco.etapa }}
-                                </span>
-                            </td>
-                            
-                            <!-- Evidencia -->
-                            <td class="text-center">
-                                <button 
-                                    type="button"
-                                    class="btn btn-link btn-evidence p-1"
-                                    (click)="verEvidencias(inco)"
-                                    [attr.aria-label]="'Ver evidencias de inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas fa-lg" 
-                                       [ngClass]="{
-                                         'fa-image text-success': tieneImagen(inco),
-                                         'fa-file-pdf text-danger': tienePdf(inco),
-                                         'fa-ban text-muted': !tieneEvidencia(inco)
-                                       }"
-                                       aria-hidden="true"></i>
-                                    <span class="visually-hidden">
-                                        {{ tieneEvidencia(inco) ? 'Tiene evidencia adjunta' : 'Sin evidencia' }}
-                                    </span>
-                                </button>
-                            </td>
-                            
-                            <!-- Acción -->
-                            <td class="text-center">
-                                <button 
-                                    *ngIf="!inco.razon_anulacion"
-                                    type="button"
-                                    class="btn btn-danger btn-sm"
-                                    (click)="abrirAnular(inco)"
-                                    [attr.aria-label]="'Anular inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas fa-times-circle me-1" aria-hidden="true"></i>
-                                    Anular
-                                </button>
-                                <button 
-                                    *ngIf="inco.razon_anulacion"
-                                    type="button"
-                                    class="btn btn-secondary btn-sm"
-                                    (click)="verRazonAnulacion(inco)"
-                                    [attr.aria-label]="'Ver razón de anulación de inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas fa-ban me-1" aria-hidden="true"></i>
-                                    Anulada
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                    
-                    <ng-template #sinDatos>
-                        <tbody>
-                            <tr>
-                                <td colspan="12" class="text-center py-5">
-                                    <div class="empty-state">
-                                        <i class="fas fa-inbox fa-3x text-muted mb-3" aria-hidden="true"></i>
-                                        <p class="h5 text-muted">No hay inconsistencias registradas</p>
-                                        <p class="text-muted small">
-                                            Los registros aparecerán aquí cuando se creen inconsistencias
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </ng-template>
-                    
-                    <tfoot class="table-header-custom">
-                        <tr>
-                            <th scope="col" class="text-center">Fecha</th>
-                            <th scope="col" class="text-center">Consecutivo</th>
-                            <th scope="col" class="text-center">Cliente</th>
-                            <th scope="col" class="text-center">Tipo</th>
-                            <th scope="col" class="text-center">Cant. Solicitada</th>
-                            <th scope="col" class="text-center">Cant. Inconsistencia</th>
-                            <th scope="col" class="text-center">Ítem</th>
-                            <th scope="col" class="text-center">OP/OPR/OPM</th>
-                            <th scope="col" class="text-center">Situación</th>
-                            <th scope="col" class="text-center">Aprobación</th>
-                            <th scope="col" class="text-center">Evidencia</th>
-                            <th scope="col" class="text-center">Acción</th>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+          <div class="linea-info" *ngIf="inconsistencia.tipo_inconsistencia">
+            <span class="linea-info-label">Tipo:</span>
+            <span class="linea-info-valor">{{ traducirTipoInconsistencia(inconsistencia.tipo_inconsistencia) }}</span>
+          </div>
 
-            <!-- Vista de cards para móvil y tablet -->
-            <div class="d-lg-none" role="list" aria-labelledby="page-title">
-                <div *ngIf="inconsistencias.length > 0; else sinDatosMobile">
-                    <article 
-                        *ngFor="let inco of currentData" 
-                        class="card-inconsistencia mb-3 border-start border-3"
-                        [class.border-danger]="inco.razon_anulacion"
-                        [class.border-info]="inco.etapa === 'espera' && !inco.razon_anulacion"
-                        [class.border-success]="inco.etapa !== 'espera' && !inco.razon_anulacion"
-                        role="listitem">
-                        
-                        <div class="p-3">
-                            <!-- Encabezado de card -->
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h3 class="h6 mb-1">
-                                        <span class="text-muted">ID:</span> 
-                                        <strong>{{ inco.id_inconsistencia }}</strong>
-                                    </h3>
-                                    <time [attr.datetime]="inco.fecha_inconsistencia" class="text-muted small">
-                                        {{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}
-                                    </time>
-                                </div>
-                                <span class="badge bg-light text-dark border">
-                                    {{ tipos[inco.tipo_inconsistencia] }}
-                                </span>
-                            </div>
-
-                            <!-- Información principal -->
-                            <dl class="mb-3">
-                                <div class="row mb-2">
-                                    <dt class="col-5 text-muted small">Cliente:</dt>
-                                    <dd class="col-7 mb-0">{{ inco.Cliente }}</dd>
-                                </div>
-                                <div class="row mb-2">
-                                    <dt class="col-5 text-muted small">Ítem:</dt>
-                                    <dd class="col-7 mb-0">{{ inco.item }}</dd>
-                                </div>
-                                <div class="row mb-2">
-                                    <dt class="col-5 text-muted small">Cant. Solicitada:</dt>
-                                    <dd class="col-7 mb-0 fw-semibold">{{ inco.cantidad_solicitada_op }}</dd>
-                                </div>
-                                <div class="row mb-2">
-                                    <dt class="col-5 text-muted small">Cant. Inconsistencia:</dt>
-                                    <dd class="col-7 mb-0 text-danger fw-semibold">{{ inco.cantidad_inconsistencia }}</dd>
-                                </div>
-                                <div class="row mb-2">
-                                    <dt class="col-5 text-muted small">Tipo orden:</dt>
-                                    <dd class="col-7 mb-0">{{ inco.tipo_de_orden }}</dd>
-                                </div>
-                                <div class="row mb-2">
-                                    <dt class="col-5 text-muted small">Situación:</dt>
-                                    <dd class="col-7 mb-0">{{ inco.descripcion_inconsistencia }}</dd>
-                                </div>
-                            </dl>
-
-                            <!-- Acciones -->
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <!-- Estado -->
-                                <button 
-                                    *ngIf="inco.etapa === 'espera'" 
-                                    type="button"
-                                    class="btn btn-info btn-sm flex-grow-1"
-                                    (click)="verObservacion(inco.observacion_logistica)"
-                                    [attr.aria-label]="'Ver observación de inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas fa-clock me-1" aria-hidden="true"></i>
-                                    En espera
-                                </button>
-                                <span 
-                                    *ngIf="inco.etapa !== 'espera'" 
-                                    class="badge bg-warning text-dark flex-grow-1 py-2">
-                                    {{ inco.etapa }}
-                                </span>
-
-                                <!-- Evidencia -->
-                                <button 
-                                    type="button"
-                                    class="btn btn-outline-secondary btn-sm"
-                                    (click)="verEvidencias(inco)"
-                                    [attr.aria-label]="'Ver evidencias de inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas" 
-                                       [ngClass]="{
-                                         'fa-image text-success': tieneImagen(inco),
-                                         'fa-file-pdf text-danger': tienePdf(inco),
-                                         'fa-ban text-muted': !tieneEvidencia(inco)
-                                       }"
-                                       aria-hidden="true"></i>
-                                    <span class="visually-hidden">
-                                        {{ tieneEvidencia(inco) ? 'Tiene evidencia' : 'Sin evidencia' }}
-                                    </span>
-                                </button>
-
-                                <!-- Anular/Anulada -->
-                                <button 
-                                    *ngIf="!inco.razon_anulacion"
-                                    type="button"
-                                    class="btn btn-danger btn-sm"
-                                    (click)="abrirAnular(inco)"
-                                    [attr.aria-label]="'Anular inconsistencia ' + inco.id_inconsistencia">
-                                    <i class="fas fa-times-circle me-1" aria-hidden="true"></i>
-                                    Anular
-                                </button>
-                                <button 
-                                    *ngIf="inco.razon_anulacion"
-                                    type="button"
-                                    class="btn btn-secondary btn-sm"
-                                    (click)="verRazonAnulacion(inco)"
-                                    [attr.aria-label]="'Ver razón de anulación ' + inco.id_inconsistencia">
-                                    <i class="fas fa-ban me-1" aria-hidden="true"></i>
-                                    Anulada
-                                </button>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-
-                <ng-template #sinDatosMobile>
-                    <div class="text-center py-5 px-3">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3" aria-hidden="true"></i>
-                        <p class="h5 text-muted">No hay inconsistencias registradas</p>
-                        <p class="text-muted small">
-                            Los registros aparecerán aquí cuando se creen inconsistencias
-                        </p>
-                    </div>
-                </ng-template>
-            </div>
-
+          <div class="linea-info" *ngIf="inconsistencia.tipo_de_orden">
+            <span class="linea-info-label">Orden:</span>
+            <span class="linea-info-valor">{{ inconsistencia.tipo_de_orden }}</span>
+          </div>
         </div>
 
-        <!-- Paginador -->
-        <div class="card-footer bg-white border-top">
-            <app-shared-paginator
-                *ngIf="paginationService.getPaginatorState(paginatorId)"
-                [instanceId]="paginatorId"
-                [showPageSizeSelector]="true"
-                [pageSizeOptions]="[5, 10, 25, 50, 100]"
-                [noDataMessage]="'No se encontraron registros'"
-                aria-label="Navegación de paginación">
-            </app-shared-paginator>
+        <!-- Item (si existe) -->
+        <div class="tarjeta-item" *ngIf="inconsistencia.item">
+          {{ inconsistencia.item }}
         </div>
+
+        <!-- Cantidades en línea horizontal -->
+        <div class="tarjeta-cantidades">
+          <div class="cantidad-inline">
+            <span class="cantidad-label">Solicitado:</span>
+            <span class="cantidad-valor">{{ inconsistencia.cantidad_solicitada_op || 'N/A' }}</span>
+          </div>
+          <div class="cantidad-inline">
+            <span class="cantidad-label">Inconsistencia:</span>
+            <span class="cantidad-valor destaque">{{ inconsistencia.cantidad_inconsistencia || 'N/A' }}</span>
+          </div>
+          <div class="cantidad-inline" *ngIf="inconsistencia.precio_total_inconsistencia">
+            <span class="cantidad-label">Total:</span>
+            <span class="cantidad-valor precio">{{ formatearMoneda(inconsistencia.precio_total_inconsistencia) }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="tarjeta-acciones" (click)="$event.stopPropagation()">
+          <button 
+            type="button"
+            class="boton-accion boton-detalles"
+            (click)="abrirModalDetalles(inconsistencia)"
+            aria-label="Ver detalles completos de la inconsistencia">
+            <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Ver detalles
+          </button>
+          <button 
+            type="button"
+            class="boton-accion boton-anular"
+            (click)="abrirModalAnular(inconsistencia)"
+            aria-label="Anular esta inconsistencia">
+            <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            Anular
+            </button>
+
+        </div>
+      </article>
     </div>
+  </section>
+
+  <!-- Modal Anular -->
+  <div 
+    class="modal-overlay" 
+    *ngIf="modalAnularAbierto"
+    (click)="cerrarModalAnular()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-anular-titulo"
+    aria-describedby="modal-anular-descripcion">
+    <div class="modal-contenido" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="modal-anular-titulo" class="modal-titulo">Anular Inconsistencia</h2>
+        <button 
+          type="button"
+          class="boton-cerrar"
+          (click)="cerrarModalAnular()"
+          aria-label="Cerrar modal de anulación">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p id="modal-anular-descripcion" class="modal-descripcion">
+          ¿Está seguro de que desea anular la inconsistencia 
+          <strong>{{ inconsistenciaSeleccionada?.id_inconsistencia }}</strong>?
+          Esta acción no se puede deshacer.
+        </p>
+        
+        <div class="campo-formulario">
+          <label for="razon-anulacion" class="etiqueta-filtro etiqueta-requerida">
+            Razón de anulación
+          </label>
+          <textarea 
+            id="razon-anulacion"
+            class="textarea-modal"
+            [(ngModel)]="razonAnulacion"
+            placeholder="Describa el motivo de la anulación de forma clara y detallada..."
+            rows="4"
+            required
+            aria-required="true"
+            [disabled]="procesandoAnulacion"
+            aria-describedby="razon-help"></textarea>
+          <small id="razon-help" class="linea-info-label">
+            Mínimo 10 caracteres para confirmar la anulación
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          type="button"
+          class="boton-secundario"
+          (click)="cerrarModalAnular()"
+          [disabled]="procesandoAnulacion">
+          Cancelar
+        </button>
+        <button 
+          type="button"
+          class="boton-primario boton-peligro"
+          (click)="confirmarAnulacion()"
+          [disabled]="!razonAnulacion.trim() || razonAnulacion.trim().length < 10 || procesandoAnulacion"
+          [attr.aria-busy]="procesandoAnulacion">
+          <span *ngIf="!procesandoAnulacion">Confirmar anulación</span>
+          <span *ngIf="procesandoAnulacion">Procesando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalles -->
+  <div 
+    class="modal-overlay" 
+    *ngIf="modalDetallesAbierto"
+    (click)="cerrarModalDetalles()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-detalles-titulo">
+    <div class="modal-contenido modal-grande" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="modal-detalles-titulo" class="modal-titulo">
+          Detalles - {{ inconsistenciaSeleccionada?.id_inconsistencia }}
+        </h2>
+        <button 
+          type="button"
+          class="boton-cerrar"
+          (click)="cerrarModalDetalles()"
+          aria-label="Cerrar modal de detalles">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Información general -->
+        <section class="seccion-detalles" aria-labelledby="seccion-general">
+          <h3 id="seccion-general" class="subtitulo-seccion">Información General</h3>
+          <dl class="lista-detalles">
+            <div class="detalle-item">
+              <dt>Cliente:</dt>
+              <dd>{{ inconsistenciaSeleccionada?.Cliente || 'N/A' }}</dd>
+            </div>
+            <div class="detalle-item">
+              <dt>Departamento:</dt>
+              <dd>{{ inconsistenciaSeleccionada?.nombre_departamento || 'N/A' }}</dd>
+            </div>
+            <div class="detalle-item">
+              <dt>Solicitante:</dt>
+              <dd>{{ inconsistenciaSeleccionada?.nombre_solicitante || 'N/A' }}</dd>
+            </div>
+            <div class="detalle-item" *ngIf="inconsistenciaSeleccionada?.nombre_jefe_inmediato">
+              <dt>Jefe inmediato:</dt>
+              <dd>{{ inconsistenciaSeleccionada.nombre_jefe_inmediato }}</dd>
+            </div>
+            <div class="detalle-item" *ngIf="inconsistenciaSeleccionada?.descripcion_inconsistencia">
+              <dt>Descripción:</dt>
+              <dd>{{ inconsistenciaSeleccionada.descripcion_inconsistencia }}</dd>
+            </div>
+            <div class="detalle-item" *ngIf="inconsistenciaSeleccionada?.accion_inconsistencia">
+              <dt>Acción:</dt>
+              <dd>{{ inconsistenciaSeleccionada.accion_inconsistencia }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Evidencias -->
+        <section 
+          class="seccion-detalles" 
+          *ngIf="inconsistenciaSeleccionada?.evidencias && inconsistenciaSeleccionada.evidencias.length > 0"
+          aria-labelledby="seccion-evidencias">
+          <h3 id="seccion-evidencias" class="subtitulo-seccion">Evidencias ({{ inconsistenciaSeleccionada.evidencias.length }})</h3>
+          <div class="grid-evidencias">
+            <a 
+              *ngFor="let evidencia of inconsistenciaSeleccionada.evidencias; let i = index"
+              [href]="evidencia"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="link-evidencia"
+              [attr.aria-label]="'Ver evidencia ' + (i + 1)">
+              <svg class="icono-evidencia" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              Evidencia {{ i + 1 }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="width: 1rem; height: 1rem; stroke-width: 2; margin-left: auto;">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </a>
+          </div>
+        </section>
+
+        <!-- Historial de aprobaciones -->
+        <section 
+          class="seccion-detalles" 
+          *ngIf="inconsistenciaSeleccionada?.historial_aprobaciones && inconsistenciaSeleccionada.historial_aprobaciones.length > 0"
+          aria-labelledby="seccion-historial">
+          <h3 id="seccion-historial" class="subtitulo-seccion">Historial de Trazabilidad</h3>
+          <div class="timeline" role="list">
+            <div 
+              *ngFor="let historial of inconsistenciaSeleccionada.historial_aprobaciones; let ultimo = last; let i = index"
+              class="timeline-item"
+              [class.timeline-ultimo]="ultimo"
+              role="listitem"
+              [attr.aria-label]="'Etapa ' + (i + 1) + ': ' + historial.etapa">
+              <div class="timeline-punto" aria-hidden="true"></div>
+              <div class="timeline-contenido">
+                <div class="timeline-header">
+                  <strong class="timeline-etapa">{{ historial.etapa }}</strong>
+                  <time class="timeline-fecha" [attr.datetime]="historial.fecha">
+                    {{ formatearFecha(historial.fecha) }}
+                  </time>
+                </div>
+                <p class="timeline-usuario">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="width: 0.875rem; height: 0.875rem; stroke-width: 2; display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  {{ historial.usuario }}
+                </p>
+                <p class="timeline-observacion" *ngIf="historial.observacion">
+                  {{ historial.observacion }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Información de anulación -->
+        <section 
+          class="seccion-detalles seccion-anulacion" 
+          *ngIf="inconsistenciaSeleccionada?.estado_inconsistencia === 'Anulada'"
+          aria-labelledby="seccion-anulacion">
+          <h3 id="seccion-anulacion" class="subtitulo-seccion">Información de Anulación</h3>
+          <dl class="lista-detalles">
+            <div class="detalle-item">
+              <dt>Anulada por:</dt>
+              <dd>{{ inconsistenciaSeleccionada.nombre_persona_que_anulo || 'N/A' }}</dd>
+            </div>
+            <div class="detalle-item">
+              <dt>Fecha de anulación:</dt>
+              <dd>
+                <time [attr.datetime]="inconsistenciaSeleccionada.fecha_anulacion">
+                  {{ formatearFecha(inconsistenciaSeleccionada.fecha_anulacion) }}
+                </time>
+              </dd>
+            </div>
+            <div class="detalle-item">
+              <dt>Razón:</dt>
+              <dd>{{ inconsistenciaSeleccionada.razon_anulacion || 'N/A' }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          type="button"
+          class="boton-primario"
+          (click)="cerrarModalDetalles()"
+          autofocus>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
-
-<!-- Modal de texto mejorado -->
-<ng-template #modalTexto let-data>
-    <div class="modal-header bg-primary text-white">
-        <h2 class="modal-title h5" id="modal-title">{{ data.titulo }}</h2>
-        <button 
-            type="button" 
-            class="btn-close btn-close-white" 
-            aria-label="Cerrar modal" 
-            (click)="modalRef?.close()">
-        </button>
-    </div>
-    <div class="modal-body" role="document">
-        <p class="mb-0">{{ data.contenido }}</p>
-    </div>
-    <div class="modal-footer">
-        <button 
-            type="button" 
-            class="btn btn-primary" 
-            (click)="modalRef?.close()"
-            autofocus>
-            Cerrar
-        </button>
-    </div>
-</ng-template>
-

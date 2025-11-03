@@ -12,7 +12,7 @@ import { Role } from '../models/Role';
 export class InconsistenciaService {
     private baseUrl = `${environment.URL_C_PANEL}`;
     private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
-    private q = 'http://127.0.0.1:8000/api';
+    private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
 
     constructor(
         private authService: AuthService,
@@ -118,16 +118,16 @@ export class InconsistenciaService {
 
 
 
-   aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string, accionTomar?: string | null): Observable<any> {
-    const body = {
-        id_inconsistencia,
-        id_Sdp,
-        tipo_inconsistencia,
-        accion: 'aprobar',
-        accion_tomar: accionTomar  // ✅ Cambiado a snake_case
-    };
-    return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
-}
+    aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string, accionTomar?: string | null): Observable<any> {
+        const body = {
+            id_inconsistencia,
+            id_Sdp,
+            tipo_inconsistencia,
+            accion: 'aprobar',
+            accion_tomar: accionTomar  // ✅ Cambiado a snake_case
+        };
+        return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
+    }
 
     denegarInconsistencia(id_inconsistencia: number, id_Sdp: number, motivo: string): Observable<any> {
         const body = {
@@ -139,6 +139,15 @@ export class InconsistenciaService {
         return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
     }
 
+  // En inconsistencia.service.ts
+ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Observable<any> {
+  return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, {
+    id_inconsistencia,
+    id_Sdp: id_usuario,
+    accion: 'en_espera',
+    motivo
+  });
+}
 
 
     //Historico inconsistencias //
@@ -172,17 +181,100 @@ export class InconsistenciaService {
         return this.http.get<any[]>(`${this.baseURllocal}/listas-consumo`);
     }
 
-   consumirInconsistencia(idInconsistencia: number, datos: any): Observable<any> {
-  return this.http.post(`${this.baseURllocal}/consumir`, {
-    id_inconsistencia: idInconsistencia,
-    tipo_consumo: datos.tipo,
-    ...(datos.tipo === 'consumo' 
-      ? { codigo_trn: datos.codigoTrn, codigo_consumo: datos.codigoConsumo }
-      : { codigo_validacion: datos.codigo }
-    )
-  });
+    consumirInconsistencia(idInconsistencia: number, datos: any): Observable<any> {
+        return this.http.post(`${this.baseURllocal}/consumir`, {
+            id_inconsistencia: idInconsistencia,
+            tipo_consumo: datos.tipo,
+            ...(datos.tipo === 'consumo'
+                ? { codigo_trn: datos.codigoTrn, codigo_consumo: datos.codigoConsumo }
+                : { codigo_validacion: datos.codigo }
+            )
+        });
+    }
+
+
+    //===== DASHBOARD ======//
+
+    getDashboardData(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.BaseUrlDashboard}/dashboard`, { params });
+    }
+
+    // ==================== DATOS PARA FILTROS ====================
+
+    getDepartamentos(): Observable<any> {
+        return this.http.get(`${this.BaseUrlDashboard}/filtros/departamentos`);
+    }
+
+    getClientes(): Observable<any> {
+        return this.http.get(`${this.BaseUrlDashboard}/filtros/clientes`);
+    }
+
+    getTiposInconsistencia(): Observable<any> {
+        return this.http.get(`${this.BaseUrlDashboard}/filtros/tipos`);
+    }
+
+    getUsuarios(): Observable<any> {
+        return this.http.get(`${this.BaseUrlDashboard}/filtros/usuarios`);
+    }
+
+    // ==================== MÉTRICAS INDIVIDUALES (OPCIONAL) ====================
+
+    getProductividad(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.BaseUrlDashboard}/metricas/productividad`, { params });
+    }
+
+    getCostos(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.BaseUrlDashboard}/metricas/costos`, { params });
+    }
+
+    getConsumo(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.BaseUrlDashboard}/metricas/consumo`, { params });
+    }
+
+    getGestionHumana(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.BaseUrlDashboard}/metricas/gestion-humana`, { params });
+    }
 }
 
 
 
-}

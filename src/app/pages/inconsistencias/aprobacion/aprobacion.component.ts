@@ -262,7 +262,7 @@ aprobarInconsistencia(inco: any): void {
 
       this.inconsistenciasService.aprobarInconsistencia(
         inco.id_inconsistencia,
-        +this.authService.user.id_Sdp,
+        this.authService.user.id_Sdp,
         inco.tipo_inconsistencia,
         accionTomar
       ).subscribe({
@@ -286,6 +286,79 @@ aprobarInconsistencia(inco: any): void {
   });
 }
 
+// Método para poner inconsistencia en espera
+ponerEnEspera(inco: any): void {
+  // 1. Verificar que el usuario tiene el rol de Logística
+  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
+  const esRolLogistica = rolesUsuario.some(rol => rol.toLowerCase() === 'logisitica (inconsistencias)');
+
+  if (!esRolLogistica) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Acceso denegado',
+      text: 'Solo el departamento de Logística puede poner inconsistencias en espera.',
+      confirmButtonText: 'Entendido'
+    });
+    return;
+  }
+
+  // 2. Mostrar modal de confirmación con motivo
+  Swal.fire({
+    title: 'Poner en espera',
+    html: `
+      <p>¿Deseas poner en espera la inconsistencia #${inco.id_inconsistencia}?</p>
+      <div class="mt-3">
+        <label for="motivo-espera" class="form-label fw-bold">Motivo de espera:</label>
+        <textarea 
+          id="motivo-espera" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Describe el motivo por el cual se pone en espera..."
+        ></textarea>
+      </div>
+    `,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, poner en espera',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const motivo = (document.getElementById('motivo-espera') as HTMLTextAreaElement)?.value;
+      if (!motivo || motivo.trim() === '') {
+        Swal.showValidationMessage('El motivo es obligatorio');
+        return false;
+      }
+      return motivo;
+    }
+  }).then(result => {
+    if (result.isConfirmed) {
+      const motivo = result.value;
+      this.loading = true;
+
+      // 3. Llamar al servicio ponerEnEspera
+      this.inconsistenciasService.ponerEnEspera(
+        inco.id_inconsistencia,
+        this.authService.user.id_Sdp,
+        motivo
+      ).subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          if (res.success) {
+            Swal.fire('En Espera', 'La inconsistencia ha sido puesta en espera correctamente.', 'success');
+            this.inconsistencias = this.inconsistencias.filter(i => i.id_inconsistencia !== inco.id_inconsistencia);
+            this.applyFilters();
+          } else {
+            Swal.fire('Error', res.message || 'No se pudo poner en espera la inconsistencia.', 'error');
+          }
+        },
+        error: (err) => {
+          this.loading = false;
+          console.error('Error al poner en espera:', err);
+          Swal.fire('Error', 'Ocurrió un error al poner en espera.', 'error');
+        }
+      });
+    }
+  });
+}
 
   denegarInconsistencia(inco: any): void {
     Swal.fire({
@@ -308,7 +381,7 @@ aprobarInconsistencia(inco: any): void {
         this.loading = true;
         this.inconsistenciasService.denegarInconsistencia(
           inco.id_inconsistencia,
-          +this.authService.user.id_Sdp,
+          this.authService.user.id_Sdp,
           motivo
         ).subscribe({
           next: (res: any) => {
