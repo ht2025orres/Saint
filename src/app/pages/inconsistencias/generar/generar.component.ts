@@ -80,16 +80,18 @@ export class GenerarComponent implements OnInit {
   correo_solicitante: [this.authService.user.email, Validators.required],
   inconsistencia: ['', Validators.required],
   cantidad_solicitada_op: ['', Validators.required],
-  cantidad_inco: ['', [Validators.required, this.cantidadInconsistenciaValidator()]], // 👈 Agregar validador aquí
+  cantidad_inco: ['', [Validators.required, this.cantidadInconsistenciaValidator()]],
   unidad_medida: ['unidades', Validators.required],
   item: ['', Validators.required],
+  nombre_item: ['', Validators.required],
   tipo_inco: ['', Validators.required],
   codigo: ['', Validators.required],
   precio_unitario: ['', Validators.required],
   precio_total: [{ value: '', disabled: true }],
   situacion: ['', Validators.required],
   accion: [''],
-  imagenes: [null]
+  imagenes: [null],
+  estado_op: ['Pendiente', Validators.required],
 });
   }
 
@@ -172,6 +174,18 @@ export class GenerarComponent implements OnInit {
   // 🔹 MÉTODOS AUXILIARES
   // ===========================
 
+  isPrecioVacioOCero(): boolean {
+    const precioValue = this.inconsistenciaForm.get('precio_unitario')?.value;
+    
+    // Si es null, undefined o string vacío
+    if (!precioValue || precioValue === '') return true;
+    
+    // Convertir a número eliminando formato
+    const precioNumerico = parseFloat(precioValue.toString().replace(/,/g, ''));
+    
+    // Verificar si es 0 o NaN
+    return isNaN(precioNumerico) || precioNumerico === 0;
+  }
 
   private formatNumber(value: any): string {
     if (!value) return '';
@@ -289,6 +303,7 @@ export class GenerarComponent implements OnInit {
       });
     }
   }
+
   onItemSelect(event: Event): void {
   const input = event.target as HTMLInputElement;
   const f120IdSeleccionado = input.value.trim();
@@ -310,7 +325,8 @@ export class GenerarComponent implements OnInit {
         .filter(Boolean)
         .join(' - '),
       cantidad_solicitada_op: this.formatNumber(itemEncontrado.cantidad),
-      precio_unitario: precioUnitario > 0 ? this.formatNumber(precioUnitario) : ''
+      precio_unitario: precioUnitario > 0 ? this.formatNumber(precioUnitario) : '0',
+      estado_op: itemEncontrado.estado_op || 'Pendiente' // 👈 AGREGAR: Asignar estado de la orden
     });
 
     // 👇 Validar si el precio es cero y mostrar alerta
@@ -335,6 +351,7 @@ export class GenerarComponent implements OnInit {
     }
 
     console.log('Item seleccionado:', itemEncontrado);
+    console.log('Estado de la orden:', itemEncontrado.estado_op); // 👈 Log para debug
   }
 }
 
@@ -344,6 +361,7 @@ export class GenerarComponent implements OnInit {
       this.inconsistenciaForm.patchValue({ imagenes: files });
     }
   }
+
 formatearMiles(event: Event) {
   const input = event.target as HTMLInputElement;
   let valor = input.value.replace(/,/g, '');
@@ -357,8 +375,11 @@ formatearMiles(event: Event) {
   if (input.id === 'cantidad_solicitada_op' || input.id === 'cantidad_inco') {
     this.inconsistenciaForm.get('cantidad_inco')?.updateValueAndValidity();
   }
-
-  this.calcularTotal();
+  
+  // 👇 También revalidar cuando cambie el precio
+  if (input.id === 'precio_unitario' || input.id === 'cantidad_inco') {
+    this.calcularTotal();
+  }
 }
 
   calcularTotal(): void {
@@ -403,6 +424,10 @@ formatearMiles(event: Event) {
   // Agregar campos del formulario (incluyendo los disabled)
   const formValues = this.inconsistenciaForm.getRawValue();
   
+  // 👇 DEBUG: Verificar el valor de estado_op antes de enviarlo
+  console.log('📤 Valores del formulario antes de enviar:', formValues);
+  console.log('📋 Estado de la orden que se enviará:', formValues.estado_op);
+  
   Object.entries(formValues).forEach(([key, value]) => {
     if (key === 'imagenes') {
       // Las imágenes se manejan por separado
@@ -418,6 +443,9 @@ formatearMiles(event: Event) {
       }
     }
   });
+
+  // 👇 DEBUG: Verificar que estado_op se agregó al FormData
+  console.log('✅ FormData - estado_op:', formData.get('estado_op'));
 
   // Agregar imágenes si existen
   if (imagenes && imagenes instanceof FileList && imagenes.length > 0) {
@@ -493,7 +521,8 @@ inicializarValoresPorDefecto(): void {
     nombre_proceso: this.authService.user.nombre_departamento_Sdp,
     jefe_inmediato: this.authService.user.id_lider,
     lider_nombre: this.authService.user.lider_nombre,
-    id_departamento: this.authService.user.id_departamento_Sdp
+    id_departamento: this.authService.user.id_departamento_Sdp,
+    estado_op: 'Pendiente'
   });
 
   this.inconsistenciaForm.get('fecha')?.disable();
