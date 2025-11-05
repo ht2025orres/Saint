@@ -11,6 +11,7 @@ import { Role } from '../models/Role';
 })
 export class InconsistenciaService {
     private baseUrl = `${environment.URL_C_PANEL}`;
+    //  private baseURllocal = `${environment.URL_API_LARAVEL}`;
     private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
     private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
 

@@ -8,7 +8,6 @@
 
             <button type="button" class="btn btn-filter" (click)="toggleFiltros()" aria-label="Abrir panel de filtros"
                 [attr.aria-expanded]="mostrarFiltros">
-                <!-- ^^^ CAMBIADO -->
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     aria-hidden="true">
                     <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
@@ -158,30 +157,20 @@
 
         <button type="button" class="nav-item" [class.active]="seccionActiva === 'general'"
             (click)="cambiarSeccion('general')" [attr.aria-current]="seccionActiva === 'general' ? 'page' : null">
-
             General
         </button>
-        <!-- LÍNEA 218: Navegación - Productividad -->
+
         <button type="button" class="nav-item" [class.active]="seccionActiva === 'productividad'"
             (click)="cambiarSeccion('productividad')"
             [attr.aria-current]="seccionActiva === 'productividad' ? 'page' : null">
             Productividad
         </button>
-        <!-- LÍNEA 226: Navegación - Costos -->
+
         <button type="button" class="nav-item" [class.active]="seccionActiva === 'costos'"
             (click)="cambiarSeccion('costos')" [attr.aria-current]="seccionActiva === 'costos' ? 'page' : null">
             Costos
         </button>
-        <!-- LÍNEA 234: Navegación - Consumo -->
-        <button type="button" class="nav-item" [class.active]="seccionActiva === 'consumo'"
-            (click)="cambiarSeccion('consumo')" [attr.aria-current]="seccionActiva === 'consumo' ? 'page' : null">
-            Consumo
-        </button>
-        <!-- LÍNEA 242: Navegación - Gestión -->
-        <button type="button" class="nav-item" [class.active]="seccionActiva === 'gestion'"
-            (click)="cambiarSeccion('gestion')" [attr.aria-current]="seccionActiva === 'gestion' ? 'page' : null">
-            Gestión Humana
-        </button>
+
     </nav>
 
     <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
@@ -242,7 +231,6 @@
 
             <div class="chart-container">
                 <h3 class="chart-title">Inconsistencias por etapa</h3>
-                <!-- En la sección de gráfico de barras -->
                 <div class="bar-chart" role="img" aria-label="Gráfico de barras mostrando inconsistencias por etapa">
                     <div class="bar-item" *ngFor="let etapa of productividad?.por_etapa">
                         <div class="bar-label">{{ etapa.etapa | titlecase }}</div>
@@ -325,26 +313,63 @@
             </div>
 
             <div class="table-container">
-                <h3 class="table-title">Inconsistencias por departamento</h3>
+                <h3 class="table-title">Usuarios que han realizado más rechazos de inconsistencias</h3>
                 <div class="table-responsive">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th scope="col">Departamento</th>
-                                <th scope="col">Cantidad</th>
+                                <th scope="col">Usuario</th>
+                                <th scope="col">Cantidad rechazos</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let item of productividad?.promedio_por_departamento">
-                                <td>{{ obtenerNombreDepartamento(item) }}</td>
-                                <td>{{ item.cantidad }}</td>
+                            <tr *ngFor="let item of usuariosTopReportes">
+                                <td>{{ item.nombre_completo }}</td>
+                                <td>{{ formatearNumero(item.total_denegadas) }}</td>
                             </tr>
-                            <tr
-                                *ngIf="!productividad?.promedio_por_departamento || productividad?.promedio_por_departamento.length === 0">
+                            <tr *ngIf="!usuariosTopReportes || usuariosTopReportes.length === 0">
                                 <td colspan="2" class="no-data">No hay datos disponibles</td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- GRÁFICO: Inconsistencias por departamento (Pie Chart) -->
+            <div class="chart-container">
+                <h3 class="chart-title">Inconsistencias por departamento</h3>
+                <div class="pie-chart-container" role="img" aria-label="Gráfico circular mostrando inconsistencias por departamento">
+                    <div class="pie-chart" *ngIf="productividad?.promedio_por_departamento && productividad?.promedio_por_departamento.length > 0">
+                        <svg viewBox="0 0 200 200" class="pie-svg">
+                            <ng-container *ngFor="let item of productividad?.promedio_por_departamento; let i = index">
+                                <circle
+                                    class="pie-segment"
+                                    [attr.data-department]="obtenerNombreDepartamento(item)"
+                                    cx="100"
+                                    cy="100"
+                                    r="80"
+                                    fill="transparent"
+                                    [attr.stroke]="obtenerColorDepartamento(i)"
+                                    stroke-width="40"
+                                    [attr.stroke-dasharray]="calcularStrokeDasharray(item.cantidad)"
+                                    [attr.stroke-dashoffset]="calcularStrokeDashoffset(i)"
+                                    transform="rotate(-90 100 100)"
+                                />
+                            </ng-container>
+                        </svg>
+                    </div>
+                    <div class="pie-legend" *ngIf="productividad?.promedio_por_departamento && productividad?.promedio_por_departamento.length > 0">
+                        <div class="legend-item" *ngFor="let item of productividad?.promedio_por_departamento; let i = index">
+                            <span class="legend-color" [style.background-color]="obtenerColorDepartamento(i)"></span>
+                            <span class="legend-text">
+                                {{ obtenerNombreDepartamento(item) }}
+                                <strong>({{ item.cantidad }} - {{ calcularPorcentajeDepartamento(item.cantidad, obtenerTotalDepartamentos()).toFixed(1) }}%)</strong>
+                            </span>
+                        </div>
+                    </div>
+                    <div *ngIf="!productividad?.promedio_por_departamento || productividad?.promedio_por_departamento.length === 0" class="no-data">
+                        No hay datos de departamentos disponibles
+                    </div>
                 </div>
             </div>
         </section>
@@ -381,7 +406,7 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let item of costos?.top_5_tipos_costosos">
-                                <td>{{ item.tipo_inconsistencia }}</td>
+                                <td>{{ normalizarTexto(item.tipo_inconsistencia) }}</td>
                                 <td>{{ formatearMoneda(item.total) }}</td>
                             </tr>
                             <tr *ngIf="!costos?.top_5_tipos_costosos || costos?.top_5_tipos_costosos.length === 0">
@@ -450,7 +475,7 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let item of costos?.costo_por_tipo">
-                                <td>{{ item.tipo_inconsistencia }}</td>
+                                <td>{{ normalizarTexto(item.tipo_inconsistencia) }}</td>
                                 <td>{{ formatearMoneda(item.total) }}</td>
                             </tr>
                             <tr *ngIf="!costos?.costo_por_tipo || costos?.costo_por_tipo.length === 0">
@@ -460,133 +485,26 @@
                     </table>
                 </div>
             </div>
-        </section>
 
-        <!-- CONSUMO -->
-        <section *ngIf="seccionActiva === 'consumo'" class="metrics-section" aria-labelledby="consumo-title">
-            <h2 id="consumo-title" class="section-title">Métricas de consumo</h2>
-
-            <div class="cards-grid">
-                <article class="metric-card card-success">
-                    <div class="card-header">
-                        <h3 class="card-title">Consumidas</h3>
+            <!-- GRÁFICO: Costo por departamento (Horizontal Bar Chart) -->
+            <div class="chart-container">
+                <h3 class="chart-title">Costo por departamento</h3>
+                <div class="horizontal-bar-chart" role="img" aria-label="Gráfico de barras horizontales mostrando costos por departamento">
+                    <div class="h-bar-item" *ngFor="let item of costos?.costo_por_departamento">
+                        <div class="h-bar-label">{{ obtenerNombreDepartamento(item) }}</div>
+                        <div class="h-bar-content">
+                            <div class="h-bar-wrapper">
+                                <div class="h-bar-fill" 
+                                     [style.width.%]="(item.total / obtenerMaximoCostoDepartamento()) * 100"
+                                     [attr.aria-label]="'Departamento ' + obtenerNombreDepartamento(item) + ': ' + formatearMoneda(item.total)">
+                                </div>
+                            </div>
+                            <div class="h-bar-value">{{ formatearMoneda(item.total) }}</div>
+                        </div>
                     </div>
-                    <p class="card-value">{{ formatearNumero(consumo?.consumidas) }}</p>
-                </article>
-
-                <article class="metric-card card-warning">
-                    <div class="card-header">
-                        <h3 class="card-title">Pendientes</h3>
+                    <div *ngIf="!costos?.costo_por_departamento || costos?.costo_por_departamento.length === 0" class="no-data">
+                        No hay datos de costos por departamento disponibles
                     </div>
-                    <p class="card-value">{{ formatearNumero(consumo?.pendientes) }}</p>
-                </article>
-
-                <article class="metric-card">
-                    <div class="card-header">
-                        <h3 class="card-title">Tiempo promedio consumo</h3>
-                    </div>
-                    <p class="card-value">{{ formatearDias(consumo?.tiempo_promedio_consumo) }}</p>
-                </article>
-            </div>
-
-            <div class="table-container">
-                <h3 class="table-title">Usuarios responsables de consumo</h3>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Usuario</th>
-                                <th scope="col">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let item of consumo?.usuarios_responsables_consumo">
-                                <td>{{ obtenerNombreCompleto(item.usuario_consumio) }}</td>
-                                <td>{{ item.cantidad }}</td>
-                            </tr>
-                            <tr
-                                *ngIf="!consumo?.usuarios_responsables_consumo || consumo?.usuarios_responsables_consumo.length === 0">
-                                <td colspan="2" class="no-data">No hay datos disponibles</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- GESTIÓN HUMANA -->
-        <section *ngIf="seccionActiva === 'gestion'" class="metrics-section" aria-labelledby="gestion-title">
-            <h2 id="gestion-title" class="section-title">Métricas de gestión humana</h2>
-
-            <div class="table-container">
-                <h3 class="table-title">Usuarios con más inconsistencias</h3>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Usuario</th>
-                                <th scope="col">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let item of gestionHumana?.usuarios_con_mas_inconsistencias">
-                                <td>{{ obtenerNombreCompleto(item.usuario_solicitante) }}</td>
-                                <td>{{ item.cantidad }}</td>
-                            </tr>
-                            <tr
-                                *ngIf="!gestionHumana?.usuarios_con_mas_inconsistencias || gestionHumana?.usuarios_con_mas_inconsistencias.length === 0">
-                                <td colspan="2" class="no-data">No hay datos disponibles</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <h3 class="table-title">Usuarios con más aprobaciones</h3>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Usuario</th>
-                                <th scope="col">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let item of gestionHumana?.usuarios_con_mas_aprobaciones">
-                                <td>{{ obtenerNombreCompleto(item.lider_aprobo) }}</td>
-                                <td>{{ item.cantidad }}</td>
-                            </tr>
-                            <tr
-                                *ngIf="!gestionHumana?.usuarios_con_mas_aprobaciones || gestionHumana?.usuarios_con_mas_aprobaciones.length === 0">
-                                <td colspan="2" class="no-data">No hay datos disponibles</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <h3 class="table-title">Departamentos con mayor carga</h3>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Departamento</th>
-                                <th scope="col">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let item of gestionHumana?.departamentos_con_mayor_carga">
-                                <td>{{ obtenerNombreDepartamento(item) }}</td>
-                                <td>{{ item.cantidad }}</td>
-                            </tr>
-                            <tr
-                                *ngIf="!gestionHumana?.departamentos_con_mayor_carga || gestionHumana?.departamentos_con_mayor_carga.length === 0">
-                                <td colspan="2" class="no-data">No hay datos disponibles</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </section>

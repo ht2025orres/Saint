@@ -14,6 +14,7 @@ export class ReporteInconsistenciasComponent implements OnInit {
   isLoading: boolean = false;
   errorMessage: string = '';
   
+  
   // ==================== DATOS DEL DASHBOARD ====================
   
   dashboardData: any = null;
@@ -21,6 +22,7 @@ export class ReporteInconsistenciasComponent implements OnInit {
   costos: any = null;
   consumo: any = null;
   gestionHumana: any = null;
+  usuariosTopReportes: any[] = [];
 
   // ==================== DATOS PARA FILTROS ====================
   
@@ -45,7 +47,7 @@ export class ReporteInconsistenciasComponent implements OnInit {
 
   // ==================== OPCIONES DE FILTROS ESTÁTICOS ====================
   
-  etapasDisponibles: string[] = ['lider', 'calidad', 'logistica', 'espera', 'finalizado'];
+  etapasDisponibles: string[] = ['lider', 'calidad', 'logistica','', 'espera', 'finalizado'];
   estadosConsumo: string[] = ['CONSUMIDO', 'POR CONSUMIR'];
 
   // ==================== VARIABLES DE UI ====================
@@ -108,7 +110,7 @@ export class ReporteInconsistenciasComponent implements OnInit {
     });
   }
 
-  cargarDashboard(): void {
+ cargarDashboard(): void {
   this.isLoading = true;
   this.errorMessage = '';
 
@@ -124,6 +126,7 @@ export class ReporteInconsistenciasComponent implements OnInit {
           this.costos = response.data.costos || {};
           this.consumo = response.data.consumo || {};
           this.gestionHumana = response.data.gestion_humana || {};
+          this.usuariosTopReportes = response.data.productividad?.usuarios_top_reportes || [];
         } else {
           this.errorMessage = 'No se recibieron datos del servidor.';
         }
@@ -183,64 +186,119 @@ export class ReporteInconsistenciasComponent implements OnInit {
   // ==================== MÉTODOS AUXILIARES ====================
 
   obtenerNombreCompleto(usuario: any): string {
-  if (!usuario) return 'N/A';
-  
-  const nombres = usuario.nombres || '';
-  const apellidos = usuario.apellidos || '';
-  
-  const nombreCompleto = `${nombres} ${apellidos}`.trim();
-  return nombreCompleto || 'N/A';
-}
+    if (!usuario) return 'N/A';
+    
+    const nombres = usuario.nombres || '';
+    const apellidos = usuario.apellidos || '';
+    
+    const nombreCompleto = `${nombres} ${apellidos}`.trim();
+    return nombreCompleto || 'N/A';
+  }
 
- obtenerNombreDepartamento(item: any): string {
-  if (!item) return 'N/A';
-  
-  // Si tiene la relación directa
-  if (item.departamento_relacion?.nombre_departamento) {
-    return item.departamento_relacion.nombre_departamento;
+  obtenerNombreDepartamento(item: any): string {
+    if (!item) return 'N/A';
+    
+    // Si tiene la relación directa
+    if (item.departamento_relacion?.nombre_departamento) {
+      return item.departamento_relacion.nombre_departamento;
+    }
+    
+    // Si tiene id_departamento, buscar en el array de departamentos
+    if (item.id_departamento) {
+      const dept = this.departamentos.find(d => d.id_departamento === item.id_departamento);
+      return dept?.nombre_departamento || 'N/A';
+    }
+    
+    // Si el item es directamente un departamento
+    if (item.nombre_departamento) {
+      return item.nombre_departamento;
+    }
+    
+    return 'N/A';
   }
-  
-  // Si tiene id_departamento, buscar en el array de departamentos
-  if (item.id_departamento) {
-    const dept = this.departamentos.find(d => d.id_departamento === item.id_departamento);
-    return dept?.nombre_departamento || 'N/A';
-  }
-  
-  // Si el item es directamente un departamento
-  if (item.nombre_departamento) {
-    return item.nombre_departamento;
-  }
-  
-  return 'N/A';
-}
+
   formatearMoneda(valor: number | null | undefined): string {
-  if (valor === null || valor === undefined || isNaN(valor)) return '$0';
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0
-  }).format(valor);
-}
-
-formatearNumero(valor: number | null | undefined): string {
-  if (valor === null || valor === undefined || isNaN(valor)) return '0';
-  return new Intl.NumberFormat('es-CO').format(valor);
-}
-
-formatearHoras(horas: number | null | undefined): string {
-  if (horas === null || horas === undefined || isNaN(horas)) return '0h';
-  return `${Math.round(horas)}h`;
-}
-
-formatearDias(dias: number | null | undefined): string {
-  if (dias === null || dias === undefined || isNaN(dias)) return '0 días';
-  const diasRedondeados = Math.round(dias);
-  return `${diasRedondeados} día${diasRedondeados !== 1 ? 's' : ''}`;
-}
-  calcularPorcentaje(cantidad: number): number {
-  if (!this.productividad?.total_inconsistencias || this.productividad.total_inconsistencias === 0) {
-    return 0;
+    if (valor === null || valor === undefined || isNaN(valor)) return '$0';
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0
+    }).format(valor);
   }
-  return (cantidad / this.productividad.total_inconsistencias) * 100;
-}
+
+  formatearNumero(valor: number | null | undefined): string {
+    if (valor === null || valor === undefined || isNaN(valor)) return '0';
+    return new Intl.NumberFormat('es-CO').format(valor);
+  }
+
+  formatearHoras(horas: number | null | undefined): string {
+    if (horas === null || horas === undefined || isNaN(horas)) return '0h';
+    return `${Math.round(horas)}h`;
+  }
+
+  formatearDias(dias: number | null | undefined): string {
+    if (dias === null || dias === undefined || isNaN(dias)) return '0 días';
+    const diasRedondeados = Math.round(dias);
+    return `${diasRedondeados} día${diasRedondeados !== 1 ? 's' : ''}`;
+  }
+
+  calcularPorcentaje(cantidad: number): number {
+    if (!this.productividad?.total_inconsistencias || this.productividad.total_inconsistencias === 0) {
+      return 0;
+    }
+    return (cantidad / this.productividad.total_inconsistencias) * 100;
+  }
+
+  calcularPorcentajeDepartamento(cantidad: number, total: number): number {
+    if (!total || total === 0) return 0;
+    return (cantidad / total) * 100;
+  }
+
+  obtenerTotalDepartamentos(): number {
+    if (!this.productividad?.promedio_por_departamento) return 0;
+    return this.productividad.promedio_por_departamento.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0);
+  }
+
+  obtenerMaximoCostoDepartamento(): number {
+    if (!this.costos?.costo_por_departamento || this.costos.costo_por_departamento.length === 0) return 0;
+    return Math.max(...this.costos.costo_por_departamento.map((item: any) => item.total || 0));
+  }
+
+  normalizarTexto(texto: string | null | undefined): string {
+    if (!texto) return 'N/A';
+    
+    return texto
+      .replace(/_/g, ' ')  // Reemplazar guiones bajos por espacios
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());  // Primera letra de cada palabra en mayúscula
+  }
+
+  // ==================== MÉTODOS PARA GRÁFICO CIRCULAR ====================
+
+  calcularStrokeDashoffset(index: number): number {
+    if (!this.productividad?.promedio_por_departamento) return 502.6;
+    
+    const total = this.obtenerTotalDepartamentos();
+    let offsetAcumulado = 0;
+    
+    for (let i = 0; i < index; i++) {
+      const item = this.productividad.promedio_por_departamento[i];
+      offsetAcumulado += this.calcularPorcentajeDepartamento(item.cantidad, total);
+    }
+    
+    return 502.6 - (offsetAcumulado * 5.026);
+  }
+
+  calcularStrokeDasharray(cantidad: number): string {
+    const total = this.obtenerTotalDepartamentos();
+    const porcentaje = this.calcularPorcentajeDepartamento(cantidad, total);
+    const longitud = porcentaje * 5.026;
+    return `${longitud} 502.6`;
+  }
+
+  obtenerColorDepartamento(index: number): string {
+    if (!this.productividad?.promedio_por_departamento) return 'hsl(0, 65%, 55%)';
+    const hue = (index * 360) / this.productividad.promedio_por_departamento.length;
+    return `hsl(${hue}, 65%, 55%)`;
+  }
 }

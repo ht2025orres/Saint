@@ -139,7 +139,7 @@ verTiemposProceso(inconsistencia: any): void {
         const debugInco = res.debug_inco || {};
         
         this.tiemposProceso = Object.entries(res.tiempos)
-          .filter(([key]) => key !== 'total')
+           .filter(([key]) => key !== 'total' && key !== 'finalizacion') // Nueva línea
           .map(([etapa, tiempo]: [string, any]) => {
             if (!tiempo) {
               return {

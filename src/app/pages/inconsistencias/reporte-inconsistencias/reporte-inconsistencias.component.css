@@ -444,47 +444,226 @@
     margin: 0 0 1.5rem 0;
 }
 
+/* ==================== GRÁFICO DE BARRAS VERTICAL (ETAPAS) ==================== */
 .bar-chart {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    padding: 1rem;
 }
 
 .bar-item {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 1rem;
+    grid-template-columns: 120px 1fr 80px;
     align-items: center;
+    gap: 1rem;
 }
 
 .bar-label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #475569;
-    min-width: 80px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+    text-transform: capitalize;
 }
 
 .bar-wrapper {
-    background-color: #f8fafc;
-    border-radius: 0.5rem;
-    height: 2rem;
+    height: 32px;
+    background: linear-gradient(to right, #e9ecef 0%, #f8f9fa 100%);
+    border-radius: 6px;
     overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .bar-fill {
-    background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
     height: 100%;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 6px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(245, 87, 108, 0.3);
     min-width: 2%;
-    transition: width 0.5s ease;
-    border-radius: 0.5rem;
 }
 
 .bar-value {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #0f172a;
-    min-width: 40px;
     text-align: right;
+    font-weight: 700;
+    color: #f5576c;
+    font-size: 1rem;
+}
+
+/* ==================== ESTILOS PARA GRÁFICO CIRCULAR (PIE CHART) ==================== */
+
+.pie-chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem;
+}
+
+.pie-chart {
+    width: 100%;
+    max-width: 400px;
+    height: 400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pie-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.pie-segment {
+    transition: opacity 0.3s ease, stroke-width 0.3s ease;
+    cursor: pointer;
+    stroke-linecap: round;
+}
+
+.pie-segment:hover {
+    opacity: 0.85;
+    stroke-width: 42;
+    filter: brightness(1.1);
+}
+
+.pie-legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 800px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.legend-item:hover {
+    background-color: #f1f5f9;
+    transform: translateX(4px);
+}
+
+.legend-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    border: 2px solid #ffffff;
+}
+
+.legend-text {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.legend-text strong {
+    color: #0f172a;
+    font-weight: 600;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* ==================== ESTILOS PARA GRÁFICO DE BARRAS HORIZONTALES ==================== */
+
+.horizontal-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.h-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.h-bar-label {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.95rem;
+    padding-left: 0.25rem;
+}
+
+.h-bar-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.h-bar-wrapper {
+    flex: 1;
+    height: 40px;
+    background: linear-gradient(to right, #e9ecef 0%, #f8f9fa 100%);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.h-bar-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.h-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.h-bar-value {
+    min-width: 120px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #667eea;
+}
+
+/* ==================== NO DATA STATE ==================== */
+
+.no-data {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
 }
 
 /* ==================== TABLES ==================== */
@@ -544,12 +723,6 @@
     border-bottom: none;
 }
 
-.no-data {
-    text-align: center;
-    color: #475569;
-    font-style: italic;
-}
-
 /* ==================== TABLET (768px+) ==================== */
 @media (min-width: 768px) {
     .dashboard-container {
@@ -593,6 +766,15 @@
     .nav-item {
         padding: 0.875rem 1.5rem;
     }
+
+    .bar-item {
+        grid-template-columns: 150px 1fr 80px;
+    }
+
+    .pie-chart {
+        max-width: 450px;
+        height: 450px;
+    }
 }
 
 /* ==================== DESKTOP (1024px+) ==================== */
@@ -632,6 +814,55 @@
     .data-table th,
     .data-table td {
         padding: 1.5rem;
+    }
+
+    .pie-chart {
+        max-width: 500px;
+        height: 500px;
+    }
+
+    .h-bar-content {
+        gap: 1.5rem;
+    }
+}
+
+/* ==================== RESPONSIVE MOBILE ==================== */
+@media (max-width: 768px) {
+    .bar-item {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .bar-value {
+        text-align: left;
+    }
+
+    .pie-chart {
+        max-width: 300px;
+        height: 300px;
+    }
+
+    .pie-legend {
+        grid-template-columns: 1fr;
+    }
+
+    .legend-item {
+        padding: 0.5rem;
+    }
+
+    .h-bar-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .h-bar-value {
+        text-align: left;
+        padding-left: 0.25rem;
+    }
+
+    .horizontal-bar-chart {
+        gap: 2rem;
     }
 }
 
