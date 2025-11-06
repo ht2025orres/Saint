@@ -57,12 +57,31 @@ export class ReporteInconsistenciasComponent implements OnInit {
 
   constructor(private dashboardService: InconsistenciaService ) { }
 
-  ngOnInit(): void {
-    this.cargarDatosFiltros();
-    this.cargarDashboard();
-  }
-
+ ngOnInit(): void {
+  this.establecerFechasMesActual(); // ✅ Agregar esta línea
+  this.cargarDatosFiltros();
+  this.cargarDashboard();
+}
   // ==================== MÉTODOS DE CARGA ====================
+
+
+establecerFechasMesActual(): void {
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  
+  // Formatear a YYYY-MM-DD
+  this.filtros.fecha_inicio = this.formatearFecha(primerDia);
+  this.filtros.fecha_fin = this.formatearFecha(ultimoDia);
+}
+
+formatearFecha(fecha: Date): string {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  const day = String(fecha.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 
   cargarDatosFiltros(): void {
     this.dashboardService.getDepartamentos().subscribe({
@@ -110,7 +129,7 @@ export class ReporteInconsistenciasComponent implements OnInit {
     });
   }
 
- cargarDashboard(): void {
+cargarDashboard(): void {
   this.isLoading = true;
   this.errorMessage = '';
 
@@ -126,7 +145,16 @@ export class ReporteInconsistenciasComponent implements OnInit {
           this.costos = response.data.costos || {};
           this.consumo = response.data.consumo || {};
           this.gestionHumana = response.data.gestion_humana || {};
-          this.usuariosTopReportes = response.data.productividad?.usuarios_top_reportes || [];
+          
+          // ✅ FIX: Mapear correctamente los datos de usuarios con rechazos
+          if (response.data.productividad?.top_usuarios_reportes_denegados) {
+            this.usuariosTopReportes = response.data.productividad.top_usuarios_reportes_denegados.map((item: any) => ({
+              nombre_completo: this.obtenerNombreCompleto(item.persona_que_anulo),
+              total_denegadas: item.total_inconsistencias_anuladas
+            }));
+          } else {
+            this.usuariosTopReportes = [];
+          }
         } else {
           this.errorMessage = 'No se recibieron datos del servidor.';
         }
@@ -137,7 +165,6 @@ export class ReporteInconsistenciasComponent implements OnInit {
       }
     });
 }
-
   // ==================== MÉTODOS DE FILTROS ====================
 
   limpiarFiltros(): any {
