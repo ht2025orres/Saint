@@ -25,6 +25,10 @@ import { TechnicalDataSheetsReportComponent } from './pages/technical-data-sheet
 import { CreateTechnicalSheetComponent } from './pages/technicalsheet/create/create-technical-sheet.component';
 import { ListTechnicalSheetComponent } from './pages/technicalsheet/list/list-technical-sheet.component';
 import { ViewTechnicalSheetComponent } from './pages/technicalsheet/view/view-technical-sheet.component';
+import { ReportCreateComponent } from './pages/report/report-create/report-create.component';
+import { ReportListComponent } from './pages/report/report-list/report-list.component';
+import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
+import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 
 // Users
@@ -45,6 +49,10 @@ import { DashboardEmpaqueModule } from './pages/terminacion-empaque/dashboard-em
 import { DistribucionPvModule } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.module';
 import { BodegasModule } from './pages/inventario/bodegas/bodegas.module';
 import { ZonasModule } from './pages/inventario/zonas/zonas.module';
+import { ContadoresModule } from './pages/inventario/contadores/contadores.module';
+import { GenerarHojaConteoModule } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.module';
+import { HojasConteoListModule } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.module';
+import { HojasConteoDetalleModule } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
 
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
@@ -68,7 +76,11 @@ registerLocaleData(localeEs, 'es-CO');
         SignaturePadComponent,
         TechnicalReportBigbagComponent,
         ViewReportBigbagComponent,
-        DashboardBigbagComponent
+        DashboardBigbagComponent,        
+        ReportCreateComponent,
+        ReportListComponent,
+        MiReportListComponent,
+        ReportDashboardComponent,
     ],
     bootstrap: [AppComponent], 
     imports: [
@@ -99,6 +111,10 @@ registerLocaleData(localeEs, 'es-CO');
         /* Inventario */
         BodegasModule,
         ZonasModule,
+        ContadoresModule,
+        GenerarHojaConteoModule,
+        HojasConteoListModule,
+        HojasConteoDetalleModule
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

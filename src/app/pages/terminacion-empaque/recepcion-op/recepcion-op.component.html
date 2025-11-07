@@ -83,8 +83,8 @@
                   type="number" 
                   class="form-control me-2" 
                   [ngClass]="{
-                    'is-invalid': item.cantidad_recibida > item.cantidad_teorica_total,
-                    'is-valid': item.cantidad_recibida > 0 && item.cantidad_recibida <= item.cantidad_teorica_total
+                    'is-invalid': item.cantidad_recibida > (item.cantidad_teorica_total - item.cantidad_recibida_total - getTotalUbicacionesDistintas(item)),
+                    'is-valid': item.cantidad_recibida > 0 && item.cantidad_recibida <= (item.cantidad_teorica_total - item.cantidad_recibida_total - getTotalUbicacionesDistintas(item))
                   }"
                   [(ngModel)]="item.cantidad_recibida" 
                   min="0"
@@ -340,7 +340,8 @@
                   <span class="badge" 
                         [class.bg-success]="ubicacion.ubicacion === 'Terminacion'"
                         [class.bg-warning]="ubicacion.ubicacion === 'Bordado'"
-                        [class.bg-info]="ubicacion.ubicacion === 'Estampado'">
+                        [class.bg-info]="ubicacion.ubicacion === 'Estampado'"
+                        [class.bg-secondary]="ubicacion.ubicacion !== 'Terminacion' && ubicacion.ubicacion !== 'Bordado' && ubicacion.ubicacion !== 'Estampado'">
                     {{ ubicacion.ubicacion }}
                   </span>
                 </td>

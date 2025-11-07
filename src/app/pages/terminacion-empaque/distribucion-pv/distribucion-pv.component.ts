@@ -60,67 +60,80 @@ export class DistribucionPvComponent implements OnInit {
     });
   }
 
-  async cargarPVsParaOPs(ops: any[]): Promise<void> {
-    const peticiones = ops.map(async op => {
-      try {
-        // Esperar la respuesta de los PVs
-        const pvsResp = await this.terminacionEmpaqueService.listarPVsPorOPDesdeApiLaravel(op).toPromise();
-        const cadenaPVs: string = pvsResp[0]?.pvs || '';
-        const numerosPV = (cadenaPVs.match(/\d+/g) || []).map(pv => ({
-          numero_pv: pv,
-          tieneDisponibles: false
-        }));
+async cargarPVsParaOPs(ops: any[]): Promise<void> {
+  const peticiones = ops.map(async op => {
+    try {
+      // ✅ Obtener PVs de Laravel (puede venir array u objeto)
+      const pvsResp: { pvs?: string } | Array<{ pvs?: string }> = await this.terminacionEmpaqueService
+        .listarPVsPorOPDesdeApiLaravel(op)
+        .toPromise();
 
-        // Esperar el resultado de si tiene items pendientes
-        const tieneItemsPendientes = await lastValueFrom(
-          this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(op)
-        );
+      console.log('PVs para OP', op, pvsResp);
 
-        return {
-          codigo: op,
-          pvs: numerosPV,
-          tieneDisponibles: tieneItemsPendientes
-        };
-      } catch (error) {
-        console.error(`Error procesando OP ${op}:`, error);
-        return {
-          codigo: op,
-          pvs: [],
-          tieneDisponibles: false
-        };
+      // ✅ Normalizar siempre string
+      let cadenaPVs = '';
+      if (Array.isArray(pvsResp)) {
+        cadenaPVs = pvsResp[0]?.pvs || '';
+      } else {
+        cadenaPVs = (pvsResp as { pvs?: string })?.pvs || '';
       }
-    });
 
-    // Esperar a que todas las peticiones terminen
-    const resultados = await Promise.all(peticiones);
+      // ✅ Extraer solo números (PVs)
+      const numerosPV = (cadenaPVs.match(/\d+/g) || []).map(pv => ({
+        numero_pv: pv,
+        tieneDisponibles: false
+      }));
 
-    // Ordenar: primero los que tienen disponibles
-    this.opsConPvs = resultados.sort((a, b) => {
-      const dispoA = typeof a.tieneDisponibles === 'object' && a.tieneDisponibles !== null && 'data' in a.tieneDisponibles
-        ? a.tieneDisponibles.data === true ? 1 : 0
-        : a.tieneDisponibles === true ? 1 : 0;
-      const dispoB = typeof b.tieneDisponibles === 'object' && b.tieneDisponibles !== null && 'data' in b.tieneDisponibles
-        ? b.tieneDisponibles.data === true ? 1 : 0
-        : b.tieneDisponibles === true ? 1 : 0;
+      // ✅ Consultar si OP tiene ítems pendientes
+      const tieneItemsPendientes = await lastValueFrom(
+        this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(op)
+      );
 
-      console.log('Comparando:', a.codigo, dispoA, 'vs', b.codigo, dispoB);
+      return {
+        codigo: op,
+        pvs: numerosPV,
+        tieneDisponibles: tieneItemsPendientes
+      };
 
-      return dispoB - dispoA;
-    });
+    } catch (error) {
+      console.error(`Error procesando OP ${op}:`, error);
+      return {
+        codigo: op,
+        pvs: [],
+        tieneDisponibles: false
+      };
+    }
+  });
 
-    console.log('OPs con PVs:', this.opsConPvs);
-    
-    // Inicializar paginación
-    this.inicializarPaginacion();
+  // ✅ Esperar todas las peticiones
+  const resultados = await Promise.all(peticiones);
 
-    // Inicializar paginadores por PV para cada OP
-    this.opsConPvs.forEach(op => {
-      // guardar copia "original" (para filtrar sin perder datos)
-      op.pvsOriginal = Array.isArray(op.pvs) ? [...op.pvs] : [];
-      // Inicializar paginador de PVs para esta OP
-      this.initPaginadorPV(op);
-    });
-  }
+  // ✅ Ordenar OPs: primero las que tienen disponibilidad
+  this.opsConPvs = resultados.sort((a, b) => {
+    const dispoA = typeof a.tieneDisponibles === 'object' && a.tieneDisponibles !== null && 'data' in a.tieneDisponibles
+      ? a.tieneDisponibles.data === true ? 1 : 0
+      : a.tieneDisponibles === true ? 1 : 0;
+
+    const dispoB = typeof b.tieneDisponibles === 'object' && b.tieneDisponibles !== null && 'data' in b.tieneDisponibles
+      ? b.tieneDisponibles.data === true ? 1 : 0
+      : b.tieneDisponibles === true ? 1 : 0;
+
+    console.log('Comparando:', a.codigo, dispoA, 'vs', b.codigo, dispoB);
+    return dispoB - dispoA;
+  });
+
+  console.log('OPs con PVs:', this.opsConPvs);
+
+  // ✅ Inicializar paginación
+  this.inicializarPaginacion();
+
+  // ✅ Inicializar paginadores por OP
+  this.opsConPvs.forEach(op => {
+    op.pvsOriginal = Array.isArray(op.pvs) ? [...op.pvs] : [];
+    this.initPaginadorPV(op);
+  });
+}
+
 
   /**
    * Inicializa el paginador con los datos cargados
@@ -298,7 +311,7 @@ export class DistribucionPvComponent implements OnInit {
     if (!op.expandir) {
       op.expandir = true;
       op.cargando = true;
-
+console.log('Verificando disponibilidad de ítems para OP', op);
       const pvs = op.pvsOriginal; // lista completa
       const itemsPorPV: any[] = [];
       let llamadasFinalizadas = 0;

@@ -1,120 +1,254 @@
-<div class="row page-titles mt-3">
+<!-- Encabezado con breadcrumb -->
+<header class="page-header" role="banner">
+  <div class="row page-titles">
     <div class="col-md-5 align-self-center">
-        <h3 class="text-themecolor">{{ title }}</h3>
+      <h1 class="page-title">{{ title }}</h1>
     </div>
     <div class="col-md-7 align-self-center">
+      <nav aria-label="Navegación de ruta">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a routerLink="/dashboard">Inicio</a>
-            </li>
-            <li class="breadcrumb-item">Inconsistencias</li>
-            <li class="breadcrumb-item active">{{ title }}</li>
+          <li class="breadcrumb-item">
+            <a routerLink="/dashboard">Inicio</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" aria-current="page">Inconsistencias</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
         </ol>
+      </nav>
     </div>
-</div>
+  </div>
+</header>
 
-<div class="container">
-  <div class="card mx-auto table-container">
+<!-- Contenedor principal -->
+<main class="content-container" role="main">
+  <div class="card table-card">
     
-    <!-- Filtro solo visible para ciertos líderes -->
-    <div class="row mb-3">
-        <!-- Barra de búsqueda -->
-        <div class="col-md-6">
-            <input type="text"
-                class="form-control"
-                placeholder="Buscar..."
-                [(ngModel)]="filters.busqueda"
-                (input)="applyFilters()">
+    <!-- Sección de filtros -->
+    <section class="filters-section" aria-label="Filtros de búsqueda">
+      <div class="row">
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="search-wrapper">
+            <label for="searchInput" class="visually-hidden">Buscar inconsistencias</label>
+            <input 
+              type="search"
+              id="searchInput"
+              class="form-control search-input"
+              placeholder="Buscar por cliente, solicitante o consecutivo..."
+              [(ngModel)]="filters.busqueda"
+              (input)="applyFilters()"
+              aria-describedby="searchHint">
+            <span id="searchHint" class="visually-hidden">
+              Ingrese texto para filtrar la tabla de inconsistencias
+            </span>
+          </div>
         </div>
-    </div>
+      </div>
+    </section>
 
-    <div class="card-body" style="overflow: auto;">
-      <table class="table table-hover table-striped align-middle sombra-buttoms" *ngIf="inconsistencias.length > 0; else sinDatos">
-        <thead>
-          <tr>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Fecha</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cliente</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Consecutivo</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Solicitante</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarDepartamento">Departamento</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Tipo</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Solicitada</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Inconsistencia</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Ítem</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">OP/OPR/OPM</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Unitario</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Total</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Situación</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Estado</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Acción a tomar</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Evidencias</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody style="text-align: center;">
-          <tr *ngFor="let inco of currentData">
-            <td>{{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.Cliente }}</td>
-            <td>{{ inco.id_inconsistencia }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120" >{{ inco.nombre_solicitante }}</td>
-            <td *ngIf="mostrarDepartamento">{{ inco.nombre_departamento }}</td>
-            <td>{{ tipos_inco[inco.tipo_inconsistencia] }}</td>
-            <td>{{ inco.cantidad_solicitada_op }}</td>
-            <td>{{ inco.cantidad_inconsistencia }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.item || 'N/A' }}</td>
-            <td>{{ inco.tipo_de_orden }}</td>
-            <td>{{ inco.precio_unitario | currency:'COP' }}</td>
-            <td>{{ inco.precio_total_inconsistencia | currency:'COP' }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ inco.descripcion_inconsistencia || 'N/A' }}</td>
-            <td *ngIf="mostrarEstado">{{ inco.estado_inconsistencia || 'Pendiente' }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120" *ngIf="mostrarEstado">{{ inco.accion_inconsistencia || 'N/A' }}</td>
-            <td>
-              <button class="btn btn-link p-0" (click)="verEvidencias(inco)">
-                <i class="fa-regular fa-image text-success" style="font-size: 20px;"></i>
-              </button>
-            </td>
-            <td class="d-flex flex-column gap-1">
-              <button class="btn btn-success btn-sm" (click)="aceptarInconsistencia(inco)">✔ Aceptar</button>
-              <button class="btn btn-danger btn-sm" (click)="denegarInconsistencia(inco)"><strong>X</strong> Denegar</button>
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Fecha</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cliente</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Consecutivo</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Solicitante</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarDepartamento">Departamento</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Tipo</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Solicitada</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Cant. Inconsistencia</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Ítem</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">OP/OPR/OPM</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Unitario</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Precio Total</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Descrip. Situación</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Estado</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;" *ngIf="mostrarEstado">Acción a tomar</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Evidencias</th>
-            <th class="text-center sorting_asc" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">Acciones</th>
-          </tr>
-        </tfoot>
-      </table>
+    <!-- Contenedor de tabla con scroll -->
+    <div class="card-body table-responsive-wrapper">
+      
+      <!-- Tabla de inconsistencias -->
+      <div class="table-scroll-container" *ngIf="inconsistencias.length > 0; else sinDatos">
+        <table 
+          class="table table-inconsistencias" 
+          role="table"
+          aria-label="Tabla de inconsistencias pendientes"
+          aria-describedby="tableDescription">
+          
+          <caption id="tableDescription" class="visually-hidden">
+            Lista de inconsistencias reportadas con información de fecha, cliente, cantidades y acciones disponibles
+          </caption>
 
+          <thead>
+            <tr role="row">
+              <th scope="col" class="th-fecha" role="columnheader">
+                <span class="th-content">Fecha</span>
+              </th>
+              <th scope="col" class="th-cliente" role="columnheader">
+                <span class="th-content">Cliente</span>
+              </th>
+              <th scope="col" class="th-consecutivo" role="columnheader">
+                <span class="th-content">Consecutivo</span>
+              </th>
+              <th scope="col" class="th-solicitante" role="columnheader">
+                <span class="th-content">Solicitante</span>
+              </th>
+              <th scope="col" class="th-departamento" role="columnheader" *ngIf="mostrarDepartamento">
+                <span class="th-content">Departamento</span>
+              </th>
+              <th scope="col" class="th-tipo" role="columnheader">
+                <span class="th-content">Tipo</span>
+              </th>
+              <th scope="col" class="th-cantidad" role="columnheader">
+                <span class="th-content">Cant. Solicitada</span>
+              </th>
+              <th scope="col" class="th-cantidad-inco" role="columnheader">
+                <span class="th-content">Cant. Inconsistencia</span>
+              </th>
+              <th scope="col" class="th-item" role="columnheader">
+                <span class="th-content">Descrip. Ítem</span>
+              </th>
+              <th scope="col" class="th-orden" role="columnheader">
+                <span class="th-content">OP/OPR/OPM</span>
+              </th>
+              <th scope="col" class="th-precio" role="columnheader">
+                <span class="th-content">Precio Unitario</span>
+              </th>
+              <th scope="col" class="th-precio-total" role="columnheader">
+                <span class="th-content">Precio Total</span>
+              </th>
+              <th scope="col" class="th-descripcion" role="columnheader">
+                <span class="th-content">Descrip. Situación</span>
+              </th>
+              <th scope="col" class="th-estado" role="columnheader" *ngIf="mostrarEstado">
+                <span class="th-content">Estado</span>
+              </th>
+              <th scope="col" class="th-accion" role="columnheader" *ngIf="mostrarAccionTomar">
+                <span class="th-content">Acción a tomar</span>
+              </th>
+              <th scope="col" class="th-evidencias" role="columnheader">
+                <span class="th-content">Evidencias</span>
+              </th>
+              <th scope="col" class="th-acciones" role="columnheader">
+                <span class="th-content">Acciones</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let inco of currentData" role="row">
+              <td role="cell" data-label="Fecha">
+                <time [attr.datetime]="inco.fecha_inconsistencia">
+                  {{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}
+                </time>
+              </td>
+              <td role="cell" data-label="Cliente">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
+                  {{ inco.Cliente }}
+                </span>
+              </td>
+              <td role="cell" data-label="Consecutivo">
+                <span class="badge-consecutivo">{{ inco.id_inconsistencia }}</span>
+              </td>
+              <td role="cell" data-label="Solicitante">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
+                  {{ inco.nombres + ' ' + inco.apellidos }}
+                </span>
+
+              </td>
+              <td role="cell" data-label="Departamento" *ngIf="mostrarDepartamento">
+                {{ inco.nombre_departamento }}
+              </td>
+              <td role="cell" data-label="Tipo">
+                <span class="badge-tipo">{{ tipos_inco[inco.tipo_inconsistencia] }}</span>
+              </td>
+              <td role="cell" data-label="Cant. Solicitada" class="text-numeric">
+                {{ inco.cantidad_solicitada_op }}
+              </td>
+              <td role="cell" data-label="Cant. Inconsistencia" class="text-numeric">
+                <strong>{{ inco.cantidad_inconsistencia }}</strong>
+              </td>
+              <td role="cell" data-label="Descrip. Ítem">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
+                  {{ inco.item || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="OP/OPR/OPM">
+                {{ inco.tipo_de_orden }}   {{ inco.estado_orden }}  
+              </td>
+              <td role="cell" data-label="Precio Unitario" class="text-numeric">
+                {{ inco.precio_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </td>
+              <td role="cell" data-label="Precio Total" class="text-numeric">
+                <strong>{{ inco.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+              </td>
+              <td role="cell" data-label="Descrip. Situación">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
+                  {{ inco.descripcion_inconsistencia || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Estado" *ngIf="mostrarEstado">
+                <span class="badge-estado" [attr.aria-label]="'Estado: ' + (inco.estado_inconsistencia || 'Pendiente')">
+                  {{ inco.estado_inconsistencia || 'Pendiente' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Acción a tomar" *ngIf="mostrarAccionTomar">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
+                  {{ inco.accion_inconsistencia || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Evidencias" class="td-evidencias">
+                <button 
+                  type="button"
+                  class="btn btn-icon btn-evidencias" 
+                  (click)="verEvidencias(inco)"
+                  [attr.aria-label]="'Ver evidencias de inconsistencia ' + inco.id_inconsistencia"
+                  title="Ver evidencias">
+                  <i class="fa-regular fa-image" aria-hidden="true"></i>
+                  <span class="visually-hidden">Ver evidencias</span>
+                </button>
+              </td>
+              <td role="cell" data-label="Acciones" class="td-acciones">
+                <div class="action-buttons">
+                  <button 
+                    type="button"
+                    class="btn btn-success btn-action" 
+                    (click)="aprobarInconsistencia(inco)"
+                    [attr.aria-label]="'Aceptar inconsistencia ' + inco.id_inconsistencia"
+                    title="Aceptar inconsistencia">
+                    <i class="fa-solid fa-check" aria-hidden="true"></i>
+                    <span class="btn-text">Aceptar</span>
+                  </button>
+                  <button 
+                    type="button"
+                    class="btn btn-danger btn-action" 
+                    (click)="denegarInconsistencia(inco)"
+                    [attr.aria-label]="'Denegar inconsistencia ' + inco.id_inconsistencia"
+                    title="Denegar inconsistencia">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    <span class="btn-text">Denegar</span>
+                  </button>
+                  <button 
+                    class="btn btn-warning btn-sm" 
+                    (click)="ponerEnEspera(inco)"
+                    *ngIf="mostrarAccionTomar"
+                    title="Poner en espera">
+                    <i class="fas fa-pause"></i> En Espera
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- Mensaje cuando no hay datos -->
       <ng-template #sinDatos>
-        <div class="text-center py-3">
-          <p class="mb-0">No hay inconsistencias pendientes.</p>
+        <div class="empty-state" role="status" aria-live="polite">
+          <div class="empty-state-icon" aria-hidden="true">
+            <i class="fa-regular fa-folder-open"></i>
+          </div>
+          <p class="empty-state-message">No hay inconsistencias pendientes.</p>
+          <p class="empty-state-hint">Las inconsistencias aparecerán aquí cuando sean reportadas.</p>
         </div>
       </ng-template>
 
     </div>
-    <app-shared-paginator
-    *ngIf="paginationService.getPaginatorState(paginatorId)"
-    [instanceId]="paginatorId"
-    [showPageSizeSelector]="true"
-    [pageSizeOptions]="[5, 10, 25, 50, 100]"
-    [noDataMessage]="'No se encontraron registros'">
-    </app-shared-paginator>
+
+    <!-- Paginador -->
+    <footer class="card-footer" role="contentinfo">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(paginatorId)"
+        [instanceId]="paginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25, 50, 100]"
+        [noDataMessage]="'No se encontraron registros'"
+        aria-label="Paginación de tabla de inconsistencias">
+      </app-shared-paginator>
+    </footer>
+
   </div>
-</div>
+</main>

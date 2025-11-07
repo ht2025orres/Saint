@@ -30,15 +30,19 @@ export class BodegasComponent implements OnInit {
   currentItems: any[] = [];
   totalItems: number = 0;
 
-  // Filtros
-  filters = { busqueda: '' };
-
+  // Filtros - 🆕 Agregamos búsqueda exacta
+  filters = { 
+    busqueda: '',
+    busquedaExacta: false  // Nueva propiedad
+  };
+  
   selectedItems: any[] = [];
   mostrarModal = false;
   zonaSeleccionada: number | null = null;
-
-  // 🆕 Zonas dinámicas desde el backend
+  
   zonas: any[] = [];
+  
+  sincronizando = false;
 
   constructor(
     public paginationService: PaginationService,
@@ -47,13 +51,25 @@ export class BodegasComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.inventarioService.sincronizarExistencias().subscribe({
+      next: (response: any) => {
+        console.log('Sincronización inicial completada:', response);
+        this.sincronizando = false;
+      },
+      error: () => {
+        this.sincronizando = false;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo completar la sincronización',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    });
     this.cargarBodegas();
-    this.cargarZonas(); // 🆕 Cargar zonas al iniciar
+    this.cargarZonas();
   }
 
-  /** -------------------------
-   *  🆕 CARGAR ZONAS
-   ------------------------- */
   cargarZonas(): void {
     this.inventarioService.obtenerZonas().subscribe({
       next: (res) => {
@@ -61,7 +77,6 @@ export class BodegasComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar zonas:', err);
-        // No mostrar error al usuario, usar zonas por defecto
         this.zonas = [];
       }
     });
@@ -77,17 +92,13 @@ export class BodegasComponent implements OnInit {
       next: (res) => {
         let bodegas = res['data'] || [];
 
-        // Si el usuario NO es admin, aplicamos filtrado por roles de gestor
         if (!this.authService.hasAnyRole(['Admin (inventario)', 'Administrador del sistema'])) {
-
-          // Lista de roles posibles de gestor
           const rolesGestores = [
             'Gestor de bodega (MP001)',
             'Gestor de bodega (MP003)',
             'Gestor de bodega (BT001)'
           ];
 
-          // Obtener todos los códigos de bodegas a las que tiene acceso
           const codigosPermitidos: string[] = [];
 
           rolesGestores.forEach(rol => {
@@ -98,11 +109,9 @@ export class BodegasComponent implements OnInit {
             }
           });
 
-          // Filtrar bodegas si tiene algún rol válido
           if (codigosPermitidos.length > 0) {
             bodegas = bodegas.filter((b: any) => codigosPermitidos.includes(b.codigo));
           } else {
-            // Si no tiene permisos sobre ninguna bodega
             bodegas = [];
           }
         }
@@ -134,10 +143,71 @@ export class BodegasComponent implements OnInit {
     }
   }
 
+  // 🆕 Filtro actualizado para bodegas con búsqueda exacta
   filterBodegas: FilterFunction = (bodega: any, filtros) => {
-    const texto = (filtros.busqueda || '').toLowerCase().trim();
-    return !texto || bodega.codigo?.toLowerCase().includes(texto);
+    const texto = (filtros.busqueda || '').trim();
+    if (!texto) return true;
+
+    const textoLower = texto.toLowerCase();
+    const codigoLower = (bodega.codigo || '').toLowerCase();
+
+    if (filtros.busquedaExacta) {
+      return codigoLower === textoLower;
+    } else {
+      return codigoLower.includes(textoLower);
+    }
   };
+
+
+  sincronizarBodegas() {
+    Swal.fire({
+      title: '¿Sincronizar con SIESA?',
+      text: 'Se actualizará el estado de existencias de los items',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, sincronizar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.sincronizando = true;
+        
+        Swal.fire({
+          title: 'Sincronizando...',
+          text: 'Por favor espera',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        this.inventarioService.sincronizarExistencias().subscribe({
+          next: (response: any) => {
+            this.sincronizando = false;
+            Swal.fire({
+              title: '¡Sincronización completada!',
+              text: 'Los datos se han actualizado correctamente',
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false
+            }).then(() => {
+              window.location.reload();
+            });
+          },
+          error: () => {
+            this.sincronizando = false;
+            Swal.fire({
+              title: 'Error',
+              text: 'No se pudo completar la sincronización',
+              icon: 'error',
+              confirmButtonText: 'Aceptar'
+            });
+          }
+        });
+      }
+    });
+  }
 
   /** -------------------------
    *  ITEMS
@@ -175,13 +245,36 @@ export class BodegasComponent implements OnInit {
     });
   }
 
+  // 🆕 Filtro actualizado para items con búsqueda exacta
   filterItems: FilterFunction = (item: any, filtros) => {
-    const texto = (filtros.busqueda || '').toLowerCase().trim();
+    const texto = (filtros.busqueda || '').trim();
     if (!texto) return true;
 
-    return item.id_item?.toLowerCase().includes(texto) ||
-           item.descripcion?.toLowerCase().includes(texto) ||
-           item.zonas?.some((z: any) => z.nombre.toLowerCase().includes(texto));
+    const textoLower = texto.toLowerCase();
+    // console.log('Filtrando ítem:', item);
+    if (filtros.busquedaExacta) {
+      // Búsqueda exacta: coincidencia completa en cualquier campo
+      const idItemLower = (item.id_item || '').toLowerCase();
+      const descripcionLower = (item.descripcion || '').toLowerCase();
+      const cantidadStr = String(item.cantidad || '');
+      const id_color = String(item.id_color?.trim() || '');
+      const zonaExacta = item.zonas?.some((z: any) => 
+        (z.nombre || '').toLowerCase() === textoLower
+      );
+
+      return idItemLower === textoLower || 
+             descripcionLower === textoLower || 
+             cantidadStr === texto ||
+             id_color === texto ||
+             zonaExacta ;
+    } else {
+      // Búsqueda parcial: coincidencia en cualquier parte
+      return item.id_item?.toLowerCase().includes(textoLower) ||
+             item.descripcion?.toLowerCase().includes(textoLower) ||
+             item.id_color?.toLowerCase().includes(textoLower) ||
+             String(item.cantidad || '').includes(texto) ||
+             item.zonas?.some((z: any) => z.nombre.toLowerCase().includes(textoLower));
+    }
   };
 
   volverABodegas(): void {
@@ -261,7 +354,8 @@ export class BodegasComponent implements OnInit {
         this.inventarioService.eliminarZonaItem(
           item.id_item,
           this.codigoBodega!,
-          zona.id
+          zona.id,
+          item.id_f400
         ).subscribe({
           next: () => {
             Swal.fire('¡Eliminado!', 'Zona eliminada correctamente.', 'success');
