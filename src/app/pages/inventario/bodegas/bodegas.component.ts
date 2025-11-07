@@ -43,7 +43,7 @@ export class BodegasComponent implements OnInit {
   zonas: any[] = [];
   
   sincronizando = false;
-  
+
   constructor(
     public paginationService: PaginationService,
     private inventarioService: InventarioService,
@@ -51,6 +51,21 @@ export class BodegasComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.inventarioService.sincronizarExistencias().subscribe({
+      next: (response: any) => {
+        console.log('Sincronización inicial completada:', response);
+        this.sincronizando = false;
+      },
+      error: () => {
+        this.sincronizando = false;
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo completar la sincronización',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    });
     this.cargarBodegas();
     this.cargarZonas();
   }

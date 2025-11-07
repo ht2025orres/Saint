@@ -1,18 +1,19 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
-import { ContadoresComponent } from './contadores.component';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { GenerarHojaConteoComponent } from './generar-hoja-conteo.component';
 
 
 @NgModule({
-  declarations: [ ContadoresComponent ],
+  declarations: [ GenerarHojaConteoComponent ],
   imports: [
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
     FormsModule
   ],
-  exports: [ ContadoresComponent ]
+  exports: [ GenerarHojaConteoComponent
+  ]
 })
-export class ContadoresModule { }
+export class GenerarHojaConteoModule { }

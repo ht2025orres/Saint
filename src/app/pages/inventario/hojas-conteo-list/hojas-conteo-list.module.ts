@@ -1,18 +1,20 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
-import { ContadoresComponent } from './contadores.component';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-
+import { SharedModule } from 'src/app/shared/shared.module';
+import { HojasConteoListComponent } from './hojas-conteo-list.component';
 
 @NgModule({
-  declarations: [ ContadoresComponent ],
+  declarations: [ HojasConteoListComponent ],
   imports: [
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
+    SharedModule
   ],
-  exports: [ ContadoresComponent ]
+  exports: [ HojasConteoListComponent
+  ]
 })
-export class ContadoresModule { }
+export class HojasConteoListModule { }

@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService } from '../services/auth.service'; // ✅ asegúrate de importar tu AuthService
+import { AuthService } from '../services/auth.service';
 
 export interface ResumenBodega {
   codigo_bodega: string;
@@ -84,98 +84,247 @@ export class InventarioService {
     });
   }
 
-  listarBodegas(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/bodegas`, {
-      params: { usuario_id: this.getUsuarioActual() }
-    });
-  }
-
-  obtenerBodega(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiLaravelUrl}/bodegas/${id}`, {
-      params: { usuario_id: this.getUsuarioActual() }
-    });
-  }
-
-  crearBodega(bodega: any): Observable<any> {
-    return this.http.post<any>(`${this.apiLaravelUrl}/bodegas`, {
-      ...bodega,
-      usuario_id: this.getUsuarioActual()
-    });
-  }
-
-  actualizarBodega(id: number, bodega: any): Observable<any> {
-    return this.http.put<any>(`${this.apiLaravelUrl}/bodegas/${id}`, {
-      ...bodega,
-      usuario_id: this.getUsuarioActual()
-    });
-  }
-
-  eliminarBodega(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiLaravelUrl}/bodegas/${id}`, {
-      body: { usuario_id: this.getUsuarioActual() }
-    });
-  }
-
   sincronizarExistencias(): Observable<any> {
     return this.http.post(`${this.apiLaravelUrl}/inventario/sincronizar`, {});
   }
 
   /**
-   * ================================
-   *        ÍTEMS
-   * ================================
+   * Obtiene la lista de líderes de conteo con sus asignaciones
    */
-  listarItems(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/items`);
+  obtenerLideresConteo(): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/conteo/lideres`);
   }
 
-  obtenerItem(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiLaravelUrl}/items/${id}`);
+  /**
+   * Obtiene la lista de contadores registrados
+   */
+  obtenerContadores(): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/conteo/contadores`);
   }
 
-  crearItem(item: any): Observable<any> {
-    return this.http.post<any>(`${this.apiLaravelUrl}/items`, item);
+  /**
+   * Obtiene las hojas de conteo disponibles para asignar
+   */
+  obtenerHojasConteoDisponibles(): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/conteo/hojas-disponibles`);
   }
 
-  actualizarItem(id: number, item: any): Observable<any> {
-    return this.http.put<any>(`${this.apiLaravelUrl}/items/${id}`, item);
+  /**
+   * Busca usuarios en la plataforma externa de permisos
+   * @param termino - Término de búsqueda (nombre, apellido o cédula)
+   */
+  buscarUsuariosExternos(termino: string): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/usuarios-externos/buscar`, {
+      params: { q: termino }
+    });
   }
 
-  eliminarItem(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiLaravelUrl}/items/${id}`);
+  /**
+   * Registra múltiples contadores en la base de datos
+   * @param contadores - Array de contadores a registrar
+   */
+  registrarContadores(contadores: any[]): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/contadores/registrar`, {
+      contadores: contadores,
+      id: this.getUsuarioActual()
+    });
+  }
+
+  /**
+   * Asigna hojas de conteo a un líder
+   * @param payload - { lider_id: number, hojas_ids: number[] }
+   */
+  asignarHojasALider(payload: any): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-hojas`, payload);
+  }
+
+  /**
+   * Asigna contadores a un líder
+   * @param payload - { lider_id: number, contadores_ids: number[] }
+   */
+  asignarContadoresALider(payload: any): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-contadores`, payload);
+  }
+
+  /**
+   * Desasigna una hoja de conteo de un líder
+   * @param liderId - ID del líder
+   * @param hojaId - ID de la hoja a desasignar
+   */
+  desasignarHojaLider(liderId: number, hojaId: number): Observable<any> {
+    return this.http.delete(`${this.apiLaravelUrl}/conteo/lideres/${liderId}/hojas/${hojaId}`);
+  }
+
+  /**
+   * Desasigna un contador de un líder
+   * @param liderId - ID del líder
+   * @param contadorId - ID del contador a desasignar
+   */
+  desasignarContadorLider(liderId: number, contadorId: number): Observable<any> {
+    return this.http.delete(`${this.apiLaravelUrl}/conteo/lideres/${liderId}/contadores/${contadorId}`);
   }
 
   /**
    * ================================
-   *   MOVIMIENTOS DE INVENTARIO
+   *    HOJAS DE CONTEO
    * ================================
    */
-  listarMovimientos(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/movimientos-inventario`);
-  }
 
-  obtenerMovimiento(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiLaravelUrl}/movimientos-inventario/${id}`);
-  }
-
-  registrarMovimiento(movimiento: any): Observable<any> {
-    return this.http.post<any>(`${this.apiLaravelUrl}/movimientos-inventario`, movimiento);
-  }
-
-  eliminarMovimiento(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiLaravelUrl}/movimientos-inventario/${id}`);
+  obtenerFechaSugerida(params: any): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/conteo/fecha-sugerida`, { params });
   }
 
   /**
-   * ================================
-   *   REPORTES Y DASHBOARD
-   * ================================
+   * Genera una sugerencia de hoja de conteo basada en parámetros
    */
-  obtenerStockPorBodega(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/inventario/stock-por-bodega`);
+  generarSugerenciaHoja(payload: {
+    codigo_bodega: string;
+    zonas_ids?: number[];
+    max_items?: number;
+    umbral_existencia?: number;
+  }): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/hojas/generar-sugerencia`, {
+      ...payload,
+      usuario_id: this.getUsuarioActual()
+    });
   }
 
-  obtenerKardex(itemId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/inventario/${itemId}/kardex`);
+  /**
+   * Crea una hoja de conteo definitiva
+   */
+  crearHojaConteo(payload: {
+    id_lider: number;
+    tipo: 'CONTEO' | 'RECONTEO1' | 'RECONTEO2' | 'RECONTEO3';
+    items: number[]; // IDs de item_zona
+    observaciones?: string;
+  }): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/hojas/crear`, {
+      ...payload,
+      usuario_id: this.getUsuarioActual()
+    });
   }
+
+/**
+ * Listar hojas de conteo con filtros
+ */
+listarHojasConteo(params: any): Observable<any> {
+  return this.http.get(`${this.apiLaravelUrl}/conteo/hojas`, { params });
+}
+
+/**
+ * Obtener detalle de una hoja
+ */
+obtenerDetalleHoja(id: number): Observable<any> {
+  return this.http.get(`${this.apiLaravelUrl}/conteo/hojas/${id}`);
+}
+
+/**
+ * Obtener items de una hoja
+ */
+obtenerItemsHoja(id: number): Observable<any> {
+  return this.http.get(`${this.apiLaravelUrl}/conteo/hojas/${id}/items`);
+}
+
+/**
+ * Cambiar líder de una hoja
+ */
+cambiarLiderHoja(id: number, payload: any): Observable<any> {
+  return this.http.put(`${this.apiLaravelUrl}/conteo/hojas/${id}/cambiar-lider`, payload);
+}
+
+/**
+ * Eliminar item de una hoja
+ */
+eliminarItemHoja(idHoja: number, idItem: number, payload: any): Observable<any> {
+  return this.http.delete(`${this.apiLaravelUrl}/conteo/hojas/${idHoja}/items/${idItem}`, {
+    body: payload
+  });
+}
+
+/**
+ * Agregar items a una hoja
+ */
+agregarItemsHoja(id: number, payload: any): Observable<any> {
+  return this.http.post(`${this.apiLaravelUrl}/conteo/hojas/${id}/agregar-items`, payload);
+}
+
+/**
+ * Marcar/desmarcar item para reconteo
+ */
+toggleReconteoItem(idHoja: number, idItem: number, payload: any): Observable<any> {
+  return this.http.put(
+    `${this.apiLaravelUrl}/conteo/hojas/${idHoja}/items/${idItem}/toggle-reconteo`,
+    payload
+  );
+}
+
+/**
+ * Finalizar hoja de conteo
+ */
+finalizarHojaConteo(id: number, payload: any): Observable<any> {
+  return this.http.post(`${this.apiLaravelUrl}/conteo/hojas/${id}/finalizar`, payload);
+}
+
+/**
+ * Eliminar hoja de conteo
+ */
+eliminarHojaConteo(id: number, payload: any): Observable<any> {
+  return this.http.delete(`${this.apiLaravelUrl}/conteo/hojas/${id}`, {
+    body: payload
+  });
+}
+
+
+
+
+
+
+  // ========================================
+  // GESTIÓN DE ITEMS DE HOJAS
+  // ========================================
+
+  /**
+   * Cambiar estado de un item individual
+   */
+  cambiarEstadoItem(idHoja: number, idItem: number, payload: any): Observable<any> {
+    return this.http.put(`${this.apiLaravelUrl}/hojas-conteo/${idHoja}/items/${idItem}/estado`, payload);
+  }
+
+  /**
+   * Marcar todos los items con diferencias para reconteo
+   */
+  marcarTodosReconteo(idHoja: number, payload: any): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/hojas-conteo/${idHoja}/items/marcar-todos-reconteo`, payload);
+  }
+
+  /**
+   * Validar todos los items
+   */
+  validarTodosItems(idHoja: number, payload: any): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/hojas-conteo/${idHoja}/items/validar-todos`, payload);
+  }
+
+  /**
+   * Obtener items disponibles para agregar
+   */
+  obtenerItemsDisponibles(params: any): Observable<any> {
+    let httpParams = new HttpParams();
+    
+    if (params.codigo_bodega) {
+      httpParams = httpParams.set('codigo_bodega', params.codigo_bodega);
+    }
+    if (params.excluir_hoja_id) {
+      httpParams = httpParams.set('excluir_hoja_id', params.excluir_hoja_id.toString());
+    }
+
+    return this.http.get(`${this.apiLaravelUrl}/hojas-conteo/items-disponibles`, { params: httpParams });
+  }
+
+  /**
+   * Actualizar estado de la hoja
+   */
+  actualizarEstadoHoja(idHoja: number, payload: any): Observable<any> {
+    return this.http.put(`${this.apiLaravelUrl}/hojas-conteo/${idHoja}/estado`, payload);
+  }
+
 }

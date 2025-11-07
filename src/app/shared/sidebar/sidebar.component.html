@@ -1,4 +1,10 @@
 <aside class="left-sidebar">
+    <!-- Header del sidebar con botón centrado -->
+    <div class="sidebar-header" style="border-bottom: 1px solid rgba(120, 130, 140, 0.13);">
+        <div class="text-center" (click)="toggleSidebar()" style="cursor: pointer;">
+            <i class="mdi mdi-menu fs-4 text-muted"></i>
+        </div>
+    </div>
     <div class="scroll-sidebar">
         <nav class="sidebar-nav">
             <ul id="sidebarnav">
@@ -11,12 +17,13 @@
                     </a>
                 </li>
 
-                <li *ngIf="!authService.hasRole('Consulta')">
+                <li *ngIf="!authService.hasOnlyRole('Consulta')">
                     <a class="waves-effect waves-dark" routerLink="/technical-data-sheets-report" aria-expanded="false" class="text-decoration-none">
                         <i class="mdi mdi-file-chart"></i>
-                        <span class="hide-menu mt-5 pt-15">Reporte de Fichas <span
-                                class="label label-rouded label-themecolor pull-right">4
-                            </span></span>
+                        <span class="hide-menu mt-5 pt-15">
+                            Reporte de Fichas 
+                            <span class="label label-rouded label-themecolor pull-right">4</span>
+                        </span>
                     </a>
                 </li>
 
@@ -177,6 +184,15 @@
                         </li>
                         <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)') || authService.hasRole('Gestor de bodega (MP001)') || authService.hasRole('Gestor de bodega (MP003)') || authService.hasRole('Gestor de bodega (BT001)')">
                             <a [routerLink]="['/zonas']" class="text-decoration-none">Zonas</a>
+                        </li>
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
+                            <a [routerLink]="['/contadores']" class="text-decoration-none">Contadores</a>
+                        </li>
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
+                            <a [routerLink]="['/generar-hoja-conteo']" class="text-decoration-none">Generar hoja de conteo</a>
+                        </li>
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
+                            <a [routerLink]="['/hojas-conteo-list']" class="text-decoration-none">Listado de hojas de conteo</a>
                         </li>
                         <li *ngIf="authService.hasRole('Administrador del sistema')">
                             <a [routerLink]="['/items']" class="text-decoration-none">Ítems</a>

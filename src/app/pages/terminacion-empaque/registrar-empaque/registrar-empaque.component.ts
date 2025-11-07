@@ -219,7 +219,7 @@ export class RegistrarEmpaqueComponent implements OnInit {
           this.filtersItems,
           this.filterFunctionItems
         ).subscribe(state => this.currentItemsPV = state.currentData);
-
+console.log(this.itemsPV);
         this.modalService.open(this.tmplRegistrarEmpaque, { size: 'xl' });
       },
       error: () => Swal.fire('Error', 'No se pudieron cargar los ítems para registrar empaque', 'error')
@@ -228,6 +228,41 @@ export class RegistrarEmpaqueComponent implements OnInit {
 
   registrarEmpaque(): void {
     console.log(this.itemsPV)
+    
+    // *** VALIDAR ANTES DE FILTRAR ***
+    const itemsInvalidos = this.itemsPV.filter(item => {
+      const asignado = Number(item.asignado) || 0;
+      const empacado = Number(item.empacado) || 0;
+      const teorico = Number(item.teorico) || 0;
+      const cantidad = Number(item.cantidad_a_registrar) || 0;
+
+      if (cantidad <= 0) return false;
+
+      const nuevoTotal = empacado + cantidad;
+      const limite = Math.min(asignado, teorico);
+
+      return nuevoTotal > limite;
+    });
+
+    if (itemsInvalidos.length > 0) {
+      const mensajes = itemsInvalidos.map(item => {
+        const asignado = Number(item.asignado) || 0;
+        const empacado = Number(item.empacado) || 0;
+        const teorico = Number(item.teorico) || 0;
+        const limite = Math.min(asignado, teorico);
+
+        return `- ${item.id_item.trim()} - ${item.id_color.trim()} - ${item.id_talla.trim()}: |
+    Intentas registrar ${item.cantidad_a_registrar}, máximo permitido: ${limite - empacado}`;
+      }).join('\n');
+
+      Swal.fire({
+        title: 'Cantidades inválidas',
+        html: `<pre style="text-align: left;">${mensajes}</pre>`,
+        icon: 'error'
+      });
+      return;
+    }
+
     const registros = this.itemsPV
       .filter(item => item.cantidad_a_registrar > 0)
       .map(item => ({
@@ -250,12 +285,23 @@ export class RegistrarEmpaqueComponent implements OnInit {
         Swal.fire('Éxito', 'Empaque registrado correctamente.', 'success');
         this.modalService.dismissAll();
         this.itemsPV = [];
-        this.cargarPVsAsignadas(); // Refresca la lista
+        this.cargarPVsAsignadas();
       },
       error: () => {
         Swal.fire('Error', 'No se pudo registrar el empaque.', 'error');
       }
     });
+  }
+
+  validarCantidad(item: any): boolean {
+    if (!item.cantidad_a_registrar || item.cantidad_a_registrar <= 0) return true;
+    const nuevoTotal = (item.empacado || 0) + item.cantidad_a_registrar;
+    const maxPermitido = Math.min(item.asignado - item.empacado, item.teorico - item.empacado);
+    return item.cantidad_a_registrar <= maxPermitido;
+  }
+
+  obtenerMaximo(item: any): number {
+    return Math.min(item.asignado - (item.empacado || 0), item.teorico - (item.empacado || 0));
   }
 
   applyFilters(): void {
