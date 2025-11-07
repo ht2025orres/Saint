@@ -1,47 +1,560 @@
 <!-- ============================================================== -->
-<!-- Bread crumb and right sidebar toggle -->
+<!-- Bread crumb -->
 <!-- ============================================================== -->
 <div class="row page-titles mt-3">
   <div class="col-md-5 align-self-center">
     <h3 class="text-themecolor">Dashboard</h3>
   </div>
-  <div class="col-md-7 align-self-center">
-    <ol class="breadcrumb">
+  <div class="col-md-7 align-self-center d-flex justify-content-end align-items-center">
+    <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item">
         <a routerLink="/dashboard">Inicio</a>
       </li>
-      <li class="breadcrumb-item">paginas</li>
+      <li class="breadcrumb-item">páginas</li>
       <li class="breadcrumb-item active">Dashboard</li>
     </ol>
   </div>
 </div>
+
 <!-- ============================================================== -->
-<!-- End Bread crumb and right sidebar toggle -->
+<!-- End Bread crumb -->
 <!-- ============================================================== -->
 
-<div class="content">
+<!-- Vista estándar (usuarios normales) -->
+<div *ngIf="!isAdmin" class="content">
   <div class="container-fluid">
     <section id="about">
       <div class="container">
-          <div class="row about-container">
-            <div class="col-lg-6">
-              <header>
-                <h3>Bienvenid&#64; al nuevo SaINT</h3>
-              </header>
-              <p>
-                SaINT o Sistema administrativo integrado es una plataforma web interna,
-                diseñada para ser aprovechada por todos nuestros
-                colaboradores y que puedan acceder a servicios
-                exclusivos y privados de la compañía,
-                con el objetivo de promover nuevas formas de colaboración
-                y acceso a los sistemas.
-              </p>
-            </div>
-            <div class="col-lg-4">
-              <img src="../../assets/images/about-extra-1.svg" class="img-fluid" alt="about-img"/>
-            </div>
+        <div class="row about-container">
+          <div class="col-lg-6">
+            <header>
+              <h3>Bienvenid&#64; al nuevo SaINT</h3>
+            </header>
+            <p>
+              SaINT o Sistema administrativo integrado es una plataforma web interna,
+              diseñada para ser aprovechada por todos nuestros
+              colaboradores y que puedan acceder a servicios
+              exclusivos y privados de la compañía,
+              con el objetivo de promover nuevas formas de colaboración
+              y acceso a los sistemas.
+            </p>
+          </div>
+          <div class="col-lg-4">
+            <img src="../../assets/images/about-extra-1.svg" class="img-fluid" alt="about-img"/>
           </div>
         </div>
+      </div>
     </section>
   </div>
 </div>
+
+<!-- Vista de administrador con pestañas -->
+<div *ngIf="isAdmin" class="admin-dashboard">
+  <ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button 
+        class="nav-link" 
+        [class.active]="activeTab === 'production'"
+        (click)="activeTab = 'production'"
+        type="button">
+        Panel de Producción
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button 
+        class="nav-link" 
+        [class.active]="activeTab === 'billing'"
+        (click)="activeTab = 'billing'; loadBillingData()"
+        type="button">
+        Dashboard de Facturación
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- Tab: Panel de Producción -->
+    <div *ngIf="activeTab === 'production'" class="tab-pane active">
+      <h2 class="text-center mb-4">Panel de Producción</h2>
+      <div class="metrics-grid">
+        <app-metric-card
+          *ngFor="let metric of metrics"
+          [metric]="metric">
+        </app-metric-card>
+      </div>
+    </div>
+
+    <!-- Tab: Dashboard de Facturación -->
+    <div *ngIf="activeTab === 'billing'" class="tab-pane active">
+      <h2 class="text-center mb-4">Dashboard de Facturación</h2>
+      
+      <div *ngIf="loading" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && billingData">
+        <!-- Filtros -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <label>Año:</label>
+            <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBillingData()">
+              <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label>Mes:</label>
+            <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
+              <option [value]="1">Enero</option>
+              <option [value]="2">Febrero</option>
+              <option [value]="3">Marzo</option>
+              <option [value]="4">Abril</option>
+              <option [value]="5">Mayo</option>
+              <option [value]="6">Junio</option>
+              <option [value]="7">Julio</option>
+              <option [value]="8">Agosto</option>
+              <option [value]="9">Septiembre</option>
+              <option [value]="10">Octubre</option>
+              <option [value]="11">Noviembre</option>
+              <option [value]="12">Diciembre</option>
+            </select>
+          </div>
+          <div class="col-md-3" style="display: none;">
+            <label>Plan Presupuestal:</label>
+            <select class="form-select" [(ngModel)]="selectedPlan" (change)="loadBillingData()">
+              <option value="008">008 - PRESUPUESTO CO</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-primary w-100 me-2" (click)="openInvoiceModal()">
+              <i class="bi bi-file-earmark-text"></i> Ver Facturas
+            </button>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-info w-100" (click)="openShipmentModal()">
+              <i class="bi bi-box-seam"></i> Ver Remisiones
+            </button>
+          </div>
+        </div>
+
+        <!-- Resumen General con Remisiones -->
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="card bg-primary">
+              <div class="card-body">
+                <h6 class="text-white">Presupuesto Total</h6>
+                <h3 class="text-white">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-success">
+              <div class="card-body">
+                <h6 class="text-white">Facturación</h6>
+                <h3 class="text-white">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-info">
+              <div class="card-body">
+                <h6 class="text-white">Remisionado Mes Actual</h6>
+                <h3 class="text-white">{{billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="card bg-secondary">
+              <div class="card-body">
+                <h6 class="text-white">Remisionado Mes Anterior</h6>
+                <h3 class="text-white">{{billingData.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-warning">
+              <div class="card-body">
+                <h6 class="text-white">Diferencia</h6>
+                <h3 class="text-white">{{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-dark">
+              <div class="card-body">
+                <h6 class="text-white">% Ejecutado</h6>
+                <h3 class="text-white">{{billingData.porcentajeEjecutado | number:'1.0-0'}}%</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Presupuesto por Unidad de Negocio -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <h5 class="mb-0">Presupuesto por Unidad de Negocio</h5>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Buscar por U.N. o Descripción..."
+                    [(ngModel)]="filterUnidad">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>U.N.</th>
+                    <th>Descripción</th>
+                    <th class="text-end">Presupuesto</th>
+                    <th class="text-end">Real</th>
+                    <th class="text-end">Remis. Actual</th>
+                    <th class="text-end">Remis. Anterior</th>
+                    <th class="text-end">Diferencia</th>
+                    <th class="text-end">% Ejecutado</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of filteredBillingUnits">
+                    <td>{{item.unidad}}</td>
+                    <td>{{item.descripcion}}</td>
+                    <td class="text-end">{{item.presupuesto | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{item.real | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{item.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{item.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end" [class.text-danger]="item.diferencia < 0" [class.text-success]="item.diferencia >= 0">
+                      {{item.diferencia | currency:'$':'symbol':'1.0-0'}}
+                    </td>
+                    <td class="text-end">
+                      <span class="badge" [class.bg-success]="item.porcentajeEjecutado >= 80" 
+                            [class.bg-warning]="item.porcentajeEjecutado >= 50 && item.porcentajeEjecutado < 80"
+                            [class.bg-danger]="item.porcentajeEjecutado < 50">
+                        {{item.porcentajeEjecutado | number:'1.0-0'}}%
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <button class="btn btn-sm btn-outline-primary me-1" (click)="openInvoiceModal(item.unidad)" title="Ver Facturas">
+                        <i class="bi bi-file-earmark-text"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-info" (click)="openShipmentModal(item.unidad)" title="Ver Remisiones">
+                        <i class="bi bi-box-seam"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="fw-bold">
+                    <td colspan="2">TOTAL</td>
+                    <td class="text-end">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{billingData.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">{{billingData.porcentajeEjecutado | number:'1.0-0'}}%</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfico de Cumplimiento -->
+        <div class="card">
+          <div class="card-header">
+            <h5>% de Cumplimiento por Unidad de Negocio</h5>
+          </div>
+          <div class="card-body">
+            <canvas id="billingChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalle de Facturas -->
+<div class="modal fade" [class.show]="showInvoiceModal" [style.display]="showInvoiceModal ? 'block' : 'none'" 
+     tabindex="-1" aria-labelledby="invoiceModalLabel" [attr.aria-hidden]="!showInvoiceModal">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="invoiceModalLabel">
+          Detalle de Facturas - {{getMonthName(selectedMonth)}} {{selectedYear}}
+          <span *ngIf="selectedUnit" class="badge bg-primary ms-2">U.N. {{selectedUnit}}</span>
+        </h5>
+        <button type="button" class="btn-close" (click)="closeInvoiceModal()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Barra de búsqueda y filtros -->
+        <div class="row mb-3">
+          <div class="col-md-8">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Buscar por número de factura o cliente..."
+                [(ngModel)]="searchTerm">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <select class="form-select" [(ngModel)]="pageSize" (change)="currentPage = 1">
+              <option [value]="10">10 por página</option>
+              <option [value]="25">25 por página</option>
+              <option [value]="50">50 por página</option>
+              <option [value]="100">100 por página</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="loadingInvoices" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+
+        <div *ngIf="!loadingInvoices && paginatedInvoices.length > 0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover expandable-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px;"></th>
+                  <th>Nro. Factura</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let invoice of paginatedInvoices">
+                  <tr class="clickable-row" (click)="toggleInvoiceExpansion(invoice)">
+                    <td>
+                      <i class="bi" [class.bi-chevron-right]="!invoice.expanded" [class.bi-chevron-down]="invoice.expanded"></i>
+                    </td>
+                    <td>{{invoice.nro_factura}}</td>
+                    <td>{{invoice.fecha_factura | date:'dd/MM/yyyy'}}</td>
+                    <td>{{invoice.cliente}}</td>
+                    <td class="text-end fw-bold">{{invoice.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                  </tr>
+                  <tr *ngIf="invoice.expanded" class="expanded-content">
+                    <td colspan="5">
+                      <div class="p-3 bg-light">
+                        <table class="table table-sm table-bordered mb-0">
+                          <thead class="table-secondary">
+                            <tr>
+                              <th>Código Item</th>
+                              <th>Descripción</th>
+                              <th class="text-end">Cantidad</th>
+                              <th class="text-end">Precio Unit.</th>
+                              <th class="text-end">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let item of invoice.items">
+                              <td>{{item.codigo_item}}</td>
+                              <td>{{item.descripcion_item}}</td>
+                              <td class="text-end">{{item.cantidad | number:'1.2-2'}}</td>
+                              <td class="text-end">{{item.precio_unitario | currency:'$':'symbol':'1.0-0'}}</td>
+                              <td class="text-end">{{item.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+              <tfoot class="table-light fw-bold">
+                <tr>
+                  <td colspan="4" class="text-end">TOTAL FACTURAS:</td>
+                  <td class="text-end">{{getTotalInvoices() | currency:'$':'symbol':'1.0-0'}}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <nav aria-label="Paginación de facturas" *ngIf="totalInvoicePages > 1">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a class="page-link" (click)="changePage(currentPage - 1)" tabindex="-1">Anterior</a>
+              </li>
+              <li class="page-item" *ngFor="let page of [].constructor(totalInvoicePages); let i = index" 
+                  [class.active]="currentPage === i + 1">
+                <a class="page-link" (click)="changePage(i + 1)">{{i + 1}}</a>
+              </li>
+              <li class="page-item" [class.disabled]="currentPage === totalInvoicePages">
+                <a class="page-link" (click)="changePage(currentPage + 1)">Siguiente</a>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="text-center text-muted">
+            Mostrando {{(currentPage - 1) * pageSize + 1}} - {{Math.min(currentPage * pageSize, filteredInvoices.length)}} 
+            de {{filteredInvoices.length}} facturas
+          </div>
+        </div>
+
+        <div *ngIf="!loadingInvoices && paginatedInvoices.length === 0" class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+          <p class="mt-3 text-muted">No se encontraron facturas para el periodo seleccionado</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeInvoiceModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showInvoiceModal" *ngIf="showInvoiceModal"></div>
+
+<!-- Modal de Detalle de Remisiones -->
+<div class="modal fade" [class.show]="showShipmentModal" [style.display]="showShipmentModal ? 'block' : 'none'" 
+     tabindex="-1" aria-labelledby="shipmentModalLabel" [attr.aria-hidden]="!showShipmentModal">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="shipmentModalLabel">
+          Remisiones Pendientes - {{getMonthName(selectedMonth)}} {{selectedYear}}
+          <span *ngIf="selectedUnit" class="badge bg-light text-dark ms-2">U.N. {{selectedUnit}}</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeShipmentModal()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Barra de búsqueda y filtros -->
+        <div class="row mb-3">
+          <div class="col-md-8">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Buscar por número de remisión o cliente..."
+                [(ngModel)]="shipmentSearchTerm">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <select class="form-select" [(ngModel)]="shipmentPageSize" (change)="shipmentCurrentPage = 1">
+              <option [value]="10">10 por página</option>
+              <option [value]="25">25 por página</option>
+              <option [value]="50">50 por página</option>
+              <option [value]="100">100 por página</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="loadingShipments" class="text-center py-5">
+          <div class="spinner-border text-info" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </div>
+
+        <div *ngIf="!loadingShipments && paginatedShipments.length > 0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover expandable-table">
+              <thead class="table-info">
+                <tr>
+                  <th style="width: 50px;"></th>
+                  <th>Nro. Remisión</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Pedido</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let shipment of paginatedShipments">
+                  <tr class="clickable-row" (click)="toggleShipmentExpansion(shipment)">
+                    <td>
+                      <i class="bi" [class.bi-chevron-right]="!shipment.expanded" [class.bi-chevron-down]="shipment.expanded"></i>
+                    </td>
+                    <td>{{shipment.nro_documento}}</td>
+                    <td>{{shipment.fecha | date:'dd/MM/yyyy'}}</td>
+                    <td>{{shipment.cliente_despacho}}</td>
+                    <td>{{shipment.pedido_documento}}</td>
+                    <td class="text-end fw-bold">{{shipment.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                  </tr>
+                  <tr *ngIf="shipment.expanded" class="expanded-content">
+                    <td colspan="6">
+                      <div class="p-3 bg-light">
+                        <table class="table table-sm table-bordered mb-0">
+                          <thead class="table-secondary">
+                            <tr>
+                              <th>Código Item</th>
+                              <th>Descripción</th>
+                              <th class="text-end">Cantidad</th>
+                              <th class="text-end">Precio Unit.</th>
+                              <th class="text-end">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let item of shipment.items">
+                              <td>{{item.codigo_item}}</td>
+                              <td>{{item.descripcion_item}}</td>
+                              <td class="text-end">{{item.cantidad | number:'1.2-2'}}</td>
+                              <td class="text-end">{{item.precio_unitario | currency:'$':'symbol':'1.0-0'}}</td>
+                              <td class="text-end">{{item.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+              <tfoot class="table-info fw-bold">
+                <tr>
+                  <td colspan="5" class="text-end">TOTAL REMISIONES PENDIENTES:</td>
+                  <td class="text-end">{{getTotalShipments() | currency:'$':'symbol':'1.0-0'}}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <nav aria-label="Paginación de remisiones" *ngIf="totalShipmentPages > 1">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" [class.disabled]="shipmentCurrentPage === 1">
+                <a class="page-link" (click)="changeShipmentPage(shipmentCurrentPage - 1)" tabindex="-1">Anterior</a>
+              </li>
+              <li class="page-item" *ngFor="let page of [].constructor(totalShipmentPages); let i = index" 
+                  [class.active]="shipmentCurrentPage === i + 1">
+                <a class="page-link" (click)="changeShipmentPage(i + 1)">{{i + 1}}</a>
+              </li>
+              <li class="page-item" [class.disabled]="shipmentCurrentPage === totalShipmentPages">
+                <a class="page-link" (click)="changeShipmentPage(shipmentCurrentPage + 1)">Siguiente</a>
+              </li>
+            </ul>
+          </nav>
+
+          <div class="text-center text-muted">
+            Mostrando {{(shipmentCurrentPage - 1) * shipmentPageSize + 1}} - {{Math.min(shipmentCurrentPage * shipmentPageSize, filteredShipments.length)}} 
+            de {{filteredShipments.length}} remisiones
+          </div>
+        </div>
+
+        <div *ngIf="!loadingShipments && paginatedShipments.length === 0" class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+          <p class="mt-3 text-muted">No se encontraron remisiones pendientes para el periodo seleccionado</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeShipmentModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showShipmentModal" *ngIf="showShipmentModal"></div>

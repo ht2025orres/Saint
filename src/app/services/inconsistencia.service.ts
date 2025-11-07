@@ -278,4 +278,3 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
 }
 
 
-

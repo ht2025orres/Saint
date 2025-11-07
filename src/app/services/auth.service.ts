@@ -150,6 +150,12 @@ export class AuthService {
     return roles.some(r => normalizedUserRoles.has(this.normalize(String(r))));
   }
 
+  hasOnlyRole(role: string): boolean {
+    const normalizedRole = this.normalize(String(role));
+    const roles = Array.from(this.getNormalizedUserRoles());
+    return roles.length === 1 && roles[0] === normalizedRole;
+  }
+
   logout(): void {
     this._token = null;
     this._user = null;

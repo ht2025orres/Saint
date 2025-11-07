@@ -124,7 +124,7 @@
 
 <ng-template #tmplRegistrarEmpaque>
   <div class="modal-header">
-    <h5 class="modal-title">Registrar Empaque - PV {{ pvSeleccionada?.pv_codigo ?? '' }}
+    <h5 class="modal-title">Registrar Empaque - PV {{ pvSeleccionada?? '' }}
       <span *ngIf="ptSeleccionada" class="text-muted small ms-2">
         (PT: {{ ptSeleccionada }})
       </span>
@@ -170,12 +170,17 @@
           <td>
             <input type="number" class="form-control"
               [ngClass]="{
-                'is-invalid': item.cantidad_a_registrar > 0 && ((item.empacado + item.cantidad_a_registrar) > item.asignado || (item.empacado + item.cantidad_a_registrar) > item.teorico),
-                'is-valid': item.cantidad_a_registrar > 0 && (item.empacado + item.cantidad_a_registrar) <= item.asignado && (item.empacado + item.cantidad_a_registrar) <= item.teorico
+                'is-invalid': !validarCantidad(item),
+                'is-valid': validarCantidad(item) && item.cantidad_a_registrar > 0
               }"
               [(ngModel)]="item.cantidad_a_registrar"
-              [max]="Math.min(item.cantidad_asignada - item.cantidad_empacada, item.cantidad_teorica - item.cantidad_empacada)"
-              [min]="0">
+              [max]="obtenerMaximo(item)"
+              [min]="0"
+              (input)="validarCantidad(item)"
+              [disabled]="obtenerMaximo(item) <= 0">
+            <small *ngIf="!validarCantidad(item)" class="text-danger d-block">
+              Máximo permitido: {{ obtenerMaximo(item) }}
+            </small>
           </td>
           <td>
             <select class="form-select" [(ngModel)]="item.tipo_empaque">

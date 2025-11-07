@@ -156,7 +156,7 @@ export class RecepcionOpComponent implements OnInit {
     .listarPVsPorOPDesdeApiLaravel(opEncontrada.id)
     .subscribe({
       next: (respuesta) => {
-        const cadenaPVs: string = respuesta[0]?.pvs || '';
+        const cadenaPVs: string = respuesta['pvs'] || '';
         const numerosPV = cadenaPVs.match(/\d+/g) || [];
 
         if (numerosPV.length === 0) {
@@ -618,29 +618,34 @@ export class RecepcionOpComponent implements OnInit {
       Swal.fire('Error', 'No se ha seleccionado un ítem válido', 'error');
       return;
     }
+
+    // *** VALIDAR QUE NO EXCEDA LA CANTIDAD TEÓRICA ***
+    const totalRecibidoActual = item.cantidad_recibida_total + item.cantidad_recibida + this.getTotalUbicacionesDistintas(item);
+    if (totalRecibidoActual + this.modalUbicacion.cantidad > item.cantidad_teorica_total) {
+      Swal.fire('Error', `No puede recepcionar más de ${item.cantidad_teorica_total} unidades. Ya tiene ${totalRecibidoActual} recepcionadas.`, 'error');
+      return;
+    }
+
     if (!item.ubicaciones_distintas) {
       item.ubicaciones_distintas = [];
     }
 
-    // *** SOLO buscar entre ubicaciones NUEVAS ***
     const ubicacionExistente = item.ubicaciones_distintas.find(
       u => u.ubicacion === this.modalUbicacion.ubicacionSeleccionada && u.esNueva === true
     );
 
     if (ubicacionExistente) {
-      // Si ya existe una ubicación nueva en esta sesión, sumar
       ubicacionExistente.cantidad += this.modalUbicacion.cantidad;
       if (this.modalUbicacion.comentario.trim()) {
         ubicacionExistente.comentario = this.modalUbicacion.comentario;
       }
     } else {
-      // Crear nueva ubicación y marcarla como NUEVA
       item.ubicaciones_distintas.push({
         ubicacion: this.modalUbicacion.ubicacionSeleccionada,
         cantidad: this.modalUbicacion.cantidad,
         comentario: this.modalUbicacion.comentario || '',
         fecha: new Date(),
-        esNueva: true // ← MARCAR COMO NUEVA
+        esNueva: true
       });
     }
 
@@ -739,7 +744,9 @@ export class RecepcionOpComponent implements OnInit {
   // Obtener total de cantidades en ubicaciones distintas
   getTotalUbicacionesDistintas(item: ItemRecepcion): number {
     if (!item.ubicaciones_distintas) return 0;
-    return item.ubicaciones_distintas.reduce((sum, ub) => sum + ub.cantidad, 0);
+    return item.ubicaciones_distintas
+      .filter(ub => ub.esNueva === true)
+      .reduce((sum, ub) => sum + ub.cantidad, 0);
   }
 
   applyFilters(): void {
