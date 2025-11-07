@@ -1,10 +1,11 @@
-// dashboard-bigbag.component.ts - VERSIÓN REFACTORIZADA
+// dashboard-bigbag.component.ts - SOLUCIÓN 2: Porcentaje solo en tooltip
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { HttpParams } from '@angular/common/http';
 import { Observable, Subject, Subscription, interval, of } from 'rxjs';
 import { switchMap, retry, catchError, startWith, takeUntil } from 'rxjs/operators';
 import Chart, { ChartConfiguration, ChartType } from 'chart.js/auto';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { BigbagService } from 'src/app/services/bigbag.service';
 import { DashboardResponse, DashboardFilters } from 'src/app/models/dashboard.interface';
 
@@ -57,6 +58,8 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
   ) {
     this.initForm();
     this.registerNoDataPlugin();
+    // Registrar el plugin de datalabels globalmente
+    Chart.register(ChartDataLabels);
   }
 
   ngOnInit(): void {
@@ -76,11 +79,8 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
     }
   }
 
-  // ===== LÓGICA ESPECÍFICA DEL DASHBOARD (MOVIDA DESDE EL SERVICIO) =====
+  // ===== LÓGICA ESPECÍFICA DEL DASHBOARD =====
   
-  /**
-   * Construye los parámetros HTTP para los filtros del dashboard
-   */
   private buildHttpParams(filters?: DashboardFilters): HttpParams | undefined {
     if (!filters) return undefined;
     
@@ -94,9 +94,6 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
     return params.keys().length > 0 ? params : undefined;
   }
 
-  /**
-   * Obtiene datos del dashboard con manejo de errores específico del dashboard
-   */
   private getDashboardData(filters?: DashboardFilters): Observable<DashboardResponse> {
     const params = this.buildHttpParams(filters);
     
@@ -112,9 +109,6 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
     );
   }
 
-  /**
-   * Configura auto-refresh con intervalo para el dashboard
-   */
   private getDatosAutoRefresh(filters?: DashboardFilters, intervalMs: number = 15000): Observable<DashboardResponse> {
     return interval(intervalMs).pipe(
       startWith(0),
@@ -123,9 +117,6 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
     );
   }
 
-  /**
-   * Extrae filtros del formulario del dashboard
-   */
   private getFiltersFromForm(): DashboardFilters {
     const formValue = this.filtersForm.value;
     return {
@@ -136,7 +127,7 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
     };
   }
 
-  // ===== LÓGICA DEL COMPONENTE (EXISTENTE) =====
+  // ===== LÓGICA DEL COMPONENTE =====
 
   private initChartsWhenReady(): void {
     let attempts = 0;
@@ -302,7 +293,7 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
   }
 
   private initCharts(): void {
-    // Chart Estados (Doughnut)
+    // Chart Estados (Doughnut) - Solo valor visible, porcentaje en tooltip
     this.chartEstados = this.createChart(
       this.chartEstadosRef.nativeElement,
       'doughnut',
@@ -311,13 +302,32 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
           legend: { position: 'bottom' },
           noDataPlugin: {
             message: 'No se han registrado recepciones en este período'
+          },
+          datalabels: {
+            color: '#fff',
+            font: {
+              weight: 'bold',
+              size: 14
+            },
+            formatter: (value: number) => value // Solo mostrar el valor
+          },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => {
+                const dataset = context.dataset;
+                const total = dataset.data.reduce((acc: number, val: number) => acc + val, 0);
+                const value = context.parsed;
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${context.label}: ${value} (${percentage}%)`;
+              }
+            }
           }
         },
         animation: { duration: 800 }
       }
     );
 
-    // Chart Top Clientes (Bar)
+    // Chart Top Clientes (Bar) - CON DATALABELS (sin porcentaje)
     this.chartTopClientes = this.createChart(
       this.chartTopClientesRef.nativeElement,
       'bar',
@@ -326,6 +336,16 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
         plugins: {
           noDataPlugin: {
             message: 'No se han repartido empaques en este período'
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#1f2937',
+            font: {
+              weight: 'bold',
+              size: 16
+            },
+            formatter: (value: number) => value.toLocaleString('es-CO')
           }
         },
         animation: { duration: 800 },
@@ -333,7 +353,7 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
       }
     );
 
-    // Chart Por Fecha (Line)
+    // Chart Por Fecha (Line) - SIN DATALABELS (muchos datos)
     this.chartPorFecha = this.createChart(
       this.chartPorFechaRef.nativeElement,
       'line',
@@ -346,6 +366,9 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
         plugins: {
           noDataPlugin: {
             message: 'No se han registrado empaques en este período'
+          },
+          datalabels: {
+            display: false // Desactivar en gráficas de línea con muchos puntos
           }
         },
         animation: { duration: 800 },
@@ -353,7 +376,7 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
       }
     );
 
-    // Chart Precintos Color (Pie)
+    // Chart Precintos Color (Pie) - Solo valor visible, porcentaje en tooltip
     this.chartPrecintosColor = this.createChart(
       this.chartPrecintosColorRef.nativeElement,
       'pie',
@@ -362,6 +385,25 @@ export class DashboardBigbagComponent implements OnInit, OnDestroy, AfterViewIni
           legend: { position: 'bottom' },
           noDataPlugin: {
             message: 'No se han repartido precintos en este período'
+          },
+          datalabels: {
+            color: '#fff',
+            font: {
+              weight: 'bold',
+              size: 18
+            },
+            formatter: (value: number) => Number(value) // Solo mostrar el valor
+          },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => {
+                const dataset = context.dataset;
+                const total = dataset.data.reduce((acc: number, val: any) => acc + Number(val), 0);
+                const value = Number(context.parsed);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${context.label}: ${value} (${percentage}%)`;
+              }
+            }
           }
         },
         animation: { duration: 800 },
