@@ -8,8 +8,10 @@ export class User {
   public password: string;
   public enable: boolean;
   public roles: Role[] = [];
-  public id_Sdp: string;
+  public id_Sdp: number;
   public nombre_departamento_Sdp: string;
   public id_departamento_Sdp: string;
+  id_lider: number;
+  lider_nombre: string;
   nombre_completo: string;
 }
