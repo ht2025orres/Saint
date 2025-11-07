@@ -52,36 +52,47 @@ export class LoginComponent implements OnInit {
     }
 
     login(): void {
-        if (this.formGr.valid) {
-            this.user.email = this.formGr.get('email').value;
-            this.user.password = this.formGr.get('password').value;
-            this.authService.login(this.user).subscribe(response => {
-                this.authService.saveUser(response.access_token);
-                this.authService.saveToken(response.access_token);
-                const user = this.authService.user;
-                Swal.fire({
-                    title: 'Inicio de sesión',
-                    html: `Hola <strong>${user.firstName}</strong> , iniciaste sesión correctamente`,
-                    icon: 'success',
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-                this.router.navigate(['/dashboard']);
-            }, err => {
-                if (err.status === 400) {
-                    Swal.fire({
-                        title: 'Error de autenticación',
-                        html: 'Usuario o contraseña incorrecta',
-                        icon: 'warning',
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                    this.formGr.get('email').setValue('');
-                    this.formGr.get('password').setValue('');
-                }
-            });
+  if (this.formGr.valid) {
+    this.user.email = this.formGr.get('email')!.value;
+    this.user.password = this.formGr.get('password')!.value;
+
+    this.authService.login(this.user).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.authService.saveUser(response);
+          console.log(response);
+            this.router.navigate(['/dashboard']);
+          Swal.fire({
+            title: 'Inicio de sesión',
+            html: `Hola <strong>${response.user.name}</strong>, iniciaste sesión correctamente.`,
+            icon: 'success',
+            timer: 2000,
+            timerProgressBar: true
+          });
+
+          
+        } else {
+          Swal.fire({
+            title: 'Error',
+            html: response.message,
+            icon: 'error'
+          });
         }
-    }
+      },
+      error: (err) => {
+        Swal.fire({
+          title: 'Error de autenticación',
+          html: 'Usuario o contraseña incorrectos',
+          icon: 'warning',
+          timer: 2000,
+          timerProgressBar: true
+        });
+        this.formGr.reset();
+      }
+    });
+  }
+}
+
 
 
     validateCursor() {
