@@ -1,0 +1,470 @@
+<div class="container py-4">
+  <h2 class="mb-4 display-6">
+    Control de Conteo de Inventario
+  </h2>
+
+  <!-- 🎯 PESTAÑAS DE NAVEGACIÓN -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link" 
+         [class.active]="vistaActiva === 'lideres'"
+         (click)="cambiarVista('lideres')"
+         style="cursor: pointer;">
+        <i class="bi bi-people-fill me-2"></i>
+        Gestión de Líderes
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" 
+         [class.active]="vistaActiva === 'contadores'"
+         (click)="cambiarVista('contadores')"
+         style="cursor: pointer;">
+        <i class="bi bi-person-plus-fill me-2"></i>
+        Registro de Contadores
+      </a>
+    </li>
+  </ul>
+
+  <!-- ============================================ -->
+  <!-- 👨‍💼 VISTA: GESTIÓN DE LÍDERES -->
+  <!-- ============================================ -->
+  <div *ngIf="vistaActiva === 'lideres'">
+    
+    <!-- Indicador de carga -->
+    <ng-container *ngIf="isLoadingLideres; else lideresContent">
+      <div class="alert alert-secondary text-center mt-4">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Cargando líderes de conteo...
+      </div>
+    </ng-container>
+
+    <ng-template #lideresContent>
+      <!-- Lista de líderes -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">
+                <i class="bi bi-person-badge me-2"></i>
+                Líderes Disponibles
+              </h5>
+            </div>
+            <div class="card-body p-2" style="max-height: 600px; overflow-y: auto;">
+              
+              <div *ngIf="lideres.length === 0" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                No hay líderes registrados
+              </div>
+
+              <div *ngFor="let lider of lideres" 
+                   class="card mb-2 border" 
+                   [class.border-primary]="liderSeleccionado?.id === lider.id"
+                   style="cursor: pointer;"
+                   (click)="seleccionarLider(lider)">
+                <div class="card-body py-2 px-3">
+                  <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                      <h6 class="mb-0">{{ lider.nombre_completo }}</h6>
+                    </div>
+                    <div class="text-end">
+                      <span class="badge bg-info me-1" title="Hojas asignadas">
+                        <i class="bi bi-file-earmark-text"></i>
+                        {{ lider.hojas_asignadas?.length || 0 }}
+                      </span>
+                      <span class="badge bg-success" title="Contadores asignados">
+                        <i class="bi bi-people"></i>
+                        {{ lider.contadores_asignados?.length || 0 }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel de asignación -->
+        <div class="col-md-8">
+          <div *ngIf="!liderSeleccionado" class="alert alert-info text-center">
+            <i class="bi bi-hand-index me-2"></i>
+            Selecciona un líder de la lista para gestionar sus asignaciones
+          </div>
+
+          <div *ngIf="liderSeleccionado" class="card shadow-sm">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">
+                <i class="bi bi-person-circle me-2"></i>
+                {{ liderSeleccionado.nombre_completo }}
+              </h5>
+            </div>
+            <div class="card-body">
+              
+              <!-- 📄 SECCIÓN: Hojas de Conteo -->
+              <div class="mb-4">
+                <h6 class="border-bottom pb-2 mb-3">
+                  <i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>
+                  Hojas de Conteo Asignadas
+                </h6>
+
+                <!-- Hojas actuales -->
+                <div *ngIf="liderSeleccionado.hojas_asignadas && liderSeleccionado.hojas_asignadas.length > 0" 
+                     class="mb-3">
+                  <div *ngFor="let hoja of liderSeleccionado.hojas_asignadas" 
+                       class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded">
+                    <div>
+                      <strong>{{ hoja.numero_hoja }}</strong>
+                      <small class="text-muted d-block">
+                        {{ hoja.bodega }} - {{ hoja.zona }}
+                      </small>
+                    </div>
+                    <div>
+                      <span class="badge me-2" [ngClass]="getEstadoBadgeClass(hoja.estado)">
+                        {{ getEstadoTexto(hoja.estado) }}
+                      </span>
+                      <button class="btn btn-sm btn-outline-danger" 
+                              (click)="desasignarHoja(liderSeleccionado!.id, hoja.id)"
+                              title="Desasignar hoja">
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div *ngIf="!liderSeleccionado.hojas_asignadas || liderSeleccionado.hojas_asignadas.length === 0"
+                     class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  No tiene hojas asignadas
+                </div>
+
+                <!-- Botón para asignar nuevas hojas -->
+                <button class="btn btn-sm btn-primary" 
+                        (click)="modalAsignarHojas.showModal()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Asignar Hojas
+                </button>
+              </div>
+
+              <!-- 👥 SECCIÓN: Contadores -->
+              <div>
+                <h6 class="border-bottom pb-2 mb-3">
+                  <i class="bi bi-people-fill me-2 text-success"></i>
+                  Contadores Asignados
+                </h6>
+
+                <!-- Contadores actuales -->
+                <div *ngIf="liderSeleccionado.contadores_asignados && liderSeleccionado.contadores_asignados.length > 0"
+                     class="mb-3">
+                  <div *ngFor="let contador of liderSeleccionado.contadores_asignados"
+                       class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded">
+                    <div>
+                      <strong>{{ contador.nombre }} {{ contador.apellido }}</strong>
+                      <small class="text-muted d-block">CC: {{ contador.cedula }}</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger"
+                            (click)="desasignarContador(liderSeleccionado!.id, contador.id!)"
+                            title="Desasignar contador">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="!liderSeleccionado.contadores_asignados || liderSeleccionado.contadores_asignados.length === 0"
+                     class="alert alert-warning">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  No tiene contadores asignados
+                </div>
+
+                <!-- Botón para asignar contadores -->
+                <button class="btn btn-sm btn-success"
+                        (click)="modalAsignarContadores.showModal()">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Asignar Contadores
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 👤 VISTA: REGISTRO DE CONTADORES -->
+  <!-- ============================================ -->
+  <div *ngIf="vistaActiva === 'contadores'">
+    <div class="row">
+      
+      <!-- Formulario de búsqueda -->
+      <div class="col-md-5">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-search me-2"></i>
+              Buscar Colaborador
+            </h5>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="contadorForm">
+              <div class="mb-3">
+                <label class="form-label">Buscar por nombre, apellido o cédula</label>
+                <input type="text" 
+                       class="form-control"
+                       formControlName="busquedaUsuario"
+                       placeholder="Escribe al menos 3 caracteres..."
+                       list="usuarios-list"
+                       autocomplete="off">
+                
+                <datalist id="usuarios-list">
+                  <option *ngFor="let usuario of usuariosBuscados" 
+                          [value]="usuario.nombres + ' ' + usuario.apellidos + ' - ' + usuario.cedula"
+                          (click)="agregarContadorTemporal(usuario)">
+                  </option>
+                </datalist>
+
+                <small class="text-muted d-block mt-2">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Selecciona un colaborador de la lista desplegable
+                </small>
+              </div>
+
+              <!-- Resultados de búsqueda -->
+              <div *ngIf="buscandoUsuario" class="alert alert-secondary py-2">
+                <div class="spinner-border spinner-border-sm me-2"></div>
+                Buscando...
+              </div>
+
+              <div *ngIf="usuariosBuscados.length > 0 && !buscandoUsuario" 
+                   class="list-group"
+                   style="max-height: 300px; overflow-y: auto;">
+                <button type="button"
+                        *ngFor="let usuario of usuariosBuscados"
+                        class="list-group-item list-group-item-action"
+                        (click)="agregarContadorTemporal(usuario)">
+                  <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ usuario.nombres }} {{ usuario.apellidos }}</h6>
+                    <small>CC: {{ usuario.cedula }}</small>
+                  </div>
+                  <small class="text-muted" *ngIf="usuario.cargo">{{ usuario.cargo }}</small>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de contadores temporales -->
+      <div class="col-md-7">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="bi bi-list-check me-2"></i>
+              Contadores a Registrar
+              <span class="badge bg-primary ms-2">{{ contadoresTemporales.length }}</span>
+            </h5>
+            <button class="btn btn-success btn-sm"
+                    (click)="guardarContadores()"
+                    [disabled]="contadoresTemporales.length === 0 || guardandoContadores">
+              <span *ngIf="!guardandoContadores">
+                <i class="bi bi-save me-1"></i>
+                Guardar Todos
+              </span>
+              <span *ngIf="guardandoContadores">
+                <span class="spinner-border spinner-border-sm me-1"></span>
+                Guardando...
+              </span>
+            </button>
+          </div>
+          <div class="card-body p-0">
+            
+            <div *ngIf="contadoresTemporales.length === 0" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+              <p class="mb-0">No hay contadores en la lista</p>
+              <small>Busca y agrega colaboradores para registrarlos</small>
+            </div>
+
+            <div *ngIf="contadoresTemporales.length > 0" class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Cédula</th>
+                    <th class="text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let contador of contadoresTemporales; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ contador.nombres }}</td>
+                    <td>{{ contador.apellidos }}</td>
+                    <td>{{ contador.cedula }}</td>
+                    <td class="text-center">
+                      <button class="btn btn-sm btn-outline-danger"
+                              (click)="eliminarContadorTemporal(i)"
+                              title="Eliminar de la lista">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de contadores registrados -->
+        <div class="card shadow-sm mt-4" *ngIf="contadores.length > 0">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="bi bi-database me-2"></i>
+              Contadores Registrados
+              <span class="badge bg-secondary ms-2">{{ contadores.length }}</span>
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+              <table class="table table-sm table-striped mb-0">
+                <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre Completo</th>
+                    <th>Cédula</th>
+                    <th class="text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let contador of contadores; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ contador.nombres }} {{ contador.apellidos }}</td>
+                    <td>{{ contador.cedula }}</td>
+                    <td class="text-center">
+                      <span class="badge" 
+                            [ngClass]="contador.activo ? 'bg-success' : 'bg-secondary'">
+                        {{ contador.activo ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================ -->
+<!-- 🎯 MODAL: Asignar Hojas -->
+<!-- ============================================ -->
+<dialog #modalAsignarHojas class="modal-dialog-custom">
+  <div class="modal-content-custom">
+    <div class="modal-header-custom bg-primary text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-file-earmark-plus me-2"></i>
+        Asignar Hojas de Conteo
+      </h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modalAsignarHojas.close()"></button>
+    </div>
+    <div class="modal-body-custom">
+      <p class="mb-3">
+        Selecciona las hojas que deseas asignar a 
+        <strong>{{ liderSeleccionado?.nombre_completo }}</strong>
+      </p>
+
+      <div *ngIf="hojasDisponibles.length === 0" class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        No hay hojas disponibles para asignar
+      </div>
+
+      <div *ngIf="hojasDisponibles.length > 0" 
+           class="list-group" 
+           style="max-height: 400px; overflow-y: auto;">
+        <label *ngFor="let hoja of hojasDisponibles" 
+               class="list-group-item list-group-item-action">
+          <input type="checkbox" 
+                 class="form-check-input me-2"
+                 [value]="hoja.id"
+                 [checked]="asignacionForm.get('hojasIds')?.value?.includes(hoja.id)"
+                 (change)="toggleHojaSeleccion($event, hoja.id)">
+          <strong>{{ hoja.numero_hoja }}</strong>
+          <small class="text-muted d-block ms-4">
+            {{ hoja.bodega }} - {{ hoja.zona }}
+          </small>
+          <span class="badge ms-2" [ngClass]="getEstadoBadgeClass(hoja.estado)">
+            {{ getEstadoTexto(hoja.estado) }}
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer-custom">
+      <button class="btn btn-secondary" (click)="modalAsignarHojas.close()">
+        Cancelar
+      </button>
+      <button class="btn btn-primary" 
+              (click)="asignarHojasALider(asignacionForm.get('hojasIds')?.value); modalAsignarHojas.close()"
+              [disabled]="!asignacionForm.get('hojasIds')?.value?.length">
+        <i class="bi bi-check-circle me-1"></i>
+        Asignar Hojas
+      </button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ============================================ -->
+<!-- 👥 MODAL: Asignar Contadores -->
+<!-- ============================================ -->
+<dialog #modalAsignarContadores class="modal-dialog-custom">
+  <div class="modal-content-custom">
+    <div class="modal-header-custom bg-success text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-person-plus me-2"></i>
+        Asignar Contadores
+      </h5>
+      <button type="button" class="btn-close btn-close-white" (click)="modalAsignarContadores.close()"></button>
+    </div>
+    <div class="modal-body-custom">
+      <p class="mb-3">
+        Selecciona los contadores que deseas asignar a 
+        <strong>{{ liderSeleccionado?.nombre_completo }}</strong>
+      </p>
+
+      <div *ngIf="contadores.length === 0" class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        No hay contadores disponibles. Registra contadores primero.
+      </div>
+
+      <div *ngIf="contadores.length > 0" 
+           class="list-group" 
+           style="max-height: 400px; overflow-y: auto;">
+        <label *ngFor="let contador of contadores" 
+               class="list-group-item list-group-item-action">
+          <input type="checkbox" 
+                 class="form-check-input me-2"
+                 [value]="contador.id"
+                 [checked]="asignacionForm.get('contadoresIds')?.value?.includes(contador.id)"
+                 (change)="toggleContadorSeleccion($event, contador.id!)">
+          <strong>{{ contador.nombres }} {{ contador.apellidos }}</strong>
+          <small class="text-muted d-block ms-4">CC: {{ contador.cedula }}</small>
+          <span class="badge bg-success ms-2" *ngIf="contador.activo">
+            <i class="bi bi-check-circle"></i> Activo
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer-custom">
+      <button class="btn btn-secondary" (click)="modalAsignarContadores.close()">
+        Cancelar
+      </button>
+      <button class="btn btn-success" 
+              (click)="asignarContadoresALider(asignacionForm.get('contadoresIds')?.value); modalAsignarContadores.close()"
+              [disabled]="!asignacionForm.get('contadoresIds')?.value?.length">
+        <i class="bi bi-check-circle me-1"></i>
+        Asignar Contadores
+      </button>
+    </div>
+  </div>
+</dialog>

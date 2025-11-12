@@ -31,10 +31,15 @@ import { TechnicalPrecintosBigbagComponent } from './pages/technical-report-bigb
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
 import { ViewPrecintoBigbagComponent } from './pages/technical-report-bigbag/view-precinto-bigbag/view-precinto-bigbag.component';
+import { ContadoresComponent } from './pages/inventario/contadores/contadores.component';
+import { GenerarHojaConteoComponent } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.component';
+import { HojasConteoListComponent } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.component';
+import { HojasConteoDetalleComponent } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.component';
 import { ReportCreateComponent } from './pages/report/report-create/report-create.component';
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
 import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
+
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
   {
@@ -65,11 +70,14 @@ const routes: Routes = [
       { path: 'technical-report-bigbag', component: TechnicalReportBigbagComponent, title: 'Crear reporte BigBag' },
       { path: 'view-report-bigbag', component: ViewReportBigbagComponent, title: 'Ver reporte BigBag' },
       { path: 'view-precinto-bigbag', component: ViewPrecintoBigbagComponent, title: 'Ver precinto BigBag' },
+      { path: 'contadores', component: ContadoresComponent, title: 'Contadores' },
+      { path: 'generar-hoja-conteo', component: GenerarHojaConteoComponent, title: 'Generar hoja de conteo'},
+      { path: 'hojas-conteo-list', component: HojasConteoListComponent, title: 'Listado hojas de conteo' },
+      { path: 'hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo' },      
       { path: 'create-report', component: ReportCreateComponent, title: 'Crear reporte'},
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes'},
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes'},
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
-
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

@@ -1,269 +1,331 @@
-import { PaginationService, FilterFunction } from '../../../shared/pagination/pagination.service';
-import { InconsistenciaService } from 'src/app/services/inconsistencia.service';
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { ChartConfiguration } from 'chart.js';
-import { AuthService } from 'src/app/services/auth.service';
-import { Subscription } from 'rxjs';
+import { Component, OnInit } from '@angular/core';
+import { InconsistenciaService  } from '../../../services/inconsistencia.service';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-reporte-inconsistencias',
   templateUrl: './reporte-inconsistencias.component.html',
   styleUrls: ['./reporte-inconsistencias.component.css']
 })
-export class ReporteInconsistenciasComponent implements OnInit, OnDestroy {
-  title = 'Reporte de Inconsistencias';
-  paginatorId = 'inconsistencias-reporte-paginator';
+export class ReporteInconsistenciasComponent implements OnInit {
 
-  datosOriginales: any[] = [];
-  datosFiltrados: any[] = [];
-  currentData: any[] = [];
+  // ==================== VARIABLES DE ESTADO ====================
+  
+  isLoading: boolean = false;
+  errorMessage: string = '';
+  
+  
+  // ==================== DATOS DEL DASHBOARD ====================
+  
+  dashboardData: any = null;
+  productividad: any = null;
+  costos: any = null;
+  consumo: any = null;
+  gestionHumana: any = null;
+  usuariosTopReportes: any[] = [];
 
-  // Suscripción para limpiar en OnDestroy
-  private paginationSubscription?: Subscription;
-
-  inconsistencias: any[] = [];
+  // ==================== DATOS PARA FILTROS ====================
+  
   departamentos: any[] = [];
-  tipos: { id: string, nombre: string, checked?: boolean }[] = [];
+  clientes: any[] = [];
+  tiposInconsistencia: any[] = [];
+  usuarios: any[] = [];
 
-  tipos_inco: { [key: string]: string } = {};
-
-  filtros = {
-    tiposSeleccionados: [] as string[],
-    departamento: '',
-    mes: '',
-    fechaInicio: '',
-    fechaFin: '',
-    estadoAnulacion: 'todas'
+  // ==================== FILTROS ACTIVOS ====================
+  
+  filtros: any = {
+    fecha_inicio: '',
+    fecha_fin: '',
+    departamento: null,
+    cliente: '',
+    tipo_inconsistencia: '',
+    etapa: '',
+    solicitante: null,
+    estado_consumo: '',
+    tipo_de_orden: ''
   };
 
-  estadoChartLabels: string[] = [];
-  estadoChartData: ChartConfiguration<'pie'>['data']['datasets'] = [
-    { data: [], label: 'Por estado' }
-  ];
+  // ==================== OPCIONES DE FILTROS ESTÁTICOS ====================
+  
+  etapasDisponibles: string[] = ['lider', 'calidad', 'logistica','', 'espera', 'finalizado'];
+  estadosConsumo: string[] = ['CONSUMIDO', 'POR CONSUMIR'];
 
-  depChartLabels: string[] = [];
-  depChartData: ChartConfiguration<'bar'>['data']['datasets'] = [
-    { data: [], label: 'Por departamento' }
-  ];
+  // ==================== VARIABLES DE UI ====================
+  
+  mostrarFiltros: boolean = false;
+  seccionActiva: string = 'general'; // general, productividad, costos, consumo, gestion
 
-  tipoChartLabels: string[] = [];
-  tipoChartData: ChartConfiguration<'doughnut'>['data']['datasets'] = [
-    { data: [], label: 'Por tipo de inconsistencia' }
-  ];
+  constructor(private dashboardService: InconsistenciaService ) { }
 
-  dropdownAbierto = false;
+ ngOnInit(): void {
+  this.establecerFechasMesActual(); // ✅ Agregar esta línea
+  this.cargarDatosFiltros();
+  this.cargarDashboard();
+}
+  // ==================== MÉTODOS DE CARGA ====================
 
-  constructor(
-    private inconsistenciaService: InconsistenciaService,
-    public paginationService: PaginationService,
-    private authService: AuthService,
-    private http: HttpClient,
-  ) {}
 
-  ngOnInit(): void {
-    this.obtenerTipos();
-    this.cargarDatos();
-  }
+establecerFechasMesActual(): void {
+  const hoy = new Date();
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  
+  // Formatear a YYYY-MM-DD
+  this.filtros.fecha_inicio = this.formatearFecha(primerDia);
+  this.filtros.fecha_fin = this.formatearFecha(ultimoDia);
+}
 
-  ngOnDestroy(): void {
-    // Limpiar suscripción y destruir paginador
-    if (this.paginationSubscription) {
-      this.paginationSubscription.unsubscribe();
-    }
-    this.paginationService.destroyPaginator(this.paginatorId);
-  }
+formatearFecha(fecha: Date): string {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  const day = String(fecha.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
-  toggleDropdown(): void {
-    this.dropdownAbierto = !this.dropdownAbierto;
-  }
 
-  cerrarDropdown(): void {
-    this.dropdownAbierto = false;
-  }
-
-  obtenerTextoSeleccionado(): string {
-    const seleccionados = this.tipos.filter(t => t.checked);
-    if (seleccionados.length === 0) return 'Todos';
-    if (seleccionados.length === 1) return seleccionados[0].nombre;
-    return `${seleccionados.length} seleccionados`;
-  }
- 
-  obtenerTipos() {
-    this.http.get<{ [key: string]: string }>('/assets/config/config.json')
-      .subscribe({
-        next: (res) => {
-          this.tipos_inco = res;
-          console.log('Tipos de inconsistencias cargados:', this.tipos_inco);
-        },
-        error: () => {
-          console.error('Error cargando config.json');
+  cargarDatosFiltros(): void {
+    this.dashboardService.getDepartamentos().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.departamentos = response.data;
         }
-      });
-  }
-
-  cargarDatos(): void {
-    this.inconsistenciaService.listarInconsistenciasPorRol(this.authService.user.roles, this.authService.user.id_Sdp).subscribe({
-      next: (res) => {
-        this.datosOriginales = res;
-        this.datosFiltrados = Array.isArray(res) ? res : [];
-        this.extraerFiltrosUnicos();
-        
-        // Inicializar paginador y suscribirse a cambios
-        this.paginationSubscription = this.paginationService.initializePaginator(
-          this.paginatorId, 
-          this.datosFiltrados, 
-          10
-        ).subscribe(paginationState => {
-          // Esta es la clave: actualizar currentData cuando cambie el estado del paginador
-          this.currentData = paginationState.currentData;
-        });
-
-        this.actualizarGraficas();
       },
-      error: (err) => {
-        console.error('Error al cargar reporte', err);
+      error: (error) => {
+        console.error('Error al cargar departamentos:', error);
+      }
+    });
+
+    this.dashboardService.getClientes().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.clientes = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar clientes:', error);
+      }
+    });
+
+    this.dashboardService.getTiposInconsistencia().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.tiposInconsistencia = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar tipos:', error);
+      }
+    });
+
+    this.dashboardService.getUsuarios().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.usuarios = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar usuarios:', error);
       }
     });
   }
 
-  extraerFiltrosUnicos(): void {
-    const deps = new Set<string>();
-    const tiposSet = new Set<string>();
+cargarDashboard(): void {
+  this.isLoading = true;
+  this.errorMessage = '';
 
-    for (const item of this.datosOriginales) {
-      if (item.nombre_departamento) {
-        deps.add(item.nombre_departamento);
+  const filtrosLimpios = this.limpiarFiltros();
+
+  this.dashboardService.getDashboardData(filtrosLimpios)
+    .pipe(finalize(() => this.isLoading = false))
+    .subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.dashboardData = response.data;
+          this.productividad = response.data.productividad || {};
+          this.costos = response.data.costos || {};
+          this.consumo = response.data.consumo || {};
+          this.gestionHumana = response.data.gestion_humana || {};
+          
+          // ✅ FIX: Mapear correctamente los datos de usuarios con rechazos
+          if (response.data.productividad?.top_usuarios_reportes_denegados) {
+            this.usuariosTopReportes = response.data.productividad.top_usuarios_reportes_denegados.map((item: any) => ({
+              nombre_completo: this.obtenerNombreCompleto(item.persona_que_anulo),
+              total_denegadas: item.total_inconsistencias_anuladas
+            }));
+          } else {
+            this.usuariosTopReportes = [];
+          }
+        } else {
+          this.errorMessage = 'No se recibieron datos del servidor.';
+        }
+      },
+      error: (error) => {
+        this.errorMessage = 'Error al cargar los datos del dashboard. Por favor, intente nuevamente.';
+        console.error('Error al cargar dashboard:', error);
       }
-      if (item.tipo_inconsistencia) {
-        tiposSet.add(item.tipo_inconsistencia);
+    });
+}
+  // ==================== MÉTODOS DE FILTROS ====================
+
+  limpiarFiltros(): any {
+    const filtrosLimpios: any = {};
+    
+    Object.keys(this.filtros).forEach(key => {
+      const valor = this.filtros[key];
+      if (valor !== null && valor !== undefined && valor !== '') {
+        filtrosLimpios[key] = valor;
       }
-    }
+    });
 
-    this.departamentos = Array.from(deps).map((nombre) => ({
-      id: nombre,
-      nombre: nombre
-    }));
-
-    this.tipos = Array.from(tiposSet).map((id) => ({
-      id,
-      nombre: this.tipos_inco[id] || id,
-      checked: false
-    }));
-  }
-
-  onTipoCheckboxChange(): void {
-    this.filtros.tiposSeleccionados = this.tipos
-      .filter(t => t.checked)
-      .map(t => t.id);
-    this.aplicarFiltros();
+    return filtrosLimpios;
   }
 
   aplicarFiltros(): void {
-    const filtros = this.filtros;
-    const usarMes = filtros.mes;
-    const usarRango = filtros.fechaInicio || filtros.fechaFin;
-    
-    // Función personalizada para filtrar
-    const filtroCustom: FilterFunction = (item: any, filtros: any): boolean => {
-      const coincideDep = !filtros.departamento || item.nombre_departamento === filtros.departamento;
-      const tiposSeleccionados = this.tipos.filter(t => t.checked).map(t => t.id);
-      const coincideTipo = tiposSeleccionados.length === 0 || tiposSeleccionados.includes(item.tipo_inconsistencia);
-      
-      const fecha = new Date(item.fecha_inconsistencia);
-      let coincideFecha = true;
+    this.cargarDashboard();
+    this.mostrarFiltros = false;
+  }
 
-      if (usarMes && !usarRango) {
-        const [anio, mes] = filtros.mes.split('-').map(Number);
-        coincideFecha = fecha.getFullYear() === anio && (fecha.getMonth() + 1) === mes;
-      } else if (usarRango && !usarMes) {
-        const inicio = filtros.fechaInicio ? new Date(filtros.fechaInicio) : null;
-        const fin = filtros.fechaFin ? new Date(filtros.fechaFin) : null;
-        coincideFecha = (!inicio || fecha >= inicio) && (!fin || fecha <= fin);
-      } else if (usarMes && usarRango) {
-        return false;
-      }
-
-      const esAnulada = !!item.razon_anulacion && !!item.persona_que_anulo && !!item.fecha_anulacion;
-
-      const coincideAnulacion =
-        filtros.estadoAnulacion === 'todas' ||
-        (filtros.estadoAnulacion === 'anuladas' && esAnulada) ||
-        (filtros.estadoAnulacion === 'no_anuladas' && !esAnulada);
-      
-      return coincideDep && coincideTipo && coincideFecha && coincideAnulacion;
+  limpiarTodosFiltros(): void {
+    this.filtros = {
+      fecha_inicio: '',
+      fecha_fin: '',
+      departamento: null,
+      cliente: '',
+      tipo_inconsistencia: '',
+      etapa: '',
+      solicitante: null,
+      estado_consumo: '',
+      tipo_de_orden: ''
     };
-
-    // Filtrar datos localmente para las gráficas
-    this.datosFiltrados = this.datosOriginales.filter(item => filtroCustom(item, this.filtros));
-
-    // Actualizar paginador con datos filtrados
-    // Esto automáticamente actualizará currentData gracias a la suscripción
-    this.paginationService.updatePaginator(
-      this.paginatorId,
-      this.datosFiltrados,
-      undefined, // Mantener el pageSize actual
-      this.filtros,
-      filtroCustom
-    );
-
-    this.actualizarGraficas();
+    this.cargarDashboard();
   }
 
-  onMesChange(): void {
-    if (this.filtros.mes) {
-      this.filtros.fechaInicio = '';
-      this.filtros.fechaFin = '';
-    }
-    this.aplicarFiltros();
+  toggleFiltros(): void {
+    this.mostrarFiltros = !this.mostrarFiltros;
   }
 
-  onRangoChange(): void {
-    if (this.filtros.fechaInicio || this.filtros.fechaFin) {
-      this.filtros.mes = '';
-    }
-    this.aplicarFiltros();
+  // ==================== MÉTODOS DE NAVEGACIÓN ====================
+
+  cambiarSeccion(seccion: string): void {
+    this.seccionActiva = seccion;
   }
 
-  actualizarGraficas(): void {
-    const estadoMap = new Map<string, number>();
-    const depMap = new Map<string, number>();
-    const tipoMap = new Map<string, number>();
+  // ==================== MÉTODOS AUXILIARES ====================
 
-    for (const item of this.datosFiltrados) {
-      const estado = item.estado_inconsistencia || 'Sin estado';
-      const dep = item.nombre_departamento || 'Desconocido';
-      const tipoId = item.tipo_inconsistencia || 'Otro';
+  obtenerNombreCompleto(usuario: any): string {
+    if (!usuario) return 'N/A';
+    
+    const nombres = usuario.nombres || '';
+    const apellidos = usuario.apellidos || '';
+    
+    const nombreCompleto = `${nombres} ${apellidos}`.trim();
+    return nombreCompleto || 'N/A';
+  }
 
-      const tipoNombre = this.tipos_inco[tipoId] || tipoId;
-
-      estadoMap.set(estado, (estadoMap.get(estado) || 0) + 1);
-      depMap.set(dep, (depMap.get(dep) || 0) + 1);
-      tipoMap.set(tipoNombre, (tipoMap.get(tipoNombre) || 0) + 1);
+  obtenerNombreDepartamento(item: any): string {
+    if (!item) return 'N/A';
+    
+    // Si tiene la relación directa
+    if (item.departamento_relacion?.nombre_departamento) {
+      return item.departamento_relacion.nombre_departamento;
     }
+    
+    // Si tiene id_departamento, buscar en el array de departamentos
+    if (item.id_departamento) {
+      const dept = this.departamentos.find(d => d.id_departamento === item.id_departamento);
+      return dept?.nombre_departamento || 'N/A';
+    }
+    
+    // Si el item es directamente un departamento
+    if (item.nombre_departamento) {
+      return item.nombre_departamento;
+    }
+    
+    return 'N/A';
+  }
 
-    this.estadoChartLabels = Array.from(estadoMap.keys());
-    this.estadoChartData = [
-      {
-        data: Array.from(estadoMap.values()),
-        label: 'Por estado'
-      }
-    ];
+  formatearMoneda(valor: number | null | undefined): string {
+    if (valor === null || valor === undefined || isNaN(valor)) return '$0';
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0
+    }).format(valor);
+  }
 
-    this.depChartLabels = Array.from(depMap.keys());
-    this.depChartData = [
-      {
-        data: Array.from(depMap.values()),
-        label: 'Por departamento'
-      }
-    ];
+  formatearNumero(valor: number | null | undefined): string {
+    if (valor === null || valor === undefined || isNaN(valor)) return '0';
+    return new Intl.NumberFormat('es-CO').format(valor);
+  }
 
-    this.tipoChartLabels = Array.from(tipoMap.keys());
-    this.tipoChartData = [
-      {
-        data: Array.from(tipoMap.values()),
-        label: 'Por tipo'
-      }
-    ];
+  formatearHoras(horas: number | null | undefined): string {
+    if (horas === null || horas === undefined || isNaN(horas)) return '0h';
+    return `${Math.round(horas)}h`;
+  }
+
+  formatearDias(dias: number | null | undefined): string {
+    if (dias === null || dias === undefined || isNaN(dias)) return '0 días';
+    const diasRedondeados = Math.round(dias);
+    return `${diasRedondeados} día${diasRedondeados !== 1 ? 's' : ''}`;
+  }
+
+  calcularPorcentaje(cantidad: number): number {
+    if (!this.productividad?.total_inconsistencias || this.productividad.total_inconsistencias === 0) {
+      return 0;
+    }
+    return (cantidad / this.productividad.total_inconsistencias) * 100;
+  }
+
+  calcularPorcentajeDepartamento(cantidad: number, total: number): number {
+    if (!total || total === 0) return 0;
+    return (cantidad / total) * 100;
+  }
+
+  obtenerTotalDepartamentos(): number {
+    if (!this.productividad?.promedio_por_departamento) return 0;
+    return this.productividad.promedio_por_departamento.reduce((sum: number, item: any) => sum + (item.cantidad || 0), 0);
+  }
+
+  obtenerMaximoCostoDepartamento(): number {
+    if (!this.costos?.costo_por_departamento || this.costos.costo_por_departamento.length === 0) return 0;
+    return Math.max(...this.costos.costo_por_departamento.map((item: any) => item.total || 0));
+  }
+
+  normalizarTexto(texto: string | null | undefined): string {
+    if (!texto) return 'N/A';
+    
+    return texto
+      .replace(/_/g, ' ')  // Reemplazar guiones bajos por espacios
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());  // Primera letra de cada palabra en mayúscula
+  }
+
+  // ==================== MÉTODOS PARA GRÁFICO CIRCULAR ====================
+
+  calcularStrokeDashoffset(index: number): number {
+    if (!this.productividad?.promedio_por_departamento) return 502.6;
+    
+    const total = this.obtenerTotalDepartamentos();
+    let offsetAcumulado = 0;
+    
+    for (let i = 0; i < index; i++) {
+      const item = this.productividad.promedio_por_departamento[i];
+      offsetAcumulado += this.calcularPorcentajeDepartamento(item.cantidad, total);
+    }
+    
+    return 502.6 - (offsetAcumulado * 5.026);
+  }
+
+  calcularStrokeDasharray(cantidad: number): string {
+    const total = this.obtenerTotalDepartamentos();
+    const porcentaje = this.calcularPorcentajeDepartamento(cantidad, total);
+    const longitud = porcentaje * 5.026;
+    return `${longitud} 502.6`;
+  }
+
+  obtenerColorDepartamento(index: number): string {
+    if (!this.productividad?.promedio_por_departamento) return 'hsl(0, 65%, 55%)';
+    const hue = (index * 360) / this.productividad.promedio_por_departamento.length;
+    return `hsl(${hue}, 65%, 55%)`;
   }
 }

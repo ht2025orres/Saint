@@ -201,11 +201,17 @@ const normalizedRole = this.normalize(String(role));
 return this.getNormalizedUserRoles().has(normalizedRole);
 }
 
-hasAnyRole(roles: string[]): boolean {
-if (!Array.isArray(roles) || roles.length === 0) return false;
-const normalizedUserRoles = this.getNormalizedUserRoles();
-return roles.some(r => normalizedUserRoles.has(this.normalize(String(r))));
-}
+  hasAnyRole(roles: string[]): boolean {
+    if (!Array.isArray(roles) || roles.length === 0) return false;
+    const normalizedUserRoles = this.getNormalizedUserRoles();
+    return roles.some(r => normalizedUserRoles.has(this.normalize(String(r))));
+  }
+
+  hasOnlyRole(role: string): boolean {
+    const normalizedRole = this.normalize(String(role));
+    const roles = Array.from(this.getNormalizedUserRoles());
+    return roles.length === 1 && roles[0] === normalizedRole;
+  }
 
 /** ===========================
 

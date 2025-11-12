@@ -1,164 +1,415 @@
-<div class="row page-titles mt-3">
-    <div class="col-md-5 align-self-center">
-        <h3 class="text-themecolor">{{ title }}</h3>
-    </div>
-    <div class="col-md-7 align-self-center">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a routerLink="/dashboard">Inicio</a>
-            </li>
-            <li class="breadcrumb-item">Inconsistencias</li>
-            <li class="breadcrumb-item active">{{ title }}</li>
-        </ol>
-    </div>
+<div class="page-header">
+  <div class="title-section">
+    <h1 class="title" id="form-title">{{ title }}</h1>
+    <nav aria-label="Navegación de ruta">
+      <ol class="breadcrumb">
+        <li><a routerLink="/dashboard" aria-label="Ir a inicio">Inicio</a></li>
+        <li>Inconsistencias</li>
+        <li class="active" aria-current="page">{{ title }}</li>
+      </ol>
+    </nav>
+  </div>
 </div>
 
-<div class="container mt-4">
+<div class="form-container">
+  <form [formGroup]="inconsistenciaForm" (ngSubmit)="enviar()" enctype="multipart/form-data" class="inco-form"
+    aria-labelledby="form-title" novalidate>
 
-  <form [formGroup]="inconsistenciaForm" (ngSubmit)="enviar()" enctype="multipart/form-data">
+    <!-- DATOS GENERALES -->
+    <section class="form-section" aria-labelledby="datos-generales-title">
+      <h2 class="section-title" id="datos-generales-title">
+        <svg class="section-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        Datos Generales
+      </h2>
 
-    <div class="row">
-        <div class="col-md-3">
-            <label><strong>Fecha:</strong></label>
-            <input type="date" class="form-control" formControlName="fecha" disabled>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="fecha" class="form-label">Fecha:</label>
+          <input type="date" id="fecha" class="form-control" formControlName="fecha" disabled
+            aria-describedby="fecha-help">
+          <small id="fecha-help" class="form-text">Fecha de registro del sistema</small>
         </div>
 
-        <div class="col-md-4">
-            <label><strong>Cliente:</strong></label>
-            <input
-                list="clientes"
-                class="form-control"
-                id="cliente"
-                formControlName="cliente"
-                autocomplete="off"
-                placeholder="Buscar cliente..."
-                (change)="assingCustomerValues($event.target)"
-                (keyup)="searchCustomer($event.target)"
-            />
+        <div class="form-group">
+          <label for="codigo_inconsistencia" class="form-label">Consecutivo:</label>
+          <input type="text" id="codigo_inconsistencia" class="form-control readonly-field"
+            formControlName="codigo_inconsistencia" readonly aria-describedby="consecutivo-help">
+          <small id="consecutivo-help" class="form-text">Generado automáticamente</small>
+        </div>
+      </div>
 
-            <datalist id="clientes">
-                <option *ngFor="let customer of customers" [value]="customer.customerName"></option>
-            </datalist>
+      <div class="grid-2">
+
+
+        <div class="form-group">
+          <label for="lider_nombre" class="form-label">Jefe inmediato:</label>
+          <input type="text" id="lider_nombre" class="form-control readonly-field" formControlName="lider_nombre"
+            readonly aria-describedby="lider-help">
+          <input type="hidden" id="lider_nombre" class="form-control readonly-field" formControlName="jefe_inmediato"
+            readonly aria-describedby="lider-help">
+
+
+          <small id="lider-help" class="form-text">Asignado según proceso</small>
         </div>
 
-        <input type="hidden" formControlName="id_cliente">
-
-        <div class="col-md-3">
-            <label><strong>Proceso:</strong></label>
-            <input type="text" class="form-control" formControlName="nombre_proceso" readonly>
+        <div class="form-group">
+          <label for="nombre_proceso" class="form-label">Proceso:</label>
+          <input type="text" id="nombre_proceso" class="form-control readonly-field" formControlName="nombre_proceso"
+            readonly aria-describedby="proceso-help">
+          <small id="proceso-help" class="form-text">Se completa al seleccionar cliente</small>
         </div>
+      </div>
 
-        <div class="col-md-2 no-border">
-            <label><strong>Consecutivo:</strong></label>
-            <input type="text" class="form-control no-border" formControlName="codigo_inconsistencia" readonly>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="cliente" class="form-label">
+            Cliente:
+            <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          </label>
+          <input list="clientes" id="cliente" class="form-control" formControlName="cliente" autocomplete="off"
+            placeholder="Buscar cliente..." (change)="assingCustomerValues($event.target)"
+            (keyup)="searchCustomer($event.target)" aria-required="true" aria-describedby="cliente-error"
+            [attr.aria-invalid]="inconsistenciaForm.get('cliente')?.invalid && inconsistenciaForm.get('cliente')?.touched ? 'true' : null" />
+          <datalist id="clientes">
+            <option *ngFor="let customer of customers" [value]="customer.customerName"></option>
+          </datalist>
+          <div id="cliente-error" class="error-message"
+            *ngIf="inconsistenciaForm.get('cliente')?.invalid && inconsistenciaForm.get('cliente')?.touched"
+            role="alert">
+            <svg class="error-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Este campo es obligatorio
+          </div>
         </div>
-    </div>
+      </div>
+    </section>
 
-    <hr>
+    <!-- INFORMACIÓN DE INCONSISTENCIA -->
+    <section class="form-section" aria-labelledby="detalles-title">
+      <h2 class="section-title" id="detalles-title">
+        <svg class="section-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="12" y1="18" x2="12" y2="12" />
+          <line x1="12" y1="9" x2="12.01" y2="9" />
+        </svg>
+        Detalles de Inconsistencia
+      </h2>
 
-    <div class="row">
-      <div class="col-md-5">
-        <label><strong>Tipo Inconsistencia:</strong></label>
-        <select class="form-select" formControlName="inconsistencia">
-            <option value="" hidden>Seleccione</option>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="inconsistencia" class="form-label">
+            Tipo Inconsistencia:
+            <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          </label>
+          <select id="inconsistencia" class="form-select" formControlName="inconsistencia" aria-required="true"
+            aria-describedby="inconsistencia-error"
+            [attr.aria-invalid]="inconsistenciaForm.get('inconsistencia')?.invalid && inconsistenciaForm.get('inconsistencia')?.touched ? 'true' : null">
+            <option value="" disabled hidden>Seleccione una opción</option>
             <option *ngFor="let key of tipos | keyvalue" [value]="key.key">
-                {{ key.value }}
+              {{ key.value }}
             </option>
-        </select>
-      </div>
-
-      <div class="col-md-3">
-        <label><strong>Cantidad OP:</strong></label>
-        <input type="texts" class="form-control" formControlName="cantidad_solicitada_op" (input)="formatearMiles($event)">
-      </div>
-
-        <div class="col-md-4">
-            <label><strong>Cantidad:</strong></label>
-            <div class="d-flex gap-2">
-                <input
-                type="text"
-                formControlName="cantidad_inco"
-                class="form-control"
-                (input)="formatearMiles($event)"
-                />
-                <select
-                formControlName="unidad_medida"
-                class="no-border"
-                >
-                <option value="unidades">Unidades</option>
-                <option value="metros">Metros</option>
-                <option value="centimetros">Centímetros</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-3">
-        <div class="col-md-8">
-            <label><strong>Descripción Ítem:</strong></label>
-            <textarea class="form-control" formControlName="item"></textarea>
+          </select>
+          <div id="inconsistencia-error" class="error-message"
+            *ngIf="inconsistenciaForm.get('inconsistencia')?.invalid && inconsistenciaForm.get('inconsistencia')?.touched"
+            role="alert">
+            <svg class="error-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            Debe seleccionar un tipo de inconsistencia
+          </div>
         </div>
 
-        <div class="col-md-3">
-            <label><strong>Tipo:</strong></label>
-            <select
-            class="form-select"
-            formControlName="tipo_inco"
-            [ngClass]="{ 'no-border': inconsistenciaForm.get('tipo_inco')?.value }"
-            >
-            <option value="" disabled selected hidden>Seleccione tipo</option>
-            <option value="OP">OP</option>
-            <option value="OPR">OPR</option>
-            <option value="OPM">OPM</option>
+        <div class="form-group">
+          <label for="tipo_inco" class="form-label">
+            Tipo de orden:
+            <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          </label>
+          <div class="type-group">
+            <select id="tipo_inco" class="form-select" formControlName="tipo_inco" aria-required="true"
+              aria-describedby="tipo-inco-help">
+              <option value="" disabled hidden>Seleccione tipo</option>
+              <option value="OP">OP</option>
+              <option value="OPR">OPR</option>
+              <option value="OPM">OPM</option>
             </select>
-            <input type="text" class="form-control" formControlName="codigo">
+          </div>
+          <small id="tipo-inco-help" class="form-text">Seleccione el tipo de orden correspondiente</small>
         </div>
-    </div>
-
-    <div class="row mt-3">
-      <div class="col-md-3">
-        <label><strong>Precio Unitario:</strong></label>
-        <input type="text" class="form-control" formControlName="precio_unitario" (input)="formatearMiles($event)">
       </div>
 
-      <div class="col-md-3">
-        <label><strong>Precio Total:</strong></label>
-        <input type="text" class="form-control" formControlName="precio_total" readonly>
+      <div class="form-group">
+        <label for="codigo" class="form-label">
+          Código de orden:
+          <span class="required-indicator" aria-label="campo obligatorio">*</span>
+        </label>
+        <div class="input-group">
+          <input type="text" id="codigo" class="form-control" placeholder="Ingrese código" formControlName="codigo"
+            list="codigos-ordenes" autocomplete="off" aria-required="true" aria-describedby="codigo-help" />
+          <button type="button" class="btn btn-primary" (click)="consultarItem()"
+            [disabled]="!inconsistenciaForm.get('codigo')?.value"
+            [attr.aria-disabled]="!inconsistenciaForm.get('codigo')?.value ? 'true' : null"
+            aria-label="Buscar ítem por código">
+            <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <span class="btn-text">Buscar Ítem</span>
+          </button>
+        </div>
+        <datalist id="codigos-ordenes">
+          <option *ngFor="let orden of ordenesDisponibles" [value]="orden.codigo">
+            {{ orden.codigo }}
+          </option>
+        </datalist>
+        <small id="codigo-help" class="form-text">Ingrese el código y presione buscar</small>
       </div>
-    </div>
 
-    <div class="mt-3">
-      <label><strong>Descripción de la Situación:</strong></label>
-      <textarea class="form-control" formControlName="situacion" rows="3"></textarea>
-    </div>
+      <div class="grid-3">
+        <div class="form-group">
+          <label for="nombre_item" class="form-label">
+            Ítem:
+            <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          </label>
+          <input type="text" id="nombre_item" class="form-control" formControlName="nombre_item"
+            list="items-disponibles" autocomplete="off" placeholder="Seleccione un ítem..."
+            (change)="onItemSelect($event)" aria-required="true" aria-describedby="item-help" />
+          <datalist id="items-disponibles">
+            <option *ngFor="let item of itemsDisponibles" [value]="item.f120_id">
+              {{ item.f120_id }} - {{ item.descripcion_corta }}
+            </option>
+          </datalist>
+          <small id="item-help" class="form-text">Seleccione de la lista disponible</small>
+        </div>
 
-    <div *ngIf="mostrarTablaAccion" class="mt-4">
-        <label><strong>Acción a tomar:</strong></label>
-        <textarea rows="3" class="form-control" formControlName="accion" 
-                [attr.required]="accionObligatoria ? '' : null"></textarea>
-    </div>
+        <div class="form-group">
+          <label for="cantidad_solicitada_op" class="form-label">Cantidad Solicitada:</label>
+          <input type="text" id="cantidad_solicitada_op" class="form-control" formControlName="cantidad_solicitada_op"
+            (input)="formatearMiles($event)" inputmode="numeric" aria-describedby="cantidad-solicitada-help">
+          <small id="cantidad-solicitada-help" class="form-text">Cantidad original de la orden</small>
+        </div>
 
-    <div *ngIf="mostrarGrupoImagenes" id="grupoImagenes" class="mt-3">
-    <label id="labelImagenes" class="form-label">
-        <strong>
-        Adjuntar Imágenes 
-        <span *ngIf="imagenesObligatorias" style="color:red;">(obligatorio)</span>
-        <span *ngIf="!imagenesObligatorias">(opcional)</span>
-        </strong>
-    </label>
-    <input 
-        type="file"
-        class="form-control"
-        [attr.required]="imagenesObligatorias ? '' : null"
-        (change)="onFileChange($event)"
-        multiple
-    />
-    </div>
+        <div class="form-group">
+          <label for="cantidad_inco" class="form-label">
+            Cantidad Inconsistencias:
+            <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          </label>
+          <div class="input-group input-group-inline">
+            <input type="text" id="cantidad_inco" class="form-control" formControlName="cantidad_inco"
+              (input)="formatearMiles($event)" inputmode="numeric" aria-required="true"
+              aria-describedby="cantidad-inco-help cantidad-inco-error"
+              [attr.aria-invalid]="inconsistenciaForm.get('cantidad_inco')?.invalid && inconsistenciaForm.get('cantidad_inco')?.touched ? 'true' : null">
+            <select id="unidad_medida" class="form-select unidad" formControlName="unidad_medida"
+              aria-label="Unidad de medida">
+              <option value="unidades">Unidades</option>
+              <option value="metros">Metros</option>
+              <option value="centimetros">Centímetros</option>
+            </select>
+          </div>
+          <small id="cantidad-inco-help" class="form-text">Cantidad afectada</small>
 
-    <div class="text-center mt-5">
-        <button class="btn btn-primary px-4" type="submit">
-            Enviar Reporte de Inconsistencia
-        </button>
+          <!-- 👇 Agregar este mensaje de error -->
+          <div id="cantidad-inco-error" class="error-message"
+            *ngIf="inconsistenciaForm.get('cantidad_inco')?.hasError('cantidadExcedida') && inconsistenciaForm.get('cantidad_inco')?.touched"
+            role="alert">
+            <svg class="error-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            La cantidad de inconsistencias no puede ser mayor a la cantidad solicitada
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="item" class="form-label">Descripción Ítem:</label>
+        <textarea id="item" class="form-control" formControlName="item" rows="3"
+          aria-describedby="item-descripcion-help"></textarea>
+        <small id="item-descripcion-help" class="form-text">Descripción detallada del ítem</small>
+      </div>
+    </section>
+
+    <!-- COSTOS -->
+    <section class="form-section" aria-labelledby="valores-title">
+      <h2 class="section-title" id="valores-title">
+        <svg class="section-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+        Valores Económicos
+      </h2>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="precio_unitario" class="form-label">
+            Precio Unitario:
+            <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          </label>
+          <div class="input-wrapper" style="position: relative;">
+            <input type="text" id="precio_unitario" class="form-control" formControlName="precio_unitario"
+              (input)="formatearMiles($event)" inputmode="decimal"
+              aria-describedby="precio-unitario-help precio-unitario-error"
+              [attr.aria-invalid]="inconsistenciaForm.get('precio_unitario')?.invalid && inconsistenciaForm.get('precio_unitario')?.touched ? 'true' : null"
+              placeholder="Ingrese el precio unitario">
+
+            <!-- 👇 Indicador visual cuando el precio es 0 o vacío - CORREGIDO -->
+            <svg *ngIf="isPrecioVacioOCero()" class="warning-icon" width="18" height="18" viewBox="0 0 24 24"
+              fill="none" stroke="#f59e0b" stroke-width="2" aria-hidden="true"
+              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+
+          <small id="precio-unitario-help" class="form-text">
+            <span *ngIf="isPrecioVacioOCero()" style="color: #f59e0b; font-weight: 500;">
+              ⚠️ Debe ingresar el precio manualmente
+            </span>
+            <span *ngIf="!isPrecioVacioOCero()">
+              Precio por unidad
+            </span>
+          </small>
+
+          <!-- 👇 Mensaje de error si está vacío y se ha tocado -->
+          <div id="precio-unitario-error" class="error-message"
+            *ngIf="inconsistenciaForm.get('precio_unitario')?.invalid && inconsistenciaForm.get('precio_unitario')?.touched"
+            role="alert">
+            <svg class="error-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            El precio unitario es obligatorio
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="precio_total" class="form-label">Precio Total:</label>
+          <div class="calculated-field">
+            <input type="text" id="precio_total" class="form-control readonly-field" formControlName="precio_total"
+              readonly aria-describedby="precio-total-help" aria-live="polite">
+            <svg class="calculated-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+            </svg>
+          </div>
+          <small id="precio-total-help" class="form-text">Calculado automáticamente</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- DESCRIPCIONES -->
+    <section class="form-section" aria-labelledby="situacion-title">
+      <h2 class="section-title" id="situacion-title">
+        <svg class="section-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        Descripción de la Situación
+      </h2>
+      <div class="form-group">
+        <label for="situacion" class="form-label">
+          <span class="required-indicator" aria-label="campo obligatorio">*</span>
+          Describa la situación
+        </label>
+        <textarea id="situacion" class="form-control" formControlName="situacion" rows="4" aria-required="true"
+          aria-describedby="situacion-help"
+          placeholder="Describa detalladamente la inconsistencia encontrada..."></textarea>
+        <small id="situacion-help" class="form-text">Incluya todos los detalles relevantes</small>
+      </div>
+    </section>
+
+    <section *ngIf="mostrarTablaAccion" class="form-section" aria-labelledby="accion-title">
+      <h2 class="section-title" id="accion-title">
+        <svg class="section-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <polyline points="9 11 12 14 22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+        Acción a Tomar
+      </h2>
+      <div class="form-group">
+        <label for="accion" class="form-label">
+          <span *ngIf="accionObligatoria" class="required-indicator" aria-label="campo obligatorio">*</span>
+          Describa la acción correctiva
+        </label>
+        <textarea id="accion" class="form-control" rows="4" formControlName="accion"
+          [attr.required]="accionObligatoria ? '' : null" [attr.aria-required]="accionObligatoria ? 'true' : 'false'"
+          aria-describedby="accion-help"
+          placeholder="Indique las acciones a tomar para resolver la inconsistencia..."></textarea>
+        <small id="accion-help" class="form-text">Plan de acción correctiva</small>
+      </div>
+    </section>
+
+    <section *ngIf="mostrarGrupoImagenes" class="form-section" aria-labelledby="evidencias-title">
+      <h2 class="section-title" id="evidencias-title">
+        <svg class="section-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+        Adjuntar Evidencias
+      </h2>
+      <div class="form-group">
+        <label for="evidencias" class="form-label">
+          <span *ngIf="imagenesObligatorias" class="required-indicator" aria-label="campo obligatorio">*</span>
+          Archivos de evidencia
+          <span class="file-requirement" [class.required]="imagenesObligatorias">
+            ({{imagenesObligatorias ? 'obligatorio' : 'opcional'}})
+          </span>
+        </label>
+        <div class="file-input-wrapper">
+          <input type="file" id="evidencias" class="form-control file-input"
+            [attr.required]="imagenesObligatorias ? '' : null"
+            [attr.aria-required]="imagenesObligatorias ? 'true' : 'false'" (change)="onFileChange($event)" multiple
+            accept="image/*" aria-describedby="evidencias-help">
+          <label for="evidencias" class="file-input-label">
+            <svg class="upload-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span>Seleccionar archivos</span>
+          </label>
+        </div>
+        <small id="evidencias-help" class="form-text">Formatos permitidos: JPG, PNG, GIF. Máx. 5MB por archivo</small>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-submit" [disabled]="inconsistenciaForm.invalid"
+        [attr.aria-disabled]="inconsistenciaForm.invalid ? 'true' : null">
+        <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        Enviar Reporte de Inconsistencia
+      </button>
     </div>
   </form>
 </div>

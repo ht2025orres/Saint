@@ -276,4 +276,33 @@ export class TerminacionEmpaqueService {
   obtenerProgresoOP(opId: number): Observable<any> {
     return this.http.get<any>(`${this.apiLaravelUrl}/op/${opId}/progreso`);
   }
+
+  // Agregar estos métodos a terminacion-empaque.service.ts
+
+  /**
+   * Obtiene items con asignaciones de una PV específica
+   */
+  obtenerItemsConAsignaciones(opCodigo: number, pvCodigo: string): Observable<any[]> {
+    return this.http.post<any[]>(`${this.apiLaravelUrl}/pv/items-asignados`, {
+      op_codigo: opCodigo,
+      pv_codigo: pvCodigo
+    });
+  }
+
+  /**
+   * Registra la verificación física de asignaciones
+   */
+  registrarVerificacionAsignaciones(
+    items: any[], 
+    pvCodigo: string, 
+    opCodigo: number, 
+    usuario: number
+  ): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/verificar-asignaciones`, {
+      pv_codigo: pvCodigo,
+      op_codigo: opCodigo,
+      usuario: usuario,
+      items: items
+    });
+  }
 }

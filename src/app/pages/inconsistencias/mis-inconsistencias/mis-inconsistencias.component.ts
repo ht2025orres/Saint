@@ -1,199 +1,272 @@
-import { PaginationService, FilterFunction } from '../../../shared/pagination/pagination.service';
+import { Component, OnInit } from '@angular/core';
 import { InconsistenciaService } from '../../../services/inconsistencia.service';
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { AuthService } from '../../../services/auth.service';
-import { Subscription, tap, switchMap } from 'rxjs';
-import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/services/auth.service';
+
+interface Inconsistencia {
+  id: number;
+  id_inconsistencia: string;
+  fecha_inconsistencia: string;
+  Cliente: string;
+  tipo_inconsistencia: string;
+  cantidad_solicitada_op: string;
+  cantidad_inconsistencia: string;
+  item: string;
+  tipo_de_orden: string;
+  precio_unitario: number;
+  precio_total_inconsistencia: number;
+  descripcion_inconsistencia: string;
+  etapa: string;
+  estado_inconsistencia: string;
+  accion_inconsistencia: string;
+  estado_consumo: string;
+  evidencias: string[] | null;
+  razon_anulacion: string | null;
+  fecha_anulacion: string | null;
+  nombre_solicitante: string;
+  nombre_jefe_inmediato: string;
+  nombre_persona_que_anulo: string;
+  nombre_departamento: string;
+  historial_aprobaciones: HistorialAprobacion[];
+  puede_anular: boolean;
+}
+
+interface HistorialAprobacion {
+  etapa: string;
+  usuario: string;
+  fecha: string;
+  observacion: string | null;
+}
 
 @Component({
   selector: 'app-mis-inconsistencias',
   templateUrl: './mis-inconsistencias.component.html',
-  styleUrl: './mis-inconsistencias.component.css'
+  styleUrls: ['./mis-inconsistencias.component.css']
 })
 export class MisInconsistenciasComponent implements OnInit {
-  title = 'Mis Inconsistencias';
+  inconsistencias: Inconsistencia[] = [];
+  inconsistenciasFiltradas: Inconsistencia[] = [];
+  cargando: boolean = false;
+  error: string = '';
+  idUsuario: number = 1; // Obtener del servicio de autenticación
   
-  // Identificador único para este paginador
-  paginatorId = 'inconsistencias-paginator';
-  
-  // Datos
-  public inconsistencias: any[] = [];
-  currentData: any[] = []; // ← Los datos actuales de la página
-  
-  // Filtros (personaliza según tu interfaz)
-  filters = {
-    // Define aquí los filtros específicos de tu interfaz
-    estado: 'todos',
-    busqueda: '',
-  };
+  // Filtros
+  filtroEstado: string = '';
+  filtroEtapa: string = '';
+  filtroTipo: string = '';
+  busqueda: string = '';
+  filtroFechaDesde: string = '';
+  filtroFechaHasta: string = '';
 
-  private subscription = new Subscription();
+    filtrosExpandidos: boolean = false;
+
+  // Modal
+  modalAnularAbierto: boolean = false;
+  inconsistenciaSeleccionada: Inconsistencia | null = null;
+  razonAnulacion: string = '';
+  procesandoAnulacion: boolean = false;
+
+  // Modal detalles
+  modalDetallesAbierto: boolean = false;
   
-  tipos: { [key: string]: string } = {};
-  modalRef: NgbModalRef | null = null;
+  // Estados y etapas únicas
+  estados: string[] = [];
+  etapas: string[] = [];
+  tiposInconsistencia: string[] = [];
 
-  @ViewChild('modalTexto') modalTexto!: TemplateRef<any>;
-
-  constructor(
-    private inconsistenciasService: InconsistenciaService,
-    private authService: AuthService,
-    private modalService: NgbModal,
-    public paginationService: PaginationService
-  ) {}
+  constructor(private inconsistenciasService: InconsistenciaService, private authService: AuthService) {}
 
   ngOnInit(): void {
-    this.obtenerTipos();
     this.cargarInconsistencias();
   }
 
-  ngOnDestroy(): void {
-    this.subscription.unsubscribe();
-    this.paginationService.destroyPaginator(this.paginatorId);
+   toggleFiltros(): void {
+    this.filtrosExpandidos = !this.filtrosExpandidos;
+  }
+contarFiltrosActivos(): number {
+    let contador = 0;
+    if (this.filtroEstado) contador++;
+    if (this.filtroEtapa) contador++;
+    if (this.filtroTipo) contador++;
+    if (this.busqueda) contador++;
+    if (this.filtroFechaDesde) contador++;
+    if (this.filtroFechaHasta) contador++;
+    return contador;
+  }
+   // **NUEVO: TrackBy para optimizar rendimiento de lista**
+  trackByInconsistencia(index: number, item: Inconsistencia): number {
+    return item.id;
   }
 
-  obtenerTipos() {
-    fetch('/assets/config/config.json')
-      .then(r => r.json())
-      .then(json => this.tipos = json);
-  }
 
-  cargarInconsistencias() {
-    this.subscription.add(
-      this.inconsistenciasService.listarPorUsuario(this.authService.user.email).pipe(
-        tap(res => this.inconsistencias = res),
-        switchMap(() => this.paginationService.initializePaginator(this.paginatorId, this.inconsistencias, 10))
-      ).subscribe(state => {
-        this.currentData = state.currentData;
-      })
-    );
-  }
-
-  // Función de filtrado (personaliza según tus necesidades)
-  filterFunction: FilterFunction = (item, filtros) => {
-    const texto = filtros.busqueda.toLowerCase();
-
-    const coincideBusqueda =
-      !texto ||
-      Object.values(item).some(valor =>
-        valor?.toString().toLowerCase().includes(texto)
-      );
-
-    let coincideEstado = true;
-
-    if (filtros.estado === 'pendientes') {
-      coincideEstado = item.etapa !== 'terminada' && !item.razon_anulacion;
-    } else if (filtros.estado === 'terminadas') {
-      coincideEstado = item.etapa === 'terminada';
-    } else if (filtros.estado === 'anuladas') {
-      coincideEstado = !!item.razon_anulacion;
-    }
-
-    return coincideBusqueda && coincideEstado;
-  };
-
-  applyFilters(): void {
-    this.paginationService.updatePaginator(
-      this.paginatorId,
-      this.inconsistencias,
-      undefined,
-      this.filters,
-      this.filterFunction
-    );
-    const state = this.paginationService.getPaginatorState(this.paginatorId);
-    this.currentData = state?.currentData || [];
-  }
-
-  abrirModal(tipo: string, contenido: string) {
-    this.modalRef = this.modalService.open(this.modalTexto);
-    this.modalRef.componentInstance.data = {
-      titulo: tipo === 'item' ? 'Descripción del Ítem' : 'Descripción de la Situación',
-      contenido
-    };
-  }
-
-  abrirAnular(inco: any) {
-    Swal.fire({
-      title: 'Motivo de Anulación',
-      html: '<label for="swal2-textarea">Escribe el motivo</label>',
-      input: 'textarea',
-      inputPlaceholder: 'Motivo por el cual estás anulando esta inconsistencia...',
-      inputAttributes: {
-        'aria-label': 'Motivo de anulación',
-        'id': 'swal2-textarea'
+  cargarInconsistencias(): void {
+    this.cargando = true;
+    this.error = '';
+    let idUsuario = this.authService.user.id_Sdp
+    this.inconsistenciasService.listarPorUsuario(idUsuario).subscribe({
+      next: (data) => {
+        this.inconsistencias = data;
+        this.inconsistenciasFiltradas = data;
+        this.extraerOpcionesFiltros();
+        this.cargando = false;
       },
-      showCancelButton: true,
-      confirmButtonText: 'Anular',
-      cancelButtonText: 'Cancelar',
-      inputValidator: (value) => {
-        if (!value) {
-          return 'Debes escribir un motivo para anular.';
-        }
-        return null;
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const motivo = result.value as string;
-
-        // Llama al backend (a través del service)
-        this.inconsistenciasService.anularInconsistencia(inco.id_inconsistencia, motivo)
-          .subscribe({
-            next: () => {
-              Swal.fire('Anulada', 'La inconsistencia fue anulada correctamente.', 'success');
-              this.cargarInconsistencias(); // Recargar la lista si quieres
-            },
-            error: () => {
-              Swal.fire('Error', 'Hubo un problema al anular la inconsistencia.', 'error');
-            }
-          });
+      error: (err) => {
+        this.error = 'Error al cargar las inconsistencias. Por favor, intente nuevamente.';
+        this.cargando = false;
+        console.error('Error:', err);
       }
     });
   }
 
-  verRazonAnulacion(inco: any): void {
-    Swal.fire({
-      title: 'Razón de Anulación',
-      text: inco.razon_anulacion || 'No se especificó una razón',
-      icon: 'info',
-      confirmButtonText: 'Cerrar'
+  extraerOpcionesFiltros(): void {
+    this.estados = [...new Set(this.inconsistencias.map(i => i.estado_inconsistencia).filter(e => e))];
+    this.etapas = [...new Set(this.inconsistencias.map(i => i.etapa).filter(e => e))];
+    this.tiposInconsistencia = [...new Set(this.inconsistencias.map(i => i.tipo_inconsistencia).filter(t => t))];
+  }
+
+  aplicarFiltros(): void {
+    this.inconsistenciasFiltradas = this.inconsistencias.filter(inc => {
+      const cumpleEstado = !this.filtroEstado || inc.estado_inconsistencia === this.filtroEstado;
+      const cumpleEtapa = !this.filtroEtapa || inc.etapa === this.filtroEtapa;
+      const cumpleTipo = !this.filtroTipo || inc.tipo_inconsistencia === this.filtroTipo;
+      const cumpleBusqueda = !this.busqueda || 
+        inc.id_inconsistencia.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+        inc.Cliente?.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+        inc.item?.toLowerCase().includes(this.busqueda.toLowerCase());
+      
+      let cumpleFecha = true;
+      if (this.filtroFechaDesde && inc.fecha_inconsistencia) {
+        cumpleFecha = cumpleFecha && new Date(inc.fecha_inconsistencia) >= new Date(this.filtroFechaDesde);
+      }
+      if (this.filtroFechaHasta && inc.fecha_inconsistencia) {
+        cumpleFecha = cumpleFecha && new Date(inc.fecha_inconsistencia) <= new Date(this.filtroFechaHasta);
+      }
+
+      return cumpleEstado && cumpleEtapa && cumpleTipo && cumpleBusqueda && cumpleFecha;
     });
   }
 
-
-  verObservacion(obs: string) {
-    Swal.fire('Observación', obs || 'Sin observación', 'info');
+  limpiarFiltros(): void {
+    this.filtroEstado = '';
+    this.filtroEtapa = '';
+    this.filtroTipo = '';
+    this.busqueda = '';
+    this.filtroFechaDesde = '';
+    this.filtroFechaHasta = '';
+    this.inconsistenciasFiltradas = this.inconsistencias;
   }
 
-  tieneEvidencia(inco: any): boolean {
-    const archivos = JSON.parse(inco.evidencias || '[]');
-    return archivos.length > 0;
+  abrirModalAnular(inconsistencia: Inconsistencia): void {
+    this.inconsistenciaSeleccionada = inconsistencia;
+    this.modalAnularAbierto = true;
+    this.razonAnulacion = '';
   }
 
-  tieneImagen(inco: any): boolean {
-    const archivos = JSON.parse(inco.evidencias || '[]');
-    return archivos.some((archivo: string) => /\.(jpg|jpeg|png|gif)$/i.test(archivo));
+  cerrarModalAnular(): void {
+    this.modalAnularAbierto = false;
+    this.inconsistenciaSeleccionada = null;
+    this.razonAnulacion = '';
   }
 
-  tienePdf(inco: any): boolean {
-    const archivos = JSON.parse(inco.evidencias || '[]');
-    return archivos.some((archivo: string) => /\.pdf$/i.test(archivo));
-  }
-
-  verEvidencias(inco: any): void {
-    const archivos = JSON.parse(inco.evidencias || '[]');
-
-    if (!archivos.length) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Sin evidencia',
-        text: 'Esta inconsistencia no tiene evidencias adjuntas.',
-        confirmButtonText: 'Entendido'
-      });
+  confirmarAnulacion(): void {
+    if (!this.inconsistenciaSeleccionada || !this.razonAnulacion.trim()) {
       return;
     }
 
-    archivos.forEach((archivo: string) => {
-      window.open(archivo, '_blank');
+    this.procesandoAnulacion = true;
+    
+    // Aquí iría la llamada al servicio para anular
+    // this.inconsistenciasService.anularInconsistencia(...)
+    console.log('Anulando inconsistencia:', this.inconsistenciaSeleccionada.id, this.razonAnulacion);
+    
+    // Simulación
+    setTimeout(() => {
+      this.procesandoAnulacion = false;
+      this.cerrarModalAnular();
+      this.cargarInconsistencias();
+    }, 1000);
+  }
+
+  abrirModalDetalles(inconsistencia: Inconsistencia): void {
+    this.inconsistenciaSeleccionada = inconsistencia;
+    this.modalDetallesAbierto = true;
+  }
+
+  cerrarModalDetalles(): void {
+    this.modalDetallesAbierto = false;
+    this.inconsistenciaSeleccionada = null;
+  }
+
+  obtenerClaseEstado(estado: string): string {
+    const clases: { [key: string]: string } = {
+      'abierta': 'estado-abierta',
+      'Aprobada': 'estado-aprobada',
+      'Anulada': 'estado-anulada',
+      'Denegada': 'estado-denegada'
+    };
+    return clases[estado] || 'estado-default';
+  }
+
+  obtenerClaseEtapa(etapa: string): string {
+    const clases: { [key: string]: string } = {
+      'lider': 'etapa-lider',
+      'contabilidad': 'etapa-contabilidad',
+      'calidad': 'etapa-calidad',
+      'logistica': 'etapa-logistica',
+      'terminada': 'etapa-terminada',
+      'espera': 'etapa-espera',
+      'cartera': 'etapa-cartera',
+      'patronaje': 'etapa-patronaje'
+    };
+    return clases[etapa] || 'etapa-default';
+  }
+
+  formatearFecha(fecha: string | null): string {
+    if (!fecha) return 'N/A';
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-CO', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
+  }
+
+  formatearMoneda(valor: number | null): string {
+    if (!valor) return '$0';
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0
+    }).format(valor);
+  }
+
+  traducirTipoInconsistencia(tipo: string): string {
+    const traducciones: { [key: string]: string } = {
+      'error_operario': 'Error de Operario',
+      'error_patronaje': 'Error de Patronaje',
+      'error_corte': 'Error de Corte',
+      'documental_contabilidad': 'Documental Contabilidad',
+      'documental_calidad': 'Documental Calidad',
+      'ajuste_promedio': 'Ajuste de Promedio'
+    };
+    return traducciones[tipo] || tipo;
+  }
+
+  traducirEtapa(etapa: string): string {
+    const traducciones: { [key: string]: string } = {
+      'lider': 'Líder',
+      'contabilidad': 'Contabilidad',
+      'calidad': 'Calidad',
+      'logistica': 'Logística',
+      'terminada': 'Terminada',
+      'espera': 'En Espera',
+      'cartera': 'Cartera',
+      'patronaje': 'Patronaje',
+      'desarrollo': 'Desarrollo',
+      'produccion': 'Producción',
+      'trazo': 'Trazo'
+    };
+    return traducciones[etapa] || etapa;
   }
 }

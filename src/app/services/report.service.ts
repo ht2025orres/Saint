@@ -36,7 +36,7 @@ export interface DashboardResponse {
   providedIn: 'root'
 })
 export class ReportService {
-  private apiUrl = `${environment.URL_API_LARAVEL_LOCAL}/api/report`;
+  private apiUrl = `${environment.URL_API_LARAVEL}/report`;
 
   constructor(private http: HttpClient) {}
 

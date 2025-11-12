@@ -116,14 +116,20 @@ export class ViewPrecintoBigbagComponent {
                          (precinto.color_consecutivo && 
                           precinto.color_consecutivo.toLowerCase().includes(this.filtros.color.toLowerCase()));
       
-      // Filtro por búsqueda (número de precinto o documento de recepción)
+      // Filtro por búsqueda (número de precinto, documento de recepción, cliente, planta o remisión)
       const cumpleBusqueda = !this.filtros.busqueda || 
                             (precinto.numero_precinto && 
                              precinto.numero_precinto.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase())) ||
                             (precinto.num_recepcion && 
                              precinto.num_recepcion.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase())) ||
                             (precinto.rango_precintos && 
-                             precinto.rango_precintos.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase()));
+                             precinto.rango_precintos.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase())) ||
+                            (precinto.cliente && 
+                             precinto.cliente.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase())) ||
+                            (precinto.planta && 
+                             precinto.planta.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase())) ||
+                            (precinto.num_remision && 
+                             precinto.num_remision.toString().toLowerCase().includes(this.filtros.busqueda.toLowerCase()));
       
       // Filtro por área
       const cumpleArea = !this.filtros.area || 
@@ -171,171 +177,171 @@ export class ViewPrecintoBigbagComponent {
     this.aplicarFiltros();
   }
 
-  // Nuevo método para exportar a Excel
   // Método mejorado para exportar a Excel con mejor feedback y validaciones
-exportarAExcel(): void {
-  // Verificar si hay datos filtrados para exportar
-  if (this.precintosFiltrados.length === 0) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'No hay datos para exportar',
-      text: 'No hay registros que coincidan con los filtros aplicados.',
-      confirmButtonColor: '#3085d6',
-      confirmButtonText: 'Entendido'
-    });
-    return;
-  }
-
-  // Mostrar confirmación con información sobre qué se va a exportar
-  const mensaje = this.precintosFiltrados.length === this.precintos.length 
-    ? `¿Desea exportar todos los ${this.precintosFiltrados.length} registros a Excel?`
-    : `¿Desea exportar los ${this.precintosFiltrados.length} registros filtrados de un total de ${this.precintos.length} registros?`;
-
-  Swal.fire({
-    title: 'Confirmar exportación',
-    text: mensaje,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#28a745',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Sí, exportar',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      this.procesarExportacion();
+  exportarAExcel(): void {
+    // Verificar si hay datos filtrados para exportar
+    if (this.precintosFiltrados.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No hay datos para exportar',
+        text: 'No hay registros que coincidan con los filtros aplicados.',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Entendido'
+      });
+      return;
     }
-  });
-}
 
-// Método separado para procesar la exportación
-private procesarExportacion(): void {
-  // Mostrar loading
-  
+    // Mostrar confirmación con información sobre qué se va a exportar
+    const mensaje = this.precintosFiltrados.length === this.precintos.length 
+      ? `¿Desea exportar todos los ${this.precintosFiltrados.length} registros a Excel?`
+      : `¿Desea exportar los ${this.precintosFiltrados.length} registros filtrados de un total de ${this.precintos.length} registros?`;
 
-  try {
-    // Preparar los datos para exportar (solo los filtrados)
-    const datosParaExportar = this.precintosFiltrados.map((precinto, index) => ({
-      'N°': index + 1, // Numeración consecutiva
-      'Doc Recepción': precinto.num_recepcion || 'N/A',
-      'Número Precinto': precinto.numero_precinto || 'N/A',
-      'Fecha Entrega': this.formatearFecha(precinto.fecha_entrega),
-      'Cantidad': precinto.cantidad || 0,
-      'Rango': precinto.rango_precintos || 'N/A',
-      'Color': precinto.color_consecutivo || 'N/A',
-      'Área': precinto.area_precinto || 'N/A',
-      'Novedad': this.formatearNovedad(precinto.novedades_precintos),
-      'Estado Firma': this.formatearEstadoFirma(precinto.firmado_por)
-      
-    }));
-
-    // Crear el libro de Excel
-    const workbook = XLSX.utils.book_new();
-    
-    // Crear la hoja con los datos
-    const worksheet = XLSX.utils.json_to_sheet(datosParaExportar);
-    
-    // Configurar el ancho de las columnas
-    const columnWidths = [
-      { wch: 5 },  // N°
-      { wch: 15 }, // Doc Recepción
-      { wch: 15 }, // Número Precinto
-      { wch: 12 }, // Fecha Entrega
-      { wch: 10 }, // Cantidad
-      { wch: 20 }, // Rango
-      { wch: 10 }, // Color
-      { wch: 15 }, // Área
-      { wch: 30 }, // Novedad
-      { wch: 12 }, // Estado Firma
-      { wch: 20 }  // Firmado por
-    ];
-    worksheet['!cols'] = columnWidths;
-    
-    // Agregar metadatos a la hoja
-    const metadata = {
-      'Exportado por': this.userInfo.name,
-      'Fecha de exportación': new Date().toLocaleString('es-ES'),
-      'Total de registros': this.precintosFiltrados.length,
-      'Filtros aplicados': this.obtenerFiltrosAplicados()
-    };
-    
-    // Agregar la hoja principal al libro
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Precintos');
-    
-    // Crear una segunda hoja con información del reporte
-    const metadataSheet = XLSX.utils.json_to_sheet([metadata]);
-    XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Información del Reporte');
-    
-    // Generar el nombre del archivo con fecha y hora actual
-    const fechaActual = new Date();
-    const fechaFormateada = fechaActual.toISOString().split('T')[0];
-    const horaFormateada = fechaActual.toTimeString().split(' ')[0].replace(/:/g, '-');
-    const nombreArchivo = `precintos_${this.userInfo.name.replace(/\s+/g, '_')}_${fechaFormateada}_${horaFormateada}.xlsx`;
-    
-    // Descargar el archivo
-    XLSX.writeFile(workbook, nombreArchivo);
-    
-    // Cerrar loading y mostrar mensaje de éxito
     Swal.fire({
-      icon: 'success',
-      title: 'Exportación exitosa',
-      html: `
-        <p>Se han exportado <strong>${this.precintosFiltrados.length}</strong> registros a Excel.</p>
-        <p><small>Archivo: ${nombreArchivo}</small></p>
-      `,
+      title: 'Confirmar exportación',
+      text: mensaje,
+      icon: 'question',
+      showCancelButton: true,
       confirmButtonColor: '#28a745',
-      confirmButtonText: 'Continuar'
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, exportar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.procesarExportacion();
+      }
     });
+  }
+
+  // Método separado para procesar la exportación
+  private procesarExportacion(): void {
+    try {
+      // Preparar los datos para exportar (solo los filtrados)
+      const datosParaExportar = this.precintosFiltrados.map((precinto, index) => ({
+        'N°': index + 1,
+        'Cliente': precinto.cliente || 'N/A',
+        'Planta': precinto.planta || 'N/A',
+        'N° Remisión': precinto.num_remision || 'N/A',
+        'Doc Recepción': precinto.num_recepcion || 'N/A',
+        'Número Precinto': precinto.numero_precinto || 'N/A',
+        'Fecha Entrega': this.formatearFecha(precinto.fecha_entrega),
+        'Cantidad': precinto.cantidad || 0,
+        'Rango': precinto.rango_precintos || 'N/A',
+        'Color': precinto.color_consecutivo || 'N/A',
+        'Área': precinto.area_precinto || 'N/A',
+        'Novedad': this.formatearNovedad(precinto.novedades_precintos),
+        'Estado Firma': this.formatearEstadoFirma(precinto.firmado_por)
+      }));
+
+      // Crear el libro de Excel
+      const workbook = XLSX.utils.book_new();
+      
+      // Crear la hoja con los datos
+      const worksheet = XLSX.utils.json_to_sheet(datosParaExportar);
+      
+      // Configurar el ancho de las columnas
+      const columnWidths = [
+        { wch: 5 },  // N°
+        { wch: 30 }, // Cliente
+        { wch: 30 }, // Planta
+        { wch: 15 }, // N° Remisión
+        { wch: 15 }, // Doc Recepción
+        { wch: 15 }, // Número Precinto
+        { wch: 12 }, // Fecha Entrega
+        { wch: 10 }, // Cantidad
+        { wch: 20 }, // Rango
+        { wch: 10 }, // Color
+        { wch: 15 }, // Área
+        { wch: 30 }, // Novedad
+        { wch: 12 }  // Estado Firma
+      ];
+      worksheet['!cols'] = columnWidths;
+      
+      // Agregar metadatos a la hoja
+      const metadata = {
+        'Exportado por': this.userInfo.name,
+        'Fecha de exportación': new Date().toLocaleString('es-ES'),
+        'Total de registros': this.precintosFiltrados.length,
+        'Filtros aplicados': this.obtenerFiltrosAplicados()
+      };
+      
+      // Agregar la hoja principal al libro
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Precintos');
+      
+      // Crear una segunda hoja con información del reporte
+      const metadataSheet = XLSX.utils.json_to_sheet([metadata]);
+      XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Información del Reporte');
+      
+      // Generar el nombre del archivo con fecha y hora actual
+      const fechaActual = new Date();
+      const fechaFormateada = fechaActual.toISOString().split('T')[0];
+      const horaFormateada = fechaActual.toTimeString().split(' ')[0].replace(/:/g, '-');
+      const nombreArchivo = `precintos_${this.userInfo.name.replace(/\s+/g, '_')}_${fechaFormateada}_${horaFormateada}.xlsx`;
+      
+      // Descargar el archivo
+      XLSX.writeFile(workbook, nombreArchivo);
+      
+      // Mostrar mensaje de éxito
+      Swal.fire({
+        icon: 'success',
+        title: 'Exportación exitosa',
+        html: `
+          <p>Se han exportado <strong>${this.precintosFiltrados.length}</strong> registros a Excel.</p>
+          <p><small>Archivo: ${nombreArchivo}</small></p>
+        `,
+        confirmButtonColor: '#28a745',
+        confirmButtonText: 'Continuar'
+      });
+      
+    } catch (error) {
+      console.error('Error al exportar a Excel:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de exportación',
+        text: 'No se pudo exportar el archivo. Por favor, intente nuevamente.',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Reintentar'
+      });
+    }
+  }
+
+  // Método auxiliar para formatear el estado de la novedad
+  private formatearNovedad(novedad: any): string {
+    if (!novedad || novedad.toString().trim() === '') {
+      return 'Sin novedad';
+    }
+    return novedad.toString();
+  }
+
+  // Método auxiliar para formatear el estado de la firma
+  private formatearEstadoFirma(firmadoPor: any): string {
+    if (!firmadoPor || firmadoPor.toString().trim() === '') {
+      return 'No firmado';
+    }
+    return 'Firmado';
+  }
+
+  // Método auxiliar para obtener descripción de filtros aplicados
+  private obtenerFiltrosAplicados(): string {
+    const filtrosActivos = [];
     
-  } catch (error) {
-    console.error('Error al exportar a Excel:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error de exportación',
-      text: 'No se pudo exportar el archivo. Por favor, intente nuevamente.',
-      confirmButtonColor: '#d33',
-      confirmButtonText: 'Reintentar'
-    });
+    if (this.filtros.color) {
+      filtrosActivos.push(`Color: ${this.filtros.color}`);
+    }
+    if (this.filtros.busqueda) {
+      filtrosActivos.push(`Búsqueda: ${this.filtros.busqueda}`);
+    }
+    if (this.filtros.area) {
+      filtrosActivos.push(`Área: ${this.filtros.area}`);
+    }
+    if (this.filtros.fechaDesde) {
+      filtrosActivos.push(`Fecha desde: ${this.filtros.fechaDesde}`);
+    }
+    if (this.filtros.fechaHasta) {
+      filtrosActivos.push(`Fecha hasta: ${this.filtros.fechaHasta}`);
+    }
+    
+    return filtrosActivos.length > 0 ? filtrosActivos.join(', ') : 'Sin filtros';
   }
-}
-
-// Método auxiliar para formatear el estado de la novedad
-private formatearNovedad(novedad: any): string {
-  if (!novedad || novedad.toString().trim() === '') {
-    return 'Sin novedad';
-  }
-  return novedad.toString();
-}
-
-// Método auxiliar para formatear el estado de la firma
-private formatearEstadoFirma(firmadoPor: any): string {
-  if (!firmadoPor || firmadoPor.toString().trim() === '') {
-    return 'No firmado';
-  }
-  return 'Firmado';
-}
-
-// Método auxiliar para obtener descripción de filtros aplicados
-private obtenerFiltrosAplicados(): string {
-  const filtrosActivos = [];
-  
-  if (this.filtros.color) {
-    filtrosActivos.push(`Color: ${this.filtros.color}`);
-  }
-  if (this.filtros.busqueda) {
-    filtrosActivos.push(`Búsqueda: ${this.filtros.busqueda}`);
-  }
-  if (this.filtros.area) {
-    filtrosActivos.push(`Área: ${this.filtros.area}`);
-  }
-  if (this.filtros.fechaDesde) {
-    filtrosActivos.push(`Fecha desde: ${this.filtros.fechaDesde}`);
-  }
-  if (this.filtros.fechaHasta) {
-    filtrosActivos.push(`Fecha hasta: ${this.filtros.fechaHasta}`);
-  }
-  
-  return filtrosActivos.length > 0 ? filtrosActivos.join(', ') : 'Sin filtros';
-}
 
   // Método auxiliar para formatear fechas
   private formatearFecha(fecha: string | Date): string {
@@ -432,7 +438,6 @@ private obtenerFiltrosAplicados(): string {
       this.novedad = '';
       this.firmaBase64 = '';
       this.firma = null;
-      // Ya se resetea arriba pero por consistencia también aquí
       this.firmaUrl = null;
     }
     
@@ -446,7 +451,6 @@ private obtenerFiltrosAplicados(): string {
     
     this.bigbagService.obtenerFirmaTemporal(precintoId).subscribe({
       next: (response) => {
-        // Cambiar de 'firma_digital' a 'url' según tu controlador PHP
         if (response && response.url) {
           this.firmaUrl = response.url;
           console.log('Firma obtenida del backend para precinto', precintoId, ':', this.firmaUrl);
@@ -464,7 +468,7 @@ private obtenerFiltrosAplicados(): string {
 
   cerrarModal() {
     this.modalAbierto = false;
-    this.mostrarFormulario = true; // Resetear para la próxima vez
+    this.mostrarFormulario = true;
   }
 
   guardarFirmaYnov() {
@@ -507,7 +511,6 @@ private obtenerFiltrosAplicados(): string {
       next: (response) => {
         console.log('Respuesta del servidor:', response);
         
-        // Mostrar mensaje de éxito con SweetAlert2
         Swal.fire({
           icon: 'success',
           title: '¡Éxito!',
@@ -516,20 +519,14 @@ private obtenerFiltrosAplicados(): string {
           confirmButtonText: 'Continuar'
         });
         
-        // Limpiar el modal
         this.novedad = '';
         this.firmaBase64 = '';
-        
-        // Cerrar modal
         this.cerrarModal();
-        
-        // Actualizar la lista de precintos
         this.enviarUsuarioAlBackend();
       },
       error: (error) => {
         console.error('Error al guardar novedad y firma:', error);
         
-        // Mostrar mensaje de error con SweetAlert2
         Swal.fire({
           icon: 'error',
           title: 'Error',
