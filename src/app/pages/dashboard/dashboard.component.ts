@@ -32,7 +32,7 @@ interface InvoiceDetail {
   descripcion_item: string;
   cantidad: number;
   precio_unitario: number;
-  valor_subtotal: number;
+  valor_bruto: number;
   items?: InvoiceItem[];
   expanded?: boolean;
 }
@@ -42,7 +42,7 @@ interface InvoiceItem {
   descripcion_item: string;
   cantidad: number;
   precio_unitario: number;
-  valor_subtotal: number;
+  valor_bruto: number;
 }
 
 interface ShipmentDetail {
@@ -50,7 +50,7 @@ interface ShipmentDetail {
   fecha: string;
   cliente_despacho: string;
   pedido_documento: string;
-  valor_subtotal: number;
+  valor_bruto: number;
   items?: ShipmentItem[];
   expanded?: boolean;
 }
@@ -60,7 +60,7 @@ interface ShipmentItem {
   descripcion_item: string;
   cantidad: number;
   precio_unitario: number;
-  valor_subtotal: number;
+  valor_bruto: number;
 }
 
 @Component({
@@ -238,7 +238,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           descripcion_item: '',
           cantidad: 0,
           precio_unitario: 0,
-          valor_subtotal: 0,
+          valor_bruto: 0,
           items: [],
           expanded: false
         });
@@ -250,9 +250,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         descripcion_item: item.descripcion_item,
         cantidad: item.cantidad,
         precio_unitario: item.precio_unitario,
-        valor_subtotal: item.valor_subtotal
+        valor_bruto: item.valor_bruto
       });
-      invoice.valor_subtotal += item.valor_subtotal;
+      invoice.valor_bruto += item.valor_bruto;
     });
     
     this.invoiceDetails = Array.from(this.groupedInvoices.values());
@@ -290,7 +290,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getTotalInvoices(): number {
-    return this.invoiceDetails.reduce((sum, inv) => sum + inv.valor_subtotal, 0);
+    return this.invoiceDetails.reduce((sum, inv) => sum + inv.valor_bruto, 0);
   }
 
   // Modal de remisiones
@@ -345,7 +345,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           fecha: item.fecha,
           cliente_despacho: item.cliente_despacho,
           pedido_documento: item.pedido_documento,
-          valor_subtotal: 0,
+          valor_bruto: 0,
           items: [],
           expanded: false
         });
@@ -357,9 +357,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         descripcion_item: item.descripcion_item,
         cantidad: item.cantidad,
         precio_unitario: item.precio_unitario,
-        valor_subtotal: item.valor_subtotal
+        valor_bruto: item.valor_bruto
       });
-      shipment.valor_subtotal += item.valor_subtotal;
+      shipment.valor_bruto += item.valor_bruto;
     });
     
     this.shipmentDetails = Array.from(this.groupedShipments.values());
@@ -397,7 +397,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getTotalShipments(): number {
-    return this.shipmentDetails.reduce((sum, ship) => sum + ship.valor_subtotal, 0);
+    return this.shipmentDetails.reduce((sum, ship) => sum + ship.valor_bruto, 0);
   }
 
   getMonthName(month: number): string {
