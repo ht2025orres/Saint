@@ -64,16 +64,19 @@
                 'list-group-item-success':
                   !tieneRolEmpacadores() && pv.tieneDisponibles && !pv.tieneAsignaciones,
                 'list-group-item-warning':
-                  !tieneRolEmpacadores() && pv.tieneAsignaciones
+                  (!tieneRolEmpacadores() && pv.tieneAsignaciones) && !this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')
               }">
 
             <div class="d-flex flex-column">
               <div class="fw-medium">
                 PV: {{ pv.numero_pv || 'Desconocida' }}
-                <span *ngIf="AuthService.hasRole('Gestion empacadores (Terminación y Empaque)') && pv.tieneAsignaciones"
-                      class="badge bg-warning text-dark ms-2">
-                  <i class="bi bi-exclamation-triangle"></i> Pendiente verificación
-                </span>
+                  <span
+                    *ngIf="AuthService.hasRole('Gestion empacadores (Terminación y Empaque)') 
+                            && pv.tieneAsignaciones 
+                            && !AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')"
+                    class="badge bg-warning text-dark ms-2">
+                    <i class="bi bi-exclamation-triangle"></i> Pendiente verificación
+                  </span>
               </div>
               
               <!-- Mostrar cliente específico de esta PV -->

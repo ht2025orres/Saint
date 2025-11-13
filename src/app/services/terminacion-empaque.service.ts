@@ -126,6 +126,15 @@ export class TerminacionEmpaqueService {
     });
   }
 
+  registrarAsignacionesDirecto(items: any[], pvId: string, opCodigo: number, usuario: number) {
+    return this.http.post(`${this.apiLaravelUrl}/registrar-asignaciones-directo`, {
+      pv_id: pvId,
+      op_codigo: opCodigo,
+      usuario: usuario,
+      items: items
+    });
+  }
+
   /**
    * Obtiene lista de PVs pendientes desde la API Laravel
    */
