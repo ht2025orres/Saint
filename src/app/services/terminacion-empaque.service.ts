@@ -32,7 +32,7 @@ export class TerminacionEmpaqueService {
   }
 
   listarItemsDePVDesdeApiLaravel(id: number, op: number = 0) {
-    console.log('Listando items de PV desde Laravel:', id, 'OP:', op);
+    // console.log('Listando items de PV desde Laravel:', id, 'OP:', op);
     if (op === 0) {
       return this.http.get<any[]>(`${this.apiLaravelUrl}/pv/${id}/items`);
     } else {
