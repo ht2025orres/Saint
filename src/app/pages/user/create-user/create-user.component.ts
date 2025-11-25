@@ -83,6 +83,7 @@ export class CreateUserComponent implements OnInit {
         'gestor de bodega (bt001)': 'almacen',
         'jefe de bodega': 'almacen',
         'admin (inventario)': 'almacen',
+        'lider contador (inventario)': 'almacen',
 
         // ⚪ ficha tecnicas
         'creacion de fichas tecnica': 'ficha',

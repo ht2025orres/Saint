@@ -1,0 +1,635 @@
+/* ========================================
+   UTILIDADES ACCESIBILIDAD
+   ======================================== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ========================================
+   ENCABEZADO Y BREADCRUMB
+   ======================================== */
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-titles {
+  padding: 1rem 0;
+  margin-top: 1rem;
+}
+
+.page-title {
+  color: #2c3e50;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+  content: "/";
+  color: #8898aa;
+}
+
+.breadcrumb-item a {
+  color: #4bc5e8;
+  text-decoration: none;
+  transition: color 150ms ease-in-out;
+}
+
+.breadcrumb-item a:hover,
+.breadcrumb-item a:focus {
+  color: #3ba3c7;
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  color: #67757c;
+}
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
+.content-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+}
+
+.table-card {
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+/* ========================================
+   SECCIÓN DE FILTROS
+   ======================================== */
+.filters-section {
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-input {
+  padding: 0.625rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid #e9ecef;
+  border-radius: 0.375rem;
+  transition: all 250ms ease-in-out;
+  width: 100%;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4bc5e8;
+  box-shadow: 0 0 0 0.2rem rgba(75, 197, 232, 0.25);
+}
+
+/* ========================================
+   TABLA - CONTENEDOR Y SCROLL
+   ======================================== */
+.card-body {
+  padding: 0;
+}
+
+.table-responsive-wrapper {
+  overflow: hidden;
+}
+
+.table-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========================================
+   TABLA - ESTILOS BASE
+   ======================================== */
+.table-inconsistencias {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  min-width: 1200px;
+  table-layout: fixed;
+}
+
+.table-inconsistencias thead {
+  background: rgba(75, 197, 232, 0.07);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-inconsistencias thead th {
+  color: #67757c;
+  font-weight: 600;
+  text-align: center;
+  padding: 1rem;
+  border-bottom: 2px solid #e9ecef;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.table-inconsistencias tbody tr {
+  transition: background-color 150ms ease-in-out;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.table-inconsistencias tbody tr:hover {
+  background-color: rgba(75, 197, 232, 0.03);
+}
+
+.table-inconsistencias tbody tr:focus-within {
+  background-color: rgba(75, 197, 232, 0.05);
+  outline: 2px solid #4bc5e8;
+  outline-offset: -2px;
+}
+
+.table-inconsistencias tbody td {
+  padding: 1rem;
+  text-align: center;
+  vertical-align: middle;
+  color: #2c3e50;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Asegurar que las celdas con appAutoExpand no se expandan */
+.table-inconsistencias tbody td[data-label="Cliente"],
+.table-inconsistencias tbody td[data-label="Solicitante"],
+.table-inconsistencias tbody td[data-label="Acción"] {
+  overflow: hidden !important;
+  max-width: 100% !important;
+  width: auto !important;
+}
+
+/* Forzar que appAutoExpand no expanda la celda - sobrescribir estilos inline de la directiva */
+.table-inconsistencias tbody td [appAutoExpand] {
+  display: inline-block !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Prevenir que el hover expanda el contenido más allá de la celda */
+.table-inconsistencias tbody td [appAutoExpand]:hover,
+.table-inconsistencias tbody td [appAutoExpand][style*="white-space: normal"],
+.table-inconsistencias tbody td [appAutoExpand][style*="overflow: visible"] {
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  display: inline-block !important;
+}
+
+/* ========================================
+   TABLA - COLUMNAS ESPECÍFICAS
+   ======================================== */
+/* Columna 1: Consecutivo */
+.th-consecutivo,
+.table-inconsistencias tbody td:nth-child(1) {
+  width: 100px;
+  min-width: 100px;
+}
+
+/* Columna 2: Fecha Aprobado */
+.th-fecha,
+.table-inconsistencias tbody td:nth-child(2) {
+  width: 150px;
+  min-width: 150px;
+}
+
+/* Columna 3: Cliente */
+.th-cliente,
+.table-inconsistencias tbody td:nth-child(3) {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+/* Columna 4: Solicitante */
+.th-solicitante,
+.table-inconsistencias tbody td:nth-child(4) {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+/* Columna 5: Tipo */
+.th-tipo,
+.table-inconsistencias tbody td:nth-child(5) {
+  width: 150px;
+  min-width: 150px;
+}
+
+/* Columna 6: Acción */
+.th-accion,
+.table-inconsistencias tbody td:nth-child(6) {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+/* Columna 7: Etapa */
+.table-inconsistencias thead th:nth-child(7),
+.table-inconsistencias tbody td:nth-child(7) {
+  width: 120px;
+  min-width: 120px;
+}
+
+/* Columna 8: Estado */
+.table-inconsistencias thead th:nth-child(8),
+.table-inconsistencias tbody td:nth-child(8) {
+  width: 120px;
+  min-width: 120px;
+}
+
+/* Columna 9: Consumo */
+.table-inconsistencias thead th:nth-child(9),
+.table-inconsistencias tbody td:nth-child(9) {
+  width: 140px;
+  min-width: 140px;
+}
+
+/* Columna 10: Precio Total */
+.th-precio-total,
+.table-inconsistencias tbody td:nth-child(10) {
+  width: 130px;
+  min-width: 130px;
+}
+
+.table-inconsistencias thead .th-precio-total {
+  text-align: right;
+  padding-right: 1.5rem;
+}
+
+/* Columna 11: Acciones */
+.th-acciones,
+.table-inconsistencias tbody td:nth-child(11) {
+  width: 160px;
+  min-width: 160px;
+}
+
+/* Clases adicionales para compatibilidad */
+.th-departamento,
+.th-orden,
+.th-estado {
+  width: 120px;
+}
+
+.th-item,
+.th-descripcion {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.th-cantidad,
+.th-cantidad-inco {
+  width: 100px;
+}
+
+.th-precio {
+  width: 120px;
+}
+
+.th-evidencias {
+  width: 80px;
+}
+
+/* ========================================
+   TABLA - CONTENIDO CELDAS
+   ======================================== */
+.text-numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  padding-right: 1.5rem;
+}
+
+.badge-consecutivo {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: rgba(75, 197, 232, 0.07);
+  color: #3ba3c7;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.badge-tipo {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #e7f3ff;
+  color: #0056b3;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.badge-estado {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* ========================================
+   BOTONES - BASE
+   ======================================== */
+.btn {
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 250ms ease-in-out;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  text-decoration: none;
+}
+
+.btn:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   BOTONES - EVIDENCIAS
+   ======================================== */
+.td-evidencias {
+  text-align: center;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #28a745;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: all 150ms ease-in-out;
+}
+
+.btn-icon:hover,
+.btn-icon:focus {
+  color: #218838;
+  background: rgba(40, 167, 69, 0.1);
+  transform: scale(1.1);
+}
+
+/* ========================================
+   BOTONES - ACCIONES
+   ======================================== */
+.td-acciones {
+  padding: 0.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.btn-action {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.btn-action i {
+  font-size: 0.875rem;
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-info:hover,
+.btn-info:focus {
+  background-color: #138496;
+  transform: translateY(-1px);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* ========================================
+   ESTADO VACÍO
+   ======================================== */
+.empty-state {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  color: #8898aa;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  color: #8898aa;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state-message {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #67757c;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-hint {
+  font-size: 0.875rem;
+  color: #8898aa;
+  margin: 0;
+}
+
+/* ========================================
+   PAGINADOR
+   ======================================== */
+.card-footer {
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+/* ========================================
+   RESPONSIVE - TABLET
+   ======================================== */
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .filters-section {
+    padding: 1rem;
+  }
+  
+  .table-scroll-container {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  
+  .action-buttons {
+    flex-direction: row;
+  }
+  
+  .btn-action {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+    min-width: auto;
+  }
+  
+  .btn-text {
+    display: none;
+  }
+  
+  .btn-action i {
+    margin: 0;
+  }
+}
+
+/* ========================================
+   RESPONSIVE - MOBILE
+   ======================================== */
+@media (max-width: 576px) {
+  .content-container {
+    padding: 0;
+  }
+  
+  .page-titles {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .page-title {
+    font-size: 1.25rem;
+  }
+  
+  .breadcrumb {
+    font-size: 0.75rem;
+  }
+  
+  .filters-section {
+    padding: 0.5rem;
+  }
+  
+  .search-input {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.5rem;
+  }
+  
+  .table-inconsistencias {
+    font-size: 0.75rem;
+    min-width: 100%;
+  }
+  
+  .table-inconsistencias thead {
+    position: static;
+  }
+  
+  .table-inconsistencias thead th {
+    padding: 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .table-inconsistencias tbody td {
+    padding: 0.5rem;
+  }
+  
+  .table-inconsistencias tbody td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 0.25rem;
+  }
+  
+  .action-buttons {
+    gap: 0.25rem;
+  }
+  
+  .btn-action {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.375rem;
+  }
+  
+  .card-footer {
+    padding: 0.5rem;
+  }
+}
+
+/* ========================================
+   MODO ALTO CONTRASTE (ACCESIBILIDAD)
+   ======================================== */
+@media (prefers-contrast: high) {
+  .table-inconsistencias tbody tr:hover {
+    background-color: rgba(75, 197, 232, 0.15);
+  }
+  
+  .btn:focus {
+    outline-width: 3px;
+  }
+  
+  .search-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(75, 197, 232, 0.5);
+  }
+}
+

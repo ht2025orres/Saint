@@ -11,8 +11,10 @@ import { Role } from '../models/Role';
 })
 export class InconsistenciaService {
     private baseUrl = `${environment.URL_C_PANEL}`;
-     private baseURllocal = `${environment.URL_API_LARAVEL}`;
-    // private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
+    private baseUrlCpanel = `${environment.URL_API_LARAVEL}/inconsistencias`;
+    private baseUrlCpanelDashboard = `${environment.URL_API_LARAVEL}/dashboardInc`;
+
+    private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
     private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
 
     constructor(
@@ -72,38 +74,38 @@ export class InconsistenciaService {
 
 
     obtenerCodigoOrden(data: { orden_compra: string }): Observable<any> {
-        return this.http.post(`${this.baseURllocal}/codigo_orden`, data);
+        return this.http.post(`${this.baseUrlCpanel}/codigo_orden`, data);
     }
 
     obtenerUltimoCodigo(): Observable<{ codigo: string }> {
-        const url = `${this.baseURllocal}/ultimo_codigo`;
+        const url = `${this.baseUrlCpanel}/ultimo_codigo`;
         return this.http.get<{ codigo: string }>(url);
     }
 
 
     consultarItem(codigo: string, cliente: string): Observable<any> {
-        return this.http.post(`${this.baseURllocal}/consultar-item`, {
+        return this.http.post(`${this.baseUrlCpanel}/consultar-item`, {
             codigo,
             cliente
         });
     }
 
     generarInconsistencia(data: FormData): Observable<any> {
-        return this.http.post(`${this.baseURllocal}/generar_inconsistencia`, data);
+        return this.http.post(`${this.baseUrlCpanel}/generar_inconsistencia`, data);
     }
 
     //rutas - ver mis inconsistencia//
 
 
     listarPorUsuario(idUsuario: number): Observable<any[]> {
-        return this.http.get<{ success: boolean, data: any[] }>(`${this.baseURllocal}/usuario/${idUsuario}`)
+        return this.http.get<{ success: boolean, data: any[] }>(`${this.baseUrlCpanel}/usuario/${idUsuario}`)
             .pipe(
                 map(response => response.data || [])
             );
     }
 
     anularInconsistencia(id_inco: string, razon_anulacion: string, id_usuario: string): Observable<any> {
-        return this.http.post<any>(`${this.baseURllocal}/anular_inconsistencia`, {
+        return this.http.post<any>(`${this.baseUrlCpanel}/anular_inconsistencia`, {
             id_inco,
             razon_anulacion,
             id_usuario
@@ -114,7 +116,7 @@ export class InconsistenciaService {
         // ✅ Solo enviar el rol como query param
         const params = new HttpParams().set('rol', rol);
 
-        return this.http.get(`${this.baseURllocal}/listar_inconsistencias_departamento`, { params });
+        return this.http.get(`${this.baseUrlCpanel}/listar_inconsistencias_departamento`, { params });
     }
 
 
@@ -127,7 +129,7 @@ export class InconsistenciaService {
             accion: 'aprobar',
             accion_tomar: accionTomar  // ✅ Cambiado a snake_case
         };
-        return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
+        return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
     }
 
     denegarInconsistencia(id_inconsistencia: number, id_Sdp: number, motivo: string): Observable<any> {
@@ -137,12 +139,12 @@ export class InconsistenciaService {
             accion: 'denegar',
             motivo
         };
-        return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, body);
+        return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
     }
 
   // En inconsistencia.service.ts
 ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Observable<any> {
-  return this.http.post(`${this.baseURllocal}/accion_inconsistencia`, {
+  return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, {
     id_inconsistencia,
     id_Sdp: id_usuario,
     accion: 'en_espera',
@@ -163,7 +165,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
             .set('year', (year || new Date().getFullYear()).toString());
 
         // ✅ Paréntesis normales con template string dentro
-        return this.http.get(`${this.baseURllocal}/historico`, { params });
+        return this.http.get(`${this.baseUrlCpanel}/historico`, { params });
     }
 
 
@@ -171,7 +173,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
      * Obtiene los tiempos de proceso de una inconsistencia específica
      */
     obtenerTiemposProceso(idInconsistencia: number): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseURllocal}/${idInconsistencia}/tiempos-proceso`);
+        return this.http.get<any[]>(`${this.baseUrlCpanel}/${idInconsistencia}/tiempos-proceso`);
     }
 
 
@@ -179,11 +181,11 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
     //CONSUMIR INCONSISTENCIAS//
 
     obtenerInconsistenciasListasParaConsumir(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseURllocal}/listas-consumo`);
+        return this.http.get<any[]>(`${this.baseUrlCpanel}/listas-consumo`);
     }
 
     consumirInconsistencia(idInconsistencia: number, datos: any): Observable<any> {
-        return this.http.post(`${this.baseURllocal}/consumir`, {
+        return this.http.post(`${this.baseUrlCpanel}/consumir`, {
             id_inconsistencia: idInconsistencia,
             tipo_consumo: datos.tipo,
             ...(datos.tipo === 'consumo'
@@ -205,25 +207,25 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.BaseUrlDashboard}/dashboard`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard }/dashboard`, { params });
     }
 
     // ==================== DATOS PARA FILTROS ====================
 
     getDepartamentos(): Observable<any> {
-        return this.http.get(`${this.BaseUrlDashboard}/filtros/departamentos`);
+        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/departamentos`);
     }
 
     getClientes(): Observable<any> {
-        return this.http.get(`${this.BaseUrlDashboard}/filtros/clientes`);
+        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/clientes`);
     }
 
     getTiposInconsistencia(): Observable<any> {
-        return this.http.get(`${this.BaseUrlDashboard}/filtros/tipos`);
+        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/tipos`);
     }
 
     getUsuarios(): Observable<any> {
-        return this.http.get(`${this.BaseUrlDashboard}/filtros/usuarios`);
+        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/usuarios`);
     }
 
     // ==================== MÉTRICAS INDIVIDUALES (OPCIONAL) ====================
@@ -237,7 +239,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.BaseUrlDashboard}/metricas/productividad`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/productividad`, { params });
     }
 
     getCostos(filtros?: any): Observable<any> {
@@ -249,7 +251,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.BaseUrlDashboard}/metricas/costos`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/costos`, { params });
     }
 
     getConsumo(filtros?: any): Observable<any> {
@@ -261,7 +263,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.BaseUrlDashboard}/metricas/consumo`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/consumo`, { params });
     }
 
     getGestionHumana(filtros?: any): Observable<any> {
@@ -273,8 +275,6 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.BaseUrlDashboard}/metricas/gestion-humana`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/gestion-humana`, { params });
     }
 }
-
-

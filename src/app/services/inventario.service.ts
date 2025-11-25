@@ -96,6 +96,53 @@ export class InventarioService {
   }
 
   /**
+   * Obtiene las hojas de conteo disponibles para asignar
+   */
+  obtenerHojasConteoDisponibles(): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/conteo/hojas-disponibles`);
+  }
+
+  /**
+   * Asigna hojas de conteo a un líder
+   */
+  asignarHojasALider(payload: any): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-hojas`, payload);
+  }
+
+  /**
+   * Asigna contadores a un líder
+   */
+  asignarContadoresALider(payload: any): Observable<any> {
+    payload.usuario_id = this.getUsuarioActual();
+    return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-contadores`, payload);
+  }
+
+  /**
+   * Desasigna una hoja de conteo de un líder
+   */
+  desasignarHojaLider(liderId: number, hojaId: number): Observable<any> {
+    return this.http.delete(
+      `${this.apiLaravelUrl}/conteo/lideres/${liderId}/hojas/${hojaId}`
+    );
+  }
+
+  /**
+   * Desasigna un contador de un líder
+   */
+  desasignarContadorLider(liderId: number, contadorId: number): Observable<any> {
+    return this.http.delete(
+      `${this.apiLaravelUrl}/conteo/lideres/${liderId}/contadores/${contadorId}`
+    );
+  }
+
+  /**
+   * Obtiene la lista de líderes de conteo con sus asignaciones
+   */
+  // obtenerLideresConteo(): Observable<any> {
+  //   return this.http.get(`${this.apiLaravelUrl}/conteo/lideres`);
+  // }
+
+  /**
    * Obtiene la lista de contadores registrados
    */
   obtenerContadores(): Observable<any> {
@@ -105,9 +152,9 @@ export class InventarioService {
   /**
    * Obtiene las hojas de conteo disponibles para asignar
    */
-  obtenerHojasConteoDisponibles(): Observable<any> {
-    return this.http.get(`${this.apiLaravelUrl}/conteo/hojas-disponibles`);
-  }
+  // obtenerHojasConteoDisponibles(): Observable<any> {
+  //   return this.http.get(`${this.apiLaravelUrl}/conteo/hojas-disponibles`);
+  // }
 
   /**
    * Busca usuarios en la plataforma externa de permisos
@@ -130,39 +177,39 @@ export class InventarioService {
     });
   }
 
-  /**
-   * Asigna hojas de conteo a un líder
-   * @param payload - { lider_id: number, hojas_ids: number[] }
-   */
-  asignarHojasALider(payload: any): Observable<any> {
-    return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-hojas`, payload);
-  }
+  // /**
+  //  * Asigna hojas de conteo a un líder
+  //  * @param payload - { lider_id: number, hojas_ids: number[] }
+  //  */
+  // asignarHojasALider(payload: any): Observable<any> {
+  //   return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-hojas`, payload);
+  // }
 
-  /**
-   * Asigna contadores a un líder
-   * @param payload - { lider_id: number, contadores_ids: number[] }
-   */
-  asignarContadoresALider(payload: any): Observable<any> {
-    return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-contadores`, payload);
-  }
+  // /**
+  //  * Asigna contadores a un líder
+  //  * @param payload - { lider_id: number, contadores_ids: number[] }
+  //  */
+  // asignarContadoresALider(payload: any): Observable<any> {
+  //   return this.http.post(`${this.apiLaravelUrl}/conteo/lideres/asignar-contadores`, payload);
+  // }
 
-  /**
-   * Desasigna una hoja de conteo de un líder
-   * @param liderId - ID del líder
-   * @param hojaId - ID de la hoja a desasignar
-   */
-  desasignarHojaLider(liderId: number, hojaId: number): Observable<any> {
-    return this.http.delete(`${this.apiLaravelUrl}/conteo/lideres/${liderId}/hojas/${hojaId}`);
-  }
+  // /**
+  //  * Desasigna una hoja de conteo de un líder
+  //  * @param liderId - ID del líder
+  //  * @param hojaId - ID de la hoja a desasignar
+  //  */
+  // desasignarHojaLider(liderId: number, hojaId: number): Observable<any> {
+  //   return this.http.delete(`${this.apiLaravelUrl}/conteo/lideres/${liderId}/hojas/${hojaId}`);
+  // }
 
-  /**
-   * Desasigna un contador de un líder
-   * @param liderId - ID del líder
-   * @param contadorId - ID del contador a desasignar
-   */
-  desasignarContadorLider(liderId: number, contadorId: number): Observable<any> {
-    return this.http.delete(`${this.apiLaravelUrl}/conteo/lideres/${liderId}/contadores/${contadorId}`);
-  }
+  // /**
+  //  * Desasigna un contador de un líder
+  //  * @param liderId - ID del líder
+  //  * @param contadorId - ID del contador a desasignar
+  //  */
+  // desasignarContadorLider(liderId: number, contadorId: number): Observable<any> {
+  //   return this.http.delete(`${this.apiLaravelUrl}/conteo/lideres/${liderId}/contadores/${contadorId}`);
+  // }
 
   /**
    * ================================
@@ -324,7 +371,37 @@ eliminarHojaConteo(id: number, payload: any): Observable<any> {
    * Actualizar estado de la hoja
    */
   actualizarEstadoHoja(idHoja: number, payload: any): Observable<any> {
-    return this.http.put(`${this.apiLaravelUrl}/hojas-conteo/${idHoja}/estado`, payload);
+    return this.http.put(`${this.apiLaravelUrl}/conteo/hojas/${idHoja}/estado`, payload);
   }
 
+  /**
+   * Obtener hojas de conteo del líder actual
+   */
+  obtenerHojasDelLider(): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/conteo/hojas/lider/mis-hojas`, {
+      usuario_id: this.getUsuarioActual()
+    });
+  }
+
+  /**
+   * Registrar conteo de un item
+   */
+  registrarConteoItem(idHoja: number, idItem: number, payload: any): Observable<any> {
+    return this.http.post(
+      `${this.apiLaravelUrl}/conteo/hojas/${idHoja}/items/${idItem}/registrar-conteo`,
+      payload
+    );
+  }
+
+  /**
+   * Guardar progreso del conteo
+   */
+  guardarProgresoConteo(idHoja: number, payload: any): Observable<any> {
+    return this.http.post(
+      `${this.apiLaravelUrl}/conteo/hojas/${idHoja}/guardar-progreso`,
+      payload
+    );
+  }
+
+  
 }

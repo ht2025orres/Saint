@@ -1,135 +1,236 @@
-<div class="row page-titles mt-3">
-  <div class="col-md-5 align-self-center">
-    <h3 class="text-themecolor">{{ title }}</h3>
+<!-- Encabezado con breadcrumb -->
+<header class="page-header" role="banner">
+  <div class="row page-titles">
+    <div class="col-md-5 align-self-center">
+      <h1 class="page-title">{{ title }}</h1>
+    </div>
+    <div class="col-md-7 align-self-center">
+      <nav aria-label="Navegación de ruta">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a routerLink="/dashboard">Inicio</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#" aria-current="page">Inconsistencias</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+        </ol>
+      </nav>
+    </div>
   </div>
-  <div class="col-md-7 align-self-center">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item">
-        <a routerLink="/dashboard">Inicio</a>
-      </li>
-      <li class="breadcrumb-item">Inconsistencias</li>
-      <li class="breadcrumb-item active">{{ title }}</li>
-    </ol>
-  </div>
-</div>
+</header>
 
-<div class="container">
-  <div class="card mx-auto table-container">
-
-    <!-- Filtros -->
-    <div class="row mb-3">
-      <!-- Búsqueda -->
-      <div class="col-md-4">
-        <input 
-          type="text" 
-          class="form-control" 
-          placeholder="Buscar..." 
-          [value]="filters.busqueda" 
-          (input)="onSearchInput($event)" 
-        />
-      </div>
-
-      <!-- Filtro por estado consumo -->
-      <div class="col-md-3">
-        <select class="form-select" [value]="filters.estadoConsumo" (change)="onEstadoConsumoChange($event)">
-          <option value="">Todos los consumos</option>
-          <option value="CONSUMIDO">Consumido</option>
-          <option value="POR CONSUMIR">Por consumir</option>
-        </select>
-      </div>
-
-      <!-- Filtro por etapa -->
-      <div class="col-md-3">
-        <select class="form-select" [value]="filters.etapa" (change)="onEtapaChange($event)">
-          <option value="">Todas las etapas</option>
-          <option value="terminada">Terminada</option>
-          <option value="espera">En espera</option>
-        </select>
-      </div>
-
-    <!-- Tabla -->
-    <div class="card-body" style="overflow: auto;" *ngIf="!loading">
-      <table class="table table-hover table-striped align-middle sombra-buttoms" *ngIf="currentData.length > 0; else sinDatos">
-        <thead>
-          <tr>
-            <th class="text-center">Consecutivo</th>
-            <th class="text-center">Fecha Aprobado</th>
-            <th class="text-center">Cliente</th>
-            <th class="text-center">Solicitante</th>
-            <th class="text-center">Tipo</th>
-            <th class="text-center">Acción</th>
-            <th class="text-center">Etapa</th>
-            <th class="text-center">Estado</th>
-            <th class="text-center">Consumo</th>
-            <th class="text-center">Precio Total</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody style="text-align: center;">
-          <tr *ngFor="let item of currentData">
-            <td>{{ item?.id_inconsistencia || 'N/A' }}</td>
-            <td>{{ item?.fecha_logistica || item?.fecha_espera }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ item?.Cliente || 'N/A' }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ item?.nombre_solicitante || 'N/A' }}</td>
-            <td>{{ tipos[item?.tipo_inconsistencia] || item?.tipo_inconsistencia || 'N/A' }}</td>
-            <td appAutoExpand [maxLength]="15" [maxWidth]="120">{{ item?.accion_inconsistencia || 'N/A' }}</td>
-            <td>
-              <span class="badge bg-{{ getColorEtapa(item?.etapa) }}">
-                {{ (item?.etapa || 'N/A').toUpperCase() }}
-              </span>
-            </td>
-            <td>{{ item?.estado_inconsistencia || 'N/A' }}</td>
-            <td>
-              <span class="badge bg-{{ getColorConsumo(item?.estado_consumo) }}">
-                {{ item?.estado_consumo || 'N/A' }}
-              </span>
-            </td>
-            <td>{{ item?.precio_total_inconsistencia | currency:'COP' }}</td>
-            <td>
-              <div class="btn-group" role="group">
-                <button 
-                  class="btn btn-sm btn-info" 
-                  (click)="verDetalles(item)"
-                  [disabled]="!item"
-                  title="Ver detalles">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button 
-                  *ngIf="puedeConsumir(item)" 
-                  class="btn btn-sm btn-success" 
-                  (click)="consumirInconsistencia(item)"
-                  title="Consumir inconsistencia">
-                  <i class="fas fa-check"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <ng-template #sinDatos>
-        <div class="text-center py-4">
-          <div class="text-muted">
-            <i class="fas fa-inbox fa-2x mb-2"></i>
-            <p class="mb-0">No hay inconsistencias registradas.</p>
-            <small *ngIf="filters.busqueda || filters.estadoConsumo || filters.etapa">
-              Intenta cambiar los criterios de búsqueda.
-            </small>
+<!-- Contenedor principal -->
+<main class="content-container" role="main">
+  <div class="card table-card">
+    
+    <!-- Sección de filtros -->
+    <section class="filters-section" aria-label="Filtros de búsqueda">
+      <div class="row">
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="search-wrapper">
+            <label for="searchInput" class="visually-hidden">Buscar inconsistencias</label>
+            <input 
+              type="search"
+              id="searchInput"
+              class="form-control search-input"
+              placeholder="Buscar por cliente, solicitante o consecutivo..."
+              [value]="filters.busqueda" 
+              (input)="onSearchInput($event)"
+              aria-describedby="searchHint">
+            <span id="searchHint" class="visually-hidden">
+              Ingrese texto para filtrar la tabla de inconsistencias
+            </span>
           </div>
         </div>
+        <div class="col-12 col-md-6 col-lg-3">
+          <label for="estadoConsumoFilter" class="visually-hidden">Filtrar por estado de consumo</label>
+          <select 
+            id="estadoConsumoFilter"
+            class="form-control search-input" 
+            [value]="filters.estadoConsumo" 
+            (change)="onEstadoConsumoChange($event)">
+            <option value="">Todos los consumos</option>
+            <option value="CONSUMIDO">Consumido</option>
+            <option value="POR CONSUMIR">Por consumir</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+          <label for="etapaFilter" class="visually-hidden">Filtrar por etapa</label>
+          <select 
+            id="etapaFilter"
+            class="form-control search-input" 
+            [value]="filters.etapa" 
+            (change)="onEtapaChange($event)">
+            <option value="">Todas las etapas</option>
+            <option value="terminada">Terminada</option>
+            <option value="espera">En espera</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contenedor de tabla con scroll -->
+    <div class="card-body table-responsive-wrapper" *ngIf="!loading">
+      
+      <!-- Tabla de inconsistencias -->
+      <div class="table-scroll-container" *ngIf="currentData.length > 0; else sinDatos">
+        <table 
+          class="table table-inconsistencias" 
+          role="table"
+          aria-label="Tabla de inconsistencias pendientes de consumo"
+          aria-describedby="tableDescription">
+          
+          <caption id="tableDescription" class="visually-hidden">
+            Lista de inconsistencias pendientes de consumo con información de fecha, cliente, estado y acciones disponibles
+          </caption>
+
+          <thead>
+            <tr role="row">
+              <th scope="col" class="th-consecutivo" role="columnheader">
+                <span class="th-content">Consecutivo</span>
+              </th>
+              <th scope="col" class="th-fecha" role="columnheader">
+                <span class="th-content">Fecha Aprobado</span>
+              </th>
+              <th scope="col" class="th-cliente" role="columnheader">
+                <span class="th-content">Cliente</span>
+              </th>
+              <th scope="col" class="th-solicitante" role="columnheader">
+                <span class="th-content">Solicitante</span>
+              </th>
+              <th scope="col" class="th-tipo" role="columnheader">
+                <span class="th-content">Tipo</span>
+              </th>
+              <th scope="col" class="th-accion" role="columnheader">
+                <span class="th-content">Acción</span>
+              </th>
+              <th scope="col" class="th-estado" role="columnheader">
+                <span class="th-content">Etapa</span>
+              </th>
+              <th scope="col" class="th-estado" role="columnheader">
+                <span class="th-content">Estado</span>
+              </th>
+              <th scope="col" class="th-estado" role="columnheader">
+                <span class="th-content">Consumo</span>
+              </th>
+              <th scope="col" class="th-precio-total" role="columnheader">
+                <span class="th-content">Precio Total</span>
+              </th>
+              <th scope="col" class="th-acciones" role="columnheader">
+                <span class="th-content">Acciones</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let item of currentData" role="row">
+              <td role="cell" data-label="Consecutivo">
+                <span class="badge-consecutivo">{{ item?.id_inconsistencia || 'N/A' }}</span>
+              </td>
+              <td role="cell" data-label="Fecha Aprobado">
+                <time [attr.datetime]="item?.fecha_logistica || item?.fecha_espera">
+                  {{ item?.fecha_logistica || item?.fecha_espera || 'N/A' }}
+                </time>
+              </td>
+              <td role="cell" data-label="Cliente">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120" [title]="item?.Cliente || 'N/A'">
+                  {{ item?.Cliente || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Solicitante">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120" [title]="item?.nombre_solicitante || 'N/A'">
+                  {{ item?.nombre_solicitante || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Tipo">
+                <span class="badge-tipo">{{ tipos[item?.tipo_inconsistencia] || item?.tipo_inconsistencia || 'N/A' }}</span>
+              </td>
+              <td role="cell" data-label="Acción">
+                <span appAutoExpand [maxLength]="15" [maxWidth]="120" [title]="item?.accion_inconsistencia || 'N/A'">
+                  {{ item?.accion_inconsistencia || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Etapa">
+                <span class="badge" [ngClass]="'bg-' + getColorEtapa(item?.etapa)" [attr.aria-label]="'Etapa: ' + (item?.etapa || 'N/A')">
+                  {{ (item?.etapa || 'N/A').toUpperCase() }}
+                </span>
+              </td>
+              <td role="cell" data-label="Estado">
+                <span class="badge-estado" [attr.aria-label]="'Estado: ' + (item?.estado_inconsistencia || 'N/A')">
+                  {{ item?.estado_inconsistencia || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Consumo">
+                <span class="badge" [ngClass]="'bg-' + getColorConsumo(item?.estado_consumo)" [attr.aria-label]="'Estado de consumo: ' + (item?.estado_consumo || 'N/A')">
+                  {{ item?.estado_consumo || 'N/A' }}
+                </span>
+              </td>
+              <td role="cell" data-label="Precio Total" class="text-numeric">
+                <strong>{{ item?.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+              </td>
+              <td role="cell" data-label="Acciones" class="td-acciones">
+                <div class="action-buttons">
+                  <button 
+                    type="button"
+                    class="btn btn-info btn-action" 
+                    (click)="verDetalles(item)"
+                    [disabled]="!item"
+                    [attr.aria-label]="'Ver detalles de inconsistencia ' + (item?.id_inconsistencia || '')"
+                    title="Ver detalles">
+                    <i class="fas fa-eye" aria-hidden="true"></i>
+                    <span class="btn-text">Ver detalles</span>
+                  </button>
+                  <button 
+                    *ngIf="puedeConsumir(item)" 
+                    type="button"
+                    class="btn btn-success btn-action" 
+                    (click)="consumirInconsistencia(item)"
+                    [attr.aria-label]="'Consumir inconsistencia ' + (item?.id_inconsistencia || '')"
+                    title="Consumir inconsistencia">
+                    <i class="fas fa-check" aria-hidden="true"></i>
+                    <span class="btn-text">Consumir</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- Mensaje cuando no hay datos -->
+      <ng-template #sinDatos>
+        <div class="empty-state" role="status" aria-live="polite">
+          <div class="empty-state-icon" aria-hidden="true">
+            <i class="fa-regular fa-folder-open"></i>
+          </div>
+          <p class="empty-state-message">No hay inconsistencias registradas.</p>
+          <p class="empty-state-hint" *ngIf="filters.busqueda || filters.estadoConsumo || filters.etapa">
+            Intenta cambiar los criterios de búsqueda.
+          </p>
+          <p class="empty-state-hint" *ngIf="!filters.busqueda && !filters.estadoConsumo && !filters.etapa">
+            Las inconsistencias aparecerán aquí cuando estén listas para consumo.
+          </p>
+        </div>
       </ng-template>
+
     </div>
 
     <!-- Paginador -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(paginatorId) && !loading"
-      [instanceId]="paginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25, 50, 100]"
-      [noDataMessage]="'No se encontraron registros'">
-    </app-shared-paginator>
+    <footer class="card-footer" role="contentinfo">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(paginatorId) && !loading"
+        [instanceId]="paginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25, 50, 100]"
+        [noDataMessage]="'No se encontraron registros'"
+        aria-label="Paginación de tabla de inconsistencias pendientes de consumo">
+      </app-shared-paginator>
+    </footer>
+
   </div>
-</div>
+</main>
 
 <!-- Modal Detalles -->
 <ng-template #modalDetalles>

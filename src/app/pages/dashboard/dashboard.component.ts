@@ -110,7 +110,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   shipmentSearchTerm: string = '';
   shipmentFilterByUN: string = '';
   
-  private chart: Chart | null = null;
+  private charts: Map<string, Chart> = new Map();
   
   // Exponer Math para el template
   Math = Math;
@@ -131,9 +131,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.chart) {
-      this.chart.destroy();
-    }
+    this.charts.forEach(chart => {
+      if (chart) {
+        chart.destroy();
+      }
+    });
   }
 
   initializeYears(): void {
@@ -158,7 +160,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.billingData = data;
         this.loading = false;
         
-        setTimeout(() => this.renderChart(), 100);
+        setTimeout(() => this.renderAllCharts(), 100);
       },
       error: (error) => {
         console.error('Error loading billing data:', error);
@@ -208,12 +210,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.selectedUnit || undefined
     ).subscribe({
       next: (data) => {
-        // Agrupar facturas por número de factura
         this.groupInvoices(data);
-        
-        // Obtener unidades únicas para el filtro
         this.availableUnits = [...new Set(data.map((inv: any) => inv.unidad_negocio))];
-        
         this.loadingInvoices = false;
       },
       error: (error) => {
@@ -293,7 +291,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.invoiceDetails.reduce((sum, inv) => sum + inv.valor_bruto, 0);
   }
 
-  // Modal de remisiones
   openShipmentModal(unidad?: string): void {
     this.selectedUnit = unidad || '';
     this.showShipmentModal = true;
@@ -408,64 +405,126 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return months[month - 1];
   }
 
-  renderChart(): void {
-    if (this.chart) {
-      this.chart.destroy();
-    }
+  renderAllCharts(): void {
+    if (!this.billingData) return;
+    
+    // Destruir gráficos anteriores
+    this.charts.forEach(chart => chart.destroy());
+    this.charts.clear();
+    
+    this.renderComparisonChart();
+    this.renderExecutionPercentageChart();
+    this.renderVariationChart();
+    this.renderDifferenceTrendChart();
+  }
 
-    const canvas = document.getElementById('billingChart') as HTMLCanvasElement;
+  // Gráfico 1: Comparativa Presupuesto vs Real (Barras horizontales)
+  renderComparisonChart(): void {
+    const canvas = document.getElementById('comparisonChart') as HTMLCanvasElement;
     if (!canvas || !this.billingData) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const units = this.billingData.detalleUnidades;
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
-        labels: this.billingData.detalleUnidades.map(u => u.descripcion),
+        labels: units.map(u => u.descripcion),
         datasets: [
           {
             label: 'Presupuesto',
-            data: this.billingData.detalleUnidades.map(u => u.presupuesto),
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            data: units.map(u => u.presupuesto),
+            backgroundColor: 'rgba(54, 162, 235, 0.8)',
             borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
+            borderWidth: 2,
+            borderRadius: 5
           },
           {
-            label: 'Real',
-            data: this.billingData.detalleUnidades.map(u => u.real),
-            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            label: 'Facturado Real',
+            data: units.map(u => u.real),
+            backgroundColor: 'rgba(75, 192, 192, 0.8)',
             borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
+            borderWidth: 2,
+            borderRadius: 5
           }
         ]
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value) {
-                return '$' + value.toLocaleString();
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { font: { size: 12, weight: 'bold' } }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => {
+                return `${context.dataset.label}: $${context.parsed.x.toLocaleString('es-CO')}`
               }
             }
           }
         },
+        scales: {
+          x: {
+            ticks: {
+              callback: (value) => '$' + (value as number).toLocaleString('es-CO')
+            }
+          }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, config);
+    this.charts.set('comparison', chart);
+  }
+
+  // Gráfico 2: % de Ejecución (Gauge/Dónut)
+  renderExecutionPercentageChart(): void {
+    const canvas = document.getElementById('executionChart') as HTMLCanvasElement;
+    if (!canvas || !this.billingData) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const percentage = this.billingData.porcentajeEjecutado;
+    const remaining = 100 - percentage;
+
+    // Determinar color según porcentaje
+    let color = 'rgba(75, 192, 75, 0.8)'; // Verde
+    if (percentage < 50) {
+      color = 'rgba(255, 99, 99, 0.8)'; // Rojo
+    } else if (percentage < 75) {
+      color = 'rgba(255, 193, 7, 0.8)'; // Amarillo
+    }
+
+    const config: ChartConfiguration = {
+      type: 'doughnut',
+      data: {
+        labels: ['Ejecutado', 'Pendiente'],
+        datasets: [{
+          data: [percentage, remaining],
+          backgroundColor: [color, 'rgba(200, 200, 200, 0.3)'],
+          borderColor: [color, 'rgba(200, 200, 200, 1)'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: {
           legend: {
-            position: 'top',
+            position: 'bottom',
+            labels: { font: { size: 12, weight: 'bold' } }
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
-                let label = context.dataset.label || '';
-                if (label) {
-                  label += ': ';
-                }
-                label += '$' + context.parsed.y.toLocaleString();
-                return label;
+              label: (context) => {
+                return `${context.label}: ${context.parsed}%`
               }
             }
           }
@@ -473,6 +532,124 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     };
 
-    this.chart = new Chart(ctx, config);
+    const chart = new Chart(ctx, config);
+    this.charts.set('execution', chart);
+  }
+
+  // Gráfico 3: Variación por Unidad (Porcentaje)
+  renderVariationChart(): void {
+    const canvas = document.getElementById('variationChart') as HTMLCanvasElement;
+    if (!canvas || !this.billingData) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const units = this.billingData.detalleUnidades;
+    
+    // Colores rojo/verde según si es negativo o positivo
+    const colors = units.map(u => 
+      u.porcentajeEjecutado >= 80 ? 'rgba(75, 192, 75, 0.8)' :
+      u.porcentajeEjecutado >= 50 ? 'rgba(255, 193, 7, 0.8)' :
+      'rgba(255, 99, 99, 0.8)'
+    );
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: units.map(u => u.descripcion),
+        datasets: [{
+          label: '% Ejecución',
+          data: units.map(u => u.porcentajeEjecutado),
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('0.8', '1')),
+          borderWidth: 2,
+          borderRadius: 5
+        }]
+      },
+      options: {
+        indexAxis: 'x',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => `${context.parsed.y.toFixed(2)}%`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: (value) => (value as number) + '%'
+            }
+          }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, config);
+    this.charts.set('variation', chart);
+  }
+
+  // Gráfico 4: Diferencia (Ingreso Real + Remisionado - Remisionado Anterior)
+  renderDifferenceTrendChart(): void {
+    const canvas = document.getElementById('differenceChart') as HTMLCanvasElement;
+    if (!canvas || !this.billingData) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const units = this.billingData.detalleUnidades;
+    
+    const colors = units.map(u => u.diferencia >= 0 ? 'rgba(75, 192, 75, 0.8)' : 'rgba(255, 99, 99, 0.8)');
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: units.map(u => u.descripcion),
+        datasets: [{
+          label: 'Diferencia ($)',
+          data: units.map(u => u.diferencia),
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('0.8', '1')),
+          borderWidth: 2,
+          borderRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        indexAxis: 'x',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => `$${(context.parsed.y as number).toLocaleString('es-CO')}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: (value) => '$' + (value as number).toLocaleString('es-CO')
+            }
+          }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, config);
+    this.charts.set('difference', chart);
   }
 }

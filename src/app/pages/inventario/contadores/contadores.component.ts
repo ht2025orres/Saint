@@ -278,10 +278,7 @@ export class ContadoresComponent implements OnInit, OnDestroy {
   }
 
   asignarHojasALider(hojasIds: number[]): void {
-    if (!this.liderSeleccionado) {
-      Swal.fire('Error', 'Debes seleccionar un líder primero', 'error');
-      return;
-    }
+    if (!this.liderSeleccionado || !hojasIds?.length) return;
 
     const payload = {
       lider_id: this.liderSeleccionado.id,
@@ -292,20 +289,18 @@ export class ContadoresComponent implements OnInit, OnDestroy {
       next: () => {
         Swal.fire('¡Éxito!', 'Hojas asignadas correctamente', 'success');
         this.cargarLideres();
+        this.cargarHojasDisponibles();
         this.liderSeleccionado = null;
       },
       error: (err) => {
-        console.error('Error asignando hojas:', err);
+        console.error('Error:', err);
         Swal.fire('Error', 'No se pudieron asignar las hojas', 'error');
       }
     });
   }
 
   asignarContadoresALider(contadoresIds: number[]): void {
-    if (!this.liderSeleccionado) {
-      Swal.fire('Error', 'Debes seleccionar un líder primero', 'error');
-      return;
-    }
+    if (!this.liderSeleccionado || !contadoresIds?.length) return;
 
     const payload = {
       lider_id: this.liderSeleccionado.id,
@@ -319,7 +314,7 @@ export class ContadoresComponent implements OnInit, OnDestroy {
         this.liderSeleccionado = null;
       },
       error: (err) => {
-        console.error('Error asignando contadores:', err);
+        console.error('Error:', err);
         Swal.fire('Error', 'No se pudieron asignar los contadores', 'error');
       }
     });

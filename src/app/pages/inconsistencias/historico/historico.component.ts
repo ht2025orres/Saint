@@ -240,7 +240,7 @@ verEvidencias(inco: any): void {
       // Convierte las rutas relativas a URLs completas
       archivos = evidenciasParsed.map((ruta: string) => {
         // Usa el dominio actual de la app (útil en desarrollo y producción)
-        const baseUrl = 'http://localhost:8000';
+        const baseUrl = 'https://colegioprovidencia.edu.co/Saint-Backend/public';
 
         return `${baseUrl}/${ruta}`;
       });
