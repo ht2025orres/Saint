@@ -39,6 +39,7 @@ import { ReportCreateComponent } from './pages/report/report-create/report-creat
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
 import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
+import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -78,8 +79,10 @@ const routes: Routes = [
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes'},
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes'},
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
+      { path: 'authorization-manager', component: AuthorizationManagerComponent, title: 'Control de Acceso' },
     ]
   },
+ 
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }
 ];
 

@@ -92,6 +92,7 @@
             <th style="width: 90px;">Origen</th>
             <th style="width: 100px;">Tipo</th>
             <th class="text-center" style="width: 70px;">Item</th>
+            <th class="text-center" style="width: 70px;">OP</th>
             <th style="width: 130px;">Cliente</th>
             <th style="width: 130px;">Prenda</th>
             <th class="text-center" style="width: 100px;">Estado</th>
@@ -106,7 +107,8 @@
             <td class="text-center small">{{ r.id }}</td>
             <td class="small">{{ r.origen | titlecase }}</td>
             <td class="small">{{ r.tipo_reporte | titlecase }}</td>
-            <td class="text-center small">{{ r.item }}</td>
+            <td class="text-center small">{{ r.item }}</td> 
+            <td class="text-center small">{{ r.op_reporte }}</td>
             <td class="small text-truncate" style="max-width: 130px;" [title]="r.cliente">
               {{ r.cliente }}
             </td>
@@ -137,6 +139,14 @@
                 <i class="bi bi-eye"></i>
               </button>
               <span *ngIf="!r.evidencia_respuesta" class="text-muted small">N/A</span>
+              -
+              <button *ngIf="r.evidencia" 
+                class="btn btn-outline-primary btn-sm py-1 px-2" 
+                (click)="verEvidencia(r.id, r.estado)"
+                title="Ver evidencia">
+                <i class="bi bi-eye"></i>
+              </button>
+              <span *ngIf="!r.evidencia" class="text-muted small">N/A</span>
             </td>
           </tr>
         </tbody>

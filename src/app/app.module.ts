@@ -34,6 +34,7 @@ import { AngularEditorModule } from '@kolkov/angular-editor';
 // Users
 import { ListUserComponent } from './pages/user/list-user/list-user.component';
 import { CreateUserComponent } from './pages/user/create-user/create-user.component';
+import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthModule } from './auth/auth.module';
@@ -81,6 +82,7 @@ registerLocaleData(localeEs, 'es-CO');
         ReportListComponent,
         MiReportListComponent,
         ReportDashboardComponent,
+        AuthorizationManagerComponent,
     ],
     bootstrap: [AppComponent], 
     imports: [
@@ -114,7 +116,7 @@ registerLocaleData(localeEs, 'es-CO');
         ContadoresModule,
         GenerarHojaConteoModule,
         HojasConteoListModule,
-        HojasConteoDetalleModule
+        HojasConteoDetalleModule,
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

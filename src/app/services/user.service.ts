@@ -11,7 +11,7 @@ import { environment } from '../../environments/environment';
 export class UserService {
 
   private urlEndPoint = `${environment.URL_LOGIN}/v1/users`;
-  private apiLaravelUrl = environment.URL_API_LARAVEL;
+  private apiLaravelUrl = environment.URL_API_LARAVEL_LOCAL;
 
   constructor(private http: HttpClient) { }
 
@@ -33,7 +33,6 @@ export class UserService {
       );
   }
 
-
   getAllPaginator(page: number): Observable<User[]> {
     return this.http.get(`${this.urlEndPoint}/page/` + page)
       .pipe(
@@ -42,8 +41,7 @@ export class UserService {
       );
   }
 
-
-  getAll(): Observable<User[]> {
+  getAlluser(): Observable<User[]> {
     return this.http.get<User[]>(`${this.urlEndPoint}`);
   }
 
@@ -68,4 +66,38 @@ export class UserService {
       params: { ids: ids.join(',') }
     });
   }
+
+  // ======================================================================
+  // ===== NUEVO CÓDIGO PARA GESTIÓN DE PERFILES / MÓDULOS / PERMISOS =====
+  // ======================================================================
+
+    // Listado de usuarios (list-users)
+  getAll(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/list-users`, {headers: { 'X-Requires-User-Email': 'true' }});
+  }
+
+  // Asignar/Quitar perfil (usado por UI)
+  assignPerfil(user_id: number, perfil_id: number) {
+    return this.http.post(`${this.apiLaravelUrl}/assign/perfil`, { user_id, perfil_id }, {headers: { 'X-Requires-User-Email': 'true' }});
+  }
+  removePerfil(user_id: number, perfil_id: number) {
+    return this.http.post(`${this.apiLaravelUrl}/remove/perfil`, { user_id, perfil_id }, {headers: { 'X-Requires-User-Email': 'true' }});
+  }
+
+  // Duplicar permisos/roles
+  duplicatePermissions(source_user_id: number, target_user_id: number) {
+    return this.http.post(`${this.apiLaravelUrl}/duplicate/access`, { source_user_id, target_user_id }, {headers: { 'X-Requires-User-Email': 'true' }});
+  }
+
+  // Obtener permisos efectivos (directos + heredados)
+  getEffectivePermissions(userId: number) {
+    return this.http.get<any>(`${this.apiLaravelUrl}/user/${userId}/effective-permissions`, {headers: { 'X-Requires-User-Email': 'true' }});
+  }
+
+  // Asignar permiso directo (usa PermissionsService normalmente)
+
+  // ======================================================================
+  // ===== FIN NUEVO CÓDIGO ===============================================
+  // ======================================================================
+
 }
