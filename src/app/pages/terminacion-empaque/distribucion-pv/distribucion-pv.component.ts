@@ -72,8 +72,15 @@ export class DistribucionPvComponent implements OnInit {
   }
 
   tieneRolEmpacadores(): boolean {
+    // Si tiene el rol de Distribuidor PV Directo, retorna false siempre
+    if (this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')) {
+      return false;
+    }
+
+    // En caso contrario, evalúa normalmente si tiene el rol de Gestión empacadores
     return this.AuthService.hasRole('Gestion empacadores (Terminación y Empaque)');
   }
+
   // ===== MÉTODOS PARA VERIFICACIÓN =====
 
   /**
@@ -1119,48 +1126,65 @@ private ordenarPVs(op: any): void {
 
     this.usuario_que_registra = this.AuthService.user.id;
 
-    this.terminacionEmpaqueService
-      .registrarAsignaciones(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
-      .subscribe({
-        next: (res: any) => {
-          // Si la API solo devuelve message, mostramos eso directamente
-          if (res.message) {
-            Swal.fire('Éxito', res.message, 'success');
-            return;
+    // 🔹 Detectar si el usuario es "Distribuidor PV Directo"
+    const esDistribuidorPvDirecto = this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)');
+
+    if (esDistribuidorPvDirecto) {
+      // 👉 Flujo alternativo para Distribuidor PV Directo
+      this.terminacionEmpaqueService
+        .registrarAsignacionesDirecto(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
+        .subscribe({
+          next: (res: any) => {
+            Swal.fire('Éxito', res.message || 'Asignaciones registradas (Distribuidor PV Directo).', 'success')
+              .then(() => window.location.reload());
+          },
+          error: (err) => {
+            console.error('Error registrando asignaciones (Distribuidor PV Directo):', err);
+            Swal.fire('Error', 'No se pudo registrar las asignaciones para Distribuidor PV Directo.', 'error');
           }
+        });
 
-          // Si en algún momento tu backend devuelve validación con items
-          if (res.valid !== undefined) {
-            if (!res.valid) {
-              const errores = (res.items || [])
-                .filter((r: any) => !r.valid)
-                .map((r: any) => `Item ${r.f120_id || r.referencia || ''}: ${r.errors.join(', ')}`)
-                .join('<br/>');
-
-              Swal.fire({
-                title: 'Errores en asignaciones',
-                html: errores || 'Hay errores en algunas asignaciones',
-                icon: 'error',
-                width: 700
-              });
-
-              this.assignmentPayload = res.items || [];
-            } else {
-              this.assignmentPayload = res.items || [];
-              Swal.fire({
-                title: 'Asignaciones válidas',
-                html: `Se validaron ${this.assignmentPayload.length} ítems.`,
-                icon: 'success'
-              }).then(() => {
-                window.location.reload();
-              });
+    } else {
+      // 👉 Flujo normal para los demás usuarios
+      this.terminacionEmpaqueService
+        .registrarAsignaciones(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
+        .subscribe({
+          next: (res: any) => {
+            if (res.message) {
+              Swal.fire('Éxito', res.message, 'success');
+              return;
             }
+
+            if (res.valid !== undefined) {
+              if (!res.valid) {
+                const errores = (res.items || [])
+                  .filter((r: any) => !r.valid)
+                  .map((r: any) => `Item ${r.f120_id || r.referencia || ''}: ${r.errors.join(', ')}`)
+                  .join('<br/>');
+
+                Swal.fire({
+                  title: 'Errores en asignaciones',
+                  html: errores || 'Hay errores en algunas asignaciones',
+                  icon: 'error',
+                  width: 700
+                });
+
+                this.assignmentPayload = res.items || [];
+              } else {
+                this.assignmentPayload = res.items || [];
+                Swal.fire({
+                  title: 'Asignaciones válidas',
+                  html: `Se validaron ${this.assignmentPayload.length} ítems.`,
+                  icon: 'success'
+                }).then(() => window.location.reload());
+              }
+            }
+          },
+          error: (err) => {
+            console.error('Error registrando asignaciones:', err);
+            Swal.fire('Error', 'No se pudo registrar las asignaciones en el servicio.', 'error');
           }
-        },
-        error: (err) => {
-          console.error('Error registrando asignaciones:', err);
-          Swal.fire('Error', 'No se pudo registrar las asignaciones en el servicio.', 'error');
-        }
-      });
+        });
+    }
   }
 }

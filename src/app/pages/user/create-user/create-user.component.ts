@@ -70,6 +70,7 @@ export class CreateUserComponent implements OnInit {
         'receptor op (terminacion y empaque)': 'terminacion',
         'distribuidor pv (terminacion y empaque)': 'terminacion',
         'gestion empacadores (terminacion y empaque)': 'terminacion',
+        'distribuidor pv directo (terminación y empaque)': 'terminacion',
 
         // 🟤 RENUEVA
         'auxiliar (renueva)': 'renueva',
@@ -88,8 +89,8 @@ export class CreateUserComponent implements OnInit {
         'aprobacion ficha tecnica (primera revision)': 'ficha',
         'aprobacion ficha tecnica (segunda revision)': 'ficha',
         'calidad ficha tecnica': 'ficha',
-        'Reporte ficha tecnica': 'ficha',
-        'Gestor reporte ficha tecnica': 'ficha'
+        'reporte ficha tecnica': 'ficha',
+        'gestor reporte ficha tecnica': 'ficha'
 
     };
 

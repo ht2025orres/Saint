@@ -13,12 +13,21 @@
                 
                 <li><a class="has-arrow waves-effect waves-dark" href="#" aria-expanded="false" class="text-decoration-none has-arrow waves-effect waves-dark"><i
                             class="mdi mdi-file-chart"></i><span class="hide-menu">Reporte de Fichas </span></a>
+
+                <li *ngIf="!authService.hasRole('Consulta')">
+                    <a class="has-arrow waves-effect waves-dark text-decoration-none" href="#" aria-expanded="false">
+                        <i class="mdi mdi-file-chart"></i>
+                        <span class="hide-menu">Reporte de Fichas</span>
+                    </a>
                     <ul aria-expanded="false" class="collapse">
                         <li *ngIf="!authService.hasRole('Consulta')">
                             <a class="waves-effect waves-dark" routerLink="/technical-data-sheets-report" aria-expanded="false" class="text-decoration-none">
                                 <span class="hide-menu mt-5 pt-15">Análisis por Mes<span
                                         class="label label-rouded label-themecolor pull-right">4
                                     </span></span>
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Gestor reporte ficha tecnica')">
+                            <a class="text-decoration-none waves-effect waves-dark" routerLink="/technical-data-sheets-report">
+                                Análisis por Mes
                             </a>
                         </li>
                         <li >
@@ -153,7 +162,7 @@
                             <a [routerLink]="['/recepcion-op']" class="text-decoration-none">Recepción de OP</a>
                         </li>
 
-                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Distribuidor PV (Terminación y Empaque)')">
+                        <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Distribuidor PV (Terminación y Empaque)') || authService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')">
                             <a [routerLink]="['/distribucion-pv']" class="text-decoration-none">Distribución de PV</a>
                         </li>
 
