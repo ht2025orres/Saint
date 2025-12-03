@@ -46,8 +46,8 @@ export class CreateUserComponent implements OnInit {
 
         // 🟢 SISTEMA
         'administrador del sistema': 'sistema',
-        'consulta': 'ficha',
-
+        'consulta kpis facturación': 'sistema',
+        
         // 🟣 INCONSISTENCIAS
         'lider aprobador (inconsistencias)': 'inconsistencias',
         'matriz de remplazo (inconsistencias)': 'inconsistencias',
@@ -60,7 +60,7 @@ export class CreateUserComponent implements OnInit {
         'revision consumo (inconsistencias)': 'inconsistencias',
         'cartera (inconsistencias)': 'inconsistencias',
         'patronaje (inconsistencias)': 'inconsistencias',
-
+        
         // 🟠 TERMINACIÓN DE EMPAQUE
         'empacador (terminación y empaque)': 'terminacion',
         'receptor op (terminación y empaque)': 'terminacion',
@@ -71,12 +71,12 @@ export class CreateUserComponent implements OnInit {
         'distribuidor pv (terminacion y empaque)': 'terminacion',
         'gestion empacadores (terminacion y empaque)': 'terminacion',
         'distribuidor pv directo (terminación y empaque)': 'terminacion',
-
+        
         // 🟤 RENUEVA
         'auxiliar (renueva)': 'renueva',
         'operario (renueva)': 'renueva',
         'jefe renueva': 'renueva',
-
+        
         // 🟡 ALMACÉN
         'gestor de bodega (mp001)': 'almacen',
         'gestor de bodega (mp003)': 'almacen',
@@ -84,15 +84,16 @@ export class CreateUserComponent implements OnInit {
         'jefe de bodega': 'almacen',
         'admin (inventario)': 'almacen',
         'lider contador (inventario)': 'almacen',
-
+        
         // ⚪ ficha tecnicas
+        'consulta': 'ficha',
         'creacion de fichas tecnica': 'ficha',
         'aprobacion ficha tecnica (primera revision)': 'ficha',
         'aprobacion ficha tecnica (segunda revision)': 'ficha',
         'calidad ficha tecnica': 'ficha',
         'reporte ficha tecnica': 'ficha',
         'gestor reporte ficha tecnica': 'ficha'
-
+        
     };
 
     constructor(

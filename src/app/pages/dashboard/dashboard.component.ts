@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MetricsService } from 'src/app/services/metrics.service';
 import { BillingService } from 'src/app/services/billing.service';
+import { InventarioService, BodegaSummary, ItemBodega } from 'src/app/services/inventario.service';
 import { ProcessMetric } from 'src/app/models/process-metric.model';
 import { AuthService } from 'src/app/services/auth.service';
 import Chart, { ChartConfiguration } from 'chart.js/auto';
@@ -9,17 +10,24 @@ interface BillingData {
   totalPresupuesto: number;
   totalReal: number;
   totalDiferencia: number;
+  totalDiferenciaConCreditos?: number;
   porcentajeEjecutado: number;
+  porcentajeEjecutadoConCreditos?: number;
   remisionadoMesActual?: number;
+  remisionadoMesActualConCreditos?: number;
   remisionadoMesAnterior?: number;
+  isPastMonth?: boolean;
   detalleUnidades: Array<{
     unidad: string;
     descripcion: string;
     presupuesto: number;
     real: number;
     diferencia: number;
+    diferenciaConCreditos?: number;
     porcentajeEjecutado: number;
+    porcentajeEjecutadoConCreditos?: number;
     remisionadoMesActual?: number;
+    remisionadoMesActualConCreditos?: number;
     remisionadoMesAnterior?: number;
   }>;
 }
@@ -71,6 +79,7 @@ interface ShipmentItem {
 export class DashboardComponent implements OnInit, OnDestroy {
   metrics: ProcessMetric[] = [];
   isAdmin: boolean = false;
+  isBillingConsultant: boolean = false;
   activeTab: string = 'production';
   
   // Billing data
@@ -80,6 +89,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedMonth: number = new Date().getMonth() + 1;
   selectedPlan: string = '008';
   availableYears: number[] = [];
+  
+  // Inventory data
+  warehousesSummary: BodegaSummary[] = [];
+  warehouseItems: ItemBodega[] = [];
+  selectedWarehouse: string = '';
+  loadingWarehouses: boolean = false;
+  loadingWarehouseItems: boolean = false;
+  warehouseSearchTerm: string = '';
   
   // Tabla principal - Filtros
   filterUnidad: string = '';
@@ -109,25 +126,72 @@ export class DashboardComponent implements OnInit, OnDestroy {
   shipmentPageSize: number = 10;
   shipmentSearchTerm: string = '';
   shipmentFilterByUN: string = '';
+
+  previousShipmentsDetail: Map<string, any> = new Map();
+  showTooltip: Map<string, boolean> = new Map();
+  tooltipPosition: Map<string, {top: number, left: number}> = new Map();
   
   private charts: Map<string, Chart> = new Map();
   
-  // Exponer Math para el template
   Math = Math;
 
   constructor(
     private metricsService: MetricsService,
     private billingService: BillingService,
+    private inventoryService: InventarioService,
     public authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    // Verificar roles
     this.isAdmin = this.authService.hasRole('Administrador del sistema');
+    this.isBillingConsultant = this.authService.hasRole('Consulta KPIs Facturación');
     
-    if (this.isAdmin) {
-      this.loadMetrics();
+    // Determinar el tab inicial según el rol
+    if (this.isAdmin || this.isBillingConsultant) {
+      if (this.isBillingConsultant && !this.isAdmin) {
+        // Si solo es consultor de facturación, inicia en billing
+        this.activeTab = 'billing';
+        this.loadBillingData();
+      } else if (this.isAdmin) {
+        // Si es admin, carga métricas de producción por defecto
+        this.loadMetrics();
+      }
+      
       this.initializeYears();
     }
+  }
+
+  // Método helper para verificar si debe mostrar las pestañas
+  shouldShowTab(tab: string): boolean {
+    // Si es admin, puede ver todas las pestañas
+    if (this.isAdmin) {
+      return true;
+    }
+    
+    // Si es consultor de facturación, solo puede ver billing
+    if (this.isBillingConsultant) {
+      return tab === 'billing';
+    }
+    
+    return false;
+  }
+
+  loadPreviousShipmentsDetail(): void {
+    this.billingService.getPreviousShipmentsDetail(
+      this.selectedYear, 
+      this.selectedMonth
+    ).subscribe({
+      next: (data) => {
+        this.previousShipmentsDetail.clear();
+        data.forEach((item: any) => {
+          this.previousShipmentsDetail.set(item.unidad_negocio, item.detalle_por_mes);
+        });
+      },
+      error: (error) => {
+        console.error('Error loading previous shipments detail:', error);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -159,7 +223,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.billingData = data;
         this.loading = false;
-        
+        this.loadPreviousShipmentsDetail();
         setTimeout(() => this.renderAllCharts(), 100);
       },
       error: (error) => {
@@ -169,7 +233,183 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Filtrado de la tabla principal
+  // NUEVOS MÉTODOS PARA BODEGAS
+  loadWarehousesData(): void {
+    this.loadingWarehouses = true;
+    this.inventoryService.getWarehousesSummary().subscribe({
+      next: (data) => {
+        this.warehousesSummary = data;
+        this.loadingWarehouses = false;
+        setTimeout(() => this.renderWarehouseCharts(), 100);
+      },
+      error: (error) => {
+        console.error('Error loading warehouses data:', error);
+        this.loadingWarehouses = false;
+      }
+    });
+  }
+
+  loadWarehouseItems(codigoBodega: string): void {
+    this.selectedWarehouse = codigoBodega;
+    this.loadingWarehouseItems = true;
+    this.inventoryService.getWarehouseItems(codigoBodega).subscribe({
+      next: (data) => {
+        this.warehouseItems = data;
+        this.loadingWarehouseItems = false;
+      },
+      error: (error) => {
+        console.error('Error loading warehouse items:', error);
+        this.loadingWarehouseItems = false;
+      }
+    });
+  }
+
+  get filteredWarehouseItems(): ItemBodega[] {
+    if (!this.warehouseSearchTerm) return this.warehouseItems;
+    
+    const searchLower = this.warehouseSearchTerm.toLowerCase();
+    return this.warehouseItems.filter(item => 
+      item.id_item.toLowerCase().includes(searchLower) ||
+      item.descripcion.toLowerCase().includes(searchLower) ||
+      item.referencia?.toLowerCase().includes(searchLower)
+    );
+  }
+
+  renderWarehouseCharts(): void {
+    if (this.warehousesSummary.length === 0) return;
+    
+    // Destruir gráficos anteriores de bodegas
+    if (this.charts.has('warehouseValue')) {
+      this.charts.get('warehouseValue')?.destroy();
+    }
+    if (this.charts.has('warehouseItems')) {
+      this.charts.get('warehouseItems')?.destroy();
+    }
+    
+    this.renderWarehouseValueChart();
+    this.renderWarehouseItemsChart();
+  }
+
+  renderWarehouseValueChart(): void {
+    const canvas = document.getElementById('warehouseValueChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: this.warehousesSummary.map(w => w.nombre_bodega),
+        datasets: [{
+          label: 'Valor Total Inventario',
+          data: this.warehousesSummary.map(w => w.valor_total),
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2,
+          borderRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            padding: 12,
+            callbacks: {
+              label: (context) => `$${(context.parsed.y as number).toLocaleString('es-CO')}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => '$' + (value as number).toLocaleString('es-CO')
+            }
+          }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, config);
+    this.charts.set('warehouseValue', chart);
+  }
+
+  renderWarehouseItemsChart(): void {
+    const canvas = document.getElementById('warehouseItemsChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const config: ChartConfiguration = {
+      type: 'doughnut',
+      data: {
+        labels: this.warehousesSummary.map(w => w.nombre_bodega),
+        datasets: [{
+          label: 'Total Items',
+          data: this.warehousesSummary.map(w => w.total_items),
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(255, 206, 86, 0.8)',
+            'rgba(75, 192, 192, 0.8)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.label}: ${context.parsed} items`
+            }
+          }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, config);
+    this.charts.set('warehouseItems', chart);
+  }
+
+  showPreviousShipmentsTooltip(unidad: string, event: MouseEvent): void {
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    
+    this.showTooltip.set(unidad, true);
+    this.tooltipPosition.set(unidad, {
+      top: rect.top - 10,
+      left: rect.left + rect.width / 2
+    });
+  }
+
+  hidePreviousShipmentsTooltip(unidad: string): void {
+    this.showTooltip.set(unidad, false);
+  }
+
+  getPreviousShipmentsDetail(unidad: string): any[] {
+    return this.previousShipmentsDetail.get(unidad) || [];
+  }
+
+  isTooltipVisible(unidad: string): boolean {
+    return this.showTooltip.get(unidad) || false;
+  }
+
+  getTooltipPosition(unidad: string): {top: number, left: number} {
+    return this.tooltipPosition.get(unidad) || {top: 0, left: 0};
+  }
+
   get filteredBillingUnits() {
     if (!this.billingData) return [];
     
@@ -180,6 +420,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       return matchUnidad;
     });
+  }
+
+  get totalCantidad(): number {
+    return this.filteredWarehouseItems
+      ? this.filteredWarehouseItems.reduce((sum, item) => sum + item.cantidad, 0)
+      : 0;
+  }
+
+  get totalCosto(): number {
+    return this.filteredWarehouseItems
+      ? this.filteredWarehouseItems.reduce((sum, item) => sum + item.costo_prom_total, 0)
+      : 0;
   }
 
   openInvoiceModal(unidad?: string): void {
@@ -408,7 +660,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   renderAllCharts(): void {
     if (!this.billingData) return;
     
-    // Destruir gráficos anteriores
     this.charts.forEach(chart => chart.destroy());
     this.charts.clear();
     
@@ -418,7 +669,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.renderDifferenceTrendChart();
   }
 
-  // Gráfico 1: Comparativa Presupuesto vs Real (Barras horizontales)
   renderComparisonChart(): void {
     const canvas = document.getElementById('comparisonChart') as HTMLCanvasElement;
     if (!canvas || !this.billingData) return;
@@ -483,7 +733,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.charts.set('comparison', chart);
   }
 
-  // Gráfico 2: % de Ejecución (Gauge/Dónut)
   renderExecutionPercentageChart(): void {
     const canvas = document.getElementById('executionChart') as HTMLCanvasElement;
     if (!canvas || !this.billingData) return;
@@ -494,12 +743,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const percentage = this.billingData.porcentajeEjecutado;
     const remaining = 100 - percentage;
 
-    // Determinar color según porcentaje
-    let color = 'rgba(75, 192, 75, 0.8)'; // Verde
+    let color = 'rgba(75, 192, 75, 0.8)';
     if (percentage < 50) {
-      color = 'rgba(255, 99, 99, 0.8)'; // Rojo
+      color = 'rgba(255, 99, 99, 0.8)';
     } else if (percentage < 75) {
-      color = 'rgba(255, 193, 7, 0.8)'; // Amarillo
+      color = 'rgba(255, 193, 7, 0.8)';
     }
 
     const config: ChartConfiguration = {
@@ -536,7 +784,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.charts.set('execution', chart);
   }
 
-  // Gráfico 3: Variación por Unidad (Porcentaje)
   renderVariationChart(): void {
     const canvas = document.getElementById('variationChart') as HTMLCanvasElement;
     if (!canvas || !this.billingData) return;
@@ -546,7 +793,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const units = this.billingData.detalleUnidades;
     
-    // Colores rojo/verde según si es negativo o positivo
     const colors = units.map(u => 
       u.porcentajeEjecutado >= 80 ? 'rgba(75, 192, 75, 0.8)' :
       u.porcentajeEjecutado >= 50 ? 'rgba(255, 193, 7, 0.8)' :
@@ -598,7 +844,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.charts.set('variation', chart);
   }
 
-  // Gráfico 4: Diferencia (Ingreso Real + Remisionado - Remisionado Anterior)
   renderDifferenceTrendChart(): void {
     const canvas = document.getElementById('differenceChart') as HTMLCanvasElement;
     if (!canvas || !this.billingData) return;
