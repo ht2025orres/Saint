@@ -12,7 +12,6 @@ export class UserService {
 
   private urlEndPoint = `${environment.URL_LOGIN}/v1/users`;
   private apiLaravelUrl = environment.URL_API_LARAVEL;
-  private ostia = 'http://127.0.0.1:8000/api';
 
   constructor(private http: HttpClient) { }
 
@@ -48,10 +47,13 @@ export class UserService {
     return this.http.get<User[]>(`${this.urlEndPoint}`);
   }
 
- disableUser(user: User): Observable<any> {
-  return this.http.post<any>(`${this.ostia}/users/disable`, { user_id: user.id });
-}
+  disableUser(user: User) {
+    return this.http.put(`${this.apiLaravelUrl}/users/disable/${user.id}`, {});
+  }
 
+  enableUser(user: User) {
+    return this.http.put(`${this.apiLaravelUrl}/users/enable/${user.id}`, {});
+  }
 
   getById(id: any): Observable<User> {
     return this.http.get<User>(`${this.urlEndPoint}/${id}`);

@@ -642,64 +642,98 @@ export class HojasConteoListComponent implements OnInit {
     });
   }
 
-  finalizarHoja(hoja: any): void {
+  puedeModificarEstado(hoja: any): boolean {
+    return ['BORRADOR', 'PENDIENTE', 'EN_PROCESO'].includes(hoja.estado);
+  }
+
+  getTextoBotonEstado(estado: string): string {
+    const textos: any = {
+      'BORRADOR': 'Enviar a Pendiente',
+      'PENDIENTE': 'Finalizar',
+      'EN_PROCESO': 'Finalizar'
+    };
+    return textos[estado] || '';
+  }
+
+  cambiarEstadoHoja(hoja: any): void {
+    const nuevoEstado = hoja.estado === 'BORRADOR' ? 'PENDIENTE' : 'FINALIZADO';
+    const textoAccion = nuevoEstado === 'PENDIENTE' ? 'enviar a pendiente' : 'finalizar';
+    
     Swal.fire({
-      title: '¿Finalizar hoja?',
-      html: `
-        <p>¿Desea finalizar la hoja <strong>${hoja.codigo_hoja}</strong>?</p>
-        <p class="text-muted small">Se detectarán automáticamente los items que requieren reconteo.</p>
-      `,
+      title: `¿${textoAccion.charAt(0).toUpperCase() + textoAccion.slice(1)} hoja?`,
+      html: nuevoEstado === 'FINALIZADO' 
+        ? `<p>¿Desea finalizar la hoja <strong>${hoja.codigo_hoja}</strong>?</p>
+          <p class="text-muted small">Se detectarán automáticamente los items que requieren reconteo.</p>`
+        : `<p>¿Desea enviar la hoja <strong>${hoja.codigo_hoja}</strong> a estado PENDIENTE?</p>`,
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Sí, finalizar',
+      confirmButtonText: `Sí, ${textoAccion}`,
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
         this.procesando = true;
 
-        const payload = {
-          umbral_porcentaje: 5,
-          umbral_valor: 100000,
-          crear_reconteo_automatico: true
-        };
+        if (nuevoEstado === 'FINALIZADO') {
+          const payload = {
+            umbral_porcentaje: 5,
+            umbral_valor: 100000,
+            crear_reconteo_automatico: true
+          };
 
-        this.inventarioService.finalizarHojaConteo(hoja.id, payload).subscribe({
-          next: (res) => {
-            const stats = res['estadisticas'];
-            
-            let mensaje = `
-              <p>Hoja finalizada exitosamente</p>
-              <hr>
-              <p><strong>Estadísticas:</strong></p>
-              <p>Items contados: ${stats.items_contados} / ${stats.total_items}</p>
-              <p>Items con diferencia: ${stats.items_con_diferencia}</p>
-              <p>Items requieren reconteo: ${stats.items_requieren_reconteo}</p>
-            `;
+          this.inventarioService.finalizarHojaConteo(hoja.id, payload).subscribe({
+            next: (res) => {
+              const stats = res['estadisticas'];
+              let mensaje = `
+                <p>Hoja finalizada exitosamente</p>
+                <hr>
+                <p><strong>Estadísticas:</strong></p>
+                <p>Items contados: ${stats.items_contados} / ${stats.total_items}</p>
+                <p>Items con diferencia: ${stats.items_con_diferencia}</p>
+                <p>Items requieren reconteo: ${stats.items_requieren_reconteo}</p>
+              `;
 
-            if (res['hoja_reconteo_creada']) {
-              mensaje += `<hr><p class="text-success">
-                <i class="bi bi-check-circle"></i>
-                Se creó automáticamente la hoja de reconteo: 
-                <strong>${res['hoja_reconteo_creada'].codigo_hoja}</strong>
-              </p>`;
+              if (res['hoja_reconteo_creada']) {
+                mensaje += `<hr><p class="text-success">
+                  <i class="bi bi-check-circle"></i>
+                  Se creó automáticamente la hoja de reconteo: 
+                  <strong>${res['hoja_reconteo_creada'].codigo_hoja}</strong>
+                </p>`;
+              }
+
+              Swal.fire({
+                icon: 'success',
+                title: '¡Finalizada!',
+                html: mensaje,
+                confirmButtonText: 'Aceptar'
+              });
+              this.cargarHojas();
+            },
+            error: (err) => {
+              Swal.fire('Error', err.error?.message || 'No se pudo finalizar la hoja', 'error');
+            },
+            complete: () => {
+              this.procesando = false;
             }
+          });
+        } else {
+          const payload = {
+            estado: nuevoEstado,
+            usuario_id: this.authService.user.id
+          };
 
-            Swal.fire({
-              icon: 'success',
-              title: '¡Finalizada!',
-              html: mensaje,
-              confirmButtonText: 'Aceptar'
-            });
-
-            this.cargarHojas();
-          },
-          error: (err) => {
-            Swal.fire('Error', err.error?.message || 'No se pudo finalizar la hoja', 'error');
-          },
-          complete: () => {
-            this.procesando = false;
-          }
-        });
+          this.inventarioService.actualizarEstadoHoja(hoja.id, payload).subscribe({
+            next: () => {
+              Swal.fire('¡Éxito!', 'Estado actualizado correctamente', 'success');
+              this.cargarHojas();
+            },
+            error: (err) => {
+              Swal.fire('Error', err.error?.message || 'No se pudo actualizar el estado', 'error');
+            },
+            complete: () => {
+              this.procesando = false;
+            }
+          });
+        }
       }
     });
   }

@@ -277,4 +277,198 @@
     </div>
   </ng-template>
 
+  <!-- AGREGAR ESTOS MODALES AL FINAL DEL ARCHIVO hojas-conteo-detalle.component.html -->
+
+  <!-- Modal: Ver Items -->
+  <div class="modal fade" [class.show]="modalVerItems" 
+      [style.display]="modalVerItems ? 'block' : 'none'"
+      tabindex="-1">
+    <div class="modal-dialog modal-xl" style="--bs-modal-width: 95%;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-list-check me-2"></i>
+            Items - {{ hoja?.codigo_hoja }}
+            <span class="badge ms-2" [ngClass]="{
+              'bg-secondary': hoja?.estado === 'BORRADOR',
+              'bg-warning text-dark': hoja?.estado === 'PENDIENTE',
+              'bg-info': hoja?.estado === 'EN_PROCESO',
+              'bg-success': hoja?.estado === 'FINALIZADO'
+            }">
+              {{ getEstadoLabel(hoja?.estado) }}
+            </span>
+          </h5>
+          <button type="button" class="btn-close" (click)="cerrarModalItems()"></button>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          
+          <!-- Barra de búsqueda -->
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <input type="text" class="form-control" 
+                    placeholder="Buscar item..."
+                    [(ngModel)]="busquedaItemsModal"
+                    (input)="filtrarItemsModal()">
+            </div>
+          </div>
+
+          <!-- Cargando -->
+          <div *ngIf="cargandoItems" class="text-center py-4">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2">Cargando items...</p>
+          </div>
+
+          <!-- Lista de items -->
+          <div *ngIf="!cargandoItems && itemsHoja?.length > 0" 
+              class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th>Zona</th>
+                  <th class="text-end" style="cursor: pointer;" (click)="cambiarOrden('existencia_siesa')">
+                    Exist. SIESA
+                    <i class="bi" [ngClass]="{
+                      'bi-arrow-up': ordenActual.campo === 'existencia_siesa' && ordenActual.direccion === 'asc',
+                      'bi-arrow-down': ordenActual.campo === 'existencia_siesa' && ordenActual.direccion === 'desc'
+                    }"></i>
+                  </th>
+                  <th class="text-end">Contado</th>
+                  <th class="text-end" style="cursor: pointer;" (click)="cambiarOrden('costo_total')">
+                    Costo Total
+                    <i class="bi" [ngClass]="{
+                      'bi-arrow-up': ordenActual.campo === 'costo_total' && ordenActual.direccion === 'asc',
+                      'bi-arrow-down': ordenActual.campo === 'costo_total' && ordenActual.direccion === 'desc'
+                    }"></i>
+                  </th>
+                  <th class="text-end" style="cursor: pointer;" (click)="cambiarOrden('diferencia_unidades')">
+                    Dif. Unidades
+                    <i class="bi" [ngClass]="{
+                      'bi-arrow-up': ordenActual.campo === 'diferencia_unidades' && ordenActual.direccion === 'asc',
+                      'bi-arrow-down': ordenActual.campo === 'diferencia_unidades' && ordenActual.direccion === 'desc'
+                    }"></i>
+                  </th>
+                  <th class="text-end" style="cursor: pointer;" (click)="cambiarOrden('diferencia_costo')">
+                    Dif. Costo
+                    <i class="bi" [ngClass]="{
+                      'bi-arrow-up': ordenActual.campo === 'diferencia_costo' && ordenActual.direccion === 'asc',
+                      'bi-arrow-down': ordenActual.campo === 'diferencia_costo' && ordenActual.direccion === 'desc'
+                    }"></i>
+                  </th>
+                  <th>U.M</th>
+                  <th>Estado Item</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of itemsHojaFiltrados" [ngClass]="{
+                  'table-warning': Math.abs(item.diferencia_unidades) > 0,
+                  'table-danger': item.diferencia_costo > 100000
+                }">
+                  <td>
+                    <code>{{ item.codigo_item }}<span *ngIf="item.id_color">-{{ item.id_color }}</span><span *ngIf="item.id_talla">-{{ item.id_talla }}</span></code>
+                  </td>
+                  <td>
+                    <small>{{ item.descripcion }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-info">{{ item.zona_nombre }}</span>
+                  </td>
+                  <td class="text-end">
+                    {{ item.existencia_siesa | number:'1.0-2' }}
+                  </td>
+                  <td class="text-end">
+                    {{ item.cantidad_contada | number:'1.0-2' }}
+                  </td>
+                  <td class="text-end">
+                    {{ item.costo_prom_total_siesa | currency:'COP':'symbol':'1.0-0' }}
+                  </td>
+                  <td class="text-end" [ngClass]="{
+                    'text-danger fw-bold': item.diferencia_unidades < 0,
+                    'text-success fw-bold': item.diferencia_unidades > 0
+                  }">
+                    {{ item.diferencia_unidades | number:'1.0-2' }}
+                  </td>
+                  <td class="text-end" [ngClass]="{
+                    'text-danger fw-bold': item.diferencia_costo > 0
+                  }">
+                    {{ item.diferencia_costo | currency:'COP':'symbol':'1.0-0' }}
+                  </td>
+                  <td>{{ item.unidad }}</td>
+                  <td>
+                    <span [ngClass]="getEstadoItemClass(item.estado)" class="badge">
+                      {{ item.estado }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Sin items -->
+          <div *ngIf="!cargandoItems && itemsHoja?.length === 0" 
+              class="alert alert-info text-center">
+            Esta hoja no tiene items asignados
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cerrarModalItems()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cambiar Líder -->
+  <div class="modal fade" [class.show]="modalCambiarLider" 
+      [style.display]="modalCambiarLider ? 'block' : 'none'"
+      tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-person-gear me-2"></i>
+            Cambiar Líder
+          </h5>
+          <button type="button" class="btn-close" (click)="cerrarModalCambiarLider()"></button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Hoja: <strong>{{ hoja?.codigo_hoja }}</strong><br>
+            Líder actual: <strong>{{ hoja?.lider_nombre || 'Sin asignar' }}</strong>
+          </p>
+
+          <div class="form-group mt-3">
+            <label>Nuevo Líder</label>
+            <select class="form-control" [(ngModel)]="nuevoLiderId">
+              <option [ngValue]="null">-- Seleccione --</option>
+              <option *ngFor="let lider of lideres" [ngValue]="lider.id">
+                {{ lider.nombre_completo }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cerrarModalCambiarLider()">Cancelar</button>
+          <button class="btn btn-primary" 
+                  [disabled]="!nuevoLiderId || procesando"
+                  (click)="confirmarCambioLider()">
+            <span *ngIf="procesando">
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Guardando...
+            </span>
+            <span *ngIf="!procesando">
+              <i class="bi bi-check me-1"></i> Confirmar
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay de modales -->
+  <div class="modal-backdrop fade" 
+      [class.show]="modalVerItems || modalCambiarLider"
+      *ngIf="modalVerItems || modalCambiarLider">
+  </div>
 </div>

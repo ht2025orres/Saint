@@ -21,7 +21,7 @@
 <!-- ============================================================== -->
 
 <!-- Vista estándar (usuarios normales) -->
-<div *ngIf="!isAdmin" class="content">
+<div *ngIf="!isAdmin && !isBillingConsultant" class="content">
   <div class="container-fluid">
     <section id="about">
       <div class="container">
@@ -49,9 +49,9 @@
 </div>
 
 <!-- Vista de administrador con pestañas -->
-<div *ngIf="isAdmin" class="admin-dashboard">
+<div *ngIf="isAdmin || isBillingConsultant" class="admin-dashboard">
   <ul class="nav nav-tabs mb-4" role="tablist">
-    <li class="nav-item" role="presentation">
+    <li class="nav-item" role="presentation" *ngIf="shouldShowTab('production')">
       <button 
         class="nav-link" 
         [class.active]="activeTab === 'production'"
@@ -60,7 +60,7 @@
         Panel de Producción
       </button>
     </li>
-    <li class="nav-item" role="presentation">
+    <li class="nav-item" role="presentation" *ngIf="shouldShowTab('billing')">
       <button 
         class="nav-link" 
         [class.active]="activeTab === 'billing'"
@@ -69,11 +69,20 @@
         Dashboard de Facturación
       </button>
     </li>
+    <li class="nav-item" role="presentation" *ngIf="shouldShowTab('inventory')">
+      <button 
+        class="nav-link" 
+        [class.active]="activeTab === 'inventory'"
+        (click)="activeTab = 'inventory'; loadWarehousesData()"
+        type="button">
+        Dashboard de Bodegas
+      </button>
+    </li>
   </ul>
 
   <div class="tab-content">
     <!-- Tab: Panel de Producción -->
-    <div *ngIf="activeTab === 'production'" class="tab-pane active">
+    <div *ngIf="activeTab === 'production' && shouldShowTab('production')" class="tab-pane active">
       <h2 class="text-center mb-4">Panel de Producción</h2>
       <div class="metrics-grid">
         <app-metric-card
@@ -83,120 +92,205 @@
       </div>
     </div>
 
-    <!-- Tab: Dashboard de Facturación -->
-    <div *ngIf="activeTab === 'billing'" class="tab-pane active">
-      <h2 class="text-center mb-4">Dashboard de Facturación</h2>
+    <!-- Sección de Gráficos Mejorada en el Tab de Facturación -->
+    <div *ngIf="activeTab === 'billing' && shouldShowTab('billing')" class="tab-pane active">
       
+      <!-- Filtros -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Año:</label>
+          <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBillingData()">
+            <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Mes:</label>
+          <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
+            <option [value]="1">Enero</option>
+            <option [value]="2">Febrero</option>
+            <option [value]="3">Marzo</option>
+            <option [value]="4">Abril</option>
+            <option [value]="5">Mayo</option>
+            <option [value]="6">Junio</option>
+            <option [value]="7">Julio</option>
+            <option [value]="8">Agosto</option>
+            <option [value]="9">Septiembre</option>
+            <option [value]="10">Octubre</option>
+            <option [value]="11">Noviembre</option>
+            <option [value]="12">Diciembre</option>
+          </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end gap-2">
+          <button class="btn btn-primary flex-grow-1" (click)="openInvoiceModal()">
+            <i class="bi bi-file-earmark-text"></i> Ver Facturas
+          </button>
+          <button class="btn btn-info flex-grow-1" (click)="openShipmentModal()">
+            <i class="bi bi-box-seam"></i> Ver Remisiones
+          </button>
+        </div>
+      </div>
+
+      <!-- Indicadores Principales -->
+      <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="card border-0 shadow-sm bg-gradient-primary">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="text-muted mb-2">Presupuesto Total</h6>
+                  <h3 class="mb-0">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</h3>
+                  <small class="text-muted">Mes {{getMonthName(selectedMonth)}}</small>
+                </div>
+                <i class="bi bi-cash-coin" style="font-size: 2rem; color: #007bff; opacity: 0.3;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="card border-0 shadow-sm bg-gradient-success">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="text-muted mb-2">Facturación Real</h6>
+                  <h3 class="mb-0">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</h3>
+                  <small class="text-muted">{{((billingData.totalReal / billingData.totalPresupuesto) * 100) | number:'1.0-0'}}% del presupuesto</small>
+                </div>
+                <i class="bi bi-graph-up" style="font-size: 2rem; color: #28a745; opacity: 0.3;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="card border-0 shadow-sm bg-gradient-info">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="text-muted mb-2">Diferencia</h6>
+                  <h3 class="mb-0" 
+                      [class.text-success]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0" 
+                      [class.text-danger]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) < 0">
+                    {{(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) | currency:'$':'symbol':'1.0-0'}}
+                    <small *ngIf="billingData.isPastMonth" class="text-muted d-block" style="font-size: 0.7rem;">
+                      ({{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}})
+                    </small>
+                  </h3>
+                  <small class="text-muted">Real + Remisionado - Anterior</small>
+                </div>
+                <i class="bi bi-arrow-left-right" style="font-size: 2rem; color: #17a2b8; opacity: 0.3;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="card border-0 shadow-sm bg-gradient-warning">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                  <h6 class="text-muted mb-2">% Ejecutado</h6>
+                  <h3 class="mb-0">
+                    {{(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) | number:'1.0-0'}}%
+                    <small *ngIf="billingData.isPastMonth" class="text-muted d-block" style="font-size: 0.7rem;">
+                      ({{billingData.porcentajeEjecutado | number:'1.0-0'}}%)
+                    </small>
+                  </h3>
+                  <small class="text-muted">Meta de desempeño</small>
+                </div>
+                <i class="bi bi-speedometer2" style="font-size: 2rem; color: #ffc107; opacity: 0.3;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <!-- Cargando -->
       <div *ngIf="loading" class="text-center my-5">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Cargando...</span>
         </div>
+        <p class="text-muted mt-3">Cargando datos de facturación...</p>
       </div>
 
       <div *ngIf="!loading && billingData">
-        <!-- Filtros -->
+        <!-- Gráficos Principales (2x2) -->
         <div class="row mb-4">
-          <div class="col-md-3">
-            <label>Año:</label>
-            <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBillingData()">
-              <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
-            </select>
+          <!-- Gráfico 1: Comparativa Presupuesto vs Real -->
+          <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light border-bottom">
+                <h5 class="mb-0">
+                  <i class="bi bi-bar-chart-fill text-primary"></i> Comparativa: Presupuesto vs Facturación
+                </h5>
+                <small class="text-muted">Análisis por unidad de negocio</small>
+              </div>
+              <div class="card-body">
+                <canvas id="comparisonChart" style="max-height: 350px;"></canvas>
+              </div>
+            </div>
           </div>
-          <div class="col-md-3">
-            <label>Mes:</label>
-            <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
-              <option [value]="1">Enero</option>
-              <option [value]="2">Febrero</option>
-              <option [value]="3">Marzo</option>
-              <option [value]="4">Abril</option>
-              <option [value]="5">Mayo</option>
-              <option [value]="6">Junio</option>
-              <option [value]="7">Julio</option>
-              <option [value]="8">Agosto</option>
-              <option [value]="9">Septiembre</option>
-              <option [value]="10">Octubre</option>
-              <option [value]="11">Noviembre</option>
-              <option [value]="12">Diciembre</option>
-            </select>
-          </div>
-          <div class="col-md-3" style="display: none;">
-            <label>Plan Presupuestal:</label>
-            <select class="form-select" [(ngModel)]="selectedPlan" (change)="loadBillingData()">
-              <option value="008">008 - PRESUPUESTO CO</option>
-            </select>
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <button class="btn btn-primary w-100 me-2" (click)="openInvoiceModal()">
-              <i class="bi bi-file-earmark-text"></i> Ver Facturas
-            </button>
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <button class="btn btn-info w-100" (click)="openShipmentModal()">
-              <i class="bi bi-box-seam"></i> Ver Remisiones
-            </button>
-          </div>
-        </div>
 
-        <!-- Resumen General con Remisiones -->
-        <div class="row mb-4">
-          <div class="col-md-4">
-            <div class="card bg-primary">
-              <div class="card-body">
-                <h6 class="text-white">Presupuesto Total</h6>
-                <h3 class="text-white">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</h3>
+          <!-- Gráfico 2: % Ejecución General -->
+          <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light border-bottom">
+                <h5 class="mb-0">
+                  <i class="bi bi-pie-chart text-info"></i> % de Ejecución General
+                </h5>
+                <small class="text-muted">Progreso del presupuesto</small>
               </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-success">
-              <div class="card-body">
-                <h6 class="text-white">Facturación</h6>
-                <h3 class="text-white">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</h3>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-info">
-              <div class="card-body">
-                <h6 class="text-white">Remisionado Mes Actual</h6>
-                <h3 class="text-white">{{billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row mb-4">
-          <div class="col-md-4">
-            <div class="card bg-secondary">
-              <div class="card-body">
-                <h6 class="text-white">Remisionado Mes Anterior</h6>
-                <h3 class="text-white">{{billingData.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</h3>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-warning">
-              <div class="card-body">
-                <h6 class="text-white">Diferencia</h6>
-                <h3 class="text-white">{{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}}</h3>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card bg-dark">
-              <div class="card-body">
-                <h6 class="text-white">% Ejecutado</h6>
-                <h3 class="text-white">{{billingData.porcentajeEjecutado | number:'1.0-0'}}%</h3>
+              <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 350px;">
+                <div style="max-width: 250px; width: 100%;">
+                  <canvas id="executionChart"></canvas>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Tabla de Presupuesto por Unidad de Negocio -->
-        <div class="card mb-4">
-          <div class="card-header">
+        <!-- Gráficos Secundarios (2x1) -->
+        <div class="row mb-4">
+          <!-- Gráfico 3: % Ejecución por Unidad -->
+          <div class="col-lg-12 mb-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light border-bottom">
+                <h5 class="mb-0">
+                  <i class="bi bi-percent text-success"></i> % de Ejecución por Unidad de Negocio
+                </h5>
+                <small class="text-muted">Verde ≥80% | Amarillo 50-79% | Rojo &lt;50%</small>
+              </div>
+              <div class="card-body">
+                <canvas id="variationChart" style="max-height: 300px;"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfico 4: Diferencia -->
+        <div class="row mb-4">
+          <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light border-bottom">
+                <h5 class="mb-0">
+                  <i class="bi bi-graph-up-arrow text-danger"></i> Diferencia por Unidad (Real + Remisionado - Anterior)
+                </h5>
+                <small class="text-muted">Verde: Ingreso positivo | Rojo: Ingreso negativo</small>
+              </div>
+              <div class="card-body">
+                <canvas id="differenceChart" style="max-height: 300px;"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Detalle de Presupuesto por Unidad -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-light border-bottom">
             <div class="row align-items-center">
               <div class="col-md-6">
-                <h5 class="mb-0">Presupuesto por Unidad de Negocio</h5>
+                <h5 class="mb-0">
+                  <i class="bi bi-table"></i> Presupuesto Detallado por Unidad de Negocio
+                </h5>
               </div>
               <div class="col-md-6">
                 <div class="input-group">
@@ -213,36 +307,77 @@
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-hover">
-                <thead>
+                <thead class="table-light">
                   <tr>
-                    <th>U.N.</th>
+                    <th><i class="bi bi-hash"></i> U.N.</th>
                     <th>Descripción</th>
                     <th class="text-end">Presupuesto</th>
-                    <th class="text-end">Real</th>
+                    <th class="text-end">Facturado</th>
                     <th class="text-end">Remis. Actual</th>
                     <th class="text-end">Remis. Anterior</th>
-                    <th class="text-end">Diferencia</th>
+                    <th class="text-end">Ingreso Real</th>
                     <th class="text-end">% Ejecutado</th>
                     <th class="text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let item of filteredBillingUnits">
-                    <td>{{item.unidad}}</td>
+                  <tr *ngFor="let item of filteredBillingUnits" class="align-middle">
+                    <td><strong>{{item.unidad}}</strong></td>
                     <td>{{item.descripcion}}</td>
                     <td class="text-end">{{item.presupuesto | currency:'$':'symbol':'1.0-0'}}</td>
                     <td class="text-end">{{item.real | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{item.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{item.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end" [class.text-danger]="item.diferencia < 0" [class.text-success]="item.diferencia >= 0">
-                      {{item.diferencia | currency:'$':'symbol':'1.0-0'}}
+                    <td class="text-end">
+                      {{(billingData.isPastMonth ? item.remisionadoMesActualConCreditos : item.remisionadoMesActual) | currency:'$':'symbol':'1.0-0'}}
+                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted" style="font-size: 0.75rem;">
+                        ({{item.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}})
+                      </small>
+                    </td>
+                    
+                    <!-- COLUMNA REMIS. ANTERIOR CON TOOLTIP -->
+                    <td class="text-end position-relative">
+                      <span 
+                        class="remis-anterior-value"
+                        (mouseenter)="showPreviousShipmentsTooltip(item.unidad, $event)"
+                        (mouseleave)="hidePreviousShipmentsTooltip(item.unidad)"
+                        style="cursor: help; text-decoration: underline dotted; text-decoration-color: #6c757d;">
+                        {{item.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}
+                      </span>
+                      
+                      <!-- Tooltip -->
+                      <div 
+                        *ngIf="isTooltipVisible(item.unidad) && getPreviousShipmentsDetail(item.unidad).length > 0"
+                        class="custom-tooltip"
+                        [style.top.px]="getTooltipPosition(item.unidad).top"
+                        [style.left.px]="getTooltipPosition(item.unidad).left">
+                        <div class="tooltip-arrow"></div>
+                        <div class="tooltip-content">
+                          <div class="fw-bold mb-2 border-bottom pb-1">Detalle por mes</div>
+                          <div *ngFor="let mes of getPreviousShipmentsDetail(item.unidad)" class="tooltip-row">
+                            <span>{{getMonthName(mes.mes)}} {{mes.ano}}:</span>
+                            <span class="fw-bold">{{mes.valor | currency:'$':'symbol':'1.0-0'}}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    <td class="text-end fw-bold" 
+                        [class.text-danger]="(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) < 0" 
+                        [class.text-success]="(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) >= 0">
+                      {{(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) | currency:'$':'symbol':'1.0-0'}}
+                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted" style="font-size: 0.75rem;">
+                        ({{item.diferencia | currency:'$':'symbol':'1.0-0'}})
+                      </small>
                     </td>
                     <td class="text-end">
-                      <span class="badge" [class.bg-success]="item.porcentajeEjecutado >= 80" 
-                            [class.bg-warning]="item.porcentajeEjecutado >= 50 && item.porcentajeEjecutado < 80"
-                            [class.bg-danger]="item.porcentajeEjecutado < 50">
-                        {{item.porcentajeEjecutado | number:'1.0-0'}}%
+                      <span class="badge" 
+                        [class.bg-success]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) >= 80" 
+                        [class.bg-warning]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) >= 50 && (billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) < 80"
+                        [class.bg-danger]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) < 50">
+                        {{(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) | number:'1.0-0'}}%
                       </span>
+                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted mt-1" style="font-size: 0.75rem;">
+                        ({{item.porcentajeEjecutado | number:'1.0-0'}}%)
+                      </small>
                     </td>
                     <td class="text-center">
                       <button class="btn btn-sm btn-outline-primary me-1" (click)="openInvoiceModal(item.unidad)" title="Ver Facturas">
@@ -254,15 +389,32 @@
                     </td>
                   </tr>
                 </tbody>
-                <tfoot>
-                  <tr class="fw-bold">
+
+                <!-- En el TFOOT, dejar solo el valor sin tooltip -->
+                <tfoot class="table-light fw-bold">
+                  <tr>
                     <td colspan="2">TOTAL</td>
                     <td class="text-end">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</td>
                     <td class="text-end">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end">
+                      {{(billingData.isPastMonth ? billingData.remisionadoMesActualConCreditos : billingData.remisionadoMesActual) | currency:'$':'symbol':'1.0-0'}}
+                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted">
+                        ({{billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}})
+                      </small>
+                    </td>
                     <td class="text-end">{{billingData.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{billingData.porcentajeEjecutado | number:'1.0-0'}}%</td>
+                    <td class="text-end">
+                      {{(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) | currency:'$':'symbol':'1.0-0'}}
+                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted">
+                        ({{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}})
+                      </small>
+                    </td>
+                    <td class="text-end">
+                      {{(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) | number:'1.0-0'}}%
+                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted">
+                        ({{billingData.porcentajeEjecutado | number:'1.0-0'}}%)
+                      </small>
+                    </td>
                     <td></td>
                   </tr>
                 </tfoot>
@@ -270,19 +422,173 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+    </div>
 
-        <!-- Gráfico de Cumplimiento -->
-        <div class="card">
-          <div class="card-header">
-            <h5>% de Cumplimiento por Unidad de Negocio</h5>
+    <!-- Tab: Dashboard de Bodegas (agregar después del tab de billing) -->
+    <div *ngIf="activeTab === 'inventory' && shouldShowTab('inventory')" class="tab-pane active">
+      <h2 class="text-center mb-4">Dashboard de Bodegas</h2>
+
+      <!-- Cargando -->
+      <div *ngIf="loadingWarehouses" class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="text-muted mt-3">Cargando datos de inventario...</p>
+      </div>
+
+      <div *ngIf="!loadingWarehouses && warehousesSummary.length > 0">
+        <!-- Indicadores Principales -->
+        <div class="row mb-4">
+          <div class="col-lg-3 col-md-6 mb-3" *ngFor="let warehouse of warehousesSummary">
+            <div class="card border-0 shadow-sm" [class.bg-gradient-info]="warehouse.codigo === 'MP001'" 
+                [class.bg-gradient-success]="warehouse.codigo === 'MP003'"
+                [class.bg-gradient-warning]="warehouse.codigo === 'BT001'">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="flex-grow-1">
+                    <h6 class="text-muted mb-2">{{warehouse.nombre_bodega}}</h6>
+                    <h3 class="mb-0">{{warehouse.valor_total | currency:'$':'symbol':'1.0-0'}}</h3>
+                    <small class="text-muted">{{warehouse.total_items}} items | {{warehouse.total_existencias | number:'1.0-0'}} unidades</small>
+                  </div>
+                  <i class="bi bi-box-seam" style="font-size: 2rem; opacity: 0.3;"></i>
+                </div>
+                <button class="btn btn-sm btn-outline-primary mt-3 w-100" 
+                        (click)="loadWarehouseItems(warehouse.codigo)">
+                  Ver Detalle
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="card-body">
-            <canvas id="billingChart"></canvas>
+        </div>
+
+        <!-- Gráficos de Bodegas -->
+        <div class="row mb-4">
+          <!-- Gráfico: Valor por Bodega -->
+          <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light border-bottom">
+                <h5 class="mb-0">
+                  <i class="bi bi-bar-chart-fill text-primary"></i> Valor Total por Bodega
+                </h5>
+              </div>
+              <div class="card-body">
+                <canvas id="warehouseValueChart" style="max-height: 350px;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico: Distribución de Items -->
+          <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-light border-bottom">
+                <h5 class="mb-0">
+                  <i class="bi bi-pie-chart text-info"></i> Distribución de Items
+                </h5>
+              </div>
+              <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 350px;">
+                <div style="max-width: 300px; width: 100%;">
+                  <canvas id="warehouseItemsChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Items de Bodega Seleccionada -->
+        <div class="card border-0 shadow-sm mb-4" *ngIf="selectedWarehouse">
+          <div class="card-header bg-light border-bottom">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <h5 class="mb-0">
+                  <i class="bi bi-table"></i> Items de Bodega: {{selectedWarehouse}}
+                </h5>
+              </div>
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Buscar por código, referencia o descripción..."
+                    [(ngModel)]="warehouseSearchTerm">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="loadingWarehouseItems" class="card-body text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+
+          <div *ngIf="!loadingWarehouseItems" class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Referencia</th>
+                    <th>Descripción</th>
+                    <th>Color</th>
+                    <th>Talla</th>
+                    <th>Zonas</th>
+                    <th class="text-end">Cantidad</th>
+                    <th class="text-end">Costo Unit.</th>
+                    <th class="text-end">Costo Total</th>
+                    <th>U.M.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of filteredWarehouseItems" class="align-middle">
+                    <td><strong>{{item.id_item}}</strong></td>
+                    <td>{{item.referencia}}</td>
+                    <td>{{item.descripcion}}</td>
+                    <td>{{item.color || '-'}}</td>
+                    <td>{{item.id_talla || '-'}}</td>
+                    <td>
+                      <span *ngFor="let zona of item.zonas" 
+                            class="badge bg-secondary me-1">
+                        {{zona.nombre}}
+                      </span>
+                    </td>
+                    <td class="text-end">{{item.cantidad | number:'1.2-2'}}</td>
+                    <td class="text-end">{{item.costo_prom_unitario | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end fw-bold">{{item.costo_prom_total | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td>{{item.unidad_medida}}</td>
+                  </tr>
+                </tbody>
+                <tfoot class="table-light fw-bold" *ngIf="filteredWarehouseItems.length > 0">
+                  <tr>
+                    <td colspan="6" class="text-end">TOTALES:</td>
+                    <td class="text-end">
+                      {{ totalCantidad | number:'1.2-2' }}
+                    </td>
+                    <td></td>
+                    <td class="text-end">
+                      {{ totalCosto | currency:'$':'symbol':'1.0-0' }}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div *ngIf="filteredWarehouseItems.length === 0" class="text-center py-5">
+              <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+              <p class="mt-3 text-muted">No se encontraron items</p>
+            </div>
           </div>
         </div>
       </div>
+
+      <div *ngIf="!loadingWarehouses && warehousesSummary.length === 0" class="text-center py-5">
+        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+        <p class="mt-3 text-muted">No se encontraron datos de bodegas</p>
+      </div>
     </div>
-  </div>
 </div>
 
 <!-- Modal de Detalle de Facturas -->
@@ -347,7 +653,7 @@
                     <td>{{invoice.nro_factura}}</td>
                     <td>{{invoice.fecha_factura | date:'dd/MM/yyyy'}}</td>
                     <td>{{invoice.cliente}}</td>
-                    <td class="text-end fw-bold">{{invoice.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end fw-bold">{{invoice.valor_bruto | currency:'$':'symbol':'1.0-0'}}</td>
                   </tr>
                   <tr *ngIf="invoice.expanded" class="expanded-content">
                     <td colspan="5">
@@ -368,7 +674,7 @@
                               <td>{{item.descripcion_item}}</td>
                               <td class="text-end">{{item.cantidad | number:'1.2-2'}}</td>
                               <td class="text-end">{{item.precio_unitario | currency:'$':'symbol':'1.0-0'}}</td>
-                              <td class="text-end">{{item.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                              <td class="text-end">{{item.valor_bruto | currency:'$':'symbol':'1.0-0'}}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -485,7 +791,7 @@
                     <td>{{shipment.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{shipment.cliente_despacho}}</td>
                     <td>{{shipment.pedido_documento}}</td>
-                    <td class="text-end fw-bold">{{shipment.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                    <td class="text-end fw-bold">{{shipment.valor_bruto | currency:'$':'symbol':'1.0-0'}}</td>
                   </tr>
                   <tr *ngIf="shipment.expanded" class="expanded-content">
                     <td colspan="6">
@@ -506,7 +812,7 @@
                               <td>{{item.descripcion_item}}</td>
                               <td class="text-end">{{item.cantidad | number:'1.2-2'}}</td>
                               <td class="text-end">{{item.precio_unitario | currency:'$':'symbol':'1.0-0'}}</td>
-                              <td class="text-end">{{item.valor_subtotal | currency:'$':'symbol':'1.0-0'}}</td>
+                              <td class="text-end">{{item.valor_bruto | currency:'$':'symbol':'1.0-0'}}</td>
                             </tr>
                           </tbody>
                         </table>

@@ -133,6 +133,17 @@ export class GenerarHojaConteoComponent implements OnInit {
       next: (res) => {
         const raw = res['data'] || [];
 
+        // 🔍 VALIDACIÓN: si viene vacío, no avanzar al paso 2
+        if (!raw.length) {
+          Swal.fire(
+            'Sin resultados',
+            'Esta bodega no tiene ítems disponibles con las configuraciones seleccionadas.',
+            'warning'
+          );
+          this.generandoSugerencia = false;
+          return; // ⛔ DETIENE el flujo, no sigue al paso 2
+        }
+
         // Normalizar items y zonas
         this.itemsSugeridos = raw.map((item: any) => {
           // normalizar valores numéricos

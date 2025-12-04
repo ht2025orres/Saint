@@ -36,7 +36,7 @@ export interface DashboardResponse {
   providedIn: 'root'
 })
 export class ReportService {
-  private apiUrl = `${environment.URL_API_LARAVEL}/api/report`;
+  private apiUrl = `${environment.URL_API_LARAVEL}/report`;
 
   constructor(private http: HttpClient) {}
 
@@ -104,5 +104,10 @@ getDashboardData(year: number, month: number): Observable<any> {
       `${this.apiUrl}/report_dashboard/${year}/${month}`
     )
     .pipe(map((res) => res.data));
+}
+
+// Cargar op con sus items y la descripcion de la prenda
+Get_item_op(op:string): Observable<any>{
+  return this.http.get(`${this.apiUrl}/siesa/consulta?op=${op}`)
 }
 }

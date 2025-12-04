@@ -347,6 +347,19 @@
           </button>
           <button 
             type="button"
+            class="boton-accion boton-evidencias"
+            (click)="verEvidencias(inconsistencia)"
+            *ngIf="tieneEvidencias(inconsistencia)"
+            aria-label="Ver evidencias de la inconsistencia">
+            <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            Ver evidencias
+          </button>
+          <button 
+            type="button"
             class="boton-accion boton-anular"
             (click)="abrirModalAnular(inconsistencia)"
             aria-label="Anular esta inconsistencia">
@@ -436,163 +449,5 @@
   </div>
 
   <!-- Modal Detalles -->
-  <div 
-    class="modal-overlay" 
-    *ngIf="modalDetallesAbierto"
-    (click)="cerrarModalDetalles()"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modal-detalles-titulo">
-    <div class="modal-contenido modal-grande" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2 id="modal-detalles-titulo" class="modal-titulo">
-          Detalles - {{ inconsistenciaSeleccionada?.id_inconsistencia }}
-        </h2>
-        <button 
-          type="button"
-          class="boton-cerrar"
-          (click)="cerrarModalDetalles()"
-          aria-label="Cerrar modal de detalles">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <!-- Información general -->
-        <section class="seccion-detalles" aria-labelledby="seccion-general">
-          <h3 id="seccion-general" class="subtitulo-seccion">Información General</h3>
-          <dl class="lista-detalles">
-            <div class="detalle-item">
-              <dt>Cliente:</dt>
-              <dd>{{ inconsistenciaSeleccionada?.Cliente || 'N/A' }}</dd>
-            </div>
-            <div class="detalle-item">
-              <dt>Departamento:</dt>
-              <dd>{{ inconsistenciaSeleccionada?.nombre_departamento || 'N/A' }}</dd>
-            </div>
-            <div class="detalle-item">
-              <dt>Solicitante:</dt>
-              <dd>{{ inconsistenciaSeleccionada?.nombre_solicitante || 'N/A' }}</dd>
-            </div>
-            <div class="detalle-item" *ngIf="inconsistenciaSeleccionada?.nombre_jefe_inmediato">
-              <dt>Jefe inmediato:</dt>
-              <dd>{{ inconsistenciaSeleccionada.nombre_jefe_inmediato }}</dd>
-            </div>
-            <div class="detalle-item" *ngIf="inconsistenciaSeleccionada?.descripcion_inconsistencia">
-              <dt>Descripción:</dt>
-              <dd>{{ inconsistenciaSeleccionada.descripcion_inconsistencia }}</dd>
-            </div>
-            <div class="detalle-item" *ngIf="inconsistenciaSeleccionada?.accion_inconsistencia">
-              <dt>Acción:</dt>
-              <dd>{{ inconsistenciaSeleccionada.accion_inconsistencia }}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <!-- Evidencias -->
-        <section 
-          class="seccion-detalles" 
-          *ngIf="inconsistenciaSeleccionada?.evidencias && inconsistenciaSeleccionada.evidencias.length > 0"
-          aria-labelledby="seccion-evidencias">
-          <h3 id="seccion-evidencias" class="subtitulo-seccion">Evidencias ({{ inconsistenciaSeleccionada.evidencias.length }})</h3>
-          <div class="grid-evidencias">
-            <a 
-              *ngFor="let evidencia of inconsistenciaSeleccionada.evidencias; let i = index"
-              [href]="evidencia"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="link-evidencia"
-              [attr.aria-label]="'Ver evidencia ' + (i + 1)">
-              <svg class="icono-evidencia" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-              Evidencia {{ i + 1 }}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="width: 1rem; height: 1rem; stroke-width: 2; margin-left: auto;">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </a>
-          </div>
-        </section>
-
-        <!-- Historial de aprobaciones -->
-        <section 
-          class="seccion-detalles" 
-          *ngIf="inconsistenciaSeleccionada?.historial_aprobaciones && inconsistenciaSeleccionada.historial_aprobaciones.length > 0"
-          aria-labelledby="seccion-historial">
-          <h3 id="seccion-historial" class="subtitulo-seccion">Historial de Trazabilidad</h3>
-          <div class="timeline" role="list">
-            <div 
-              *ngFor="let historial of inconsistenciaSeleccionada.historial_aprobaciones; let ultimo = last; let i = index"
-              class="timeline-item"
-              [class.timeline-ultimo]="ultimo"
-              role="listitem"
-              [attr.aria-label]="'Etapa ' + (i + 1) + ': ' + historial.etapa">
-              <div class="timeline-punto" aria-hidden="true"></div>
-              <div class="timeline-contenido">
-                <div class="timeline-header">
-                  <strong class="timeline-etapa">{{ historial.etapa }}</strong>
-                  <time class="timeline-fecha" [attr.datetime]="historial.fecha">
-                    {{ formatearFecha(historial.fecha) }}
-                  </time>
-                </div>
-                <p class="timeline-usuario">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="width: 0.875rem; height: 0.875rem; stroke-width: 2; display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                  {{ historial.usuario }}
-                </p>
-                <p class="timeline-observacion" *ngIf="historial.observacion">
-                  {{ historial.observacion }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Información de anulación -->
-        <section 
-          class="seccion-detalles seccion-anulacion" 
-          *ngIf="inconsistenciaSeleccionada?.estado_inconsistencia === 'Anulada'"
-          aria-labelledby="seccion-anulacion">
-          <h3 id="seccion-anulacion" class="subtitulo-seccion">Información de Anulación</h3>
-          <dl class="lista-detalles">
-            <div class="detalle-item">
-              <dt>Anulada por:</dt>
-              <dd>{{ inconsistenciaSeleccionada.nombre_persona_que_anulo || 'N/A' }}</dd>
-            </div>
-            <div class="detalle-item">
-              <dt>Fecha de anulación:</dt>
-              <dd>
-                <time [attr.datetime]="inconsistenciaSeleccionada.fecha_anulacion">
-                  {{ formatearFecha(inconsistenciaSeleccionada.fecha_anulacion) }}
-                </time>
-              </dd>
-            </div>
-            <div class="detalle-item">
-              <dt>Razón:</dt>
-              <dd>{{ inconsistenciaSeleccionada.razon_anulacion || 'N/A' }}</dd>
-            </div>
-          </dl>
-        </section>
-      </div>
-
-      <div class="modal-footer">
-        <button 
-          type="button"
-          class="boton-primario"
-          (click)="cerrarModalDetalles()"
-          autofocus>
-          Cerrar
-        </button>
-      </div>
-    </div>
-  </div>
+ 
 </div>

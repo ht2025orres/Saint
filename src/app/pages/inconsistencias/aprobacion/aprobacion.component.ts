@@ -132,6 +132,18 @@ verificarRolLogistica(): void {
   console.log(' ¿Mostrar columna Acción a tomar?:', this.mostrarAccionTomar);
 }
 
+estaEnEspera(inco: any): boolean {
+  // Verificar múltiples campos que pueden indicar que está en espera
+  return (
+    inco.etapa === 'espera' ||
+    inco.etapa === 'En espera' ||
+    inco.fecha_espera != null ||
+    inco.estado_inconsistencia === 'En espera' ||
+    inco.estado_inconsistencia === 'en_espera' ||
+    (inco.estado_inconsistencia && inco.estado_inconsistencia.toLowerCase().includes('espera'))
+  );
+}
+
 
 verEvidencias(inco: any): void {
   // Primero intenta obtener evidencias_urls (que vienen del backend ya parseadas)
@@ -144,7 +156,7 @@ verEvidencias(inco: any): void {
       // Convierte las rutas relativas a URLs completas
       archivos = evidenciasParsed.map((ruta: string) => {
         // Usa el dominio actual de la app (útil en desarrollo y producción)
-        const baseUrl = 'http://localhost:8000';
+        const baseUrl = 'https://colegioprovidencia.edu.co/Saint-Backend/public';
 
         return `${baseUrl}/${ruta}`;
       });
@@ -344,8 +356,8 @@ ponerEnEspera(inco: any): void {
           this.loading = false;
           if (res.success) {
             Swal.fire('En Espera', 'La inconsistencia ha sido puesta en espera correctamente.', 'success');
-            this.inconsistencias = this.inconsistencias.filter(i => i.id_inconsistencia !== inco.id_inconsistencia);
-            this.applyFilters();
+            // Recargar la lista para obtener el estado actualizado desde el backend
+            this.cargarInconsistencias();
           } else {
             Swal.fire('Error', res.message || 'No se pudo poner en espera la inconsistencia.', 'error');
           }

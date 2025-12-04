@@ -2,6 +2,7 @@ export interface Report {
   id: number;
   origen: 'calidad' | 'produccion';
   tipo_reporte: 'ficha tecnica' | 'patronaje';
+  op_reporte: string;
   cliente: string;
   item: string;
   prenda: string;

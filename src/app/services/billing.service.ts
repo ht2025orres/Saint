@@ -39,6 +39,18 @@ export class BillingService {
     return this.http.get<BillingDataResponse>(`${this.apiUrl}/budget-summary`, { params });
   }
 
+  getPreviousShipmentsDetail(year: number, month: number, unidad?: string): Observable<any> {
+    let params = new HttpParams()
+      .set('year', year.toString())
+      .set('month', month.toString());
+    
+    if (unidad) {
+      params = params.set('unidad', unidad);
+    }
+    
+    return this.http.get(`${this.apiUrl}/previous-shipments-detail`, { params });
+  }
+
   /**
    * Obtiene presupuesto por unidad de negocio
    */

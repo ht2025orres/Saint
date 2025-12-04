@@ -396,6 +396,8 @@ formatearMiles(event: Event) {
     });
   }
 
+  
+
  enviar(): void {
   // Validar formulario
   if (this.inconsistenciaForm.invalid) {
@@ -463,6 +465,12 @@ formatearMiles(event: Event) {
       Swal.showLoading();
     }
   });
+
+  console.log("🧩 FORM DATA FINAL:");
+formData.forEach((val, key) => {
+  console.log(key, val);
+});
+
 
   // Enviar datos
   this.inconsistenciasService.generarInconsistencia(formData).subscribe({

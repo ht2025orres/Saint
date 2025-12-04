@@ -53,6 +53,7 @@ import { ContadoresModule } from './pages/inventario/contadores/contadores.modul
 import { GenerarHojaConteoModule } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.module';
 import { HojasConteoListModule } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.module';
 import { HojasConteoDetalleModule } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
+import { ContadorItemsModule } from './pages/inventario/contador-items/contador-items.module';
 
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
@@ -114,7 +115,8 @@ registerLocaleData(localeEs, 'es-CO');
         ContadoresModule,
         GenerarHojaConteoModule,
         HojasConteoListModule,
-        HojasConteoDetalleModule
+        HojasConteoDetalleModule,
+        ContadorItemsModule,
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

@@ -1,6 +1,7 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, HostListener} from '@angular/core';
 import {AuthService} from '../../services/auth.service';
 import {Router} from '@angular/router';
+import {SidebarService} from '../../services/sidebar.service';
 
 @Component({
   selector: 'app-header',
@@ -8,20 +9,40 @@ import {Router} from '@angular/router';
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent implements OnInit {
+  isMobile = false;
 
   constructor(public authService: AuthService,
-              private router: Router) {
+              private router: Router,
+              private sidebarService: SidebarService) {
+    // Mobile-first: verificar tamaño de pantalla inmediatamente
+    this.checkMobile();
   }
-
-  name: string;
 
   ngOnInit(): void {
-    this.name = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+    // Verificar nuevamente después de que el componente esté inicializado
+    this.checkMobile();
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+  @HostListener('window:resize', ['$event'])
+  onResize(): void {
+    this.checkMobile();
+  }
+
+  private checkMobile(): void {
+    const wasMobile = this.isMobile;
+    this.isMobile = window.innerWidth < 768;
+    
+    // Forzar detección de cambio para Angular
+    if (wasMobile !== this.isMobile) {
+      // Trigger change detection
+      setTimeout(() => {
+        // Esto ayuda a que Angular detecte el cambio
+      }, 0);
+    }
+  }
+
+  toggleSidebar(): void {
+    this.sidebarService.toggle();
   }
 
 }

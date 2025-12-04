@@ -13,6 +13,7 @@ export const environment = {
     URL_TECHNICAL_DATA_SHEET : 'https://lb.protejer.com',
     URL_C_PANEL: 'https://colegioprovidencia.edu.co/Sdp',
     URL_API_LARAVEL: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
+    URL_API_LARAVEL_LOCAL : 'http://127.0.0.1:8000/api',
 };
 
 /*
