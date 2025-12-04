@@ -68,21 +68,61 @@ export class LoginComponent implements OnInit {
                 });
                 this.router.navigate(['/dashboard']);
             }, err => {
-                if (err.status === 400) {
-                    Swal.fire({
-                        title: 'Error de autenticación',
-                        html: 'Usuario o contraseña incorrecta',
-                        icon: 'warning',
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                    this.formGr.get('email').setValue('');
-                    this.formGr.get('password').setValue('');
+
+                // 🟥 1. Usuario deshabilitado por tu API Laravel
+                if (err.error?.message === 'Usuario deshabilitado') {
+                Swal.fire({
+                    title: 'Acceso denegado',
+                    html: 'El usuario está <b>deshabilitado</b>.<br>Contacte con el administrador.',
+                    icon: 'error',
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+
+                this.formGr.get('password')?.setValue('');
+                return;
                 }
+
+                // 🟥 2. Usuario no existe
+                if (err.error?.message === 'Usuario no encontrado') {
+                Swal.fire({
+                    title: 'Usuario no encontrado',
+                    html: 'Verifique el correo ingresado.',
+                    icon: 'warning',
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+
+                this.formGr.get('email')?.setValue('');
+                this.formGr.get('password')?.setValue('');
+                return;
+                }
+
+                // 🟥 3. Error 400 del servidor OAuth externo (usuario / contraseña incorrecta)
+                if (err.status === 400) {
+                Swal.fire({
+                    title: 'Error de autenticación',
+                    html: 'Usuario o contraseña incorrecta',
+                    icon: 'warning',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+
+                this.formGr.get('password')?.setValue('');
+                return;
+                }
+
+                // 🟥 4. Error Genérico
+                Swal.fire({
+                title: 'Error inesperado',
+                html: 'Ha ocurrido un error al procesar la solicitud',
+                icon: 'error'
+                });
+
+                console.error('Login error:', err);
             });
         }
     }
-
 
     validateCursor() {
         if (this.formGr.invalid) {

@@ -32,17 +32,21 @@
         <div class="table-responsive mt-2">
             <div id="example23_wrapper" class="dataTables_wrapper" style="color: #67757c;">
 
+                <!-- OPCIÓN 1: Mantener tu selector actual -->
                 <div class="dataTables_length responsive-text" id="myTable_length">
                     <label>Mostrar
                         <select name="myTable_length" aria-controls="myTable" class=""
-                            (change)="listBySize($event.target.value)">
+                            (change)="listBySize(+$event.target.value)">
                             <option value="10">10</option>
                             <option value="20">20</option>
                             <option value="30">30</option>
                             <option value="50">50</option>
-                        </select> entradas</label>
+                        </select> entradas
+                    </label>
                 </div>
 
+                <!-- OPCIÓN 2: Usar solo el selector del paginador (eliminar el de arriba) -->
+                <!-- El paginador ya tiene [showPageSizeSelector]="true" -->
                 <div id="example23_filter" class="dataTables_filter mb-3">
                     <label class="fw-bold responsive-text">Buscar:
                         <input type="search" class="" placeholder="" aria-controls="example23"
@@ -51,23 +55,28 @@
                 </div>
 
 
-                <table id="example23" class="table table-hover table-striped align-middle sombra-buttoms"
-                    role="grid" aria-describedby="example23_info">
+                <table id="example23" class="table table-hover table-striped align-middle sombra-buttoms" role="grid"
+                    aria-describedby="example23_info">
                     <thead>
                         <tr role="row">
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
                                 Nombre
                             </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
                                 Apellido
                             </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
                                 Email
                             </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
                                 Roles
                             </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1" style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
+                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
+                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
                                 Acciones
                             </th>
                         </tr>
@@ -97,10 +106,25 @@
                             <td class="d-flex align-items-center justify-content-center">
                                 <div class="d-flex" style="padding-right: 0!important;">
 
-                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor justify-content-center align-items-center sombra-buttoms"
+                                    <!-- Editar -->
+                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor sombra-buttoms"
                                         [routerLink]="['/createUser', user.id]">
                                         <i class="fa fa-pencil fa-3x text-white"></i>
                                     </a>
+
+                                    <!-- Si usuario está habilitado → mostrar botón deshabilitar -->
+                                    <button *ngIf="user.enabled"
+                                        class="nav-link mx-1 btn btn-cicle-sheet btn-danger sombra-buttoms"
+                                        (click)="disableUser(user)">
+                                        <i class="fa fa-ban fa-3x text-white"></i>
+                                    </button>
+
+                                    <!-- Si usuario está deshabilitado → mostrar botón activar -->
+                                    <button *ngIf="!user.enabled"
+                                        class="nav-link mx-1 btn btn-cicle-sheet btn-success sombra-buttoms"
+                                        (click)="enableUser(user)">
+                                        <i class="fa fa-check fa-3x text-white"></i>
+                                    </button>
 
                                 </div>
                             </td>
@@ -109,8 +133,11 @@
                 </table>
 
 
-                <!--                PAGINADOR-->
-                <app-paginador *ngIf="paginator" [paginator]="paginator"></app-paginador>
+                <!--                PAGINADOR--> <!-- Paginador -->
+                <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)"
+                    [instanceId]="paginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50, 100]"
+                    [noDataMessage]="'No se encontraron registros'">
+                </app-shared-paginator>
 
             </div>
         </div>

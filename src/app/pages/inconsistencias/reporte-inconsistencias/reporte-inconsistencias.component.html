@@ -1,132 +1,493 @@
-<div class="container mt-4">
-  <h3 class="text-center mb-4">Reporte General de Inconsistencias</h3>
+<main class="dashboard-container" role="main">
 
-  <!-- Filtros -->
-    <div class="row g-3 align-items-end mb-4">
-        <div class="col-md-3">
-            <label>Departamento</label>
-            <select class="form-select" [(ngModel)]="filtros.departamento" (change)="aplicarFiltros()">
-                <option value="">Todos</option>
-                <option *ngFor="let dep of departamentos" [value]="dep.id">{{ dep.nombre }}</option>
-            </select>
+    <!-- ==================== HEADER ==================== -->
+    <header class="dashboard-header">
+        <h1 class="dashboard-title">Dashboard de Inconsistencias</h1>
+
+        <div class="header-actions">
+
+            <button type="button" class="btn btn-filter" (click)="toggleFiltros()" aria-label="Abrir panel de filtros"
+                [attr.aria-expanded]="mostrarFiltros">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    aria-hidden="true">
+                    <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                </svg>
+                <span>Filtros</span>
+            </button>
+
+            <button type="button" class="btn btn-refresh" (click)="cargarDashboard()" [disabled]="isLoading"
+                aria-label="Actualizar datos del dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    aria-hidden="true">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                </svg>
+                <span>Actualizar</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== PANEL DE FILTROS ==================== -->
+    <aside class="filters-panel" [class.active]="mostrarFiltros" role="complementary" aria-label="Panel de filtros">
+
+        <div class="filters-header">
+            <h2 class="filters-title">Filtros de búsqueda</h2>
+            <button type="button" class="btn-close" (click)="toggleFiltros()" aria-label="Cerrar panel de filtros">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
 
-        <!-- Selector de tipos con menú propio -->
-        <div class="col-md-3 position-relative">
-            <label class="form-label">Tipo de Inconsistencia</label>
+        <form class="filters-form" (ngSubmit)="aplicarFiltros()">
 
-            <div (click)="toggleDropdown()" class="form-select text-start" style="cursor: pointer;">
-                {{ obtenerTextoSeleccionado() }}
+            <div class="form-group">
+                <label for="fecha-inicio" class="form-label">Fecha inicio</label>
+                <input type="date" id="fecha-inicio" class="form-control" [(ngModel)]="filtros.fecha_inicio"
+                    name="fecha_inicio" aria-describedby="fecha-inicio-help">
+                <small id="fecha-inicio-help" class="form-text">Seleccione la fecha inicial del rango</small>
             </div>
 
-            <div *ngIf="dropdownAbierto" class="dropdown-panel border p-2 bg-white shadow-sm rounded" style="max-height: 300px; overflow-y: auto; position: absolute; width: 100%; z-index: 1000;">
-                <div *ngFor="let tipo of tipos" class="form-check">
-                    <label class="form-check-label d-flex justify-content-between align-items-center px-2 py-1"
-                            [ngClass]="{ 'fw-bold': tipo.checked }"
-                            style="cursor: pointer;">
-                        <div class="d-flex align-items-center">
-                            <input type="checkbox"
-                                    class="form-check-input me-2"
-                                    [(ngModel)]="tipo.checked"
-                                    (ngModelChange)="onTipoCheckboxChange()" />
-                            {{ tipo.nombre }}
+            <div class="form-group">
+                <label for="fecha-fin" class="form-label">Fecha fin</label>
+                <input type="date" id="fecha-fin" class="form-control" [(ngModel)]="filtros.fecha_fin" name="fecha_fin"
+                    aria-describedby="fecha-fin-help">
+                <small id="fecha-fin-help" class="form-text">Seleccione la fecha final del rango</small>
+            </div>
+
+            <div class="form-group">
+                <label for="departamento" class="form-label">Departamento</label>
+                <select id="departamento" class="form-control" [(ngModel)]="filtros.departamento" name="departamento">
+                    <option [ngValue]="null">Todos los departamentos</option>
+                    <option *ngFor="let dept of departamentos" [ngValue]="dept.id_departamento">
+                        {{ dept.nombre_departamento }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="cliente" class="form-label">Cliente</label>
+                <select id="cliente" class="form-control" [(ngModel)]="filtros.cliente" name="cliente">
+                    <option value="">Todos los clientes</option>
+                    <option *ngFor="let cliente of clientes" [value]="cliente">
+                        {{ cliente }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="tipo-inconsistencia" class="form-label">Tipo de inconsistencia</label>
+                <select id="tipo-inconsistencia" class="form-control" [(ngModel)]="filtros.tipo_inconsistencia"
+                    name="tipo_inconsistencia">
+                    <option value="">Todos los tipos</option>
+                    <option *ngFor="let tipo of tiposInconsistencia" [value]="tipo">
+                        {{ tipo }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="etapa" class="form-label">Etapa</label>
+                <select id="etapa" class="form-control" [(ngModel)]="filtros.etapa" name="etapa">
+                    <option value="">Todas las etapas</option>
+                    <option *ngFor="let etapa of etapasDisponibles" [value]="etapa">
+                        {{ etapa | titlecase }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="solicitante" class="form-label">Solicitante</label>
+                <select id="solicitante" class="form-control" [(ngModel)]="filtros.solicitante" name="solicitante">
+                    <option [ngValue]="null">Todos los usuarios</option>
+                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id_usuario">
+                        {{ obtenerNombreCompleto(usuario) }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="estado-consumo" class="form-label">Estado de consumo</label>
+                <select id="estado-consumo" class="form-control" [(ngModel)]="filtros.estado_consumo"
+                    name="estado_consumo">
+                    <option value="">Todos los estados</option>
+                    <option *ngFor="let estado of estadosConsumo" [value]="estado">
+                        {{ estado }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="tipo-orden" class="form-label">Tipo de orden</label>
+                <input type="text" id="tipo-orden" class="form-control" [(ngModel)]="filtros.tipo_de_orden"
+                    name="tipo_de_orden" placeholder="Ingrese tipo de orden">
+            </div>
+
+            <div class="filters-actions">
+                <button type="submit" class="btn btn-primary btn-block">
+                    Aplicar filtros
+                </button>
+                <button type="button" class="btn btn-secondary btn-block" (click)="limpiarTodosFiltros()">
+                    Limpiar filtros
+                </button>
+            </div>
+        </form>
+    </aside>
+
+    <!-- ==================== LOADING STATE ==================== -->
+    <div *ngIf="isLoading" class="loading-container" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading-text">Cargando datos del dashboard...</p>
+    </div>
+
+    <!-- ==================== ERROR STATE ==================== -->
+    <div *ngIf="errorMessage && !isLoading" class="alert alert-error" role="alert">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- ==================== NAVEGACIÓN DE SECCIONES ==================== -->
+    <nav class="sections-nav" role="navigation" aria-label="Navegación de métricas" *ngIf="dashboardData && !isLoading">
+
+        <button type="button" class="nav-item" [class.active]="seccionActiva === 'general'"
+            (click)="cambiarSeccion('general')" [attr.aria-current]="seccionActiva === 'general' ? 'page' : null">
+            General
+        </button>
+
+        <button type="button" class="nav-item" [class.active]="seccionActiva === 'productividad'"
+            (click)="cambiarSeccion('productividad')"
+            [attr.aria-current]="seccionActiva === 'productividad' ? 'page' : null">
+            Productividad
+        </button>
+
+        <button type="button" class="nav-item" [class.active]="seccionActiva === 'costos'"
+            (click)="cambiarSeccion('costos')" [attr.aria-current]="seccionActiva === 'costos' ? 'page' : null">
+            Costos
+        </button>
+
+    </nav>
+
+    <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
+    <div class="dashboard-content" *ngIf="dashboardData && !isLoading">
+
+        <!-- VISTA GENERAL -->
+        <section *ngIf="seccionActiva === 'general'" class="metrics-section" aria-labelledby="general-title">
+            <h2 id="general-title" class="section-title">Resumen general</h2>
+
+            <div class="cards-grid">
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Total inconsistencias</h3>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" aria-hidden="true">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </div>
+                    <p class="card-value">{{ formatearNumero(productividad?.total_inconsistencias) }}</p>
+                </article>
+
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Costo total</h3>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" aria-hidden="true">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <p class="card-value">{{ formatearMoneda(costos?.costo_total) }}</p>
+                </article>
+
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Consumidas</h3>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <p class="card-value">{{ formatearNumero(consumo?.consumidas) }}</p>
+                </article>
+
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Pendientes</h3>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <p class="card-value">{{ formatearNumero(consumo?.pendientes) }}</p>
+                </article>
+            </div>
+
+            <div class="chart-container">
+                <h3 class="chart-title">Inconsistencias por etapa</h3>
+                <div class="bar-chart" role="img" aria-label="Gráfico de barras mostrando inconsistencias por etapa">
+                    <div class="bar-item" *ngFor="let etapa of productividad?.por_etapa">
+                        <div class="bar-label">{{ etapa.etapa | titlecase }}</div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill" [style.width.%]="calcularPorcentaje(etapa.cantidad)"
+                                [attr.aria-label]="'Etapa ' + etapa.etapa + ': ' + etapa.cantidad + ' inconsistencias'">
+                            </div>
                         </div>
-                        <span *ngIf="tipo.checked" class="text-success">✓</span>
-                    </label>
-                </div>
-                <div class="text-end mt-2">
-                    <button class="btn btn-sm btn-primary me-1" (click)="aplicarFiltros()">Aplicar</button>
-                    <button class="btn btn-sm btn-secondary" (click)="cerrarDropdown()">Cerrar</button>
+                        <div class="bar-value">{{ etapa.cantidad }}</div>
+                    </div>
+                    <div *ngIf="!productividad?.por_etapa || productividad?.por_etapa.length === 0" class="no-data">
+                        No hay datos de etapas disponibles
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="col-md-2">
-            <label>Mes</label>
-            <input type="month" class="form-control" [(ngModel)]="filtros.mes" (change)="onMesChange()" />
-        </div>
+        <!-- PRODUCTIVIDAD -->
+        <section *ngIf="seccionActiva === 'productividad'" class="metrics-section"
+            aria-labelledby="productividad-title">
+            <h2 id="productividad-title" class="section-title">Métricas de productividad</h2>
 
-        <div class="col-md-2">
-            <label>Desde</label>
-            <input type="date" class="form-control" [(ngModel)]="filtros.fechaInicio" (change)="onRangoChange()" />
-        </div>
+            <div class="cards-grid">
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Duración total proceso</h3>
+                    </div>
+                    <p class="card-value">{{ formatearDias(productividad?.duracion_total_proceso) }}</p>
+                </article>
 
-        <div class="col-md-2">
-            <label>Hasta</label>
-            <input type="date" class="form-control" [(ngModel)]="filtros.fechaFin" (change)="onRangoChange()" />
-        </div>
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Porcentaje en espera</h3>
+                    </div>
+                    <p class="card-value">{{ productividad?.porcentaje_en_espera }}%</p>
+                </article>
+            </div>
 
-        <div class="col-md-3">
-            <label>Estado de Anulación</label>
-            <select class="form-select" [(ngModel)]="filtros.estadoAnulacion" (change)="aplicarFiltros()">
-                <option value="todas">Todas</option>
-                <option value="anuladas">Solo anuladas</option>
-                <option value="no_anuladas">Solo no anuladas</option>
-            </select>
-        </div>
+            <div class="card-full" *ngIf="productividad?.tiempos_aprobacion">
+                <h3 class="card-title">Tiempos promedio de aprobación</h3>
+                <div class="times-grid">
+                    <div class="time-item">
+                        <span class="time-label">Líder</span>
+                        <span class="time-value">{{ formatearHoras(productividad?.tiempos_aprobacion?.lider) }}</span>
+                    </div>
+                    <div class="time-item">
+                        <span class="time-label">Calidad</span>
+                        <span class="time-value">{{ formatearHoras(productividad?.tiempos_aprobacion?.calidad) }}</span>
+                    </div>
+                    <div class="time-item">
+                        <span class="time-label">Logística</span>
+                        <span class="time-value">{{ formatearHoras(productividad?.tiempos_aprobacion?.logistica)
+                            }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 class="table-title">Top usuarios por inconsistencias</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Usuario</th>
+                                <th scope="col">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of productividad?.promedio_por_usuario">
+                                <td>{{ obtenerNombreCompleto(item.usuario_solicitante) }}</td>
+                                <td>{{ item.cantidad }}</td>
+                            </tr>
+                            <tr
+                                *ngIf="!productividad?.promedio_por_usuario || productividad?.promedio_por_usuario.length === 0">
+                                <td colspan="2" class="no-data">No hay datos disponibles</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 class="table-title">Usuarios que han realizado más rechazos de inconsistencias</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Usuario</th>
+                                <th scope="col">Cantidad rechazos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of usuariosTopReportes">
+                                <td>{{ item.nombre_completo }}</td>
+                                <td>{{ formatearNumero(item.total_denegadas) }}</td>
+                            </tr>
+                            <tr *ngIf="!usuariosTopReportes || usuariosTopReportes.length === 0">
+                                <td colspan="2" class="no-data">No hay datos disponibles</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GRÁFICO: Inconsistencias por departamento (Pie Chart) -->
+            <div class="chart-container">
+                <h3 class="chart-title">Inconsistencias por departamento</h3>
+                <div class="pie-chart-container" role="img" aria-label="Gráfico circular mostrando inconsistencias por departamento">
+                    <div class="pie-chart" *ngIf="productividad?.promedio_por_departamento && productividad?.promedio_por_departamento.length > 0">
+                        <svg viewBox="0 0 200 200" class="pie-svg">
+                            <ng-container *ngFor="let item of productividad?.promedio_por_departamento; let i = index">
+                                <circle
+                                    class="pie-segment"
+                                    [attr.data-department]="obtenerNombreDepartamento(item)"
+                                    cx="100"
+                                    cy="100"
+                                    r="80"
+                                    fill="transparent"
+                                    [attr.stroke]="obtenerColorDepartamento(i)"
+                                    stroke-width="40"
+                                    [attr.stroke-dasharray]="calcularStrokeDasharray(item.cantidad)"
+                                    [attr.stroke-dashoffset]="calcularStrokeDashoffset(i)"
+                                    transform="rotate(-90 100 100)"
+                                />
+                            </ng-container>
+                        </svg>
+                    </div>
+                    <div class="pie-legend" *ngIf="productividad?.promedio_por_departamento && productividad?.promedio_por_departamento.length > 0">
+                        <div class="legend-item" *ngFor="let item of productividad?.promedio_por_departamento; let i = index">
+                            <span class="legend-color" [style.background-color]="obtenerColorDepartamento(i)"></span>
+                            <span class="legend-text">
+                                {{ obtenerNombreDepartamento(item) }}
+                                <strong>({{ item.cantidad }} - {{ calcularPorcentajeDepartamento(item.cantidad, obtenerTotalDepartamentos()).toFixed(1) }}%)</strong>
+                            </span>
+                        </div>
+                    </div>
+                    <div *ngIf="!productividad?.promedio_por_departamento || productividad?.promedio_por_departamento.length === 0" class="no-data">
+                        No hay datos de departamentos disponibles
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COSTOS -->
+        <section *ngIf="seccionActiva === 'costos'" class="metrics-section" aria-labelledby="costos-title">
+            <h2 id="costos-title" class="section-title">Métricas de costos</h2>
+
+            <div class="cards-grid">
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Costo total</h3>
+                    </div>
+                    <p class="card-value">{{ formatearMoneda(costos?.costo_total) }}</p>
+                </article>
+
+                <article class="metric-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Costo promedio</h3>
+                    </div>
+                    <p class="card-value">{{ formatearMoneda(costos?.costo_promedio) }}</p>
+                </article>
+            </div>
+
+          
+
+            <div class="table-container">
+                <h3 class="table-title">Costo por cliente</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Cliente</th>
+                                <th scope="col">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of costos?.costo_por_cliente">
+                                <td>{{ item.Cliente }}</td>
+                                <td>{{ formatearMoneda(item.total) }}</td>
+                            </tr>
+                            <tr *ngIf="!costos?.costo_por_cliente || costos?.costo_por_cliente.length === 0">
+                                <td colspan="2" class="no-data">No hay datos disponibles</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 class="table-title">Costo por departamento</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Departamento</th>
+                                <th scope="col">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of costos?.costo_por_departamento">
+                                <td>{{ obtenerNombreDepartamento(item) }}</td>
+                                <td>{{ formatearMoneda(item.total) }}</td>
+                            </tr>
+                            <tr *ngIf="!costos?.costo_por_departamento || costos?.costo_por_departamento.length === 0">
+                                <td colspan="2" class="no-data">No hay datos disponibles</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 class="table-title">Costo por tipo de inconsistencia</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let item of costos?.costo_por_tipo">
+                                <td>{{ normalizarTexto(item.tipo_inconsistencia) }}</td>
+                                <td>{{ formatearMoneda(item.total) }}</td>
+                            </tr>
+                            <tr *ngIf="!costos?.costo_por_tipo || costos?.costo_por_tipo.length === 0">
+                                <td colspan="2" class="no-data">No hay datos disponibles</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GRÁFICO: Costo por departamento (Horizontal Bar Chart) -->
+            <div class="chart-container">
+                <h3 class="chart-title">Costo por departamento</h3>
+                <div class="horizontal-bar-chart" role="img" aria-label="Gráfico de barras horizontales mostrando costos por departamento">
+                    <div class="h-bar-item" *ngFor="let item of costos?.costo_por_departamento">
+                        <div class="h-bar-label">{{ obtenerNombreDepartamento(item) }}</div>
+                        <div class="h-bar-content">
+                            <div class="h-bar-wrapper">
+                                <div class="h-bar-fill" 
+                                     [style.width.%]="(item.total / obtenerMaximoCostoDepartamento()) * 100"
+                                     [attr.aria-label]="'Departamento ' + obtenerNombreDepartamento(item) + ': ' + formatearMoneda(item.total)">
+                                </div>
+                            </div>
+                            <div class="h-bar-value">{{ formatearMoneda(item.total) }}</div>
+                        </div>
+                    </div>
+                    <div *ngIf="!costos?.costo_por_departamento || costos?.costo_por_departamento.length === 0" class="no-data">
+                        No hay datos de costos por departamento disponibles
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <!-- Gráficas -->
-    <div class="row g-4">
-        <div class="col-md-6">
-            <h5 class="text-center">Inconsistencias por Estado</h5>
-            <canvas baseChart
-            [datasets]="estadoChartData"
-            [labels]="estadoChartLabels"
-            [type]="'pie'">
-            </canvas>
-        </div>
-
-        <div class="col-md-6">
-            <h5 class="text-center">Inconsistencias por Departamento</h5>
-            <canvas baseChart
-            [datasets]="depChartData"
-            [labels]="depChartLabels"
-            [type]="'bar'">
-            </canvas>
-        </div>
-
-        <div class="col-md-6">
-            <h5 class="text-center">Inconsistencias por Tipo</h5>
-            <canvas baseChart
-                [datasets]="tipoChartData"
-                [labels]="tipoChartLabels"
-                [type]="'doughnut'">
-            </canvas>
-        </div>
-    </div>
-
-  <!-- Tabla de resultados -->
-  <div class="mt-4">
-    <table class="table table-hover table-bordered">
-      <thead>
-        <tr>
-          <th>Consecutivo</th>
-          <th>Departamento</th>
-          <th>Tipo</th>
-          <th>Etapa</th>
-          <th>Estado</th>
-          <th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let inc of currentData">
-          <td>{{ inc.id_inconsistencia }}</td>
-          <td>{{ inc.nombre_departamento }}</td>
-          <td>{{ tipos_inco[inc.tipo_inconsistencia] }}</td>
-          <td>{{ inc.etapa }}</td>
-          <td>{{ inc.estado_inconsistencia }}</td>
-          <td>{{ inc.fecha_inconsistencia | date:'yyyy-MM-dd' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-    <!-- Paginador -->
-<app-shared-paginator
-    *ngIf="paginationService.getPaginatorState(paginatorId)"
-    [instanceId]="paginatorId"
-    [showPageSizeSelector]="true"
-    [pageSizeOptions]="[5, 10, 25, 50, 100]"
-    [noDataMessage]="'No se encontraron registros'">
-</app-shared-paginator>
-</div>
+</main>

@@ -48,7 +48,11 @@ export class UserService {
   }
 
   disableUser(user: User) {
-    return this.http.put('', user);
+    return this.http.put(`${this.apiLaravelUrl}/users/disable/${user.id}`, {});
+  }
+
+  enableUser(user: User) {
+    return this.http.put(`${this.apiLaravelUrl}/users/enable/${user.id}`, {});
   }
 
   getById(id: any): Observable<User> {

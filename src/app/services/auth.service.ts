@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { User } from '../models/User';
 import { environment } from '../../environments/environment';
@@ -10,6 +11,7 @@ import { InconsistenciaService } from './inconsistencia.service';
 })
 export class AuthService {
 
+  private apiLaravelUrl = environment.URL_API_LARAVEL_LOCAL;
   private urlEndPoint = `${environment.URL_LOGIN}/oauth/token`;
   // tslint:disable-next-line:variable-name
   private _user: User;
@@ -42,17 +44,42 @@ export class AuthService {
     return null;
   }
 
+  checkUserEnabled(email: string): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/auth/check-enabled`, { email });
+  }
+
   login(user: User): Observable<any> {
-    const credenciales = btoa('angularapp' + ':' + 'CF1p1092$#');
-    const httpHeaders = new HttpHeaders({
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: 'Basic ' + credenciales
-    });
-    const params = new URLSearchParams();
-    params.set('grant_type', 'password');
-    params.set('username', user.email);
-    params.set('password', user.password);
-    return this.http.post<any>(this.urlEndPoint, params.toString(), { headers: httpHeaders });
+
+    // 1️⃣ Primero verificamos si el usuario está habilitado en Laravel
+    return this.checkUserEnabled(user.email).pipe(
+      switchMap((resp: any) => {
+
+        if (!resp.enabled) {
+          return throwError(() => ({
+            error: {
+              message: 'Usuario deshabilitado'
+            }
+          }));
+        }
+
+        // 2️⃣ Si está habilitado, procedemos con el login normal
+        const credenciales = btoa('angularapp' + ':' + 'CF1p1092$#');
+
+        const httpHeaders = new HttpHeaders({
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: 'Basic ' + credenciales
+        });
+
+        const params = new URLSearchParams();
+        params.set('grant_type', 'password');
+        params.set('username', user.email);
+        params.set('password', user.password);
+
+        return this.http.post<any>(this.urlEndPoint, params.toString(), {
+          headers: httpHeaders
+        });
+      })
+    );
   }
 
   saveUser(accessToken: string): void {
@@ -145,6 +172,12 @@ export class AuthService {
     if (!Array.isArray(roles) || roles.length === 0) return false;
     const normalizedUserRoles = this.getNormalizedUserRoles();
     return roles.some(r => normalizedUserRoles.has(this.normalize(String(r))));
+  }
+
+  hasOnlyRole(role: string): boolean {
+    const normalizedRole = this.normalize(String(role));
+    const roles = Array.from(this.getNormalizedUserRoles());
+    return roles.length === 1 && roles[0] === normalizedRole;
   }
 
   logout(): void {

@@ -29,8 +29,772 @@
   padding: 2rem;
 }
 
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+.admin-dashboard {
+  padding: 20px;
+
+  .nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+
+    .nav-link {
+      color: #495057;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 12px 24px;
+      font-weight: 500;
+      transition: all 0.3s;
+
+      &:hover {
+        color: #007bff;
+        background-color: #f8f9fa;
+      }
+
+      &.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+        background-color: transparent;
+      }
+    }
+  }
+
+  .tab-content {
+    padding: 30px 0;
+  }
+}
+
+.card {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  &.bg-primary,
+  &.bg-success,
+  &.bg-warning,
+  &.bg-info,
+  &.bg-secondary,
+  &.bg-dark {
+    .card-body {
+      h6 {
+        opacity: 0.9;
+        font-size: 0.875rem;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+
+      h3 {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+
+    h5 {
+      margin: 0;
+      font-weight: 600;
+      color: #495057;
+    }
+  }
+
+  .card-body {
+    padding: 20px;
+  }
+}
+
+.table {
+  font-size: 0.9rem;
+
+  thead {
+    background-color: #f8f9fa;
+
+    th {
+      border-top: none;
+      border-bottom: 2px solid #dee2e6;
+      font-weight: 600;
+      color: #495057;
+      padding: 12px;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      td {
+        padding: 12px;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  tfoot {
+    tr {
+      background-color: #f8f9fa;
+      border-top: 2px solid #dee2e6;
+
+      td {
+        padding: 12px;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Tabla expandible
+.expandable-table {
+  .clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #e9ecef !important;
+    }
+
+    td:first-child {
+      color: #007bff;
+      font-size: 1.2rem;
+    }
+  }
+
+  .expanded-content {
+    background-color: #f8f9fa;
+
+    td {
+      padding: 0 !important;
+    }
+
+    .table {
+      margin-bottom: 0;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+.badge {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+// Modal styles
+.modal {
+  &.show {
+    display: block;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-dialog {
+    margin-top: 50px;
+  }
+
+  .modal-content {
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+
+    &.bg-info {
+      background-color: #17a2b8 !important;
+      border-bottom-color: #138496;
+    }
+
+    .modal-title {
+      font-weight: 600;
+      color: #495057;
+    }
+  }
+
+  .modal-body {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+
+    .table {
+      margin-bottom: 0;
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+
+        &.table-info {
+          background-color: #d1ecf1;
+        }
+      }
+    }
+  }
+}
+
+.modal-backdrop {
+  &.show {
+    opacity: 0.5;
+  }
+}
+
+// Paginación
+.pagination {
+  margin-top: 20px;
+  margin-bottom: 10px;
+
+  .page-item {
+    &.active .page-link {
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+
+    .page-link {
+      color: #007bff;
+      cursor: pointer;
+      transition: all 0.3s;
+
+      &:hover {
+        background-color: #e9ecef;
+      }
+    }
+
+    &.disabled .page-link {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+}
+
+// Barra de búsqueda
+.input-group {
+  .input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+  }
+
+  .form-control {
+    border-left: none;
+
+    &:focus {
+      border-color: #ced4da;
+      box-shadow: none;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .admin-dashboard {
+    padding: 10px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .card {
+    &.bg-primary,
+    &.bg-success,
+    &.bg-warning,
+    &.bg-info,
+    &.bg-secondary,
+    &.bg-dark {
+      .card-body {
+        h6 {
+          font-size: 0.75rem;
+        }
+
+        h3 {
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+
+  .modal-dialog {
+    margin: 10px;
+    
+    &.modal-xl {
+      max-width: calc(100% - 20px);
+    }
+  }
+
+  .expandable-table {
+    .expanded-content {
+      .table {
+        font-size: 0.75rem;
+      }
+    }
+  }
+}
+
+// Chart container
+canvas {
+  max-height: 400px;
+}
+
+// Animaciones suaves
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card,
+.table-responsive {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+// Colores adicionales para las tablas
+.table-info {
+  background-color: #d1ecf1;
+}
+
+.table-secondary {
+  background-color: #e2e3e5;
+}
+
+// Botones en acciones
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.2rem;
+}
+
+// Mejora visual de iconos
+.bi {
+  vertical-align: middle;
+}
+
+// Estado hover para filas
+tr.clickable-row {
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Variables de color
+$primary-gradient: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+$success-gradient: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+$info-gradient: linear-gradient(135deg, #17a2b8 0%, #0c5460 100%);
+$warning-gradient: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+$danger-gradient: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+
+// Backgrounds con gradiente
+.bg-gradient-primary {
+  background: $primary-gradient !important;
+  color: white;
+
+  h6, h3, small, .text-muted {
+    color: white !important;
+  }
+}
+
+.bg-gradient-success {
+  background: $success-gradient !important;
+  color: white;
+
+  h6, h3, small, .text-muted {
+    color: white !important;
+  }
+}
+
+.bg-gradient-info {
+  background: $info-gradient !important;
+  color: white;
+
+  h6, h3, small, .text-muted {
+    color: white !important;
+  }
+}
+
+.bg-gradient-warning {
+  background: $warning-gradient !important;
+  color: white;
+
+  h6, h3, small, .text-muted {
+    color: white !important;
+  }
+}
+
+.bg-gradient-danger {
+  background: $danger-gradient !important;
+  color: white;
+
+  h6, h3, small, .text-muted {
+    color: white !important;
+  }
+}
+
+// Tarjetas de indicadores
+.card {
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+
+    h3 {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    h6 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+// Card headers mejorados
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e3e6f0;
+  padding: 1.25rem 1.5rem;
+
+  h5 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #2c3e50;
+
+    i {
+      margin-right: 0.5rem;
+      font-size: 1.2rem;
+    }
+  }
+
+  small {
+    display: block;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+}
+
+// Tablas mejoradas
+.table {
+  margin-bottom: 0;
+
+  thead {
+    background-color: #f8f9fa;
+
+    th {
+      border-bottom: 2px solid #dee2e6;
+      font-weight: 700;
+      color: #495057;
+      padding: 1rem;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #dee2e6;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      td {
+        padding: 0.875rem 1rem;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  tfoot {
+    tr {
+      border-top: 2px solid #dee2e6;
+      font-weight: 700;
+      background-color: #f8f9fa;
+
+      td {
+        padding: 1rem;
+      }
+    }
+  }
+}
+
+// Badges mejorados
+.badge {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.bg-success {
+    background-color: #28a745 !important;
+    color: white;
+  }
+
+  &.bg-warning {
+    background-color: #ffc107 !important;
+    color: #333;
+  }
+
+  &.bg-danger {
+    background-color: #dc3545 !important;
+    color: white;
+  }
+}
+
+// Botones mejorados
+.btn {
+  border-radius: 0.375rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  i {
+    margin-right: 0.25rem;
+  }
+}
+
+// Selectores y input mejorados
+.form-select,
+.form-control {
+  border-radius: 0.375rem;
+  border: 1px solid #dee2e6;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+  &:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+// Contenedor de gráficos
+.chart-container {
+  position: relative;
+  margin: 1rem 0;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+// Inputs en modales mejorados
+.input-group {
+  margin-bottom: 1rem;
+
+  .input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    color: #495057;
+  }
+
+  .form-control {
+    border: 1px solid #dee2e6;
+
+    &:focus {
+      border-color: #007bff;
+    }
+  }
+}
+
+// Spinners y estados de carga
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+// Text utilities
+.text-muted {
+  color: #6c757d !important;
+}
+
+.text-success {
+  color: #28a745 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+// Responsive mejorado
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+
+    h3 {
+      font-size: 1.4rem;
+    }
+  }
+
+  .table {
+    font-size: 0.9rem;
+
+    thead th,
+    tbody td,
+    tfoot td {
+      padding: 0.75rem 0.5rem;
+    }
+  }
+
+  .btn-sm {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+// Efecto hover en filas de tabla
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #e7f3ff !important;
+  }
+}
+
+// Estilos para expanded content en tablas
+.expanded-content {
+  background-color: #f8f9fa;
+
+  td {
+    padding: 0 !important;
+  }
+}
+
+// Paginación mejorada
+.pagination {
+  gap: 0.5rem;
+
+  .page-link {
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    color: #007bff;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+
+    &.active {
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Gaps mejorados
+.gap-2 {
+  gap: 0.5rem !important;
+}
+
+.gap-3 {
+  gap: 1rem !important;
+}
+
+// Sombras suaves
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+// Agregar en dashboard.component.scss
+
+.custom-tooltip {
+  position: fixed;
+  z-index: 9999;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  
+  .tooltip-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid rgba(0, 0, 0, 0.9);
+  }
+  
+  .tooltip-content {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    
+    .tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 4px 0;
+      
+      &:not(:last-child) {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+.remis-anterior-value {
+  display: inline-block;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: rgba(108, 117, 125, 0.1);
+  }
 }

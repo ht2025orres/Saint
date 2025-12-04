@@ -1,0 +1,71 @@
+<div class="container ">
+  <h3>Crear Reporte</h3>
+  <form (ngSubmit)="crearReporte()" class="mt-3">
+    <div class="row">
+      <div class="col-md-6">
+        <label>Origen</label>
+        <select [(ngModel)]="report.origen" name="origen" class="form-control">
+          <option value="calidad">Calidad</option>
+          <option value="produccion">Producción</option>
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label>Tipo de Reporte</label>
+        <select [(ngModel)]="report.tipo_reporte" name="tipo_reporte" class="form-control">
+          <option value="ficha tecnica">Ficha Técnica</option>
+          <option value="patronaje">Patronaje</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-6">
+    
+        <label>Cliente</label>
+            <input
+                type="text"
+                list="clientes"
+                class="form-control"
+                id="cliente"
+                name="cliente"
+                [(ngModel)]="report.cliente"
+                autocomplete="off"
+                placeholder="Buscar cliente..."
+                (keyup)="searchCustomer($event)"
+                (change)="assingCustomerValues($event)"
+                required 
+            />
+
+            <datalist id="clientes">
+                <option *ngFor="let customer of customers" [value]="customer.customerName"></option>
+            </datalist>
+      </div>
+
+      <div class="col-md-6">
+        <label>Item</label>
+        <input type="text" [(ngModel)]="report.item" name="item" class="form-control" required />
+      </div>
+
+      <div class="col-md-6">
+        <label>Prenda</label>
+        <input type="text" [(ngModel)]="report.prenda" name="prenda" class="form-control" required />
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <label>Observación</label>
+      <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label for="evidencia" class="form-label">Evidencia (opcional)</label>
+        <input type="file" class="form-control" (change)="onFileSelected($event)" name="evidencia" />
+        <small class="text-muted">Puedes subir imagen, PDF o Word. No es obligatorio.</small>
+    </div>
+
+    <div class="text-end mt-4">
+      <button type="submit" class="btn btn-primary">Crear Reporte</button>
+    </div>
+  </form>
+</div>

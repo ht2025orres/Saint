@@ -259,9 +259,19 @@ exportandoExcel: boolean = false;
       return;
     }
 
-    this.mostrarModal = true;
-    this.formularioPrecinto.fechaEntrega = this.obtenerFechaActual();
-    this.mostrarAlerta = false;
+    // Recargar los colores consecutivos para obtener el numero_actual actualizado
+    // Esto asegura que el rango inicial se calcule correctamente después de asignaciones previas
+    this.cargarColoresConsecutivos().then(() => {
+      this.mostrarModal = true;
+      this.formularioPrecinto.fechaEntrega = this.obtenerFechaActual();
+      this.mostrarAlerta = false;
+    }).catch(error => {
+      console.error('Error al recargar colores consecutivos:', error);
+      // Abrir el modal de todas formas si hay error
+      this.mostrarModal = true;
+      this.formularioPrecinto.fechaEntrega = this.obtenerFechaActual();
+      this.mostrarAlerta = false;
+    });
   }
 
   cerrarModal(): void {
@@ -393,9 +403,10 @@ exportandoExcel: boolean = false;
     }
 
     // Calcular el rango
+    // Si numero_actual es 100 y asignamos 50 precintos, el rango debe ser 100 → 149
     const numeroActual = parseInt(colorData.numero_actual) || 0;
-    const numeroInicio = numeroActual + 1;
-    const numeroFin = numeroActual + cantidad;
+    const numeroInicio = numeroActual; // El rango inicia en el valor actual
+    const numeroFin = numeroActual + cantidad - 1; // El rango termina en actual + cantidad - 1
 
     // Asignar valores calculados
     this.formularioPrecinto.rango = `${numeroInicio} - ${numeroFin}`;
@@ -406,12 +417,12 @@ exportandoExcel: boolean = false;
     this.ultimaCantidadIngresada = this.formularioPrecinto.cantidad;
     this.rangoCalculado = this.formularioPrecinto.rango;
 
-    console.log(`Rango calculado para ${colorSeleccionado}:`, {
+    console.log(`Rango calculado para ${colorSeleccionado}:, {
       numeroActual,
       cantidad,
       rango: this.formularioPrecinto.rango,
       numeroPrecinto: this.formularioPrecinto.numeroPrecinto
-    });
+    }`);
   }
 
   /**
@@ -435,7 +446,7 @@ exportandoExcel: boolean = false;
       // Actualizar en la base de datos
       this.bigbagService.actualizarConsecutivo(color, nuevoNumero).subscribe({
         next: (response) => {
-          console.log(`Consecutivo actualizado para ${color}:`, nuevoNumero);
+          console.log(`Consecutivo actualizado para ${color}:, nuevoNumero`);
 
           // Actualizar el array local
           colorData.numero_actual = nuevoNumero.toString();
@@ -443,7 +454,7 @@ exportandoExcel: boolean = false;
           resolve();
         },
         error: (error) => {
-          console.error(`Error al actualizar consecutivo para ${color}:`, error);
+          console.error(`Error al actualizar consecutivo para ${color}:, error`);
           reject(error);
         }
       });
@@ -456,7 +467,7 @@ exportandoExcel: boolean = false;
    * Evento cuando cambia el color seleccionado
    */
  onColorChange(): void {
-    console.log('Color cambiado a:', `"${this.formularioPrecinto.color_consecutivo}"`);
+    console.log('Color cambiado a:', "${this.formularioPrecinto.color_consecutivo}");
     this.limpiarError();
     this.calcularRangoPrecinto();
 }
@@ -484,10 +495,10 @@ exportandoExcel: boolean = false;
 
   debugearColorSeleccionado(): void {
     console.log('=== DEBUG COLOR SELECCIONADO ===');
-    console.log('Valor en formulario:', `"${this.formularioPrecinto.color_consecutivo}"`);
+    console.log('Valor en formulario:', "${this.formularioPrecinto.color_consecutivo}");
     console.log('Tipo:', typeof this.formularioPrecinto.color_consecutivo);
     console.log('Longitud:', this.formularioPrecinto.color_consecutivo?.length);
-    console.log('Colores disponibles:', this.coloresConsecutivos.map(c => `"${c.color}"`));
+    console.log('Colores disponibles:', this.coloresConsecutivos.map(c => "${c.color}"));
     
     // Verificar coincidencias exactas
     const colorEncontrado = this.coloresConsecutivos.find(c => c.color === this.formularioPrecinto.color_consecutivo);
