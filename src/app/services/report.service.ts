@@ -105,4 +105,9 @@ getDashboardData(year: number, month: number): Observable<any> {
     )
     .pipe(map((res) => res.data));
 }
+
+// Cargar op con sus items y la descripcion de la prenda
+Get_item_op(op:string): Observable<any>{
+  return this.http.get(`${this.apiUrl}/siesa/consulta?op=${op}`)
+}
 }
