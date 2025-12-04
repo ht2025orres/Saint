@@ -162,6 +162,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  get totalFilteredInvoices(): number {
+    return this.filteredInvoices.reduce((sum, inv) => sum + inv.valor_bruto, 0);
+  }
+
   // Método helper para verificar si debe mostrar las pestañas
   shouldShowTab(tab: string): boolean {
     // Si es admin, puede ver todas las pestañas
@@ -477,11 +481,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.groupedInvoices.clear();
     
     data.forEach(item => {
-      const key = `${item.nro_factura}_${item.fecha_factura}`;
+      const key = item.nro_factura.trim();
       
       if (!this.groupedInvoices.has(key)) {
         this.groupedInvoices.set(key, {
-          nro_factura: item.nro_factura,
+          nro_factura: item.nro_factura.trim(),
           fecha_factura: item.fecha_factura,
           cliente: item.cliente,
           codigo_item: '',
@@ -498,14 +502,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       invoice.items!.push({
         codigo_item: item.codigo_item,
         descripcion_item: item.descripcion_item,
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario,
-        valor_bruto: item.valor_bruto
+        cantidad: parseFloat(item.cantidad),
+        precio_unitario: parseFloat(item.precio_unitario),
+        valor_bruto: parseFloat(item.valor_bruto)
       });
-      invoice.valor_bruto += item.valor_bruto;
+      invoice.valor_bruto += parseFloat(item.valor_bruto);
     });
     
-    this.invoiceDetails = Array.from(this.groupedInvoices.values());
+    this.invoiceDetails = Array.from(this.groupedInvoices.values())
+      .sort((a, b) => new Date(b.fecha_factura).getTime() - new Date(a.fecha_factura).getTime());
   }
 
   toggleInvoiceExpansion(invoice: InvoiceDetail): void {
@@ -537,10 +542,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (page >= 1 && page <= this.totalInvoicePages) {
       this.currentPage = page;
     }
-  }
-
-  getTotalInvoices(): number {
-    return this.invoiceDetails.reduce((sum, inv) => sum + inv.valor_bruto, 0);
   }
 
   openShipmentModal(unidad?: string): void {
@@ -586,11 +587,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.groupedShipments.clear();
     
     data.forEach(item => {
-      const key = `${item.nro_documento}_${item.fecha}`;
+      const key = item.nro_documento.trim();
       
       if (!this.groupedShipments.has(key)) {
         this.groupedShipments.set(key, {
-          nro_documento: item.nro_documento,
+          nro_documento: item.nro_documento.trim(),
           fecha: item.fecha,
           cliente_despacho: item.cliente_despacho,
           pedido_documento: item.pedido_documento,
@@ -604,14 +605,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       shipment.items!.push({
         codigo_item: item.codigo_item,
         descripcion_item: item.descripcion_item,
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario,
-        valor_bruto: item.valor_bruto
+        cantidad: parseFloat(item.cantidad),
+        precio_unitario: parseFloat(item.precio_unitario),
+        valor_bruto: parseFloat(item.valor_bruto)
       });
-      shipment.valor_bruto += item.valor_bruto;
+      shipment.valor_bruto += parseFloat(item.valor_bruto);
     });
     
-    this.shipmentDetails = Array.from(this.groupedShipments.values());
+    this.shipmentDetails = Array.from(this.groupedShipments.values())
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
   }
 
   toggleShipmentExpansion(shipment: ShipmentDetail): void {
@@ -896,5 +898,75 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const chart = new Chart(ctx, config);
     this.charts.set('difference', chart);
+  }
+
+  get totalFilteredShipments(): number {
+    return this.filteredShipments.reduce((sum, ship) => sum + ship.valor_bruto, 0);
+  }
+
+  trackByInvoice(index: number, invoice: InvoiceDetail): string {
+    return invoice.nro_factura;
+  }
+
+  trackByShipment(index: number, shipment: ShipmentDetail): string {
+    return shipment.nro_documento;
+  }
+
+  trackByItem(index: number, item: any): string {
+    return item.codigo_item + index;
+  }
+
+  getVisiblePages(): number[] {
+    const pages: number[] = [];
+    const total = this.totalInvoicePages;
+    const current = this.currentPage;
+    
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      }
+    }
+    return pages;
+  }
+
+  getVisibleShipmentPages(): number[] {
+    const pages: number[] = [];
+    const total = this.totalShipmentPages;
+    const current = this.shipmentCurrentPage;
+    
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      }
+    }
+    return pages;
   }
 }
