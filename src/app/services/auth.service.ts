@@ -11,7 +11,7 @@ import { InconsistenciaService } from './inconsistencia.service';
 })
 export class AuthService {
 
-  private apiLaravelUrl = environment.URL_API_LARAVEL_LOCAL;
+  private apiLaravelUrl = environment.URL_API_LARAVEL;
   private urlEndPoint = `${environment.URL_LOGIN}/oauth/token`;
   // tslint:disable-next-line:variable-name
   private _user: User;
