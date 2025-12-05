@@ -12,7 +12,7 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
   styleUrls: ['./report-create.component.css']
 })
 export class ReportCreateComponent {
-  
+
   report: Report = {
     id: 0,
     origen: 'calidad',
@@ -36,46 +36,46 @@ export class ReportCreateComponent {
     private reportService: ReportService,
     private authService: AuthService,
     private erpIntegrationService: ErpIntegrationService
-  ) {}
+  ) { }
 
   // ==========================
   // CONSULTAR OP
   // ==========================
-buscarOP(): void {
-  const op = this.report.op_reporte?.trim();
-  if (!op) return;
+  buscarOP(): void {
+    const op = this.report.op_reporte?.trim();
+    if (!op) return;
 
-  this.mostrarLoader();
+    this.mostrarLoader();
 
-  this.erpIntegrationService.getItemsByOP(op).subscribe({
-    next: (resp) => {
-      this.ocultarLoader();
+    this.erpIntegrationService.getItemsByOP(op).subscribe({
+      next: (resp) => {
+        this.ocultarLoader();
 
-      const data = resp?.data?.[op]?.items || [];
-      this.itemsOP = data;
+        const data = resp?.data?.[op]?.items || [];
+        this.itemsOP = data;
 
-      if (data.length === 0) {
-        Swal.fire("Sin resultados", "No se encontraron items para esta OP", "warning");
-        return;
+        if (data.length === 0) {
+          Swal.fire("Sin resultados", "No se encontraron items para esta OP", "warning");
+          return;
+        }
+
+        if (data.length === 1) {
+          this.asignarItem(data[0]);
+        } else {
+          this.seleccionarItem(data);
+        }
+      },
+      error: () => {
+        this.ocultarLoader();
+        Swal.fire("Error", "No fue posible consultar la OP", "error");
       }
+    });
+  }
 
-      if (data.length === 1) {
-        this.asignarItem(data[0]);
-      } else {
-        this.seleccionarItem(data);
-      }
-    },
-    error: () => {
-      this.ocultarLoader();
-      Swal.fire("Error", "No fue posible consultar la OP", "error");
-    }
-  });
-}
-
-mostrarLoader() {
-  Swal.fire({
-    title: "Consultando información...",
-    html: `
+  mostrarLoader() {
+    Swal.fire({
+      title: "Consultando información...",
+      html: `
       <div class="spinner" style="
         border: 5px solid #eee;
         border-top: 5px solid #3b82f6;
@@ -93,17 +93,17 @@ mostrarLoader() {
         }
       </style>
     `,
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    backdrop: true
-  });
-}
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      backdrop: true
+    });
+  }
 
 
-ocultarLoader() {
-  Swal.close();
-}
+  ocultarLoader() {
+    Swal.close();
+  }
 
 
 
@@ -127,9 +127,9 @@ ocultarLoader() {
     }
   }
 
- seleccionarItem(items: any[]) {
+  seleccionarItem(items: any[]) {
 
-  let html = `
+    let html = `
     <input type="text" id="filtroItems" class="swal2-input" placeholder="Filtrar...">
 
     <div id="listaItems" style="max-height:300px; overflow-y:auto; text-align:left;">
@@ -143,35 +143,35 @@ ocultarLoader() {
     </div>
   `;
 
-  Swal.fire({
-    title: "Selecciona un ítem",
-    html,
-    showConfirmButton: false,
-    width: 600,
-    didOpen: () => {
-      const input = document.getElementById("filtroItems") as HTMLInputElement;
-      const lista = document.getElementById("listaItems") as HTMLElement;
+    Swal.fire({
+      title: "Selecciona un ítem",
+      html,
+      showConfirmButton: false,
+      width: 600,
+      didOpen: () => {
+        const input = document.getElementById("filtroItems") as HTMLInputElement;
+        const lista = document.getElementById("listaItems") as HTMLElement;
 
-      // 👉 Filtrar dinamicamente
-      input.addEventListener("input", () => {
-        const term = input.value.toLowerCase();
+        // 👉 Filtrar dinamicamente
+        input.addEventListener("input", () => {
+          const term = input.value.toLowerCase();
+          lista.querySelectorAll(".item-opcion").forEach((el: any) => {
+            const txt = el.innerText.toLowerCase();
+            el.style.display = txt.includes(term) ? "block" : "none";
+          });
+        });
+
+        // 👉 Capturar clic en item
         lista.querySelectorAll(".item-opcion").forEach((el: any) => {
-          const txt = el.innerText.toLowerCase();
-          el.style.display = txt.includes(term) ? "block" : "none";
+          el.addEventListener("click", () => {
+            const index = Number(el.getAttribute("data-index"));
+            this.asignarItem(items[index]);
+            Swal.close();
+          });
         });
-      });
-
-      // 👉 Capturar clic en item
-      lista.querySelectorAll(".item-opcion").forEach((el: any) => {
-        el.addEventListener("click", () => {
-          const index = Number(el.getAttribute("data-index"));
-          this.asignarItem(items[index]);
-          Swal.close();
-        });
-      });
-    }
-  });
-}
+      }
+    });
+  }
 
 
   // ==========================
@@ -188,36 +188,36 @@ ocultarLoader() {
 
   // Primero validamos que todos los campos esten diligenciados, solo la Evidencia puede estar vacia.
   camposCompletos(): { ok: boolean, faltantes: string[] } {
-  const faltantes: string[] = [];
+    const faltantes: string[] = [];
 
-  if (!this.report.origen) faltantes.push("Origen");
-  if (!this.report.tipo_reporte) faltantes.push("Tipo de reporte");
-  if (!this.report.op_reporte) faltantes.push("OP");
-  if (!this.report.cliente) faltantes.push("Cliente");
-  if (!this.report.item) faltantes.push("Item");
-  if (!this.report.prenda) faltantes.push("Prenda");
-  if (!this.report.observacion) faltantes.push("Observación");
-  // evidencia NO es obligatoria
+    if (!this.report.origen) faltantes.push("Origen");
+    if (!this.report.tipo_reporte) faltantes.push("Tipo de reporte");
+    if (!this.report.op_reporte) faltantes.push("OP");
+    if (!this.report.cliente) faltantes.push("Cliente");
+    if (!this.report.item) faltantes.push("Item");
+    if (!this.report.prenda) faltantes.push("Prenda");
+    if (!this.report.observacion) faltantes.push("Observación");
+    // evidencia NO es obligatoria
 
-  return { ok: faltantes.length === 0, faltantes };
-}
+    return { ok: faltantes.length === 0, faltantes };
+  }
 
   crearReporte(): void {
     const val = this.camposCompletos();
 
-  if (!val.ok) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Campos incompletos',
-      html: `
+    if (!val.ok) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campos incompletos',
+        html: `
         <p>Debes completar todos los campos obligatorios:</p>
         <ul style="text-align:left;">
           ${val.faltantes.map(f => `<li><strong>${f}</strong></li>`).join('')}
         </ul>
       `
-    });
-    return;
-  }
+      });
+      return;
+    }
 
     this.report.creado_por = this.authService.user.id;
 

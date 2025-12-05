@@ -2,7 +2,7 @@
   <h3>Crear Reporte</h3>
 
   <form (ngSubmit)="crearReporte()" class="mt-3">
-    
+
     <!-- ORIGEN + TIPO REPORTE -->
     <div class="row">
       <div class="col-md-6">
@@ -26,38 +26,24 @@
     <div class="row mt-3">
       <div class="col-md-6">
         <label>OP</label>
-        <input type="text"
-              [(ngModel)]="report.op_reporte"
-              name="op_reporte"
-              class="form-control"
-              placeholder="Ingrese la OP"
-              required
-              (blur)="buscarOP()" />
+        <input type="text" [(ngModel)]="report.op_reporte" name="op_reporte" class="form-control"
+          placeholder="Ingrese la OP" required (blur)="buscarOP()" />
       </div>
 
       <!-- CLIENTE (desde la búsqueda manual o desde la OP) -->
       <div class="col-md-6">
         <label>Cliente</label>
 
-        <input type="text"
-               list="clientesOP"
-               class="form-control"
-               id="cliente"
-               name="cliente"
-               [(ngModel)]="report.cliente"
-               autocomplete="off"
-               placeholder="Buscar cliente..."
-               (keyup)="searchCustomer($event)"
-               (change)="assingCustomerValues($event)"
-               required />
+        <input type="text" list="clientesOP" class="form-control" id="cliente" name="cliente"
+          [(ngModel)]="report.cliente" autocomplete="off" placeholder="Buscar cliente..."
+          (keyup)="searchCustomer($event)" (change)="assingCustomerValues($event)" required />
 
         <datalist id="clientesOP">
           <!-- CLIENTES DE LA OP -->
           <option *ngFor="let it of itemsOP" [value]="it.cliente"></option>
 
           <!-- CLIENTES BUSCADOS MANUALMENTE -->
-          <option *ngFor="let customer of customers" 
-                  [value]="customer.customerName">
+          <option *ngFor="let customer of customers" [value]="customer.customerName">
           </option>
         </datalist>
       </div>
@@ -66,18 +52,11 @@
       <div class="col-md-6 mt-3">
         <label>Item</label>
 
-        <input list="itemsList"
-               type="text"
-               [(ngModel)]="report.item"
-               name="item"
-               class="form-control"
-               placeholder="Seleccione o escriba un item"
-               required
-               (change)="asignarItemDesdeLista($event)" />
+        <input list="itemsList" type="text" [(ngModel)]="report.item" name="item" class="form-control"
+          placeholder="Seleccione o escriba un item" required (change)="asignarItemDesdeLista($event)" />
 
         <datalist id="itemsList">
-          <option *ngFor="let it of itemsOP"
-                  [value]="it.codigo_item">
+          <option *ngFor="let it of itemsOP" [value]="it.codigo_item">
             {{ it.descripcion }} - {{ it.cliente }}
           </option>
         </datalist>
@@ -87,17 +66,11 @@
       <div class="col-md-6 mt-3">
         <label>Prenda</label>
 
-        <input list="prendasList"
-               type="text"
-               [(ngModel)]="report.prenda"
-               name="prenda"
-               class="form-control"
-               placeholder="Seleccione o escriba una prenda"
-               required />
+        <input list="prendasList" type="text" [(ngModel)]="report.prenda" name="prenda" class="form-control"
+          placeholder="Seleccione o escriba una prenda" required />
 
         <datalist id="prendasList">
-          <option *ngFor="let it of itemsOP"
-                  [value]="it.descripcion">
+          <option *ngFor="let it of itemsOP" [value]="it.descripcion">
           </option>
         </datalist>
       </div>

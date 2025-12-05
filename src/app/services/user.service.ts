@@ -71,27 +71,27 @@ export class UserService {
   // ===== NUEVO CÓDIGO PARA GESTIÓN DE PERFILES / MÓDULOS / PERMISOS =====
   // ======================================================================
 
-    // Listado de usuarios (list-users)
+  // Listado de usuarios (list-users)
   getAll(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/list-users`, {headers: { 'X-Requires-User-Email': 'true' }});
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/list-users`, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   // Asignar/Quitar perfil (usado por UI)
   assignPerfil(user_id: number, perfil_id: number) {
-    return this.http.post(`${this.apiLaravelUrl}/assign/perfil`, { user_id, perfil_id }, {headers: { 'X-Requires-User-Email': 'true' }});
+    return this.http.post(`${this.apiLaravelUrl}/asignacion/assign/perfil`, { user_id, perfil_id }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
   removePerfil(user_id: number, perfil_id: number) {
-    return this.http.post(`${this.apiLaravelUrl}/remove/perfil`, { user_id, perfil_id }, {headers: { 'X-Requires-User-Email': 'true' }});
+    return this.http.post(`${this.apiLaravelUrl}/asignacion/remove/perfil`, { user_id, perfil_id }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   // Duplicar permisos/roles
   duplicatePermissions(source_user_id: number, target_user_id: number) {
-    return this.http.post(`${this.apiLaravelUrl}/duplicate/access`, { source_user_id, target_user_id }, {headers: { 'X-Requires-User-Email': 'true' }});
+    return this.http.post(`${this.apiLaravelUrl}/duplicate/access`, { source_user_id, target_user_id }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   // Obtener permisos efectivos (directos + heredados)
   getEffectivePermissions(userId: number) {
-    return this.http.get<any>(`${this.apiLaravelUrl}/user/${userId}/effective-permissions`, {headers: { 'X-Requires-User-Email': 'true' }});
+    return this.http.get<any>(`${this.apiLaravelUrl}/user/${userId}/effective-permissions`, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   // Asignar permiso directo (usa PermissionsService normalmente)
