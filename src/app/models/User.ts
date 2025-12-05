@@ -6,7 +6,7 @@ export class User {
   public lastName: string;
   public email: string;
   public password: string;
-  public enable: boolean;
+  public enabled: boolean;
   public roles: Role[] = [];
   public id_Sdp: number;
   public nombre_departamento_Sdp: string;

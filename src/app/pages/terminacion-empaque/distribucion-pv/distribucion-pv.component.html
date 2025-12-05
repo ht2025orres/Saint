@@ -233,11 +233,13 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of currentItems"
-                    [ngClass]="{
-                      'table-success': getCantidadDisponible(item) > 0,
-                      'table-secondary': getCantidadDisponible(item) === 0
-                    }">
+                  <tr *ngFor="let item of currentItems"
+                      [ngClass]="{
+                        'table-success': getCantidadDisponible(item) > 0 && !itemCompletoTeorico(item),
+                        'table-secondary': getCantidadDisponible(item) === 0 && !itemCompletoTeorico(item),
+                        'table-warning': itemCompletoTeorico(item)
+                      }"
+                      [style.--bs-table-bg]="itemCompletoTeorico(item) ? 'rgba(255, 192, 203, 0.8)' : ''">
                   <td>{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}</td>
                   <td>{{ item.descripcion_corta }}</td>
                   <td>{{ item.descripcion }}</td>
@@ -246,7 +248,15 @@
                   <td>{{ item.id_talla }}</td>
                   <td>{{ item.id_color }}</td>
                   <td>{{ item.cantidad | number:'1.2-2' }}</td>
-                  <td>{{ item.cantidad_recibida || 0 | number:'1.2-2' }}</td>
+                  <td>
+                    <!-- Número grande → disponible para esta PV -->
+                    {{ (item.cantidad_recibida - item.cantidad_asignada_otros) | number:'1.2-2' }}
+                    <!-- Paréntesis → total recibido -->
+                    <div *ngIf="item.cantidad_recibida_total > 0"
+                        style="font-size: 0.70em; opacity: 0.55; line-height: 1;">
+                      ({{ item.cantidad_recibida | number:'1.2-2' }})
+                    </div>
+                  </td>
                   <td>{{ item.cantidad_asignada || 0 | number:'1.2-2' }}</td>
                   <td class="fw-bold" 
                       [ngClass]="{
@@ -289,11 +299,15 @@
 
                     <!-- Mensajes debajo -->
                     <div *ngIf="item.cantidad_a_asignar > 0">
-                      <small *ngIf="excedeTeorica(item)" class="text-danger d-block">
+                      <!-- <small *ngIf="excedeTeorica(item)" class="text-danger d-block">
                         Excede la cantidad teórica (máx: {{ item.cantidad | number:'1.2-2' }})
                       </small>
                       <small *ngIf="excedeDisponible(item)" class="text-danger d-block">
                         Excede la cantidad disponible (máx: {{ getCantidadDisponible(item) | number:'1.2-2' }})
+                      </small> -->
+                      <small *ngIf="item.cantidad_a_asignar > getMaximoPermitido(item)"
+                            class="text-danger d-block">
+                        Excede la cantidad permitida (máx: {{ getMaximoPermitido(item) | number:'1.2-2' }})
                       </small>
                     </div>
                   </td>

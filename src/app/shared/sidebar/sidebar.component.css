@@ -1,28 +1,805 @@
-/* Botón toggle para el sidebar */
-.sidebar-toggle-box {
+:host {
+  display: block;
+}
+
+body{
+  background-color: #F4F6F9 !important;
+}
+
+/* ==============================================================
+   MOBILE FIRST - Estilos base para móvil (< 768px)
+   ============================================================== */
+
+/* Overlay para móvil - solo visible en móvil */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sidebar base - móvil: oculto por defecto, se desliza desde la izquierda */
+:host .left-sidebar.saint-sidebar {
+  background: #F4F6F9;
+  width: 280px;
+  max-width: 85vw;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  height: 100dvh; /* Soporte para viewport dinámico en móviles */
+  z-index: 1002; /* Por encima del header (z-index: 1001) */
+  -webkit-box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
+  padding-top: 0;
+  transform: translateX(-100%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y; /* Mejorar scroll táctil */
+}
+
+/* Sidebar abierto en móvil */
+:host .left-sidebar.saint-sidebar.mobile-open {
+  transform: translateX(0);
+}
+
+:host .sidebar-surface {
+  height: 100vh;
+  height: 100dvh; /* Soporte para viewport dinámico en móviles */
+  background: #ffffff;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: -webkit-fill-available; /* Fallback para Safari */
+}
+
+/* Ocultar overlay en desktop - solo móvil */
+@media (min-width: 768px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+:host .saint-sidebar.collapsed .sidebar-link i,
+:host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link i {
+  margin: 0 !important;
+  min-width: 20px !important;
+  width: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Ocultar flechas de submenú cuando está colapsado */
+:host .saint-sidebar.collapsed .sidebar-link.has-arrow .arrow-icon,
+:host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.has-arrow .arrow-icon {
+  display: none !important;
+}
+
+:host .sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 24px 0;
+  border-bottom: none;
+  margin-bottom: 24px;
+  min-height: auto;
+  place-self: center;
+}
+
+:host .brand-block {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  gap: 8px;
+}
+
+:host .brand-logo {
+  max-width: 100%;
+  height: auto;
+  max-height: 50px;
+}
+
+:host .sidebar-toggle {
+  border: none;
+  background: transparent;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6B7280;
+  transition: color 0.2s ease;
+  padding: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
+:host .sidebar-toggle i {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:host .sidebar-toggle:hover {
+  background: #F9FAFB;
+  color: #2563EB;
+}
+
+/* Botón toggle: oculto en móvil (usamos el del header) */
+:host .sidebar-toggle {
+  display: none;
+}
+
+:host .sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+:host .scroll-sidebar.saint-scroll-sidebar,
+:host .saint-scroll-sidebar {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+  height: calc(100vh - 250px);
+  min-height: 200px;
+}
+
+:host .scroll-sidebar.saint-scroll-sidebar::-webkit-scrollbar,
+:host .saint-scroll-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+:host .scroll-sidebar.saint-scroll-sidebar::-webkit-scrollbar-thumb,
+:host .saint-scroll-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+}
+
+:host .scroll-sidebar.saint-scroll-sidebar::-webkit-scrollbar-thumb:hover,
+:host .saint-scroll-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+:host .sidebar-list.saint-sidebar-list,
+:host .saint-sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+:host .sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #1F2937;
+  font-weight: 400;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  position: relative;
+  line-height: 1.5;
+}
+
+:host .sidebar-link i {
+  min-width: 22px;
+  width: 22px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  transition: color 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+:host .sidebar-link:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+:host .sidebar-link:hover i {
+  color: #4B5563;
+}
+
+:host .sidebar-link.active {
+  background: #EFF6FF;
+  color: #2563EB;
+  font-weight: 500;
+}
+
+:host .sidebar-link.active i {
+  color: #2563EB;
+}
+
+/* Estilo para elementos con submenú cuando tienen un hijo activo */
+/* Usar selector :has() para detectar cuando un submenú tiene un elemento activo */
+:host li:has(.sidebar-sublink.active) > .sidebar-link.has-arrow {
+
+  color: #2563EB !important;
+  font-weight: 500 !important;
+}
+
+:host li:has(.sidebar-sublink.active) > .sidebar-link.has-arrow i {
+  color: #2563EB !important;
+}
+
+:host li:has(.sidebar-sublink.active) > .sidebar-link.has-arrow .arrow-icon {
+  color: #2563EB !important;
+}
+
+/* El estado activo del padre se mantiene incluso si el submenú está cerrado */
+/* El submenú puede cerrarse normalmente, pero el padre mantiene el estilo activo */
+
+/* Fallback para navegadores que no soportan :has() - usar clase activa en el li */
+:host li.active-parent > .sidebar-link.has-arrow {
+  background: #EFF6FF !important;
+  color: #2563EB !important;
+  font-weight: 500 !important;
+}
+
+:host li.active-parent > .sidebar-link.has-arrow i {
+  color: #2563EB !important;
+}
+
+:host li.active-parent > .sidebar-link.has-arrow .arrow-icon {
+  color: #2563EB !important;
+}
+
+/* NO forzar que el submenú esté visible - permitir que se cierre normalmente */
+/* Solo mantener el estilo activo del padre */
+
+/* Estilo para links con submenú */
+:host .sidebar-link.has-arrow {
+  position: relative;
+}
+
+:host .sidebar-link.has-arrow::after {
+  display: none !important;
+  content: none !important;
+}
+
+:host .sidebar-nav.saint-sidebar-nav .has-arrow::after,
+:host .saint-sidebar-nav .has-arrow::after {
+  display: none !important;
+  content: none !important;
+}
+
+:host .sidebar-link.has-arrow .arrow-icon {
+  margin-left: auto;
+  font-size: 16px;
+  color: #6B7280;
+  transition: transform 0.3s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 18px;
+  width: 18px;
+}
+
+:host .sidebar-link.has-arrow:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+:host .sidebar-link.has-arrow:hover i:not(.arrow-icon) {
+  color: #4B5563;
+}
+
+:host .sidebar-link.has-arrow:hover .arrow-icon {
+  color: #4B5563;
+}
+
+/* Cuando el submenú está expandido, rotar el icono */
+:host .sidebar-link.has-arrow[aria-expanded="true"] .arrow-icon {
+  transform: rotate(180deg);
+  color: #2563EB;
+}
+
+:host .sidebar-link.has-arrow[aria-expanded="true"] {
+  color: #1F2937;
+}
+
+:host .sidebar-link.has-arrow[aria-expanded="true"] i {
+  color: #4B5563;
+}
+
+:host .sidebar-link.has-arrow[aria-expanded="true"]:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+:host .sidebar-link.has-arrow[aria-expanded="true"]:hover i {
+  color: #4B5563;
+}
+
+:host .sidebar-submenu {
+  list-style: none;
+  margin: 8px 0 12px 0;
+  padding-left: 40px;
+  border-left: none;
+}
+
+/* Estilos normales de Bootstrap collapse para submenús */
+:host .sidebar-submenu.collapse {
+  display: none;
+}
+
+:host .sidebar-submenu.collapse.show,
+:host .sidebar-submenu.collapse.in {
+  display: block;
+}
+
+:host .sidebar-submenu li {
+  margin: 0;
+}
+
+:host .sidebar-sublink {
+  display: block;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #6B7280;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  margin: 4px 0;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:host .sidebar-sublink:hover {
+  color: #2563EB;
+  background: #F9FAFB;
+}
+
+:host .sidebar-sublink.active {
+  color: #2563EB;
+  font-weight: 500;
+}
+
+:host .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+:host .sidebar-utility {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #1F2937;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:host .sidebar-utility:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+:host .sidebar-utility.active {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+:host .sidebar-utility .utility-icon {
+  min-width: 22px;
+  width: 22px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  transition: color 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+:host .sidebar-utility:hover .utility-icon {
+  color: #4B5563;
+}
+
+:host .sidebar-utility.active .utility-icon {
+  color: #2563EB;
+}
+
+:host .sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px;
+  background: #F9FAFB;
+  border-radius: 10px;
+  margin-top: 0;
+  min-width: 0;
+  overflow: visible;
+}
+
+:host .user-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: #2563EB;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  flex-shrink: 0;
+}
+
+:host .user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+}
+
+:host .user-name {
+  font-weight: 500;
+  color: #111827;
+  font-size: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+:host .user-role {
+  font-size: 12px;
+  color: #6B7280;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+:host .user-action {
+  margin-left: auto;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
+  text-decoration: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+:host .user-action i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 18px;
+}
+
+:host .user-action:hover {
+  background: #FFFFFF;
+  color: #2563EB;
+}
+
+:host .collapse-label {
+  transition: opacity 0.2s ease, width 0.3s ease, margin 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
+}
+
+:host .hide-menu,
+:host .saint-menu-label {
+  transition: opacity 0.2s ease, width 0.3s ease, margin 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+}
+
+/* Desktop: ocultar labels cuando está colapsado - Sobrescribir estilos globales */
+@media (min-width: 768px) {
+  :host .saint-sidebar.collapsed .collapse-label,
+  :host-context(.mini-sidebar) :host .saint-sidebar .collapse-label,
+  :host .saint-sidebar.collapsed .hide-menu,
+  :host .saint-sidebar.collapsed .saint-menu-label,
+  :host-context(.mini-sidebar) :host .saint-sidebar .hide-menu,
+  :host-context(.mini-sidebar) :host .saint-sidebar .saint-menu-label {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-link,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link {
+    justify-content: center !important;
+    margin: 2px 0 !important;
+    padding: 11px !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-utility,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-utility {
+    justify-content: center !important;
+    margin: 2px 0 !important;
+    padding: 11px !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-utility .utility-icon,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-utility .utility-icon {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-utility .utility-text,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-utility .utility-text {
+    display: none !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-user-card,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-user-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px 8px !important;
+    gap: 8px !important;
+  }
+
+  :host .saint-sidebar.collapsed .user-action,
+  :host-context(.mini-sidebar) :host .saint-sidebar .user-action {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  :host .saint-sidebar.collapsed .user-meta,
+  :host-context(.mini-sidebar) :host .saint-sidebar .user-meta {
+    display: none !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-link.has-arrow .arrow-icon,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.has-arrow .arrow-icon {
+    display: none !important;
+  }
+
+  /* Ocultar submenús cuando el sidebar está colapsado */
+  :host .saint-sidebar.collapsed .sidebar-submenu,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-submenu {
+    display: none !important;
+  }
+
+  /* Prevenir que los estilos globales afecten el sidebar colapsado */
+  :host .saint-sidebar.collapsed .sidebar-nav.saint-sidebar-nav #sidebarnav > li > a,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-nav.saint-sidebar-nav #sidebarnav > li > a {
+    padding: 11px !important;
+    width: 100% !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-nav.saint-sidebar-nav #sidebarnav > li:hover > a,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-nav.saint-sidebar-nav #sidebarnav > li:hover > a {
+    width: 100% !important;
+  }
+}
+
+/* ==============================================================
+   TABLET Y DESKTOP - Estilos para pantallas >= 768px
+   ============================================================== */
+
+@media (min-width: 768px) {
+  /* Sidebar visible por defecto en desktop */
+  :host .left-sidebar.saint-sidebar {
+    width: 240px;
+    transform: translateX(0);
     position: fixed;
-    left: 220px;
-    top: 15px;
-    z-index: 100;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    left: 0;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Sidebar colapsado en desktop */
+  :host .left-sidebar.saint-sidebar.collapsed,
+  :host-context(.mini-sidebar) :host .left-sidebar.saint-sidebar {
+    width: 70px;
+  }
+
+  /* Mostrar botón toggle en desktop */
+  :host .sidebar-toggle {
+    display: flex;
+  }
+
+  /* Desktop: ajustes cuando está colapsado */
+  :host .saint-sidebar.collapsed .sidebar-link,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link,
+  :host .saint-sidebar.collapsed .sidebar-link.has-arrow,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.has-arrow {
+    justify-content: center !important;
+    margin: 2px 0 !important;
+    padding: 11px !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
 }
 
-.sidebar-toggle-box .fa {
-    font-size: 20px;
-    color: #398bf7;
-    background: white;
-    padding: 8px;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+/* ==============================================================
+   Ajustes globales para móvil - page-wrapper sin margen
+   ============================================================== */
+
+/* Prevenir scroll del body cuando el sidebar está abierto en móvil */
+body.sidebar-mobile-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
-.mini-sidebar .sidebar-toggle-box {
-    left: 50px;
+/* ==============================================================
+   MOBILE (< 768px) - Sin margen, contenido a pantalla completa
+   Sobrescribir estilos de style.css que aplican margin-left
+   ============================================================== */
+@media (max-width: 767px) {
+  /* Forzar que el contenido principal NO tenga margen en móvil */
+  /* Usar selectores más específicos para sobrescribir style.css */
+  .page-wrapper,
+  #main-wrapper .page-wrapper,
+  #main-wrapper > .page-wrapper,
+  body .page-wrapper,
+  html body .page-wrapper,
+  :host-context(#main-wrapper) .page-wrapper,
+  :host-context(body) .page-wrapper {
+    margin-left: 0 !important;
+    padding-top: 56px !important; /* Espacio para el header móvil */
+    transition: none !important;
+    -webkit-transition: none !important;
+    -o-transition: none !important;
+  }
+  
+  /* Sobrescribir específicamente el estilo de style.css para max-width: 1023px */
+  @media (max-width: 1023px) {
+    .page-wrapper,
+    #main-wrapper .page-wrapper,
+    #main-wrapper > .page-wrapper,
+    body .page-wrapper,
+    html body .page-wrapper {
+      margin-left: 0 !important;
+    }
+  }
+  
+  /* Asegurar que el sidebar no afecte el layout en móvil */
+  :host .left-sidebar.saint-sidebar {
+    position: fixed !important;
+    transform: translateX(-100%);
+  }
+  
+  :host .left-sidebar.saint-sidebar.mobile-open {
+    transform: translateX(0);
+  }
 }
 
-/* Asegurar que los submenús funcionen en estado mini */
-.mini-sidebar .sidebar-nav #sidebarnav > li:hover > ul {
-    display: block !important;
+/* ==============================================================
+   TABLETS (768px - 1023px) - Margen para sidebar colapsado
+   ============================================================== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-wrapper,
+  #main-wrapper .page-wrapper {
+    margin-left: 70px !important;
+    transition: margin-left 0.3s ease !important;
+  }
+  
+  :host-context(.mini-sidebar) .page-wrapper,
+  :host-context(.mini-sidebar) #main-wrapper .page-wrapper {
+    margin-left: 70px !important;
+  }
+  
+  :host-context(body:not(.mini-sidebar)) .page-wrapper,
+  :host-context(body:not(.mini-sidebar)) #main-wrapper .page-wrapper {
+    margin-left: 240px !important;
+  }
 }
 
+/* ==============================================================
+   DESKTOP (>= 1024px) - Margen completo para sidebar
+   ============================================================== */
+@media (min-width: 1024px) {
+  .page-wrapper,
+  #main-wrapper .page-wrapper {
+    margin-left: 240px !important;
+    transition: margin-left 0.3s ease !important;
+  }
+  
+  :host-context(.mini-sidebar) .page-wrapper,
+  :host-context(.mini-sidebar) #main-wrapper .page-wrapper {
+    margin-left: 70px !important;
+  }
+  
+  :host-context(body:not(.mini-sidebar)) .page-wrapper,
+  :host-context(body:not(.mini-sidebar)) #main-wrapper .page-wrapper {
+    margin-left: 240px !important;
+  }
+}
+.sidebar-float-panel {
+  position: fixed;
+  left: 80px; /* donde termina el sidebar colapsado */
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  border-radius: 6px;
+  padding: 10px 0;
+  z-index: 9999;
+  min-width: 220px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.floating-submenu li a {
+  display: block;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.floating-submenu li a:hover {
+  background: #f2f2f2;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

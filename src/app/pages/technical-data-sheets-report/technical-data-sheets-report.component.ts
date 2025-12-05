@@ -7,7 +7,7 @@ import { Chart } from 'chart.js';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
-import * as moment from 'moment';
+import moment from 'moment';
 import { Subject } from 'rxjs';
 
 @Component({

@@ -106,19 +106,25 @@
                             <td class="d-flex align-items-center justify-content-center">
                                 <div class="d-flex" style="padding-right: 0!important;">
 
-                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor justify-content-center align-items-center sombra-buttoms"
+                                    <!-- Editar -->
+                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor sombra-buttoms"
                                         [routerLink]="['/createUser', user.id]">
                                         <i class="fa fa-pencil fa-3x text-white"></i>
                                     </a>
 
-                                        <button 
-                                            class="nav-link mx-1 btn btn-cicle-sheet btn-danger justify-content-center align-items-center sombra-buttoms"
-                                            (click)="disableUser(user)"
-                                            title="Deshabilitar usuario"
-                                            type="button">
-                                            <i class="fa fa-ban fa-3x text-white"></i>
-                                        </button>
+                                    <!-- Si usuario está habilitado → mostrar botón deshabilitar -->
+                                    <button *ngIf="user.enabled"
+                                        class="nav-link mx-1 btn btn-cicle-sheet btn-danger sombra-buttoms"
+                                        (click)="disableUser(user)">
+                                        <i class="fa fa-ban fa-3x text-white"></i>
+                                    </button>
 
+                                    <!-- Si usuario está deshabilitado → mostrar botón activar -->
+                                    <button *ngIf="!user.enabled"
+                                        class="nav-link mx-1 btn btn-cicle-sheet btn-success sombra-buttoms"
+                                        (click)="enableUser(user)">
+                                        <i class="fa fa-check fa-3x text-white"></i>
+                                    </button>
 
                                 </div>
                             </td>

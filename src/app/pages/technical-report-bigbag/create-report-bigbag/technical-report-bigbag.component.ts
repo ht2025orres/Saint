@@ -153,7 +153,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
       lastName: this.authService.user.lastName,
       email: 'juan.perez@example.com',
       password: '',
-      enable: true,
+      enabled: true,
       roles: [],
       id_Sdp: this.authService.user.id_Sdp,
       nombre_departamento_Sdp: this.authService.user.nombre_departamento_Sdp ?? '',

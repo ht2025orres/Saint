@@ -3,14 +3,14 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false,
+    production: false,
     // URL_LOGIN : 'http://localhost:8080',
     // URL_ERP_INTEGRATION : 'http://localhost:9001',
     // URL_TECHNICAL_DATA_SHEET : 'http://localhost:9000'
-    URL_REPORT_TECHNICAL_DATA_SHEETS : 'https://providenciacfi.com/api_technical_data_sheet_service.php',
-    URL_LOGIN : 'https://lb.protejer.com',
-    URL_ERP_INTEGRATION : 'https://lb.protejer.com',
-    URL_TECHNICAL_DATA_SHEET : 'https://lb.protejer.com',
+    URL_REPORT_TECHNICAL_DATA_SHEETS: 'https://providenciacfi.com/api_technical_data_sheet_service.php',
+    URL_LOGIN: 'https://lb.protejer.com',
+    URL_ERP_INTEGRATION: 'https://lb.protejer.com',
+    URL_TECHNICAL_DATA_SHEET: 'https://lb.protejer.com',
     URL_C_PANEL: 'https://colegioprovidencia.edu.co/Sdp',
     URL_API_LARAVEL: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
     URL_API_LARAVEL_LOCAL: 'http://127.0.0.1:8000/api'

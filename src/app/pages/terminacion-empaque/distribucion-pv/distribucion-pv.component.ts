@@ -103,7 +103,7 @@ export class DistribucionPvComponent implements OnInit {
           verificado: (Number(i.cantidad_asignada) || 0) <= (Number(i.cantidad_verificada) || 0) // Comparación numérica real
         }));
 
-      console.log('Items para verificación:', this.itemsVerificacion);
+      // console.log('Items para verificación:', this.itemsVerificacion);
 
       // Reinicializar filtros
       this.verFilters = {
@@ -327,7 +327,7 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
         .listarPVsPorOPDesdeApiLaravel(op)
         .toPromise();
 
-      console.log('PVs para OP', op, pvsResp);
+      // console.log('PVs para OP', op, pvsResp);
 
       // ✅ Normalizar siempre string y obtener clientes
       let cadenaPVs = '';
@@ -364,7 +364,7 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
         this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(op)
       );
       
-      console.log('Items pendientes para OP', op, tieneItemsPendientes['data']);
+      // console.log('Items pendientes para OP', op, tieneItemsPendientes['data']);
 
       // ✅ NUEVO: Verificar disponibilidad para cada PV individualmente
       if (numerosPV.length > 0) {
@@ -411,11 +411,11 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
       ? b.tieneDisponibles.data === true ? 1 : 0
       : b.tieneDisponibles === true ? 1 : 0;
 
-    console.log('Comparando:', a.codigo, dispoA, 'vs', b.codigo, dispoB);
+    // console.log('Comparando:', a.codigo, dispoA, 'vs', b.codigo, dispoB);
     return dispoB - dispoA;
   });
 
-  console.log('OPs con PVs:', this.opsConPvs);
+  // console.log('OPs con PVs:', this.opsConPvs);
 
   // ✅ Inicializar paginación
   this.inicializarPaginacion();
@@ -436,44 +436,47 @@ private async verificarDisponibilidadPorPV(op: number, pvs: any[]): Promise<void
         this.terminacionEmpaqueService.listarItemsDePVDesdeApiLaravel(pv.numero_pv, op)
       );
       
-      console.log(`Items cargados para PV ${pv.numero_pv}:`, items);
+      // console.log(`Items cargados para PV ${pv.numero_pv}:`, items);
 
       // ✅ Verificar si hay al menos un item con disponibilidad
       const tieneDisponibles = items.some((item: any) => {
         const cantidadAsignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
+        const cantidadTeorica = parseFloat(String(item.cantidad || 0)) || 0;
+        
+        // 🔹 NUEVO: Si ya completó su cantidad teórica, no está disponible
+        if (cantidadAsignada >= cantidadTeorica) {
+          return false;
+        }
         
         // ✅ Calcular cantidad en empaque según la nueva lógica
         let cantidadEmpaque = 0;
         
         if (Array.isArray(item.ubicaciones_distintas) && item.ubicaciones_distintas.length > 0) {
-          // ✅ CON ubicaciones distintas: buscar específicamente empaque
           const ubicacionEmpaque = item.ubicaciones_distintas.find(
             u => u.ubicacion?.toLowerCase().includes('empaque')
           );
           if (ubicacionEmpaque) {
             cantidadEmpaque = parseFloat(String(ubicacionEmpaque.cantidad || 0)) || 0;
           }
-          // Si no hay ubicación empaque en el array, cantidadEmpaque queda en 0
         } else {
-          // ✅ SIN ubicaciones distintas: toda la cantidad_recibida_total está en empaque
           cantidadEmpaque = parseFloat(String(item.cantidad_recibida_total || 0)) || 0;
         }
 
         const disponible = cantidadEmpaque - cantidadAsignada;
         
-        console.log(`Item ${item.f120_id}-${item.id_color}-${item.id_talla}:`, {
-          cantidadEmpaque,
-          cantidadAsignada,
-          disponible,
-          tieneUbicacionesDistintas: Array.isArray(item.ubicaciones_distintas) && item.ubicaciones_distintas.length > 0,
-          cantidadRecibidaTotal: item.cantidad_recibida_total
-        });
+        // console.log(`Item ${item.f120_id}-${item.id_color}-${item.id_talla}:`, {
+        //   cantidadEmpaque,
+        //   cantidadAsignada,
+        //   cantidadTeorica,
+        //   disponible,
+        //   completoTeorico: cantidadAsignada >= cantidadTeorica
+        // });
 
         return disponible > 0;
       });
 
       pv.tieneDisponibles = tieneDisponibles;
-      console.log(`PV ${pv.numero_pv} - Tiene disponibles:`, tieneDisponibles);
+      // console.log(`PV ${pv.numero_pv} - Tiene disponibles:`, tieneDisponibles);
 
     } catch (error) {
       console.error(`Error verificando disponibilidad para PV ${pv.numero_pv}:`, error);
@@ -482,6 +485,15 @@ private async verificarDisponibilidadPorPV(op: number, pvs: any[]): Promise<void
   });
 
   await Promise.all(peticiones);
+}
+
+/**
+ * Verifica si un item ya completó su cantidad teórica
+ */
+itemCompletoTeorico(item: any): boolean {
+  const cantidadAsignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
+  const cantidadTeorica = parseFloat(String(item.cantidad || 0)) || 0;
+  return cantidadAsignada >= cantidadTeorica;
 }
 
 /**
@@ -512,7 +524,7 @@ private async preCargarAsignacionesPendientes(op: number, pvs: any[]): Promise<v
         const pvIndex = pvs.findIndex(p => p.numero_pv === pvResultado.numero_pv);
         if (pvIndex !== -1) {
           pvs[pvIndex].tieneAsignaciones = tieneAsignacionesSinVerificar;
-          console.log(`PV ${pvResultado.numero_pv} - Asignaciones pendientes:`, tieneAsignacionesSinVerificar);
+          // console.log(`PV ${pvResultado.numero_pv} - Asignaciones pendientes:`, tieneAsignacionesSinVerificar);
         }
       });
     }
@@ -593,7 +605,7 @@ private async verificarAsignacionesPendientesOP(op: number, pvs: any[]): Promise
       const pvIndex = pvs.findIndex(p => p.numero_pv === pvResultado.numero_pv);
       if (pvIndex !== -1) {
         pvs[pvIndex].tieneAsignaciones = tieneAsignacionesSinVerificar;
-        console.log(`PV ${pvResultado.numero_pv} - Asignaciones pendientes:`, tieneAsignacionesSinVerificar);
+        // console.log(`PV ${pvResultado.numero_pv} - Asignaciones pendientes:`, tieneAsignacionesSinVerificar);
       }
     });
 
@@ -853,7 +865,8 @@ private ordenarPVs(op: any): void {
    */
   tienePVsConAsignacionesPendientes(op: any): boolean {
     if (!op.pvsOriginal || !Array.isArray(op.pvsOriginal)) return false;
-    // console.log('Verificando asignaciones pendientes para OP', op.codigo, op.pvsOriginal, (op.pvsOriginal.some(pv => pv.tieneAsignaciones === true)));
+    // console.log('Verificando asignaciones pendientes para OP', op.codigo, op.pvsOriginal, !(op.pvsOriginal.some(pv => pv.tieneAsignaciones === true)));
+    // console.log(op);
     return op.pvsOriginal.some(pv => pv.tieneAsignaciones === true);
   }
 
@@ -998,53 +1011,48 @@ private ordenarPVs(op: any): void {
    * -------------------- */
   esCantidadValida(item: any): boolean {
     const asignar = Number(item.cantidad_a_asignar) || 0;
+
+    // No es válido si no hay cantidad
     if (asignar <= 0) return false;
 
-    const limiteTeorico = Number(item.cantidad) || 0;
-    // disponible = lo recibido menos lo ya asignado en esta PV
-    const disponible = Math.max(0, (Number(item.cantidad_recibida) || 0) - (Number(item.cantidad_asignada) || 0));
+    const max = this.getMaximoPermitido(item);
 
-    return asignar <= limiteTeorico && asignar <= disponible;
+    return asignar <= max;
   }
 
-  excedeTeorica(item: any): boolean {
-    const asignar = Number(item.cantidad_a_asignar) || 0;
-    const limiteTeorico = Number(item.cantidad) || 0;
-    return asignar > limiteTeorico;
-  }
+  // excedeTeorica(item: any): boolean {
+  //   const asignar = Number(item.cantidad_a_asignar) || 0;
+  //   const limiteTeorico = Number(item.cantidad) || 0;
+  //   return asignar > limiteTeorico;
+  // }
 
-  excedeDisponible(item: any): boolean {
-    const asignar = Number(item.cantidad_a_asignar) || 0;
-    const disponible = Math.max(0, (Number(item.cantidad_recibida) || 0) - (Number(item.cantidad_asignada) || 0));
-    return asignar > disponible;
-  }
+  // excedeDisponible(item: any): boolean {
+  //   const asignar = Number(item.cantidad_a_asignar) || 0;
+  //   const disponible = Math.max(0, (Number(item.cantidad_recibida) || 0) - (Number(item.cantidad_asignada) || 0));
+  //   return asignar > disponible;
+  // }
 
   /**
    * Calcula la cantidad disponible para un item
    * Toma en cuenta que no se debe asignar más de lo que requiere (item.cantidad).
    */
   getCantidadDisponible(item: any): number {
-    let cantidadEmpaque = 0;
 
-    // ✅ Misma lógica que en verificarDisponibilidadPorPV
-    if (Array.isArray(item.ubicaciones_distintas) && item.ubicaciones_distintas.length > 0) {
-      // ✅ CON ubicaciones distintas: buscar específicamente empaque
-      const enEmpaque = item.ubicaciones_distintas.find((u: any) => 
-        u.ubicacion?.toLowerCase().includes('empaque')
-      );
-      if (enEmpaque) {
-        cantidadEmpaque = parseFloat(String(enEmpaque.cantidad || 0));
-      }
-      // Si no hay ubicación empaque, cantidadEmpaque queda en 0
-    } else {
-      // ✅ SIN ubicaciones distintas: toda la cantidad_recibida_total está en empaque
-      cantidadEmpaque = parseFloat(String(item.cantidad_recibida_total || 0));
+    // Si el backend ya trae cantidad_disponible_real, úsala directamente
+    if (item.cantidad_disponible_real !== undefined) {
+
+      const disponible = parseFloat(String(item.cantidad_disponible_real || 0));
+
+      // Si está en negativo por alguna inconsistencia, corregir
+      return disponible > 0 ? disponible : 0;
     }
 
-    const cantidadAsignada = parseFloat(String(item.cantidad_asignada || 0));
-    const disponible = cantidadEmpaque - cantidadAsignada;
+    // fallback por si el backend no lo trae
+    const teorico = parseFloat(String(item.cantidad || 0));
+    const asignadoTotal = parseFloat(String(item.cantidad_asignada_total || 0));
+    const disponibleFallback = teorico - asignadoTotal;
 
-    return disponible > 0 ? disponible : 0;
+    return disponibleFallback > 0 ? disponibleFallback : 0;
   }
 
   /**
@@ -1065,7 +1073,40 @@ private ordenarPVs(op: any): void {
    * Calcula el máximo permitido para un item
    */
   getMaximoPermitido(item: any): number {
-    return Math.min(item.cantidad || 0, this.getCantidadDisponible(item));
+
+    const teorica = item.cantidad ?? 0;                           // Lo que la PV requiere
+    const yaAsignado = item.cantidad_asignada ?? 0;               // Asignado previamente
+    const recibidaTotal = item.cantidad_recibida_total ?? 0;      // Lo recibido en OP
+    const enEmpaque = item.cantidad_en_empaque ?? 0;              // Si tienes empaque
+    const disponible = this.getCantidadDisponible(item) ?? 0;     // Disponible real OP
+
+    // 1. Cantidad que falta por asignar según la PV
+    const faltantePV = Math.max(teorica - yaAsignado, 0);
+
+    // 2. Cantidad realmente utilizable de la OP
+    const utilDisponible = Math.max(disponible - enEmpaque, 0);
+
+    console.log('Cálculo máximo permitido para item', item.f120_id, {
+      teorica,
+      yaAsignado,
+      recibidaTotal,
+      enEmpaque,
+      disponible,
+      faltantePV,
+      utilDisponible
+    });
+
+    console.log('Máximo permitido será el mínimo de:', {
+      faltantePV,
+      utilDisponible,
+      teorica,
+      disponible
+    });
+
+    console.log('Máximo permitido:', Math.min(faltantePV, utilDisponible, teorica, disponible));
+
+    // 3. El máximo permitido será el mínimo de todas las restricciones
+    return Math.min(faltantePV, utilDisponible, teorica, disponible);
   }
 
     /* -------------------
@@ -1094,16 +1135,41 @@ private ordenarPVs(op: any): void {
    */
   asignarMaximos(force = false): void {
     if (!this.items || !this.items.length) return;
+
     this.items.forEach(item => {
-      const disponible = this.getCantidadDisponible(item);
-      if (disponible <= 0) return;
-      if (force || !item.cantidad_a_asignar || Number(item.cantidad_a_asignar) === 0) {
-        item.cantidad_a_asignar = this.roundValue(this.getMaximoPermitido(item), 2);
-      } else {
-        // si ya tiene valor y no forzamos, lo dejamos
+
+      const maxPermitido = this.getMaximoPermitido(item);
+
+      // Si no hay nada que asignar → seguir
+      if (maxPermitido <= 0) {
+        item.cantidad_a_asignar = 0;
+        return;
       }
+
+      const valorActual = Number(item.cantidad_a_asignar) || 0;
+
+      // Si forzamos → siempre asigna máximo
+      if (force) {
+        item.cantidad_a_asignar = this.roundValue(maxPermitido, 2);
+        return;
+      }
+
+      // SI NO FORZAMOS:
+      // 1) si no tiene valor actual
+      if (valorActual === 0) {
+        item.cantidad_a_asignar = this.roundValue(maxPermitido, 2);
+        return;
+      }
+
+      // 2) si tiene valor pero es inválido → corregimos
+      if (valorActual < 0 || valorActual > maxPermitido || isNaN(valorActual)) {
+        item.cantidad_a_asignar = this.roundValue(maxPermitido, 2);
+        return;
+      }
+
+      // 3) si ya tiene un valor válido → lo dejamos como está
     });
-    // refrescar paginación/filtrado
+
     this.applyItemFilters();
   }
 
@@ -1112,12 +1178,64 @@ private ordenarPVs(op: any): void {
    * Por ahora NO hace POST a la API: solo genera y valida el payload en el servicio.
    */
   prepararYValidarAsignaciones(): void {
+    const errores: string[] = [];
+    const itemsInvalidos: any[] = [];
+
+    (this.items || []).forEach(item => {
+      const asignar = Number(item.cantidad_a_asignar) || 0;
+      const max = this.getMaximoPermitido(item);
+
+      if (asignar <= 0) return; // no lo validamos si no asigna nada
+
+      const erroresItem: string[] = [];
+
+      if (asignar > max) {
+        erroresItem.push(
+          `Cantidad a asignar (${asignar}) excede el máximo permitido (${max}).`
+        );
+      }
+
+      if (asignar > (item.cantidad || 0)) {
+        erroresItem.push(
+          `Excede la cantidad teórica (${item.cantidad}).`
+        );
+      }
+
+      if (asignar > this.getCantidadDisponible(item)) {
+        erroresItem.push(
+          `Excede la cantidad disponible (${this.getCantidadDisponible(item)}).`
+        );
+      }
+
+      if (asignar < 0) {
+        erroresItem.push(
+          `Cantidad negativa no permitida.`
+        );
+      }
+
+      if (erroresItem.length > 0) {
+        errores.push(
+          `<b>Item ${item.f120_id || item.referencia}:</b><br>• ${erroresItem.join('<br>• ')}`
+        );
+        itemsInvalidos.push(item);
+      }
+    });
+
+    // 👉 Mostrar errores si existen
+    if (errores.length > 0) {
+      Swal.fire({
+        title: 'Errores en asignaciones',
+        html: errores.join('<br><br>'),
+        icon: 'error',
+        width: 750
+      });
+      return;
+    }
+
+    // 👉 Si no hay errores, continuar como antes
     const itemsParaEnviar = (this.items || [])
       .filter(item => Number(item.cantidad_a_asignar) > 0)
-      .map(item => ({
-        ...item
-        // aquí puedes seleccionar solo los campos que necesites
-      }));
+      .map(item => ({ ...item }));
 
     if (itemsParaEnviar.length === 0) {
       Swal.fire('Atención', 'No hay ítems con cantidad a asignar.', 'warning');
@@ -1126,11 +1244,9 @@ private ordenarPVs(op: any): void {
 
     this.usuario_que_registra = this.AuthService.user.id;
 
-    // 🔹 Detectar si el usuario es "Distribuidor PV Directo"
     const esDistribuidorPvDirecto = this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)');
 
     if (esDistribuidorPvDirecto) {
-      // 👉 Flujo alternativo para Distribuidor PV Directo
       this.terminacionEmpaqueService
         .registrarAsignacionesDirecto(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
         .subscribe({
@@ -1138,14 +1254,12 @@ private ordenarPVs(op: any): void {
             Swal.fire('Éxito', res.message || 'Asignaciones registradas (Distribuidor PV Directo).', 'success')
               .then(() => window.location.reload());
           },
-          error: (err) => {
-            console.error('Error registrando asignaciones (Distribuidor PV Directo):', err);
+          error: () => {
             Swal.fire('Error', 'No se pudo registrar las asignaciones para Distribuidor PV Directo.', 'error');
           }
         });
 
     } else {
-      // 👉 Flujo normal para los demás usuarios
       this.terminacionEmpaqueService
         .registrarAsignaciones(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
         .subscribe({
@@ -1180,8 +1294,7 @@ private ordenarPVs(op: any): void {
               }
             }
           },
-          error: (err) => {
-            console.error('Error registrando asignaciones:', err);
+          error: () => {
             Swal.fire('Error', 'No se pudo registrar las asignaciones en el servicio.', 'error');
           }
         });

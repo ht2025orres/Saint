@@ -35,6 +35,7 @@ import { ContadoresComponent } from './pages/inventario/contadores/contadores.co
 import { GenerarHojaConteoComponent } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.component';
 import { HojasConteoListComponent } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.component';
 import { HojasConteoDetalleComponent } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.component';
+import { ContadorItemsComponent } from './pages/inventario/contador-items/contador-items.component';
 import { ReportCreateComponent } from './pages/report/report-create/report-create.component';
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
@@ -49,7 +50,7 @@ const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent, title: 'Inicio' },
       { path: 'createTechnicalDataSheet/:id/:operation', component: CreateTechnicalSheetComponent, title: 'Crear ficha técnica' },
       { path: 'viewTechnicalDataSheet/:id', component: ViewTechnicalSheetComponent, title: 'Ver ficha técnica' },
-      { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas'},
+      { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas' },
       { path: 'listTechnicalDataSheet/page/:page/:status', component: ListTechnicalSheetComponent, title: 'Listar fichas técnicas' },
       { path: 'users/page/:page', component: ListUserComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Listar usuarios' },
       { path: 'createUser/:id', component: CreateUserComponent, title: 'Crear usuario' },
@@ -74,7 +75,8 @@ const routes: Routes = [
       { path: 'contadores', component: ContadoresComponent, title: 'Contadores' },
       { path: 'generar-hoja-conteo', component: GenerarHojaConteoComponent, title: 'Generar hoja de conteo'},
       { path: 'hojas-conteo-list', component: HojasConteoListComponent, title: 'Listado hojas de conteo' },
-      { path: 'hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo' },      
+      { path: 'hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo' },   
+      { path: 'contador-items', component: ContadorItemsComponent, title: 'Contador de ítems' },   
       { path: 'create-report', component: ReportCreateComponent, title: 'Crear reporte'},
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes'},
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes'},

@@ -187,10 +187,19 @@
                 </button>
               </div>
 
-              <button *ngIf="hoja.estado !== 'FINALIZADO'" 
-                      class="btn btn-sm btn-success w-100 mt-2"
-                      (click)="finalizarHoja(hoja)">
-                <i class="bi bi-check-circle me-1"></i> Finalizar
+              <button *ngIf="puedeModificarEstado(hoja)" 
+                      class="btn btn-sm w-100 mt-2"
+                      [ngClass]="{
+                        'btn-primary': hoja.estado === 'BORRADOR',
+                        'btn-success': hoja.estado === 'PENDIENTE' || hoja.estado === 'EN_PROCESO'
+                      }"
+                      (click)="cambiarEstadoHoja(hoja)"
+                      [disabled]="procesando">
+                <i class="bi me-1" [ngClass]="{
+                  'bi-send': hoja.estado === 'BORRADOR',
+                  'bi-check-circle': hoja.estado === 'PENDIENTE' || hoja.estado === 'EN_PROCESO'
+                }"></i> 
+                {{ getTextoBotonEstado(hoja.estado) }}
               </button>
             </div>
 
@@ -382,7 +391,7 @@
                   <code>{{ item.codigo_item }}<span *ngIf="item.id_color">-{{ item.id_color }}</span><span *ngIf="item.id_talla">-{{ item.id_talla }}</span></code>
                 </td>
                 <td>
-                  <small>{{ item.descripcion }}</small>
+                  <small>{{ item.descripcion }}<span *ngIf="item.id_color"> - {{ item.id_color }}</span><span *ngIf="item.id_talla"> - {{ item.id_talla }}</span></small>
                 </td>
                 <td>
                   <span class="badge bg-info">{{ item.zona_nombre }}</span>
@@ -524,7 +533,7 @@
                   <code>{{ item.codigo_item }}</code>
                 </td>
                 <td>
-                  <small>{{ item.descripcion }}</small>
+                  <small>{{ item.descripcion }} - {{ item.color }} - {{ item.id_talla }}</small>
                 </td>
                 <td>
                   <span class="badge bg-info">{{ item.zona_nombre }}</span>

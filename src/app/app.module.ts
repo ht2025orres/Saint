@@ -54,6 +54,7 @@ import { ContadoresModule } from './pages/inventario/contadores/contadores.modul
 import { GenerarHojaConteoModule } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.module';
 import { HojasConteoListModule } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.module';
 import { HojasConteoDetalleModule } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
+import { ContadorItemsModule } from './pages/inventario/contador-items/contador-items.module';
 
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
@@ -61,7 +62,8 @@ import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashbo
 
 registerLocaleData(localeEs, 'es-CO');
 
-@NgModule({ declarations: [
+@NgModule({
+    declarations: [
         AppComponent,
         DashboardComponent,
         MetricCardComponent,
@@ -77,14 +79,14 @@ registerLocaleData(localeEs, 'es-CO');
         SignaturePadComponent,
         TechnicalReportBigbagComponent,
         ViewReportBigbagComponent,
-        DashboardBigbagComponent,        
+        DashboardBigbagComponent,
         ReportCreateComponent,
         ReportListComponent,
         MiReportListComponent,
         ReportDashboardComponent,
         AuthorizationManagerComponent,
     ],
-    bootstrap: [AppComponent], 
+    bootstrap: [AppComponent],
     imports: [
         BrowserModule,
         AppRoutingModule,
@@ -117,12 +119,14 @@ registerLocaleData(localeEs, 'es-CO');
         GenerarHojaConteoModule,
         HojasConteoListModule,
         HojasConteoDetalleModule,
-    ], 
+        ContadorItemsModule,
+    ],
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },
         { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi())
-    ] })
+    ]
+})
 export class AppModule { }

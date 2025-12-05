@@ -18,6 +18,7 @@ export class ReportCreateComponent {
     origen: 'calidad',
     tipo_reporte: 'ficha tecnica',
     op_reporte: '',
+    op_reporte: '',
     item: '',
     prenda: '',
     observacion: '',
@@ -29,7 +30,11 @@ export class ReportCreateComponent {
 
   customers: Customer[] = [];
   itemsOP: any[] = [];
+
+  customers: Customer[] = [];
+  itemsOP: any[] = [];
   selectedFile: File | null = null;
+  // loadingOP = false;
   // loadingOP = false;
 
   constructor(
@@ -226,7 +231,10 @@ export class ReportCreateComponent {
         next: (res) => {
           this.report.evidencia = res.url;
           this.guardarReporte();
+          this.report.evidencia = res.url;
+          this.guardarReporte();
         },
+        error: () => Swal.fire('Error', 'No se pudo subir la evidencia', 'error')
         error: () => Swal.fire('Error', 'No se pudo subir la evidencia', 'error')
       });
     } else {
@@ -237,13 +245,14 @@ export class ReportCreateComponent {
   private guardarReporte(): void {
     this.reportService.createReport(this.report).subscribe({
       next: () => {
-        Swal.fire('Éxito', 'Reporte creado correctamente', 'success');
-        this.resetForm();
-      },
-      error: (err) => {
-        Swal.fire('Error', err.error.message || 'No se pudo crear el reporte', 'error');
-      }
-    });
+        next: () => {
+          Swal.fire('Éxito', 'Reporte creado correctamente', 'success');
+          this.resetForm();
+        },
+          error: (err) => {
+            Swal.fire('Error', err.error.message || 'No se pudo crear el reporte', 'error');
+          }
+      });
   }
 
   private resetForm(): void {
@@ -251,6 +260,7 @@ export class ReportCreateComponent {
       id: 0,
       origen: 'calidad',
       tipo_reporte: 'ficha tecnica',
+      op_reporte: '',
       op_reporte: '',
       cliente: '',
       item: '',
@@ -262,6 +272,8 @@ export class ReportCreateComponent {
     };
 
     this.itemsOP = [];
+
+    this.itemsOP = [];
     this.selectedFile = null;
   }
 
@@ -271,19 +283,37 @@ export class ReportCreateComponent {
   searchCustomer(event: Event): void {
     const input = event.target as HTMLInputElement;
     const term = input.value.trim();
+    // ==========================
+    // BUSCAR CLIENTE MANUAL
+    // ==========================
+    searchCustomer(event: Event): void {
+      const input = event.target as HTMLInputElement;
+      const term = input.value.trim();
 
-    if (term.length > 2) {
+      if(term.length > 2) {
       this.erpIntegrationService.searchCustomer(term).subscribe({
         next: (resp) => this.customers = resp,
         error: () => (this.customers = [])
       });
     }
   }
-
-  assingCustomerValues(event: Event): void {
-    const name = (event.target as HTMLInputElement).value.trim();
-    const cliente = this.customers.find(c => c.customerName === name);
-    if (cliente) this.report.cliente = cliente.customerName;
+  if(term.length > 2) {
+  this.erpIntegrationService.searchCustomer(term).subscribe({
+    next: (resp) => this.customers = resp,
+    error: () => (this.customers = [])
+  });
+}
   }
+
+assingCustomerValues(event: Event): void {
+  const name = (event.target as HTMLInputElement).value.trim();
+  const cliente = this.customers.find(c => c.customerName === name);
+  if(cliente) this.report.cliente = cliente.customerName;
+}
+assingCustomerValues(event: Event): void {
+  const name = (event.target as HTMLInputElement).value.trim();
+  const cliente = this.customers.find(c => c.customerName === name);
+  if(cliente) this.report.cliente = cliente.customerName;
+}
 
 }

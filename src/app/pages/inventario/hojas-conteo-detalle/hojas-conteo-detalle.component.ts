@@ -13,6 +13,7 @@ import { forkJoin } from 'rxjs';
 export class HojasConteoDetalleComponent implements OnInit {
   
   isLoading = false;
+  procesando = false;
   hojaId: number;
   
   hoja: any = null;
@@ -20,6 +21,27 @@ export class HojasConteoDetalleComponent implements OnInit {
   contadores: any[] = [];
 
   lideres: any[] = [];
+
+  // Modales
+  modalVerItems = false;
+  modalCambiarLider = false;
+
+  // Items de hoja
+  itemsHoja: any[] = [];
+  itemsHojaFiltrados: any[] = [];
+  busquedaItemsModal = '';
+  cargandoItems = false;
+
+  // Cambio de líder
+  nuevoLiderId: number | null = null;
+
+  // Ordenamiento
+  ordenActual = {
+    campo: 'diferencia_costo',
+    direccion: 'desc'
+  };
+
+  Math = Math;
 
   constructor(
     private route: ActivatedRoute,
@@ -37,7 +59,6 @@ export class HojasConteoDetalleComponent implements OnInit {
       return;
     }
 
-    // Primero cargo líderes, luego los datos de la hoja
     this.cargarDatosMaestros();
   }
 
@@ -47,7 +68,7 @@ export class HojasConteoDetalleComponent implements OnInit {
     }).subscribe({
       next: ({ lideres }) => {
         this.lideres = lideres['data'] || [];
-        this.cargarDetalle(); // ahora sí cargo el detalle
+        this.cargarDetalle();
       },
       error: () => {
         Swal.fire('Error', 'Error cargando información de líderes', 'error');
@@ -67,7 +88,6 @@ export class HojasConteoDetalleComponent implements OnInit {
           this.estadisticas = data.estadisticas;
           this.contadores = data.contadores || [];
 
-          // Convertir id_lider → nombre
           this.cargarNombreLider();
         } else {
           Swal.fire('Error', res['message'] || 'No se pudo cargar el detalle', 'error');
@@ -124,17 +144,109 @@ export class HojasConteoDetalleComponent implements OnInit {
   }
 
   /** ===============================
-   *  ACCIONES
+   *  MODAL: VER ITEMS
    ================================ */
 
-  volver(): void {
-    this.router.navigate(['hojas-conteo-list']);
+  verItems(): void {
+    this.modalVerItems = true;
+    this.cargarItemsHoja();
   }
 
-  verItems(): void {
-    // Navegar a la vista de items o abrir modal
-    this.router.navigate(['hojas-conteo', this.hojaId, 'items']);
+  cargarItemsHoja(): void {
+    this.cargandoItems = true;
+
+    this.inventarioService.obtenerItemsHoja(this.hojaId).subscribe({
+      next: (res) => {
+        this.itemsHoja = (res['data'] || []).map(item => {
+          const existencia = parseFloat(item.existencia_siesa || 0);
+          const contada = parseFloat(item.cantidad_contada || 0);
+          const costoUnit = parseFloat(item.costo_prom_unitario_siesa || 0);
+          const costoTotal = parseFloat(item.costo_prom_total_siesa || 0);
+
+          const diferenciaUnidades = existencia - contada;
+          const diferenciaCosto = Math.abs(diferenciaUnidades * costoUnit);
+
+          return {
+            ...item,
+            diferencia_unidades: diferenciaUnidades,
+            diferencia_costo: diferenciaCosto,
+            costo_total: costoTotal
+          };
+        });
+
+        this.ordenarItems();
+        this.itemsHojaFiltrados = [...this.itemsHoja];
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudieron cargar los items', 'error');
+      },
+      complete: () => {
+        this.cargandoItems = false;
+      }
+    });
   }
+
+  ordenarItems(): void {
+    this.itemsHoja.sort((a, b) => {
+      const tieneDifA = Math.abs(a.diferencia_unidades) > 0;
+      const tieneDifB = Math.abs(b.diferencia_unidades) > 0;
+
+      if (tieneDifA && !tieneDifB) return -1;
+      if (!tieneDifA && tieneDifB) return 1;
+
+      if (tieneDifA && tieneDifB) {
+        return b.diferencia_costo - a.diferencia_costo;
+      }
+
+      return b.costo_total - a.costo_total;
+    });
+  }
+
+  cambiarOrden(campo: string): void {
+    if (this.ordenActual.campo === campo) {
+      this.ordenActual.direccion = this.ordenActual.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.ordenActual.campo = campo;
+      this.ordenActual.direccion = 'desc';
+    }
+
+    this.itemsHojaFiltrados.sort((a, b) => {
+      const valorA = a[campo] || 0;
+      const valorB = b[campo] || 0;
+      
+      if (this.ordenActual.direccion === 'asc') {
+        return valorA - valorB;
+      } else {
+        return valorB - valorA;
+      }
+    });
+  }
+
+  filtrarItemsModal(): void {
+    const busqueda = this.busquedaItemsModal.trim().toLowerCase();
+    
+    if (!busqueda) {
+      this.itemsHojaFiltrados = [...this.itemsHoja];
+      return;
+    }
+
+    this.itemsHojaFiltrados = this.itemsHoja.filter(item =>
+      (item.codigo_item || '').toLowerCase().includes(busqueda) ||
+      (item.descripcion || '').toLowerCase().includes(busqueda) ||
+      (item.zona_nombre || '').toLowerCase().includes(busqueda)
+    );
+  }
+
+  cerrarModalItems(): void {
+    this.modalVerItems = false;
+    this.itemsHoja = [];
+    this.itemsHojaFiltrados = [];
+    this.busquedaItemsModal = '';
+  }
+
+  /** ===============================
+   *  MODAL: CAMBIAR LÍDER
+   ================================ */
 
   cambiarLider(): void {
     if (this.hoja.estado === 'FINALIZADO') {
@@ -142,44 +254,55 @@ export class HojasConteoDetalleComponent implements OnInit {
       return;
     }
 
-    // Aquí puedes abrir un modal o navegar a otra vista
-    // Por ahora solo mostramos un ejemplo con SweetAlert
-    Swal.fire({
-      title: 'Cambiar Líder',
-      text: 'Funcionalidad para cambiar líder',
-      icon: 'info'
+    this.nuevoLiderId = this.hoja.id_lider;
+    this.modalCambiarLider = true;
+  }
+
+  confirmarCambioLider(): void {
+    if (!this.nuevoLiderId) {
+      Swal.fire('Atención', 'Debe seleccionar un líder', 'warning');
+      return;
+    }
+
+    if (this.nuevoLiderId === this.hoja.id_lider) {
+      Swal.fire('Atención', 'El líder seleccionado es el mismo actual', 'info');
+      return;
+    }
+
+    this.procesando = true;
+
+    const payload = {
+      id_lider: this.nuevoLiderId,
+      usuario_id: this.authService.user.id
+    };
+
+    this.inventarioService.cambiarLiderHoja(this.hojaId, payload).subscribe({
+      next: () => {
+        Swal.fire('¡Éxito!', 'Líder cambiado correctamente', 'success');
+        this.modalCambiarLider = false;
+        this.cargarDetalle();
+      },
+      error: (err) => {
+        Swal.fire('Error', err.error?.message || 'No se pudo cambiar el líder', 'error');
+      },
+      complete: () => {
+        this.procesando = false;
+      }
     });
   }
 
-  // exportarHoja(): void {
-  //   Swal.fire({
-  //     title: 'Exportando...',
-  //     text: 'Generando archivo de exportación',
-  //     allowOutsideClick: false,
-  //     didOpen: () => {
-  //       Swal.showLoading();
-  //     }
-  //   });
+  cerrarModalCambiarLider(): void {
+    this.modalCambiarLider = false;
+    this.nuevoLiderId = null;
+  }
 
-  //   this.inventarioService.exportarHojaConteo(this.hojaId).subscribe({
-  //     next: (blob) => {
-  //       const url = window.URL.createObjectURL(blob);
-  //       const a = document.createElement('a');
-  //       a.href = url;
-  //       a.download = `hoja_conteo_${this.hoja.codigo_hoja}.xlsx`;
-  //       a.click();
-  //       window.URL.revokeObjectURL(url);
-        
-  //       Swal.close();
-  //       Swal.fire('¡Éxito!', 'Archivo exportado correctamente', 'success');
-  //     },
-  //     error: (err) => {
-  //       console.error('Error exportando:', err);
-  //       Swal.fire('Error', 'No se pudo exportar la hoja', 'error');
-  //     }
-  //   });
-  //   console.log('Funcionalidad de exportar hoja aún no implementada');
-  // }
+  /** ===============================
+   *  ACCIONES
+   ================================ */
+
+  volver(): void {
+    this.router.navigate(['hojas-conteo-list']);
+  }
 
   finalizarHoja(): void {
     Swal.fire({
@@ -311,5 +434,15 @@ export class HojasConteoDetalleComponent implements OnInit {
       'RECONTEO3': 'Reconteo 3'
     };
     return labels[tipo] || tipo;
+  }
+
+  getEstadoItemClass(estado: string): string {
+    const classes: any = {
+      'PENDIENTE': 'bg-secondary',
+      'CONTADO': 'bg-success',
+      'VALIDADO': 'bg-primary',
+      'RECONTEO': 'bg-warning text-dark'
+    };
+    return classes[estado] || 'bg-secondary';
   }
 }
