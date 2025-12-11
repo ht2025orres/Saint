@@ -59,6 +59,8 @@ import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
 import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
 
+import { OrdenCompraModule } from './pages/comerciales/orden-compra/orden-compra.module';
+
 registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({ declarations: [
@@ -117,6 +119,8 @@ registerLocaleData(localeEs, 'es-CO');
         HojasConteoListModule,
         HojasConteoDetalleModule,
         ContadorItemsModule,
+        /* Comerciales */
+        OrdenCompraModule
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

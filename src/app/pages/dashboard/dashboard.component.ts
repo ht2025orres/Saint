@@ -5,6 +5,9 @@ import { InventarioService, BodegaSummary, ItemBodega } from 'src/app/services/i
 import { ProcessMetric } from 'src/app/models/process-metric.model';
 import { AuthService } from 'src/app/services/auth.service';
 import Chart, { ChartConfiguration } from 'chart.js/auto';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+Chart.register(ChartDataLabels);
 
 interface BillingData {
   totalPresupuesto: number;
@@ -318,15 +321,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(0,0,0,0.8)',
             padding: 12,
             callbacks: {
               label: (context) => `$${(context.parsed.y as number).toLocaleString('es-CO')}`
             }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            formatter: (value) => '$' + value.toLocaleString('es-CO'),
+            color: '#000',
+            font: { weight: 'bold', size: 11 }
           }
         },
         scales: {
@@ -378,6 +386,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
             callbacks: {
               label: (context) => `${context.label}: ${context.parsed} items`
             }
+          },
+          datalabels: {
+            color: '#fff',
+            font: { weight: 'bold', size: 13 },
+            formatter: (value) => value + ' items'
           }
         }
       }
@@ -715,10 +728,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
             backgroundColor: 'rgba(0,0,0,0.8)',
             padding: 12,
             callbacks: {
-              label: (context) => {
-                return `${context.dataset.label}: $${context.parsed.x.toLocaleString('es-CO')}`
-              }
+              label: (context) => `${context.dataset.label}: $${context.parsed.x.toLocaleString('es-CO')}`
             }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'right',
+            formatter: (value) => '$' + value.toLocaleString('es-CO'),
+            color: '#000',
+            font: { weight: 'bold', size: 10 }
           }
         },
         scales: {
@@ -773,10 +791,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
           },
           tooltip: {
             callbacks: {
-              label: (context) => {
-                return `${context.label}: ${context.parsed}%`
-              }
+              label: (context) => `${context.label}: ${context.parsed}%`
             }
+          },
+          datalabels: {
+            color: '#fff',
+            font: { weight: 'bold', size: 14 },
+            formatter: (value) => value.toFixed(1) + '%'
           }
         }
       }
@@ -819,15 +840,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         responsive: true,
         maintainAspectRatio: true,
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(0,0,0,0.8)',
             padding: 12,
             callbacks: {
               label: (context) => `${context.parsed.y.toFixed(2)}%`
             }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            formatter: (value) => value.toFixed(1) + '%',
+            color: '#000',
+            font: { weight: 'bold', size: 11 }
           }
         },
         scales: {
@@ -854,7 +880,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!ctx) return;
 
     const units = this.billingData.detalleUnidades;
-    
     const colors = units.map(u => u.diferencia >= 0 ? 'rgba(75, 192, 75, 0.8)' : 'rgba(255, 99, 99, 0.8)');
 
     const config: ChartConfiguration = {
@@ -875,15 +900,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         maintainAspectRatio: true,
         indexAxis: 'x',
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(0,0,0,0.8)',
             padding: 12,
             callbacks: {
               label: (context) => `$${(context.parsed.y as number).toLocaleString('es-CO')}`
             }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: (context) => (context.dataset.data as number[])[context.dataIndex] >= 0 ? 'top' : 'bottom',
+            formatter: (value) => '$' + (value as number).toLocaleString('es-CO'),
+            color: '#000',
+            font: { weight: 'bold', size: 10 }
           }
         },
         scales: {

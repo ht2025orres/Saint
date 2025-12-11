@@ -40,6 +40,7 @@ import { ReportCreateComponent } from './pages/report/report-create/report-creat
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
 import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
+import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-compra.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -49,7 +50,7 @@ const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent, title: 'Inicio' },
       { path: 'createTechnicalDataSheet/:id/:operation', component: CreateTechnicalSheetComponent, title: 'Crear ficha técnica' },
       { path: 'viewTechnicalDataSheet/:id', component: ViewTechnicalSheetComponent, title: 'Ver ficha técnica' },
-      { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas'},
+      { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas' },
       { path: 'listTechnicalDataSheet/page/:page/:status', component: ListTechnicalSheetComponent, title: 'Listar fichas técnicas' },
       { path: 'users/page/:page', component: ListUserComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Listar usuarios' },
       { path: 'createUser/:id', component: CreateUserComponent, title: 'Crear usuario' },
@@ -80,6 +81,7 @@ const routes: Routes = [
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes'},
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes'},
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
+      { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' }
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

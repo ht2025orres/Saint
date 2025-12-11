@@ -175,7 +175,21 @@
               </ul>
             </li>
 
-            <li *ngIf="authService.hasRole('Administrador del sistema')">
+            <li
+              *ngIf="authService.hasAnyRole([
+                'Administrador del sistema',
+                'Lider Aprobador (inconsistencias)',
+                'Matriz de Remplazo (inconsistencias)',
+                'Calidad (inconsistencias)',
+                'Contabilidad (inconsistencias)',
+                'Logistica (inconsistencias)',
+                'Trazo (inconsistencias)',
+                'Patronista (inconsistencias)',
+                'Solicitante (inconsistencias)',
+                'Revision Consumo (inconsistencias)',
+                'Cartera (inconsistencias)',
+                'Patronaje (inconsistencias)'
+              ])">
               <a
                 class="sidebar-link has-arrow waves-effect waves-dark"
                 href="javascript:void(0)"
@@ -194,32 +208,56 @@
                 <i class="bi bi-chevron-right arrow-icon"></i>
               </a>
               <ul aria-expanded="false" class="collapse sidebar-submenu">
-                <li>
+                <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Solicitante (inconsistencias)')">
                   <a class="sidebar-sublink" [routerLink]="['/mis-inconsistencias']" routerLinkActive="active">
                     Mis Inconsistencias
                   </a>
                 </li>
-                <li>
+                <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Solicitante (inconsistencias)')">
                   <a class="sidebar-sublink" [routerLink]="['/generar-inconsistencias']" routerLinkActive="active">
                     Generar Inconsistencias
                   </a>
                 </li>
-                <li>
+                <li
+                  *ngIf="authService.hasAnyRole([
+                    'Administrador del sistema',
+                    'Lider Aprobador (inconsistencias)',
+                    'Matriz de Remplazo (inconsistencias)',
+                    'Calidad (inconsistencias)',
+                    'Contabilidad (inconsistencias)',
+                    'Logistica (inconsistencias)',
+                    'Trazo (inconsistencias)',
+                    'Patronista (inconsistencias)',
+                    'Cartera (inconsistencias)',
+                    'Patronaje (inconsistencias)'
+                  ])">
                   <a class="sidebar-sublink" [routerLink]="['/aprobar-inconsistencias']" routerLinkActive="active">
                     Aprobar Inconsistencias
                   </a>
                 </li>
-                <li>
+                <li
+                  *ngIf="authService.hasAnyRole([
+                    'Administrador del sistema',
+                    'Lider Aprobador (inconsistencias)',
+                    'Matriz de Remplazo (inconsistencias)',
+                    'Calidad (inconsistencias)',
+                    'Contabilidad (inconsistencias)',
+                    'Logistica (inconsistencias)',
+                    'Trazo (inconsistencias)',
+                    'Patronista (inconsistencias)',
+                    'Cartera (inconsistencias)',
+                    'Patronaje (inconsistencias)'
+                  ])">
                   <a class="sidebar-sublink" [routerLink]="['/historico-inconsistencias']" routerLinkActive="active">
                     Histórico Inconsistencias
                   </a>
                 </li>
-                <li>
+                <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Revision Consumo (inconsistencias)')">
                   <a class="sidebar-sublink" [routerLink]="['/revision-consumo']" routerLinkActive="active">
                     Revisión de Consumo
                   </a>
                 </li>
-                <li>
+                <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Calidad (inconsistencias)') || authService.hasRole('Consulta KPIs Facturación')">
                   <a class="sidebar-sublink" [routerLink]="['/reporte-inconsistencias']" routerLinkActive="active">
                     Reporte de Inconsistencias
                   </a>
@@ -395,6 +433,14 @@
                   </a>
                 </li>
               </ul>
+            </li>
+            <li *ngIf="authService.hasRole('Administrador del sistema')">
+              <a class="sidebar-link waves-effect waves-dark"
+                [routerLink]="['/orden-compra']"
+                routerLinkActive="active">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="hide-menu saint-menu-label">Órdenes</span>
+              </a>
             </li>
           </ul>
         </nav>

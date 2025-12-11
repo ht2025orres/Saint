@@ -1,0 +1,554 @@
+<div class="min-h-screen bg-gray-50 p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Órdenes de Compra</h1>
+      <p class="text-gray-600">Gestión y seguimiento de órdenes de compra de clientes</p>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="isLoading" class="bg-white rounded-lg shadow p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <p class="mt-4 text-gray-600">Cargando órdenes...</p>
+    </div>
+
+    <!-- Contenido principal -->
+    <div *ngIf="!isLoading">
+      <!-- Barra de acciones y filtros -->
+      <div class="bg-white rounded-lg shadow mb-6 p-4">
+        <div class="flex flex-col md:flex-row gap-4">
+          <!-- Búsqueda -->
+          <div class="flex-1">
+            <input 
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Buscar por número de orden o cliente..."
+              [(ngModel)]="filters.busqueda"
+              (input)="applyFilters()">
+          </div>
+
+          <!-- Filtro estado -->
+          <div class="w-full md:w-48">
+            <select 
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              [(ngModel)]="filters.estado"
+              (change)="applyFilters()">
+              <option value="">Todos los estados</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="EN_PROCESO">En Proceso</option>
+              <option value="COMPLETADA">Completada</option>
+            </select>
+          </div>
+
+          <!-- Toggle búsqueda exacta -->
+          <div class="flex items-center gap-2">
+            <input 
+              type="checkbox"
+              id="exacta"
+              class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              [(ngModel)]="filters.busquedaExacta"
+              (change)="applyFilters()">
+            <label for="exacta" class="text-sm text-gray-700 cursor-pointer whitespace-nowrap">
+              Búsqueda exacta
+            </label>
+          </div>
+
+          <!-- Botón nueva orden -->
+          <button 
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+            (click)="abrirModalUpload()">
+            <i class="bi bi-plus-circle mr-2"></i>
+            Nueva Orden
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de órdenes -->
+      <div *ngIf="currentOrdenes?.length > 0; else sinOrdenes" class="space-y-4">
+        <div *ngFor="let orden of currentOrdenes" 
+             class="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
+          <div class="flex flex-col md:flex-row md:items-center gap-4">
+            <!-- Info principal -->
+            <div class="flex-1">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">{{ orden.numero_orden }}</h3>
+                  <p class="text-sm text-gray-600">{{ orden.cliente }}</p>
+                </div>
+                <span 
+                  class="px-3 py-1 rounded-full text-xs font-medium"
+                  [ngClass]="getEstadoBadgeClass(orden.estado)">
+                  {{ getEstadoTexto(orden.estado) }}
+                </span>
+              </div>
+
+              <!-- Métricas -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Fecha Recepción</p>
+                  <p class="font-medium text-gray-900">{{ orden.fecha_recepcion | date:'dd/MM/yyyy' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Productos</p>
+                  <p class="font-medium text-gray-900">{{ orden.total_productos }} tipos</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Total Items</p>
+                  <p class="font-medium text-gray-900">{{ orden.total_items }} unidades</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Valor Total</p>
+                  <p class="font-medium text-gray-900">{{ orden.valor_total | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex md:flex-col gap-2">
+              <button class="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium">
+                <i class="bi bi-eye mr-1"></i>
+                Ver Detalle
+              </button>
+              <button 
+                *ngIf="orden.archivo_url"
+                class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                <i class="bi bi-download mr-1"></i>
+                Documento
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info y paginación -->
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-center mb-4">
+            <p class="text-sm text-gray-600">
+              Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalOrdenes }} órdenes
+            </p>
+          </div>
+
+          <app-shared-paginator
+            *ngIf="paginationService.getPaginatorState(paginatorId)"
+            [instanceId]="paginatorId"
+            [showPageSizeSelector]="true"
+            [pageSizeOptions]="[10, 25, 50]">
+          </app-shared-paginator>
+        </div>
+      </div>
+
+      <!-- Sin órdenes -->
+      <ng-template #sinOrdenes>
+        <div class="bg-white rounded-lg shadow p-12 text-center">
+          <i class="bi bi-inbox text-6xl text-gray-300"></i>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">No hay órdenes</h3>
+          <p class="mt-2 text-gray-600">
+            <span *ngIf="filters.busqueda || filters.estado; else mensajeInicial">
+              No se encontraron órdenes con los filtros aplicados
+            </span>
+            <ng-template #mensajeInicial>
+              Comienza subiendo una nueva orden de compra
+            </ng-template>
+          </p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL 1: CARGAR DOCUMENTO ========== -->
+<div *ngIf="mostrarModalUpload" 
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- Header con stepper -->
+    <div class="border-b border-gray-200 p-6">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Cargar Documento</h2>
+      
+      <!-- Stepper -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+            <i class="bi bi-check"></i>
+          </div>
+          <span class="text-xs mt-2 text-purple-600 font-medium">Cargar Documento</span>
+        </div>
+        <div class="flex-1 h-1 bg-gray-200"></div>
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">
+            2
+          </div>
+          <span class="text-xs mt-2 text-gray-500">Procesar Documento</span>
+        </div>
+        <div class="flex-1 h-1 bg-gray-200"></div>
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">
+            3
+          </div>
+          <span class="text-xs mt-2 text-gray-500">Resumen Final</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Paso 1: Cargar Documento</h3>
+
+      <!-- Selector de cliente -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Cliente *
+        </label>
+        <select 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          [(ngModel)]="clienteSeleccionado">
+          <option value="">-- Seleccione un cliente --</option>
+          <option *ngFor="let cliente of clientes" [value]="cliente.id">
+            {{ cliente.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Drag & drop area -->
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-500 transition-colors">
+        <input 
+          type="file"
+          id="fileUpload"
+          class="hidden"
+          accept=".pdf,.jpg,.jpeg,.png"
+          (change)="onFileSelected($event)">
+        
+        <label for="fileUpload" class="cursor-pointer">
+          <div class="mb-4">
+            <i class="bi bi-cloud-upload text-5xl text-gray-400"></i>
+          </div>
+          <p class="text-gray-600 mb-2">
+            <span *ngIf="!archivoSeleccionado">
+              Arrastre y suelte su documento aquí o haga clic para seleccionar un archivo.
+            </span>
+            <span *ngIf="archivoSeleccionado" class="text-purple-600 font-medium">
+              <i class="bi bi-file-earmark-check mr-2"></i>
+              {{ archivoSeleccionado.name }}
+            </span>
+          </p>
+          <p class="text-sm text-gray-500">
+            Formatos soportados: PDF, JPG, PNG. Tamaño máximo: 25MB.
+          </p>
+        </label>
+      </div>
+
+      <!-- Info adicional -->
+      <div class="mt-4 flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
+        <i class="bi bi-info-circle text-blue-600 mt-0.5"></i>
+        <p class="text-sm text-blue-800">
+          Asegúrese de que el documento esté legible y contenga la información completa de la orden de compra.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 p-6 flex justify-end gap-3">
+      <button 
+        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        (click)="cerrarModalUpload()"
+        [disabled]="isProcesando">
+        Cancelar
+      </button>
+      <button 
+        class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+        (click)="procesarDocumento()"
+        [disabled]="!archivoSeleccionado || !clienteSeleccionado || isProcesando">
+        <span *ngIf="!isProcesando">
+          Procesar Documento
+        </span>
+        <span *ngIf="isProcesando" class="flex items-center gap-2">
+          <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+          Procesando...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL 2: PROCESAR DOCUMENTO ========== -->
+<div *ngIf="mostrarModalProcesar" 
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- Header con stepper -->
+    <div class="border-b border-gray-200 p-6">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Procesar Documento</h2>
+      
+      <!-- Stepper -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+            <i class="bi bi-check"></i>
+          </div>
+          <span class="text-xs mt-2 text-purple-600 font-medium">Cargar Documento</span>
+        </div>
+        <div class="flex-1 h-1 bg-purple-600"></div>
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+            2
+          </div>
+          <span class="text-xs mt-2 text-purple-600 font-medium">Procesar Documento</span>
+        </div>
+        <div class="flex-1 h-1 bg-gray-200"></div>
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-semibold">
+            3
+          </div>
+          <span class="text-xs mt-2 text-gray-500">Resumen Final</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Paso 2: Procesar Documento</h3>
+
+      <!-- Alerta éxito -->
+      <div class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-3">
+        <i class="bi bi-check-circle text-purple-600 text-xl mt-0.5"></i>
+        <p class="text-purple-800 text-sm">
+          Documento procesado exitosamente. Se encontraron los siguientes datos:
+        </p>
+      </div>
+
+      <!-- Información general -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+          <input 
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+            [(ngModel)]="datosDocumento.cliente"
+            readonly>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de llegada de la orden de compra</label>
+          <input 
+            type="date"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            [(ngModel)]="datosDocumento.fechaLlegada">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Número de Orden</label>
+          <input 
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            [(ngModel)]="datosDocumento.numeroOrden">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Total de Productos</label>
+          <input 
+            type="number"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+            [value]="datosDocumento.totalProductos"
+            readonly>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Total Estimado</label>
+          <input 
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+            [value]="datosDocumento.totalEstimado | currency:'COP':'symbol-narrow':'1.0-0'"
+            readonly>
+        </div>
+      </div>
+
+      <!-- Productos detectados -->
+      <div class="mb-6">
+        <h4 class="text-md font-semibold text-gray-900 mb-3">Productos Detectados</h4>
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Código
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Producto
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Cantidad
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let producto of productosDetectados" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {{ producto.codigo }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  {{ producto.producto }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ producto.cantidad }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 p-6 flex justify-between">
+      <button 
+        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        (click)="volverAUpload()">
+        Volver
+      </button>
+      <button 
+        class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        (click)="confirmarOrden()">
+        Continuar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL 3: RESUMEN FINAL ========== -->
+<div *ngIf="mostrarModalResumen && ordenCreada" 
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- Header con stepper -->
+    <div class="border-b border-gray-200 p-6">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Procesar Orden de Compra</h2>
+      
+      <!-- Stepper -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+            <i class="bi bi-check"></i>
+          </div>
+          <span class="text-xs mt-2 text-purple-600 font-medium">Cargar Documento</span>
+        </div>
+        <div class="flex-1 h-1 bg-purple-600"></div>
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+            <i class="bi bi-check"></i>
+          </div>
+          <span class="text-xs mt-2 text-purple-600 font-medium">Procesar Documento</span>
+        </div>
+        <div class="flex-1 h-1 bg-purple-600"></div>
+        <div class="flex flex-col items-center flex-1">
+          <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+            3
+          </div>
+          <span class="text-xs mt-2 text-purple-600 font-medium">Resumen Final</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Paso 3: Resumen Final</h3>
+
+      <!-- Alerta éxito -->
+      <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+        <i class="bi bi-check-circle text-green-600 text-xl mt-0.5"></i>
+        <p class="text-green-800 text-sm">
+          Orden de compra registrada exitosamente. Resumen completo:
+        </p>
+      </div>
+
+      <!-- Información General -->
+      <div class="mb-6">
+        <h4 class="text-md font-semibold text-gray-900 mb-3">Información General</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Número de Orden</p>
+            <p class="font-semibold text-gray-900">{{ ordenCreada.numero_orden }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Cliente</p>
+            <p class="font-semibold text-gray-900">{{ ordenCreada.cliente }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Fecha de Recepción</p>
+            <p class="font-semibold text-gray-900">{{ ordenCreada.fecha_recepcion | date:'dd/MM/yyyy' }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Total de Productos</p>
+            <p class="font-semibold text-gray-900">{{ ordenCreada.total_productos }} tipos</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Total de Items</p>
+            <p class="font-semibold text-gray-900">{{ ordenCreada.total_items }} unidades</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Valor Total</p>
+            <p class="font-semibold text-gray-900">{{ ordenCreada.valor_total | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle de Productos (si está disponible) -->
+      <div class="mb-6" *ngIf="productosDetectados?.length > 0">
+        <h4 class="text-md font-semibold text-gray-900 mb-3">Detalle de Productos</h4>
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Código
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Producto
+                </th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Cantidad
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let producto of productosDetectados" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {{ producto.codigo }}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  {{ producto.producto }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                  {{ producto.cantidad }}
+                </td>
+              </tr>
+              <tr class="bg-gray-50 font-semibold">
+                <td colspan="2" class="px-6 py-4 text-sm text-gray-900 text-right">
+                  Total Items:
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900 text-right">
+                  {{ ordenCreada.total_items }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 p-6 flex justify-between gap-3">
+      <button 
+        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        (click)="cerrarModalResumen()">
+        Volver
+      </button>
+      <div class="flex gap-3">
+        <button 
+          class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          (click)="verOrdenCompleta()">
+          Ver Orden Completa
+        </button>
+        <button 
+          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          (click)="finalizarYGuardar()">
+          Finalizar y Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -154,10 +154,11 @@ export class TerminacionEmpaqueService {
   /**
    * Asigna una PV a un empacador usando la API Laravel
    */
-  asignarPVAEmpacador(empacadorId: string, pvCodigo: string): Observable<any> {
+  asignarPVAEmpacador(empacadorId: string, pvCodigo: string, usuario: number): Observable<any> {
     return this.http.post<any>(`${this.apiLaravelUrl}/empacadores/asignar-pv`, {
       empacador_id: empacadorId,
-      pv_codigo: pvCodigo
+      pv_codigo: pvCodigo,
+      usuario: usuario
     });
   }
 

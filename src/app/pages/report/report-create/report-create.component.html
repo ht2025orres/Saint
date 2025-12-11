@@ -1,6 +1,9 @@
-<div class="container ">
+<div class="container">
   <h3>Crear Reporte</h3>
+
   <form (ngSubmit)="crearReporte()" class="mt-3">
+    
+    <!-- ORIGEN + TIPO REPORTE -->
     <div class="row">
       <div class="col-md-6">
         <label>Origen</label>
@@ -19,53 +22,104 @@
       </div>
     </div>
 
+    <!-- OP -->
     <div class="row mt-3">
       <div class="col-md-6">
-    
+        <label>OP</label>
+        <input type="text"
+              [(ngModel)]="report.op_reporte"
+              name="op_reporte"
+              class="form-control"
+              placeholder="Ingrese la OP"
+              required
+              (blur)="buscarOP()" />
+      </div>
+
+      <!-- CLIENTE (desde la búsqueda manual o desde la OP) -->
+      <div class="col-md-6">
         <label>Cliente</label>
-            <input
-                type="text"
-                list="clientes"
-                class="form-control"
-                id="cliente"
-                name="cliente"
-                [(ngModel)]="report.cliente"
-                autocomplete="off"
-                placeholder="Buscar cliente..."
-                (keyup)="searchCustomer($event)"
-                (change)="assingCustomerValues($event)"
-                required 
-            />
 
-            <datalist id="clientes">
-                <option *ngFor="let customer of customers" [value]="customer.customerName"></option>
-            </datalist>
+        <input type="text"
+               list="clientesOP"
+               class="form-control"
+               id="cliente"
+               name="cliente"
+               [(ngModel)]="report.cliente"
+               autocomplete="off"
+               placeholder="Buscar cliente..."
+               (keyup)="searchCustomer($event)"
+               (change)="assingCustomerValues($event)"
+               required />
+
+        <datalist id="clientesOP">
+          <!-- CLIENTES DE LA OP -->
+          <option *ngFor="let it of itemsOP" [value]="it.cliente"></option>
+
+          <!-- CLIENTES BUSCADOS MANUALMENTE -->
+          <option *ngFor="let customer of customers" 
+                  [value]="customer.customerName">
+          </option>
+        </datalist>
       </div>
 
-      <div class="col-md-6">
+      <!-- ITEM -->
+      <div class="col-md-6 mt-3">
         <label>Item</label>
-        <input type="text" [(ngModel)]="report.item" name="item" class="form-control" required />
+
+        <input list="itemsList"
+               type="text"
+               [(ngModel)]="report.item"
+               name="item"
+               class="form-control"
+               placeholder="Seleccione o escriba un item"
+               required
+               (change)="asignarItemDesdeLista($event)" />
+
+        <datalist id="itemsList">
+          <option *ngFor="let it of itemsOP"
+                  [value]="it.codigo_item">
+            {{ it.descripcion }} - {{ it.cliente }}
+          </option>
+        </datalist>
       </div>
 
-      <div class="col-md-6">
+      <!-- PRENDA -->
+      <div class="col-md-6 mt-3">
         <label>Prenda</label>
-        <input type="text" [(ngModel)]="report.prenda" name="prenda" class="form-control" required />
+
+        <input list="prendasList"
+               type="text"
+               [(ngModel)]="report.prenda"
+               name="prenda"
+               class="form-control"
+               placeholder="Seleccione o escriba una prenda"
+               required />
+
+        <datalist id="prendasList">
+          <option *ngFor="let it of itemsOP"
+                  [value]="it.descripcion">
+          </option>
+        </datalist>
       </div>
     </div>
 
+    <!-- OBSERVACIÓN -->
     <div class="mt-3">
       <label>Observación</label>
       <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control"></textarea>
     </div>
 
-    <div class="mb-3">
-        <label for="evidencia" class="form-label">Evidencia (opcional)</label>
-        <input type="file" class="form-control" (change)="onFileSelected($event)" name="evidencia" />
-        <small class="text-muted">Puedes subir imagen, PDF o Word. No es obligatorio.</small>
+    <!-- ARCHIVOS -->
+    <div class="mb-3 mt-3">
+      <label for="evidencia" class="form-label">Evidencia (opcional)</label>
+      <input type="file" class="form-control" (change)="onFileSelected($event)" name="evidencia" />
+      <small class="text-muted">Puedes subir imagen, PDF o Word. No es obligatorio.</small>
     </div>
 
+    <!-- BOTÓN -->
     <div class="text-end mt-4">
       <button type="submit" class="btn btn-primary">Crear Reporte</button>
     </div>
+
   </form>
 </div>
