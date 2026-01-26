@@ -315,4 +315,33 @@ export class TerminacionEmpaqueService {
       items: items
     });
   }
+
+  eliminarRegistroEmpaque(numeroEmpaque: string, idItem: string, idTalla: string): Observable<any> {
+    const data = { id_item: idItem, id_talla: idTalla };
+    return this.http.delete<any>(
+      `${this.apiLaravelUrl}/empaque/eliminar/${numeroEmpaque}`,
+      { body: data }
+    );
+  }
+
+  eliminarEmpaqueCompleto(numeroEmpaque: string): Observable<any> {
+    return this.http.delete<any>(
+      `${this.apiLaravelUrl}/empaque/eliminar-completo/${numeroEmpaque}`
+    );
+  }
+
+  actualizarEmpaqueCompleto(datos: any): Observable<any> {
+    return this.http.put<any>(`${this.apiLaravelUrl}/empaque/actualizar`, datos);
+  }
+
+  getMovimientosPorPV(pvCodigo: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiLaravelUrl}/empaque/movimientos-por-pv`,
+      { pv_codigo: pvCodigo }
+    );
+  }
+
+  getHistorialMovimientos(filtrosHistorial: any): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/empaque/historial-movimientos`);
+  }
 }

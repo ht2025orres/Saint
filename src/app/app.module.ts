@@ -60,6 +60,8 @@ import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-
 import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
 
 import { OrdenCompraModule } from './pages/comerciales/orden-compra/orden-compra.module';
+import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.module';
+import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
 
 registerLocaleData(localeEs, 'es-CO');
 
@@ -83,7 +85,7 @@ registerLocaleData(localeEs, 'es-CO');
         ReportCreateComponent,
         ReportListComponent,
         MiReportListComponent,
-        ReportDashboardComponent,
+        ReportDashboardComponent
     ],
     bootstrap: [AppComponent], 
     imports: [
@@ -120,7 +122,10 @@ registerLocaleData(localeEs, 'es-CO');
         HojasConteoDetalleModule,
         ContadorItemsModule,
         /* Comerciales */
-        OrdenCompraModule
+        OrdenCompraModule,
+        TiemposItemsModule,
+        /* Planeacion */
+        PlaneacionModule
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

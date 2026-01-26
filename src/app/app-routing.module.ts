@@ -41,6 +41,8 @@ import { ReportListComponent } from './pages/report/report-list/report-list.comp
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
 import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
 import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-compra.component';
+import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-items.component';
+import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -81,7 +83,9 @@ const routes: Routes = [
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes'},
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes'},
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
-      { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' }
+      { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' },
+      { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
+      { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' }
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

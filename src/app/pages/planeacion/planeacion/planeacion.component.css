@@ -1,0 +1,63 @@
+/* Estilos para checkboxes personalizados */
+.custom-checkbox {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.custom-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.custom-checkbox-label {
+  position: relative;
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  /* border: 2px solid #d1d5db; */
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox-label:hover {
+  border-color: #9ca3af;
+}
+
+.custom-checkbox-input:checked + .custom-checkbox-label {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.custom-checkbox-input:focus + .custom-checkbox-label {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+.custom-checkbox-input:checked + .custom-checkbox-label::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid transparent;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Sobrescribir específicamente los estilos globales para nuestros checkboxes */
+.custom-checkbox [type="checkbox"] + label:before,
+.custom-checkbox [type="checkbox"]:not(.filled-in) + label:after {
+  border-radius: 4px !important;
+}
+
+/* Si el CSS global usa [type=checkbox] sin clase, también lo sobrescribimos */
+.custom-checkbox input[type="checkbox"] + label::before,
+.custom-checkbox input[type="checkbox"] + label::after {
+  border-radius: 4px !important;
+}

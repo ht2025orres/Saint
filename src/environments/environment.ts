@@ -9,7 +9,7 @@ export const environment = {
     // URL_TECHNICAL_DATA_SHEET : 'http://localhost:9000'
     URL_REPORT_TECHNICAL_DATA_SHEETS : 'https://providenciacfi.com/api_technical_data_sheet_service.php',
     URL_LOGIN : 'https://lb.protejer.com',
-    URL_ERP_INTEGRATION : 'https://lb.protejer.com',
+    // URL_ERP_INTEGRATION : 'https://lb.protejer.com',
     URL_TECHNICAL_DATA_SHEET : 'https://lb.protejer.com',
     URL_C_PANEL: 'https://colegioprovidencia.edu.co/Sdp',
     // URL_API_LARAVEL: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',

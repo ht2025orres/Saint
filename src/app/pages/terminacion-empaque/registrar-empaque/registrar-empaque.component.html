@@ -83,7 +83,7 @@
       </span>
     </h5>
   </div>
-  <div class="modal-body">
+  <div class="modal-body" style="overflow-y: auto;">
     <input
       type="text"
       class="form-control mb-3"
@@ -137,7 +137,7 @@
       </span>
     </h5>
   </div>
-  <div class="modal-body">
+  <div class="modal-body" style="overflow-y: auto;">
     <input
       type="text"
       class="form-control mb-3"
@@ -231,7 +231,7 @@
   <div class="modal-header">
     <h5 class="modal-title">Empaques - PV {{ pvSeleccionada?.pv_codigo ?? '' }}</h5>
   </div>
-  <div class="modal-body">
+  <div class="modal-body" style="overflow-y: auto;">
 
     <!-- Barra de búsqueda -->
     <div class="mb-3">
@@ -269,17 +269,24 @@
               </td>
               <td class="fw-bold">{{ empaque.numero_empaque }}</td>
               <td>{{ empaque.tipo_empaque }}</td>
-              <td>
+              <!-- <td>
                 <span class="badge bg-info">{{ empaque.items?.length || 0 }} items</span>
-              </td>
+              </td> -->
               <td>
+                <span class="badge bg-info">{{ contarItemsUnicos(empaque) }} items</span>
+              </td>
+              <!-- <td>
                 <div class="btn-group btn-group-sm">
                   <button class="btn btn-outline-success" (click)="generarQR(empaque)">
                     <i class="bi bi-qr-code"></i> QR
                   </button>
-                  <!-- <button class="btn btn-outline-info" (click)="imprimirEtiqueta(empaque)">
-                    <i class="bi bi-printer"></i> Etiqueta
-                  </button> -->
+                </div>
+              </td> -->
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-success" (click)="generarEtiquetaTexto(empaque)">
+                    <i class="bi bi-tag"></i> Etiqueta
+                  </button>
                 </div>
               </td>
             </tr>
@@ -376,8 +383,104 @@
   </div>
   <div class="modal-footer">
     <button class="btn btn-secondary" (click)="modal.close()">Cerrar</button>
-    <button class="btn btn-primary" (click)="descargarQR()"> <i class="bi bi-download"></i> Descargar</button>
-    <button class="btn btn-success" (click)="imprimirQR()"> <i class="bi bi-printer"></i> Imprimir</button>
+    <!-- <button class="btn btn-primary" (click)="descargarQR()"> <i class="bi bi-download"></i> Descargar</button>
+    <button class="btn btn-success" (click)="imprimirQR()"> <i class="bi bi-printer"></i> Imprimir</button> -->
+  </div>
+</ng-template>
+
+<ng-template #etiquetaTemplate let-modal>
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+      <i class="bi bi-tag-fill me-2"></i>Etiqueta de Empaque
+    </h5>
+    <button type="button" class="btn-close btn-close-white" (click)="modal.close()"></button>
+  </div>
+  <div class="modal-body">
+    <div id="etiquetaContenido" class="border p-4 bg-light rounded">
+      <!-- Encabezado -->
+      <div class="text-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="text-start">
+            <h6 class="mb-1"><strong>OP:</strong> {{ etiquetaData.op }}</h6>
+            <h6 class="mb-1"><strong>PV:</strong> {{ etiquetaData.pv }}</h6>
+            <h6 class="mb-1"><strong>OC:</strong> {{ etiquetaData.oc }}</h6>
+          </div>
+          <div class="text-end">
+            <h4 class="mb-0 text-primary">Numero empaque: {{ etiquetaData.numero_empaque }}</h4>
+            <span class="badge bg-primary">Tipo empaque: {{ etiquetaData.tipo_empaque }}</span>
+          </div>
+        </div>
+        
+        <div class="border-top border-bottom py-2 mb-3">
+          <h5 class="mb-0">{{ etiquetaData.cliente }}</h5>
+        </div>
+      </div>
+
+      <!-- Información del empaque -->
+      <div class="row mb-3">
+        <div class="col-6">
+          <p class="mb-1"><strong>Empacador:</strong></p>
+          <p class="mb-0">{{ etiquetaData.empacador }}</p>
+        </div>
+        <div class="col-6 text-end">
+          <p class="mb-1"><strong>Fecha:</strong></p>
+          <p class="mb-0">{{ fechaActual | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+      </div>
+
+      <!-- Tabla de items -->
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th width="15%">Item</th>
+              <th>Descripción</th>
+              <th width="15%">Talla</th>
+              <th width="15%">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of etiquetaData.items">
+              <td class="fw-bold">{{ item.item_id }}</td>
+              <td>{{ item.descripcion }}</td>
+              <td>{{ item.talla }}</td>
+              <td class="text-center"><span class="badge bg-success">{{ item.cantidad }}</span></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="text-end fw-bold">Total Items:</td>
+              <td class="text-center fw-bold">{{ calcularTotalItems() }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Código de barras simulado -->
+      <!-- <div class="text-center mt-3">
+        <div class="d-inline-block border p-2 bg-white">
+          <div class="barcode-text mb-1">*{{ etiquetaData.numero_empaque }}*</div>
+          <div class="barcode-lines">
+            <div class="barcode-line" style="width: 40px;"></div>
+            <div class="barcode-line" style="width: 20px;"></div>
+            <div class="barcode-line" style="width: 60px;"></div>
+            <div class="barcode-line" style="width: 30px;"></div>
+          </div>
+          <small class="text-muted">Código: {{ etiquetaData.numero_empaque }}</small>
+        </div>
+      </div> -->
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline-secondary" (click)="modal.close()">
+      <i class="bi bi-x-lg"></i> Cerrar
+    </button>
+    <button class="btn btn-outline-primary" (click)="descargarEtiquetaImagen()">
+      <i class="bi bi-download"></i> Descargar Imagen
+    </button>
+    <button class="btn btn-success" (click)="imprimirEtiqueta()">
+      <i class="bi bi-printer"></i> Imprimir
+    </button>
   </div>
 </ng-template>
 </div>

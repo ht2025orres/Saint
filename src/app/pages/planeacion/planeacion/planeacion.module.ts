@@ -1,22 +1,16 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DashboardEmpaqueComponent } from './dashboard-empaque.component';
 import { FormsModule } from '@angular/forms';
-import { NgChartsModule } from 'ng2-charts';
 import { SharedModule } from 'src/app/shared/shared.module';
-
-
+import { PlaneacionComponent } from './planeacion.component';
 
 @NgModule({
-  declarations: [DashboardEmpaqueComponent],
+  declarations: [PlaneacionComponent],
   imports: [
     CommonModule,
     FormsModule,
-    NgChartsModule,
     SharedModule
   ],
-  exports: [
-    DashboardEmpaqueComponent
-  ]
+  exports: [PlaneacionComponent]
 })
-export class DashboardEmpaqueModule { }
+export class PlaneacionModule { }

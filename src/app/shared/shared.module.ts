@@ -20,7 +20,7 @@ import { PaginationService } from './pagination/pagination.service';
         HeaderComponent,
         LoadingComponent,
         AutoExpandDirective,
-        SharedPaginatorComponent
+        SharedPaginatorComponent,
     ],
     exports: [
         FooterComponent,
@@ -29,7 +29,7 @@ import { PaginationService } from './pagination/pagination.service';
         HeaderComponent,
         LoadingComponent,
         AutoExpandDirective,
-        SharedPaginatorComponent
+        SharedPaginatorComponent,
     ],
     imports: [
         CommonModule,

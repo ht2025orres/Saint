@@ -5,6 +5,12 @@ import { SidebarService } from '../../services/sidebar.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
+interface SubmenuItem {
+  label: string;
+  link: string;
+  roles?: string[]; // Roles permitidos para esta opción
+}
+
 @Component({
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
@@ -18,7 +24,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   userRole = '';
   userInitials = '';
 
-  hoveredSubmenu: any[] | null = null;
+  hoveredSubmenu: SubmenuItem[] | null = null;
   floatPanelTop = 0;
   floatCloseTimeout: any;
 
@@ -32,14 +38,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private renderer: Renderer2
   ) {
-    
     this.checkMobile();
     
     if (!this.isMobile) {
       const saved = localStorage.getItem('sidebarCollapsed');
       this.isCollapsed = saved ? JSON.parse(saved) : true;
       
-      // Aplicar clase ANTES de que Angular renderice
       if (this.isCollapsed) {
         this.renderer.addClass(document.body, 'mini-sidebar');
       } else {
@@ -74,17 +78,43 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  openFloatPanel(submenu: any[], event: MouseEvent) {
-    if (!this.isCollapsed) return;
+  /**
+   * Abre el panel flotante filtrando por roles
+   */
+  openFloatPanel(submenu: SubmenuItem[], event: MouseEvent) {
+    if (!this.isCollapsed || this.isMobile) return;
 
     clearTimeout(this.floatCloseTimeout);
-    this.hoveredSubmenu = submenu;
+    
+    // Filtrar opciones según roles del usuario
+    this.hoveredSubmenu = this.filterSubmenuByRoles(submenu);
+    
+    // Solo mostrar si hay al menos una opción visible
+    if (this.hoveredSubmenu.length === 0) {
+      this.hoveredSubmenu = null;
+      return;
+    }
 
     const target = event.target as HTMLElement;
     const rect = target.closest('.sidebar-link')?.getBoundingClientRect();
     if (rect) {
       this.floatPanelTop = rect.top;
     }
+  }
+
+  /**
+   * Filtra las opciones del submenú según los roles del usuario
+   */
+  private filterSubmenuByRoles(submenu: SubmenuItem[]): SubmenuItem[] {
+    return submenu.filter(item => {
+      // Si no tiene roles definidos, es visible para todos
+      if (!item.roles || item.roles.length === 0) {
+        return true;
+      }
+      
+      // Verificar si el usuario tiene alguno de los roles requeridos
+      return this.authService.hasAnyRole(item.roles);
+    });
   }
 
   closeFloatPanel() {
@@ -95,6 +125,14 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
   keepFloatPanelOpen() {
     clearTimeout(this.floatCloseTimeout);
+  }
+
+  /**
+   * Verifica si una opción debe mostrarse según roles
+   */
+  canShowMenuItem(roles?: string[]): boolean {
+    if (!roles || roles.length === 0) return true;
+    return this.authService.hasAnyRole(roles);
   }
   
   private updateActiveParentStates(): void {

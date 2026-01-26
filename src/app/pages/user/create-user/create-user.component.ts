@@ -37,7 +37,8 @@ export class CreateUserComponent implements OnInit {
         { name: 'terminacion', displayName: 'Terminación de Empaque' },
         { name: 'almacen', displayName: 'Almacén' },
         { name: 'ficha', displayName: 'Ficha Tecnicas' },
-        { name: 'sistema', displayName: 'Sistema' }
+        { name: 'sistema', displayName: 'Sistema' },
+        { name: 'ocs', displayName: 'Gestion de OCs' }
 
     ];
 
@@ -92,7 +93,11 @@ export class CreateUserComponent implements OnInit {
         'aprobacion ficha tecnica (segunda revision)': 'ficha',
         'calidad ficha tecnica': 'ficha',
         'reporte ficha tecnica': 'ficha',
-        'gestor reporte ficha tecnica': 'ficha'
+        'gestor reporte ficha tecnica': 'ficha',
+
+        // Gestion de OCs
+        'cargar ocs': 'ocs',
+        'procesar ocs': 'ocs'
         
     };
 
