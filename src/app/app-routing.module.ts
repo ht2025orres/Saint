@@ -43,6 +43,7 @@ import { ReportDashboardComponent } from './pages/report/report-dashboard/report
 import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-compra.component';
 import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-items.component';
 import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
+import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -85,7 +86,8 @@ const routes: Routes = [
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
       { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' },
       { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
-      { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' }
+      { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
+      { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' }
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

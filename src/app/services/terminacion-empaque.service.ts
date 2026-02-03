@@ -135,6 +135,11 @@ export class TerminacionEmpaqueService {
     });
   }
 
+  // En terminacion-empaque.service.ts
+  obtenerItemsConUbicacionesDistintas(opCodigo: number): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/op/${opCodigo}/ubicaciones-distintas`);
+  }
+
   /**
    * Obtiene lista de PVs pendientes desde la API Laravel
    */
@@ -332,6 +337,14 @@ export class TerminacionEmpaqueService {
 
   actualizarEmpaqueCompleto(datos: any): Observable<any> {
     return this.http.put<any>(`${this.apiLaravelUrl}/empaque/actualizar`, datos);
+  }
+
+  actualizarCampoEmpaque(datos: any): Observable<any> {
+    return this.http.patch<any>(`${this.apiLaravelUrl}/empaque/campo`, datos);
+  }
+
+  actualizarCantidadItem(datos: any): Observable<any> {
+    return this.http.patch<any>(`${this.apiLaravelUrl}/empaque/item/cantidad`, datos);
   }
 
   getMovimientosPorPV(pvCodigo: string): Observable<any> {

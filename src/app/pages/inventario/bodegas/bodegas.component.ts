@@ -393,4 +393,9 @@ export class BodegasComponent implements OnInit {
     if (!zonas || zonas.length === 0) return 'Sin zona';
     return zonas.map(z => z.nombre).join(', ');
   }
+
+  obtenerDescripcionZona(zonaId: number): string {
+    const zona = this.zonas.find(z => z.id === zonaId);
+    return zona ? zona.descripcion : '';
+  }
 }

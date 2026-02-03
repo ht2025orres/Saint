@@ -63,6 +63,8 @@ import { OrdenCompraModule } from './pages/comerciales/orden-compra/orden-compra
 import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.module';
 import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
 
+import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
+
 registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({ declarations: [
@@ -125,7 +127,9 @@ registerLocaleData(localeEs, 'es-CO');
         OrdenCompraModule,
         TiemposItemsModule,
         /* Planeacion */
-        PlaneacionModule
+        PlaneacionModule,
+        /* Financiero */
+        CentrosCostosModule
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

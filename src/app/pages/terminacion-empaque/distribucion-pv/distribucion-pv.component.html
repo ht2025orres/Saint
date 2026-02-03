@@ -2,13 +2,23 @@
 <div class="container py-4">
   <h2 class="mb-4 display-6">Distribución de Ítems</h2>
 
-  <!-- Barra de búsqueda -->
-  <div class="mb-3" *ngIf="opsConPvs?.length > 0">
-    <input type="text"
-           class="form-control"
-           placeholder="Buscar por código de OP..."
-           [(ngModel)]="filters.busqueda"
-           (input)="applyFilters()">
+  <!-- Barra de búsqueda y botón ubicaciones -->
+  <div class="row mb-3" *ngIf="opsConPvs?.length > 0">
+    <div class="col-md-9">
+      <input type="text"
+             class="form-control"
+             placeholder="Buscar por código de OP..."
+             [(ngModel)]="filters.busqueda"
+             (input)="applyFilters()">
+    </div>
+    <div class="col-md-3">
+      <button 
+        type="button" 
+        class="btn btn-info w-100"
+        (click)="abrirModalUbicacionesDistintas()">
+        <i class="bi bi-box-arrow-in-right"></i> Ver Ubicaciones Distintas
+      </button>
+    </div>
   </div>
 
   <div *ngIf="currentOps?.length > 0; else cargandoOps">
@@ -250,7 +260,7 @@
                   <td>{{ item.cantidad | number:'1.2-2' }}</td>
                   <td>
                     <!-- Número grande → disponible para esta PV -->
-                    {{ (item.cantidad_recibida - item.cantidad_asignada_otros) | number:'1.2-2' }}
+                    {{ (item.cantidad_asignada_total - item.cantidad_asignada_otros) | number:'1.2-2' }}
                     <!-- Paréntesis → total recibido -->
                     <div *ngIf="item.cantidad_recibida_total > 0"
                         style="font-size: 0.70em; opacity: 0.55; line-height: 1;">
@@ -368,18 +378,20 @@
           <!-- Botón "Asignar" (prepara/valida en el servicio) -->
           <button type="button" 
                   class="btn btn-success"
-                  [disabled]="!tieneItemsValidosParaGuardar()"
+                  [disabled]="!tieneItemsValidosParaGuardar() || guardandoAsignacion"
                   (click)="prepararYValidarAsignaciones()"
                   *ngIf="!tieneRolEmpacadores()">
-            Asignar
+            <span *ngIf="!guardandoAsignacion">Asignar</span>
+            <span *ngIf="guardandoAsignacion">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Guardando...
+            </span>
           </button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- Agregar este modal DESPUÉS del modal de items en distribucion-pv.component.html -->
 
 <!-- Modal Verificación de Asignaciones -->
 <div class="modal fade" id="verificacionModal" tabindex="-1" aria-labelledby="verificacionModalLabel" aria-hidden="true">
@@ -461,7 +473,6 @@
                       [(ngModel)]="item.cantidad_fisica"
                       min="0"
                       [max]="item.cantidad_asignada"
-                      [disabled]="item.verificado"
                       style="width: 100px;">
                   </td>
                   <td [ngClass]="{
@@ -475,7 +486,6 @@
                       class="form-control form-control-sm" 
                       rows="2"
                       [(ngModel)]="item.nota_inconsistencia"
-                      [disabled]="item.verificado"
                       placeholder="Nota de inconsistencia..."
                       style="min-width: 200px;"></textarea>
                   </td>
@@ -538,14 +548,199 @@
         </div>
         <div>
           <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cerrar</button>
-          <button 
-            type="button" 
-            class="btn btn-primary"
-            [disabled]="!todosVerificados()"
-            (click)="confirmarVerificacion()">
-            <i class="bi bi-save"></i> Confirmar Verificación
+          <button type="button" 
+                  class="btn btn-primary"
+                  [disabled]="getItemsVerificados() === 0 || guardandoVerificacion"
+                  (click)="confirmarVerificacion()">
+            <span *ngIf="!guardandoVerificacion">
+              <i class="bi bi-save"></i> Confirmar Verificación
+            </span>
+            <span *ngIf="guardandoVerificacion">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Guardando...
+            </span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ubicaciones Distintas -->
+<div class="modal fade" id="ubicacionesDistintasModal" tabindex="-1" aria-labelledby="ubicacionesDistintasModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="ubicacionesDistintasModalLabel">
+          Ubicaciones Distintas
+        </h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Input para buscar OP -->
+        <div class="row mb-3">
+          <div class="col-md-8">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Ingrese número de OP..."
+                   [(ngModel)]="opBuscadaUbicaciones"
+                   (keyup.enter)="buscarUbicacionesPorOP()">
+          </div>
+          <div class="col-md-4">
+            <button 
+              type="button" 
+              class="btn btn-primary w-100"
+              (click)="buscarUbicacionesPorOP()"
+              [disabled]="cargandoUbicaciones">
+              <span *ngIf="!cargandoUbicaciones">
+                <i class="bi bi-search"></i> Buscar
+              </span>
+              <span *ngIf="cargandoUbicaciones">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Buscando...
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtros (solo visible si hay resultados) -->
+        <div class="row mb-3" *ngIf="itemsUbicacionesDistintas?.length > 0">
+          <div class="col-md-8">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Buscar por descripción, item, color, talla, ubicación..."
+                   [(ngModel)]="ubicDistFilters.busqueda"
+                   (input)="applyUbicDistFilters()">
+          </div>
+          <div class="col-md-4">
+            <select class="form-select" [(ngModel)]="ubicDistFilters.ubicacion" (change)="applyUbicDistFilters()">
+              <option value="">Todas las ubicaciones</option>
+              <option value="Bordado">Bordado</option>
+              <option value="Estampado">Estampado</option>
+              <option value="Terminacion">Terminación</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="cargandoUbicaciones" class="text-center my-4">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2">Cargando ubicaciones...</p>
+        </div>
+
+        <div *ngIf="!cargandoUbicaciones && currentUbicDistItems?.length > 0; else sinUbicaciones">
+          <div class="mb-3">
+            <small class="text-muted">
+              Mostrando {{ currentUbicDistItems.length }} de {{ itemsUbicacionesDistintas.length }} registros
+              <span *ngIf="opBuscadaUbicaciones"> - OP: <strong>{{ opBuscadaUbicaciones }}</strong></span>
+            </small>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>Item</th>
+                  <th>Descripción</th>
+                  <th>Talla</th>
+                  <th>Color</th>
+                  <th>Ubicación Actual</th>
+                  <th>Cantidad</th>
+                  <th>Comentario</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of currentUbicDistItems">
+                  <td>{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}</td>
+                  <td>{{ item.descripcion_corta }}</td>
+                  <td>{{ item.id_talla }}</td>
+                  <td>{{ item.id_color }}</td>
+                  <td>
+                    <span class="badge" 
+                          [class.bg-warning]="item.ubicacion === 'Bordado'"
+                          [class.bg-info]="item.ubicacion === 'Estampado'"
+                          [class.bg-success]="item.ubicacion === 'Terminacion'">
+                      {{ item.ubicacion }}
+                    </span>
+                  </td>
+                  <td>{{ item.cantidad | number:'1.2-2' }}</td>
+                  <td>{{ item.comentario || 'Sin comentario' }}</td>
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                              type="button" 
+                              data-bs-toggle="dropdown"
+                              [disabled]="guardandoCambioUbicacion">
+                        Cambiar a
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <button 
+                            class="dropdown-item"
+                            [class.disabled]="item.ubicacion === 'Empaque'"
+                            (click)="cambiarUbicacionItem(item, 'Empaque')">
+                            Empaque
+                          </button>
+                        </li>
+                        <li>
+                          <button 
+                            class="dropdown-item"
+                            [class.disabled]="item.ubicacion === 'Terminacion'"
+                            (click)="cambiarUbicacionItem(item, 'Terminacion')">
+                            Terminación
+                          </button>
+                        </li>
+                        <li>
+                          <button 
+                            class="dropdown-item"
+                            [class.disabled]="item.ubicacion === 'Bordado'"
+                            (click)="cambiarUbicacionItem(item, 'Bordado')">
+                            Bordado
+                          </button>
+                        </li>
+                        <li>
+                          <button 
+                            class="dropdown-item"
+                            [class.disabled]="item.ubicacion === 'Estampado'"
+                            (click)="cambiarUbicacionItem(item, 'Estampado')">
+                            Estampado
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <app-shared-paginator
+            *ngIf="paginationService.getPaginatorState(ubicDistPaginatorId)"
+            [instanceId]="ubicDistPaginatorId"
+            [showPageSizeSelector]="true"
+            [pageSizeOptions]="[10, 25, 50]">
+          </app-shared-paginator>
+        </div>
+
+        <ng-template #sinUbicaciones>
+          <div class="alert alert-info" *ngIf="!cargandoUbicaciones && opBuscadaUbicaciones">
+            <span *ngIf="ubicDistFilters.busqueda || ubicDistFilters.ubicacion; else noUbicAll">
+              No se encontraron registros con los filtros aplicados.
+            </span>
+            <ng-template #noUbicAll>
+              No hay items con ubicaciones distintas a Empaque para la OP {{ opBuscadaUbicaciones }}.
+            </ng-template>
+          </div>
+          <div class="alert alert-secondary" *ngIf="!cargandoUbicaciones && !opBuscadaUbicaciones">
+            <i class="bi bi-info-circle"></i> Ingrese un número de OP y presione "Buscar" para ver las ubicaciones distintas.
+          </div>
+        </ng-template>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>

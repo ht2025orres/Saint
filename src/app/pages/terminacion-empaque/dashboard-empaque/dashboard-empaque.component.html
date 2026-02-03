@@ -589,7 +589,7 @@
 </div>
 
 <!-- MODAL: Editar Empaque -->
-<ng-template #modalEditarEmpaque let-modal>
+<!-- <ng-template #modalEditarEmpaque let-modal>
   <div class="modal-header bg-primary text-white">
     <h5 class="modal-title">
       <i class="bi bi-pencil-square me-2"></i>Editar Empaque
@@ -667,7 +667,7 @@
       <i class="bi bi-check-lg"></i> Guardar Cambios
     </button>
   </div>
-</ng-template>
+</ng-template> -->
 
 <ng-template #modalMovimientos let-modal>
   <div class="modal-header bg-info text-white">
@@ -830,7 +830,7 @@
       </div>
       <div class="modal-body">
         <div *ngIf="selectedItem">
-          Información básica en dos columnas
+          <!-- Información básica en dos columnas -->
           <div class="row mb-4">
             <div class="col-md-6" *ngFor="let detail of getSelectedItemInfo().details.slice(0, Math.ceil(getSelectedItemInfo().details.length/2))">
               <p><strong>{{ detail.label }}:</strong> {{ detail.value }}</p>
@@ -840,7 +840,7 @@
             </div>
           </div>
 
-          <!-- <!Contenido específico para OPs -> -->
+          <!-- Contenido específico para OPs -->
           <div *ngIf="selectedItemType === 'OP'" class="mt-4">
             <h6 class="fw-bold">Pedidos de Venta (PVs):</h6>
             <div *ngIf="selectedItem.pvs && selectedItem.pvs.length > 0; else noPVs">
@@ -851,7 +851,6 @@
                       <th>Código PV</th>
                       <th>Items</th>
                       <th>PTs</th>
-                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -859,18 +858,6 @@
                       <td>{{ pv.codigo }}</td>
                       <td>{{ pv.items?.length || 0 }}</td>
                       <td>{{ pv.pts?.length || 0 }}</td>
-                      <td>
-                        <div class="btn-group btn-group-sm">
-                          <!-- <button class="btn btn-outline-success" (click)="generarQRPV(pv, 'PV', selectedItem.codigo)" 
-                                  data-bs-toggle="tooltip" title="Generar QR PV">
-                            <i class="bi bi-qr-code"></i>
-                          </button> -->
-                          <!-- <button class="btn btn-outline-info" (click)="imprimirEtiquetaPV(pv, 'PV')" 
-                                  data-bs-toggle="tooltip" title="Imprimir etiqueta PV">
-                            <i class="bi bi-printer"></i>
-                          </button> -->
-                        </div>
-                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -881,9 +868,9 @@
             </ng-template>
           </div>
 
-          <!-- <! Contenido específico para PVs con Toggle -> -->
+          <!-- Contenido específico para PVs con Toggle -->
           <div *ngIf="selectedItemType === 'PV'" class="mt-4">
-            <!-- <! Toggle Button para modo PV -> -->
+            <!-- Toggle Button para modo PV -->
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h6 class="fw-bold mb-0">Detalle del PV:</h6>
               <div class="btn-group" role="group">
@@ -903,20 +890,13 @@
               </div>
             </div>
 
-            <!-- <! Modo Recepcionado (contenido original) -> -->
+            <!-- Modo Recepcionado -->
             <div *ngIf="modoDetallePV === 'recepcionado'">
-              <!-- <! Barra de búsqueda -> -->
               <div class="mb-3">
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Buscar items..."
-                  [(ngModel)]="filtersItems.busqueda"
-                  (input)="aplicarFiltrosItems()"
-                />
+                <input type="text" class="form-control" placeholder="Buscar items..."
+                  [(ngModel)]="filtersItems.busqueda" (input)="aplicarFiltrosItems()" />
               </div>
 
-              <!-- <!- Items consolidados del PV -> -->
               <div *ngIf="currentItemsPV && currentItemsPV.length > 0" class="mb-4">
                 <h6 class="fw-bold">Items del PV (Consolidados):</h6>
                 <div class="table-responsive">
@@ -947,7 +927,6 @@
                   </table>
                 </div>
 
-                <!-- <!- Paginador items -> -->
                 <app-shared-paginator
                   *ngIf="paginationService.getPaginatorState(paginatorItemsId)"
                   [instanceId]="paginatorItemsId"
@@ -957,17 +936,11 @@
               </div>
             </div>
 
-            <!-- <!- Modo Empacado (nuevo contenido) -> -->
+            <!-- Modo Empacado -->
             <div *ngIf="modoDetallePV === 'empacado'">
-              <!-- <!- Barra de búsqueda -> -->
               <div class="mb-3">
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Buscar en empaques..."
-                  [(ngModel)]="filtersEmpaques.busqueda"
-                  (input)="aplicarFiltrosEmpaques()"
-                />
+                <input type="text" class="form-control" placeholder="Buscar en empaques..."
+                  [(ngModel)]="filtersEmpaques.busqueda" (input)="aplicarFiltrosEmpaques()" />
               </div>
 
               <div *ngIf="currentEmpaquesPV.length > 0; else noEmpaques">
@@ -989,7 +962,7 @@
                     </thead>
                     <tbody>
                       <ng-container *ngFor="let empaque of currentEmpaquesPV">
-                        <!-- <!- Fila principal -> -->
+                        <!-- Fila principal -->
                         <tr>
                           <td>
                             <button class="btn btn-sm btn-link p-0" 
@@ -1001,21 +974,56 @@
                             </button>
                           </td>
                           <td>
-                            <span class="fw-bold">{{ empaque.numero_empaque }}</span>
+                            <!-- Edición inline del número -->
+                            <div class="d-flex align-items-center gap-2">
+                              <span *ngIf="!editingField[empaque.numero_empaque]?.numero" class="fw-bold">
+                                {{ empaque.numero_empaque }}
+                              </span>
+                              <input *ngIf="editingField[empaque.numero_empaque]?.numero"
+                                type="text"
+                                class="form-control form-control-sm"
+                                [(ngModel)]="tempValues[empaque.numero_empaque].numero"
+                                (blur)="guardarCampo(empaque, 'numero')"
+                                (keyup.enter)="guardarCampo(empaque, 'numero')"
+                                (keyup.escape)="cancelarEdicion(empaque, 'numero')"
+                                [id]="'input-numero-' + empaque.numero_empaque">
+                              <button class="btn btn-sm btn-link p-0"
+                                *ngIf="!editingField[empaque.numero_empaque]?.numero"
+                                (click)="iniciarEdicionCampo(empaque, 'numero')">
+                                <i class="bi bi-pencil text-primary"></i>
+                              </button>
+                            </div>
                           </td>
                           <td>
-                            <span class="badge bg-info">{{ empaque.tipo_empaque }}</span>
+                            <!-- Edición inline del tipo -->
+                            <div class="d-flex align-items-center gap-2">
+                              <span *ngIf="!editingField[empaque.numero_empaque]?.tipo" class="badge bg-info">
+                                {{ empaque.tipo_empaque }}
+                              </span>
+                              <select *ngIf="editingField[empaque.numero_empaque]?.tipo"
+                                class="form-select form-select-sm"
+                                [(ngModel)]="tempValues[empaque.numero_empaque].tipo"
+                                (blur)="guardarCampo(empaque, 'tipo')"
+                                (change)="guardarCampo(empaque, 'tipo')"
+                                [id]="'select-tipo-' + empaque.numero_empaque">
+                                <option value="Canasta">Canasta</option>
+                                <option value="Costal">Costal</option>
+                                <option value="Bolsa">Bolsa</option>
+                                <option value="Caja">Caja</option>
+                                <option value="Otro">Otro</option>
+                              </select>
+                              <button class="btn btn-sm btn-link p-0"
+                                *ngIf="!editingField[empaque.numero_empaque]?.tipo"
+                                (click)="iniciarEdicionCampo(empaque, 'tipo')">
+                                <i class="bi bi-pencil text-primary"></i>
+                              </button>
+                            </div>
                           </td>
                           <td>
                             <span class="badge bg-secondary">{{ empaque.items?.length || 0 }} items</span>
                           </td>
                           <td>
                             <div class="btn-group btn-group-sm">
-                              <button class="btn btn-outline-primary" 
-                                      (click)="abrirEditarEmpaqueSweetAlert(empaque)"
-                                      title="Editar empaque">
-                                <i class="bi bi-pencil"></i>
-                              </button>
                               <button class="btn btn-outline-success" 
                                       (click)="generarEtiquetaEmpaque(empaque)"
                                       title="Generar etiqueta">
@@ -1030,7 +1038,7 @@
                           </td>
                         </tr>
 
-                        <!-- <!- Fila expandida -> -->
+                        <!-- Fila expandida -->
                         <tr *ngIf="expandedEmpaquesDetalle.has(empaque.numero_empaque)" class="bg-light">
                           <td colspan="5" class="p-0">
                             <div class="p-3">
@@ -1056,7 +1064,28 @@
                                         <span class="badge bg-light text-dark">{{ item.id_talla }}</span>
                                       </td>
                                       <td>
-                                        <span class="fw-bold text-primary">{{ item.cantidad }}</span>
+                                        <!-- Edición inline de cantidad -->
+                                        <div class="d-flex align-items-center gap-2">
+                                          <span *ngIf="!editingField[item.id]?.cantidad" class="fw-bold text-primary">
+                                            {{ item.cantidad }}
+                                          </span>
+                                          <input *ngIf="editingField[item.id]?.cantidad"
+                                            type="number"
+                                            class="form-control form-control-sm"
+                                            style="width: 80px;"
+                                            [(ngModel)]="tempValues[item.id].cantidad"
+                                            (blur)="guardarCantidadItem(empaque, item)"
+                                            (keyup.enter)="guardarCantidadItem(empaque, item)"
+                                            (keyup.escape)="cancelarEdicion(item, 'cantidad')"
+                                            min="1"
+                                            step="1"
+                                            [id]="'input-cantidad-' + item.id">
+                                          <button class="btn btn-sm btn-link p-0"
+                                            *ngIf="!editingField[item.id]?.cantidad"
+                                            (click)="iniciarEdicionCantidad(item)">
+                                            <i class="bi bi-pencil text-primary"></i>
+                                          </button>
+                                        </div>
                                       </td>
                                       <td>
                                         <small class="text-muted">{{ item.fecha_empaque | date:'dd/MM/yyyy HH:mm' }}</small>
@@ -1076,7 +1105,6 @@
                   </table>
                 </div>
 
-                <!-- <!- Paginador empaques -> -->
                 <app-shared-paginator
                   *ngIf="paginationService.getPaginatorState(paginatorEmpaquesId)"
                   [instanceId]="paginatorEmpaquesId"
@@ -1097,14 +1125,6 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <div class="btn-group">
-          <!-- <button type="button" class="btn btn-success" (click)="generarQRUnificado(selectedItem, selectedItemType)">
-            <i class="bi bi-qr-code"></i> Generar QR
-          </button> -->
-          <!-- <button type="button" class="btn btn-info" (click)="imprimirEtiquetaUnificada(selectedItem, selectedItemType)">
-            <i class="bi bi-printer"></i> Imprimir Etiqueta
-          </button> -->
-        </div>
       </div>
     </div>
   </div>

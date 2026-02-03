@@ -222,7 +222,15 @@
     </app-shared-paginator>
 
     <div class="text-end mt-3">
-      <button class="btn btn-success" (click)="registrarEmpaque()">Registrar</button>
+      <button class="btn btn-success" 
+              (click)="registrarEmpaque()"
+              [disabled]="guardandoEmpaque">
+        <span *ngIf="!guardandoEmpaque">Registrar</span>
+        <span *ngIf="guardandoEmpaque">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Guardando...
+        </span>
+      </button>
     </div>
   </div>
 </ng-template>
@@ -356,7 +364,7 @@
 </ng-template>
 
 <!-- Modal QR -->
-<ng-template #qrTemplate let-modal>
+<!-- <ng-template #qrTemplate let-modal>
   <div class="modal-header" style="background-color: #4F45B1;">
     <h5 class="modal-title" style="color: white;">
       Código QR - {{ qrTitle }}
@@ -383,10 +391,10 @@
   </div>
   <div class="modal-footer">
     <button class="btn btn-secondary" (click)="modal.close()">Cerrar</button>
-    <!-- <button class="btn btn-primary" (click)="descargarQR()"> <i class="bi bi-download"></i> Descargar</button>
-    <button class="btn btn-success" (click)="imprimirQR()"> <i class="bi bi-printer"></i> Imprimir</button> -->
+    <button class="btn btn-primary" (click)="descargarQR()"> <i class="bi bi-download"></i> Descargar</button>
+    <button class="btn btn-success" (click)="imprimirQR()"> <i class="bi bi-printer"></i> Imprimir</button>
   </div>
-</ng-template>
+</ng-template> -->
 
 <ng-template #etiquetaTemplate let-modal>
   <div class="modal-header bg-primary text-white">
@@ -478,9 +486,9 @@
     <button class="btn btn-outline-primary" (click)="descargarEtiquetaImagen()">
       <i class="bi bi-download"></i> Descargar Imagen
     </button>
-    <button class="btn btn-success" (click)="imprimirEtiqueta()">
+    <!-- <button class="btn btn-success" (click)="imprimirEtiqueta()">
       <i class="bi bi-printer"></i> Imprimir
-    </button>
+    </button> -->
   </div>
 </ng-template>
 </div>

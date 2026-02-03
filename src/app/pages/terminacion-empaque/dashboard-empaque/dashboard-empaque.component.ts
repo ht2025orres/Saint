@@ -94,6 +94,9 @@ export class DashboardEmpaqueComponent implements OnInit {
   empaqueEditando: any = null;
   itemsEmpaqueEditando: any[] = [];
 
+  editingField: { [key: string]: { [field: string]: boolean } } = {};
+  tempValues: { [key: string]: any } = {};
+
   // Agregar esta propiedad
   empaqueForm = {
     numero_empaque: '',
@@ -494,140 +497,232 @@ export class DashboardEmpaqueComponent implements OnInit {
     return index;
   }
 
-// Método alternativo usando SweetAlert2
-async abrirEditarEmpaqueSweetAlert(empaque: any): Promise<void> {
-  this.empaqueEditando = { ...empaque };
+iniciarEdicionCampo(empaque: any, campo: string): void {
+  const key = empaque.numero_empaque;
   
-  // Crear formulario HTML para SweetAlert
-  const { value: formValues } = await Swal.fire({
-    title: 'Editar Empaque',
-    html: `
-      <div class="container-fluid">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Número de Empaque</label>
-            <input 
-              type="number" 
-              id="numero-empaque" 
-              class="form-control" 
-              value="${empaque.numero_empaque}">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Tipo de Empaque</label>
-            <select id="tipo-empaque" class="form-select">
-              <option value="Canasta" ${empaque.tipo_empaque === 'Canasta' ? 'selected' : ''}>Canasta</option>
-              <option value="Costal" ${empaque.tipo_empaque === 'Costal' ? 'selected' : ''}>Costal</option>
-              <option value="Bolsa" ${empaque.tipo_empaque === 'Bolsa' ? 'selected' : ''}>Bolsa</option>
-              <option value="Caja" ${empaque.tipo_empaque === 'Caja' ? 'selected' : ''}>Caja</option>
-              <option value="Otro" ${empaque.tipo_empaque === 'Otro' ? 'selected' : ''}>Otro</option>
-            </select>
-          </div>
-        </div>
-        
-        <h6 class="fw-bold mb-3">Items del Empaque</h6>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered">
-            <thead class="table-light">
-              <tr>
-                <th>Item</th>
-                <th>Descripción</th>
-                <th>Talla</th>
-                <th>Cantidad</th>
-              </tr>
-            </thead>
-            <tbody id="items-table">
-              ${empaque.items.map((item: any, index: number) => `
-                <tr>
-                  <td style="display: none;"> ${item.id}</td>
-                  <td>${item.item_id}</td>
-                  <td>${item.descripcion}</td>
-                  <td>${item.id_talla}</td>
-                  <td>
-                    <input 
-                      type="number" 
-                      class="form-control form-control-sm item-cantidad" 
-                      data-index="${index}"
-                      data-item-id="${item.item_id}"
-                      data-talla="${item.id_talla}"
-                      value="${item.cantidad}"
-                      min="1"
-                      step="1">
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `,
-    width: '800px',
-    showCancelButton: true,
-    confirmButtonText: 'Guardar Cambios',
-    cancelButtonText: 'Cancelar',
-    focusConfirm: false,
-    preConfirm: () => {
-      const numeroEmpaque = (document.getElementById('numero-empaque') as HTMLInputElement).value;
-      const tipoEmpaque = (document.getElementById('tipo-empaque') as HTMLSelectElement).value;
-      
-      const items: any[] = [];
-      const cantidadInputs = document.querySelectorAll('.item-cantidad');
-      
-      cantidadInputs.forEach((input: any) => {
-        const index = input.dataset.index;
-        const item = empaque.items[index];
-        items.push({
-          ...item,
-          cantidad: Number(input.value)
-        });
-      });
-      
-      if (!numeroEmpaque) {
-        Swal.showValidationMessage('El número de empaque es requerido');
-        return false;
+  if (!this.editingField[key]) {
+    this.editingField[key] = {};
+  }
+  
+  if (!this.tempValues[key]) {
+    this.tempValues[key] = {};
+  }
+  
+  // Guardar valor original
+  if (campo === 'numero') {
+    this.tempValues[key].numero = empaque.numero_empaque;
+    this.tempValues[key].numeroOriginal = empaque.numero_empaque;
+  } else if (campo === 'tipo') {
+    this.tempValues[key].tipo = empaque.tipo_empaque;
+    this.tempValues[key].tipoOriginal = empaque.tipo_empaque;
+  }
+  
+  this.editingField[key][campo] = true;
+  
+  // Focus después del render
+  setTimeout(() => {
+    const inputId = campo === 'numero' 
+      ? `input-numero-${key}` 
+      : `select-tipo-${key}`;
+    const element = document.getElementById(inputId) as HTMLInputElement;
+    if (element) {
+      element.focus();
+      if (element.select) {
+        element.select();
       }
-      
-      if (items.length === 0) {
-        Swal.showValidationMessage('Debe haber al menos un item');
-        return false;
-      }
-      
-      return {
-        numero_empaque: numeroEmpaque,
-        tipo_empaque: tipoEmpaque,
-        items: items
-      };
     }
-  });
+  }, 0);
+}
+
+iniciarEdicionCantidad(item: any): void {
+  const key = item.id;
   
-  if (formValues) {
-    this.guardarCambiosEmpaqueSweetAlert(formValues);
+  if (!this.editingField[key]) {
+    this.editingField[key] = {};
+  }
+  
+  if (!this.tempValues[key]) {
+    this.tempValues[key] = {};
+  }
+  
+  this.tempValues[key].cantidad = item.cantidad;
+  this.tempValues[key].cantidadOriginal = item.cantidad;
+  this.editingField[key].cantidad = true;
+  
+  setTimeout(() => {
+    const element = document.getElementById(`input-cantidad-${key}`) as HTMLInputElement;
+    if (element) {
+      element.focus();
+      element.select();
+    }
+  }, 0);
+}
+
+cancelarEdicion(item: any, campo: string): void {
+  const key = item.numero_empaque || item.id;
+  
+  if (this.editingField[key]) {
+    this.editingField[key][campo] = false;
+  }
+  
+  // Restaurar valor original
+  if (campo === 'numero') {
+    this.tempValues[key].numero = this.tempValues[key].numeroOriginal;
+  } else if (campo === 'tipo') {
+    this.tempValues[key].tipo = this.tempValues[key].tipoOriginal;
+  } else if (campo === 'cantidad') {
+    this.tempValues[key].cantidad = this.tempValues[key].cantidadOriginal;
   }
 }
 
-guardarCambiosEmpaqueSweetAlert(datos: any): void {
-  const cambios = {
+async guardarCampo(empaque: any, campo: string): Promise<void> {
+  const key = empaque.numero_empaque;
+  const valorNuevo = campo === 'numero' 
+    ? this.tempValues[key].numero 
+    : this.tempValues[key].tipo;
+  const valorOriginal = campo === 'numero'
+    ? this.tempValues[key].numeroOriginal
+    : this.tempValues[key].tipoOriginal;
+  
+  // Si no cambió, solo cerrar edición
+  if (valorNuevo === valorOriginal) {
+    this.editingField[key][campo] = false;
+    return;
+  }
+  
+  // Validaciones
+  if (campo === 'numero' && !valorNuevo?.trim()) {
+    Swal.fire('Error', 'El número de empaque no puede estar vacío', 'error');
+    this.cancelarEdicion(empaque, campo);
+    return;
+  }
+  
+  const result = await Swal.fire({
+    title: '¿Confirmar cambio?',
+    text: `${campo === 'numero' ? 'Número' : 'Tipo'}: "${valorOriginal}" → "${valorNuevo}"`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, cambiar',
+    cancelButtonText: 'Cancelar'
+  });
+  
+  if (!result.isConfirmed) {
+    this.cancelarEdicion(empaque, campo);
+    return;
+  }
+  
+  // CORRECCIÓN: Siempre usar el número de empaque original (no el valor original del campo que cambia)
+  const numeroEmpaqueOriginal = this.tempValues[key].numeroOriginal;
+  
+  const datos = {
     op_codigo: this.selectedOP,
     pv_codigo: this.selectedItem?.codigo,
-    numero_empaque_original: this.empaqueEditando.codigoOriginal || this.empaqueEditando.numero_empaque,
-    numero_empaque: datos.numero_empaque,
-    tipo_empaque: datos.tipo_empaque,
-    items: datos.items.map((item: any) => ({
-      id: item.id,
-      item_id: item.item_id,
-      referencia: item.referencia,
-      id_talla: item.id_talla,
-      cantidad: Number(item.cantidad)
-    })),
-    usuario_id: this.authService.user.id
+    numero_empaque_original: numeroEmpaqueOriginal, // SIEMPRE el número original del empaque
+    numero_empaque: campo === 'numero' ? valorNuevo : empaque.numero_empaque,
+    tipo_empaque: campo === 'tipo' ? valorNuevo : empaque.tipo_empaque,
+    campo_actualizar: campo
   };
-
-  this.empaqueService.actualizarEmpaqueCompleto(cambios).subscribe({
-    next: () => {
-      Swal.fire('Éxito', 'Cambios guardados correctamente', 'success');
+  
+  // Para enviar los hashes si tienes los items
+  // Agregar items al request si están disponibles
+  if (this.itemsEmpaqueEditando) {
+    datos['items'] = this.itemsEmpaqueEditando.map((item: any) => ({
+      f120_id: item.f120_id,
+      id_color: item.id_color,
+      id_talla: item.id_talla
+    }));
+  }
+  
+  this.empaqueService.actualizarCampoEmpaque(datos).subscribe({
+    next: (response: any) => {
+      Swal.fire({
+        icon: 'success',
+        title: 'Actualizado',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      
+      // Actualizar el objeto local
+      if (campo === 'numero') {
+        empaque.numero_empaque = valorNuevo;
+      } else {
+        empaque.tipo_empaque = valorNuevo;
+      }
+      
+      this.editingField[key][campo] = false;
       this.cargarEmpaquesPVDetalle(this.selectedItem);
     },
     error: (err) => {
-      Swal.fire('Error', err.error?.error || 'Hubo un problema al guardar', 'error');
+      Swal.fire('Error', err.error?.error || 'No se pudo actualizar', 'error');
+      this.cancelarEdicion(empaque, campo);
+    }
+  });
+}
+
+async guardarCantidadItem(empaque: any, item: any): Promise<void> {
+  const key = item.id;
+  const cantidadNueva = Number(this.tempValues[key].cantidad);
+  const cantidadOriginal = this.tempValues[key].cantidadOriginal;
+  
+  // Si no cambió, solo cerrar edición
+  if (cantidadNueva === cantidadOriginal) {
+    this.editingField[key].cantidad = false;
+    return;
+  }
+  
+  // Validaciones
+  if (!cantidadNueva || cantidadNueva < 1) {
+    Swal.fire('Error', 'La cantidad debe ser mayor a 0', 'error');
+    this.cancelarEdicion(item, 'cantidad');
+    return;
+  }
+  
+  const result = await Swal.fire({
+    title: '¿Confirmar cambio?',
+    text: `Cantidad: ${cantidadOriginal} → ${cantidadNueva}`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, cambiar',
+    cancelButtonText: 'Cancelar'
+  });
+  
+  if (!result.isConfirmed) {
+    this.cancelarEdicion(item, 'cantidad');
+    return;
+  }
+
+  console.log('Datos de el item:', {item});
+  
+  const datos = {
+    op_codigo: this.selectedOP,
+    pv_codigo: this.selectedItem?.codigo,
+    numero_empaque: empaque.numero_empaque,
+    item_id: item.id,
+    descripcion: item.descripcion,
+    referencia: item.referencia,
+    cantidad: cantidadNueva
+  };
+  
+  this.empaqueService.actualizarCantidadItem(datos).subscribe({
+    next: () => {
+      Swal.fire({
+        icon: 'success',
+        title: 'Cantidad actualizada',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      
+      // Actualizar el objeto local
+      item.cantidad = cantidadNueva;
+      this.editingField[key].cantidad = false;
+    },
+    error: (err) => {
+      Swal.fire('Error', err.error?.error || 'No se pudo actualizar', 'error');
+      this.cancelarEdicion(item, 'cantidad');
     }
   });
 }
@@ -747,49 +842,49 @@ guardarCambiosEmpaqueSweetAlert(datos: any): void {
   //   });
   // }
 
-  guardarCambiosEmpaque(): void {
-    if (this.itemsEmpaqueEditando.length === 0) {
-      Swal.fire('Error', 'Debe haber al menos un item en el empaque', 'error');
-      return;
-    }
+  // guardarCambiosEmpaque(): void {
+  //   if (this.itemsEmpaqueEditando.length === 0) {
+  //     Swal.fire('Error', 'Debe haber al menos un item en el empaque', 'error');
+  //     return;
+  //   }
 
-    // Validar cantidades
-    const cantidadesInvalidas = this.itemsEmpaqueEditando.some(item => 
-      !item.cantidad || item.cantidad <= 0
-    );
+  //   // Validar cantidades
+  //   const cantidadesInvalidas = this.itemsEmpaqueEditando.some(item => 
+  //     !item.cantidad || item.cantidad <= 0
+  //   );
     
-    if (cantidadesInvalidas) {
-      Swal.fire('Error', 'Todas las cantidades deben ser mayores a 0', 'error');
-      return;
-    }
+  //   if (cantidadesInvalidas) {
+  //     Swal.fire('Error', 'Todas las cantidades deben ser mayores a 0', 'error');
+  //     return;
+  //   }
 
-    const cambios = {
-      op_codigo: this.selectedOP,
-      pv_codigo: this.selectedItem.codigo,
-      numero_empaque_original: this.empaqueEditando.codigoOriginal || this.empaqueEditando.numero_empaque,
-      numero_empaque: this.empaqueForm.numero_empaque,
-      tipo_empaque: this.empaqueForm.tipo_empaque,
-      items: this.itemsEmpaqueEditando.map(item => ({
-        id: item.id,
-        item_id: item.item_id,
-        referencia: item.referencia,
-        id_talla: item.id_talla,
-        cantidad: Number(item.cantidad)
-      })),
-      usuario_id: this.authService.user.id
-    };
+  //   const cambios = {
+  //     op_codigo: this.selectedOP,
+  //     pv_codigo: this.selectedItem.codigo,
+  //     numero_empaque_original: this.empaqueEditando.codigoOriginal || this.empaqueEditando.numero_empaque,
+  //     numero_empaque: this.empaqueForm.numero_empaque,
+  //     tipo_empaque: this.empaqueForm.tipo_empaque,
+  //     items: this.itemsEmpaqueEditando.map(item => ({
+  //       id: item.id,
+  //       item_id: item.item_id,
+  //       referencia: item.referencia,
+  //       id_talla: item.id_talla,
+  //       cantidad: Number(item.cantidad)
+  //     })),
+  //     usuario_id: this.authService.user.id
+  //   };
 
-    this.empaqueService.actualizarEmpaqueCompleto(cambios).subscribe({
-      next: () => {
-        Swal.fire('Éxito', 'Cambios guardados correctamente', 'success');
-        this.modalService.dismissAll();
-        this.cargarEmpaquesPVDetalle(this.selectedItem);
-      },
-      error: (err) => {
-        Swal.fire('Error', err.error?.error || 'Hubo un problema al guardar', 'error');
-      }
-    });
-  }
+  //   this.empaqueService.actualizarEmpaqueCompleto(cambios).subscribe({
+  //     next: () => {
+  //       Swal.fire('Éxito', 'Cambios guardados correctamente', 'success');
+  //       this.modalService.dismissAll();
+  //       this.cargarEmpaquesPVDetalle(this.selectedItem);
+  //     },
+  //     error: (err) => {
+  //       Swal.fire('Error', err.error?.error || 'Hubo un problema al guardar', 'error');
+  //     }
+  //   });
+  // }
 
   async generarEtiquetaEmpaque(empaque: any): Promise<void> {
     const itemsMap = new Map<string, any>();

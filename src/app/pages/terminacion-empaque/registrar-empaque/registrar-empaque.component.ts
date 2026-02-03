@@ -74,6 +74,8 @@ export class RegistrarEmpaqueComponent implements OnInit {
   qrEmpacador = '';
   qrData: any = {};
 
+  guardandoEmpaque = false;
+
   @ViewChild('tmplVerItems', { static: true }) tmplVerItems!: TemplateRef<any>;
   @ViewChild('tmplRegistrarEmpaque', { static: true }) tmplRegistrarEmpaque!: TemplateRef<any>;
   @ViewChild('tmplVerEmpaques', { static: true }) tmplVerEmpaques!: TemplateRef<any>;
@@ -235,9 +237,8 @@ export class RegistrarEmpaqueComponent implements OnInit {
   }
 
   registrarEmpaque(): void {
-    console.log(this.itemsPV)
-    
-    // *** VALIDAR ANTES DE FILTRAR ***
+    if (this.guardandoEmpaque) return;
+
     const itemsInvalidos = this.itemsPV.filter(item => {
       const asignado = Number(item.asignado) || 0;
       const empacado = Number(item.empacado) || 0;
@@ -260,7 +261,7 @@ export class RegistrarEmpaqueComponent implements OnInit {
         const limite = Math.min(asignado, teorico);
 
         return `- ${item.id_item.trim()} - ${item.id_color.trim()} - ${item.id_talla.trim()}: |
-    Intentas registrar ${item.cantidad_a_registrar}, máximo permitido: ${limite - empacado}`;
+      Intentas registrar ${item.cantidad_a_registrar}, máximo permitido: ${limite - empacado}`;
       }).join('\n');
 
       Swal.fire({
@@ -288,15 +289,24 @@ export class RegistrarEmpaqueComponent implements OnInit {
       return;
     }
 
+    this.guardandoEmpaque = true;
+
     this.terminacionEmpaqueService.registrarEmpaqueApiLaravel(registros).subscribe({
       next: () => {
+        this.itemsPV.forEach(item => {
+          item.cantidad_a_registrar = 0;
+          item.tipo_empaque = '';
+          item.numero_empaque = '';
+        });
+        
         Swal.fire('Éxito', 'Empaque registrado correctamente.', 'success');
         this.modalService.dismissAll();
-        this.itemsPV = [];
         this.cargarPVsAsignadas();
+        this.guardandoEmpaque = false;
       },
       error: () => {
         Swal.fire('Error', 'No se pudo registrar el empaque.', 'error');
+        this.guardandoEmpaque = false;
       }
     });
   }

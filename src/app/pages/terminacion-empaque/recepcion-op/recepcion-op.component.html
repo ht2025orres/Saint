@@ -10,17 +10,31 @@
       class="form-control"
       list="opOpciones"
       [(ngModel)]="codigoOPSeleccionada"
-      placeholder="Escribe o selecciona una OP" />
+      placeholder="Escribe o selecciona una OP"
+      [disabled]="loadingBuscarItems" />
     <datalist id="opOpciones">
       <option *ngFor="let op of listaOPs" [value]="op.codigo"></option>
     </datalist>
   </div>
 
-  <!-- Botón para cargar PVs -->
-  <button class="btn btn-secondary mb-3" (click)="buscarPVs()">Buscar items de OP</button>
+  <!-- Botón para cargar PVs con estado de carga -->
+  <button 
+    class="btn btn-secondary mb-3" 
+    (click)="buscarPVs()"
+    [disabled]="loadingBuscarItems">
+    <span *ngIf="!loadingBuscarItems">Buscar items de OP</span>
+    <span *ngIf="loadingBuscarItems">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Cargando...
+    </span>
+  </button>
 
   <!-- Botón para abrir modal de recepción de PTs -->
-  <button *ngIf="authService.hasRole('Distribuidor PV (Terminación y Empaque)')" class="btn btn-primary mb-3 ms-2" (click)="abrirModalRecepcionPTs()">
+  <button 
+    *ngIf="authService.hasRole('Distribuidor PV (Terminación y Empaque)')" 
+    class="btn btn-primary mb-3 ms-2" 
+    (click)="abrirModalRecepcionPTs()"
+    [disabled]="loadingBuscarItems">
     Recibir PTs
   </button>
   
@@ -88,12 +102,14 @@
                   }"
                   [(ngModel)]="item.cantidad_recibida" 
                   min="0"
+                  [disabled]="loadingGuardarRecepcion"
                   *ngIf="authService.hasRole('Distribuidor PV (Terminación y Empaque)')">
 
                 <button
                   type="button"
                   class="btn btn-link p-0"
                   (click)="abrirModalUbicacion(item)"
+                  [disabled]="loadingGuardarRecepcion"
                   title="Asignar ubicación distinta">
                   <i class="fas fa-exchange-alt text-primary"></i>
                 </button>
@@ -114,14 +130,24 @@
         [pageSizeOptions]="[5, 10, 25, 50]">
       </app-shared-paginator>
 
-      <button class="btn btn-primary mt-3" (click)="guardarRecepcion()">Guardar Recepción</button>
+      <!-- Botón Guardar Recepción con estado de carga -->
+      <button 
+        class="btn btn-primary mt-3" 
+        (click)="guardarRecepcion()"
+        [disabled]="loadingGuardarRecepcion">
+        <span *ngIf="!loadingGuardarRecepcion">Guardar Recepción</span>
+        <span *ngIf="loadingGuardarRecepcion">
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Guardando...
+        </span>
+      </button>
     </div>
   </div>
 
   <ng-template #cargandoOPs>
     <div class="p-3 text-center">
       <div class="spinner-border text-primary" role="status"></div>
-      <p class="mt-2 mb-0">Cargando OPs...</p>
+      <p class="mt-2 mb-0">Cargando OP...</p>
     </div>
   </ng-template>
 
@@ -153,12 +179,20 @@
               placeholder="Ingresa número de PT (ej: 47488)"
               [(ngModel)]="modalRecepcionPTs.ptIngresado"
               (keyup.enter)="buscarItemsEnModal()"
+              [disabled]="loadingBuscarModal"
             />
           </div>
           <div class="col-md-2">
-            <button class="btn btn-primary" (click)="buscarItemsEnModal()" [disabled]="modalRecepcionPTs.cargando">
-              <span *ngIf="!modalRecepcionPTs.cargando">Buscar</span>
-              <span *ngIf="modalRecepcionPTs.cargando" class="spinner-border spinner-border-sm"></span>
+            <!-- Botón Buscar del modal con estado de carga -->
+            <button 
+              class="btn btn-primary" 
+              (click)="buscarItemsEnModal()" 
+              [disabled]="loadingBuscarModal">
+              <span *ngIf="!loadingBuscarModal">Buscar</span>
+              <span *ngIf="loadingBuscarModal">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Buscando...
+              </span>
             </button>
           </div>
         </div>
@@ -213,11 +247,15 @@
                       [(ngModel)]="item.cantidad_recibida"
                       [min]="0"
                       [max]="getMaximoPermitidoModal(item)"
+                      [disabled]="loadingGuardarModal"
                     />
                     <small *ngIf="excedeTeoricaModal(item)" class="text-danger">Excede teórica</small>
                   </td>
                   <td>
-                    <button class="btn btn-sm btn-outline-primary" (click)="asignarMaximoItemModal(item)">Max</button>
+                    <button 
+                      class="btn btn-sm btn-outline-primary" 
+                      (click)="asignarMaximoItemModal(item)"
+                      [disabled]="loadingGuardarModal">Max</button>
                   </td>
                 </tr>
               </tbody>
@@ -237,8 +275,22 @@
                 <strong>Total recibido: {{ totalRecibidoModal }}</strong>
               </div>
               <div>
-                <button class="btn btn-outline-success me-2" (click)="asignarMaximosGeneralesModal()">Asignar máximos (General)</button>
-                <button class="btn btn-success" (click)="guardarRecepcionModal()">Guardar Recepción</button>
+                <button 
+                  class="btn btn-outline-success me-2" 
+                  (click)="asignarMaximosGeneralesModal()"
+                  [disabled]="loadingGuardarModal">Asignar máximos (General)</button>
+                
+                <!-- Botón Guardar Recepción del modal con estado de carga -->
+                <button 
+                  class="btn btn-success" 
+                  (click)="guardarRecepcionModal()"
+                  [disabled]="loadingGuardarModal">
+                  <span *ngIf="!loadingGuardarModal">Guardar Recepción</span>
+                  <span *ngIf="loadingGuardarModal">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Guardando...
+                  </span>
+                </button>
               </div>
             </div>
           </div>
