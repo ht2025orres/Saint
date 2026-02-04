@@ -890,51 +890,75 @@ private ordenarPVs(op: any): void {
     this.opSeleccionada = op;
 
     try {
-      const items = await this.terminacionEmpaqueService
-        .listarItemsDePVDesdeApiLaravel(+pv, op)
-        .toPromise();
+      await this.cargarItemsParaPV(op, pv, true);
+    } catch (err) {
+      Swal.fire('Error', 'No se pudieron cargar los ítems de la PV', 'error');
+      console.error('Error al cargar ítems de PV', op, pv, err);
+    }
+  }
 
-      this.items = items.map(i => {
-        const cantidadTeorica = parseFloat(String(i.cantidad || 0)) || 0;
-        const cantidadRecibida = parseFloat(String(i.cantidad_recibida || i.cantidad_recibida_total || 0)) || 0;
-        const cantidadAsignada = parseFloat(String(i.cantidad_asignada || 0)) || 0;
+  private async cargarItemsParaPV(op: number, pv: string, mostrarModal: boolean): Promise<void> {
+    const items = await this.terminacionEmpaqueService
+      .listarItemsDePVDesdeApiLaravel(+pv, op)
+      .toPromise();
 
-        let cantidadEmpaque = 0;
-        if (Array.isArray(i.ubicaciones_distintas)) {
-          const ubicacionEmpaque = i.ubicaciones_distintas.find(
-            u => u.ubicacion?.toLowerCase() === 'empaque'
-          );
-          if (ubicacionEmpaque) {
-            cantidadEmpaque = parseFloat(String(ubicacionEmpaque.cantidad || 0)) || 0;
-          }
-        } else if (i.ubicacion?.toLowerCase() === 'empaque') {
-          cantidadEmpaque = parseFloat(String(i.cantidad || 0)) || 0;
+    this.items = items.map(i => {
+      const cantidadTeorica = parseFloat(String(i.cantidad || 0)) || 0;
+      const cantidadRecibida = parseFloat(String(i.cantidad_recibida || i.cantidad_recibida_total || 0)) || 0;
+      const cantidadAsignada = parseFloat(String(i.cantidad_asignada || 0)) || 0;
+
+      let cantidadEmpaque = 0;
+      if (Array.isArray(i.ubicaciones_distintas)) {
+        const ubicacionEmpaque = i.ubicaciones_distintas.find(
+          u => u.ubicacion?.toLowerCase() === 'empaque'
+        );
+        if (ubicacionEmpaque) {
+          cantidadEmpaque = parseFloat(String(ubicacionEmpaque.cantidad || 0)) || 0;
         }
+      } else if (i.ubicacion?.toLowerCase() === 'empaque') {
+        cantidadEmpaque = parseFloat(String(i.cantidad || 0)) || 0;
+      }
 
-        return {
-          ...i,
-          cantidad: cantidadTeorica,
-          cantidad_recibida: cantidadRecibida,
-          cantidad_asignada: cantidadAsignada,
-          cantidad_en_empaque: cantidadEmpaque,
-          cantidad_a_asignar: 0
-        };
-      });
+      return {
+        ...i,
+        cantidad: cantidadTeorica,
+        cantidad_recibida: cantidadRecibida,
+        cantidad_asignada: cantidadAsignada,
+        cantidad_en_empaque: cantidadEmpaque,
+        cantidad_a_asignar: 0
+      };
+    });
 
-      this.itemFilters = { busqueda: '', soloDisponibles: false };
-      this.initializarPaginacionItems();
+    this.itemFilters = { busqueda: '', soloDisponibles: false };
+    this.initializarPaginacionItems();
 
-      this.pvSeleccionada = pv;
-      this.ocCliente = this.items[0]?.oc_cliente || 'N/A';
+    this.pvSeleccionada = pv;
+    this.ocCliente = this.items[0]?.oc_cliente || 'N/A';
 
+    if (mostrarModal) {
       const modalEl = document.getElementById('itemsModal');
       if (modalEl) {
         const modal = new Modal(modalEl);
         modal.show();
       }
-    } catch (err) {
-      Swal.fire('Error', 'No se pudieron cargar los ítems de la PV', 'error');
-      console.error('Error al cargar ítems de PV', op, pv, err);
+    }
+  }
+
+  private async refrescarDespuesAsignacion(): Promise<void> {
+    if (!this.opSeleccionada || !this.pvSeleccionada) return;
+
+    try {
+      await this.cargarItemsParaPV(this.opSeleccionada, this.pvSeleccionada, false);
+
+      const op = this.opsConPvs.find(o => o.codigo === this.opSeleccionada);
+      if (op?.pvsOriginal) {
+        await this.verificarDisponibilidadPorPV(op.codigo, op.pvsOriginal);
+        await this.preCargarAsignacionesPendientes(op.codigo, op.pvsOriginal);
+        this.ordenarPVs(op);
+        this.filtrarPVs(op);
+      }
+    } catch (error) {
+      console.error('Error al refrescar datos después de asignar:', error);
     }
   }
 
@@ -1088,35 +1112,40 @@ private ordenarPVs(op: any): void {
       : this.terminacionEmpaqueService.registrarAsignaciones(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra);
 
     servicio.subscribe({
-      next: (res: any) => {
+      next: async (res: any) => {
         this.items.forEach(item => item.cantidad_a_asignar = 0);
-        
-        if (res.message) {
-          Swal.fire('Éxito', res.message, 'success').then(() => window.location.reload());
-        } else if (res.valid !== undefined) {
-          if (!res.valid) {
-            const errores = (res.items || [])
-              .filter((r: any) => !r.valid)
-              .map((r: any) => `Item ${r.f120_id || r.referencia || ''}: ${r.errors.join(', ')}`)
-              .join('<br/>');
 
-            Swal.fire({
-              title: 'Errores en asignaciones',
-              html: errores || 'Hay errores en algunas asignaciones',
-              icon: 'error',
-              width: 700
-            });
-            this.assignmentPayload = res.items || [];
-          } else {
-            this.assignmentPayload = res.items || [];
-            Swal.fire({
-              title: 'Asignaciones válidas',
-              html: `Se validaron ${this.assignmentPayload.length} ítems.`,
-              icon: 'success'
-            }).then(() => window.location.reload());
+        try {
+          if (res.message) {
+            await Swal.fire('Éxito', res.message, 'success');
+            await this.refrescarDespuesAsignacion();
+          } else if (res.valid !== undefined) {
+            if (!res.valid) {
+              const errores = (res.items || [])
+                .filter((r: any) => !r.valid)
+                .map((r: any) => `Item ${r.f120_id || r.referencia || ''}: ${r.errors.join(', ')}`)
+                .join('<br/>');
+
+              Swal.fire({
+                title: 'Errores en asignaciones',
+                html: errores || 'Hay errores en algunas asignaciones',
+                icon: 'error',
+                width: 700
+              });
+              this.assignmentPayload = res.items || [];
+            } else {
+              this.assignmentPayload = res.items || [];
+              await Swal.fire({
+                title: 'Asignaciones válidas',
+                html: `Se validaron ${this.assignmentPayload.length} ítems.`,
+                icon: 'success'
+              });
+              await this.refrescarDespuesAsignacion();
+            }
           }
+        } finally {
+          this.guardandoAsignacion = false;
         }
-        this.guardandoAsignacion = false;
       },
       error: () => {
         Swal.fire('Error', 'No se pudo registrar las asignaciones.', 'error');

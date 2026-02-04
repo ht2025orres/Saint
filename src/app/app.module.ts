@@ -13,6 +13,7 @@ import { PagesComponent } from './pages/pages.component';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { TokenInterceptor } from './interceptors/tokenInterceptor';
 import { AuthInterceptor } from './interceptors/authInterceptor';
+import { LoadingInterceptor } from './interceptors/loading.interceptor';
 import { registerLocaleData } from '@angular/common';
 import { NgChartsModule } from 'ng2-charts';
 import localeEs from '@angular/common/locales/es-CO';
@@ -136,6 +137,7 @@ registerLocaleData(localeEs, 'es-CO');
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },
         { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+        { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi())
     ] })
 export class AppModule { }
