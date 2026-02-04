@@ -241,7 +241,22 @@ export class DashboardEmpaqueComponent implements OnInit {
 
   procesarDatosOPs(data: any) {
     this.kpisOP = data.kpis;
-    this.opsData = data.ops || [];
+    this.opsData = (data.ops || []).map((op: any) => ({
+      ...op,
+      costo_total: parseFloat(op.costo_total) || 0,
+      costo_real: parseFloat(op.costo_real) || 0,
+      pvs: (op.pvs || []).map((pv: any) => ({
+        ...pv,
+        costo_total: parseFloat(pv.costo_total) || 0,
+        costo_real: parseFloat(pv.costo_real) || 0,
+        pts: (pv.pts || []).map((pt: any) => ({
+          ...pt,
+          costo_total: parseFloat(pt.costo_total) || 0,
+          costo_real: parseFloat(pt.costo_real) || 0
+        }))
+      }))
+    }));
+    
     this.filteredOPs = [...this.opsData];
     this.updatePagination();
   }
@@ -1060,27 +1075,31 @@ async guardarCantidadItem(empaque: any, item: any): Promise<void> {
   };
 
   getPVTotalPTsCost(pv: any): number {
-    if (!pv.pts || pv.pts.length === 0) return 0;
-    return pv.pts.reduce((total: number, pt: any) => total + (parseFloat(pt.costo_total) || 0), 0);
+    return (pv.pts || []).reduce((sum: number, pt: any) => 
+      sum + (parseFloat(pt.costo_total) || 0), 0
+    );
   }
 
   getPVRealPTsCost(pv: any): number {
-    if (!pv.pts || pv.pts.length === 0) return 0;
-    return pv.pts.reduce((total: number, pt: any) => total + (parseFloat(pt.costo_real) || 0), 0);
+    return (pv.pts || []).reduce((sum: number, pt: any) => 
+      sum + (parseFloat(pt.costo_real) || 0), 0
+    );
   }
 
   getOPTotalPTsCost(op: any): number {
-    if (!op.pvs || op.pvs.length === 0) return 0;
-    return op.pvs.reduce((total: number, pv: any) => total + this.getPVTotalPTsCost(pv), 0);
+    return (op.pvs || []).reduce((sum: number, pv: any) => 
+      sum + this.getPVTotalPTsCost(pv), 0
+    );
   }
 
   getOPRealPTsCost(op: any): number {
-    if (!op.pvs || op.pvs.length === 0) return 0;
-    return op.pvs.reduce((total: number, pv: any) => total + this.getPVRealPTsCost(pv), 0);
+    return (op.pvs || []).reduce((sum: number, pv: any) => 
+      sum + this.getPVRealPTsCost(pv), 0
+    );
   }
 
   getCostoTotal(pv: any): number {
-    return parseFloat(pv.costo_real) + this.getPVRealPTsCost(pv);
+    return (parseFloat(pv.costo_real) || 0) + this.getPVRealPTsCost(pv);
   }
 
   getSelectedItemInfo(): any {
