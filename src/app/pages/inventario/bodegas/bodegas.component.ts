@@ -160,6 +160,8 @@ export class BodegasComponent implements OnInit {
 
 
   sincronizarBodegas() {
+    if (this.sincronizando) return;
+
     Swal.fire({
       title: '¿Sincronizar con SIESA?',
       text: 'Se actualizará el estado de existencias de los items',
@@ -192,7 +194,7 @@ export class BodegasComponent implements OnInit {
               timer: 1500,
               showConfirmButton: false
             }).then(() => {
-              window.location.reload();
+              this.refrescarDatosPostSincronizacion();
             });
           },
           error: () => {
@@ -207,6 +209,14 @@ export class BodegasComponent implements OnInit {
         });
       }
     });
+  }
+
+  private refrescarDatosPostSincronizacion(): void {
+    this.cargarBodegas();
+
+    if (this.vistaActual === 'items' && this.codigoBodega && this.nombreBodega) {
+      this.verItemsDeBodega(this.codigoBodega, this.nombreBodega);
+    }
   }
 
   /** -------------------------
@@ -392,5 +402,10 @@ export class BodegasComponent implements OnInit {
   getZonasNombres(zonas: any[]): string {
     if (!zonas || zonas.length === 0) return 'Sin zona';
     return zonas.map(z => z.nombre).join(', ');
+  }
+
+  obtenerDescripcionZona(zonaId: number): string {
+    const zona = this.zonas.find(z => z.id === zonaId);
+    return zona ? zona.descripcion : '';
   }
 }

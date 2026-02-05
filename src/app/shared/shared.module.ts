@@ -10,6 +10,7 @@ import {PaginadorComponent} from './paginador/paginador.component';
 import { SharedPaginatorComponent } from '../shared/pagination/shared-paginator/shared-paginator.component';
 import { LoadingComponent } from './loading/loading.component';
 import { PaginationService } from './pagination/pagination.service';
+import { LoadingButtonDirective } from './loading/loading-button.directive';
 
 
 @NgModule({
@@ -20,7 +21,8 @@ import { PaginationService } from './pagination/pagination.service';
         HeaderComponent,
         LoadingComponent,
         AutoExpandDirective,
-        SharedPaginatorComponent
+        SharedPaginatorComponent,
+        LoadingButtonDirective,
     ],
     exports: [
         FooterComponent,
@@ -29,7 +31,8 @@ import { PaginationService } from './pagination/pagination.service';
         HeaderComponent,
         LoadingComponent,
         AutoExpandDirective,
-        SharedPaginatorComponent
+        SharedPaginatorComponent,
+        LoadingButtonDirective,
     ],
     imports: [
         CommonModule,

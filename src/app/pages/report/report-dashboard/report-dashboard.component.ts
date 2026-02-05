@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ReportService } from '../../../services/report.service';
 import { Chart, registerables } from 'chart.js';
+import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
 
 Chart.register(...registerables);
 
@@ -306,5 +308,52 @@ export class ReportDashboardComponent implements OnInit, OnDestroy {
       this.chartEstados.destroy();
       this.chartEstados = null;
     }
+  }
+
+  exportarExcel(): void {
+    if (!this.reports.length) {
+      alert('No hay datos para exportar');
+      return;
+    }
+
+    // 🔹 Mapear datos con nombres amigables
+    const data = this.reports.map(r => ({
+      ID: r.id,
+      OP: r.op_reporte,
+      Cliente: r.cliente,
+      Usuario: r.usuario,
+      Estado: r.estado,
+      Prioridad: r.prioridad,
+      'Fecha Creación': r.fecha_creacion
+        ? new Date(r.fecha_creacion).toLocaleString()
+        : '',
+      'Fecha Respuesta': r.fecha_respuesta
+        ? new Date(r.fecha_respuesta).toLocaleString()
+        : '',
+      'Tiempo Atención (h)': (r.minutos_laborales / 60).toFixed(2)
+    }));
+
+    // 🔹 Crear hoja
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(data);
+
+    // 🔹 Crear libro
+    const workbook: XLSX.WorkBook = {
+      Sheets: { Reporte: worksheet },
+      SheetNames: ['Reporte']
+    };
+
+    // 🔹 Exportar
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    const blob = new Blob([excelBuffer], {
+      type: 'application/octet-stream'
+    });
+
+    const nombreArchivo = `reporte_fichas_${this.selectedYear}_${this.selectedMonth}.xlsx`;
+
+    saveAs(blob, nombreArchivo);
   }
 }

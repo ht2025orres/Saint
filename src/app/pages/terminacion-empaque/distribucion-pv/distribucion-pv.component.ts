@@ -21,30 +21,39 @@ export class DistribucionPvComponent implements OnInit {
   itemsVerificacion: any[] = [];
   currentVerItems: any[] = [];
 
+  // Variables para modal de ubicaciones distintas
+  ubicDistPaginatorId = 'ubicaciones-distintas-paginator';
+  itemsUbicacionesDistintas: any[] = [];
+  currentUbicDistItems: any[] = [];
+  cargandoUbicaciones = false;
+  guardandoCambioUbicacion = false;
+  opBuscadaUbicaciones: string = '';
+
+  ubicDistFilters = {
+    busqueda: '',
+    ubicacion: ''
+  };
+
   verFilters = {
     busqueda: '',
     soloPendientes: false
   };
 
   opSeleccionada: number | null = null;
-  assignmentPayload: any[] = []; // payload validado listo para enviar a la API (cuando lo implementes)
+  assignmentPayload: any[] = [];
   
-  // Datos originales y filtrados
-  opsConPvs: any[] = []; // Datos originales completos
-  currentOps: any[] = []; // Datos mostrados después de filtros y paginación
+  opsConPvs: any[] = [];
+  currentOps: any[] = [];
 
-  // Items para el modal
-  items: any[] = []; // Todos los items originales
-  currentItems: any[] = []; // Items mostrados después de filtros y paginación
+  items: any[] = [];
+  currentItems: any[] = [];
   pvSeleccionada: string | null = null;
   ocCliente: string | null = null;
   
-  // Filtros
   filters = {
     busqueda: ''
   };
 
-  // Filtros para items en el modal
   itemFilters = {
     busqueda: '',
     soloDisponibles: false
@@ -54,6 +63,9 @@ export class DistribucionPvComponent implements OnInit {
   paginatedPvs: { [opCodigo: string]: any[] } = {};
 
   Math = Math;
+
+  guardandoAsignacion = false;
+  guardandoVerificacion = false;
 
   constructor(
     private terminacionEmpaqueService: TerminacionEmpaqueService,
@@ -68,53 +80,40 @@ export class DistribucionPvComponent implements OnInit {
       },
       error: () => Swal.fire('Error', 'No se pudieron cargar las OPs', 'error')
     });
-    console.log('ROL VALIDO:', this.AuthService.hasRole('Gestion empacadores (Terminación y Empaque)'));
   }
 
   tieneRolEmpacadores(): boolean {
-    // Si tiene el rol de Distribuidor PV Directo, retorna false siempre
     if (this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')) {
       return false;
     }
-
-    // En caso contrario, evalúa normalmente si tiene el rol de Gestión empacadores
     return this.AuthService.hasRole('Gestion empacadores (Terminación y Empaque)');
   }
 
   // ===== MÉTODOS PARA VERIFICACIÓN =====
 
-  /**
-   * Abre el modal de verificación con los items asignados de una PV
-   */
   async abrirVerificacion(op: number, pv: string): Promise<void> {
     this.pvVerificacion = pv;
     this.opSeleccionada = op;
 
     try {
-      // Obtener items con asignaciones de esta PV
       const items = await this.terminacionEmpaqueService
         .obtenerItemsConAsignaciones(op, pv)
         .toPromise();
 
-        this.itemsVerificacion = items.map(i => ({
-          ...i,
-          cantidad_fisica: Number(i.cantidad_asignada) || 0, // Inicialmente igual a lo asignado
-          nota_inconsistencia: '',
-          verificado: (Number(i.cantidad_asignada) || 0) <= (Number(i.cantidad_verificada) || 0) // Comparación numérica real
-        }));
+      this.itemsVerificacion = items.map(i => ({
+        ...i,
+        cantidad_fisica: Number(i.cantidad_verificada) || 0, // Iniciar con lo ya verificado
+        nota_inconsistencia: '',
+        verificado: (Number(i.cantidad_asignada) || 0) <= (Number(i.cantidad_verificada) || 0)
+      }));
 
-      // console.log('Items para verificación:', this.itemsVerificacion);
-
-      // Reinicializar filtros
       this.verFilters = {
         busqueda: '',
         soloPendientes: false
       };
 
-      // Inicializar paginación
       this.initializarPaginacionVerificacion();
 
-      // Abrir modal
       const modalEl = document.getElementById('verificacionModal');
       if (modalEl) {
         const modal = new Modal(modalEl);
@@ -126,9 +125,6 @@ export class DistribucionPvComponent implements OnInit {
     }
   }
 
-  /**
-   * Inicializa la paginación para items de verificación
-   */
   initializarPaginacionVerificacion(): void {
     if (this.itemsVerificacion.length > 0) {
       this.paginationService.initializePaginator(
@@ -143,9 +139,6 @@ export class DistribucionPvComponent implements OnInit {
     }
   }
 
-  /**
-   * Aplica filtros en el modal de verificación
-   */
   applyVerFilters(): void {
     this.paginationService.updatePaginator(
       this.verPaginatorId,
@@ -159,11 +152,7 @@ export class DistribucionPvComponent implements OnInit {
     this.currentVerItems = state?.currentData || [];
   }
 
-  /**
-   * Función de filtrado para verificación
-   */
   verFilterFunction: FilterFunction = (item: any, filtros) => {
-    // Filtro por texto
     const texto = (filtros.busqueda || '').toLowerCase().trim();
     let pasaBusqueda = true;
     
@@ -181,7 +170,6 @@ export class DistribucionPvComponent implements OnInit {
                     talla.includes(texto);
     }
 
-    // Filtro por pendientes
     let pasaPendientes = true;
     if (filtros.soloPendientes) {
       pasaPendientes = !item.verificado;
@@ -190,33 +178,25 @@ export class DistribucionPvComponent implements OnInit {
     return pasaBusqueda && pasaPendientes;
   };
 
-  /**
-   * Calcula la diferencia entre cantidad física y asignada
-   */
   getDiferencia(item: any): number {
     const fisica = parseFloat(String(item.cantidad_fisica || 0)) || 0;
     const asignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
     return fisica - asignada;
   }
 
-  /**
-   * Valida si un item puede ser verificado
-   */
   esVerificacionValida(item: any): boolean {
     const fisica = parseFloat(String(item.cantidad_fisica || 0)) || 0;
     const asignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
     
-    // Si hay diferencia, debe tener nota
-    if (fisica !== asignada) {
-      return item.nota_inconsistencia && item.nota_inconsistencia.trim().length > 0;
-    }
+    if (fisica > asignada) return false;
     
-    return fisica >= 0 && fisica <= asignada;
+    // if (fisica !== asignada) {
+    //   return item.nota_inconsistencia && item.nota_inconsistencia.trim().length > 0;
+    // }
+    
+    return fisica >= 0;
   }
 
-  /**
-   * Marca un item como verificado
-   */
   verificarItem(item: any): void {
     if (!this.esVerificacionValida(item)) {
       Swal.fire('Atención', 'Debes agregar una nota si hay diferencia en la cantidad', 'warning');
@@ -227,109 +207,289 @@ export class DistribucionPvComponent implements OnInit {
     this.applyVerFilters();
   }
 
-  /**
-   * Revierte la verificación de un item
-   */
   desverificarItem(item: any): void {
     item.verificado = false;
     this.applyVerFilters();
   }
 
-  /**
-   * Cuenta items verificados
-   */
   getItemsVerificados(): number {
     return (this.itemsVerificacion || []).filter(i => i.verificado).length;
   }
 
-  /**
-   * Verifica si todos los items están verificados
-   */
   todosVerificados(): boolean {
     if (!this.itemsVerificacion || this.itemsVerificacion.length === 0) return false;
     return this.itemsVerificacion.every(i => i.verificado);
   }
 
-  /**
-   * Confirma la verificación y envía los datos al backend
-   */
   confirmarVerificacion(): void {
-    if (!this.todosVerificados()) {
-      Swal.fire('Atención', 'Debes verificar todos los items antes de confirmar', 'warning');
+    const verificados = this.itemsVerificacion.filter(i => i.verificado);
+    
+    if (verificados.length === 0) {
+      Swal.fire('Atención', 'Debes verificar al menos un item', 'warning');
       return;
     }
 
-    const itemsConDiferencia = this.itemsVerificacion.filter(i => this.getDiferencia(i) !== 0);
+    const itemsConDiferencia = verificados.filter(i => this.getDiferencia(i) !== 0);
     
-    if (itemsConDiferencia.length > 0) {
-      Swal.fire({
-        title: 'Confirmar inconsistencias',
-        html: `Se encontraron <strong>${itemsConDiferencia.length}</strong> items con diferencias.<br>¿Deseas continuar?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, confirmar',
-        cancelButtonText: 'Cancelar'
-      }).then(result => {
-        if (result.isConfirmed) {
-          this.enviarVerificacion();
+    const mensaje = this.todosVerificados() 
+      ? `Se verificarán <strong>${verificados.length}</strong> items.`
+      : `Se verificarán <strong>${verificados.length}</strong> de ${this.itemsVerificacion.length} items.<br>La PV quedará incompleta.`;
+    
+    Swal.fire({
+      title: 'Confirmar verificación',
+      html: mensaje + (itemsConDiferencia.length > 0 ? `<br><br><strong>${itemsConDiferencia.length}</strong> items con diferencias.` : ''),
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, confirmar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.enviarVerificacion();
+      }
+    });
+  }
+
+  enviarVerificacion(): void {
+    if (this.guardandoVerificacion) return;
+
+    const payload = this.itemsVerificacion
+      .filter(i => i.verificado)
+      .map(item => ({
+        f120_id: item.f120_id,
+        id_color: item.id_color,
+        id_talla: item.id_talla,
+        referencia: item.referencia,
+        descripcion: item.descripcion,
+        cantidad_asignada: item.cantidad_asignada,
+        cantidad_fisica: item.cantidad_fisica,
+        nota_inconsistencia: item.nota_inconsistencia || null,
+        diferencia: this.getDiferencia(item)
+      }));
+
+    const usuario = this.AuthService.user.id;
+    
+    this.guardandoVerificacion = true;
+
+    this.terminacionEmpaqueService
+      .registrarVerificacionAsignaciones(payload, this.pvVerificacion, this.opSeleccionada, usuario)
+      .subscribe({
+        next: (res: any) => {
+          this.itemsVerificacion.forEach(item => {
+            item.cantidad_fisica = 0;
+            item.nota_inconsistencia = '';
+            item.verificado = false;
+          });
+
+          Swal.fire('Éxito', res.message || 'Verificación registrada correctamente', 'success')
+            .then(() => {
+              const modalEl = document.getElementById('verificacionModal');
+              if (modalEl) {
+                const modal = Modal.getInstance(modalEl);
+                modal?.hide();
+              }
+              
+              const op = this.opsConPvs.find(o => o.codigo === this.opSeleccionada);
+              if (op && op.pvsOriginal) {
+                const pv = op.pvsOriginal.find(p => p.numero_pv === this.pvVerificacion);
+                if (pv) {
+                  pv.tieneAsignaciones = false;
+                }
+                this.filtrarPVs(op);
+              }
+              this.guardandoVerificacion = false;
+            });
+        },
+        error: (err) => {
+          console.error('Error al registrar verificación:', err);
+          Swal.fire('Error', 'No se pudo registrar la verificación', 'error');
+          this.guardandoVerificacion = false;
         }
       });
-    } else {
-      this.enviarVerificacion();
+  }
+
+  // ===== MODAL UBICACIONES DISTINTAS =====
+
+  abrirModalUbicacionesDistintas(): void {
+    this.opBuscadaUbicaciones = '';
+    this.itemsUbicacionesDistintas = [];
+    this.currentUbicDistItems = [];
+    this.ubicDistFilters = {
+      busqueda: '',
+      ubicacion: ''
+    };
+
+    const modalEl = document.getElementById('ubicacionesDistintasModal');
+    if (modalEl) {
+      const modal = new Modal(modalEl);
+      modal.show();
     }
   }
 
-  // /**
-  //  * Envía la verificación al backend
-  //  */
-  // enviarVerificacion(): void {
-  //   const payload = this.itemsVerificacion.map(item => ({
-  //     f120_id: item.f120_id,
-  //     id_color: item.id_color,
-  //     id_talla: item.id_talla,
-  //     cantidad_asignada: item.cantidad_asignada,
-  //     cantidad_fisica: item.cantidad_fisica,
-  //     nota_inconsistencia: item.nota_inconsistencia || null,
-  //     diferencia: this.getDiferencia(item)
-  //   }));
+  async buscarUbicacionesPorOP(): Promise<void> {
+    if (!this.opBuscadaUbicaciones || this.opBuscadaUbicaciones.trim() === '') {
+      Swal.fire('Atención', 'Debe ingresar un número de OP', 'warning');
+      return;
+    }
 
-  //   const usuario = this.AuthService.user.id;
+    this.cargandoUbicaciones = true;
+    this.itemsUbicacionesDistintas = [];
+    this.currentUbicDistItems = [];
 
-  //   this.terminacionEmpaqueService
-  //     .registrarVerificacionAsignaciones(payload, this.pvVerificacion, this.opSeleccionada, usuario)
-  //     .subscribe({
-  //       next: (res: any) => {
-  //         Swal.fire('Éxito', res.message || 'Verificación registrada correctamente', 'success')
-  //           .then(() => {
-  //             // Cerrar modal
-  //             const modalEl = document.getElementById('verificacionModal');
-  //             if (modalEl) {
-  //               const modal = Modal.getInstance(modalEl);
-  //               modal?.hide();
-  //             }
-              
-  //             // Recargar datos
-  //             this.ngOnInit();
-  //           });
-  //       },
-  //       error: (err) => {
-  //         console.error('Error al registrar verificación:', err);
-  //         Swal.fire('Error', 'No se pudo registrar la verificación', 'error');
-  //       }
-  //     });
-  // }
+    try {
+      const items = await this.terminacionEmpaqueService
+        .obtenerItemsConUbicacionesDistintas(Number(this.opBuscadaUbicaciones))
+        .toPromise();
+
+      this.itemsUbicacionesDistintas = items.filter((i: any) => 
+        i.ubicacion && i.ubicacion.toLowerCase() !== 'empaque'
+      );
+
+      if (this.itemsUbicacionesDistintas.length === 0) {
+        Swal.fire('Sin resultados', `No hay items con ubicaciones distintas a Empaque para la OP ${this.opBuscadaUbicaciones}`, 'info');
+      }
+
+      this.ubicDistFilters = {
+        busqueda: '',
+        ubicacion: ''
+      };
+
+      this.initializarPaginacionUbicDist();
+      this.cargandoUbicaciones = false;
+
+    } catch (err) {
+      console.error('Error cargando ubicaciones distintas:', err);
+      Swal.fire('Error', 'No se pudieron cargar las ubicaciones para esta OP', 'error');
+      this.cargandoUbicaciones = false;
+    }
+  }
+
+  initializarPaginacionUbicDist(): void {
+    if (this.itemsUbicacionesDistintas.length > 0) {
+      this.paginationService.initializePaginator(
+        this.ubicDistPaginatorId,
+        this.itemsUbicacionesDistintas,
+        10,
+        this.ubicDistFilters,
+        this.ubicDistFilterFunction
+      ).subscribe(state => {
+        this.currentUbicDistItems = state.currentData || [];
+      });
+    }
+  }
+
+  applyUbicDistFilters(): void {
+    this.paginationService.updatePaginator(
+      this.ubicDistPaginatorId,
+      this.itemsUbicacionesDistintas,
+      undefined,
+      this.ubicDistFilters,
+      this.ubicDistFilterFunction
+    );
+    
+    const state = this.paginationService.getPaginatorState(this.ubicDistPaginatorId);
+    this.currentUbicDistItems = state?.currentData || [];
+  }
+
+  ubicDistFilterFunction: FilterFunction = (item: any, filtros) => {
+    const texto = (filtros.busqueda || '').toLowerCase().trim();
+    let pasaBusqueda = true;
+    
+    if (texto) {
+      const descripcionCorta = (item.descripcion_corta || '').toLowerCase();
+      const descripcion = (item.descripcion || '').toLowerCase();
+      const itemId = `${item.f120_id}-${item.id_color}-${item.id_talla}`.toLowerCase();
+      const ubicacion = (item.ubicacion || '').toLowerCase();
+      
+      pasaBusqueda = descripcionCorta.includes(texto) ||
+                    descripcion.includes(texto) ||
+                    itemId.includes(texto) ||
+                    ubicacion.includes(texto);
+    }
+
+    let pasaUbicacion = true;
+    if (filtros.ubicacion) {
+      pasaUbicacion = item.ubicacion === filtros.ubicacion;
+    }
+
+    return pasaBusqueda && pasaUbicacion;
+  };
+
+  cambiarUbicacionItem(item: any, nuevaUbicacion: string): void {
+    if (this.guardandoCambioUbicacion) return;
+
+    if ((nuevaUbicacion === 'Bordado' || nuevaUbicacion === 'Estampado') && !item.comentario) {
+      Swal.fire({
+        title: 'Comentario requerido',
+        input: 'textarea',
+        inputLabel: 'Ingrese el motivo del cambio:',
+        inputPlaceholder: 'Escriba aquí...',
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar'
+      }).then(result => {
+        if (result.isConfirmed && result.value) {
+          this.ejecutarCambioUbicacion(item, nuevaUbicacion, result.value);
+        }
+      });
+    } else {
+      Swal.fire({
+        title: '¿Cambiar ubicación?',
+        html: `¿Mover ${item.cantidad} unidades de <strong>${item.ubicacion}</strong> a <strong>${nuevaUbicacion}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cambiar',
+        cancelButtonText: 'Cancelar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.ejecutarCambioUbicacion(item, nuevaUbicacion, item.comentario);
+        }
+      });
+    }
+  }
+
+  private ejecutarCambioUbicacion(item: any, nuevaUbicacion: string, comentario?: string): void {
+    this.guardandoCambioUbicacion = true;
+
+    const payload = {
+      op_codigo: this.opSeleccionada!.toString(),
+      item_hash: item.hash,
+      referencia: item.codigo,
+      f120_id: item.f120_id,
+      descripcion: item.descripcion,
+      id_color: item.id_color,
+      id_talla: item.id_talla,
+      cantidad_recibida: item.cantidad,
+      precio_unitario: item.precio_unitario || 0,
+      usuario: this.AuthService.user.id,
+      ubicacion_actual: item.ubicacion,
+      ubicacion: nuevaUbicacion,
+      comentario: comentario || ''
+    };
+
+    this.terminacionEmpaqueService.actualizarUbicacion(payload).subscribe({
+      next: () => {
+        item.ubicacion = nuevaUbicacion;
+        item.comentario = comentario || '';
+        this.applyUbicDistFilters();
+        Swal.fire('Éxito', 'Ubicación actualizada correctamente', 'success');
+        this.guardandoCambioUbicacion = false;
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudo actualizar la ubicación', 'error');
+        this.guardandoCambioUbicacion = false;
+      }
+    });
+  }
+
+  // ===== MÉTODOS EXISTENTES =====
 
 async cargarPVsParaOPs(ops: any[]): Promise<void> {
   const peticiones = ops.map(async op => {
     try {
-      // ✅ Obtener PVs de Laravel
       const pvsResp: { pvs?: string, clientes?: any[] } | Array<{ pvs?: string, clientes?: any[] }> = await this.terminacionEmpaqueService
         .listarPVsPorOPDesdeApiLaravel(op)
         .toPromise();
 
-      // console.log('PVs para OP', op, pvsResp);
-
-      // ✅ Normalizar siempre string y obtener clientes
       let cadenaPVs = '';
       let clientes = [];
       if (Array.isArray(pvsResp)) {
@@ -340,7 +500,6 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
         clientes = (pvsResp as { pvs?: string, clientes?: any[] })?.clientes || [];
       }
 
-      // ✅ Crear un mapa de PV -> Cliente para acceso rápido
       const pvClienteMap = new Map<string, any>();
       clientes.forEach(cliente => {
         cliente.pvs.forEach((pvNum: number) => {
@@ -351,27 +510,21 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
         });
       });
 
-      // ✅ Extraer números de PVs y asignar cliente correspondiente
       const numerosPV = (cadenaPVs.match(/\d+/g) || []).map(pv => ({
         numero_pv: pv,
-        tieneDisponibles: false, // Inicialmente false
+        tieneDisponibles: false,
         tieneAsignaciones: false,
         cliente: pvClienteMap.get(pv) || null
       }));
 
-      // ✅ Consultar si OP tiene ítems pendientes
       const tieneItemsPendientes = await lastValueFrom(
         this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(op)
       );
       
-      // console.log('Items pendientes para OP', op, tieneItemsPendientes['data']);
-
-      // ✅ NUEVO: Verificar disponibilidad para cada PV individualmente
       if (numerosPV.length > 0) {
         await this.verificarDisponibilidadPorPV(op, numerosPV);
       }
 
-      // ✅ NUEVO: Precargar información de asignaciones pendientes
       await this.preCargarAsignacionesPendientes(op, numerosPV);
       
       return {
@@ -398,10 +551,8 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
     }
   });
 
-  // ✅ Esperar todas las peticiones
   const resultados = await Promise.all(peticiones);
 
-  // ✅ Ordenar OPs: primero las que tienen disponibilidad
   this.opsConPvs = resultados.sort((a, b) => {
     const dispoA = typeof a.tieneDisponibles === 'object' && a.tieneDisponibles !== null && 'data' in a.tieneDisponibles
       ? a.tieneDisponibles.data === true ? 1 : 0
@@ -411,44 +562,31 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
       ? b.tieneDisponibles.data === true ? 1 : 0
       : b.tieneDisponibles === true ? 1 : 0;
 
-    // console.log('Comparando:', a.codigo, dispoA, 'vs', b.codigo, dispoB);
     return dispoB - dispoA;
   });
 
-  // console.log('OPs con PVs:', this.opsConPvs);
-
-  // ✅ Inicializar paginación
   this.inicializarPaginacion();
 
-  // ✅ Inicializar paginadores por OP
   this.opsConPvs.forEach(op => {
     this.initPaginadorPV(op);
   });
 }
-/**
- * Verifica la disponibilidad de items para cada PV individualmente
- */
+
 private async verificarDisponibilidadPorPV(op: number, pvs: any[]): Promise<void> {
   const peticiones = pvs.map(async (pv) => {
     try {
-      // ✅ Cargar items de la PV específica
       const items = await lastValueFrom(
         this.terminacionEmpaqueService.listarItemsDePVDesdeApiLaravel(pv.numero_pv, op)
       );
-      
-      // console.log(`Items cargados para PV ${pv.numero_pv}:`, items);
 
-      // ✅ Verificar si hay al menos un item con disponibilidad
       const tieneDisponibles = items.some((item: any) => {
         const cantidadAsignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
         const cantidadTeorica = parseFloat(String(item.cantidad || 0)) || 0;
         
-        // 🔹 NUEVO: Si ya completó su cantidad teórica, no está disponible
         if (cantidadAsignada >= cantidadTeorica) {
           return false;
         }
         
-        // ✅ Calcular cantidad en empaque según la nueva lógica
         let cantidadEmpaque = 0;
         
         if (Array.isArray(item.ubicaciones_distintas) && item.ubicaciones_distintas.length > 0) {
@@ -463,20 +601,11 @@ private async verificarDisponibilidadPorPV(op: number, pvs: any[]): Promise<void
         }
 
         const disponible = cantidadEmpaque - cantidadAsignada;
-        
-        // console.log(`Item ${item.f120_id}-${item.id_color}-${item.id_talla}:`, {
-        //   cantidadEmpaque,
-        //   cantidadAsignada,
-        //   cantidadTeorica,
-        //   disponible,
-        //   completoTeorico: cantidadAsignada >= cantidadTeorica
-        // });
 
         return disponible > 0;
       });
 
       pv.tieneDisponibles = tieneDisponibles;
-      // console.log(`PV ${pv.numero_pv} - Tiene disponibles:`, tieneDisponibles);
 
     } catch (error) {
       console.error(`Error verificando disponibilidad para PV ${pv.numero_pv}:`, error);
@@ -487,22 +616,14 @@ private async verificarDisponibilidadPorPV(op: number, pvs: any[]): Promise<void
   await Promise.all(peticiones);
 }
 
-/**
- * Verifica si un item ya completó su cantidad teórica
- */
 itemCompletoTeorico(item: any): boolean {
   const cantidadAsignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
   const cantidadTeorica = parseFloat(String(item.cantidad || 0)) || 0;
   return cantidadAsignada >= cantidadTeorica;
 }
 
-/**
- * Precarga información de asignaciones pendientes para una OP
- * SIN necesidad de cargar todos los items
- */
 private async preCargarAsignacionesPendientes(op: number, pvs: any[]): Promise<void> {
   try {
-    // ✅ Cargar items básicos para cada PV (solo lo necesario para la verificación)
     const itemsPorPV = await this.cargarItemsBasicosParaPVs(op, pvs);
     
     if (itemsPorPV.length > 0) {
@@ -516,7 +637,6 @@ private async preCargarAsignacionesPendientes(op: number, pvs: any[]): Promise<v
               const cantidadAsignada = parseFloat(item.asignado?.cantidad_asignada || '0');
               const cantidadVerificada = parseFloat(item.asignado?.cantidad_verificada || '0');
               
-              // Tiene asignación pero NO está completamente verificada
               return cantidadAsignada > 0 && cantidadVerificada < cantidadAsignada;
             })
           : false;
@@ -524,7 +644,6 @@ private async preCargarAsignacionesPendientes(op: number, pvs: any[]): Promise<v
         const pvIndex = pvs.findIndex(p => p.numero_pv === pvResultado.numero_pv);
         if (pvIndex !== -1) {
           pvs[pvIndex].tieneAsignaciones = tieneAsignacionesSinVerificar;
-          // console.log(`PV ${pvResultado.numero_pv} - Asignaciones pendientes:`, tieneAsignacionesSinVerificar);
         }
       });
     }
@@ -533,27 +652,21 @@ private async preCargarAsignacionesPendientes(op: number, pvs: any[]): Promise<v
   }
 }
 
-/**
- * Carga información básica de items para las PVs (solo lo necesario para verificar asignaciones)
- */
 private async cargarItemsBasicosParaPVs(op: number, pvs: any[]): Promise<any[]> {
   const itemsPorPV: any[] = [];
   
   const peticiones = pvs.map(async (pv) => {
     try {
-      // ✅ Cargar items básicos de la PV
       const items = await lastValueFrom(
         this.terminacionEmpaqueService.listarItemsDePVDesdeApiLaravel(pv.numero_pv, op)
       );
 
-      // ✅ Solo necesitamos la estructura básica para la verificación
       itemsPorPV.push({
         numero_pv: pv.numero_pv,
         items: items.map((item: any) => ({
           f120_id: item.f120_id,
           id_color: item.id_color,
           id_talla: item.id_talla,
-          // Incluir solo campos necesarios para la verificación
           cantidad: item.cantidad,
           cantidad_recibida: item.cantidad_recibida,
           cantidad_asignada: item.cantidad_asignada
@@ -563,7 +676,6 @@ private async cargarItemsBasicosParaPVs(op: number, pvs: any[]): Promise<any[]> 
 
     } catch (error) {
       console.error(`Error cargando items básicos para PV ${pv.numero_pv}:`, error);
-      // ✅ Añadir estructura vacía para no romper la verificación
       itemsPorPV.push({
         numero_pv: pv.numero_pv,
         items: [],
@@ -576,47 +688,6 @@ private async cargarItemsBasicosParaPVs(op: number, pvs: any[]): Promise<any[]> 
   return itemsPorPV;
 }
 
-/**
- * NUEVO MÉTODO: Verificar asignaciones pendientes para todas las PVs de una OP
- */
-private async verificarAsignacionesPendientesOP(op: number, pvs: any[]): Promise<void> {
-  try {
-    const itemsPorPV = pvs.map(pv => ({
-      numero_pv: pv.numero_pv,
-      items: [], // No necesitamos los items, solo la estructura
-      numero_op: op
-    }));
-
-    const resultado = await lastValueFrom(
-      this.terminacionEmpaqueService.verificarItemsPendientesDePV(itemsPorPV)
-    );
-
-    resultado.data.forEach((pvResultado: any) => {
-      const tieneAsignacionesSinVerificar = Array.isArray(pvResultado.items_validados)
-        ? pvResultado.items_validados.some((item: any) => {
-            const cantidadAsignada = parseFloat(item.asignado?.cantidad_asignada || '0');
-            const cantidadVerificada = parseFloat(item.asignado?.cantidad_verificada || '0');
-            
-            // Tiene asignación pero NO está completamente verificada
-            return cantidadAsignada > 0 && cantidadVerificada < cantidadAsignada;
-          })
-        : false;
-
-      const pvIndex = pvs.findIndex(p => p.numero_pv === pvResultado.numero_pv);
-      if (pvIndex !== -1) {
-        pvs[pvIndex].tieneAsignaciones = tieneAsignacionesSinVerificar;
-        // console.log(`PV ${pvResultado.numero_pv} - Asignaciones pendientes:`, tieneAsignacionesSinVerificar);
-      }
-    });
-
-  } catch (error) {
-    console.error(`Error verificando asignaciones para OP ${op}:`, error);
-  }
-}
-
-/**
- * Obtener nombres de clientes de una OP
- */
 obtenerNombresClientes(op: any): string {
   if (!op.clientes || op.clientes.length === 0) {
     return '';
@@ -624,36 +695,24 @@ obtenerNombresClientes(op: any): string {
   return op.clientes.map((c: any) => c.nombre).join(', ');
 }
 
-/**
- * Verificar si tiene múltiples clientes
- */
 tieneMultiplesClientes(op: any): boolean {
   return op.clientes && op.clientes.length > 1;
 }
 
-/**
- * Obtener primer cliente
- */
 obtenerPrimerCliente(op: any): any {
   return op.clientes && op.clientes.length > 0 ? op.clientes[0] : null;
 }
 
-/**
- * Obtener cantidad de clientes
- */
 obtenerCantidadClientes(op: any): number {
   return op.clientes ? op.clientes.length : 0;
 }
 
-  /**
-   * Inicializa el paginador con los datos cargados
-   */
   inicializarPaginacion(): void {
     if (this.opsConPvs.length > 0) {
       this.paginationService.initializePaginator(
         this.paginatorId,
         this.opsConPvs,
-        10, // Tamaño de página inicial
+        10,
         this.filters,
         this.filterFunction
       ).subscribe(state => {
@@ -664,10 +723,8 @@ obtenerCantidadClientes(op: any): number {
 
   initPaginadorPV(op: any, pageSize = 5): void {
     const instanceId = 'pv_' + op.codigo;
-    // asegúrate de tener un filtro vacío inicial
     this.pvFilters[op.codigo] = this.pvFilters[op.codigo] || '';
 
-    // inicializa el paginador para las PVs de esta OP
     this.paginationService
       .initializePaginator(
         instanceId,
@@ -677,20 +734,16 @@ obtenerCantidadClientes(op: any): number {
         this.pvFilterFunction
       )
       .subscribe(state => {
-        // state.currentData contiene la página actual (pvs filtradas)
         op.pvsPaged = state.currentData || [];
       });
   }
 
-  /**
-   * Inicializa la paginación de items en el modal
-   */
   initializarPaginacionItems(): void {
     if (this.items.length > 0) {
       this.paginationService.initializePaginator(
         this.itemsPaginatorId,
         this.items,
-        5, // Tamaño de página inicial
+        5,
         this.itemFilters,
         this.itemsFilterFunction
       ).subscribe(state => {
@@ -699,14 +752,11 @@ obtenerCantidadClientes(op: any): number {
     }
   }
 
-  /**
-   * Aplica los filtros de búsqueda y actualiza la paginación
-   */
   applyFilters(): void {
     this.paginationService.updatePaginator(
       this.paginatorId,
       this.opsConPvs,
-      undefined, // Mantener tamaño de página actual
+      undefined,
       this.filters,
       this.filterFunction
     );
@@ -715,14 +765,11 @@ obtenerCantidadClientes(op: any): number {
     this.currentOps = state?.currentData || [];
   }
 
-  /**
-   * Aplica los filtros en el modal de items
-   */
   applyItemFilters(): void {
     this.paginationService.updatePaginator(
       this.itemsPaginatorId,
       this.items,
-      undefined, // Mantener tamaño de página actual
+      undefined,
       this.itemFilters,
       this.itemsFilterFunction
     );
@@ -735,47 +782,33 @@ obtenerCantidadClientes(op: any): number {
     const instanceId = 'pv_' + op.codigo;
     const filtro = { busqueda: this.pvFilters[op.codigo] || '' };
 
-    // updatePaginator tiene la misma firma que usaste para OPs:
     this.paginationService.updatePaginator(
       instanceId,
       op.pvsOriginal || [],
-      undefined, // mantener pageSize actual
+      undefined,
       filtro,
       this.pvFilterFunction
     );
 
-    // actualizar el array que iteras en la vista
     const state = this.paginationService.getPaginatorState(instanceId);
     op.pvsPaged = state?.currentData || [];
   }
 
-  /**
-   * Función de filtrado para el paginador principal
-   */
   filterFunction: FilterFunction = (item: any, filtros) => {
     const texto = filtros.busqueda.toLowerCase().trim();
     if (!texto) return true;
     
-    // Buscar en el código de la OP
     return item.codigo?.toLowerCase().includes(texto);
   };
 
-  /**
-   * Función de filtrado para PVs
-   */
   pvFilterFunction: FilterFunction = (pv: any, filtros: any) => {
     const texto = (filtros?.busqueda || '').toString().toLowerCase().trim();
     if (!texto) return true;
-    // pv puede ser string o objeto { numero_pv: '...' }
     const numero = (pv.numero_pv ?? pv).toString().toLowerCase();
     return numero.includes(texto);
   };
 
-  /**
-   * Función de filtrado para items en el modal
-   */
   itemsFilterFunction: FilterFunction = (item: any, filtros) => {
-    // Filtro por texto de búsqueda
     const texto = (filtros.busqueda || '').toLowerCase().trim();
     let pasaBusqueda = true;
     
@@ -795,20 +828,14 @@ obtenerCantidadClientes(op: any): number {
                    talla.includes(texto);
     }
 
-    // Filtro por disponibilidad
     let pasaDisponibilidad = true;
     if (filtros.soloDisponibles) {
       const cantidadRecibida = parseFloat(String(item.cantidad_recibida || 0)) || 0;
       const cantidadAsignada = parseFloat(String(item.cantidad_asignada || 0)) || 0;
       const cantidadRequerida = parseFloat(String(item.cantidad || 0)) || 0;
 
-      // Disponible en la OP
       const disponibleOP = cantidadRecibida - cantidadAsignada;
-
-      // Faltante respecto al requerido
       const faltantePorRequerido = cantidadRequerida - cantidadAsignada;
-
-      // Disponible real
       const disponible = Math.max(0, Math.min(disponibleOP, faltantePorRequerido));
 
       pasaDisponibilidad = disponible > 0;
@@ -822,7 +849,6 @@ obtenerCantidadClientes(op: any): number {
       op.expandir = true;
       op.cargando = true;
       
-      // ✅ Recargar datos de disponibilidad al expandir
       this.verificarDisponibilidadPorPV(op.codigo, op.pvsOriginal)
         .then(() => {
           op.cargando = false;
@@ -840,214 +866,115 @@ obtenerCantidadClientes(op: any): number {
     }
   }
 
-/**
- * Ordena PVs basado en datos precargados
- */
 private ordenarPVs(op: any): void {
   if (!op.pvsOriginal || !Array.isArray(op.pvsOriginal)) return;
   
   op.pvsOriginal.sort((a, b) => {
-    // Prioridad 1: Asignaciones sin verificar
     if (a.tieneAsignaciones !== b.tieneAsignaciones) {
       return (b.tieneAsignaciones ? 1 : 0) - (a.tieneAsignaciones ? 1 : 0);
     }
-    // Prioridad 2: Disponibles
     if (a.tieneDisponibles !== b.tieneDisponibles) {
       return (b.tieneDisponibles ? 1 : 0) - (a.tieneDisponibles ? 1 : 0);
     }
-    // Prioridad 3: Orden numérico de PV
     return parseInt(a.numero_pv) - parseInt(b.numero_pv);
   });
 }
 
-  /**
-   * Verifica si una OP tiene PVs con asignaciones pendientes de verificar
-   */
   tienePVsConAsignacionesPendientes(op: any): boolean {
     if (!op.pvsOriginal || !Array.isArray(op.pvsOriginal)) return false;
-    // console.log('Verificando asignaciones pendientes para OP', op.codigo, op.pvsOriginal, !(op.pvsOriginal.some(pv => pv.tieneAsignaciones === true)));
-    // console.log(op);
     return op.pvsOriginal.some(pv => pv.tieneAsignaciones === true);
   }
 
-  private async verificarAsignacionesDePVs(op: number, pvs: any[]): Promise<void> {
-    const itemsPorPV = pvs.map(pv => ({
-      numero_pv: pv.numero_pv,
-      items: [],
-      numero_op: op
-    }));
-
-    try {
-      const resultado = await lastValueFrom(
-        this.terminacionEmpaqueService.verificarItemsPendientesDePV(itemsPorPV)
-      );
-
-      resultado.data.forEach((pvResultado: any) => {
-        const tieneAsignacionesSinVerificar = Array.isArray(pvResultado.items_validados)
-          ? pvResultado.items_validados.some((item: any) => {
-              const cantidadAsignada = parseFloat(item.asignado?.cantidad_asignada || '0');
-              const cantidadVerificada = parseFloat(item.asignado?.cantidad_verificada || '0');
-              return cantidadAsignada > 0 && cantidadVerificada < cantidadAsignada;
-            })
-          : false;
-
-        const pvIndex = pvs.findIndex(p => p.numero_pv === pvResultado.numero_pv);
-        if (pvIndex !== -1) {
-          pvs[pvIndex].tieneAsignaciones = tieneAsignacionesSinVerificar;
-        }
-      });
-    } catch (error) {
-      console.error('Error verificando asignaciones:', error);
-    }
-  }
-
-  enviarVerificacion(): void {
-  const payload = this.itemsVerificacion.map(item => ({
-    f120_id: item.f120_id,
-    id_color: item.id_color,
-    id_talla: item.id_talla,
-    referencia: item.referencia,
-    descripcion: item.descripcion,
-    cantidad_asignada: item.cantidad_asignada,
-    cantidad_fisica: item.cantidad_fisica,
-    nota_inconsistencia: item.nota_inconsistencia || null,
-    diferencia: this.getDiferencia(item)
-  }));
-
-  const usuario = this.AuthService.user.id;
-
-  this.terminacionEmpaqueService
-    .registrarVerificacionAsignaciones(payload, this.pvVerificacion, this.opSeleccionada, usuario)
-    .subscribe({
-      next: (res: any) => {
-        Swal.fire('Éxito', res.message || 'Verificación registrada correctamente', 'success')
-          .then(() => {
-            // Cerrar modal
-            const modalEl = document.getElementById('verificacionModal');
-            if (modalEl) {
-              const modal = Modal.getInstance(modalEl);
-              modal?.hide();
-            }
-            
-            // ✅ Actualizar estado local de la PV para que desaparezca el botón
-            const op = this.opsConPvs.find(o => o.codigo === this.opSeleccionada);
-            if (op && op.pvsOriginal) {
-              const pv = op.pvsOriginal.find(p => p.numero_pv === this.pvVerificacion);
-              if (pv) {
-                pv.tieneAsignaciones = false; // Ya no tiene asignaciones pendientes
-              }
-              this.filtrarPVs(op); // Refrescar vista
-            }
-          });
-      },
-      error: (err) => {
-        console.error('Error al registrar verificación:', err);
-        Swal.fire('Error', 'No se pudo registrar la verificación', 'error');
-      }
-    });
-}
-
-  // DistribucionPvComponent (o RecepcionOpComponent si es allí)
   async verItemsDePV(op: number, pv: string): Promise<void> {
     this.pvSeleccionada = pv;
     this.opSeleccionada = op;
 
     try {
-      const items = await this.terminacionEmpaqueService
-        .listarItemsDePVDesdeApiLaravel(+pv, op)
-        .toPromise();
-
-      // ✅ Mostrar todos los ítems, pero calcular disponibilidad solo por lo que está en empaque
-      this.items = items.map(i => {
-        const cantidadTeorica = parseFloat(String(i.cantidad || 0)) || 0;
-        const cantidadRecibida = parseFloat(String(i.cantidad_recibida || i.cantidad_recibida_total || 0)) || 0;
-        const cantidadAsignada = parseFloat(String(i.cantidad_asignada || 0)) || 0;
-
-        // 🔹 Buscar en "ubicaciones_distintas" cuánto hay en empaque
-        let cantidadEmpaque = 0;
-        if (Array.isArray(i.ubicaciones_distintas)) {
-          const ubicacionEmpaque = i.ubicaciones_distintas.find(
-            u => u.ubicacion?.toLowerCase() === 'empaque'
-          );
-          if (ubicacionEmpaque) {
-            cantidadEmpaque = parseFloat(String(ubicacionEmpaque.cantidad || 0)) || 0;
-          }
-        } else if (i.ubicacion?.toLowerCase() === 'empaque') {
-          // Si el campo directo indica que el ítem está en empaque
-          cantidadEmpaque = parseFloat(String(i.cantidad || 0)) || 0;
-        }
-
-        return {
-          ...i,
-          cantidad: cantidadTeorica,                 // cantidad teórica total del ítem
-          cantidad_recibida: cantidadRecibida,       // total recibido
-          cantidad_asignada: cantidadAsignada,       // ya asignado
-          cantidad_en_empaque: cantidadEmpaque,      // 🔹 nueva propiedad
-          cantidad_a_asignar: 0                      // campo editable del usuario
-        };
-      });
-
-      // 🔄 Reiniciar filtros y paginación
-      this.itemFilters = { busqueda: '', soloDisponibles: false };
-      this.initializarPaginacionItems();
-
-      this.pvSeleccionada = pv;
-      this.ocCliente = this.items[0]?.oc_cliente || 'N/A';
-
-      const modalEl = document.getElementById('itemsModal');
-      if (modalEl) {
-        const modal = new Modal(modalEl);
-        modal.show();
-      }
+      await this.cargarItemsParaPV(op, pv, true);
     } catch (err) {
       Swal.fire('Error', 'No se pudieron cargar los ítems de la PV', 'error');
       console.error('Error al cargar ítems de PV', op, pv, err);
     }
   }
 
+  private async cargarItemsParaPV(op: number, pv: string, mostrarModal: boolean): Promise<void> {
+    const items = await this.terminacionEmpaqueService
+      .listarItemsDePVDesdeApiLaravel(+pv, op)
+      .toPromise();
 
-  /** --------------------
-   * Validaciones para iconos
-   * -------------------- */
+    this.items = items.map(i => {
+      const cantidadTeorica = parseFloat(String(i.cantidad || 0)) || 0;
+      const cantidadRecibida = parseFloat(String(i.cantidad_recibida || i.cantidad_recibida_total || 0)) || 0;
+      const cantidadAsignada = parseFloat(String(i.cantidad_asignada || 0)) || 0;
+
+      let cantidadEmpaque = 0;
+      if (Array.isArray(i.ubicaciones_distintas)) {
+        const ubicacionEmpaque = i.ubicaciones_distintas.find(
+          u => u.ubicacion?.toLowerCase() === 'empaque'
+        );
+        if (ubicacionEmpaque) {
+          cantidadEmpaque = parseFloat(String(ubicacionEmpaque.cantidad || 0)) || 0;
+        }
+      } else if (i.ubicacion?.toLowerCase() === 'empaque') {
+        cantidadEmpaque = parseFloat(String(i.cantidad || 0)) || 0;
+      }
+
+      return {
+        ...i,
+        cantidad: cantidadTeorica,
+        cantidad_recibida: cantidadRecibida,
+        cantidad_asignada: cantidadAsignada,
+        cantidad_en_empaque: cantidadEmpaque,
+        cantidad_a_asignar: 0
+      };
+    });
+
+    this.itemFilters = { busqueda: '', soloDisponibles: false };
+    this.initializarPaginacionItems();
+
+    this.pvSeleccionada = pv;
+    this.ocCliente = this.items[0]?.oc_cliente || 'N/A';
+
+    if (mostrarModal) {
+      const modalEl = document.getElementById('itemsModal');
+      if (modalEl) {
+        const modal = new Modal(modalEl);
+        modal.show();
+      }
+    }
+  }
+
+  private async refrescarDespuesAsignacion(): Promise<void> {
+    if (!this.opSeleccionada || !this.pvSeleccionada) return;
+
+    try {
+      await this.cargarItemsParaPV(this.opSeleccionada, this.pvSeleccionada, false);
+
+      const op = this.opsConPvs.find(o => o.codigo === this.opSeleccionada);
+      if (op?.pvsOriginal) {
+        await this.verificarDisponibilidadPorPV(op.codigo, op.pvsOriginal);
+        await this.preCargarAsignacionesPendientes(op.codigo, op.pvsOriginal);
+        this.ordenarPVs(op);
+        this.filtrarPVs(op);
+      }
+    } catch (error) {
+      console.error('Error al refrescar datos después de asignar:', error);
+    }
+  }
+
   esCantidadValida(item: any): boolean {
     const asignar = Number(item.cantidad_a_asignar) || 0;
-
-    // No es válido si no hay cantidad
     if (asignar <= 0) return false;
-
     const max = this.getMaximoPermitido(item);
-
     return asignar <= max;
   }
 
-  // excedeTeorica(item: any): boolean {
-  //   const asignar = Number(item.cantidad_a_asignar) || 0;
-  //   const limiteTeorico = Number(item.cantidad) || 0;
-  //   return asignar > limiteTeorico;
-  // }
-
-  // excedeDisponible(item: any): boolean {
-  //   const asignar = Number(item.cantidad_a_asignar) || 0;
-  //   const disponible = Math.max(0, (Number(item.cantidad_recibida) || 0) - (Number(item.cantidad_asignada) || 0));
-  //   return asignar > disponible;
-  // }
-
-  /**
-   * Calcula la cantidad disponible para un item
-   * Toma en cuenta que no se debe asignar más de lo que requiere (item.cantidad).
-   */
   getCantidadDisponible(item: any): number {
-
-    // Si el backend ya trae cantidad_disponible_real, úsala directamente
     if (item.cantidad_disponible_real !== undefined) {
-
       const disponible = parseFloat(String(item.cantidad_disponible_real || 0));
-
-      // Si está en negativo por alguna inconsistencia, corregir
       return disponible > 0 ? disponible : 0;
     }
 
-    // fallback por si el backend no lo trae
     const teorico = parseFloat(String(item.cantidad || 0));
     const asignadoTotal = parseFloat(String(item.cantidad_asignada_total || 0));
     const disponibleFallback = teorico - asignadoTotal;
@@ -1055,92 +982,45 @@ private ordenarPVs(op: any): void {
     return disponibleFallback > 0 ? disponibleFallback : 0;
   }
 
-  /**
-   * Cuenta los items que todavía pueden recibir asignación
-   */
   getItemsConCantidadParaAsignar(): number {
     return (this.items || []).filter(item => this.getCantidadDisponible(item) > 0).length;
   }
 
-  /**
-   * Verifica si hay items válidos para guardar
-   */
   tieneItemsValidosParaGuardar(): boolean {
     return (this.items || []).some(item => this.esCantidadValida(item));
   }
 
-  /**
-   * Calcula el máximo permitido para un item
-   */
   getMaximoPermitido(item: any): number {
+    const teorica = item.cantidad ?? 0;
+    const yaAsignado = item.cantidad_asignada ?? 0;
+    const recibidaTotal = item.cantidad_recibida_total ?? 0;
+    const enEmpaque = item.cantidad_en_empaque ?? 0;
+    const disponible = this.getCantidadDisponible(item) ?? 0;
 
-    const teorica = item.cantidad ?? 0;                           // Lo que la PV requiere
-    const yaAsignado = item.cantidad_asignada ?? 0;               // Asignado previamente
-    const recibidaTotal = item.cantidad_recibida_total ?? 0;      // Lo recibido en OP
-    const enEmpaque = item.cantidad_en_empaque ?? 0;              // Si tienes empaque
-    const disponible = this.getCantidadDisponible(item) ?? 0;     // Disponible real OP
-
-    // 1. Cantidad que falta por asignar según la PV
     const faltantePV = Math.max(teorica - yaAsignado, 0);
-
-    // 2. Cantidad realmente utilizable de la OP
     const utilDisponible = Math.max(disponible - enEmpaque, 0);
 
-    console.log('Cálculo máximo permitido para item', item.f120_id, {
-      teorica,
-      yaAsignado,
-      recibidaTotal,
-      enEmpaque,
-      disponible,
-      faltantePV,
-      utilDisponible
-    });
-
-    console.log('Máximo permitido será el mínimo de:', {
-      faltantePV,
-      utilDisponible,
-      teorica,
-      disponible
-    });
-
-    console.log('Máximo permitido:', Math.min(faltantePV, utilDisponible, teorica, disponible));
-
-    // 3. El máximo permitido será el mínimo de todas las restricciones
     return Math.min(faltantePV, utilDisponible, teorica, disponible);
   }
 
-    /* -------------------
-    Helpers y acciones
-    ------------------- */
   roundValue(value: number, decimals = 2): number {
     if (isNaN(value) || value === null) return 0;
     const factor = Math.pow(10, decimals);
     return Math.round(value * factor) / factor;
   }
 
-  /**
-   * Asigna el máximo permitido solo a la fila dada
-   */
   asignarMaximoItem(item: any): void {
     const maximo = this.getMaximoPermitido(item);
     item.cantidad_a_asignar = this.roundValue(maximo, 2);
-    // actualizar paginación/filtrado si es necesario
     this.applyItemFilters();
   }
 
-  /**
-   * Asigna máximos para todas las filas visibles / cargadas
-   * force = true -> sobrescribe cualquier valor ya digitado
-   * force = false -> solo asigna donde cantidad_a_asignar === 0
-   */
   asignarMaximos(force = false): void {
     if (!this.items || !this.items.length) return;
 
     this.items.forEach(item => {
-
       const maxPermitido = this.getMaximoPermitido(item);
 
-      // Si no hay nada que asignar → seguir
       if (maxPermitido <= 0) {
         item.cantidad_a_asignar = 0;
         return;
@@ -1148,36 +1028,28 @@ private ordenarPVs(op: any): void {
 
       const valorActual = Number(item.cantidad_a_asignar) || 0;
 
-      // Si forzamos → siempre asigna máximo
       if (force) {
         item.cantidad_a_asignar = this.roundValue(maxPermitido, 2);
         return;
       }
 
-      // SI NO FORZAMOS:
-      // 1) si no tiene valor actual
       if (valorActual === 0) {
         item.cantidad_a_asignar = this.roundValue(maxPermitido, 2);
         return;
       }
 
-      // 2) si tiene valor pero es inválido → corregimos
       if (valorActual < 0 || valorActual > maxPermitido || isNaN(valorActual)) {
         item.cantidad_a_asignar = this.roundValue(maxPermitido, 2);
         return;
       }
-
-      // 3) si ya tiene un valor válido → lo dejamos como está
     });
 
     this.applyItemFilters();
   }
 
-  /**
-   * Prepara y valida las asignaciones usando el servicio Angular.
-   * Por ahora NO hace POST a la API: solo genera y valida el payload en el servicio.
-   */
   prepararYValidarAsignaciones(): void {
+    if (this.guardandoAsignacion) return;
+
     const errores: string[] = [];
     const itemsInvalidos: any[] = [];
 
@@ -1185,43 +1057,32 @@ private ordenarPVs(op: any): void {
       const asignar = Number(item.cantidad_a_asignar) || 0;
       const max = this.getMaximoPermitido(item);
 
-      if (asignar <= 0) return; // no lo validamos si no asigna nada
+      if (asignar <= 0) return;
 
       const erroresItem: string[] = [];
 
       if (asignar > max) {
-        erroresItem.push(
-          `Cantidad a asignar (${asignar}) excede el máximo permitido (${max}).`
-        );
+        erroresItem.push(`Cantidad a asignar (${asignar}) excede el máximo permitido (${max}).`);
       }
 
       if (asignar > (item.cantidad || 0)) {
-        erroresItem.push(
-          `Excede la cantidad teórica (${item.cantidad}).`
-        );
+        erroresItem.push(`Excede la cantidad teórica (${item.cantidad}).`);
       }
 
       if (asignar > this.getCantidadDisponible(item)) {
-        erroresItem.push(
-          `Excede la cantidad disponible (${this.getCantidadDisponible(item)}).`
-        );
+        erroresItem.push(`Excede la cantidad disponible (${this.getCantidadDisponible(item)}).`);
       }
 
       if (asignar < 0) {
-        erroresItem.push(
-          `Cantidad negativa no permitida.`
-        );
+        erroresItem.push(`Cantidad negativa no permitida.`);
       }
 
       if (erroresItem.length > 0) {
-        errores.push(
-          `<b>Item ${item.f120_id || item.referencia}:</b><br>• ${erroresItem.join('<br>• ')}`
-        );
+        errores.push(`<b>Item ${item.f120_id || item.referencia}:</b><br>• ${erroresItem.join('<br>• ')}`);
         itemsInvalidos.push(item);
       }
     });
 
-    // 👉 Mostrar errores si existen
     if (errores.length > 0) {
       Swal.fire({
         title: 'Errores en asignaciones',
@@ -1232,7 +1093,6 @@ private ordenarPVs(op: any): void {
       return;
     }
 
-    // 👉 Si no hay errores, continuar como antes
     const itemsParaEnviar = (this.items || [])
       .filter(item => Number(item.cantidad_a_asignar) > 0)
       .map(item => ({ ...item }));
@@ -1243,61 +1103,54 @@ private ordenarPVs(op: any): void {
     }
 
     this.usuario_que_registra = this.AuthService.user.id;
-
     const esDistribuidorPvDirecto = this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)');
+    
+    this.guardandoAsignacion = true;
 
-    if (esDistribuidorPvDirecto) {
-      this.terminacionEmpaqueService
-        .registrarAsignacionesDirecto(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
-        .subscribe({
-          next: (res: any) => {
-            Swal.fire('Éxito', res.message || 'Asignaciones registradas (Distribuidor PV Directo).', 'success')
-              .then(() => window.location.reload());
-          },
-          error: () => {
-            Swal.fire('Error', 'No se pudo registrar las asignaciones para Distribuidor PV Directo.', 'error');
-          }
-        });
+    const servicio = esDistribuidorPvDirecto
+      ? this.terminacionEmpaqueService.registrarAsignacionesDirecto(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
+      : this.terminacionEmpaqueService.registrarAsignaciones(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra);
 
-    } else {
-      this.terminacionEmpaqueService
-        .registrarAsignaciones(itemsParaEnviar, this.pvSeleccionada, this.opSeleccionada, this.usuario_que_registra)
-        .subscribe({
-          next: (res: any) => {
-            if (res.message) {
-              Swal.fire('Éxito', res.message, 'success');
-              return;
+    servicio.subscribe({
+      next: async (res: any) => {
+        this.items.forEach(item => item.cantidad_a_asignar = 0);
+
+        try {
+          if (res.message) {
+            await Swal.fire('Éxito', res.message, 'success');
+            await this.refrescarDespuesAsignacion();
+          } else if (res.valid !== undefined) {
+            if (!res.valid) {
+              const errores = (res.items || [])
+                .filter((r: any) => !r.valid)
+                .map((r: any) => `Item ${r.f120_id || r.referencia || ''}: ${r.errors.join(', ')}`)
+                .join('<br/>');
+
+              Swal.fire({
+                title: 'Errores en asignaciones',
+                html: errores || 'Hay errores en algunas asignaciones',
+                icon: 'error',
+                width: 700
+              });
+              this.assignmentPayload = res.items || [];
+            } else {
+              this.assignmentPayload = res.items || [];
+              await Swal.fire({
+                title: 'Asignaciones válidas',
+                html: `Se validaron ${this.assignmentPayload.length} ítems.`,
+                icon: 'success'
+              });
+              await this.refrescarDespuesAsignacion();
             }
-
-            if (res.valid !== undefined) {
-              if (!res.valid) {
-                const errores = (res.items || [])
-                  .filter((r: any) => !r.valid)
-                  .map((r: any) => `Item ${r.f120_id || r.referencia || ''}: ${r.errors.join(', ')}`)
-                  .join('<br/>');
-
-                Swal.fire({
-                  title: 'Errores en asignaciones',
-                  html: errores || 'Hay errores en algunas asignaciones',
-                  icon: 'error',
-                  width: 700
-                });
-
-                this.assignmentPayload = res.items || [];
-              } else {
-                this.assignmentPayload = res.items || [];
-                Swal.fire({
-                  title: 'Asignaciones válidas',
-                  html: `Se validaron ${this.assignmentPayload.length} ítems.`,
-                  icon: 'success'
-                }).then(() => window.location.reload());
-              }
-            }
-          },
-          error: () => {
-            Swal.fire('Error', 'No se pudo registrar las asignaciones en el servicio.', 'error');
           }
-        });
-    }
+        } finally {
+          this.guardandoAsignacion = false;
+        }
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudo registrar las asignaciones.', 'error');
+        this.guardandoAsignacion = false;
+      }
+    });
   }
 }

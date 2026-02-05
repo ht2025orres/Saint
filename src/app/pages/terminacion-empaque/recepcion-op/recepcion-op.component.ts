@@ -84,6 +84,13 @@ export class RecepcionOpComponent implements OnInit {
   busquedaIniciada = false;
   cargando = false;
 
+  // ====== NUEVAS BANDERAS DE CARGA ======
+  loadingBuscarItems = false;
+  loadingGuardarRecepcion = false;
+  loadingBuscarModal = false;
+  loadingGuardarModal = false;
+  // ====================================
+
   // Modales
   modalUbicacion: ModalUbicacionData = {
     item: null,
@@ -134,18 +141,20 @@ export class RecepcionOpComponent implements OnInit {
     });
   }
 
-  // esDistribuidor(): boolean {
-  //   const roles = (this.authService.user.roles || []).map((role: any) => typeof role === 'string' ? role : role.name || role);
-  //   console.log(roles);
-  //   return roles.includes('Distribuidor PV (Terminación y Empaque)');
-  // }
-
   buscarPVs(): void {
+    // Evitar múltiples clics
+    if (this.loadingBuscarItems) {
+      return;
+    }
+
     this.busquedaIniciada = true;
+    this.loadingBuscarItems = true; // ← Activar loading
     this.cargando = true;
+    
     const opEncontrada = this.listaOPs.find(op => op.codigo === this.codigoOPSeleccionada);
     if (!opEncontrada) {
       this.cargando = false;
+      this.loadingBuscarItems = false; // ← Desactivar loading
       Swal.fire('Advertencia', 'Debes seleccionar una OP válida', 'warning');
       return;
     }
@@ -160,6 +169,7 @@ export class RecepcionOpComponent implements OnInit {
         const numerosPV = cadenaPVs.match(/\d+/g) || [];
 
         if (numerosPV.length === 0) {
+          this.loadingBuscarItems = false; // ← Desactivar loading
           Swal.fire('Sin PVs', 'La OP no tiene PVs asociadas', 'info');
           return;
         }
@@ -238,21 +248,26 @@ export class RecepcionOpComponent implements OnInit {
                       this.filters,
                       this.filterFunction
                     ).subscribe(state => this.currentItems = state.currentData);
+                    
                     this.cargando = false;
+                    this.loadingBuscarItems = false; // ← Desactivar loading
                   }, () => {
                     this.cargando = false;
+                    this.loadingBuscarItems = false; // ← Desactivar loading
                     Swal.fire('Error', 'No se pudo cargar cantidades recibidas locales', 'error');
                   });
               });
           },
           error: () => {
-            this.cargando = false;  
+            this.cargando = false;
+            this.loadingBuscarItems = false; // ← Desactivar loading
             Swal.fire('Error', 'Error al obtener ítems de las PVs', 'error');
           }
         });
       },
       error: () => {
-        this.cargando = false;  
+        this.cargando = false;
+        this.loadingBuscarItems = false; // ← Desactivar loading
         Swal.fire('Error', 'Error al obtener PVs desde API Laravel', 'error');
       }
     });
@@ -303,20 +318,28 @@ export class RecepcionOpComponent implements OnInit {
       cargando: false
     };
     this.busquedaIniciada = false;
+    this.loadingBuscarModal = false; // ← Reset loading
   }
 
   cerrarModalRecepcionPTs() {
     this.modalRecepcionPTs.mostrar = false;
     this.busquedaIniciada = false;
+    this.loadingBuscarModal = false; // ← Reset loading
   }
 
   buscarItemsEnModal() {
+    // Evitar múltiples clics
+    if (this.loadingBuscarModal) {
+      return;
+    }
+
     const pt = (this.modalRecepcionPTs.ptIngresado || '').toString().trim();
     if (!pt) {
       Swal.fire('Atención', 'Debes ingresar un número de PT', 'warning');
       return;
     }
 
+    this.loadingBuscarModal = true; // ← Activar loading
     this.modalRecepcionPTs.cargando = true;
     this.busquedaIniciada = true;
     this.modalRecepcionPTs.items = [];
@@ -324,18 +347,25 @@ export class RecepcionOpComponent implements OnInit {
 
     this.terminacionEmpaqueService.listarItemsDePVDesdeApiLaravel(+pt).subscribe({
       next: (res: any[]) => {
+        console.log('Items recibidos para PT', pt, ':', res);
         if (!res || res.length === 0) {
           this.modalRecepcionPTs.cargando = false;
+          this.loadingBuscarModal = false; // ← Desactivar loading
           Swal.fire('Atención', 'No se encontraron ítems para esta PT', 'info');
           return;
         }
 
         // ====== Extraer número de PV desde las notas ======
         const notaEjemplo = res[0]?.notas_completas || '';
-        const matchPv = notaEjemplo.match(/PV\s*(\d+)/i);
-        if (matchPv) {
-          this.modalRecepcionPTs.pv = matchPv[1]; // Solo el número
-          console.log('PV detectada desde notas:', this.modalRecepcionPTs.pv);
+
+        let match =
+          notaEjemplo.match(/complementa\s+la\s+(\d+)/i) || // 1️⃣ prioridad
+          notaEjemplo.match(/PV\s*(\d+)/i) ||                // 2️⃣ segunda opción
+          notaEjemplo.match(/(\d+)/);                        // 3️⃣ fallback
+
+        if (match) {
+          this.modalRecepcionPTs.pv = match[1];
+          console.log('Número detectado desde notas:', this.modalRecepcionPTs.pv);
         }
 
         // ====== Unificar ítems por hash ======
@@ -345,7 +375,6 @@ export class RecepcionOpComponent implements OnInit {
 
             res.forEach((item, i) => {
               const hash = hashesGenerados[i].hash;
-              console.log('item de PT:', item);
               if (!itemsUnificados[hash]) {
                 itemsUnificados[hash] = {
                   hash: hash,
@@ -376,10 +405,10 @@ export class RecepcionOpComponent implements OnInit {
               .subscribe(
                 (response: { [hash: string]: any }) => {
                   hashes.forEach(hash => {
-                    const itemData = response[hash];
+                    const itemData = response['data'][hash];
                     if (itemData !== undefined) {
                       itemsUnificados[hash].cantidad_recibida_total =
-                        itemData.cantidad_recibida_total || 0;
+                        itemData.cantidad_recibida_total;
 
                       if (itemData.ubicaciones_distintas) {
                         // ← Marcar como NO nuevas
@@ -404,15 +433,18 @@ export class RecepcionOpComponent implements OnInit {
                   ).subscribe(state => this.currentItemsModal = state.currentData);
 
                   this.modalRecepcionPTs.cargando = false;
+                  this.loadingBuscarModal = false; // ← Desactivar loading
                 },
                 () => {
                   this.modalRecepcionPTs.cargando = false;
+                  this.loadingBuscarModal = false; // ← Desactivar loading
                   Swal.fire('Error', 'No se pudo cargar cantidades recibidas locales', 'error');
                 }
               );
           },
           error: () => {
             this.modalRecepcionPTs.cargando = false;
+            this.loadingBuscarModal = false; // ← Desactivar loading
             Swal.fire('Error', 'Error generando hashes para los ítems', 'error');
           }
         });
@@ -420,6 +452,7 @@ export class RecepcionOpComponent implements OnInit {
       error: (err) => {
         console.error('Error cargando items PT:', err);
         this.modalRecepcionPTs.cargando = false;
+        this.loadingBuscarModal = false; // ← Desactivar loading
         Swal.fire('Error', 'No se pudieron cargar los ítems de la PT', 'error');
       }
     });
@@ -512,12 +545,15 @@ export class RecepcionOpComponent implements OnInit {
   }
 
   get totalRecibidoModal(): number {
-    // console.log('Calculando total recibido modal:', this.modalRecepcionPTs.items);
-    // console.log(this.modalRecepcionPTs);
     return (this.modalRecepcionPTs.items || []).reduce((sum, it) => sum + (Number(it.cantidad_recibida) || 0), 0);
   }
 
   guardarRecepcionModal() {
+    // Evitar múltiples clics
+    if (this.loadingGuardarModal) {
+      return;
+    }
+
     const itemsParaGuardar = (this.modalRecepcionPTs.items || [])
       .filter(i => Number(i.cantidad_recibida) > 0)
       .map(i => ({
@@ -545,6 +581,8 @@ export class RecepcionOpComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then(result => {
       if (result.isConfirmed) {
+        this.loadingGuardarModal = true; // ← Activar loading
+
         const usuario = this.authService.user.id || 0;
         
         // Generar hashes para los items del modal
@@ -560,12 +598,14 @@ export class RecepcionOpComponent implements OnInit {
               cantidad_teorica: item.cantidad_teorica,
               cantidad_recibida: item.cantidad_recibida,
               precio_unitario: item.precio_unitario,
-              ubicacion: 'Terminacion',
+              ubicacion: 'Empaque',
               comentario: ''
             }));
 
             console.log('Recibidos a guardar:', recibidos);
             console.log(itemsParaGuardar)
+
+            console.log('Modal PT:', this.modalRecepcionPTs);
 
             const ptCodigo = this.modalRecepcionPTs.ptIngresado;
             const pvCodigo = this.modalRecepcionPTs.pv;
@@ -574,10 +614,30 @@ export class RecepcionOpComponent implements OnInit {
               .registrarRecepcionPT(recibidos, ptCodigo, pvCodigo, usuario)
               .subscribe({
                 next: () => {
+                  this.loadingGuardarModal = false; // ← Desactivar loading
                   Swal.fire('Éxito', 'Recepción de PT guardada correctamente', 'success');
+                  
+                  // ====== LIMPIAR Y ACTUALIZAR ======
+                  // Limpiar inputs del modal
+                  this.modalRecepcionPTs.ptIngresado = '';
+                  this.modalRecepcionPTs.pv = '';
+                  
+                  // Limpiar cantidades recibidas de los items
+                  this.modalRecepcionPTs.items.forEach(item => {
+                    item.cantidad_recibida_total += item.cantidad_recibida;
+                    item.cantidad_recibida = 0;
+                  });
+                  
+                  // Actualizar la vista
+                  this.applyItemFiltersModal();
+                  
+                  // Cerrar el modal
                   this.cerrarModalRecepcionPTs();
                 },
-                error: () => Swal.fire('Error', 'No se pudo guardar la recepción', 'error')
+                error: () => {
+                  this.loadingGuardarModal = false; // ← Desactivar loading
+                  Swal.fire('Error', 'No se pudo guardar la recepción', 'error');
+                }
               });
           });
       }
@@ -766,6 +826,11 @@ export class RecepcionOpComponent implements OnInit {
   };
 
   guardarRecepcion(): void {
+    // Evitar múltiples clics
+    if (this.loadingGuardarRecepcion) {
+      return;
+    }
+
     if (!this.opSeleccionada) {
       Swal.fire('Error', 'Selecciona una OP primero', 'error');
       return;
@@ -811,54 +876,74 @@ export class RecepcionOpComponent implements OnInit {
       return;
     }
 
-    this.terminacionEmpaqueService.generarHashes(todosLosItems)
-      .subscribe(hashesGenerados => {
-        const recibidos = todosLosItems.map((item, idx) => ({
-          hash: hashesGenerados[idx].hash,
-          referencia: item.codigo,
-          id_item: item.f120_id,
-          descripcion: item.descripcion,
-          id_color: item.id_color,
-          id_talla: item.id_talla,
-          cantidad_recibida: item.cantidad_recibida,
-          precio_unitario: item.precio_unitario || 0,
-          ubicacion: (item as any).ubicacion || 'Terminacion',
-          comentario: (item as any).comentario || ''
-        }));
+    Swal.fire({
+      title: 'Confirmar recepción',
+      html: `Se guardarán <strong>${todosLosItems.length}</strong> registros con un total de <strong>${this.totalRecibido}</strong> unidades.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, guardar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.loadingGuardarRecepcion = true; // ← Activar loading
 
-        this.terminacionEmpaqueService
-          .registrarRecepcion(recibidos, this.opSeleccionada!.codigo, usuario)
-          .subscribe({
-            next: () => {
-              Swal.fire('Éxito', 'Recepción guardada', 'success');
-              
-              this.items.forEach(i => {
-                // Sumar cantidades normales
-                if (i.cantidad_recibida > 0) {
-                  i.cantidad_recibida_total += i.cantidad_recibida;
-                }
-                
-                // Sumar y marcar ubicaciones distintas como guardadas
-                if (i.ubicaciones_distintas && i.ubicaciones_distintas.length > 0) {
-                  i.ubicaciones_distintas.forEach(ub => {
-                    if (ub.esNueva) {
-                      i.cantidad_recibida_total += ub.cantidad;
-                      ub.esNueva = false; // ← Marcar como guardada
+        this.terminacionEmpaqueService.generarHashes(todosLosItems)
+          .subscribe(hashesGenerados => {
+            const recibidos = todosLosItems.map((item, idx) => ({
+              hash: hashesGenerados[idx].hash,
+              referencia: item.codigo,
+              id_item: item.f120_id,
+              descripcion: item.descripcion,
+              id_color: item.id_color,
+              id_talla: item.id_talla,
+              cantidad_recibida: item.cantidad_recibida,
+              precio_unitario: item.precio_unitario || 0,
+              ubicacion: (item as any).ubicacion || 'Terminacion',
+              comentario: (item as any).comentario || ''
+            }));
+
+            this.terminacionEmpaqueService
+              .registrarRecepcion(recibidos, this.opSeleccionada!.codigo, usuario)
+              .subscribe({
+                next: () => {
+                  this.loadingGuardarRecepcion = false; // ← Desactivar loading
+                  Swal.fire('Éxito', 'Recepción guardada', 'success');
+                  
+                  // ====== LIMPIAR Y ACTUALIZAR ======
+                  this.items.forEach(i => {
+                    // Sumar cantidades normales
+                    if (i.cantidad_recibida > 0) {
+                      i.cantidad_recibida_total += i.cantidad_recibida;
                     }
+                    
+                    // Sumar y marcar ubicaciones distintas como guardadas
+                    if (i.ubicaciones_distintas && i.ubicaciones_distintas.length > 0) {
+                      i.ubicaciones_distintas.forEach(ub => {
+                        if (ub.esNueva) {
+                          i.cantidad_recibida_total += ub.cantidad;
+                          ub.esNueva = false; // ← Marcar como guardada
+                        }
+                      });
+                    }
+                    
+                    // Limpiar solo cantidad normal
+                    i.cantidad_recibida = 0;
                   });
+                  
+                  // Actualizar vista
+                  this.applyFilters();
+                  
+                  // Verificar estado de PTs
+                  this.verificarEstadoPTs();
+                },
+                error: () => {
+                  this.loadingGuardarRecepcion = false; // ← Desactivar loading
+                  Swal.fire('Error', 'No se pudo guardar', 'error');
                 }
-                
-                // Limpiar solo cantidad normal
-                i.cantidad_recibida = 0;
-                
-                // *** NO limpiar ubicaciones_distintas, solo las marcamos como guardadas ***
               });
-              
-              this.applyFilters();
-            },
-            error: () => Swal.fire('Error', 'No se pudo guardar', 'error')
           });
-      });
+      }
+    });
   }
 
   get totalRecibido(): number {

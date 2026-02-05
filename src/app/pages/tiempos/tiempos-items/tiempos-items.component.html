@@ -1,0 +1,235 @@
+<div class="bg-gray-50 p-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Tiempos de Producción</h1>
+      <p class="text-gray-600">Gestión de tiempos por tipo de prenda y talla</p>
+    </div>
+
+    <div *ngIf="isLoading" class="bg-white rounded-lg shadow p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <p class="mt-4 text-gray-600">Cargando tiempos...</p>
+    </div>
+
+    <div *ngIf="!isLoading">
+      <div class="bg-white rounded-lg shadow mb-6 p-4">
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <input type="text"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Buscar por tipo de prenda o talla..." 
+              [(ngModel)]="filters.busqueda"
+              (input)="applyFilters()">
+          </div>
+
+          <div class="w-full md:w-48">
+            <select
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              [(ngModel)]="filters.tipoPrenda" 
+              (change)="applyFilters()">
+              <option value="">Todos los tipos</option>
+              <option *ngFor="let tipo of tiposPrendaUnicos" [value]="tipo">{{ tipo }}</option>
+            </select>
+          </div>
+
+          <div class="w-full md:w-48">
+            <select
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              [(ngModel)]="filters.talla" 
+              (change)="applyFilters()">
+              <option value="">Todas las tallas</option>
+              <option *ngFor="let talla of tallasUnicas" [value]="talla">{{ talla }}</option>
+            </select>
+          </div>
+
+
+        </div>
+      </div>
+
+      <div *ngIf="currentTiempos?.length > 0; else sinDatos" class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tipo de Prenda
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Talla
+                </th>
+                <!-- <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Modelos
+                </th> -->
+                <!-- <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Existencia
+                </th> -->
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  T. Estandar (min)
+                </th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  T. Optimo (min)
+                </th>
+                <!-- <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  T. Total (min)
+                </th> -->
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let tiempo of currentTiempos" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ tiempo.tipo_prenda }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ tiempo.id_talla }}</div>
+                </td>
+                <!-- <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-sm text-gray-600">{{ tiempo.cantidad_modelos }}</span>
+                </td> -->
+                <!-- <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-sm font-medium text-gray-900">{{ tiempo.existencia_total }}</span>
+                </td> -->
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-sm" [class.text-gray-400]="!tiempo.tiempo_estandar" 
+                        [class.font-medium]="tiempo.tiempo_estandar">
+                    {{ tiempo.tiempo_estandar || '-' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-sm" [class.text-gray-400]="!tiempo.tiempo_optimo"
+                        [class.font-medium]="tiempo.tiempo_optimo">
+                    {{ tiempo.tiempo_optimo || '-' }}
+                  </span>
+                </td>
+                <!-- <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-sm font-semibold" [class.text-gray-400]="!tiempo.tiempo_total"
+                        [class.text-blue-600]="tiempo.tiempo_total">
+                    {{ tiempo.tiempo_total || '-' }}
+                  </span>
+                </td> -->
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <button
+                    (click)="abrirModalEditar(tiempo)"
+                    class="inline-flex items-center px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                    <i class="bi bi-pencil mr-1"></i>
+                    Editar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-4 border-t">
+          <div class="flex justify-between items-center mb-4">
+            <p class="text-sm text-gray-600">
+              Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalTiempos }} registros
+            </p>
+          </div>
+          
+          <app-shared-paginator 
+            *ngIf="paginationService.getPaginatorState(paginatorId)" 
+            [instanceId]="paginatorId"
+            [showPageSizeSelector]="true" 
+            [pageSizeOptions]="[25, 50, 100]">
+          </app-shared-paginator>
+        </div>
+      </div>
+
+      <ng-template #sinDatos>
+        <div class="bg-white rounded-lg shadow p-12 text-center">
+          <i class="bi bi-clock-history text-6xl text-gray-300"></i>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">No hay registros</h3>
+          <p class="mt-2 text-gray-600">
+            <span *ngIf="filters.busqueda || filters.tipoPrenda || filters.talla; else mensajeInicial">
+              No se encontraron registros con los filtros aplicados
+            </span>
+            <ng-template #mensajeInicial>
+              No hay items disponibles en Siesa
+            </ng-template>
+          </p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TIEMPOS -->
+<div *ngIf="mostrarModalEditar"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 p-4">
+  <div class="bg-white rounded-lg w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold text-gray-900">Editar Tiempos</h2>
+      <button (click)="cerrarModalEditar()" class="text-gray-400 hover:text-gray-600">
+        <i class="bi bi-x-lg text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+      <p class="text-sm text-gray-700">
+        <strong>Tipo:</strong> {{ tiempoEditar?.tipo_prenda }}<br>
+        <strong>Talla:</strong> {{ tiempoEditar?.id_talla }}
+      </p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Tiempo de Estandar (minutos)
+        </label>
+        <input type="number"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [(ngModel)]="tiemposForm.tiempo_estandar"
+          min="0"
+          step="1">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Tiempo de Optimo (minutos)
+        </label>
+        <input type="number"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [(ngModel)]="tiemposForm.tiempo_optimo"
+          min="0"
+          step="1">
+      </div>
+
+      <!-- <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Tiempo de Optimo (minutos)
+        </label>
+        <input type="number"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          [(ngModel)]="tiemposForm.tiempo_optimo"
+          (input)="calcularTiempoTotal()"
+          min="0"
+          step="1">
+      </div> -->
+
+      <!-- <div class="p-3 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600">Tiempo Total</p>
+        <p class="text-2xl font-bold text-blue-600">{{ tiemposForm.tiempo_total }} min</p>
+      </div> -->
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button
+        (click)="cerrarModalEditar()"
+        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+        Cancelar
+      </button>
+      <button
+        (click)="guardarTiempos()"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+        [disabled]="isGuardando">
+        <span *ngIf="!isGuardando">Guardar</span>
+        <span *ngIf="isGuardando" class="flex items-center gap-2">
+          <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+          Guardando...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>

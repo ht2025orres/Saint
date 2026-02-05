@@ -135,6 +135,11 @@ export class TerminacionEmpaqueService {
     });
   }
 
+  // En terminacion-empaque.service.ts
+  obtenerItemsConUbicacionesDistintas(opCodigo: number): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/op/${opCodigo}/ubicaciones-distintas`);
+  }
+
   /**
    * Obtiene lista de PVs pendientes desde la API Laravel
    */
@@ -154,10 +159,11 @@ export class TerminacionEmpaqueService {
   /**
    * Asigna una PV a un empacador usando la API Laravel
    */
-  asignarPVAEmpacador(empacadorId: string, pvCodigo: string): Observable<any> {
+  asignarPVAEmpacador(empacadorId: string, pvCodigo: string, usuario: number): Observable<any> {
     return this.http.post<any>(`${this.apiLaravelUrl}/empacadores/asignar-pv`, {
       empacador_id: empacadorId,
-      pv_codigo: pvCodigo
+      pv_codigo: pvCodigo,
+      usuario: usuario
     });
   }
 
@@ -313,5 +319,42 @@ export class TerminacionEmpaqueService {
       usuario: usuario,
       items: items
     });
+  }
+
+  eliminarRegistroEmpaque(numeroEmpaque: string, idItem: string, idTalla: string): Observable<any> {
+    const data = { id_item: idItem, id_talla: idTalla };
+    return this.http.delete<any>(
+      `${this.apiLaravelUrl}/empaque/eliminar/${numeroEmpaque}`,
+      { body: data }
+    );
+  }
+
+  eliminarEmpaqueCompleto(numeroEmpaque: string): Observable<any> {
+    return this.http.delete<any>(
+      `${this.apiLaravelUrl}/empaque/eliminar-completo/${numeroEmpaque}`
+    );
+  }
+
+  actualizarEmpaqueCompleto(datos: any): Observable<any> {
+    return this.http.put<any>(`${this.apiLaravelUrl}/empaque/actualizar`, datos);
+  }
+
+  actualizarCampoEmpaque(datos: any): Observable<any> {
+    return this.http.patch<any>(`${this.apiLaravelUrl}/empaque/campo`, datos);
+  }
+
+  actualizarCantidadItem(datos: any): Observable<any> {
+    return this.http.patch<any>(`${this.apiLaravelUrl}/empaque/item/cantidad`, datos);
+  }
+
+  getMovimientosPorPV(pvCodigo: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiLaravelUrl}/empaque/movimientos-por-pv`,
+      { pv_codigo: pvCodigo }
+    );
+  }
+
+  getHistorialMovimientos(filtrosHistorial: any): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/empaque/historial-movimientos`);
   }
 }

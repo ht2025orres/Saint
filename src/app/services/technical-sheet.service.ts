@@ -35,14 +35,15 @@ export class TechnicalSheetService {
 
     getAlldb(status: string): Observable<any> {
         return this.http.post(`${this.urlEndPointSaint}/technicaldatasheet/list`, {status});
-    }
-    getAll(page: number, status: string): Observable<TechnicalDataSheet[]> {
-        return this.http.get(`${this.urlEndPoint}/page/${page}/status/${status}`)
-            .pipe(
-                tap((response: any) =>
-                    (response.content as TechnicalDataSheet[]).forEach(ficha => console.log(ficha)))
-            );
     }
+    
+    // getAll(page: number, status: string): Observable<TechnicalDataSheet[]> {
+    //     return this.http.get(`${this.urlEndPoint}/page/${page}/status/${status}`)
+    //         .pipe(
+    //             tap((response: any) =>
+    //                 (response.content as TechnicalDataSheet[]).forEach(ficha => console.log(ficha)))
+    //         );
+    // }
 
     saveFicha(technicalDataSheet: TechnicalDataSheet): Observable<any> {
         if (technicalDataSheet.id != null){

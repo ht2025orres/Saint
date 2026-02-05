@@ -1,0 +1,269 @@
+<div class="bg-gray-50 min-h-screen p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Crear Planeación de Producción</h1>
+      <p class="text-gray-600">Seleccione OPs, PVs e ítems para armar la planeación</p>
+    </div>
+
+    <!-- Resumen de selección -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
+      <div class="flex items-center">
+        <i class="bi bi-info-circle text-blue-600 text-xl mr-3"></i>
+        <div>
+          <p class="font-semibold text-blue-900">Selección actual:</p>
+          <p class="text-blue-800">{{ totalOPsSeleccionadas }} OPs | {{ totalPVsSeleccionadas }} PVs</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+      <textarea 
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+        rows="3" 
+        [(ngModel)]="observaciones"
+        placeholder="Ingrese observaciones generales de la planeación..."></textarea>
+    </div>
+
+    <!-- Buscador de OPs -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <input 
+        type="text" 
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="Buscar OPs..."
+        [(ngModel)]="filters.busqueda"
+        (input)="applyFilters()">
+    </div>
+
+    <!-- Spinner de carga inicial -->
+    <div *ngIf="cargando" class="bg-white rounded-lg shadow p-12 text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <p class="mt-4 text-gray-600">Cargando OPs...</p>
+    </div>
+
+    <!-- Lista de OPs -->
+    <div *ngIf="!cargando" class="space-y-3">
+      <div *ngFor="let op of currentOPs" class="bg-white rounded-lg shadow overflow-hidden">
+        
+        <!-- Header OP -->
+        <div class="border-b border-gray-200">
+          <div class="flex items-center p-4 hover:bg-gray-50 transition-colors">
+            <!-- Checkbox personalizado para OP -->
+            <div class="custom-checkbox">
+              <input 
+                type="checkbox"
+                [id]="'op-checkbox-' + op.id"
+                class="custom-checkbox-input"
+                [checked]="op.seleccionada"
+                (change)="toggleSeleccionOP(op)">
+              <label [for]="'op-checkbox-' + op.id" class="custom-checkbox-label"></label>
+            </div>
+
+            <!-- Info OP -->
+            <button 
+              class="flex-1 flex items-center justify-between ml-4 text-left"
+              (click)="toggleOP(op)">
+              <div>
+                <span class="font-semibold text-gray-900">OP {{ op.codigo }}</span>
+                <span class="ml-3 text-sm text-gray-500">{{ op.fecha_creacion }}</span>
+              </div>
+              <i class="bi text-gray-400 transition-transform"
+                 [class.bi-chevron-down]="!op.expandida"
+                 [class.bi-chevron-up]="op.expandida"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel de PVs -->
+        <div *ngIf="op.expandida" class="bg-gray-50 p-4">
+          
+          <!-- Spinner cargando PVs -->
+          <div *ngIf="op.cargandoPVs" class="flex items-center justify-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="ml-3 text-gray-600">Cargando PVs...</span>
+          </div>
+
+          <!-- Lista de PVs -->
+          <div *ngIf="!op.cargandoPVs && op.pvs.length > 0">
+            <input 
+              type="text" 
+              class="w-full px-4 py-2 mb-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              placeholder="Buscar PVs..."
+              [(ngModel)]="op.pvFilters.busqueda"
+              (input)="applyPVFilters(op)">
+
+            <div class="space-y-2">
+              <div *ngFor="let pv of getPVsFiltradas(op)"
+                   class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                
+                <div class="flex items-center">
+                  <!-- Checkbox personalizado para PV -->
+                  <div class="custom-checkbox">
+                    <input 
+                      type="checkbox"
+                      [id]="'pv-checkbox-' + pv.id"
+                      class="custom-checkbox-input"
+                      [checked]="pv.seleccionada"
+                      (change)="toggleSeleccionPV(pv)">
+                    <label [for]="'pv-checkbox-' + pv.id" class="custom-checkbox-label"></label>
+                  </div>
+                  <label [for]="'pv-checkbox-' + pv.id" class="ml-3 text-sm font-medium text-gray-900 cursor-pointer">
+                    PV {{ pv.numero }}
+                  </label>
+                </div>
+
+                <button 
+                  class="px-3 py-1.5 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
+                  (click)="abrirModalItems(pv)">
+                  <i class="bi bi-eye"></i>
+                  Ver Items
+                </button>
+              </div>
+            </div>
+
+            <!-- Paginador de PVs -->
+            <div class="mt-4">
+              <app-shared-paginator
+                *ngIf="paginationService.getPaginatorState('pvs-' + op.id)"
+                [instanceId]="'pvs-' + op.id"
+                [showPageSizeSelector]="true"
+                [pageSizeOptions]="[5, 10, 25]">
+              </app-shared-paginator>
+            </div>
+          </div>
+
+          <div *ngIf="!op.cargandoPVs && op.pvs.length === 0" 
+               class="text-center py-8 text-gray-500">
+            <i class="bi bi-inbox text-4xl"></i>
+            <p class="mt-2">No hay PVs para esta OP</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginador de OPs -->
+    <div *ngIf="!cargando" class="mt-6 bg-white rounded-lg shadow p-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(paginatorId)"
+        [instanceId]="paginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25, 50]">
+      </app-shared-paginator>
+    </div>
+
+    <!-- Botón guardar -->
+    <div *ngIf="!cargando" class="mt-6 flex justify-end">
+      <button 
+        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl flex items-center gap-2"
+        (click)="guardarPlaneacion()">
+        <i class="bi bi-save"></i>
+        Guardar Planeación
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Items -->
+<div *ngIf="modalItems.mostrar"
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl" style="max-height: 90vh;">
+    
+    <!-- Header Modal -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+      <h2 class="text-2xl font-bold text-gray-900">Items de PV {{ modalItems.pv?.numero }}</h2>
+      <button 
+        class="text-gray-400 hover:text-gray-600 transition-colors"
+        (click)="cerrarModalItems()">
+        <i class="bi bi-x-lg text-2xl"></i>
+      </button>
+    </div>
+
+    <!-- Body Modal -->
+    <div class="flex-1 overflow-y-auto p-6">
+      
+      <!-- Spinner cargando items -->
+      <div *ngIf="modalItems.cargando" class="flex flex-col items-center justify-center py-12">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p class="mt-4 text-gray-600">Cargando ítems...</p>
+      </div>
+
+      <!-- Lista de items -->
+      <div *ngIf="!modalItems.cargando">
+        <input 
+          type="text" 
+          class="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Buscar ítems..."
+          [(ngModel)]="itemFilters.busqueda"
+          (input)="applyItemFilters()">
+
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-6 py-3 text-left">
+                  <!-- Checkbox personalizado para "seleccionar todos" -->
+                  <div class="custom-checkbox">
+                    <input 
+                      type="checkbox"
+                      id="select-all-items"
+                      class="custom-checkbox-input"
+                      [checked]="modalItems.pv?.seleccionada"
+                      (change)="toggleTodosItems()">
+                    <label for="select-all-items" class="custom-checkbox-label"></label>
+                  </div>
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referencia</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let item of currentItems" class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <!-- Checkbox personalizado para Item -->
+                  <div class="custom-checkbox">
+                    <input 
+                      type="checkbox"
+                      [id]="'item-checkbox-' + item.codigo_item"
+                      class="custom-checkbox-input"
+                      [checked]="item.seleccionado"
+                      (change)="toggleSeleccionItem(item)">
+                    <label [for]="'item-checkbox-' + item.codigo_item" class="custom-checkbox-label"></label>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.codigo_item }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.referencia }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ item.descripcion }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ item.cliente }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900">{{ item.cantidad }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginador de items -->
+        <div class="mt-4">
+          <app-shared-paginator
+            *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
+            [instanceId]="itemsPaginatorId"
+            [showPageSizeSelector]="true"
+            [pageSizeOptions]="[10, 25, 50, 100]">
+          </app-shared-paginator>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Modal -->
+    <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+      <button 
+        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        (click)="cerrarModalItems()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

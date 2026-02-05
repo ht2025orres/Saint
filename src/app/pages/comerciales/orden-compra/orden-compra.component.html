@@ -1,0 +1,357 @@
+<div class="bg-gray-50 p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Órdenes de Compra</h1>
+      <p class="text-gray-600">Gestión y seguimiento de órdenes de compra de clientes</p>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="isLoading" class="bg-white rounded-lg shadow p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <p class="mt-4 text-gray-600">Cargando órdenes...</p>
+    </div>
+
+    <!-- Contenido principal -->
+    <div *ngIf="!isLoading">
+      <!-- Barra de acciones y filtros -->
+      <div class="bg-white rounded-lg shadow mb-6 p-4">
+        <div class="flex flex-col md:flex-row gap-4">
+          <!-- Búsqueda -->
+          <div class="flex-1">
+            <input type="text"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Buscar por número de orden, cliente o PV..." [(ngModel)]="filters.busqueda"
+              (input)="applyFilters()">
+          </div>
+
+          <!-- Filtro estado -->
+          <div class="w-full md:w-48">
+            <select
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              [(ngModel)]="filters.estado" (change)="applyFilters()">
+              <option value="">Todos los estados</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="PROCESADA">Procesada</option>
+              <option value="RECHAZADA">Rechazada</option>
+            </select>
+          </div>
+
+          <!-- Botón nueva orden -->
+          <button *ngIf="authService.hasAnyRole(['Procesar OCs'])"
+            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+            (click)="abrirModalNuevaOrden()">
+            <i class="bi bi-plus-circle mr-2"></i>
+            Nueva Orden
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de órdenes -->
+      <div *ngIf="currentOrdenes?.length > 0; else sinOrdenes" class="space-y-4">
+        <div *ngFor="let orden of currentOrdenes"
+          class="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
+          <div class="flex flex-col md:flex-row md:items-center gap-4">
+            <!-- Info principal -->
+            <div class="flex-1">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">OC {{ orden.numero_orden }}</h3>
+                  <p class="text-sm text-gray-600">{{ orden.cliente }}</p>
+                  <p *ngIf="orden.pv_asociado" class="text-xs text-green-600 mt-1">
+                    <i class="bi bi-link-45deg"></i> PV: {{ orden.pv_asociado }}
+                  </p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-medium" [ngClass]="getEstadoBadgeClass(orden.estado)">
+                  {{ getEstadoTexto(orden.estado) }}
+                </span>
+              </div>
+
+              <!-- Métricas -->
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500">Fecha Registro</p>
+                  <p class="font-medium text-gray-900">{{ orden.fecha_registro | date:'dd/MM/yyyy' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Fecha Entrega Estimada</p>
+                  <p class="font-medium text-gray-900">{{ orden.fecha_entrega_estimada | date:'dd/MM/yyyy' }}<span class="text-xs text-gray-500">({{ orden.dias_entrega }} días)</span></p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Documento</p>
+                  <p class="font-medium text-gray-900">
+                    <i class="bi bi-file-earmark-pdf text-red-600"></i>
+                    PDF
+                  </p>
+                </div>
+                <div *ngIf="orden.observaciones && orden.estado === 'RECHAZADA'">
+                  <p class="text-xs text-gray-500">Motivo rechazo</p>
+                  <p class="text-sm text-red-600 truncate" [title]="orden.observaciones">
+                    {{ orden.observaciones }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex items-stretch justify-between w-full md:w-auto gap-4">
+              <!-- Ver / Descargar -->
+              <div class="flex gap-2">
+                <button
+                  (click)="verDocumento(orden)"
+                  class="inline-flex items-center justify-center w-9 h-9 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  [disabled]="isLoadingDocument">
+                  <i class="bi bi-eye text-base"></i>
+                </button>
+
+                <button
+                  (click)="descargarDocumento(orden)"
+                  class="inline-flex items-center justify-center w-9 h-9 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors">
+                  <i class="bi bi-download text-base"></i>
+                </button>
+              </div>
+
+              <!-- Procesar / Rechazar -->
+              <div *ngIf="authService.hasAnyRole(['Cargar OCs']) && orden.estado === 'PENDIENTE'"
+                class="flex flex-col gap-2 ml-auto">
+                <button
+                  (click)="procesarOrden(orden)"
+                  class="p-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                  [disabled]="isProcesando"
+                  title="Procesar y vincular PV">
+                  <i class="bi bi-check-circle text-lg"></i>
+                </button>
+
+                <button
+                  (click)="abrirModalRechazo(orden)"
+                  class="p-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  title="Rechazar orden">
+                  <i class="bi bi-x-circle text-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info y paginación -->
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-center mb-4">
+            <p class="text-sm text-gray-600">
+              Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalOrdenes }} órdenes
+            </p>
+          </div>
+
+          <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)" [instanceId]="paginatorId"
+            [showPageSizeSelector]="true" [pageSizeOptions]="[10, 25, 50]">
+          </app-shared-paginator>
+        </div>
+      </div>
+
+      <!-- Sin órdenes -->
+      <ng-template #sinOrdenes>
+        <div class="bg-white rounded-lg shadow p-12 text-center">
+          <i class="bi bi-inbox text-6xl text-gray-300"></i>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">No hay órdenes</h3>
+          <p class="mt-2 text-gray-600">
+            <span *ngIf="filters.busqueda || filters.estado; else mensajeInicial">
+              No se encontraron órdenes con los filtros aplicados
+            </span>
+            <ng-template #mensajeInicial>
+              Comienza registrando una nueva orden de compra
+            </ng-template>
+          </p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL NUEVA ORDEN (sin cambios) ========== -->
+<div *ngIf="mostrarModalNuevaOrden"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 p-2 sm:p-4 overflow-y-auto">
+  <div
+    class="bg-white rounded-lg w-full h-full max-w-2xl mx-2 sm:mx-4 max-h-[90vh] flex flex-col overflow-hidden my-4 sm:my-auto"
+    style="margin-top:auto !important;">
+    <!-- Header -->
+    <div class="border-b border-gray-200 p-4 sm:p-6 flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg sm:text-2xl font-bold text-gray-900">Nueva Orden de Compra</h2>
+        <button (click)="cerrarModalNuevaOrden()" class="text-gray-400 hover:text-gray-600" [disabled]="isSubiendo">
+          <i class="bi bi-x-lg text-xl sm:text-2xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+      <!-- Selector de cliente -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Cliente <span class="text-red-500">*</span>
+        </label>
+        <input
+          class="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+          list="listaClientes" [(ngModel)]="nuevaOrden.clienteNombre" (input)="onClienteInput()"
+          placeholder="Escriba para buscar un cliente..." />
+        <datalist id="listaClientes">
+          <option *ngFor="let cliente of clientes" [value]="cliente.razon_social">
+        </datalist>
+      </div>
+
+      <!-- Número de orden -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Número de Orden (OC) <span class="text-red-500">*</span>
+        </label>
+        <input type="text"
+          class="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+          [(ngModel)]="nuevaOrden.numeroOrden" placeholder="Ej: OC-2024-001" />
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Fecha de entrega estimada <span class="text-red-500">*</span>
+        </label>
+
+        <select
+          class="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+          [(ngModel)]="nuevaOrden.diasEntrega" (change)="calcularFechaEntrega()">
+
+          <option value="" disabled selected>Seleccione una fecha</option>
+          <option value="30">30 días</option>
+          <option value="45">45 días</option>
+        </select>
+
+        <!-- Mostrar resultado -->
+        <p *ngIf="nuevaOrden.fechaEntregaEstimada" class="mt-2 text-sm text-gray-700">
+          Fecha estimada: <strong>{{ nuevaOrden.fechaEntregaEstimada | date:'dd/MM/yyyy' }}</strong>
+        </p>
+      </div>
+
+      <!-- Drag & drop area -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Documento <span class="text-red-500">*</span>
+        </label>
+        <div
+          class="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center hover:border-blue-500 transition-colors">
+          <input type="file" id="fileUpload" class="hidden" accept=".pdf" (change)="onFileSelected($event)">
+          <label for="fileUpload" class="cursor-pointer">
+            <div class="mb-3 sm:mb-4">
+              <i class="bi bi-cloud-upload text-3xl sm:text-5xl text-gray-400"></i>
+            </div>
+            <p class="text-sm sm:text-base text-gray-600 mb-2">
+              <span *ngIf="!nuevaOrden.archivo">
+                Arrastre y suelte su documento aquí o haga clic para seleccionar
+              </span>
+              <span *ngIf="nuevaOrden.archivo" class="text-blue-600 font-medium break-all">
+                <i class="bi bi-file-earmark-pdf mr-2"></i>
+                {{ nuevaOrden.archivo.name }}
+              </span>
+            </p>
+            <p class="text-xs sm:text-sm text-gray-500">
+              Solo archivos PDF. Tamaño máximo: 25MB.
+            </p>
+          </label>
+        </div>
+      </div>
+
+      <!-- Info adicional -->
+      <div class="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
+        <i class="bi bi-info-circle text-blue-600 mt-0.5 flex-shrink-0"></i>
+        <p class="text-xs sm:text-sm text-blue-800">
+          El documento será almacenado en S3 y quedará pendiente de procesamiento.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 p-4 sm:p-6 flex flex-col sm:flex-row justify-end gap-3 flex-shrink-0">
+      <button
+        class="w-full sm:w-auto px-4 py-2 sm:px-6 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+        (click)="cerrarModalNuevaOrden()" [disabled]="isSubiendo">
+        Cancelar
+      </button>
+      <button
+        class="w-full sm:w-auto px-4 py-2 sm:px-6 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm sm:text-base"
+        (click)="registrarOrden()" [disabled]="!formularioValido() || isSubiendo">
+        <span *ngIf="!isSubiendo" class="flex items-center justify-center gap-2">
+          <i class="bi bi-check-circle"></i>
+          Registrar Orden
+        </span>
+        <span *ngIf="isSubiendo" class="flex items-center justify-center gap-2">
+          <span class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+          Subiendo...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL RECHAZO ========== -->
+<div *ngIf="mostrarModalRechazo"
+  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 p-4">
+  <div class="bg-white rounded-lg w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold text-gray-900">Rechazar Orden</h2>
+      <button (click)="cerrarModalRechazo()" class="text-gray-400 hover:text-gray-600">
+        <i class="bi bi-x-lg text-xl"></i>
+      </button>
+    </div>
+
+    <p class="text-sm text-gray-600 mb-4">
+      Está a punto de rechazar la orden <strong>{{ ordenArechazar?.numero_orden }}</strong>.
+      Debe indicar el motivo del rechazo (mínimo 10 caracteres).
+    </p>
+
+    <textarea
+      [(ngModel)]="motivoRechazo"
+      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+      rows="4"
+      placeholder="Escriba el motivo del rechazo..."></textarea>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button
+        (click)="cerrarModalRechazo()"
+        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+        Cancelar
+      </button>
+      <button
+        (click)="confirmarRechazo()"
+        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+        [disabled]="!motivoRechazo.trim() || motivoRechazo.length < 10">
+        Rechazar Orden
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL VISOR DE DOCUMENTO (sin cambios) ========== -->
+<div *ngIf="mostrarModalDocumento"
+  class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-30 p-4">
+  <div class="bg-white rounded-lg w-full h-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="border-b border-gray-200 p-4 flex items-center justify-between flex-shrink-0">
+      <div>
+        <h2 class="text-xl font-bold text-gray-900">Orden de Compra</h2>
+        <p class="text-sm text-gray-600">{{ documentoOrdenNumero }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a [href]="documentoUrl" download
+          class="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium">
+          <i class="bi bi-download mr-1"></i>
+          Descargar
+        </a>
+        <button (click)="cerrarModalDocumento()" class="text-gray-400 hover:text-gray-600">
+          <i class="bi bi-x-lg text-2xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Visor de PDF -->
+    <div class="flex-1 overflow-hidden bg-gray-100">
+      <iframe [src]="documentoUrl" class="w-full h-full border-0" title="Visor de documento PDF">
+      </iframe>
+    </div>
+  </div>
+</div>

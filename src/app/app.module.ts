@@ -13,6 +13,7 @@ import { PagesComponent } from './pages/pages.component';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { TokenInterceptor } from './interceptors/tokenInterceptor';
 import { AuthInterceptor } from './interceptors/authInterceptor';
+import { LoadingInterceptor } from './interceptors/loading.interceptor';
 import { registerLocaleData } from '@angular/common';
 import { NgChartsModule } from 'ng2-charts';
 import localeEs from '@angular/common/locales/es-CO';
@@ -59,6 +60,12 @@ import { ContadorItemsModule } from './pages/inventario/contador-items/contador-
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
 import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
+
+import { OrdenCompraModule } from './pages/comerciales/orden-compra/orden-compra.module';
+import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.module';
+import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
+
+import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
 
 registerLocaleData(localeEs, 'es-CO');
 
@@ -120,12 +127,20 @@ registerLocaleData(localeEs, 'es-CO');
         HojasConteoListModule,
         HojasConteoDetalleModule,
         ContadorItemsModule,
+        /* Comerciales */
+        OrdenCompraModule,
+        TiemposItemsModule,
+        /* Planeacion */
+        PlaneacionModule,
+        /* Financiero */
+        CentrosCostosModule
     ],
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },
         { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+        { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi())
     ]
 })

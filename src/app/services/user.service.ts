@@ -21,25 +21,25 @@ export class UserService {
     });
   }
 
-  searchUser(word: string) {
-    return this.http.get<User[]>(`${this.urlEndPoint}/search/${word}`)
-  }
+  // searchUser(word: string) {
+  //   return this.http.get<User[]>(`${this.urlEndPoint}/search/${word}`)
+  // }
 
-  listUserSheetBySize(size: number): Observable<User[]> {
-    return this.http.get(`${this.urlEndPoint}/size/` + size)
-      .pipe(
-        tap((response: any) =>
-          (response.content as User[]).forEach(ficha => console.log(ficha)))
-      );
-  }
+  // listUserSheetBySize(size: number): Observable<User[]> {
+  //   return this.http.get(`${this.urlEndPoint}/size/` + size)
+  //     .pipe(
+  //       tap((response: any) =>
+  //         (response.content as User[]).forEach(ficha => console.log(ficha)))
+  //     );
+  // }
 
-  getAllPaginator(page: number): Observable<User[]> {
-    return this.http.get(`${this.urlEndPoint}/page/` + page)
-      .pipe(
-        tap((response: any) =>
-          (response.content as User[]).forEach(user => console.log(user)))
-      );
-  }
+  // getAllPaginator(page: number): Observable<User[]> {
+  //   return this.http.get(`${this.urlEndPoint}/page/` + page)
+  //     .pipe(
+  //       tap((response: any) =>
+  //         (response.content as User[]).forEach(user => console.log(user)))
+  //     );
+  // }
 
   getAlluser(): Observable<User[]> {
     return this.http.get<User[]>(`${this.urlEndPoint}`);

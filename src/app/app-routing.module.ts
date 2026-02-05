@@ -40,6 +40,10 @@ import { ReportCreateComponent } from './pages/report/report-create/report-creat
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
 import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
+import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-compra.component';
+import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-items.component';
+import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
+import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
 import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 
 const routes: Routes = [
@@ -73,18 +77,22 @@ const routes: Routes = [
       { path: 'view-report-bigbag', component: ViewReportBigbagComponent, title: 'Ver reporte BigBag' },
       { path: 'view-precinto-bigbag', component: ViewPrecintoBigbagComponent, title: 'Ver precinto BigBag' },
       { path: 'contadores', component: ContadoresComponent, title: 'Contadores' },
-      { path: 'generar-hoja-conteo', component: GenerarHojaConteoComponent, title: 'Generar hoja de conteo'},
+      { path: 'generar-hoja-conteo', component: GenerarHojaConteoComponent, title: 'Generar hoja de conteo' },
       { path: 'hojas-conteo-list', component: HojasConteoListComponent, title: 'Listado hojas de conteo' },
-      { path: 'hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo' },   
-      { path: 'contador-items', component: ContadorItemsComponent, title: 'Contador de ítems' },   
-      { path: 'create-report', component: ReportCreateComponent, title: 'Crear reporte'},
-      { path: 'list-report', component: ReportListComponent, title: 'Listar reportes'},
-      { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes'},
+      { path: 'hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo' },
+      { path: 'contador-items', component: ContadorItemsComponent, title: 'Contador de ítems' },
+      { path: 'create-report', component: ReportCreateComponent, title: 'Crear reporte' },
+      { path: 'list-report', component: ReportListComponent, title: 'Listar reportes' },
+      { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes' },
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
+      { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' },
+      { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
+      { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
+      { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' }
       { path: 'authorization-manager', component: AuthorizationManagerComponent, title: 'Control de Acceso' },
     ]
   },
- 
+
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }
 ];
 

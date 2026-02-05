@@ -3,6 +3,7 @@ import { UserService } from 'src/app/services/user.service';
 import { TerminacionEmpaqueService } from 'src/app/services/terminacion-empaque.service';
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
 import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-gestion-empacadores',
@@ -31,7 +32,8 @@ export class GestionEmpacadoresComponent implements OnInit {
   constructor(
     private userService: UserService,
     private terminacionEmpaqueService: TerminacionEmpaqueService,
-    public  paginationService: PaginationService
+    public  paginationService: PaginationService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -152,8 +154,7 @@ export class GestionEmpacadoresComponent implements OnInit {
 
         const pvCodigo = result.value;
         
-        // Solo asignar la PV, sin distribución de items
-        this.terminacionEmpaqueService.asignarPVAEmpacador(emp.id, pvCodigo).subscribe({
+        this.terminacionEmpaqueService.asignarPVAEmpacador(emp.id, pvCodigo, this.authService.user.id).subscribe({
           next: (r) => {
             if (r?.success) {
               Swal.fire('Éxito', 'PV asignada correctamente.', 'success');

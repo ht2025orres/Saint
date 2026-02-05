@@ -162,9 +162,19 @@
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Registros Recientes</h5>
-          <small>Últimos 50 registros</small>
         </div>
         <div class="card-body">
+          <!-- Barra de búsqueda -->
+          <div class="mb-3">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar en registros..."
+              [(ngModel)]="filtersRegistros.busqueda"
+              (input)="aplicarFiltrosRegistros()"
+            />
+          </div>
+
           <div class="table-responsive">
             <table class="table table-bordered table-hover">
               <thead class="table-light">
@@ -179,7 +189,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let reg of registros">
+                <tr *ngFor="let reg of currentRegistros">
                   <td>OP-{{ reg.op_id }}</td>
                   <td>{{ reg.pv_id }}</td>
                   <td>{{ reg.descripcion }} {{ reg.id_talla }}</td>
@@ -191,6 +201,14 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Paginador -->
+          <app-shared-paginator
+            *ngIf="paginationService.getPaginatorState(paginatorRegistrosId)"
+            [instanceId]="paginatorRegistrosId"
+            [showPageSizeSelector]="true"
+            [pageSizeOptions]="[5, 10, 25, 50]">
+          </app-shared-paginator>
         </div>
       </div>
     </div>
@@ -295,9 +313,9 @@
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Órdenes de Producción</h5>
-          <button class="btn btn-success btn-sm" (click)="exportarQRs()">
+          <!-- <button class="btn btn-success btn-sm" (click)="exportarQRs()">
             <i class="bi bi-qr-code"></i> Exportar QRs
-          </button>
+          </button> -->
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -433,14 +451,10 @@
                                       data-bs-toggle="tooltip" title="Ver detalle PV">
                                 <i class="bi bi-eye"></i>
                               </button>
-                              <!-- <button class="btn btn-outline-success" (click)="generarQRPV(pv, 'PV', op.codigo)"  
-                                      data-bs-toggle="tooltip" title="Generar QR PV">
-                                <i class="bi bi-qr-code"></i>
+                              <button class="btn btn-outline-info" (click)="verMovimientosPV(pv)" 
+                                      data-bs-toggle="tooltip" title="Ver movimientos">
+                                <i class="bi bi-clock-history"></i>
                               </button>
-                              <button class="btn btn-outline-info" (click)="imprimirEtiquetaPV(pv, 'PV')" 
-                                      data-bs-toggle="tooltip" title="Imprimir etiqueta PV">
-                                <i class="bi bi-printer"></i>
-                              </button> -->
                             </div>
                           </div>
                           
@@ -574,6 +588,234 @@
   </div>
 </div>
 
+<!-- MODAL: Editar Empaque -->
+<!-- <ng-template #modalEditarEmpaque let-modal>
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+      <i class="bi bi-pencil-square me-2"></i>Editar Empaque
+    </h5>
+    <button type="button" class="btn-close btn-close-white" (click)="modal.close()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Número de Empaque</label>
+        <input 
+          type="text" 
+          class="form-control" 
+          [(ngModel)]="empaqueForm.numero_empaque"
+          [ngModelOptions]="{standalone: true}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Tipo de Empaque</label>
+        <select 
+          class="form-select" 
+          [(ngModel)]="empaqueForm.tipo_empaque"
+          [ngModelOptions]="{standalone: true}">
+          <option value="Canasta">Canasta</option>
+          <option value="Costal">Costal</option>
+          <option value="Bolsa">Bolsa</option>
+          <option value="Caja">Caja</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+    </div>
+
+    <h6 class="fw-bold mb-3">Items del Empaque</h6>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>Item</th>
+            <th>Descripción</th>
+            <th>Talla</th>
+            <th>Cantidad</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of itemsEmpaqueEditando; let i = index; trackBy: trackByIndex">
+            <td>{{ item.item_id }}</td>
+            <td>{{ item.descripcion }}</td>
+            <td>{{ item.id_talla }}</td>
+            <td>
+              <input 
+                type="number" 
+                class="form-control form-control-sm" 
+                [(ngModel)]="item.cantidad"
+                [ngModelOptions]="{standalone: true}"
+                min="0"
+                step="1">
+            </td>
+            <td class="text-center">
+              <button 
+                type="button"
+                class="btn btn-sm btn-outline-danger" 
+                (click)="eliminarItemEmpaque(i)"
+                title="Eliminar item">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.close()">Cancelar</button>
+    <button type="button" class="btn btn-success" (click)="guardarCambiosEmpaque()">
+      <i class="bi bi-check-lg"></i> Guardar Cambios
+    </button>
+  </div>
+</ng-template> -->
+
+<ng-template #modalMovimientos let-modal>
+  <div class="modal-header bg-info text-white">
+    <h5 class="modal-title">
+      <i class="bi bi-clock-history me-2"></i>Movimientos - PV {{ pvMovimientos }}
+    </h5>
+    <button type="button" class="btn-close btn-close-white" (click)="modal.close()"></button>
+  </div>
+  <div class="modal-body">
+    <!-- Barra de búsqueda -->
+    <div class="mb-3">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Buscar movimientos..."
+        [(ngModel)]="filtersMovimientos.busqueda"
+        (input)="aplicarFiltrosMovimientos()"
+      />
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Item</th>
+            <th>Empacador</th>
+            <th>Cantidad</th>
+            <th>Tipo Empaque</th>
+            <th>Número Empaque</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mov of currentMovimientos">
+            <td>{{ mov.fecha_empaque | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ mov.descripcion }} {{ mov.id_talla }}</td>
+            <td>{{ getNombreEmpacador(mov.empacador_id) }}</td>
+            <td>{{ mov.cantidad }}</td>
+            <td>{{ mov.tipo_empaque }}</td>
+            <td>{{ mov.numero_empaque }}</td>
+          </tr>
+          <tr *ngIf="currentMovimientos.length === 0">
+            <td colspan="6" class="text-center text-muted py-4">
+              No hay movimientos registrados
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginador movimientos -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginatorMovimientosId)"
+      [instanceId]="paginatorMovimientosId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25, 50]">
+    </app-shared-paginator>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" (click)="modal.close()">Cerrar</button>
+  </div>
+</ng-template>
+
+<!-- MODAL: Etiqueta (SIN CAMBIOS, solo para referencia de estructura) -->
+<ng-template #etiquetaTemplate let-modal>
+  <div class="modal-header bg-primary text-white">
+    <h5 class="modal-title">
+      <i class="bi bi-tag-fill me-2"></i>Etiqueta de Empaque
+    </h5>
+    <button type="button" class="btn-close btn-close-white" (click)="modal.close()"></button>
+  </div>
+  <div class="modal-body">
+    <div id="etiquetaContenido" class="border p-4 bg-light rounded">
+      <!-- Encabezado -->
+      <div class="text-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="text-start">
+            <h6 class="mb-1"><strong>OP:</strong> {{ etiquetaData.op }}</h6>
+            <h6 class="mb-1"><strong>PV:</strong> {{ etiquetaData.pv }}</h6>
+            <h6 class="mb-1"><strong>OC:</strong> {{ etiquetaData.oc }}</h6>
+          </div>
+          <div class="text-end">
+            <h4 class="mb-0 text-primary">{{ etiquetaData.numero_empaque }}</h4>
+            <span class="badge bg-primary">{{ etiquetaData.tipo_empaque }}</span>
+          </div>
+        </div>
+        
+        <div class="border-top border-bottom py-2 mb-3">
+          <h5 class="mb-0">{{ etiquetaData.cliente }}</h5>
+        </div>
+      </div>
+
+      <!-- Información -->
+      <div class="row mb-3">
+        <div class="col-6">
+          <p class="mb-1"><strong>Empacador:</strong></p>
+          <p class="mb-0">{{ etiquetaData.empacador }}</p>
+        </div>
+        <div class="col-6 text-end">
+          <p class="mb-1"><strong>Fecha:</strong></p>
+          <p class="mb-0">{{ fechaActual | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+      </div>
+
+      <!-- Tabla items -->
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th width="15%">Item</th>
+              <th>Descripción</th>
+              <th width="15%">Talla</th>
+              <th width="15%">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of etiquetaData.items">
+              <td class="fw-bold">{{ item.item_id }}</td>
+              <td>{{ item.descripcion }}</td>
+              <td>{{ item.talla }}</td>
+              <td class="text-center">
+                <span class="badge bg-success">{{ item.cantidad }}</span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="text-end fw-bold">Total Items:</td>
+              <td class="text-center fw-bold">{{ calcularTotalItems() }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline-secondary" (click)="modal.close()">
+      <i class="bi bi-x-lg"></i> Cerrar
+    </button>
+    <button class="btn btn-outline-primary" (click)="descargarEtiquetaImagen()">
+      <i class="bi bi-download"></i> Descargar Imagen
+    </button>
+    <button class="btn btn-success" (click)="imprimirEtiqueta()">
+      <i class="bi bi-printer"></i> Imprimir
+    </button>
+  </div>
+</ng-template>
+
 <!-- Modal unificado para mostrar detalle de OP o PV -->
 <!-- Modal unificado para mostrar detalle de OP o PV -->
 <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
@@ -609,7 +851,6 @@
                       <th>Código PV</th>
                       <th>Items</th>
                       <th>PTs</th>
-                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -617,18 +858,6 @@
                       <td>{{ pv.codigo }}</td>
                       <td>{{ pv.items?.length || 0 }}</td>
                       <td>{{ pv.pts?.length || 0 }}</td>
-                      <td>
-                        <div class="btn-group btn-group-sm">
-                          <button class="btn btn-outline-success" (click)="generarQRPV(pv, 'PV', selectedItem.codigo)" 
-                                  data-bs-toggle="tooltip" title="Generar QR PV">
-                            <i class="bi bi-qr-code"></i>
-                          </button>
-                          <button class="btn btn-outline-info" (click)="imprimirEtiquetaPV(pv, 'PV')" 
-                                  data-bs-toggle="tooltip" title="Imprimir etiqueta PV">
-                            <i class="bi bi-printer"></i>
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -661,11 +890,15 @@
               </div>
             </div>
 
-            <!-- Modo Recepcionado (contenido original) -->
+            <!-- Modo Recepcionado -->
             <div *ngIf="modoDetallePV === 'recepcionado'">
-              <!-- Items del PV -->
-              <div *ngIf="selectedItem.items && selectedItem.items.length > 0" class="mb-4">
-                <h6 class="fw-bold">Items del PV:</h6>
+              <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Buscar items..."
+                  [(ngModel)]="filtersItems.busqueda" (input)="aplicarFiltrosItems()" />
+              </div>
+
+              <div *ngIf="currentItemsPV && currentItemsPV.length > 0" class="mb-4">
+                <h6 class="fw-bold">Items del PV (Consolidados):</h6>
                 <div class="table-responsive">
                   <table class="table table-sm table-bordered">
                     <thead class="table-light">
@@ -674,53 +907,43 @@
                         <th>Descripción</th>
                         <th>Talla</th>
                         <th>Cantidad Teórica</th>
-                        <th>Cantidad Empacada</th>
+                        <th>Cantidad Empacada/Recibida</th>
+                        <th>Origen</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let item of selectedItem.items">
+                      <tr *ngFor="let item of currentItemsPV">
                         <td>{{ item.referencia }}</td>
                         <td>{{ item.descripcion }}</td>
                         <td>{{ item.id_talla }}</td>
                         <td>{{ item.cantidad_teorica }}</td>
-                        <td>{{ item.cantidad_empacada || 0 }}</td>
+                        <td>{{ item.es_pt ? (item.cantidad_recibida || 0) : (item.cantidad_empacada || 0) }}</td>
+                        <td>
+                          <span *ngIf="item.es_pt" class="badge bg-secondary">PT</span>
+                          <span *ngIf="!item.es_pt" class="badge bg-primary">PV</span>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-              </div>
 
-              <!-- PTs del PV -->
-              <div *ngIf="selectedItem?.pvs?.[0]?.pts?.length > 0" class="mb-4">
-                <h6 class="fw-bold">PTs asociados:</h6>
-                <div *ngFor="let pt of selectedItem.pvs[0].pts" class="card mb-2">
-                  <div class="card-body py-2">
-                    <div class="d-flex align-items-center">
-                      <i class="bi bi-box text-secondary me-2"></i>
-                      <span class="fw-bold me-2">PT: {{ pt.pt_codigo }}</span>
-                    </div>
-                    <div class="row mt-2">
-                      <div class="col-md-3">
-                        <small><strong>Referencia:</strong> {{ pt.referencia }}</small>
-                      </div>
-                      <div class="col-md-4">
-                        <small><strong>Descripción:</strong> {{ pt.descripcion }}</small>
-                      </div>
-                      <div class="col-md-2">
-                        <small><strong>Talla:</strong> {{ pt.id_talla }}</small>
-                      </div>
-                      <div class="col-md-3">
-                        <small><strong>Cantidad:</strong> {{ pt.cantidad_teorica }} / {{ pt.cantidad_recibida || 0 }}</small>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <app-shared-paginator
+                  *ngIf="paginationService.getPaginatorState(paginatorItemsId)"
+                  [instanceId]="paginatorItemsId"
+                  [showPageSizeSelector]="true"
+                  [pageSizeOptions]="[5, 10, 25, 50]">
+                </app-shared-paginator>
               </div>
             </div>
 
-            <!-- Modo Empacado (nuevo contenido) -->
+            <!-- Modo Empacado -->
             <div *ngIf="modoDetallePV === 'empacado'">
-              <div *ngIf="empaquesPVDetalle.length > 0; else noEmpaques">
+              <div class="mb-3">
+                <input type="text" class="form-control" placeholder="Buscar en empaques..."
+                  [(ngModel)]="filtersEmpaques.busqueda" (input)="aplicarFiltrosEmpaques()" />
+              </div>
+
+              <div *ngIf="currentEmpaquesPV.length > 0; else noEmpaques">
                 <h6 class="fw-bold mb-3">
                   <i class="bi bi-box-seam text-success me-2"></i>
                   Empaques registrados ({{ empaquesPVDetalle.length }})
@@ -738,48 +961,63 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <ng-container *ngFor="let empaque of empaquesPVDetalle">
-                        <!-- Fila principal de empaque -->
+                      <ng-container *ngFor="let empaque of currentEmpaquesPV">
+                        <!-- Fila principal -->
                         <tr>
                           <td>
                             <button class="btn btn-sm btn-link p-0" 
                                     (click)="toggleEmpaqueDetalle(empaque.numero_empaque)">
                               <i class="bi"
-                                 [class.bi-chevron-down]="expandedEmpaquesDetalle.has(empaque.numero_empaque)"
-                                 [class.bi-chevron-right]="!expandedEmpaquesDetalle.has(empaque.numero_empaque)">
+                                [class.bi-chevron-down]="expandedEmpaquesDetalle.has(empaque.numero_empaque)"
+                                [class.bi-chevron-right]="!expandedEmpaquesDetalle.has(empaque.numero_empaque)">
                               </i>
                             </button>
                           </td>
                           <td>
-                            <!-- Edición inline del código -->
-                            <div *ngIf="!editandoCodigo[empaque.numero_empaque]" 
-                                 class="d-flex align-items-center">
-                              <span class="fw-bold me-2">{{ empaque.numero_empaque }}</span>
-                              <button class="btn btn-sm btn-outline-secondary" 
-                                      (click)="iniciarEdicionCodigo(empaque.numero_empaque)"
-                                      title="Editar código">
-                                <i class="bi bi-pencil"></i>
-                              </button>
-                            </div>
-                            <div *ngIf="editandoCodigo[empaque.numero_empaque]" class="d-flex">
-                              <input type="text" 
-                                     class="form-control form-control-sm me-2"
-                                     [(ngModel)]="codigosEditados[empaque.numero_empaque]"
-                                     [placeholder]="empaque.numero_empaque">
-                              <button class="btn btn-sm btn-success me-1" 
-                                      (click)="guardarCodigoEmpaque(empaque, codigosEditados[empaque.numero_empaque])"
-                                      title="Guardar">
-                                <i class="bi bi-check"></i>
-                              </button>
-                              <button class="btn btn-sm btn-secondary" 
-                                      (click)="cancelarEdicionCodigo(empaque.numero_empaque)"
-                                      title="Cancelar">
-                                <i class="bi bi-x"></i>
+                            <!-- Edición inline del número -->
+                            <div class="d-flex align-items-center gap-2">
+                              <span *ngIf="!editingField[empaque.numero_empaque]?.numero" class="fw-bold">
+                                {{ empaque.numero_empaque }}
+                              </span>
+                              <input *ngIf="editingField[empaque.numero_empaque]?.numero"
+                                type="text"
+                                class="form-control form-control-sm"
+                                [(ngModel)]="tempValues[empaque.numero_empaque].numero"
+                                (blur)="guardarCampo(empaque, 'numero')"
+                                (keyup.enter)="guardarCampo(empaque, 'numero')"
+                                (keyup.escape)="cancelarEdicion(empaque, 'numero')"
+                                [id]="'input-numero-' + empaque.numero_empaque">
+                              <button class="btn btn-sm btn-link p-0"
+                                *ngIf="!editingField[empaque.numero_empaque]?.numero"
+                                (click)="iniciarEdicionCampo(empaque, 'numero')">
+                                <i class="bi bi-pencil text-primary"></i>
                               </button>
                             </div>
                           </td>
                           <td>
-                            <span class="badge bg-info">{{ empaque.tipo_empaque }}</span>
+                            <!-- Edición inline del tipo -->
+                            <div class="d-flex align-items-center gap-2">
+                              <span *ngIf="!editingField[empaque.numero_empaque]?.tipo" class="badge bg-info">
+                                {{ empaque.tipo_empaque }}
+                              </span>
+                              <select *ngIf="editingField[empaque.numero_empaque]?.tipo"
+                                class="form-select form-select-sm"
+                                [(ngModel)]="tempValues[empaque.numero_empaque].tipo"
+                                (blur)="guardarCampo(empaque, 'tipo')"
+                                (change)="guardarCampo(empaque, 'tipo')"
+                                [id]="'select-tipo-' + empaque.numero_empaque">
+                                <option value="Canasta">Canasta</option>
+                                <option value="Costal">Costal</option>
+                                <option value="Bolsa">Bolsa</option>
+                                <option value="Caja">Caja</option>
+                                <option value="Otro">Otro</option>
+                              </select>
+                              <button class="btn btn-sm btn-link p-0"
+                                *ngIf="!editingField[empaque.numero_empaque]?.tipo"
+                                (click)="iniciarEdicionCampo(empaque, 'tipo')">
+                                <i class="bi bi-pencil text-primary"></i>
+                              </button>
+                            </div>
                           </td>
                           <td>
                             <span class="badge bg-secondary">{{ empaque.items?.length || 0 }} items</span>
@@ -787,20 +1025,20 @@
                           <td>
                             <div class="btn-group btn-group-sm">
                               <button class="btn btn-outline-success" 
-                                      (click)="generarQREmpaque(empaque)"
-                                      title="Generar QR del empaque">
-                                <i class="bi bi-qr-code"></i>
+                                      (click)="generarEtiquetaEmpaque(empaque)"
+                                      title="Generar etiqueta">
+                                <i class="bi bi-tag"></i>
                               </button>
-                              <!-- <button class="btn btn-outline-info" 
-                                      (click)="imprimirEtiquetaEmpaque(empaque)"
-                                      title="Imprimir etiqueta">
-                                <i class="bi bi-printer"></i>
-                              </button> -->
+                              <button class="btn btn-outline-danger" 
+                                      (click)="eliminarEmpaqueCompleto(empaque)"
+                                      title="Eliminar empaque">
+                                <i class="bi bi-trash"></i>
+                              </button>
                             </div>
                           </td>
                         </tr>
 
-                        <!-- Fila expandida con items del empaque -->
+                        <!-- Fila expandida -->
                         <tr *ngIf="expandedEmpaquesDetalle.has(empaque.numero_empaque)" class="bg-light">
                           <td colspan="5" class="p-0">
                             <div class="p-3">
@@ -826,7 +1064,28 @@
                                         <span class="badge bg-light text-dark">{{ item.id_talla }}</span>
                                       </td>
                                       <td>
-                                        <span class="fw-bold text-primary">{{ item.cantidad }}</span>
+                                        <!-- Edición inline de cantidad -->
+                                        <div class="d-flex align-items-center gap-2">
+                                          <span *ngIf="!editingField[item.id]?.cantidad" class="fw-bold text-primary">
+                                            {{ item.cantidad }}
+                                          </span>
+                                          <input *ngIf="editingField[item.id]?.cantidad"
+                                            type="number"
+                                            class="form-control form-control-sm"
+                                            style="width: 80px;"
+                                            [(ngModel)]="tempValues[item.id].cantidad"
+                                            (blur)="guardarCantidadItem(empaque, item)"
+                                            (keyup.enter)="guardarCantidadItem(empaque, item)"
+                                            (keyup.escape)="cancelarEdicion(item, 'cantidad')"
+                                            min="1"
+                                            step="1"
+                                            [id]="'input-cantidad-' + item.id">
+                                          <button class="btn btn-sm btn-link p-0"
+                                            *ngIf="!editingField[item.id]?.cantidad"
+                                            (click)="iniciarEdicionCantidad(item)">
+                                            <i class="bi bi-pencil text-primary"></i>
+                                          </button>
+                                        </div>
                                       </td>
                                       <td>
                                         <small class="text-muted">{{ item.fecha_empaque | date:'dd/MM/yyyy HH:mm' }}</small>
@@ -834,9 +1093,6 @@
                                       <td>
                                         <small>{{ item.comentario || '-' }}</small>
                                       </td>
-                                    </tr>
-                                    <tr *ngIf="empaque.items.length === 0">
-                                      <td colspan="6" class="text-center text-muted">Sin items registrados</td>
                                     </tr>
                                   </tbody>
                                 </table>
@@ -848,13 +1104,19 @@
                     </tbody>
                   </table>
                 </div>
+
+                <app-shared-paginator
+                  *ngIf="paginationService.getPaginatorState(paginatorEmpaquesId)"
+                  [instanceId]="paginatorEmpaquesId"
+                  [showPageSizeSelector]="true"
+                  [pageSizeOptions]="[5, 10, 25, 50]">
+                </app-shared-paginator>
               </div>
               
               <ng-template #noEmpaques>
                 <div class="text-center py-5">
                   <i class="bi bi-box-seam display-1 text-muted"></i>
                   <h5 class="text-muted mt-3">No hay empaques registrados</h5>
-                  <p class="text-muted">Esta PV aún no tiene empaques registrados.</p>
                 </div>
               </ng-template>
             </div>
@@ -863,21 +1125,13 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <div class="btn-group">
-          <button type="button" class="btn btn-success" (click)="generarQRUnificado(selectedItem, selectedItemType)">
-            <i class="bi bi-qr-code"></i> Generar QR
-          </button>
-          <button type="button" class="btn btn-info" (click)="imprimirEtiquetaUnificada(selectedItem, selectedItemType)">
-            <i class="bi bi-printer"></i> Imprimir Etiqueta
-          </button>
-        </div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Modal QR (reutilizable) -->
-<div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header" style="background-color: #4F45B1;">
@@ -917,10 +1171,10 @@
       </div>
     </div>
   </div>
-</div>
+</div> -->
 
 <!-- Modal para mostrar QR (actualizado) -->
-<div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header" style="background-color: #4F45B1;">
@@ -957,4 +1211,4 @@
       </div>
     </div>
   </div>
-</div>
+</div> -->

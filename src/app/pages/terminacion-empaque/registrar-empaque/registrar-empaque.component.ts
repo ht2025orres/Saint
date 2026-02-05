@@ -2,7 +2,7 @@ import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pag
 import { TerminacionEmpaqueService } from 'src/app/services/terminacion-empaque.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user.service';
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ElementRef } from '@angular/core';
 import Swal from 'sweetalert2';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import * as QRCode from 'qrcode';
@@ -58,6 +58,13 @@ export class RegistrarEmpaqueComponent implements OnInit {
     totalPages: 1
   };
 
+  etiquetaData: any = {};
+  etiquetaTitle = '';
+  etiquetaSubtitle = '';
+
+  fechaActual = new Date();
+  etiquetaElementRef!: ElementRef;
+
   qrImageUrl: string | null = null;
   qrTitle = '';
   qrSubtitle = '';
@@ -67,10 +74,13 @@ export class RegistrarEmpaqueComponent implements OnInit {
   qrEmpacador = '';
   qrData: any = {};
 
+  guardandoEmpaque = false;
+
   @ViewChild('tmplVerItems', { static: true }) tmplVerItems!: TemplateRef<any>;
   @ViewChild('tmplRegistrarEmpaque', { static: true }) tmplRegistrarEmpaque!: TemplateRef<any>;
   @ViewChild('tmplVerEmpaques', { static: true }) tmplVerEmpaques!: TemplateRef<any>;
   @ViewChild('qrTemplate', { static: true }) qrTemplate!: TemplateRef<any>;
+  @ViewChild('etiquetaTemplate', { static: true }) etiquetaTemplate!: TemplateRef<any>;
 
   constructor(
     private terminacionEmpaqueService: TerminacionEmpaqueService,
@@ -219,7 +229,7 @@ export class RegistrarEmpaqueComponent implements OnInit {
           this.filtersItems,
           this.filterFunctionItems
         ).subscribe(state => this.currentItemsPV = state.currentData);
-console.log(this.itemsPV);
+        console.log(this.itemsPV);
         this.modalService.open(this.tmplRegistrarEmpaque, { size: 'xl' });
       },
       error: () => Swal.fire('Error', 'No se pudieron cargar los ítems para registrar empaque', 'error')
@@ -227,9 +237,8 @@ console.log(this.itemsPV);
   }
 
   registrarEmpaque(): void {
-    console.log(this.itemsPV)
-    
-    // *** VALIDAR ANTES DE FILTRAR ***
+    if (this.guardandoEmpaque) return;
+
     const itemsInvalidos = this.itemsPV.filter(item => {
       const asignado = Number(item.asignado) || 0;
       const empacado = Number(item.empacado) || 0;
@@ -252,7 +261,7 @@ console.log(this.itemsPV);
         const limite = Math.min(asignado, teorico);
 
         return `- ${item.id_item.trim()} - ${item.id_color.trim()} - ${item.id_talla.trim()}: |
-    Intentas registrar ${item.cantidad_a_registrar}, máximo permitido: ${limite - empacado}`;
+      Intentas registrar ${item.cantidad_a_registrar}, máximo permitido: ${limite - empacado}`;
       }).join('\n');
 
       Swal.fire({
@@ -280,15 +289,24 @@ console.log(this.itemsPV);
       return;
     }
 
+    this.guardandoEmpaque = true;
+
     this.terminacionEmpaqueService.registrarEmpaqueApiLaravel(registros).subscribe({
       next: () => {
+        this.itemsPV.forEach(item => {
+          item.cantidad_a_registrar = 0;
+          item.tipo_empaque = '';
+          item.numero_empaque = '';
+        });
+        
         Swal.fire('Éxito', 'Empaque registrado correctamente.', 'success');
         this.modalService.dismissAll();
-        this.itemsPV = [];
         this.cargarPVsAsignadas();
+        this.guardandoEmpaque = false;
       },
       error: () => {
         Swal.fire('Error', 'No se pudo registrar el empaque.', 'error');
+        this.guardandoEmpaque = false;
       }
     });
   }
@@ -400,16 +418,38 @@ console.log(this.itemsPV);
     }
   }
 
-  async generarQR(empaque: any) {
-    console.log('Generando QR para empaque:', empaque);
+  // Agregar en la configuración del modal para obtener referencia
+  abrirModalEtiqueta() {
+    const modalRef = this.modalService.open(this.etiquetaTemplate, { size: 'lg' });
+    modalRef.shown.subscribe(() => {
+      this.etiquetaElementRef = new ElementRef(document.getElementById('etiquetaContenido'));
+    });
+  }
+
+  calcularTotalItems(): number {
+    if (!this.etiquetaData.items) return 0;
+    return this.etiquetaData.items.reduce((total: number, item: any) => total + item.cantidad, 0);
+  }
+
+  contarItemsUnicos(empaque: any): number {
+    if (!empaque.items) return 0;
+    const itemsUnicos = new Set();
+    empaque.items.forEach((item: any) => {
+      itemsUnicos.add(item.item_id);
+    });
+    return itemsUnicos.size;
+  }
+
+  async generarEtiquetaTexto(empaque: any) {
+    console.log('Generando etiqueta para empaque:', empaque);
     try {
-      // 1. Consolidar items (sumar cantidades por item_id + id_talla)
       const itemsMap = new Map<string, any>();
 
       for (const item of empaque.items) {
         const key = `${item.item_id}_${item.id_talla}`;
         if (!itemsMap.has(key)) {
           itemsMap.set(key, {
+            item_id: item.item_id,
             descripcion: item.descripcion,
             talla: item.id_talla,
             cantidad: parseFloat(item.cantidad)
@@ -437,76 +477,246 @@ console.log(this.itemsPV);
         });
       });
 
-      // 2. Formatear el texto legible - asegurar UTF-8
-      let qrText = `OP: ${empaque.op || 'N/A'}\n`;
-      qrText += `PV: ${empaque.pv || 'N/A'}\n`;
-      qrText += `OC: ${empaque.oc || 'N/A'}\n`;
-      qrText += `Cliente: ${empaque.cliente || 'N/A'}\n`;
-      qrText += `Empacador: ${EmpacadorNombre}\n`;
-      qrText += `Tipo Empaque: ${empaque.tipo_empaque}\n`;
-      qrText += `Número Empaque: ${empaque.numero_empaque}\n\n`;
-      qrText += `Items:\n`;
+      this.etiquetaTitle = `Etiqueta - ${empaque.numero_empaque}`;
+      this.etiquetaSubtitle = empaque.tipo_empaque;
+      this.etiquetaData = {
+        op: empaque.op || 'N/A',
+        pv: empaque.pv || 'N/A',
+        oc: empaque.oc || 'N/A',
+        cliente: empaque.cliente || 'N/A',
+        empacador: EmpacadorNombre,
+        tipo_empaque: empaque.tipo_empaque,
+        numero_empaque: empaque.numero_empaque,
+        items: itemsConsolidados
+      };
 
-      itemsConsolidados.forEach(it => {
-        qrText += `- ${it.descripcion} (Talla: ${it.talla}) -> ${it.cantidad}\n`;
-      });
-
-      // 3. Convertir explícitamente a UTF-8 usando TextEncoder
-      const encoder = new TextEncoder();
-      const utf8Bytes = encoder.encode(qrText);
-      const utf8Text = new TextDecoder('utf-8').decode(utf8Bytes);
-
-      // 4. Generar QR con configuración UTF-8
-      this.qrImageUrl = await QRCode.toDataURL(utf8Text, {
-        errorCorrectionLevel: 'M', // Cambiado de 'L' a 'M' para mejor corrección
-        margin: 2,
-        scale: 8,
-        width: 350,
-        type: 'image/png',
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
-      });
-
-      // 5. Guardar para mostrar en modal
-      this.qrTitle = empaque.numero_empaque;
-      this.qrSubtitle = empaque.tipo_empaque;
-      this.qrType = empaque.tipo_empaque;
-      this.qrCode = empaque.numero_empaque;
-      this.qrCliente = empaque.cliente || 'N/A';
-      this.qrEmpacador = EmpacadorNombre;
-      this.qrData = itemsConsolidados;
-
-      // Abrir modal
-      this.modalService.open(this.qrTemplate, { size: 'lg' });
+      this.modalService.open(this.etiquetaTemplate, { size: 'lg' });
 
     } catch (err) {
-      console.error("Error generando QR:", err);
-      console.error("Detalles del error:", err.message);
+      console.error("Error generando etiqueta:", err);
     }
   }
 
-  descargarQR() {
-    if (!this.qrImageUrl) return;
-    const a = document.createElement('a');
-    a.href = this.qrImageUrl;
-    a.download = `QR_${this.qrCode}.png`;
-    a.click();
+  async descargarEtiquetaImagen() {
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const element = document.getElementById('etiquetaContenido');
+      
+      if (!element) {
+        console.error('No se encontró el elemento de la etiqueta');
+        return;
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#f8f9fa',
+        logging: false
+      });
+
+      const image = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `Etiqueta_${this.etiquetaData.numero_empaque}_${new Date().getTime()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error al generar imagen:', error);
+    }
   }
 
-  imprimirQR() {
-    if (!this.qrImageUrl) return;
-    const w = window.open('', '_blank');
-    if (!w) return;
-    w.document.write(`
-      <html><head></head>
-      <body style="text-align:center; font-family: Arial;">
-        <h3>Etiqueta ${this.qrCode}</h3>
-        <img src="${this.qrImageUrl}" />
-        <script>window.print();</script>
-      </body></html>
+  imprimirEtiqueta() {
+    const contenido = document.getElementById('etiquetaContenido')?.innerHTML;
+    if (!contenido) return;
+    
+    const estilos = `
+      <style>
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          margin: 0; 
+          padding: 20px; 
+          background: #f8f9fa;
+        }
+        .etiqueta-imprimir {
+          border: 2px solid #000;
+          padding: 20px;
+          background: white;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        .encabezado { 
+          border-bottom: 2px solid #000; 
+          padding-bottom: 10px; 
+          margin-bottom: 15px;
+        }
+        .barcode-text {
+          font-family: 'Courier New', monospace;
+          letter-spacing: 2px;
+          font-weight: bold;
+        }
+        .barcode-lines {
+          display: flex;
+          justify-content: center;
+          gap: 2px;
+          margin: 5px 0;
+        }
+        .barcode-line {
+          height: 40px;
+          background: black;
+          margin: 0 1px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        th {
+          background: #343a40;
+          color: white;
+          padding: 8px;
+        }
+        td {
+          padding: 6px;
+          border: 1px solid #dee2e6;
+        }
+        .total-row {
+          background: #e9ecef;
+          font-weight: bold;
+        }
+      </style>
+    `;
+
+    const ventana = window.open('', '_blank');
+    if (!ventana) return;
+    
+    ventana.document.write(`
+      <html>
+        <head>
+          <title>Etiqueta ${this.etiquetaData.numero_empaque}</title>
+          ${estilos}
+        </head>
+        <body>
+          <div class="etiqueta-imprimir">
+            ${contenido}
+          </div>
+          <script>
+            window.onload = function() { 
+              window.focus();
+              window.print(); 
+            }
+          </script>
+        </body>
+      </html>
     `);
-    w.document.close();
+    ventana.document.close();
   }
+
+  // async generarQR(empaque: any) {
+  //   console.log('Generando QR para empaque:', empaque);
+  //   try {
+  //     // 1. Consolidar items (sumar cantidades por item_id + id_talla)
+  //     const itemsMap = new Map<string, any>();
+
+  //     for (const item of empaque.items) {
+  //       const key = `${item.item_id}_${item.id_talla}`;
+  //       if (!itemsMap.has(key)) {
+  //         itemsMap.set(key, {
+  //           descripcion: item.descripcion,
+  //           talla: item.id_talla,
+  //           cantidad: parseFloat(item.cantidad)
+  //         });
+  //       } else {
+  //         itemsMap.get(key).cantidad += parseFloat(item.cantidad);
+  //       }
+  //     }
+
+  //     const itemsConsolidados = Array.from(itemsMap.values());
+
+  //     let EmpacadorNombre = 'N/A';
+  //     await new Promise<void>((resolve) => {
+  //       this.userService.getById(empaque.empacador_id).subscribe({
+  //         next: (user) => {
+  //           EmpacadorNombre = (user.firstName && user.lastName)
+  //             ? `${user.firstName} ${user.lastName}`
+  //             : 'N/A';
+  //           resolve();
+  //         },
+  //         error: () => {
+  //           EmpacadorNombre = 'N/A';
+  //           resolve();
+  //         }
+  //       });
+  //     });
+
+  //     // 2. Formatear el texto legible - asegurar UTF-8
+  //     let qrText = `OP: ${empaque.op || 'N/A'}\n`;
+  //     qrText += `PV: ${empaque.pv || 'N/A'}\n`;
+  //     qrText += `OC: ${empaque.oc || 'N/A'}\n`;
+  //     qrText += `Cliente: ${empaque.cliente || 'N/A'}\n`;
+  //     qrText += `Empacador: ${EmpacadorNombre}\n`;
+  //     qrText += `Tipo Empaque: ${empaque.tipo_empaque}\n`;
+  //     qrText += `Número Empaque: ${empaque.numero_empaque}\n\n`;
+  //     qrText += `Items:\n`;
+
+  //     itemsConsolidados.forEach(it => {
+  //       qrText += `- ${it.descripcion} (Talla: ${it.talla}) -> ${it.cantidad}\n`;
+  //     });
+
+  //     // 3. Convertir explícitamente a UTF-8 usando TextEncoder
+  //     const encoder = new TextEncoder();
+  //     const utf8Bytes = encoder.encode(qrText);
+  //     const utf8Text = new TextDecoder('utf-8').decode(utf8Bytes);
+
+  //     // 4. Generar QR con configuración UTF-8
+  //     this.qrImageUrl = await QRCode.toDataURL(utf8Text, {
+  //       errorCorrectionLevel: 'M', // Cambiado de 'L' a 'M' para mejor corrección
+  //       margin: 2,
+  //       scale: 8,
+  //       width: 350,
+  //       type: 'image/png',
+  //       color: {
+  //         dark: '#000000',
+  //         light: '#FFFFFF'
+  //       }
+  //     });
+
+  //     // 5. Guardar para mostrar en modal
+  //     this.qrTitle = empaque.numero_empaque;
+  //     this.qrSubtitle = empaque.tipo_empaque;
+  //     this.qrType = empaque.tipo_empaque;
+  //     this.qrCode = empaque.numero_empaque;
+  //     this.qrCliente = empaque.cliente || 'N/A';
+  //     this.qrEmpacador = EmpacadorNombre;
+  //     this.qrData = itemsConsolidados;
+
+  //     // Abrir modal
+  //     this.modalService.open(this.qrTemplate, { size: 'lg' });
+
+  //   } catch (err) {
+  //     console.error("Error generando QR:", err);
+  //     console.error("Detalles del error:", err.message);
+  //   }
+  // }
+
+  // descargarQR() {
+  //   if (!this.qrImageUrl) return;
+  //   const a = document.createElement('a');
+  //   a.href = this.qrImageUrl;
+  //   a.download = `QR_${this.qrCode}.png`;
+  //   a.click();
+  // }
+
+  // imprimirQR() {
+  //   if (!this.qrImageUrl) return;
+  //   const w = window.open('', '_blank');
+  //   if (!w) return;
+  //   w.document.write(`
+  //     <html><head></head>
+  //     <body style="text-align:center; font-family: Arial;">
+  //       <h3>Etiqueta ${this.qrCode}</h3>
+  //       <img src="${this.qrImageUrl}" />
+  //       <script>window.print();</script>
+  //     </body></html>
+  //   `);
+  //   w.document.close();
+  // }
 }
