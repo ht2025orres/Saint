@@ -3,6 +3,7 @@ import { InventarioService } from 'src/app/services/inventario.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-bodegas',
@@ -39,6 +40,8 @@ export class BodegasComponent implements OnInit {
   selectedItems: any[] = [];
   mostrarModal = false;
   zonaSeleccionada: number | null = null;
+  mostrarModalEliminar = false;
+  zonaEliminarSeleccionada: number | null = null;
   
   zonas: any[] = [];
   
@@ -377,6 +380,21 @@ export class BodegasComponent implements OnInit {
     });
   }
 
+  abrirModalEliminarZona(): void {
+    if (this.selectedItems.length === 0) {
+      Swal.fire('Atención', 'Selecciona ítems para eliminar la zona.', 'info');
+      return;
+    }
+
+    if (this.zonasDisponiblesParaEliminar.length === 0) {
+      Swal.fire('Atención', 'Los ítems seleccionados no tienen zonas para eliminar.', 'info');
+      return;
+    }
+
+    this.zonaEliminarSeleccionada = null;
+    this.mostrarModalEliminar = true;
+  }
+
   verDetalleItem(item: any): void {
     console.log('Ver detalle del ítem:', item);
   }
@@ -384,6 +402,11 @@ export class BodegasComponent implements OnInit {
   cerrarModal() {
     this.mostrarModal = false;
     this.zonaSeleccionada = null;
+  }
+
+  cerrarModalEliminar() {
+    this.mostrarModalEliminar = false;
+    this.zonaEliminarSeleccionada = null;
   }
 
   confirmar() {
@@ -395,8 +418,71 @@ export class BodegasComponent implements OnInit {
     }
   }
 
+  confirmarEliminarZona() {
+    if (!this.zonaEliminarSeleccionada) {
+      Swal.fire('Atención', 'Debes seleccionar una zona', 'warning');
+      return;
+    }
+
+    const zonaId = this.zonaEliminarSeleccionada;
+    const itemsParaEliminar = this.selectedItems.filter(item =>
+      item.zonas?.some((zona: any) => zona.id === zonaId)
+    );
+
+    if (itemsParaEliminar.length === 0) {
+      Swal.fire('Atención', 'Ningún ítem seleccionado tiene la zona elegida.', 'info');
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Eliminar zona seleccionada?',
+      text: `Se eliminará la zona de ${itemsParaEliminar.length} ítem(s).`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+
+      forkJoin(
+        itemsParaEliminar.map(item =>
+          this.inventarioService.eliminarZonaItem(
+            item.id_item,
+            this.codigoBodega!,
+            zonaId,
+            item.id_f400
+          )
+        )
+      ).subscribe({
+        next: () => {
+          Swal.fire('¡Listo!', 'Zona eliminada correctamente.', 'success');
+          this.verItemsDeBodega(this.codigoBodega!, this.nombreBodega!);
+          this.selectedItems = [];
+          this.cerrarModalEliminar();
+        },
+        error: () => Swal.fire('Error', 'No se pudo eliminar la zona.', 'error')
+      });
+    });
+  }
+
   get selectedCodigos(): string {
     return this.selectedItems.map(i => i.id_f400).join(', ');
+  }
+
+  get zonasDisponiblesParaEliminar(): any[] {
+    const mapa = new Map<number, any>();
+
+    this.selectedItems.forEach(item => {
+      (item.zonas || [])
+        .filter((zona: any) => zona.nombre !== 'Sin zona')
+        .forEach((zona: any) => {
+          if (!mapa.has(zona.id)) {
+            mapa.set(zona.id, zona);
+          }
+        });
+    });
+
+    return Array.from(mapa.values());
   }
 
   getZonasNombres(zonas: any[]): string {

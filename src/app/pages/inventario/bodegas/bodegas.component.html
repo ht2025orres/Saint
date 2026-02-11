@@ -157,9 +157,12 @@
       </button>
 
       <!-- Botón asignar zona masiva -->
-      <div *ngIf="selectedItems.length > 0">
+      <div *ngIf="selectedItems.length > 0" class="d-flex gap-2">
         <button class="btn btn-success btn-sm" (click)="mostrarModal = true">
           <i class="bi bi-geo-alt-fill me-1"></i> Agregar zona a {{ selectedItems.length }} ítem(s)
+        </button>
+        <button class="btn btn-outline-danger btn-sm" (click)="abrirModalEliminarZona()">
+          <i class="bi bi-geo-alt me-1"></i> Quitar zona a {{ selectedItems.length }} ítem(s)
         </button>
       </div>
     </div>
@@ -342,6 +345,35 @@
         <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
         <button class="btn btn-primary" (click)="confirmar()" [disabled]="!zonaSeleccionada">
           <i class="bi bi-plus-circle me-1"></i> Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de eliminación de zona -->
+  <div class="modal-overlay" *ngIf="mostrarModalEliminar">
+    <div class="modal-container">
+      <h3>Quitar zona de ítems</h3>
+      <p>
+        Vas a <b>quitar</b> una zona de 
+        <b>{{ selectedItems.length }}</b> ítem(s):
+      </p>
+      <small class="text-muted">{{ selectedCodigos }}</small>
+
+      <div class="form-group mt-3">
+        <label>Selecciona una zona</label>
+        <select class="form-control" [(ngModel)]="zonaEliminarSeleccionada" name="zonaEliminarSeleccionada">
+          <option [ngValue]="null" disabled>-- Selecciona --</option>
+          <option *ngFor="let z of zonasDisponiblesParaEliminar" [ngValue]="z.id">
+            {{ z.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <div class="mt-3 text-end">
+        <button class="btn btn-secondary" (click)="cerrarModalEliminar()">Cancelar</button>
+        <button class="btn btn-danger" (click)="confirmarEliminarZona()" [disabled]="!zonaEliminarSeleccionada">
+          <i class="bi bi-trash me-1"></i> Quitar
         </button>
       </div>
     </div>

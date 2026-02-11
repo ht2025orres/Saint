@@ -1,8 +1,5 @@
 <app-loading *ngIf="loading"></app-loading>
 
-<!-- ============================================================== -->
-<!-- Encabezado y Navegación -->
-<!-- ============================================================== -->
 <header class="page-header mt-3" role="banner">
     <div class="row page-titles">
         <div class="col-12 col-lg-5 align-self-center">
@@ -10,466 +7,219 @@
         </div>
         <nav class="col-12 col-lg-7 align-self-center" aria-label="Navegación de ruta">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item">
-                    <a routerLink="/dashboard" aria-label="Ir a inicio">Inicio</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <span>Administración</span>
-                </li>
+                <li class="breadcrumb-item"><a routerLink="/dashboard">Inicio</a></li>
+                <li class="breadcrumb-item"><span>Administración</span></li>
                 <li class="breadcrumb-item active" aria-current="page">{{title}}</li>
             </ol>
         </nav>
     </div>
 </header>
-<!-- ============================================================== -->
-<!-- Fin Encabezado -->
-<!-- ============================================================== -->
 
 <main class="row" role="main">
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-body p-3 p-md-4">
 
-                <!-- Indicador de campos obligatorios -->
                 <div class="alert alert-info mb-4" role="status">
-                    <svg class="icon-inline me-2" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"
-                        aria-hidden="true">
-                        <path fill-rule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clip-rule="evenodd" />
+                    <svg class="icon-inline me-2" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                     </svg>
-                    Los campos marcados con <span aria-label="asterisco">*</span> son obligatorios
+                    Los campos marcados con <span>*</span> son obligatorios
                 </div>
 
-                <form class="user-form" [formGroup]="formGr" (ngSubmit)="saveInfo()" autocomplete="off" novalidate>
+                <form [formGroup]="formGr" autocomplete="off" novalidate>
 
-                    <!-- Sección: Información Personal -->
+                    <!-- Información Personal -->
                     <fieldset class="form-section mb-4">
-                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">
-                            Información Personal
-                        </legend>
+                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">Información Personal</legend>
 
                         <div class="row g-3">
-                            <!-- Campo Nombre -->
                             <div class="col-12 col-md-6">
-                                <div class="form-group mb-0">
-                                    <label for="inputNombre" class="form-label">
-                                        Nombre
-                                        <abbr title="Campo obligatorio" aria-label="obligatorio">*</abbr>
-                                    </label>
-                                    <div class="input-group" [class.has-danger]="nombreNoValid"
-                                        [class.has-success]="!nombreNoValid && formGr.get('nombre').touched">
-                                        <span class="input-group-text" aria-hidden="true">
-                                            <i class="ti-user"></i>
-                                        </span>
-                                        <input type="text" id="inputNombre" class="form-control"
-                                            placeholder="Ingrese su nombre" formControlName="nombre"
-                                            autocomplete="given-name" [class.is-invalid]="nombreNoValid"
-                                            [class.is-valid]="!nombreNoValid && formGr.get('nombre').touched"
-                                            [attr.aria-invalid]="nombreNoValid ? 'true' : null"
-                                            [attr.aria-describedby]="nombreNoValid ? 'errorNombre' : null" required>
-                                    </div>
-                                    <div id="errorNombre" class="invalid-feedback d-block" *ngIf="nombreNoValid"
-                                        role="alert" aria-live="polite">
-                                        <svg class="icon-inline me-1" width="16" height="16" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        El nombre es requerido
-                                    </div>
+                                <label for="inputNombre" class="form-label">Nombre <abbr title="obligatorio">*</abbr></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti-user"></i></span>
+                                    <input type="text" id="inputNombre" class="form-control" placeholder="Ingrese su nombre" 
+                                           formControlName="nombre" [class.is-invalid]="nombreNoValid" [class.is-valid]="!nombreNoValid && formGr.get('nombre').touched">
                                 </div>
+                                <div class="invalid-feedback d-block" *ngIf="nombreNoValid">El nombre es requerido</div>
                             </div>
 
-                            <!-- Campo Apellido -->
                             <div class="col-12 col-md-6">
-                                <div class="form-group mb-0">
-                                    <label for="inputApellido" class="form-label">
-                                        Apellido
-                                        <abbr title="Campo obligatorio" aria-label="obligatorio">*</abbr>
-                                    </label>
-                                    <div class="input-group" [class.has-danger]="apellidoNoValid"
-                                        [class.has-success]="!apellidoNoValid && formGr.get('apellido').touched">
-                                        <span class="input-group-text" aria-hidden="true">
-                                            <i class="ti-user"></i>
-                                        </span>
-                                        <input type="text" id="inputApellido" class="form-control"
-                                            placeholder="Ingrese su apellido" formControlName="apellido"
-                                            autocomplete="family-name" [class.is-invalid]="apellidoNoValid"
-                                            [class.is-valid]="!apellidoNoValid && formGr.get('apellido').touched"
-                                            [attr.aria-invalid]="apellidoNoValid ? 'true' : null"
-                                            [attr.aria-describedby]="apellidoNoValid ? 'errorApellido' : null" required>
-                                    </div>
-                                    <div id="errorApellido" class="invalid-feedback d-block" *ngIf="apellidoNoValid"
-                                        role="alert" aria-live="polite">
-                                        <svg class="icon-inline me-1" width="16" height="16" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        El apellido es requerido
-                                    </div>
+                                <label for="inputApellido" class="form-label">Apellido <abbr title="obligatorio">*</abbr></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti-user"></i></span>
+                                    <input type="text" id="inputApellido" class="form-control" placeholder="Ingrese su apellido" 
+                                           formControlName="apellido" [class.is-invalid]="apellidoNoValid" [class.is-valid]="!apellidoNoValid && formGr.get('apellido').touched">
                                 </div>
+                                <div class="invalid-feedback d-block" *ngIf="apellidoNoValid">El apellido es requerido</div>
                             </div>
 
-                            <!-- Campo Email (solo admin) -->
                             <div class="col-12 col-md-6" *ngIf="authService.hasRole('Administrador del sistema')">
-                                <div class="form-group mb-0">
-                                    <label for="inputEmail" class="form-label">
-                                        Correo electrónico
-                                        <abbr title="Campo obligatorio" aria-label="obligatorio">*</abbr>
-                                    </label>
-                                    <div class="input-group" [class.has-danger]="emailNoValid"
-                                        [class.has-success]="!emailNoValid && formGr.get('email').touched">
-                                        <span class="input-group-text" aria-hidden="true">
-                                            <i class="ti-email"></i>
-                                        </span>
-                                        <input type="email" id="inputEmail" class="form-control"
-                                            placeholder="ejemplo@correo.com" formControlName="email"
-                                            autocomplete="email" [class.is-invalid]="emailNoValid"
-                                            [class.is-valid]="!emailNoValid && formGr.get('email').touched"
-                                            [attr.aria-invalid]="emailNoValid ? 'true' : null"
-                                            [attr.aria-describedby]="emailNoValid ? 'errorEmail helpEmail' : 'helpEmail'"
-                                            required>
-                                    </div>
-                                    <small id="helpEmail" class="form-text text-muted">
-                                        Se utilizará para notificaciones del sistema
-                                    </small>
-                                    <div id="errorEmail" class="invalid-feedback d-block" *ngIf="emailNoValid"
-                                        role="alert" aria-live="polite">
-                                        <svg class="icon-inline me-1" width="16" height="16" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        El correo electrónico debe ser válido
-                                    </div>
+                                <label for="inputEmail" class="form-label">Correo electrónico <abbr title="obligatorio">*</abbr></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti-email"></i></span>
+                                    <input type="email" id="inputEmail" class="form-control" placeholder="ejemplo@correo.com" 
+                                           formControlName="email" [class.is-invalid]="emailNoValid" [class.is-valid]="!emailNoValid && formGr.get('email').touched">
                                 </div>
+                                <small class="form-text text-muted">Se utilizará para notificaciones del sistema</small>
+                                <div class="invalid-feedback d-block" *ngIf="emailNoValid">El correo electrónico debe ser válido</div>
                             </div>
                         </div>
                     </fieldset>
 
-                    <!-- Sección: Seguridad -->
+                    <!-- Contraseña y Seguridad -->
                     <fieldset class="form-section mb-4">
-                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">
-                            Contraseña y Seguridad
-                        </legend>
+                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">Contraseña y Seguridad</legend>
 
                         <div class="row g-3">
-                            <!-- Campo Password -->
                             <div class="col-12 col-md-6">
-                                <div class="form-group mb-0">
-                                    <label for="inputPassword" class="form-label">
-                                        Contraseña
-                                        <abbr title="Campo obligatorio" aria-label="obligatorio">*</abbr>
-                                    </label>
-                                    <div class="input-group" [class.has-danger]="pass1NoValid"
-                                        [class.has-success]="!pass1NoValid && formGr.get('password').touched">
-                                        <span class="input-group-text" aria-hidden="true">
-                                            <i class="ti-lock"></i>
-                                        </span>
-                                        <input type="password" id="inputPassword" class="form-control"
-                                            placeholder="Ingrese su contraseña" formControlName="password"
-                                            autocomplete="new-password" [class.is-invalid]="pass1NoValid"
-                                            [class.is-valid]="!pass1NoValid && formGr.get('password').touched"
-                                            [attr.aria-invalid]="pass1NoValid ? 'true' : null"
-                                            [attr.aria-describedby]="pass1NoValid ? 'errorPassword helpPassword' : 'helpPassword'"
-                                            required>
-                                        <button type="button" class="btn btn-outline-secondary"
-                                            [class.btn-info]="modifyPassword==='pointer'"
-                                            [style.cursor]="modifyPassword" (click)="enablePasswordFields()"
-                                            aria-label="Habilitar cambio de contraseña"
-                                            [attr.aria-pressed]="modifyPassword==='pointer' ? 'true' : 'false'">
-                                            <i class="ti-pencil" aria-hidden="true"></i>
-                                        </button>
-                                    </div>
-                                    <small id="helpPassword" class="form-text text-muted">
-                                        Mínimo 8 caracteres, incluir mayúsculas y números
-                                    </small>
-                                    <div id="errorPassword" class="invalid-feedback d-block" *ngIf="pass1NoValid"
-                                        role="alert" aria-live="polite">
-                                        <svg class="icon-inline me-1" width="16" height="16" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        La contraseña es requerida
-                                    </div>
+                                <label for="inputPassword" class="form-label">Contraseña <abbr title="obligatorio">*</abbr></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti-lock"></i></span>
+                                    <input type="password" id="inputPassword" class="form-control" placeholder="Ingrese su contraseña" 
+                                           formControlName="password" [class.is-invalid]="pass1NoValid" [class.is-valid]="!pass1NoValid && formGr.get('password').touched">
+                                    <button type="button" class="btn btn-outline-secondary" [class.btn-info]="modifyPassword==='pointer'" 
+                                            [style.cursor]="modifyPassword" (click)="enablePasswordFields()">
+                                        <i class="ti-pencil"></i>
+                                    </button>
                                 </div>
+                                <small class="form-text text-muted">Mínimo 8 caracteres, incluir mayúsculas y números</small>
+                                <div class="invalid-feedback d-block" *ngIf="pass1NoValid">La contraseña es requerida</div>
                             </div>
 
-                            <!-- Campo Confirmar Password -->
                             <div class="col-12 col-md-6">
-                                <div class="form-group mb-0">
-                                    <label for="inputRepassword" class="form-label">
-                                        Confirmar contraseña
-                                        <abbr title="Campo obligatorio" aria-label="obligatorio">*</abbr>
-                                    </label>
-                                    <div class="input-group" [class.has-danger]="pass2NoValid" [class.has-success]="!pass2NoValid && formGr.get('repassword').touched
-                                                        && (formGr.get('password').value.trim().length > 0
-                                                        && formGr.get('repassword').value.trim().length > 0)">
-                                        <span class="input-group-text" aria-hidden="true">
-                                            <i class="ti-lock"></i>
-                                        </span>
-                                        <input type="password" id="inputRepassword" class="form-control"
-                                            placeholder="Repita su contraseña" formControlName="repassword"
-                                            autocomplete="new-password" [class.is-invalid]="pass2NoValid"
-                                            [class.is-valid]="!pass2NoValid && formGr.get('repassword').touched
-                                                    && (formGr.get('password').value.trim().length > 0 && formGr.get('repassword').value.trim().length > 0)"
-                                            [attr.aria-invalid]="pass2NoValid ? 'true' : null"
-                                            [attr.aria-describedby]="pass2NoValid ? 'errorRepassword' : null" required>
-                                    </div>
-                                    <div id="errorRepassword" class="invalid-feedback d-block" *ngIf="pass2NoValid"
-                                        role="alert" aria-live="polite">
-                                        <svg class="icon-inline me-1" width="16" height="16" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        Las contraseñas no coinciden
-                                    </div>
+                                <label for="inputRepassword" class="form-label">Confirmar contraseña <abbr title="obligatorio">*</abbr></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ti-lock"></i></span>
+                                    <input type="password" id="inputRepassword" class="form-control" placeholder="Repita su contraseña" 
+                                           formControlName="repassword" [class.is-invalid]="pass2NoValid" 
+                                           [class.is-valid]="!pass2NoValid && formGr.get('repassword').touched && formGr.get('password').value && formGr.get('repassword').value">
                                 </div>
+                                <div class="invalid-feedback d-block" *ngIf="pass2NoValid">Las contraseñas no coinciden</div>
                             </div>
                         </div>
                     </fieldset>
 
+                    <!-- Roles (Admin) -->
                     <fieldset class="form-section mb-4" *ngIf="authService.hasRole('Administrador del sistema')">
-                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">
-                            Permisos y Roles
-                        </legend>
+                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">Permisos y Roles</legend>
 
                         <div class="row g-3">
-                            <!-- Selector de Sección -->
                             <div class="col-12">
                                 <div class="section-filter mb-3">
-                                    <label class="form-label d-block mb-2">
-                                        <i class="ti-filter me-2" aria-hidden="true"></i>
-                                        Filtrar por sección
-                                    </label>
-                                    <div class="col-12 mb-3">
-                                        <button type="button" class="btn btn-outline-info btn-sm"
-                                            (click)="openDuplicateModal()"
-                                            [disabled]="!authService.hasRole('Administrador del sistema')">
-                                            <i class="ti-files me-2"></i>
-                                            Duplicar roles de otro usuario
+                                    <label class="form-label d-block mb-2">Filtrar roles por sección:</label>
+                                    <div class="btn-group flex-wrap" role="group">
+                                        <button type="button" class="btn btn-sm" 
+                                                [class.btn-primary]="selectedSection==='all'" 
+                                                [class.btn-outline-secondary]="selectedSection!=='all'" 
+                                                (click)="onSectionChange('all')">
+                                            Todos ({{roles.length}})
                                         </button>
-                                    </div>
-
-                                    <div class="btn-group-custom flex-wrap" role="group"
-                                        aria-label="Filtro de secciones">
-                                        <button type="button" class="btn btn-outline-primary btn-filter"
-                                            [class.active]="selectedSection === 'all'" (click)="onSectionChange('all')"
-                                            [attr.aria-pressed]="selectedSection === 'all'">
-                                            <i class="ti-view-grid me-1" aria-hidden="true"></i>
-                                            Todos
-                                            <!-- <span
-                                                class="badge bg-secondary ms-1">{{getRoleCountBySection('all')}}</span>
-                                            <span class="badge bg-success ms-1"
-                                                *ngIf="getSelectedRoleCountBySection('all') > 0">
-                                                {{getSelectedRoleCountBySection('all')}} selec.
-                                            </span> -->
-                                        </button>
-                                        <button type="button" class="btn btn-outline-primary btn-filter"
-                                            *ngFor="let section of sections"
-                                            [class.active]="selectedSection === section.name"
-                                            (click)="onSectionChange(section.name)"
-                                            [attr.aria-pressed]="selectedSection === section.name">
-                                            {{section.displayName}}
-                                            <!-- <span
-                                                class="badge bg-secondary ms-1">{{getRoleCountBySection(section.name)}}</span>
-                                            <span class="badge bg-success ms-1"
-                                                *ngIf="getSelectedRoleCountBySection(section.name) > 0">
-                                                {{getSelectedRoleCountBySection(section.name)}}
-                                            </span> -->
+                                        <button type="button" *ngFor="let section of sections" class="btn btn-sm" 
+                                                [class.btn-primary]="selectedSection===section.name" 
+                                                [class.btn-outline-secondary]="selectedSection!==section.name" 
+                                                (click)="onSectionChange(section.name)">
+                                            {{section.displayName}} ({{getRoleCountBySection(section.name)}})
                                         </button>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Botón para duplicar roles -->
-
-                            <!-- Asignar Roles con Checkboxes -->
-                            <div class="col-12 col-lg-6">
-                                <div class="form-group mb-0">
-                                    <label class="form-label d-block">
-                                        Asignar roles
-                                        <abbr title="Campo obligatorio" aria-label="obligatorio">*</abbr>
-                                        <span class="text-muted small ms-2" *ngIf="selectedSection !== 'all'">
-                                            (Mostrando: {{getSectionDisplayName(selectedSection)}})
-                                        </span>
-                                    </label>
-
-                                    <!-- Contenedor de checkboxes -->
-                                    <div class="roles-checkbox-group border rounded p-3 bg-light"
-                                        [class.border-danger]="roleNovalid"
-                                        [class.border-success]="!roleNovalid && formGr.get('role').touched" role="group"
-                                        aria-labelledby="rolesLabel">
-
-                                        <div class="form-check mb-2"
-                                            *ngFor="let role of getFilteredRoles(); let i = index">
-                                            <input class="form-check-input" type="checkbox"
-                                                [id]="'roleCheckbox' + role.id" [value]="role"
-                                                [checked]="isRoleSelected(role)" (change)="onRoleChange(role, $event)"
-                                                [attr.aria-describedby]="roleNovalid ? 'errorRole' : null">
-                                            <label
-                                                class="form-check-label d-flex justify-content-between align-items-center w-100"
-                                                [for]="'roleCheckbox' + role.id">
-                                                <span class="role-name">{{role.name}}</span>
-                                                <span class="badge bg-light text-dark ms-2 small role-section-badge">
-                                                    {{getSectionDisplayName(getRoleSection(role))}}
-                                                </span>
-                                            </label>
-                                        </div>
-
-                                        <!-- Mensaje cuando no hay roles disponibles -->
-                                        <div class="text-muted small text-center py-3"
-                                            *ngIf="!getFilteredRoles() || getFilteredRoles().length === 0">
-                                            <i class="ti-info-alt me-1"></i>
-                                            No hay roles disponibles en esta sección
-                                        </div>
-                                    </div>
-
-                                    <small id="helpRole" class="form-text text-muted mt-2 d-block">
-                                        Seleccione uno o más roles para asignar al usuario. Use el filtro de secciones
-                                        para facilitar la búsqueda.
-                                    </small>
-
-                                    <div id="errorRole" class="invalid-feedback d-block" *ngIf="roleNovalid"
-                                        role="alert" aria-live="polite">
-                                        <svg class="icon-inline me-1" width="16" height="16" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                        Debe seleccionar al menos un rol válido
-                                    </div>
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="openDuplicateModal()">
+                                        <i class="ti-files me-1"></i> Duplicar roles de otro usuario
+                                    </button>
                                 </div>
-                            </div>
 
-                            <!-- Roles Actuales (Vista previa agrupados por sección) -->
-                            <div class="col-12 col-lg-6"
-                                *ngIf="this.userCurrent.id != null || selectedRoles.length > 0">
-                                <div class="form-group mb-0">
-                                    <label class="form-label d-block">
-                                        Roles seleccionados
-                                        <span
-                                            class="badge bg-primary ms-2">{{getSelectedRolesForDisplay().length}}</span>
-                                    </label>
-                                    <div class="roles-display border rounded p-3 bg-white"
-                                        style="max-height: 400px; overflow-y: auto;" role="list"
-                                        aria-label="Lista de roles asignados">
-
-                                        <!-- Agrupar roles por sección -->
-                                        <ng-container *ngFor="let section of sections">
-                                            <div *ngIf="getSelectedRoleCountBySection(section.name) > 0" class="mb-3">
-                                                <h6 class="text-muted small mb-2 border-bottom pb-1">
-                                                    <i class="ti-folder me-1"></i>
-                                                    {{section.displayName}}
-                                                    <span class="badge bg-info text-white ms-2"
-                                                        style="font-size: 0.7rem;">
-                                                        {{getSelectedRoleCountBySection(section.name)}}
-                                                    </span>
-                                                </h6>
-                                                <div class="ms-3 mb-2">
-                                                    <ng-container *ngFor="let role of getSelectedRolesForDisplay()">
-                                                        <span class="badge me-2 mb-2"
-                                                            *ngIf="getRoleSection(role) === section.name"
-                                                            [ngClass]="role.id==1? 'bg-success text-white' : 'bg-warning text-dark'"
-                                                            [attr.aria-label]="'Rol: ' + role.name">
-                                                            {{role.name}}
-                                                        </span>
-                                                    </ng-container>
-                                                </div>
+                                <div class="roles-selection border rounded p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
+                                    <div class="row g-2">
+                                        <div class="col-12 col-md-6 col-lg-4" *ngFor="let role of getFilteredRoles()">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" [id]="'role-'+role.id" 
+                                                       [checked]="isRoleSelected(role)" (change)="onRoleChange(role, $event)">
+                                                <label class="form-check-label" [for]="'role-'+role.id">{{role.name}}</label>
                                             </div>
-                                        </ng-container>
-
-                                        <small class="text-muted d-block mt-2 text-center"
-                                            *ngIf="!getSelectedRolesForDisplay() || getSelectedRolesForDisplay().length === 0">
-                                            <i class="ti-info-alt me-1"></i>
-                                            No hay roles asignados actualmente
-                                        </small>
+                                        </div>
                                     </div>
+                                </div>
+                                <div class="invalid-feedback d-block" *ngIf="roleNovalid">Debe seleccionar al menos un rol</div>
+                            </div>
+
+                            <div class="col-12" *ngIf="selectedRoles.length > 0">
+                                <div class="selected-roles-summary border rounded p-3 bg-white">
+                                    <h6 class="mb-3">
+                                        <i class="ti-check-box me-2"></i>
+                                        Roles seleccionados ({{selectedRoles.length}})
+                                    </h6>
+
+                                    <ng-container *ngFor="let section of sections">
+                                        <div *ngIf="getSelectedRoleCountBySection(section.name) > 0" class="mb-3">
+                                            <h6 class="text-muted small mb-2 border-bottom pb-1">
+                                                <i class="ti-folder me-1"></i> {{section.displayName}}
+                                                <span class="badge bg-info text-white ms-2" style="font-size: 0.7rem;">
+                                                    {{getSelectedRoleCountBySection(section.name)}}
+                                                </span>
+                                            </h6>
+                                            <div class="ms-3 mb-2">
+                                                <ng-container *ngFor="let role of selectedRoles">
+                                                    <span class="badge me-2 mb-2" *ngIf="getRoleSection(role) === section.name" 
+                                                          [ngClass]="role.id==1? 'bg-success text-white' : 'bg-warning text-dark'">
+                                                        {{role.name}}
+                                                    </span>
+                                                </ng-container>
+                                            </div>
+                                        </div>
+                                    </ng-container>
                                 </div>
                             </div>
                         </div>
                     </fieldset>
 
-                    <!-- Roles actuales para usuarios no admin -->
-                    <fieldset class="form-section mb-4"
-                        *ngIf="!authService.hasRole('Administrador del sistema') && this.userCurrent.id != null">
-                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">
-                            Roles Asignados
-                        </legend>
-                        <div class="roles-display" role="list" aria-label="Lista de roles asignados">
-                            <span *ngFor="let role of this.userCurrent.roles" role="listitem">
-                                <span class="badge me-2 mb-2"
-                                    [ngClass]="role.id==1? 'bg-success text-white' : 'bg-warning text-dark'"
-                                    [attr.aria-label]="'Rol: ' + role.name">
+                    <!-- Roles actuales (No Admin) -->
+                    <fieldset class="form-section mb-4" *ngIf="!authService.hasRole('Administrador del sistema') && userCurrent.id">
+                        <legend class="form-section-title h5 mb-3 pb-2 border-bottom">Roles Asignados</legend>
+                        <div class="roles-display">
+                            <span *ngFor="let role of userCurrent.roles">
+                                <span class="badge me-2 mb-2" [ngClass]="role.id==1? 'bg-success text-white' : 'bg-warning text-dark'">
                                     {{role.name}}
                                 </span>
                             </span>
                         </div>
                     </fieldset>
 
-
-
-                    <!-- Acciones del Formulario -->
+                    <!-- Botones -->
                     <div class="form-actions d-flex flex-column flex-sm-row gap-2 justify-content-end pt-3 border-top">
-                        <button type="button" class="btn btn-outline-secondary btn-lg order-2 order-sm-1"
-                            [routerLink]="['/users/page/0']" aria-label="Cancelar y volver">
+                        <button type="button" class="btn btn-outline-secondary btn-lg order-2 order-sm-1" [routerLink]="['/users/page/0']">
                             Cancelar
                         </button>
-                        <button type="submit" class="btn btn-primary btn-lg order-1 order-sm-2"
-                            [disabled]="formGr.invalid || pass2NoValid" [style.cursor]="cursorValidationItem()"
-                            [attr.aria-disabled]="formGr.invalid || pass2NoValid ? 'true' : 'false'">
-                            <svg class="icon-inline me-2" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"
-                                aria-hidden="true">
-                                <path fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd" />
+                        <button type="button" class="btn btn-primary btn-lg order-1 order-sm-2" (click)="onSubmit()" [disabled]="loading">
+                            <svg class="icon-inline me-2" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                             Guardar cambios
                         </button>
                     </div>
 
-
-
                 </form>
-
 
             </div>
         </div>
     </div>
-    <!-- Modal para duplicar roles -->
-    <div class="modal fade" [class.show]="showDuplicateModal" [style.display]="showDuplicateModal ? 'block' : 'none'"
-        tabindex="-1" role="dialog" aria-labelledby="duplicateModalLabel">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+
+    <!-- Modal duplicar roles -->
+    <div class="modal fade" [class.show]="showDuplicateModal" [style.display]="showDuplicateModal ? 'block' : 'none'" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="duplicateModalLabel">
-                        <i class="ti-files me-2"></i>
-                        Duplicar roles de usuario
-                    </h5>
+                    <h5 class="modal-title"><i class="ti-files me-2"></i>Duplicar roles de usuario</h5>
                     <button type="button" class="btn-close" (click)="closeDuplicateModal()"></button>
                 </div>
                 <div class="modal-body">
-                    <label for="userSelect" class="form-label">
-                        Seleccione el usuario origen:
-                    </label>
-                    <select id="userSelect" class="form-select" [(ngModel)]="selectedUserToDuplicate"
-                        [ngModelOptions]="{standalone: true}">
+                    <label for="userSelect" class="form-label">Seleccione el usuario origen:</label>
+                    <select id="userSelect" class="form-select" [(ngModel)]="selectedUserToDuplicate" [ngModelOptions]="{standalone: true}">
                         <option [value]="null">-- Seleccione un usuario --</option>
                         <option *ngFor="let user of users" [value]="user.id">
                             {{user.firstName}} {{user.lastName}}
-                            <span *ngIf="user.roles && user.roles.length > 0">
-                                ({{user.roles.length}} roles)
-                            </span>
+                            <span *ngIf="user.roles && user.roles.length > 0">({{user.roles.length}} roles)</span>
                         </option>
                     </select>
                     <small class="form-text text-muted mt-2 d-block">
@@ -477,13 +227,9 @@
                     </small>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeDuplicateModal()">
-                        Cancelar
-                    </button>
-                    <button type="button" class="btn btn-primary" (click)="duplicateRolesFromUser()"
-                        [disabled]="!selectedUserToDuplicate">
-                        <i class="ti-check me-1"></i>
-                        Duplicar roles
+                    <button type="button" class="btn btn-secondary" (click)="closeDuplicateModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" (click)="duplicateRolesFromUser()" [disabled]="!selectedUserToDuplicate">
+                        <i class="ti-check me-1"></i>Duplicar roles
                     </button>
                 </div>
             </div>

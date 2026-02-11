@@ -628,6 +628,7 @@ async guardarCampo(empaque: any, campo: string): Promise<void> {
   
   // CORRECCIÓN: Siempre usar el número de empaque original (no el valor original del campo que cambia)
   const numeroEmpaqueOriginal = this.tempValues[key].numeroOriginal;
+  console.log(this.tempValues)
   
   const datos = {
     op_codigo: this.selectedOP,
@@ -647,7 +648,7 @@ async guardarCampo(empaque: any, campo: string): Promise<void> {
       id_talla: item.id_talla
     }));
   }
-  
+  console.log('Datos a enviar para actualizar empaque:', datos);
   this.empaqueService.actualizarCampoEmpaque(datos).subscribe({
     next: (response: any) => {
       Swal.fire({

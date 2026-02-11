@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import {TechnicalDataSheet} from '../models/TechnicalDataSheet';
-import {Observable, throwError} from 'rxjs';
+import {Observable, throwError, of} from 'rxjs';
 import {catchError, map, tap} from 'rxjs/operators';
 
 @Injectable({

@@ -271,8 +271,30 @@ export class CreateTechnicalSheetComponent implements OnInit {
         }
     }
 
+    nextStepOne() {
+        if (this.formGr.valid) {
+            // Primero guarda la información
+            this.saveInfo();
+        } else {
+            // Marca todos los campos como tocados para mostrar errores
+            this.markFormGroupTouched(this.formGr);
+        }
+    }
+
+    // Función auxiliar para marcar todos los campos como tocados
+    markFormGroupTouched(formGroup: FormGroup) {
+        Object.values(formGroup.controls).forEach(control => {
+            control.markAsTouched();
+            
+            if (control instanceof FormGroup) {
+                this.markFormGroupTouched(control);
+            }
+        });
+    }
 
     saveInfo() {
+        console.log(this.formGr);
+        console.log("formulario enviado")
         if (this.formGr.valid) {
             this.technicalDataSheetCurrent.idItem = this.formGr.get('idItem').value;
             this.technicalDataSheetCurrent.itemDescription = this.formGr.get('itemDescription').value;

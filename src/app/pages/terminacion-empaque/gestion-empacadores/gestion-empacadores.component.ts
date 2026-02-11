@@ -112,62 +112,78 @@ export class GestionEmpacadoresComponent implements OnInit {
     });
   }
 
-  /* =========================================================
+  /* =========================================================  
      2.  Asignar una PV a un empacador
   ========================================================= */
   asignarPV(emp: any): void {
-    const datalistId = 'pv-datalist-swal';
-    
-    // if (this.pvsPendientes.length <= 0) {
-    //   Swal.fire('Atención', 'Sin PVs pendientes', 'info');
-    // } else {
+    const opciones: string[] = this.pvsPendientes
+      .map(pv => pv.codigo)
+      .filter(codigo => !!codigo && codigo.trim() !== '');
 
-      const opciones: string[] = this.pvsPendientes
-        .map(pv => pv.codigo)
-        .filter(codigo => !!codigo && codigo.trim() !== '');
+    if (opciones.length === 0) {
+      Swal.fire('Atención', 'Sin PVs pendientes para asignar.', 'info');
+      return;
+    }
 
-      const optionsHTML = opciones.map(pv => `<option value="${pv}">`).join('');
+    const optionsHTML = opciones
+      .map(pv => `<option value="${pv}"></option>`)
+      .join('');
 
-      const html = `
-        <label for="swal-input">Código de PV</label><br/>
-        <input id="swal-input" list="${datalistId}" class="swal2-input" placeholder="Ej: 12345">
-        <datalist id="${datalistId}">
-          ${optionsHTML}
-        </datalist>
-      `;
+    const html = `
+      <label for="swal-input" style="display:block;margin-bottom:6px;">
+        Escribe o selecciona una PV
+      </label>
 
-      Swal.fire({
-        title: `Asignar PV a ${emp.firstName} ${emp.lastName}`,
-        html,
-        focusConfirm: false,
-        showCancelButton: true,
-        preConfirm: () => {
-          const input = (document.getElementById('swal-input') as HTMLInputElement)?.value?.trim();
-          if (!input) {
-            Swal.showValidationMessage('Debes ingresar un código de PV.');
-            return;
-          }
-          return input;
+      <input
+        id="swal-input"
+        class="swal2-input"
+        list="pvs-datalist"
+        placeholder="Ej: PV-00048358"
+        autocomplete="off"
+      />
+
+      <datalist id="pvs-datalist">
+        ${optionsHTML}
+      </datalist>
+    `;
+
+    Swal.fire({
+      title: `Asignar PV a ${emp.firstName} ${emp.lastName}`,
+      html,
+      focusConfirm: false,
+      showCancelButton: true,
+      preConfirm: () => {
+        const input = (document.getElementById('swal-input') as HTMLInputElement)
+          ?.value
+          ?.trim();
+
+        if (!input) {
+          Swal.showValidationMessage('Debes ingresar una PV.');
+          return;
         }
-      }).then(result => {
-        if (!result.isConfirmed) return;
 
-        const pvCodigo = result.value;
-        
-        this.terminacionEmpaqueService.asignarPVAEmpacador(emp.id, pvCodigo, this.authService.user.id).subscribe({
+        return input;
+      }
+    }).then(result => {
+      if (!result.isConfirmed) return;
+
+      const pvCodigo = result.value;
+
+      this.terminacionEmpaqueService
+        .asignarPVAEmpacador(emp.id, pvCodigo, this.authService.user.id)
+        .subscribe({
           next: (r) => {
             if (r?.success) {
               Swal.fire('Éxito', 'PV asignada correctamente.', 'success');
-              this.cargarEmpacadores(); // Refrescar la lista
+              this.cargarEmpacadores();
             } else {
               Swal.fire('Error', r?.error || 'No se pudo asignar.', 'error');
             }
-            console.log('asignarPVAEmpacador', r);
           },
-          error: () => Swal.fire('Error', 'No se pudo asignar la PV.', 'error')
+          error: () =>
+            Swal.fire('Error', 'No se pudo asignar la PV.', 'error')
         });
-      });
-    // }
+    });
   }
 
   desasignarPV(empacadorId: number, pvCodigo: string): void {
@@ -194,6 +210,44 @@ export class GestionEmpacadoresComponent implements OnInit {
           }
         });
       }
+    });
+  }
+
+  desasignarPVDesdeLista(emp: any): void {
+    const opciones = (emp.pvs || []).map((pv: any) => pv.codigo).filter(Boolean);
+
+    if (opciones.length === 0) {
+      Swal.fire('Atención', 'Este empacador no tiene PVs asignadas.', 'info');
+      return;
+    }
+
+    const optionsHTML = opciones.map((pv: string) => `<option value="${pv}">${pv}</option>`).join('');
+
+    const html = `
+      <label for="swal-input">Selecciona una PV</label>
+      <select id="swal-input" class="swal2-select">
+        <option value="" selected disabled>-- Selecciona --</option>
+        ${optionsHTML}
+      </select>
+    `;
+
+    Swal.fire({
+      title: `Desasignar PV de ${emp.firstName} ${emp.lastName}`,
+      html,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Desasignar',
+      preConfirm: () => {
+        const input = (document.getElementById('swal-input') as HTMLSelectElement)?.value?.trim();
+        if (!input) {
+          Swal.showValidationMessage('Debes seleccionar una PV.');
+          return;
+        }
+        return input;
+      }
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.desasignarPV(emp.id, result.value);
     });
   }
 
