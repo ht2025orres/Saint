@@ -415,7 +415,6 @@ export class TechnicalReportBigbagComponent implements OnInit {
   // === ENVÍO DE FORMULARIO ===
   onSubmit(): void {
     if (!this.validateUserForSubmission()) return;
-
     if (this.bigbagForm.valid) {
       this.submitForm();
     } else {

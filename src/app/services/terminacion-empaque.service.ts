@@ -329,9 +329,10 @@ export class TerminacionEmpaqueService {
     );
   }
 
-  eliminarEmpaqueCompleto(numeroEmpaque: string): Observable<any> {
+  eliminarEmpaqueCompleto(numeroEmpaque: string, pvCodigo: string): Observable<any> {
     return this.http.delete<any>(
-      `${this.apiLaravelUrl}/empaque/eliminar-completo/${numeroEmpaque}`
+      `${this.apiLaravelUrl}/empaque/eliminar-completo/${numeroEmpaque}`,
+      { body: { pv_codigo: pvCodigo } }
     );
   }
 

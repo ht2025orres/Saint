@@ -1,13 +1,14 @@
 <div class="container">
   <h3>Crear Reporte</h3>
 
-  <form (ngSubmit)="crearReporte()" class="mt-3">
+  <!-- Cambiamos el formulario para que no use ngSubmit -->
+  <form class="mt-3" #reportForm="ngForm">
     
     <!-- ORIGEN + TIPO REPORTE -->
     <div class="row">
       <div class="col-md-6">
         <label>Origen</label>
-        <select [(ngModel)]="report.origen" name="origen" class="form-control">
+        <select [(ngModel)]="report.origen" name="origen" class="form-control" required>
           <option value="calidad">Calidad</option>
           <option value="produccion">Producción</option>
         </select>
@@ -15,7 +16,7 @@
 
       <div class="col-md-6">
         <label>Tipo de Reporte</label>
-        <select [(ngModel)]="report.tipo_reporte" name="tipo_reporte" class="form-control">
+        <select [(ngModel)]="report.tipo_reporte" name="tipo_reporte" class="form-control" required>
           <option value="ficha tecnica">Ficha Técnica</option>
           <option value="patronaje">Patronaje</option>
         </select>
@@ -106,7 +107,7 @@
     <!-- OBSERVACIÓN -->
     <div class="mt-3">
       <label>Observación</label>
-      <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control"></textarea>
+      <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control" required></textarea>
     </div>
 
     <!-- ARCHIVOS -->
@@ -116,9 +117,11 @@
       <small class="text-muted">Puedes subir imagen, PDF o Word. No es obligatorio.</small>
     </div>
 
-    <!-- BOTÓN -->
+    <!-- BOTÓN - Cambiado a type="button" con (click) -->
     <div class="text-end mt-4">
-      <button type="submit" class="btn btn-primary">Crear Reporte</button>
+      <button type="button" class="btn btn-primary" (click)="crearReporte()" [disabled]="!reportForm.valid">
+        Crear Reporte
+      </button>
     </div>
 
   </form>

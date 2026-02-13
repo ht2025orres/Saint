@@ -58,6 +58,8 @@ export class DashboardEmpaqueComponent implements OnInit {
   filtersEmpaques = { busqueda: '' };
   filtersMovimientos = { busqueda: '' };
 
+  barChartWidth: number = 600;  // ancho dinámico para scroll horizontal
+
   // Data
   kpis: any = {};
   registros: any[] = [];
@@ -306,25 +308,87 @@ export class DashboardEmpaqueComponent implements OnInit {
   }
 
   procesarDatosDashboard(data: any) {
-    this.kpis = data.kpis;
-    this.actualizarGraficoBarras(data.registros_por_dia);
-    const empacadoresIds = this.empacadoresList.map(e => e.id);
-    this.empacadoresData = (data.por_empacador || []).filter((emp: any) => 
-      empacadoresIds.includes(emp.empacador_id)
-    );
-    this.actualizarGraficoPie();
-    this.registros = (data.detalle || []).filter((reg: any) => 
-      empacadoresIds.includes(reg.empacador_id)
-    );
-    
-    // Inicializar paginador de registros
-    this.paginationService.initializePaginator(
-      this.paginatorRegistrosId,
-      this.registros,
-      10,
-      this.filtersRegistros,
-      this.filterFunctionGenerico
-    ).subscribe(state => this.currentRegistros = state.currentData);
+      // Datos existentes
+      this.kpis = data.kpis;
+      const empacadoresIds = this.empacadoresList.map(e => e.id);
+      this.empacadoresData = (data.por_empacador || []).filter((emp: any) => 
+          empacadoresIds.includes(emp.empacador_id)
+      );
+      this.actualizarGraficoPie();
+      this.registros = (data.detalle || []).filter((reg: any) => 
+          empacadoresIds.includes(reg.empacador_id)
+      );
+
+      // --- NUEVO: Preparar datos para gráfico de barras (empacado vs recepcionado) ---
+      const empacadoMap = new Map(data.registros_por_dia.map((r: any) => [r.fecha, r.total_items]));
+      const costoMap    = new Map(data.registros_por_dia.map((r: any) => [r.fecha, r.total_costo]));
+      const recepcionMap = new Map(data.recepciones_por_dia?.map((r: any) => [r.fecha, r.total_recepcionado]) || []);
+
+      // Unir todas las fechas de ambos datasets
+      const todasLasFechas = Array.from(new Set([
+          ...data.registros_por_dia.map((r: any) => r.fecha),
+          ...(data.recepciones_por_dia?.map((r: any) => r.fecha) || [])
+      ])).sort();
+
+      // Mapear valores
+      const empacadoData: number[] = todasLasFechas.map(d => Number(empacadoMap.get(d)) || 0);
+      const recepcionData: number[] = todasLasFechas.map(d => Number(recepcionMap.get(d)) || 0);
+      this.costosPorDia = todasLasFechas.map(d => Number(costoMap.get(d)) || 0);
+
+      // Actualizar datos del gráfico
+      this.barChartData = {
+          labels: todasLasFechas,
+          datasets: [
+              {
+                  label: 'Ítems empacados',
+                  data: empacadoData,
+                  backgroundColor: '#007bff'
+              },
+              {
+                  label: 'Ítems recepcionados',
+                  data: recepcionData,
+                  backgroundColor: '#28a745'
+              }
+          ]
+      };
+
+      // Ancho dinámico para scroll (40px por barra, mínimo 600px)
+      this.barChartWidth = Math.max(600, todasLasFechas.length * 40);
+
+      // Configuración del gráfico con tooltip mejorado
+      this.barChartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+              tooltip: {
+                  callbacks: {
+                      label: (context: any) => {
+                          const datasetLabel = context.dataset.label;
+                          const value = context.parsed.y;
+                          if (datasetLabel === 'Ítems empacados') {
+                              const costo = this.costosPorDia[context.dataIndex];
+                              return `${datasetLabel}: ${value} (Costo: $${costo.toLocaleString()})`;
+                          }
+                          return `${datasetLabel}: ${value}`;
+                      }
+                  }
+              }
+          },
+          scales: {
+              y: {
+                  beginAtZero: true
+              }
+          }
+      };
+
+      // Inicializar paginador de registros (sin cambios)
+      this.paginationService.initializePaginator(
+          this.paginatorRegistrosId,
+          this.registros,
+          10,
+          this.filtersRegistros,
+          this.filterFunctionGenerico
+      ).subscribe(state => this.currentRegistros = state.currentData);
   }
 
   actualizarGraficoBarras(registrosPorDia: any[]) {
@@ -633,7 +697,7 @@ async guardarCampo(empaque: any, campo: string): Promise<void> {
   const datos = {
     op_codigo: this.selectedOP,
     pv_codigo: this.selectedItem?.codigo,
-    numero_empaque_original: numeroEmpaqueOriginal, // SIEMPRE el número original del empaque
+    numero_empaque_original: numeroEmpaqueOriginal ?? empaque.numero_empaque, // SIEMPRE el número original del empaque
     numero_empaque: campo === 'numero' ? valorNuevo : empaque.numero_empaque,
     tipo_empaque: campo === 'tipo' ? valorNuevo : empaque.tipo_empaque,
     campo_actualizar: campo
@@ -812,7 +876,7 @@ async guardarCantidadItem(empaque: any, item: any): Promise<void> {
     });
   }
 
-  eliminarEmpaqueCompleto(empaque: any): void {
+  eliminarEmpaqueCompleto(empaque: any, pv_codigo: string): void {
     Swal.fire({
       title: '¿Eliminar empaque completo?',
       html: `Se eliminará el empaque <strong>${empaque.numero_empaque}</strong> con todos sus items`,
@@ -823,7 +887,7 @@ async guardarCantidadItem(empaque: any, item: any): Promise<void> {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.empaqueService.eliminarEmpaqueCompleto(empaque.numero_empaque).subscribe({
+        this.empaqueService.eliminarEmpaqueCompleto(empaque.numero_empaque, pv_codigo).subscribe({
           next: () => {
             Swal.fire('Eliminado', 'Empaque eliminado correctamente', 'success');
             this.cargarEmpaquesPVDetalle(this.selectedItem);
@@ -1121,6 +1185,7 @@ async guardarCantidadItem(empaque: any, item: any): Promise<void> {
     } else {
       return {
         title: `PV-${this.selectedItem.codigo}`,
+        codigo: this.selectedItem.codigo,
         subtitle: 'Pedido de Venta',
         details: [
           { label: 'Código PV', value: this.selectedItem.codigo },

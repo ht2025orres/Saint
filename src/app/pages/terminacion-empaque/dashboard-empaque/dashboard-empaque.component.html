@@ -96,11 +96,16 @@
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Actividad del mes</h5>
-              <canvas baseChart
-                      [data]="barChartData"
-                      [type]="barChartType"
-                      [options]="barChartOptions">
-              </canvas>
+              <!-- Contenedor con scroll horizontal -->
+              <div style="overflow-x: auto; width: 100%;">
+                <canvas baseChart
+                        [data]="barChartData"
+                        [type]="barChartType"
+                        [options]="barChartOptions"
+                        [style.width.px]="barChartWidth"
+                        style="height: 400px;">
+                </canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -1030,7 +1035,7 @@
                                 <i class="bi bi-tag"></i>
                               </button>
                               <button class="btn btn-outline-danger" 
-                                      (click)="eliminarEmpaqueCompleto(empaque)"
+                                      (click)="eliminarEmpaqueCompleto(empaque, getSelectedItemInfo().codigo)"
                                       title="Eliminar empaque">
                                 <i class="bi bi-trash"></i>
                               </button>

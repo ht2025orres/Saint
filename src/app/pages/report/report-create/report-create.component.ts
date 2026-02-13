@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { NgForm } from '@angular/forms'; // Importa NgForm
 import { ReportService } from '../../../services/report.service';
 import { Report } from './../../../models/report';
 import { AuthService } from '../../../services/auth.service';
@@ -12,6 +13,8 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
   styleUrls: ['./report-create.component.css']
 })
 export class ReportCreateComponent {
+  
+  @ViewChild('reportForm') reportForm: NgForm; // Referencia al formulario
   
   report: Report = {
     id: 0,
@@ -30,7 +33,6 @@ export class ReportCreateComponent {
   customers: Customer[] = [];
   itemsOP: any[] = [];
   selectedFile: File | null = null;
-  // loadingOP = false;
 
   constructor(
     private reportService: ReportService,
@@ -41,71 +43,68 @@ export class ReportCreateComponent {
   // ==========================
   // CONSULTAR OP
   // ==========================
-buscarOP(): void {
-  const op = this.report.op_reporte?.trim();
-  if (!op) return;
+  buscarOP(): void {
+    const op = this.report.op_reporte?.trim();
+    if (!op) return;
 
-  this.mostrarLoader();
+    this.mostrarLoader();
 
-  this.erpIntegrationService.getItemsByOP(op).subscribe({
-    next: (resp) => {
-      this.ocultarLoader();
+    this.erpIntegrationService.getItemsByOP(op).subscribe({
+      next: (resp) => {
+        this.ocultarLoader();
 
-      const data = resp?.data?.[op]?.items || [];
-      this.itemsOP = data;
+        const data = resp?.data?.[op]?.items || [];
+        this.itemsOP = data;
 
-      if (data.length === 0) {
-        Swal.fire("Sin resultados", "No se encontraron items para esta OP", "warning");
-        return;
-      }
-
-      if (data.length === 1) {
-        this.asignarItem(data[0]);
-      } else {
-        this.seleccionarItem(data);
-      }
-    },
-    error: () => {
-      this.ocultarLoader();
-      Swal.fire("Error", "No fue posible consultar la OP", "error");
-    }
-  });
-}
-
-mostrarLoader() {
-  Swal.fire({
-    title: "Consultando información...",
-    html: `
-      <div class="spinner" style="
-        border: 5px solid #eee;
-        border-top: 5px solid #3b82f6;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        margin: 20px auto;
-        animation: spin 1s linear infinite;
-      "></div>
-
-      <style>
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+        if (data.length === 0) {
+          Swal.fire("Sin resultados", "No se encontraron items para esta OP", "warning");
+          return;
         }
-      </style>
-    `,
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    backdrop: true
-  });
-}
 
+        if (data.length === 1) {
+          this.asignarItem(data[0]);
+        } else {
+          this.seleccionarItem(data);
+        }
+      },
+      error: () => {
+        this.ocultarLoader();
+        Swal.fire("Error", "No fue posible consultar la OP", "error");
+      }
+    });
+  }
 
-ocultarLoader() {
-  Swal.close();
-}
+  mostrarLoader() {
+    Swal.fire({
+      title: "Consultando información...",
+      html: `
+        <div class="spinner" style="
+          border: 5px solid #eee;
+          border-top: 5px solid #3b82f6;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          margin: 20px auto;
+          animation: spin 1s linear infinite;
+        "></div>
 
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      backdrop: true
+    });
+  }
 
+  ocultarLoader() {
+    Swal.close();
+  }
 
   // ==========================
   // ASIGNAR ÍTEM
@@ -127,52 +126,50 @@ ocultarLoader() {
     }
   }
 
- seleccionarItem(items: any[]) {
+  seleccionarItem(items: any[]) {
+    let html = `
+      <input type="text" id="filtroItems" class="swal2-input" placeholder="Filtrar...">
 
-  let html = `
-    <input type="text" id="filtroItems" class="swal2-input" placeholder="Filtrar...">
+      <div id="listaItems" style="max-height:300px; overflow-y:auto; text-align:left;">
+        ${items.map((i, idx) => `
+          <div class="item-opcion" data-index="${idx}" 
+               style="padding:8px; cursor:pointer; border-bottom:1px solid #ddd;">
+            <strong>${i.codigo_item}</strong><br>
+            <small>${i.descripcion}</small>
+          </div>
+        `).join('')}
+      </div>
+    `;
 
-    <div id="listaItems" style="max-height:300px; overflow-y:auto; text-align:left;">
-      ${items.map((i, idx) => `
-        <div class="item-opcion" data-index="${idx}" 
-             style="padding:8px; cursor:pointer; border-bottom:1px solid #ddd;">
-          <strong>${i.codigo_item}</strong><br>
-          <small>${i.descripcion}</small>
-        </div>
-      `).join('')}
-    </div>
-  `;
+    Swal.fire({
+      title: "Selecciona un ítem",
+      html,
+      showConfirmButton: false,
+      width: 600,
+      didOpen: () => {
+        const input = document.getElementById("filtroItems") as HTMLInputElement;
+        const lista = document.getElementById("listaItems") as HTMLElement;
 
-  Swal.fire({
-    title: "Selecciona un ítem",
-    html,
-    showConfirmButton: false,
-    width: 600,
-    didOpen: () => {
-      const input = document.getElementById("filtroItems") as HTMLInputElement;
-      const lista = document.getElementById("listaItems") as HTMLElement;
+        // 👉 Filtrar dinamicamente
+        input.addEventListener("input", () => {
+          const term = input.value.toLowerCase();
+          lista.querySelectorAll(".item-opcion").forEach((el: any) => {
+            const txt = el.innerText.toLowerCase();
+            el.style.display = txt.includes(term) ? "block" : "none";
+          });
+        });
 
-      // 👉 Filtrar dinamicamente
-      input.addEventListener("input", () => {
-        const term = input.value.toLowerCase();
+        // 👉 Capturar clic en item
         lista.querySelectorAll(".item-opcion").forEach((el: any) => {
-          const txt = el.innerText.toLowerCase();
-          el.style.display = txt.includes(term) ? "block" : "none";
+          el.addEventListener("click", () => {
+            const index = Number(el.getAttribute("data-index"));
+            this.asignarItem(items[index]);
+            Swal.close();
+          });
         });
-      });
-
-      // 👉 Capturar clic en item
-      lista.querySelectorAll(".item-opcion").forEach((el: any) => {
-        el.addEventListener("click", () => {
-          const index = Number(el.getAttribute("data-index"));
-          this.asignarItem(items[index]);
-          Swal.close();
-        });
-      });
-    }
-  });
-}
-
+      }
+    });
+  }
 
   // ==========================
   // ARCHIVO
@@ -185,39 +182,39 @@ ocultarLoader() {
   // ==========================
   // CREAR REPORTE
   // ==========================
-
-  // Primero validamos que todos los campos esten diligenciados, solo la Evidencia puede estar vacia.
-  camposCompletos(): { ok: boolean, faltantes: string[] } {
-  const faltantes: string[] = [];
-
-  if (!this.report.origen) faltantes.push("Origen");
-  if (!this.report.tipo_reporte) faltantes.push("Tipo de reporte");
-  if (!this.report.op_reporte) faltantes.push("OP");
-  if (!this.report.cliente) faltantes.push("Cliente");
-  if (!this.report.item) faltantes.push("Item");
-  if (!this.report.prenda) faltantes.push("Prenda");
-  if (!this.report.observacion) faltantes.push("Observación");
-  // evidencia NO es obligatoria
-
-  return { ok: faltantes.length === 0, faltantes };
-}
-
   crearReporte(): void {
-    const val = this.camposCompletos();
+    // Verificar si el formulario es válido
+    if (this.reportForm && !this.reportForm.valid) {
+      // Marcar todos los campos como touched para mostrar errores
+      Object.keys(this.reportForm.controls).forEach(key => {
+        const control = this.reportForm.controls[key];
+        control.markAsTouched();
+      });
+      
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formulario incompleto',
+        text: 'Por favor, completa todos los campos requeridos correctamente.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
 
-  if (!val.ok) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Campos incompletos',
-      html: `
-        <p>Debes completar todos los campos obligatorios:</p>
-        <ul style="text-align:left;">
-          ${val.faltantes.map(f => `<li><strong>${f}</strong></li>`).join('')}
-        </ul>
-      `
-    });
-    return;
-  }
+    // Validación manual adicional por si acaso
+    const val = this.camposCompletos();
+    if (!val.ok) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campos incompletos',
+        html: `
+          <p>Debes completar todos los campos obligatorios:</p>
+          <ul style="text-align:left;">
+            ${val.faltantes.map(f => `<li><strong>${f}</strong></li>`).join('')}
+          </ul>
+        `
+      });
+      return;
+    }
 
     this.report.creado_por = this.authService.user.id;
 
@@ -234,6 +231,21 @@ ocultarLoader() {
     }
   }
 
+  camposCompletos(): { ok: boolean, faltantes: string[] } {
+    const faltantes: string[] = [];
+
+    if (!this.report.origen) faltantes.push("Origen");
+    if (!this.report.tipo_reporte) faltantes.push("Tipo de reporte");
+    if (!this.report.op_reporte) faltantes.push("OP");
+    if (!this.report.cliente) faltantes.push("Cliente");
+    if (!this.report.item) faltantes.push("Item");
+    if (!this.report.prenda) faltantes.push("Prenda");
+    if (!this.report.observacion) faltantes.push("Observación");
+    // evidencia NO es obligatoria
+
+    return { ok: faltantes.length === 0, faltantes };
+  }
+
   private guardarReporte(): void {
     this.reportService.createReport(this.report).subscribe({
       next: () => {
@@ -247,6 +259,12 @@ ocultarLoader() {
   }
 
   private resetForm(): void {
+    // Resetear el formulario
+    if (this.reportForm) {
+      this.reportForm.resetForm();
+    }
+    
+    // Resetear el modelo
     this.report = {
       id: 0,
       origen: 'calidad',
@@ -285,5 +303,4 @@ ocultarLoader() {
     const cliente = this.customers.find(c => c.customerName === name);
     if (cliente) this.report.cliente = cliente.customerName;
   }
-
 }

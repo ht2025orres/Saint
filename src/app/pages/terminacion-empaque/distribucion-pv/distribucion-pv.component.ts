@@ -451,14 +451,14 @@ export class DistribucionPvComponent implements OnInit {
     this.guardandoCambioUbicacion = true;
 
     const payload = {
-      op_codigo: this.opSeleccionada!.toString(),
-      item_hash: item.hash,
+      op_codigo: this.opBuscadaUbicaciones,
+      item_hash: item.item_hash,
       referencia: item.codigo,
-      f120_id: item.f120_id,
+      id_item: item.f120_id,
       descripcion: item.descripcion,
       id_color: item.id_color,
       id_talla: item.id_talla,
-      cantidad_recibida: item.cantidad,
+      cantidad_recibida: parseFloat(String(item.cantidad)) || 0,
       precio_unitario: item.precio_unitario || 0,
       usuario: this.AuthService.user.id,
       ubicacion_actual: item.ubicacion,
