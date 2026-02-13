@@ -482,7 +482,8 @@ export class RecepcionOpComponent implements OnInit {
       this.modalRecepcionPTs.items,
       undefined,
       this.itemFiltersModal,
-      this.itemsFilterFunctionModal
+      this.itemsFilterFunctionModal,
+      true
     );
 
     const state = this.paginationService.getPaginatorState(this.itemsPaginatorId);
@@ -815,7 +816,8 @@ export class RecepcionOpComponent implements OnInit {
       this.items,
       undefined,
       this.filters,
-      this.filterFunction
+      this.filterFunction,
+      true
     );
     this.currentItems = this.paginationService.getPaginatorState(this.paginatorId)?.currentData || [];
   }
