@@ -66,6 +66,8 @@ export class DistribucionPvComponent implements OnInit {
 
   guardandoAsignacion = false;
   guardandoVerificacion = false;
+  cargandoInicial = false;
+  estadoCarga = "";
 
   constructor(
     private terminacionEmpaqueService: TerminacionEmpaqueService,
@@ -74,11 +76,18 @@ export class DistribucionPvComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cargandoInicial = true;
+    this.estadoCarga = "Cargando OPs pendientes...";
+
     this.terminacionEmpaqueService.obtenerOPsPendientes().subscribe({
       next: (ops) => {
         this.cargarPVsParaOPs(ops);
       },
-      error: () => Swal.fire('Error', 'No se pudieron cargar las OPs', 'error')
+      error: () => {
+        this.cargandoInicial = false;
+        this.estadoCarga = "";
+        Swal.fire('Error', 'No se pudieron cargar las OPs', 'error');
+      }
     });
   }
 
@@ -145,7 +154,8 @@ export class DistribucionPvComponent implements OnInit {
       this.itemsVerificacion,
       undefined,
       this.verFilters,
-      this.verFilterFunction
+      this.verFilterFunction,
+      true
     );
     
     const state = this.paginationService.getPaginatorState(this.verPaginatorId);
@@ -383,7 +393,8 @@ export class DistribucionPvComponent implements OnInit {
       this.itemsUbicacionesDistintas,
       undefined,
       this.ubicDistFilters,
-      this.ubicDistFilterFunction
+      this.ubicDistFilterFunction,
+      true
     );
     
     const state = this.paginationService.getPaginatorState(this.ubicDistPaginatorId);
@@ -484,10 +495,32 @@ export class DistribucionPvComponent implements OnInit {
   // ===== MÉTODOS EXISTENTES =====
 
 async cargarPVsParaOPs(ops: any[]): Promise<void> {
-  const peticiones = ops.map(async op => {
+  this.opsConPvs = (ops || []).map(op => ({
+    codigo: op,
+    pvs: [],
+    pvsOriginal: [],
+    tieneDisponibles: false,
+    clientes: [],
+    expandir: false,
+    cargando: false,
+    cargandoDetalle: true,
+    estadoCarga: 'Pendiente de carga...'
+  }));
+
+  this.inicializarPaginacion();
+
+  for (const opCodigo of ops || []) {
+    const opUI = this.opsConPvs.find(o => o.codigo === opCodigo);
+    if (!opUI) continue;
+
     try {
+      this.estadoCarga = `OP ${opCodigo}: trayendo PVs...`;
+      opUI.estadoCarga = 'Trayendo PVs...';
+      this.refrescarPaginacionSinReinicio();
+      await this.delay(200);
+
       const pvsResp: { pvs?: string, clientes?: any[] } | Array<{ pvs?: string, clientes?: any[] }> = await this.terminacionEmpaqueService
-        .listarPVsPorOPDesdeApiLaravel(op)
+        .listarPVsPorOPDesdeApiLaravel(opCodigo)
         .toPromise();
 
       let cadenaPVs = '';
@@ -517,43 +550,45 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
         cliente: pvClienteMap.get(pv) || null
       }));
 
+      opUI.pvs = numerosPV;
+      opUI.pvsOriginal = [...numerosPV];
+      opUI.clientes = clientes;
+      this.initPaginadorPV(opUI);
+      this.refrescarPaginacionSinReinicio();
+
+      this.estadoCarga = `OP ${opCodigo}: verificando disponibles...`;
+      opUI.estadoCarga = 'Verificando cantidades disponibles...';
+      await this.delay(200);
+
       const tieneItemsPendientes = await lastValueFrom(
-        this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(op)
+        this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(opCodigo)
       );
-      
+      opUI.tieneDisponibles = tieneItemsPendientes['data'];
+
       if (numerosPV.length > 0) {
-        await this.verificarDisponibilidadPorPV(op, numerosPV);
+        await this.verificarDisponibilidadPorPV(opCodigo, numerosPV);
       }
 
-      await this.preCargarAsignacionesPendientes(op, numerosPV);
-      
-      return {
-        codigo: op,
-        pvs: numerosPV,
-        pvsOriginal: [...numerosPV],
-        tieneDisponibles: tieneItemsPendientes['data'],
-        clientes: clientes,
-        expandir: false,
-        cargando: false
-      };
+      this.estadoCarga = `OP ${opCodigo}: verificando pendientes...`;
+      opUI.estadoCarga = 'Verificando asignaciones pendientes...';
+      await this.delay(200);
 
+      await this.preCargarAsignacionesPendientes(opCodigo, numerosPV);
+
+      this.ordenarPVs(opUI);
+      this.filtrarPVs(opUI);
+      opUI.cargandoDetalle = false;
+      opUI.estadoCarga = 'Carga completada';
+      this.refrescarPaginacionSinReinicio();
     } catch (error) {
-      console.error(`Error procesando OP ${op}:`, error);
-      return {
-        codigo: op,
-        pvs: [],
-        pvsOriginal: [],
-        tieneDisponibles: false,
-        clientes: [],
-        expandir: false,
-        cargando: false
-      };
+      console.error(`Error procesando OP ${opCodigo}:`, error);
+      opUI.cargandoDetalle = false;
+      opUI.estadoCarga = 'Error cargando detalle';
+      this.refrescarPaginacionSinReinicio();
     }
-  });
+  }
 
-  const resultados = await Promise.all(peticiones);
-
-  this.opsConPvs = resultados.sort((a, b) => {
+  this.opsConPvs.sort((a, b) => {
     const dispoA = typeof a.tieneDisponibles === 'object' && a.tieneDisponibles !== null && 'data' in a.tieneDisponibles
       ? a.tieneDisponibles.data === true ? 1 : 0
       : a.tieneDisponibles === true ? 1 : 0;
@@ -565,11 +600,27 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
     return dispoB - dispoA;
   });
 
-  this.inicializarPaginacion();
+  this.refrescarPaginacionSinReinicio();
+  this.estadoCarga = '';
+  this.cargandoInicial = false;
+}
 
-  this.opsConPvs.forEach(op => {
-    this.initPaginadorPV(op);
-  });
+private refrescarPaginacionSinReinicio(): void {
+  this.paginationService.updatePaginator(
+    this.paginatorId,
+    this.opsConPvs,
+    undefined,
+    this.filters,
+    this.filterFunction,
+    true
+  );
+
+  const state = this.paginationService.getPaginatorState(this.paginatorId);
+  this.currentOps = state?.currentData || [];
+}
+
+private delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 private async verificarDisponibilidadPorPV(op: number, pvs: any[]): Promise<void> {
@@ -758,7 +809,8 @@ obtenerCantidadClientes(op: any): number {
       this.opsConPvs,
       undefined,
       this.filters,
-      this.filterFunction
+      this.filterFunction,
+      true
     );
     
     const state = this.paginationService.getPaginatorState(this.paginatorId);
@@ -771,7 +823,8 @@ obtenerCantidadClientes(op: any): number {
       this.items,
       undefined,
       this.itemFilters,
-      this.itemsFilterFunction
+      this.itemsFilterFunction,
+      true
     );
     
     const state = this.paginationService.getPaginatorState(this.itemsPaginatorId);
@@ -787,7 +840,8 @@ obtenerCantidadClientes(op: any): number {
       op.pvsOriginal || [],
       undefined,
       filtro,
-      this.pvFilterFunction
+      this.pvFilterFunction,
+      true
     );
 
     const state = this.paginationService.getPaginatorState(instanceId);
