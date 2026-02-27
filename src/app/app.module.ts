@@ -55,6 +55,7 @@ import { GenerarHojaConteoModule } from './pages/inventario/generar-hoja-conteo/
 import { HojasConteoListModule } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.module';
 import { HojasConteoDetalleModule } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
 import { ContadorItemsModule } from './pages/inventario/contador-items/contador-items.module';
+import { InventariosModule } from './pages/inventario/inventarios/inventarios.module';
 
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
@@ -65,6 +66,8 @@ import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.
 import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
 
 import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
+
+import { ProyectosModule } from './pages/proyectos/proyectos/proyectos.module';
 
 registerLocaleData(localeEs, 'es-CO');
 
@@ -124,13 +127,16 @@ registerLocaleData(localeEs, 'es-CO');
         HojasConteoListModule,
         HojasConteoDetalleModule,
         ContadorItemsModule,
+        InventariosModule,
         /* Comerciales */
         OrdenCompraModule,
         TiemposItemsModule,
         /* Planeacion */
         PlaneacionModule,
         /* Financiero */
-        CentrosCostosModule
+        CentrosCostosModule,
+        /* Proyectos */
+        ProyectosModule
     ], 
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },

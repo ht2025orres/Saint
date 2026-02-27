@@ -1,0 +1,315 @@
+<div class="container mx-auto px-4 py-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Gestión de Inventarios</h1>
+    <button 
+        (click)="abrirModalCrear()"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+        <i class="bi bi-plus-circle"></i> Nuevo Inventario
+    </button>
+</div>
+
+    <div class="mb-6 flex space-x-2">
+        <button (click)="filtroTipo='todos'; cargarInventarios()" 
+                class="px-4 py-2 text-sm font-medium rounded-md"
+                [ngClass]="filtroTipo==='todos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'">
+            Todos
+        </button>
+        <button (click)="filtroTipo='general'; cargarInventarios()"
+                class="px-4 py-2 text-sm font-medium rounded-md"
+                [ngClass]="filtroTipo==='general' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'">
+            Generales
+        </button>
+        <button (click)="filtroTipo='ciclico'; cargarInventarios()"
+                class="px-4 py-2 text-sm font-medium rounded-md"
+                [ngClass]="filtroTipo==='ciclico' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'">
+            Cíclicos
+        </button>
+    </div>
+
+  <!-- Loader -->
+  <div *ngIf="loading" class="flex justify-center py-10">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Lista de inventarios -->
+  <div *ngIf="!loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let inv of inventarios" 
+         class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition">
+      <div class="p-5">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-sm font-semibold text-gray-500">Código</span>
+            <h2 class="text-xl font-bold text-gray-800">{{ inv.codigo }}</h2>
+          </div>
+          <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                [ngClass]="{
+                  'bg-green-100 text-green-800': inv.estado === 'activo',
+                  'bg-gray-100 text-gray-800': inv.estado === 'cerrado'
+                }">
+            {{ inv.estado | uppercase }}
+          </span>
+        </div>
+
+        <div class="mt-3 space-y-2 text-sm text-gray-600">
+          <div class="flex items-center gap-2">
+            <i class="bi bi-calendar-range"></i>
+            <span>{{ inv.fecha_inicio | date:'dd/MM/yyyy':'UTC' }} - {{ inv.fecha_fin ? (inv.fecha_fin | date:'dd/MM/yyyy':'UTC') : 'Actual' }}</span>
+          </div>
+          <!-- Descripción (opcional) -->
+          <div *ngIf="inv.descripcion" class="flex items-start gap-2">
+            <i class="bi bi-card-text mt-1"></i>
+            <span>{{ inv.descripcion }}</span>
+          </div>
+        </div>
+
+        <!-- Estadísticas rápidas (simuladas, vendrán del backend) -->
+        <div class="mt-4 grid grid-cols-2 gap-2 border-t pt-3 text-xs">
+          <div>
+            <span class="block text-gray-500">Hojas</span>
+            <span class="font-semibold text-lg">{{ inv.total_hojas || 0 }}</span>
+          </div>
+          <div>
+            <span class="block text-gray-500">Items contados</span>
+            <span class="font-semibold text-lg">{{ inv.items_contados || 0 }}</span>
+          </div>
+          <div>
+            <span class="block text-gray-500">Existencias</span>
+            <span class="font-semibold text-lg">{{ inv.existencias_contadas || 0 | number }}</span>
+          </div>
+          <div>
+            <span class="block text-gray-500">Valor</span>
+            <span class="font-semibold text-lg">{{ inv.valor_total || 0 | currency:'COP':'$':'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="mt-4 flex justify-end gap-2">
+          <button (click)="verDetalle(inv)" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Ver detalle">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button *ngIf="inv.estado === 'activo'" (click)="abrirModalEditar(inv)" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button *ngIf="inv.estado === 'activo'" (click)="cerrarInventario(inv)" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Cerrar inventario">
+            <i class="bi bi-lock"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje si no hay inventarios -->
+  <div *ngIf="!loading && inventarios.length === 0" class="text-center py-10 text-gray-500">
+    <i class="bi bi-archive text-5xl"></i>
+    <p class="mt-2">No hay inventarios creados</p>
+  </div>
+</div>
+
+<!-- Modal de creación/edición -->
+<!-- Modal de creación/edición -->
+<div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl max-w-md w-full p-6">
+    <h2 class="text-xl font-bold mb-4">{{ modalTitle }}</h2>
+    <form>
+      <!-- Fecha inicio -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha inicio *</label>
+        <input type="date" [(ngModel)]="inventarioForm.fecha_inicio" name="fecha_inicio" required
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+
+      <!-- Fecha fin (opcional) -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha fin (opcional)</label>
+        <input type="date" [(ngModel)]="inventarioForm.fecha_fin" name="fecha_fin"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+
+      <!-- Tipo de inventario: botones General / Cíclico -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de inventario</label>
+        <div class="flex space-x-4">
+          <button type="button" (click)="inventarioForm.tipo='general'" 
+                  class="px-4 py-2 rounded-md transition"
+                  [ngClass]="inventarioForm.tipo === 'general' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">
+            General
+          </button>
+          <button type="button" (click)="inventarioForm.tipo='ciclico'" 
+                  class="px-4 py-2 rounded-md transition"
+                  [ngClass]="inventarioForm.tipo === 'ciclico' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'">
+            Cíclico
+          </button>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        <textarea [(ngModel)]="inventarioForm.descripcion" name="descripcion" rows="3"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex justify-end gap-2">
+        <button type="button" (click)="cerrarModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+        <button type="submit" (click)="guardarInventario()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de detalle -->
+<div *ngIf="showDetalleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+    <div class="flex justify-between items-start mb-4">
+      <h2 class="text-2xl font-bold">Detalle del Inventario</h2>
+      <button (click)="cerrarDetalle()" class="text-gray-500 hover:text-gray-700">
+        <i class="bi bi-x-lg text-xl"></i>
+      </button>
+    </div>
+
+    <div *ngIf="loadingDetalle" class="flex justify-center py-10">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <div *ngIf="!loadingDetalle && detalleInventario" class="space-y-6">
+      <!-- Información general -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+        <div>
+          <span class="text-sm text-gray-500">Código</span>
+            <p>
+                <span class="text-lg font-semibold">{{ detalleInventario.codigo }}</span>
+                <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                    [ngClass]="detalleInventario.tipo === 'general' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'">
+                {{ detalleInventario.tipo === 'general' ? 'General' : 'Cíclico' }}
+                </span>
+            </p>
+        </div>
+        <div>
+          <span class="text-sm text-gray-500">Estado</span>
+          <p><span class="px-2 py-1 text-xs font-semibold rounded-full"
+                [ngClass]="detalleInventario.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+            {{ detalleInventario.estado | uppercase }}
+          </span></p>
+        </div>
+        <div>
+          <span class="text-sm text-gray-500">Período</span>
+          <p>{{ detalleInventario.fecha_inicio | date:'dd/MM/yyyy':'UTC' }} - {{ detalleInventario.fecha_fin ? (detalleInventario.fecha_fin | date:'dd/MM/yyyy':'UTC') : 'Actual' }}</p>
+        </div>
+        <div *ngIf="detalleInventario.descripcion">
+          <span class="text-sm text-gray-500">Descripción</span>
+          <p>{{ detalleInventario.descripcion }}</p>
+        </div>
+      </div>
+
+      <!-- Estadísticas consolidadas -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-blue-50 p-3 rounded-lg text-center">
+          <div class="text-2xl font-bold text-blue-700">{{ detalleInventario.total_hojas || 0 }}</div>
+          <div class="text-xs text-gray-600">Hojas de conteo</div>
+        </div>
+        <div class="bg-green-50 p-3 rounded-lg text-center">
+          <div class="text-2xl font-bold text-green-700">{{ detalleInventario.items_contados || 0 }}</div>
+          <div class="text-xs text-gray-600">Items contados</div>
+        </div>
+        <div class="bg-yellow-50 p-3 rounded-lg text-center">
+          <div class="text-2xl font-bold text-yellow-700">{{ detalleInventario.existencias_contadas || 0 | number }}</div>
+          <div class="text-xs text-gray-600">Existencias</div>
+        </div>
+        <div class="bg-purple-50 p-3 rounded-lg text-center">
+          <div class="text-2xl font-bold text-purple-700">{{ detalleInventario.valor_total || 0 | currency:'COP':'$':'1.0-0' }}</div>
+          <div class="text-xs text-gray-600">Valor total</div>
+        </div>
+      </div>
+
+      <!-- Lista de hojas de conteo -->
+      <div>
+        <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+          <i class="bi bi-files"></i> Hojas de Conteo
+        </h3>
+        <div *ngIf="hojas.length === 0" class="text-center py-4 text-gray-500 border rounded-lg">
+          No hay hojas asociadas a este inventario.
+        </div>
+        <div class="space-y-3" *ngIf="hojas.length > 0">
+        <div *ngFor="let hoja of hojas" class="border rounded-lg hover:bg-gray-50 transition">
+            <!-- Cabecera de la hoja (clickeable) -->
+            <div class="p-4 cursor-pointer" (click)="toggleHoja(hoja.id)">
+            <div class="flex justify-between items-center">
+                <div>
+                <span class="font-medium">{{ hoja.codigo_hoja }}</span>
+                <span class="ml-2 px-2 py-0.5 text-xs rounded-full"
+                        [ngClass]="{
+                        'bg-blue-100 text-blue-800': hoja.tipo === 'CONTEO',
+                        'bg-yellow-100 text-yellow-800': hoja.tipo.includes('RECONTEO')
+                        }">
+                    {{ hoja.tipo }}
+                </span>
+                <span class="ml-2 px-2 py-0.5 text-xs rounded-full"
+                        [ngClass]="{
+                        'bg-green-100 text-green-800': hoja.estado === 'FINALIZADO',
+                        'bg-orange-100 text-orange-800': hoja.estado === 'EN_PROCESO',
+                        'bg-gray-100 text-gray-800': hoja.estado === 'PENDIENTE'
+                        }">
+                    {{ hoja.estado }}
+                </span>
+                </div>
+                <div class="text-sm text-gray-500">
+                {{ hoja.items_contados }}/{{ hoja.total_items }} items
+                <i class="bi" [ngClass]="hojaExpandidaId === hoja.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+            </div>
+            <div class="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-600">
+                <div>Líder: {{ hoja.lider_nombre || 'N/A' }}</div>
+                <div>Bodega: {{ hoja.codigo_bodega }}</div>
+                <div>Valor: {{ hoja.valor_total | currency:'COP':'$':'1.0-0' }}</div>
+            </div>
+            </div>
+
+            <!-- Panel expandible con items de la hoja -->
+            <div *ngIf="hojaExpandidaId === hoja.id" class="border-t p-4 bg-gray-50">
+            <div *ngIf="cargandoItemsHoja" class="flex justify-center py-4">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            </div>
+
+            <div *ngIf="!cargandoItemsHoja && itemsHojaExpandida.length === 0" class="text-center py-4 text-gray-500">
+                Esta hoja no tiene items.
+            </div>
+
+            <div *ngIf="!cargandoItemsHoja && itemsHojaExpandida.length > 0" class="overflow-x-auto">
+                <table class="min-w-full text-xs">
+                <thead class="bg-gray-200">
+                    <tr>
+                    <th class="px-3 py-2 text-left">Código</th>
+                    <th class="px-3 py-2 text-left">Referencia</th>
+                    <th class="px-3 py-2 text-left">Descripción</th>
+                    <th class="px-3 py-2 text-left">Zona</th>
+                    <th class="px-3 py-2 text-right">SIESA</th>
+                    <th class="px-3 py-2 text-right">Contado</th>
+                    <th class="px-3 py-2 text-right">Diferencia</th>
+                    <th class="px-3 py-2 text-right">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of itemsHojaExpandida" class="border-b hover:bg-gray-100">
+                    <td class="px-3 py-2">{{ item.codigo_item }}</td>
+                    <td class="px-3 py-2">{{ item.id_f400 }}</td>
+                    <td class="px-3 py-2">{{ item.descripcion | slice:0:30 }}...</td>
+                    <td class="px-3 py-2">{{ item.zona_nombre }}</td>
+                    <td class="px-3 py-2 text-right">{{ item.existencia_siesa | number:'1.0-0':'es-CO' }}</td>
+                    <td class="px-3 py-2 text-right">{{ item.cantidad_contada | number:'1.0-0':'es-CO' }}</td>
+                    <td class="px-3 py-2 text-right" [ngClass]="item.diferencia_unidades !== 0 ? 'text-red-600 font-semibold' : ''">
+                        {{ item.diferencia_unidades | number:'1.0-0':'es-CO' }}
+                    </td>
+                    <td class="px-3 py-2 text-right">{{ item.costo_total | currency:'COP':'$':'1.0-0' }}</td>
+                    </tr>
+                </tbody>
+                </table>
+            </div>
+            </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

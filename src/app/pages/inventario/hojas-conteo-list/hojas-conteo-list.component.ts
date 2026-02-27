@@ -18,6 +18,8 @@ export class HojasConteoListComponent implements OnInit {
   procesando = false;
 
   Math = Math;
+
+  inventarios: any[] = [];
   
   // Datos
   hojas: any[] = [];
@@ -31,8 +33,8 @@ export class HojasConteoListComponent implements OnInit {
     id_lider: null as number | null,
     tipo: null as string | null,
     estado: null as string | null,
-    fecha_desde: null as string | null,
-    fecha_hasta: null as string | null,
+    inventario_id: null as number | null,
+    tipo_inventario: null as 'general' | 'ciclico' | null,
     busqueda: ''
   };
 
@@ -71,6 +73,7 @@ export class HojasConteoListComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatosMaestros();
+    this.cargarInventarios();
   }
 
   cargarDatosMaestros(): void {
@@ -87,16 +90,25 @@ export class HojasConteoListComponent implements OnInit {
     });
   }
 
+  cargarInventarios(): void {
+    this.inventarioService.getInventarios('activos').subscribe({
+      next: (res) => this.inventarios = res.data,
+      error: () => console.error('Error cargando inventarios')
+    });
+  }
+
   cargarHojas(): void {
     this.isLoading = true;
+    this.hojas = [];
+    this.currentHojas = [];
 
     const params: any = {};
     if (this.filters.codigo_bodega) params.codigo_bodega = this.filters.codigo_bodega;
     if (this.filters.id_lider) params.id_lider = this.filters.id_lider;
     if (this.filters.tipo) params.tipo = this.filters.tipo;
     if (this.filters.estado) params.estado = this.filters.estado;
-    if (this.filters.fecha_desde) params.fecha_desde = this.filters.fecha_desde;
-    if (this.filters.fecha_hasta) params.fecha_hasta = this.filters.fecha_hasta;
+    if (this.filters.inventario_id) params.inventario_id = this.filters.inventario_id;
+    if (this.filters.tipo_inventario) params.tipo_inventario = this.filters.tipo_inventario;
 
     this.inventarioService.listarHojasConteo(params).subscribe({
       next: (res) => {
@@ -156,8 +168,8 @@ export class HojasConteoListComponent implements OnInit {
       id_lider: null,
       tipo: null,
       estado: null,
-      fecha_desde: null,
-      fecha_hasta: null,
+      inventario_id: null,
+      tipo_inventario: null,
       busqueda: ''
     };
     this.cargarHojas();
@@ -569,7 +581,7 @@ export class HojasConteoListComponent implements OnInit {
    ================================ */
 
   puedeModificarItems(): boolean {
-    return ['BORRADOR', 'PENDIENTE'].includes(this.hojaSeleccionada?.estado);
+    return ['BORRADOR', 'PENDIENTE', 'EN_PROCESO'].includes(this.hojaSeleccionada?.estado);
   }
 
   puedeAgregarItems(): boolean {

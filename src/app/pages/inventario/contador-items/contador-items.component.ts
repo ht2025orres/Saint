@@ -121,6 +121,7 @@ export class ContadorItemsComponent implements OnInit {
     this.inventarioService.obtenerDetalleHoja(this.hojaSeleccionada.id).subscribe({
       next: (res) => {
         if (res['success']) {
+          console.log('Contadores desde el backend:', res['data'].contadores);
           this.contadoresAsignados = res['data'].contadores || [];
           this.cargarItems();
         }
@@ -136,13 +137,28 @@ export class ContadorItemsComponent implements OnInit {
     this.inventarioService.obtenerItemsHoja(this.hojaSeleccionada.id).subscribe({
       next: (res) => {
         this.itemsHoja = (res['data'] || []).map((item: any) => {
+          let ids: number[] = [];
+          const raw = item.responsables;
+          if (Array.isArray(raw)) {
+            if (raw.length > 0 && typeof raw[0] === 'object') {
+              ids = raw.map(r => r.id).filter(id => id != null);
+            } else {
+              ids = raw.filter(id => typeof id === 'number');
+            }
+          } else if (typeof raw === 'string') {
+            try {
+              const parsed = JSON.parse(raw);
+              ids = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              ids = [];
+            }
+          }
           return {
             ...item,
-            responsables: item.responsables ? JSON.parse(item.responsables) : [],
+            responsables: ids,
             estado: item.estado || 'PENDIENTE'
           };
         });
-
         this.itemsFiltrados = [...this.itemsHoja];
         this.cargarProgresoLocal();
         this.isLoading = false;
@@ -171,6 +187,46 @@ export class ContadorItemsComponent implements OnInit {
     }
 
     this.itemsFiltrados = filtered;
+  }
+
+  formatearResponsables(item: any): string {
+    if (item.estado !== 'CONTADO') return '-';
+
+    let ids: number[] = [];
+
+    // 1. Extraer IDs del campo responsables (maneja varios formatos)
+    const raw = item.responsables;
+    if (Array.isArray(raw)) {
+      if (raw.length > 0 && typeof raw[0] === 'object') {
+        ids = raw.map(r => r.id).filter(id => id != null);
+      } else {
+        ids = raw.filter(id => typeof id === 'number');
+      }
+    } else if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        ids = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        ids = [];
+      }
+    }
+
+    if (ids.length === 0) return '-';
+
+    // 2. Convertir IDs a nombres usando la lista de contadores
+    const nombres = ids
+      .map(id => {
+        const contador = this.contadoresAsignados.find(c => c.id_contador === id);
+        if (contador) {
+          const nombre = contador.nombres || contador.nombre || '';
+          const apellido = contador.apellidos || contador.apellido || '';
+          return `${nombre} ${apellido}`.trim();
+        }
+        return '';
+      })
+      .filter(n => n !== '');
+
+    return nombres.length > 0 ? nombres.join(', ') : '-';
   }
 
   abrirModalConteo(item: any): void {
@@ -231,7 +287,9 @@ export class ContadorItemsComponent implements OnInit {
     const payload = {
       cantidad_contada: parseFloat(this.conteoForm.cantidad_contada),
       responsables: this.conteoForm.responsables,
-      usuario_id: this.authService.user.id
+      usuario_id: this.authService.user.id,
+      existencia_siesa: this.itemActual.existencia_siesa,
+      costo_prom_unitario_siesa: this.itemActual.costo_prom_unitario_siesa
     };
 
     this.inventarioService.registrarConteoItem(this.hojaSeleccionada.id, this.itemActual.id, payload).subscribe({
@@ -240,13 +298,19 @@ export class ContadorItemsComponent implements OnInit {
         if (itemIndex > -1) {
           this.itemsHoja[itemIndex].estado = 'CONTADO';
           this.itemsHoja[itemIndex].cantidad_contada = parseFloat(this.conteoForm.cantidad_contada);
+          this.itemsHoja[itemIndex].responsables = this.conteoForm.responsables;
           
-          const responsablesNombres = this.conteoForm.responsables.map((idResp: number) => {
-            const contador = this.contadoresAsignados.find(c => c.id_contador === idResp);
-            return contador ? `${contador.nombre} ${contador.apellidos}` : '';
-          });
-          this.itemsHoja[itemIndex].responsables = responsablesNombres;
+          // Actualizar hojaSeleccionada
           this.hojaSeleccionada.items_contados = (this.hojaSeleccionada.items_contados || 0) + 1;
+
+          // Sincronizar con la hoja en la lista (this.hojas)
+          const hojaEnLista = this.hojas.find(h => h.id === this.hojaSeleccionada.id);
+          if (hojaEnLista) {
+            hojaEnLista.items_contados = (hojaEnLista.items_contados || 0) + 1;
+            // También podrías actualizar la lista filtrada si es necesario
+            const hojaFiltrada = this.hojasFiltradas.find(h => h.id === this.hojaSeleccionada.id);
+            if (hojaFiltrada) hojaFiltrada.items_contados = hojaEnLista.items_contados;
+          }
         }
 
         this.guardarProgresoLocal();
@@ -275,6 +339,8 @@ export class ContadorItemsComponent implements OnInit {
     const itemsContados = this.itemsHoja.filter(i => i.estado === 'CONTADO').map(item => ({
       id_item: item.id,
       cantidad_contada: item.cantidad_contada,
+      existencia_siesa: item.existencia_siesa,
+      costo_prom_unitario_siesa: item.costo_prom_unitario_siesa,
       responsables: item.responsables
     }));
 
@@ -286,6 +352,13 @@ export class ContadorItemsComponent implements OnInit {
     this.inventarioService.guardarProgresoConteo(this.hojaSeleccionada.id, payload).subscribe({
       next: () => {
         this.guardarProgresoLocal();
+        const nuevosContados = this.itemsHoja.filter(i => i.estado === 'CONTADO').length;
+        this.hojaSeleccionada.items_contados = nuevosContados;
+        
+        const hojaEnLista = this.hojas.find(h => h.id === this.hojaSeleccionada.id);
+        if (hojaEnLista) {
+          hojaEnLista.items_contados = nuevosContados;
+        }
         Swal.fire({
           icon: 'success',
           title: 'Progreso guardado',
@@ -305,7 +378,7 @@ export class ContadorItemsComponent implements OnInit {
   guardarProgresoLocal(): void {
     const progreso = {
       hojaId: this.hojaSeleccionada.id,
-      items: this.itemsHoja,
+      items: this.itemsHoja, // ya contiene responsables como array de IDs
       timestamp: new Date().getTime()
     };
     localStorage.setItem(`conteo_hoja_${this.hojaSeleccionada.id}`, JSON.stringify(progreso));
@@ -321,7 +394,7 @@ export class ContadorItemsComponent implements OnInit {
           if (itemIndex > -1) {
             this.itemsHoja[itemIndex].estado = itemLocal.estado;
             this.itemsHoja[itemIndex].cantidad_contada = itemLocal.cantidad_contada;
-            this.itemsHoja[itemIndex].responsables = itemLocal.responsables;
+            this.itemsHoja[itemIndex].responsables = itemLocal.responsables; // array de IDs
           }
         });
         this.filtrarItems();

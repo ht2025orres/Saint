@@ -36,7 +36,8 @@ export class CreateUserComponent implements OnInit {
         { name: 'renueva', displayName: 'Renueva' },
         { name: 'almacen', displayName: 'Almacén' },
         { name: 'ficha', displayName: 'Ficha Técnicas' },
-        { name: 'ocs', displayName: 'Gestión de OCs' }
+        { name: 'ocs', displayName: 'Gestión de OCs' },
+        { name: 'proyectos', displayName: 'Proyectos' },
     ];
 
     private roleSectionMap: { [key: string]: string } = {
@@ -79,7 +80,8 @@ export class CreateUserComponent implements OnInit {
         'reporte ficha tecnica': 'ficha',
         'gestor reporte ficha tecnica': 'ficha',
         'cargar ocs': 'ocs',
-        'procesar ocs': 'ocs'
+        'procesar ocs': 'ocs',
+        'proyectos': 'proyectos',
     };
 
     constructor(
