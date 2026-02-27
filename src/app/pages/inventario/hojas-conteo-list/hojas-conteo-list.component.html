@@ -8,6 +8,7 @@
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="row g-3">
+        <!-- Bodega (igual) -->
         <div class="col-md-3">
           <label class="form-label">Bodega</label>
           <select class="form-select" [(ngModel)]="filters.codigo_bodega" (change)="applyFilters()">
@@ -18,6 +19,7 @@
           </select>
         </div>
 
+        <!-- Tipo (igual) -->
         <div class="col-md-2">
           <label class="form-label">Tipo</label>
           <select class="form-select" [(ngModel)]="filters.tipo" (change)="applyFilters()">
@@ -29,6 +31,7 @@
           </select>
         </div>
 
+        <!-- Estado (igual) -->
         <div class="col-md-2">
           <label class="form-label">Estado</label>
           <select class="form-select" [(ngModel)]="filters.estado" (change)="applyFilters()">
@@ -40,16 +43,27 @@
           </select>
         </div>
 
-        <div class="col-md-2">
-          <label class="form-label">Desde</label>
-          <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="applyFilters()">
+        <!-- 🔥 NUEVO: Inventario -->
+        <div class="col-md-3">
+          <label class="form-label">Inventario</label>
+          <select class="form-select" [(ngModel)]="filters.inventario_id" (change)="applyFilters()">
+            <option [ngValue]="null">Todos</option>
+            <option *ngFor="let inv of inventarios" [ngValue]="inv.id">
+              {{ inv.codigo }} ({{ inv.fecha_inicio | date:'dd/MM/yyyy' }} - {{ inv.fecha_fin ? (inv.fecha_fin | date:'dd/MM/yyyy') : 'Actual' }})
+            </option>
+          </select>
         </div>
 
         <div class="col-md-2">
-          <label class="form-label">Hasta</label>
-          <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="applyFilters()">
+          <label class="form-label">Tipo Inventario</label>
+          <select class="form-select" [(ngModel)]="filters.tipo_inventario" (change)="applyFilters()">
+            <option [ngValue]="null">Todos</option>
+            <option value="general">General</option>
+            <option value="ciclico">Cíclico</option>
+          </select>
         </div>
 
+        <!-- Líder (igual) -->
         <div class="col-md-3">
           <label class="form-label">Líder</label>
           <select class="form-select" [(ngModel)]="filters.id_lider" (change)="applyFilters()">
@@ -60,12 +74,14 @@
           </select>
         </div>
 
+        <!-- Buscar (igual) -->
         <div class="col-md-6">
           <label class="form-label">Buscar</label>
           <input type="text" class="form-control" placeholder="Código de hoja..." 
-                 [(ngModel)]="filters.busqueda" (input)="applyFilters()">
+                [(ngModel)]="filters.busqueda" (input)="applyFilters()">
         </div>
 
+        <!-- Botones (igual) -->
         <div class="col-md-3 d-flex align-items-end">
           <button class="btn btn-secondary me-2" (click)="limpiarFiltros()">
             <i class="bi bi-x-circle me-1"></i> Limpiar
@@ -109,6 +125,15 @@
                 </span>
                 <span class="badge bg-primary ms-1">
                   {{ getTipoLabel(hoja.tipo) }}
+                </span>
+              </div>
+
+              <div class="mt-2 small">
+                <i class="bi bi-archive me-1"></i>
+                <strong>Inventario:</strong> {{ hoja.inventario_codigo }}
+                <span class="text-muted">
+                  ({{ hoja.inventario_fecha_inicio | date:'dd/MM/yyyy' }} - 
+                  {{ hoja.inventario_fecha_fin ? (hoja.inventario_fecha_fin | date:'dd/MM/yyyy') : 'Actual' }})
                 </span>
               </div>
             </div>

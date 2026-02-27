@@ -18,8 +18,7 @@
           <select 
             class="form-select" 
             [(ngModel)]="configuracion.codigo_bodega" 
-            name="bodega"
-            (change)="onBodegaChange()">
+            name="bodega">
             <option [ngValue]="null">-- Seleccione una bodega --</option>
             <option 
               *ngFor="let bodega of bodegas; trackBy: trackByCodigoBodega" 
@@ -54,8 +53,7 @@
           <select 
             class="form-select" 
             [(ngModel)]="configuracion.tipo" 
-            name="tipo"
-            (change)="onTipoChange()">
+            name="tipo">
             <option value="CONTEO">Primer Conteo</option>
             <option value="RECONTEO1">Primer Reconteo</option>
             <option value="RECONTEO2">Segundo Reconteo</option>
@@ -71,29 +69,21 @@
           </small>
         </div>
 
-        <!-- 🔥 NUEVO: Fecha desde -->
+        <!-- Selección de inventario -->
         <div class="mb-3">
-          <label class="form-label">
-            <i class="bi bi-calendar3 me-1"></i>
-            Considerar hojas desde
-            <i class="bi bi-info-circle text-muted" 
-               title="Items en hojas activas desde esta fecha serán excluidos"></i>
-          </label>
-          <input 
-            type="date" 
-            class="form-control" 
-            [(ngModel)]="configuracion.fecha_desde" 
-            name="fecha_desde" 
-            [max]="fechaHoy">
-          <small class="text-muted d-block mt-1">
-            <span *ngIf="fechaSugerida">
-              <i class="bi bi-lightbulb text-warning"></i>
-              Sugerida: {{ fechaSugerida | date:'dd/MM/yyyy' }}
-            </span>
-            <span *ngIf="!fechaSugerida">
-              No hay hojas previas en esta bodega
-            </span>
-          </small>
+          <label class="form-label">Inventario <span class="text-danger">*</span></label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="inventarioSeleccionado" 
+            name="inventario"
+            (change)="onInventarioChange()">
+            <option [ngValue]="null">-- Seleccione un inventario activo --</option>
+            <option 
+              *ngFor="let inv of inventariosActivos" 
+              [ngValue]="inv.id">
+              {{ inv.codigo }} - {{ inv.tipo }} {{ inv.fecha_inicio | date:'dd/MM/yyyy':'UTC' }} | {{ inv.fecha_fin | date:'dd/MM/yyyy':'UTC' }}
+            </option>
+          </select>
         </div>
 
         <!-- Estrategia de agrupación -->
@@ -274,7 +264,7 @@
           <div class="card bg-primary text-white">
             <div class="card-body text-center">
               <h6 class="card-title">Total Ítems</h6>
-              <h3>{{ itemsSeleccionados.length }}</h3>
+              <h3 class="text-white">{{ itemsSeleccionados.length }}</h3>
               <small>de {{ itemsSugeridos.length }} sugeridos</small>
             </div>
           </div>
@@ -283,7 +273,7 @@
           <div class="card bg-info text-white">
             <div class="card-body text-center">
               <h6 class="card-title">Existencias</h6>
-              <h3>{{ calcularTotalExistencias() | number:'1.0-0':'es-CO' }}</h3>
+              <h3 class="text-white">{{ calcularTotalExistencias() | number:'1.0-0':'es-CO' }}</h3>
               <small>unidades</small>
             </div>
           </div>
@@ -292,7 +282,7 @@
           <div class="card bg-warning text-dark">
             <div class="card-body text-center">
               <h6 class="card-title">Valor Total</h6>
-              <h3>{{ calcularTotalValor() | currency:'COP':'symbol-narrow':'1.0-0':'es-CO' }}</h3>
+              <h3 class="text-white">{{ calcularTotalValor() | currency:'COP':'symbol-narrow':'1.0-0':'es-CO' }}</h3>
               <small>pesos</small>
             </div>
           </div>
@@ -301,7 +291,7 @@
           <div class="card bg-secondary text-white">
             <div class="card-body text-center">
               <h6 class="card-title">Zonas</h6>
-              <h3>{{ metadatos?.total_zonas || 0 }}</h3>
+              <h3 class="text-white">{{ metadatos?.total_zonas || 0 }}</h3>
               <small>diferentes</small>
             </div>
           </div>

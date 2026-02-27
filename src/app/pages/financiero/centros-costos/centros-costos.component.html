@@ -1,183 +1,379 @@
-<div class="bg-gray-50 p-6">
+<div class="bg-gray-50 p-6 min-h-screen">
   <div class="max-w-7xl mx-auto">
-    <div class="mb-8">
+    <!-- Header -->
+    <div class="mb-6">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Semáforo de Centros de Costo</h1>
-      <p class="text-gray-600">Monitoreo de ejecución presupuestal vs real</p>
+      <p class="text-gray-600">Monitoreo presupuestal jerárquico</p>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="mb-4 flex items-center gap-2 text-sm text-gray-600">
+      <button (click)="volverAProcesos()" 
+              [class.font-semibold]="vistaActual === 'procesos'"
+              [class.text-blue-600]="vistaActual !== 'procesos'"
+              class="hover:text-blue-700">
+        Procesos
+      </button>
+      <span *ngIf="procesoSeleccionado">›</span>
+      <button *ngIf="procesoSeleccionado" 
+              (click)="volverAGrupos()"
+              [class.font-semibold]="vistaActual === 'grupos'"
+              [class.text-blue-600]="vistaActual !== 'grupos'"
+              class="hover:text-blue-700">
+        {{ procesoSeleccionado.nombre }}
+      </button>
+      <span *ngIf="grupoSeleccionado">›</span>
+      <button *ngIf="grupoSeleccionado"
+              (click)="volverAConceptos()"
+              [class.font-semibold]="vistaActual === 'conceptos'"
+              [class.text-blue-600]="vistaActual !== 'conceptos'"
+              class="hover:text-blue-700">
+        {{ grupoSeleccionado.nombre }}
+      </button>
+      <span *ngIf="conceptoSeleccionado">›</span>
+      <span *ngIf="conceptoSeleccionado" class="font-semibold text-gray-900">
+        {{ conceptoSeleccionado.nombre }}
+      </span>
     </div>
 
     <div *ngIf="isLoading" class="bg-white rounded-lg shadow p-8 text-center">
       <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      <p class="mt-4 text-gray-600">Cargando datos...</p>
+      <p class="mt-4 text-gray-600">Cargando...</p>
     </div>
 
     <div *ngIf="!isLoading">
+      <!-- Filtros Fecha -->
       <div class="bg-white rounded-lg shadow mb-6 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div class="lg:col-span-2">
-            <input type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Buscar por cuenta, descripción o responsable..." 
-              [(ngModel)]="filters.busqueda"
-              (input)="applyFilters()">
-          </div>
+        <div class="flex gap-2 items-center">
+          <label class="text-sm font-medium text-gray-700">Período:</label>
+          <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.ano" (change)="onFechaChange()">
+            <option [value]="anoActual - 1">{{ anoActual - 1 }}</option>
+            <option [value]="anoActual">{{ anoActual }}</option>
+            <option [value]="anoActual + 1">{{ anoActual + 1 }}</option>
+          </select>
+          <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.mes" (change)="onFechaChange()">
+            <option [value]="1">Ene</option>
+            <option [value]="2">Feb</option>
+            <option [value]="3">Mar</option>
+            <option [value]="4">Abr</option>
+            <option [value]="5">May</option>
+            <option [value]="6">Jun</option>
+            <option [value]="7">Jul</option>
+            <option [value]="8">Ago</option>
+            <option [value]="9">Sep</option>
+            <option [value]="10">Oct</option>
+            <option [value]="11">Nov</option>
+            <option [value]="12">Dic</option>
+          </select>
+        </div>
+      </div>
 
-          <div>
-            <select
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              [(ngModel)]="filters.centroCosto" 
-              (change)="applyFilters()">
+      <!-- Vista Procesos -->
+      <div *ngIf="vistaActual === 'procesos'">
+        <div class="mb-4 flex justify-end">
+          <button (click)="abrirModalProceso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <i class="bi bi-plus-lg mr-2"></i>Nuevo Proceso
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let proceso of procesos" 
+               class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer"
+               (click)="verGrupos(proceso)">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">{{ proceso.nombre }}</h3>
+                <p *ngIf="proceso.responsable" class="text-sm text-gray-500 mt-1">
+                  <i class="bi bi-person"></i> {{ proceso.responsable }}
+                </p>
+              </div>
+              <div class="flex gap-2" (click)="$event.stopPropagation()">
+                <button (click)="abrirModalProceso(proceso)" class="text-blue-600 hover:text-blue-800">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button (click)="eliminarProceso(proceso.id)" class="text-red-600 hover:text-red-800">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+            
+            <p *ngIf="proceso.descripcion" class="text-sm text-gray-600 mb-4">{{ proceso.descripcion }}</p>
+            
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <p class="text-gray-500">Presupuesto</p>
+                <p class="font-semibold">{{ proceso.presupuesto | number:'1.2-2' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500">Real</p>
+                <p class="font-semibold">{{ proceso.real | number:'1.2-2' }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-gray-500">{{ proceso.total_grupos }} grupos</span>
+              <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(proceso.semaforo)">
+                {{ proceso.porcentaje.toFixed(2) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Grupos -->
+      <div *ngIf="vistaActual === 'grupos'">
+        <div class="mb-4 flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Grupos: {{ procesoSeleccionado?.nombre }}</h2>
+          <button (click)="abrirModalGrupo()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <i class="bi bi-plus-lg mr-2"></i>Nuevo Grupo
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let grupo of grupos" 
+               class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer"
+               (click)="verConceptos(grupo)">
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">{{ grupo.nombre }}</h3>
+              <div class="flex gap-2" (click)="$event.stopPropagation()">
+                <button (click)="abrirModalGrupo(grupo)" class="text-blue-600 hover:text-blue-800">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button (click)="eliminarGrupo(grupo.id)" class="text-red-600 hover:text-red-800">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+            
+            <p *ngIf="grupo.descripcion" class="text-sm text-gray-600 mb-4">{{ grupo.descripcion }}</p>
+            
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <p class="text-gray-500">Presupuesto</p>
+                <p class="font-semibold">{{ grupo.presupuesto | number:'1.2-2' }}</p>
+              </div>
+              <div>
+                <p class="text-gray-500">Real</p>
+                <p class="font-semibold">{{ grupo.real | number:'1.2-2' }}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-gray-500">{{ grupo.total_conceptos }} conceptos</span>
+              <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(grupo.semaforo)">
+                {{ grupo.porcentaje.toFixed(2) }}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Conceptos -->
+      <div *ngIf="vistaActual === 'conceptos'">
+        <div class="mb-4 flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Conceptos: {{ grupoSeleccionado?.nombre }}</h2>
+          <button (click)="abrirModalConcepto()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <i class="bi bi-plus-lg mr-2"></i>Nuevo Concepto
+          </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Presupuesto</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Real</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Ejecución</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cuentas</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr *ngFor="let concepto of conceptos" class="hover:bg-gray-50 cursor-pointer" (click)="verDetalle(concepto)">
+                <td class="px-4 py-4">
+                  <div class="font-medium text-gray-900">{{ concepto.nombre }}</div>
+                  <div *ngIf="concepto.descripcion" class="text-sm text-gray-500">{{ concepto.descripcion }}</div>
+                </td>
+                <td class="px-4 py-4 text-right font-medium">{{ concepto.presupuesto | number:'1.2-2' }}</td>
+                <td class="px-4 py-4 text-right font-medium">{{ concepto.real | number:'1.2-2' }}</td>
+                <td class="px-4 py-4 text-center">
+                  <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(concepto.semaforo)">
+                    {{ concepto.porcentaje.toFixed(2) }}%
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center text-sm">{{ concepto.total_cuentas }}</td>
+                <td class="px-4 py-4 text-center" (click)="$event.stopPropagation()">
+                  <button (click)="abrirModalConcepto(concepto)" class="text-blue-600 hover:text-blue-800 mr-3">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button (click)="eliminarConcepto(concepto.id)" class="text-red-600 hover:text-red-800">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Vista Detalle -->
+      <div *ngIf="vistaActual === 'detalle'">
+        <div class="bg-white rounded-lg shadow mb-6 p-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" class="px-4 py-2 border rounded-lg" placeholder="Buscar..." 
+                   [(ngModel)]="filters.busqueda" (input)="applyFilters()">
+            <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.centroCosto" (change)="applyFilters()">
               <option value="">Todos los centros</option>
               <option *ngFor="let centro of centrosCostosUnicos" [value]="centro">{{ centro }}</option>
             </select>
-          </div>
-
-          <div>
-            <select
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              [(ngModel)]="filters.semaforo" 
-              (change)="applyFilters()">
+            <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.semaforo" (change)="applyFilters()">
               <option value="">Todos los estados</option>
               <option value="verde">🟢 Verde (0-80%)</option>
               <option value="amarillo">🟡 Amarillo (81-95%)</option>
               <option value="rojo">🔴 Rojo (>95%)</option>
             </select>
           </div>
-
-          <div class="flex gap-2">
-            <select
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              [(ngModel)]="filters.ano" 
-              (change)="onFechaChange()">
-              <option [value]="anoActual - 1">{{ anoActual - 1 }}</option>
-              <option [value]="anoActual">{{ anoActual }}</option>
-              <option [value]="anoActual + 1">{{ anoActual + 1 }}</option>
-            </select>
-            <select
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              [(ngModel)]="filters.mes" 
-              (change)="onFechaChange()">
-              <option [value]="1">Ene</option>
-              <option [value]="2">Feb</option>
-              <option [value]="3">Mar</option>
-              <option [value]="4">Abr</option>
-              <option [value]="5">May</option>
-              <option [value]="6">Jun</option>
-              <option [value]="7">Jul</option>
-              <option [value]="8">Ago</option>
-              <option [value]="9">Sep</option>
-              <option [value]="10">Oct</option>
-              <option [value]="11">Nov</option>
-              <option [value]="12">Dic</option>
-            </select>
-          </div>
         </div>
-      </div>
 
-      <div *ngIf="currentCentros?.length > 0; else sinDatos" class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="bg-white rounded-lg shadow overflow-hidden">
           <table class="w-full">
             <thead class="bg-gray-50 border-b">
               <tr>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  Estado
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cuenta
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Descripción
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Centro de Costo
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Presupuesto
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Real
-                </th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Diferencia
-                </th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  % Ejecución
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Responsable
-                </th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cuenta</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Centro Costo</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Presupuesto</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Real</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Diferencia</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Ejecución</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let centro of currentCentros" class="hover:bg-gray-50">
+            <tbody class="divide-y">
+              <tr *ngFor="let detalle of currentDetalles" class="hover:bg-gray-50">
+                <td class="px-4 py-4 text-center">{{ getSemaforoIcon(detalle.semaforo) }}</td>
+                <td class="px-4 py-4 font-medium">{{ detalle.cuenta }}</td>
+                <td class="px-4 py-4">{{ detalle.desc_auxiliar }}</td>
+                <td class="px-4 py-4">{{ detalle.desc_ccosto }}</td>
+                <td class="px-4 py-4 text-right">{{ detalle.presupuesto | number:'1.2-2' }}</td>
+                <td class="px-4 py-4 text-right">{{ detalle.real | number:'1.2-2' }}</td>
+                <td class="px-4 py-4 text-right" 
+                    [class.text-green-600]="detalle.diferencia >= 0"
+                    [class.text-red-600]="detalle.diferencia < 0">
+                  {{ detalle.diferencia | number:'1.2-2' }}
+                </td>
                 <td class="px-4 py-4 text-center">
-                  <span class="text-2xl">{{ getSemaforoIcon(centro.semaforo) }}</span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ centro.cuenta }}</div>
-                </td>
-                <td class="px-4 py-4">
-                  <div class="text-sm text-gray-900">{{ centro.desc_auxiliar }}</div>
-                </td>
-                <td class="px-4 py-4">
-                  <div class="text-sm text-gray-600">{{ centro.desc_ccosto }}</div>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-right">
-                  <span class="text-sm font-medium text-gray-900">{{ centro.presupuesto }}</span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-right">
-                  <span class="text-sm font-medium text-gray-900">{{ centro.real }}</span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-right">
-                  <span class="text-sm" 
-                        [class.text-green-600]="centro.diferencia.includes('-') === false"
-                        [class.text-red-600]="centro.diferencia.includes('-')">
-                    {{ centro.diferencia }}
+                  <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(detalle.semaforo)">
+                    {{ detalle.porcentaje.toFixed(2) }}%
                   </span>
-                </td>
-                <td class="px-4 py-4 whitespace-nowrap text-center">
-                  <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
-                        [ngClass]="getSemaforoClass(centro.semaforo)">
-                    {{ centro.porcentaje.toFixed(2) }}%
-                  </span>
-                </td>
-                <td class="px-4 py-4">
-                  <div class="text-sm text-gray-600">{{ centro.responsable }}</div>
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
 
-        <div class="p-4 border-t">
-          <div class="flex justify-between items-center mb-4">
-            <p class="text-sm text-gray-600">
-              Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalCentros }} registros
-            </p>
+          <div class="p-4 border-t">
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-sm text-gray-600">
+                Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalDetalles }}
+              </p>
+            </div>
+            <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)" 
+                                  [instanceId]="paginatorId" [showPageSizeSelector]="true" 
+                                  [pageSizeOptions]="[25, 50, 100]">
+            </app-shared-paginator>
           </div>
-          
-          <app-shared-paginator 
-            *ngIf="paginationService.getPaginatorState(paginatorId)" 
-            [instanceId]="paginatorId"
-            [showPageSizeSelector]="true" 
-            [pageSizeOptions]="[25, 50, 100]">
-          </app-shared-paginator>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
-      <ng-template #sinDatos>
-        <div class="bg-white rounded-lg shadow p-12 text-center">
-          <i class="bi bi-graph-up text-6xl text-gray-300"></i>
-          <h3 class="mt-4 text-lg font-medium text-gray-900">No hay registros</h3>
-          <p class="mt-2 text-gray-600">
-            <span *ngIf="filters.busqueda || filters.centroCosto || filters.semaforo; else mensajeInicial">
-              No se encontraron registros con los filtros aplicados
-            </span>
-            <ng-template #mensajeInicial>
-              No hay datos disponibles para el período seleccionado
-            </ng-template>
-          </p>
+<!-- Modal Proceso -->
+<div *ngIf="modalProceso.visible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-md">
+    <h3 class="text-lg font-semibold mb-4">{{ modalProceso.isEdit ? 'Editar' : 'Nuevo' }} Proceso</h3>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Nombre</label>
+        <input type="text" [(ngModel)]="modalProceso.data.nombre" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Responsable</label>
+        <input type="text" [(ngModel)]="modalProceso.data.responsable" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Descripción</label>
+        <textarea [(ngModel)]="modalProceso.data.descripcion" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Orden</label>
+        <input type="number" [(ngModel)]="modalProceso.data.orden" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button (click)="cerrarModalProceso()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
+      <button (click)="guardarProceso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Grupo -->
+<div *ngIf="modalGrupo.visible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-md">
+    <h3 class="text-lg font-semibold mb-4">{{ modalGrupo.isEdit ? 'Editar' : 'Nuevo' }} Grupo</h3>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Nombre</label>
+        <input type="text" [(ngModel)]="modalGrupo.data.nombre" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Descripción</label>
+        <textarea [(ngModel)]="modalGrupo.data.descripcion" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Orden</label>
+        <input type="number" [(ngModel)]="modalGrupo.data.orden" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button (click)="cerrarModalGrupo()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
+      <button (click)="guardarGrupo()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Concepto -->
+<div *ngIf="modalConcepto.visible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-semibold mb-4">{{ modalConcepto.isEdit ? 'Editar' : 'Nuevo' }} Concepto</h3>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Nombre</label>
+        <input type="text" [(ngModel)]="modalConcepto.data.nombre" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Descripción</label>
+        <textarea [(ngModel)]="modalConcepto.data.descripcion" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Orden</label>
+        <input type="number" [(ngModel)]="modalConcepto.data.orden" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2">Cuentas ({{ modalConcepto.data.cuentas.length }})</label>
+        <div class="border rounded-lg p-3 max-h-60 overflow-y-auto">
+          <div *ngFor="let cuenta of cuentasDisponibles" class="flex items-center py-1">
+            <input type="checkbox" [checked]="isCuentaSeleccionada(cuenta)" 
+                   (change)="toggleCuenta(cuenta)" class="mr-2">
+            <span class="text-sm">{{ cuenta }}</span>
+          </div>
         </div>
-      </ng-template>
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button (click)="cerrarModalConcepto()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
+      <button (click)="guardarConcepto()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
     </div>
   </div>
 </div>

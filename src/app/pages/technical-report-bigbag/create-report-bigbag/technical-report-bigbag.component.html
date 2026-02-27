@@ -24,7 +24,7 @@
     <div id="separacion"></div>
 
     <div id="cont_input">
-        <form [formGroup]="bigbagForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+        <form [formGroup]="bigbagForm" enctype="multipart/form-data">
 
             <!-- Paso 1: Información Inicial -->
             <div id="step-content-1" class="step-content" [style.display]="currentStep === 1 ? 'block' : 'none'">
@@ -208,8 +208,9 @@
                     Siguiente →
                 </button>
 
-                <button type="submit" class="btn btn-success" *ngIf="currentStep === totalSteps"
-                    [disabled]="isSubmitting">
+                <button type="button" class="btn btn-success" *ngIf="currentStep === totalSteps" 
+                        [disabled]="isSubmitting || !bigbagForm.valid"
+                        (click)="onSubmit()">
                     <span *ngIf="isSubmitting">Enviando...</span>
                     <span *ngIf="!isSubmitting">Enviar Formulario</span>
                 </button>

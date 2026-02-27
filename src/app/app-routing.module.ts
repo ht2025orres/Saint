@@ -44,7 +44,8 @@ import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-com
 import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-items.component';
 import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
 import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
-import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
+import { InventariosComponent } from './pages/inventario/inventarios/inventarios.component';
+import { ProyectosComponent } from './pages/proyectos/proyectos/proyectos.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -88,8 +89,9 @@ const routes: Routes = [
       { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' },
       { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
       { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
-      { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' }
-      { path: 'authorization-manager', component: AuthorizationManagerComponent, title: 'Control de Acceso' },
+      { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' },
+      { path: 'inventarios', component: InventariosComponent, title: 'Inventarios' },
+      { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
     ]
   },
 

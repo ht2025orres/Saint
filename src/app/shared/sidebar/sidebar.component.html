@@ -499,6 +499,11 @@
                     roles: ['Administrador del sistema', 'Admin (inventario)']
                   },
                   { 
+                    label: 'Inventarios', 
+                    link: '/inventarios',
+                    roles: ['Administrador del sistema', 'Admin (inventario)']
+                  },
+                  { 
                     label: 'Generar hoja de conteo', 
                     link: '/generar-hoja-conteo',
                     roles: ['Administrador del sistema', 'Admin (inventario)']
@@ -544,6 +549,12 @@
                 </li>
                 <li
                   *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
+                  <a class="sidebar-sublink" [routerLink]="['/inventarios']" routerLinkActive="active">
+                    Inventarios
+                  </a>
+                </li>
+                <li
+                  *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Admin (inventario)')">
                   <a class="sidebar-sublink" [routerLink]="['/generar-hoja-conteo']" routerLinkActive="active">
                     Generar hoja de conteo
                   </a>
@@ -567,6 +578,7 @@
                 </li>
               </ul>
             </li>
+
             <li *ngIf="authService.hasRole('Administrador del sistema')">
               <a class="sidebar-link waves-effect waves-dark" [routerLink]="['/productos']" routerLinkActive="active">
                 <i class="bi bi-box-seam"></i>
@@ -599,6 +611,13 @@
                 routerLinkActive="active">
                 <i class="bi bi-building"></i>
                 <span class="hide-menu saint-menu-label">Centros de Costos</span>
+              </a>
+            </li>
+
+            <li *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Gestor de Proyectos')">
+              <a class="sidebar-link waves-effect waves-dark" [routerLink]="['/proyectos']" routerLinkActive="active">
+                <i class="bi bi-kanban"></i>
+                <span class="hide-menu saint-menu-label">Proyectos</span>
               </a>
             </li>
           </ul>

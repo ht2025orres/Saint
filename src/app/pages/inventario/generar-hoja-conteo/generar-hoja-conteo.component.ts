@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { InventarioService } from 'src/app/services/inventario.service';
+import { InventarioService, Inventario } from 'src/app/services/inventario.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -9,12 +9,13 @@ import Swal from 'sweetalert2';
   styleUrls: ['./generar-hoja-conteo.component.css']
 })
 export class GenerarHojaConteoComponent implements OnInit {
+  inventariosActivos: any[] = [];
+  inventarioSeleccionado: number | null = null;
   paso = 1;
   bodegas: any[] = [];
   lideres: any[] = [];
   zonas: any[] = [];
   fechaHoy = new Date().toISOString().split('T')[0];
-  fechaSugerida: string | null = null;
 
   configuracion = {
     codigo_bodega: null as string | null,
@@ -53,6 +54,7 @@ export class GenerarHojaConteoComponent implements OnInit {
   }
 
   cargarDatosMaestros(): void {
+    this.cargarInventariosActivos();
     this.inventarioService.obtenerResumenBodegas().subscribe({
       next: (res) => this.bodegas = res['data'] || [],
       error: () => Swal.fire('Error', 'No se cargaron las bodegas', 'error')
@@ -69,32 +71,10 @@ export class GenerarHojaConteoComponent implements OnInit {
     });
   }
 
-  onBodegaChange(): void {
-    if (this.configuracion.codigo_bodega) {
-      this.cargarFechaSugerida();
-    }
-  }
-
-  onTipoChange(): void {
-    this.cargarFechaSugerida();
-  }
-
-  cargarFechaSugerida(): void {
-    if (!this.configuracion.codigo_bodega) return;
-
-    const params = {
-      codigo_bodega: this.configuracion.codigo_bodega,
-      tipo: this.configuracion.tipo
-    };
-
-    this.inventarioService.obtenerFechaSugerida(params).subscribe({
-      next: (res) => {
-        this.fechaSugerida = res['fecha_sugerida'];
-        if (!this.configuracion.fecha_desde && this.fechaSugerida) {
-          this.configuracion.fecha_desde = this.fechaSugerida;
-        }
-      },
-      error: () => this.fechaSugerida = null
+  cargarInventariosActivos(): void {
+    this.inventarioService.getInventarios('activos').subscribe({
+      next: (res) => this.inventariosActivos = res.data.filter((inv: any) => inv.estado === 'activo'),
+      error: () => console.error('Error cargando inventarios activos')
     });
   }
 
@@ -112,10 +92,20 @@ export class GenerarHojaConteoComponent implements OnInit {
     return !!(this.configuracion.codigo_bodega && this.configuracion.id_lider && !this.generandoSugerencia);
   }
 
+  onInventarioChange(): void {
+    // Opcional: reiniciar configuración dependiente del inventario
+    this.configuracion.zonas_ids = [];
+  }
+
   generarSugerencia(): void {
+    if (!this.inventarioSeleccionado) {
+      Swal.fire('Validación', 'Debe seleccionar un inventario', 'warning');
+      return;
+    }
     this.generandoSugerencia = true;
 
     const payload: any = {
+      inventario_id: this.inventarioSeleccionado,
       codigo_bodega: this.configuracion.codigo_bodega,
       tipo: this.configuracion.tipo,
       estrategia: this.configuracion.estrategia,
@@ -267,7 +257,8 @@ export class GenerarHojaConteoComponent implements OnInit {
       id_lider: this.configuracion.id_lider!,
       tipo: this.configuracion.tipo,
       items: this.itemsSeleccionados,
-      observaciones: this.configuracion.observaciones || undefined
+      observaciones: this.configuracion.observaciones || undefined,
+      inventario_id: this.inventarioSeleccionado
     };
 
     this.creandoHoja = true;
@@ -299,11 +290,11 @@ export class GenerarHojaConteoComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/inventario/hojas-conteo']);
+    this.router.navigate(['/inventario/hojas-conteo-list']);
   }
 
   verDetalle(): void {
-    this.router.navigate(['/inventario/hojas-conteo', this.hojaCreada.id]);
+    this.router.navigate(['/inventario/hojas-conteo-detalle', this.hojaCreada.id]);
   }
 
   crearOtra(): void {
@@ -327,7 +318,6 @@ export class GenerarHojaConteoComponent implements OnInit {
     this.hojaCreada = null;
     this.metadatos = null;
     this.estadisticasZona = {};
-    this.cargarFechaSugerida();
   }
 
   // TrackBy functions para optimizar rendering

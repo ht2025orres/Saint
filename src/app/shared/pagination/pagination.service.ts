@@ -70,7 +70,8 @@ export class PaginationService {
     data: any[], 
     pageSize?: number,
     filters?: any,
-    filterFunction?: FilterFunction
+    filterFunction?: FilterFunction,
+    preservePage: boolean = false
   ): void {
     const subject = this.paginationStates.get(instanceId);
     if (!subject) return;
@@ -85,11 +86,15 @@ export class PaginationService {
     }
 
     // Configurar paginador
+    const totalPages = Math.ceil(filteredData.length / actualPageSize);
+    const currentPage = preservePage ? currentState.paginator.number : 0;
+    const safePage = Math.min(Math.max(currentPage, 0), Math.max(totalPages - 1, 0));
+
     const paginator: PaginatorConfig = {
       content: filteredData,
       totalElements: filteredData.length,
-      totalPages: Math.ceil(filteredData.length / actualPageSize),
-      number: 0, // Reset a primera página cuando cambian filtros
+      totalPages,
+      number: safePage,
       numberOfElements: Math.min(actualPageSize, filteredData.length),
       size: actualPageSize
     };

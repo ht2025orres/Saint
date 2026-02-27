@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { NgForm } from '@angular/forms'; // Importa NgForm
 import { ReportService } from '../../../services/report.service';
 import { Report } from './../../../models/report';
 import { AuthService } from '../../../services/auth.service';
@@ -12,7 +13,9 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
   styleUrls: ['./report-create.component.css']
 })
 export class ReportCreateComponent {
-
+  
+  @ViewChild('reportForm') reportForm: NgForm; // Referencia al formulario
+  
   report: Report = {
     id: 0,
     origen: 'calidad',
@@ -34,8 +37,6 @@ export class ReportCreateComponent {
   customers: Customer[] = [];
   itemsOP: any[] = [];
   selectedFile: File | null = null;
-  // loadingOP = false;
-  // loadingOP = false;
 
   constructor(
     private reportService: ReportService,
@@ -81,23 +82,23 @@ export class ReportCreateComponent {
     Swal.fire({
       title: "Consultando información...",
       html: `
-      <div class="spinner" style="
-        border: 5px solid #eee;
-        border-top: 5px solid #3b82f6;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        margin: 20px auto;
-        animation: spin 1s linear infinite;
-      "></div>
+        <div class="spinner" style="
+          border: 5px solid #eee;
+          border-top: 5px solid #3b82f6;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          margin: 20px auto;
+          animation: spin 1s linear infinite;
+        "></div>
 
-      <style>
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
-    `,
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `,
       allowOutsideClick: false,
       allowEscapeKey: false,
       showConfirmButton: false,
@@ -105,12 +106,9 @@ export class ReportCreateComponent {
     });
   }
 
-
   ocultarLoader() {
     Swal.close();
   }
-
-
 
   // ==========================
   // ASIGNAR ÍTEM
@@ -133,20 +131,19 @@ export class ReportCreateComponent {
   }
 
   seleccionarItem(items: any[]) {
-
     let html = `
-    <input type="text" id="filtroItems" class="swal2-input" placeholder="Filtrar...">
+      <input type="text" id="filtroItems" class="swal2-input" placeholder="Filtrar...">
 
-    <div id="listaItems" style="max-height:300px; overflow-y:auto; text-align:left;">
-      ${items.map((i, idx) => `
-        <div class="item-opcion" data-index="${idx}" 
-             style="padding:8px; cursor:pointer; border-bottom:1px solid #ddd;">
-          <strong>${i.codigo_item}</strong><br>
-          <small>${i.descripcion}</small>
-        </div>
-      `).join('')}
-    </div>
-  `;
+      <div id="listaItems" style="max-height:300px; overflow-y:auto; text-align:left;">
+        ${items.map((i, idx) => `
+          <div class="item-opcion" data-index="${idx}" 
+               style="padding:8px; cursor:pointer; border-bottom:1px solid #ddd;">
+            <strong>${i.codigo_item}</strong><br>
+            <small>${i.descripcion}</small>
+          </div>
+        `).join('')}
+      </div>
+    `;
 
     Swal.fire({
       title: "Selecciona un ítem",
@@ -178,7 +175,6 @@ export class ReportCreateComponent {
     });
   }
 
-
   // ==========================
   // ARCHIVO
   // ==========================
@@ -190,36 +186,36 @@ export class ReportCreateComponent {
   // ==========================
   // CREAR REPORTE
   // ==========================
-
-  // Primero validamos que todos los campos esten diligenciados, solo la Evidencia puede estar vacia.
-  camposCompletos(): { ok: boolean, faltantes: string[] } {
-    const faltantes: string[] = [];
-
-    if (!this.report.origen) faltantes.push("Origen");
-    if (!this.report.tipo_reporte) faltantes.push("Tipo de reporte");
-    if (!this.report.op_reporte) faltantes.push("OP");
-    if (!this.report.cliente) faltantes.push("Cliente");
-    if (!this.report.item) faltantes.push("Item");
-    if (!this.report.prenda) faltantes.push("Prenda");
-    if (!this.report.observacion) faltantes.push("Observación");
-    // evidencia NO es obligatoria
-
-    return { ok: faltantes.length === 0, faltantes };
-  }
-
   crearReporte(): void {
-    const val = this.camposCompletos();
+    // Verificar si el formulario es válido
+    if (this.reportForm && !this.reportForm.valid) {
+      // Marcar todos los campos como touched para mostrar errores
+      Object.keys(this.reportForm.controls).forEach(key => {
+        const control = this.reportForm.controls[key];
+        control.markAsTouched();
+      });
+      
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formulario incompleto',
+        text: 'Por favor, completa todos los campos requeridos correctamente.',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
 
+    // Validación manual adicional por si acaso
+    const val = this.camposCompletos();
     if (!val.ok) {
       Swal.fire({
         icon: 'warning',
         title: 'Campos incompletos',
         html: `
-        <p>Debes completar todos los campos obligatorios:</p>
-        <ul style="text-align:left;">
-          ${val.faltantes.map(f => `<li><strong>${f}</strong></li>`).join('')}
-        </ul>
-      `
+          <p>Debes completar todos los campos obligatorios:</p>
+          <ul style="text-align:left;">
+            ${val.faltantes.map(f => `<li><strong>${f}</strong></li>`).join('')}
+          </ul>
+        `
       });
       return;
     }
@@ -242,6 +238,21 @@ export class ReportCreateComponent {
     }
   }
 
+  camposCompletos(): { ok: boolean, faltantes: string[] } {
+    const faltantes: string[] = [];
+
+    if (!this.report.origen) faltantes.push("Origen");
+    if (!this.report.tipo_reporte) faltantes.push("Tipo de reporte");
+    if (!this.report.op_reporte) faltantes.push("OP");
+    if (!this.report.cliente) faltantes.push("Cliente");
+    if (!this.report.item) faltantes.push("Item");
+    if (!this.report.prenda) faltantes.push("Prenda");
+    if (!this.report.observacion) faltantes.push("Observación");
+    // evidencia NO es obligatoria
+
+    return { ok: faltantes.length === 0, faltantes };
+  }
+
   private guardarReporte(): void {
     this.reportService.createReport(this.report).subscribe({
       next: () => {
@@ -256,6 +267,12 @@ export class ReportCreateComponent {
   }
 
   private resetForm(): void {
+    // Resetear el formulario
+    if (this.reportForm) {
+      this.reportForm.resetForm();
+    }
+    
+    // Resetear el modelo
     this.report = {
       id: 0,
       origen: 'calidad',
@@ -305,15 +322,9 @@ export class ReportCreateComponent {
 }
   }
 
-assingCustomerValues(event: Event): void {
-  const name = (event.target as HTMLInputElement).value.trim();
-  const cliente = this.customers.find(c => c.customerName === name);
-  if(cliente) this.report.cliente = cliente.customerName;
-}
-assingCustomerValues(event: Event): void {
-  const name = (event.target as HTMLInputElement).value.trim();
-  const cliente = this.customers.find(c => c.customerName === name);
-  if(cliente) this.report.cliente = cliente.customerName;
-}
-
+  assingCustomerValues(event: Event): void {
+    const name = (event.target as HTMLInputElement).value.trim();
+    const cliente = this.customers.find(c => c.customerName === name);
+    if (cliente) this.report.cliente = cliente.customerName;
+  }
 }

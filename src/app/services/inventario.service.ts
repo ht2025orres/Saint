@@ -45,6 +45,29 @@ export interface ItemBodega {
   }>;
 }
 
+export interface Inventario {
+  id: number;
+  codigo: string;
+  tipo: 'general' | 'ciclico';
+  fecha_inicio: string;
+  fecha_fin: string | null;
+  estado: 'activo' | 'cerrado';
+  descripcion?: string;
+  total_hojas?: number;
+  existencias_contadas?: number;
+  valor_total?: number;
+}
+
+export interface InventarioDetalle extends Inventario {
+  hojas_conteo: any[]; // o HojaConteo[]
+  stats?: {
+    total_hojas: number;
+    items_contados: number;
+    existencias_contadas: number;
+    valor_total: number;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -275,10 +298,6 @@ export class InventarioService {
    * ================================
    */
 
-  obtenerFechaSugerida(params: any): Observable<any> {
-    return this.http.get(`${this.apiLaravelUrl}/conteo/fecha-sugerida`, { params });
-  }
-
   /**
    * Genera una sugerencia de hoja de conteo basada en parámetros
    */
@@ -461,5 +480,41 @@ eliminarHojaConteo(id: number, payload: any): Observable<any> {
     );
   }
 
-  
+  getInventarios(tipo?: 'general' | 'ciclico' | 'activos'): Observable<{ success: boolean; data: Inventario[] }> {
+    let params = new HttpParams();
+    if (tipo === 'activos') {
+      // Podrías tener un endpoint específico o filtrar después
+      return this.http.get<{ success: boolean; data: Inventario[] }>(`${this.apiLaravelUrl}/inventarios`)
+        .pipe(map(res => ({
+          ...res,
+          data: res.data.filter(inv => inv.estado === 'activo')
+        })));
+    }
+    if (tipo && tipo !== undefined) params = params.set('tipo', tipo);
+    return this.http.get<{ success: boolean; data: Inventario[] }>(`${this.apiLaravelUrl}/inventarios`, { params });
+  }
+
+  getInventario(id: number): Observable<{ success: boolean; data: InventarioDetalle; stats: any }> {
+    return this.http.get<{ success: boolean; data: InventarioDetalle; stats: any }>(`${this.apiLaravelUrl}/inventarios/${id}`);
+  }
+
+  crearInventario(data: Partial<Inventario>): Observable<{ success: boolean; data: Inventario }> {
+    return this.http.post<{ success: boolean; data: Inventario }>(`${this.apiLaravelUrl}/inventarios`, data);
+  }
+
+  cerrarInventario(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.apiLaravelUrl}/inventarios/${id}/cerrar`, {});
+  }
+
+  getHojasPorInventario(inventarioId: number): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/inventarios/${inventarioId}/hojas`);
+  }
+
+  actualizarInventario(id: number, data: Partial<Inventario>): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.apiLaravelUrl}/inventarios/${id}`, data);
+  }
+
+  getInventarioDetalle(inventarioId: number): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/inventarios/${inventarioId}/detalle`);
+  }
 }
