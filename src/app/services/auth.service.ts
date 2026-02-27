@@ -10,7 +10,7 @@ import { InconsistenciaService } from './inconsistencia.service';
   providedIn: 'root'
 })
 export class AuthService {
-  private urlEndPoint = `${environment.URL_API_LARAVEL_LOCAL}/login`;
+  private urlEndPoint = `${environment.URL_API_LARAVEL}/login`;
   private _user: User | null = null;
   private _token: string | null = null;
   private _refreshToken: string | null = null;

@@ -13,14 +13,13 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
   styleUrls: ['./report-create.component.css']
 })
 export class ReportCreateComponent {
-  
+
   @ViewChild('reportForm') reportForm: NgForm; // Referencia al formulario
-  
+
   report: Report = {
     id: 0,
     origen: 'calidad',
     tipo_reporte: 'ficha tecnica',
-    op_reporte: '',
     op_reporte: '',
     item: '',
     prenda: '',
@@ -30,9 +29,6 @@ export class ReportCreateComponent {
     estado: '',
     cliente: ''
   };
-
-  customers: Customer[] = [];
-  itemsOP: any[] = [];
 
   customers: Customer[] = [];
   itemsOP: any[] = [];
@@ -194,7 +190,7 @@ export class ReportCreateComponent {
         const control = this.reportForm.controls[key];
         control.markAsTouched();
       });
-      
+
       Swal.fire({
         icon: 'warning',
         title: 'Formulario incompleto',
@@ -227,10 +223,7 @@ export class ReportCreateComponent {
         next: (res) => {
           this.report.evidencia = res.url;
           this.guardarReporte();
-          this.report.evidencia = res.url;
-          this.guardarReporte();
         },
-        error: () => Swal.fire('Error', 'No se pudo subir la evidencia', 'error')
         error: () => Swal.fire('Error', 'No se pudo subir la evidencia', 'error')
       });
     } else {
@@ -256,14 +249,13 @@ export class ReportCreateComponent {
   private guardarReporte(): void {
     this.reportService.createReport(this.report).subscribe({
       next: () => {
-        next: () => {
-          Swal.fire('Éxito', 'Reporte creado correctamente', 'success');
-          this.resetForm();
-        },
-          error: (err) => {
-            Swal.fire('Error', err.error.message || 'No se pudo crear el reporte', 'error');
-          }
-      });
+        Swal.fire('Éxito', 'Reporte creado correctamente', 'success');
+        this.resetForm();
+      },
+      error: (err) => {
+        Swal.fire('Error', err.error.message || 'No se pudo crear el reporte', 'error');
+      }
+    });
   }
 
   private resetForm(): void {
@@ -271,13 +263,12 @@ export class ReportCreateComponent {
     if (this.reportForm) {
       this.reportForm.resetForm();
     }
-    
+
     // Resetear el modelo
     this.report = {
       id: 0,
       origen: 'calidad',
       tipo_reporte: 'ficha tecnica',
-      op_reporte: '',
       op_reporte: '',
       cliente: '',
       item: '',
@@ -300,26 +291,12 @@ export class ReportCreateComponent {
   searchCustomer(event: Event): void {
     const input = event.target as HTMLInputElement;
     const term = input.value.trim();
-    // ==========================
-    // BUSCAR CLIENTE MANUAL
-    // ==========================
-    searchCustomer(event: Event): void {
-      const input = event.target as HTMLInputElement;
-      const term = input.value.trim();
-
-      if(term.length > 2) {
+    if (term.length > 2) {
       this.erpIntegrationService.searchCustomer(term).subscribe({
         next: (resp) => this.customers = resp,
         error: () => (this.customers = [])
       });
     }
-  }
-  if(term.length > 2) {
-  this.erpIntegrationService.searchCustomer(term).subscribe({
-    next: (resp) => this.customers = resp,
-    error: () => (this.customers = [])
-  });
-}
   }
 
   assingCustomerValues(event: Event): void {

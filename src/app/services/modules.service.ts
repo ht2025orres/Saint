@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class ModulesService {
-  private base = `${environment.URL_API_LARAVEL_LOCAL}/modulos`;
+  private base = `${environment.URL_API_LARAVEL}/modulos`;
 
   constructor(private http: HttpClient) { }
 

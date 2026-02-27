@@ -57,7 +57,7 @@ export class AuthorizationManagerComponent implements OnInit {
     private moduleService: ModulesService,
     private profileService: ProfilesService,
     private permissionService: PermissionsService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadAll();
@@ -179,14 +179,14 @@ export class AuthorizationManagerComponent implements OnInit {
   // }
 
   assignPermission(permissionId: number, allow: 'ALLOW' | 'DENY') {
-  if (!this.selectedUser) return;
+    if (!this.selectedUser) return;
 
-  this.permissionService
-    .assignToUser(this.selectedUser.id, permissionId, allow)
-    .subscribe(() => {
-      this.loadUserEffectivePermissions(this.selectedUser.id);
-    });
-}
+    this.permissionService
+      .assignToUser(this.selectedUser.id, permissionId, allow)
+      .subscribe(() => {
+        this.loadUserEffectivePermissions(this.selectedUser.id);
+      });
+  }
 
 
   // removePermissionFromUser(permission: any) {
@@ -209,24 +209,24 @@ export class AuthorizationManagerComponent implements OnInit {
   }
 
   askDuplicateTarget(sourceUserId: number) {
-  const target = window.prompt('Ingrese ID destino:');
+    const target = window.prompt('Ingrese ID destino:');
 
-  if (!target) return;
+    if (!target) return;
 
-  const targetId = Number(target);
+    const targetId = Number(target);
 
-  if (isNaN(targetId)) {
-    alert('ID inválido');
-    return;
+    if (isNaN(targetId)) {
+      alert('ID inválido');
+      return;
+    }
+
+    this.duplicateAccess(sourceUserId, targetId);
   }
 
-  this.duplicateAccess(sourceUserId, targetId);
-}
-
-// En tu AuthorizationManagerComponent
-// getPermissionsByModule(moduleId: number): any[] {
-//   return this.permissions.filter(perm => perm.module_id === moduleId);
-// }
+  // En tu AuthorizationManagerComponent
+  // getPermissionsByModule(moduleId: number): any[] {
+  //   return this.permissions.filter(perm => perm.module_id === moduleId);
+  // }
   // -----------------------
   // CRUD: MODULES / PERFILES / PERMISSIONS
   // -----------------------
@@ -307,7 +307,7 @@ export class AuthorizationManagerComponent implements OnInit {
   // -----------------------
   loadUserEffectivePermissions(userId: number) {
     if (!userId) return;
-    this.userService.getEffectivePermissions(userId).subscribe({
+    this.permissionService.getEffectivePermissions(userId).subscribe({
       next: (data: any) => {
         // data => { direct: [{name, allow}], inherited: [{name, allow}] }
         this.effectivePermissions = { direct: data.direct ?? [], inherited: data.inherited ?? [] };
@@ -320,128 +320,128 @@ export class AuthorizationManagerComponent implements OnInit {
   }
 
   // Método para obtener permisos por módulo (ya lo tienes, pero aquí está mejorado)
-// getPermissionsByModule(moduleId: number): any[] {
-//   if (!this.permissions || !moduleId) return [];
-//   return this.permissions.filter(perm => perm.module_id === moduleId);
-// }
+  // getPermissionsByModule(moduleId: number): any[] {
+  //   if (!this.permissions || !moduleId) return [];
+  //   return this.permissions.filter(perm => perm.module_id === moduleId);
+  // }
 
-// Método mejorado para eliminar permisos
-removePermissionFromUser(permission: any) {
-  if (!this.selectedUser || !permission) return;
-  
-  // Usar SweetAlert2 para confirmar
-  if (confirm(`¿Está seguro de eliminar el permiso "${permission.name}" del usuario ${this.selectedUser.name}?`)) {
+  // Método mejorado para eliminar permisos
+  removePermissionFromUser(permission: any) {
+    if (!this.selectedUser || !permission) return;
+
+    // Usar SweetAlert2 para confirmar
+    if (confirm(`¿Está seguro de eliminar el permiso "${permission.name}" del usuario ${this.selectedUser.name}?`)) {
+      this.loading = true;
+      this.permissionService.removeFromUser(this.selectedUser.id, permission.id)
+        .pipe(finalize(() => this.loading = false))
+        .subscribe({
+          next: () => {
+            // Notificación de éxito
+            alert('Permiso eliminado correctamente');
+            this.loadUserEffectivePermissions(this.selectedUser.id);
+          },
+          error: (err) => {
+            console.error('Error al eliminar permiso:', err);
+            alert('Error al eliminar el permiso. Por favor intente nuevamente.');
+          }
+        });
+    }
+  }
+
+  // Método mejorado para asignar permisos con feedback visual
+  assignPermissionToUser(permission: any, allow: 'ALLOW' | 'DENY' = 'ALLOW') {
+    if (!this.selectedUser || !permission) return;
+
     this.loading = true;
-    this.permissionService.removeFromUser(this.selectedUser.id, permission.id)
+    this.permissionService.assignToUser(this.selectedUser.id, permission.id, allow)
       .pipe(finalize(() => this.loading = false))
       .subscribe({
         next: () => {
-          // Notificación de éxito
-          alert('Permiso eliminado correctamente');
+          const action = allow === 'ALLOW' ? 'permitido' : 'denegado';
+          alert(`Permiso ${action} correctamente`);
           this.loadUserEffectivePermissions(this.selectedUser.id);
         },
         error: (err) => {
-          console.error('Error al eliminar permiso:', err);
-          alert('Error al eliminar el permiso. Por favor intente nuevamente.');
+          console.error('Error al asignar permiso:', err);
+          alert('Error al asignar el permiso. Por favor intente nuevamente.');
         }
       });
   }
-}
+  // En tu AuthorizationManagerComponent
 
-// Método mejorado para asignar permisos con feedback visual
-assignPermissionToUser(permission: any, allow: 'ALLOW' | 'DENY' = 'ALLOW') {
-  if (!this.selectedUser || !permission) return;
-  
-  this.loading = true;
-  this.permissionService.assignToUser(this.selectedUser.id, permission.id, allow)
-    .pipe(finalize(() => this.loading = false))
-    .subscribe({
-      next: () => {
-        const action = allow === 'ALLOW' ? 'permitido' : 'denegado';
-        alert(`Permiso ${action} correctamente`);
-        this.loadUserEffectivePermissions(this.selectedUser.id);
-      },
-      error: (err) => {
-        console.error('Error al asignar permiso:', err);
-        alert('Error al asignar el permiso. Por favor intente nuevamente.');
-      }
+  // Filtros
+  selectedModuleFilter: string | number = 'all';
+
+  onModuleFilterChange(moduleId: string | number) {
+    this.selectedModuleFilter = moduleId;
+  }
+
+  getFilteredModules(): any[] {
+    if (this.selectedModuleFilter === 'all') {
+      return this.modules;
+    }
+    return this.modules.filter(module => module.id === this.selectedModuleFilter);
+  }
+
+  getFilteredPermissions(): any[] {
+    if (this.selectedModuleFilter === 'all') {
+      return this.permissions;
+    }
+    return this.permissions.filter(perm => perm.module_id === this.selectedModuleFilter);
+  }
+
+  // Métodos de ayuda para permisos
+  getPermissionsByModule(moduleId: number): any[] {
+    return this.permissions.filter(perm => perm.module_id === moduleId);
+  }
+
+  getDirectPermissionsByModule(moduleId: number): any[] {
+    if (!this.effectivePermissions?.direct) return [];
+    return this.effectivePermissions.direct.filter(perm => {
+      const permission = this.permissions.find(p => p.id === perm.id);
+      return permission && permission.module_id === moduleId;
     });
-}
-// En tu AuthorizationManagerComponent
-
-// Filtros
-selectedModuleFilter: string | number = 'all';
-
-onModuleFilterChange(moduleId: string | number) {
-  this.selectedModuleFilter = moduleId;
-}
-
-getFilteredModules(): any[] {
-  if (this.selectedModuleFilter === 'all') {
-    return this.modules;
   }
-  return this.modules.filter(module => module.id === this.selectedModuleFilter);
-}
 
-getFilteredPermissions(): any[] {
-  if (this.selectedModuleFilter === 'all') {
-    return this.permissions;
+  getInheritedPermissionsByModule(moduleId: number): any[] {
+    if (!this.effectivePermissions?.inherited) return [];
+    return this.effectivePermissions.inherited.filter(perm => {
+      const permission = this.permissions.find(p => p.id === perm.id);
+      return permission && permission.module_id === moduleId;
+    });
   }
-  return this.permissions.filter(perm => perm.module_id === this.selectedModuleFilter);
-}
 
-// Métodos de ayuda para permisos
-getPermissionsByModule(moduleId: number): any[] {
-  return this.permissions.filter(perm => perm.module_id === moduleId);
-}
+  isPermissionAssigned(permissionId: number, allow: string): boolean {
+    const direct = this.effectivePermissions?.direct || [];
+    return direct.some(perm => perm.id === permissionId && perm.allow === allow);
+  }
 
-getDirectPermissionsByModule(moduleId: number): any[] {
-  if (!this.effectivePermissions?.direct) return [];
-  return this.effectivePermissions.direct.filter(perm => {
-    const permission = this.permissions.find(p => p.id === perm.id);
-    return permission && permission.module_id === moduleId;
-  });
-}
+  getPermissionStatus(permissionId: number): string | null {
+    const direct = this.effectivePermissions?.direct || [];
+    const permission = direct.find(perm => perm.id === permissionId);
+    return permission ? permission.allow : null;
+  }
 
-getInheritedPermissionsByModule(moduleId: number): any[] {
-  if (!this.effectivePermissions?.inherited) return [];
-  return this.effectivePermissions.inherited.filter(perm => {
-    const permission = this.permissions.find(p => p.id === perm.id);
-    return permission && permission.module_id === moduleId;
-  });
-}
+  // Métodos de resumen
+  getTotalAllowedPermissions(): number {
+    const direct = this.effectivePermissions?.direct || [];
+    return direct.filter(perm => perm.allow === 'ALLOW').length;
+  }
 
-isPermissionAssigned(permissionId: number, allow: string): boolean {
-  const direct = this.effectivePermissions?.direct || [];
-  return direct.some(perm => perm.id === permissionId && perm.allow === allow);
-}
+  getTotalDeniedPermissions(): number {
+    const direct = this.effectivePermissions?.direct || [];
+    return direct.filter(perm => perm.allow === 'DENY').length;
+  }
 
-getPermissionStatus(permissionId: number): string | null {
-  const direct = this.effectivePermissions?.direct || [];
-  const permission = direct.find(perm => perm.id === permissionId);
-  return permission ? permission.allow : null;
-}
+  getTotalPermissions(): number {
+    const direct = this.effectivePermissions?.direct || [];
+    const inherited = this.effectivePermissions?.inherited || [];
+    return direct.length + inherited.length;
+  }
 
-// Métodos de resumen
-getTotalAllowedPermissions(): number {
-  const direct = this.effectivePermissions?.direct || [];
-  return direct.filter(perm => perm.allow === 'ALLOW').length;
-}
-
-getTotalDeniedPermissions(): number {
-  const direct = this.effectivePermissions?.direct || [];
-  return direct.filter(perm => perm.allow === 'DENY').length;
-}
-
-getTotalPermissions(): number {
-  const direct = this.effectivePermissions?.direct || [];
-  const inherited = this.effectivePermissions?.inherited || [];
-  return direct.length + inherited.length;
-}
-
-// Método para guardar cambios
-savePermissionChanges() {
-  // Aquí puedes implementar la lógica para guardar todos los cambios
-  this.closeModals();
-}
+  // Método para guardar cambios
+  savePermissionChanges() {
+    // Aquí puedes implementar la lógica para guardar todos los cambios
+    this.closeModals();
+  }
 }

@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class PermissionsService {
-  private base = `${environment.URL_API_LARAVEL_LOCAL}/permisos`;
+  private base = `${environment.URL_API_LARAVEL}/permisos`;
 
   constructor(private http: HttpClient) { }
 

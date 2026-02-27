@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class ProfilesService {
-  private base = `${environment.URL_API_LARAVEL_LOCAL}/perfiles`;
+  private base = `${environment.URL_API_LARAVEL}/perfiles`;
 
   constructor(private http: HttpClient) { }
 
