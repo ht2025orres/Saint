@@ -111,6 +111,7 @@ export class ProyectosComponent implements OnInit {
   // ── FILTROS SEGUIMIENTO ───────────────────────────────────────────────────
   filtroSemanasSelec:  number[] = [];
   filtroUsuariosSelec: number[] = [];
+  filtroTextoUsuario = '';
   vistaCalendario = false;
   calendarioDias: CalendarioDia[][] = [];
 
@@ -602,6 +603,7 @@ export class ProyectosComponent implements OnInit {
     this.showDetalleSeguimiento = true;
     this.filtroSemanasSelec     = [];
     this.filtroUsuariosSelec    = [];
+    this.filtroTextoUsuario     = '';
     this.vistaCalendario        = false;
     this.proyectoService.getDetalleSeguimiento(seguimiento.id, this.usuarioId).subscribe({
       next:  (res) => { this.detalleSeguimiento = res.data; this.loadingDetalleSeg = false; this._construirCalendario(); },
@@ -640,7 +642,52 @@ export class ProyectosComponent implements OnInit {
   }
 
   usuarioVisible(uid: number): boolean {
-    return this.filtroUsuariosSelec.length === 0 || this.filtroUsuariosSelec.includes(uid);
+    const visiblePorSeleccion = this.filtroUsuariosSelec.length === 0 || this.filtroUsuariosSelec.includes(uid);
+    if (!visiblePorSeleccion) return false;
+
+    const q = this.filtroTextoUsuario.toLowerCase().trim();
+    if (!q) return true;
+
+    return this.nombreUsuario(uid).toLowerCase().includes(q);
+  }
+
+  private puedeVerTareaSeguimiento(tarea: SeguimientoTarea): boolean {
+    const esGestorDetalle = this.detalleSeguimiento?.es_gestor === true || this.puedeGestionarModulo;
+    if (!esGestorDetalle && tarea.usuario_id !== this.usuarioId) return false;
+    return this.usuarioVisible(tarea.usuario_id);
+  }
+
+  puedeEditarSegTarea(tarea: SeguimientoTarea): boolean {
+    if (!this.detalleSeguimiento || this.detalleSeguimiento.estado !== 'activo') return false;
+    const esGestorDetalle = this.detalleSeguimiento.es_gestor === true || this.puedeGestionarModulo;
+    return esGestorDetalle || tarea.usuario_id === this.usuarioId;
+  }
+
+  puedeEliminarSegTarea(tarea: SeguimientoTarea): boolean {
+    const esGestorDetalle = this.detalleSeguimiento?.es_gestor === true || this.puedeGestionarModulo;
+    return esGestorDetalle || tarea.usuario_id === this.usuarioId;
+  }
+
+  puedeCompletarSegTarea(tarea: SeguimientoTarea): boolean {
+    const esGestorDetalle = this.detalleSeguimiento?.es_gestor === true || this.puedeGestionarModulo;
+    return tarea.estado !== 'completado' && (esGestorDetalle || tarea.usuario_id === this.usuarioId);
+  }
+
+  participantesFiltrados(): { id: number; nombre: string }[] {
+    const q = this.filtroTextoUsuario.toLowerCase().trim();
+    if (!q) return this.participantesDelSeguimiento;
+    return this.participantesDelSeguimiento.filter(p => p.nombre.toLowerCase().includes(q));
+  }
+
+  obtenerTareasSemanaVisibles(semana: SeguimientoSemana): SeguimientoTarea[] {
+    if (this.esTareasAgrupadas(semana.tareas)) {
+      const listas = Object.values(semana.tareas ?? {}) as SeguimientoTarea[][];
+      const tareas = listas.reduce((acc, lista) => acc.concat(lista), [] as SeguimientoTarea[]);
+      return tareas.filter(t => this.puedeVerTareaSeguimiento(t));
+    }
+
+    return ((semana.tareas ?? []) as SeguimientoTarea[])
+      .filter(t => this.puedeVerTareaSeguimiento(t));
   }
 
   get semanasParaMostrar(): any[] {
@@ -672,7 +719,7 @@ export class ProyectosComponent implements OnInit {
       if (!this.semanaVisible(semana.id)) return;
 
       const agregar = (t: SeguimientoTarea) => {
-        if (!this.usuarioVisible(t.usuario_id) || !t.fecha_limite_entrega) return;
+        if (!this.puedeVerTareaSeguimiento(t) || !t.fecha_limite_entrega) return;
         const key = new Date(t.fecha_limite_entrega).toDateString();
         if (!mapa.has(key)) mapa.set(key, []);
         mapa.get(key)!.push({ tarea: t, nombreUsuario: this.nombreUsuario(t.usuario_id) });

@@ -848,7 +848,12 @@
           <!-- Filtro participantes (solo gestor) -->
           <div *ngIf="detalleSeguimiento.es_gestor && participantesDelSeguimiento.length" class="flex items-center gap-2 flex-wrap">
             <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Personas:</span>
-            <button *ngFor="let p of participantesDelSeguimiento"
+            <input type="text"
+                   [(ngModel)]="filtroTextoUsuario"
+                   (input)="_construirCalendario()"
+                   class="px-2 py-1 text-xs border border-gray-300 rounded-lg"
+                   placeholder="Filtrar nombre...">
+            <button *ngFor="let p of participantesFiltrados()"
                     (click)="toggleUsuarioFiltro(p.id)"
                     class="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition"
                     [ngClass]="usuarioVisible(p.id)
@@ -920,9 +925,9 @@
                           </div>
                         </div>
                         <div class="flex gap-0.5 ml-2 flex-shrink-0">
-                          <button *ngIf="tarea.estado !== 'completado'" (click)="completarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"><i class="bi bi-check-circle text-sm"></i></button>
-                          <button *ngIf="detalleSeguimiento.estado === 'activo'" (click)="abrirModalSegTarea(semana, tarea)" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"><i class="bi bi-pencil text-sm"></i></button>
-                          <button (click)="eliminarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><i class="bi bi-trash text-sm"></i></button>
+                          <button *ngIf="puedeCompletarSegTarea(tarea)" (click)="completarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"><i class="bi bi-check-circle text-sm"></i></button>
+                          <button *ngIf="puedeEditarSegTarea(tarea)" (click)="abrirModalSegTarea(semana, tarea)" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"><i class="bi bi-pencil text-sm"></i></button>
+                          <button *ngIf="puedeEliminarSegTarea(tarea)" (click)="eliminarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><i class="bi bi-trash text-sm"></i></button>
                         </div>
                       </div>
                     </div>
@@ -936,9 +941,9 @@
 
             <!-- Vista participante -->
             <ng-container *ngIf="!detalleSeguimiento.es_gestor">
-              <ng-container *ngIf="$any(semana.tareas)?.length; else sinTareasParticipante">
+              <ng-container *ngIf="obtenerTareasSemanaVisibles(semana).length; else sinTareasParticipante">
                 <div class="space-y-1.5">
-                  <div *ngFor="let tarea of $any(semana.tareas)"
+                  <div *ngFor="let tarea of obtenerTareasSemanaVisibles(semana)"
                        class="bg-white border border-gray-200 rounded-lg px-3 py-2.5 flex items-start justify-between hover:border-gray-300 transition">
                     <div class="flex items-start gap-2 min-w-0 flex-1">
                       <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" [ngClass]="getSemaforoClass(tarea.semaforo)"></span>
@@ -952,9 +957,9 @@
                       </div>
                     </div>
                     <div class="flex gap-0.5 ml-2 flex-shrink-0">
-                      <button *ngIf="tarea.estado !== 'completado'" (click)="completarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"><i class="bi bi-check-circle text-sm"></i></button>
-                      <button *ngIf="detalleSeguimiento.estado === 'activo'" (click)="abrirModalSegTarea(semana, tarea)" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"><i class="bi bi-pencil text-sm"></i></button>
-                      <button (click)="eliminarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><i class="bi bi-trash text-sm"></i></button>
+                      <button *ngIf="puedeCompletarSegTarea(tarea)" (click)="completarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"><i class="bi bi-check-circle text-sm"></i></button>
+                      <button *ngIf="puedeEditarSegTarea(tarea)" (click)="abrirModalSegTarea(semana, tarea)" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"><i class="bi bi-pencil text-sm"></i></button>
+                      <button *ngIf="puedeEliminarSegTarea(tarea)" (click)="eliminarSegTarea(tarea)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><i class="bi bi-trash text-sm"></i></button>
                     </div>
                   </div>
                 </div>
