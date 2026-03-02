@@ -68,6 +68,8 @@ export class DistribucionPvComponent implements OnInit {
   guardandoVerificacion = false;
   cargandoInicial = false;
   estadoCarga = "";
+  colaCargaOPs: number[] = [];
+  procesandoCola = false;
 
   constructor(
     private terminacionEmpaqueService: TerminacionEmpaqueService,
@@ -495,7 +497,12 @@ export class DistribucionPvComponent implements OnInit {
   // ===== MÉTODOS EXISTENTES =====
 
 async cargarPVsParaOPs(ops: any[]): Promise<void> {
-  this.opsConPvs = (ops || []).map(op => ({
+  const opsOrdenadas = [...(ops || [])]
+    .map(op => Number(op))
+    .filter(op => !Number.isNaN(op))
+    .sort((a, b) => a - b);
+
+  this.opsConPvs = opsOrdenadas.map(op => ({
     codigo: op,
     pvs: [],
     pvsOriginal: [],
@@ -503,109 +510,157 @@ async cargarPVsParaOPs(ops: any[]): Promise<void> {
     clientes: [],
     expandir: false,
     cargando: false,
-    cargandoDetalle: true,
+    cargandoDetalle: false,
+    detalleCargado: false,
     estadoCarga: 'Pendiente de carga...'
   }));
 
   this.inicializarPaginacion();
+  this.colaCargaOPs = [...opsOrdenadas];
+  this.procesarColaOPs();
+}
 
-  for (const opCodigo of ops || []) {
+private async procesarColaOPs(): Promise<void> {
+  if (this.procesandoCola) return;
+
+  this.procesandoCola = true;
+  this.cargandoInicial = this.colaCargaOPs.length > 0;
+
+  while (this.colaCargaOPs.length > 0) {
+    const opCodigo = this.colaCargaOPs.shift();
     const opUI = this.opsConPvs.find(o => o.codigo === opCodigo);
-    if (!opUI) continue;
 
-    try {
-      this.estadoCarga = `OP ${opCodigo}: trayendo PVs...`;
-      opUI.estadoCarga = 'Trayendo PVs...';
-      this.refrescarPaginacionSinReinicio();
-      await this.delay(200);
-
-      const pvsResp: { pvs?: string, clientes?: any[] } | Array<{ pvs?: string, clientes?: any[] }> = await this.terminacionEmpaqueService
-        .listarPVsPorOPDesdeApiLaravel(opCodigo)
-        .toPromise();
-
-      let cadenaPVs = '';
-      let clientes = [];
-      if (Array.isArray(pvsResp)) {
-        cadenaPVs = pvsResp[0]?.pvs || '';
-        clientes = pvsResp[0]?.clientes || [];
-      } else {
-        cadenaPVs = (pvsResp as { pvs?: string, clientes?: any[] })?.pvs || '';
-        clientes = (pvsResp as { pvs?: string, clientes?: any[] })?.clientes || [];
-      }
-
-      const pvClienteMap = new Map<string, any>();
-      clientes.forEach(cliente => {
-        cliente.pvs.forEach((pvNum: number) => {
-          pvClienteMap.set(pvNum.toString(), {
-            nit: cliente.nit,
-            nombre: cliente.nombre
-          });
-        });
-      });
-
-      const numerosPV = (cadenaPVs.match(/\d+/g) || []).map(pv => ({
-        numero_pv: pv,
-        tieneDisponibles: false,
-        tieneAsignaciones: false,
-        cliente: pvClienteMap.get(pv) || null
-      }));
-
-      opUI.pvs = numerosPV;
-      opUI.pvsOriginal = [...numerosPV];
-      opUI.clientes = clientes;
-      this.initPaginadorPV(opUI);
-      this.refrescarPaginacionSinReinicio();
-
-      this.estadoCarga = `OP ${opCodigo}: verificando disponibles...`;
-      opUI.estadoCarga = 'Verificando cantidades disponibles...';
-      await this.delay(200);
-
-      const tieneItemsPendientes = await lastValueFrom(
-        this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(opCodigo)
-      );
-      opUI.tieneDisponibles = tieneItemsPendientes['data'];
-
-      if (numerosPV.length > 0) {
-        await this.verificarDisponibilidadPorPV(opCodigo, numerosPV);
-      }
-
-      this.estadoCarga = `OP ${opCodigo}: verificando pendientes...`;
-      opUI.estadoCarga = 'Verificando asignaciones pendientes...';
-      await this.delay(200);
-
-      await this.preCargarAsignacionesPendientes(opCodigo, numerosPV);
-
-      this.ordenarPVs(opUI);
-      this.filtrarPVs(opUI);
-      opUI.cargandoDetalle = false;
-      opUI.estadoCarga = 'Carga completada';
-      this.refrescarPaginacionSinReinicio();
-    } catch (error) {
-      console.error(`Error procesando OP ${opCodigo}:`, error);
-      opUI.cargandoDetalle = false;
-      opUI.estadoCarga = 'Error cargando detalle';
-      this.refrescarPaginacionSinReinicio();
+    if (!opUI || opUI.detalleCargado) {
+      continue;
     }
+
+    await this.cargarDetalleDeOP(opUI);
   }
 
-  this.opsConPvs.sort((a, b) => {
-    const dispoA = typeof a.tieneDisponibles === 'object' && a.tieneDisponibles !== null && 'data' in a.tieneDisponibles
-      ? a.tieneDisponibles.data === true ? 1 : 0
-      : a.tieneDisponibles === true ? 1 : 0;
-
-    const dispoB = typeof b.tieneDisponibles === 'object' && b.tieneDisponibles !== null && 'data' in b.tieneDisponibles
-      ? b.tieneDisponibles.data === true ? 1 : 0
-      : b.tieneDisponibles === true ? 1 : 0;
-
-    return dispoB - dispoA;
-  });
-
-  this.refrescarPaginacionSinReinicio();
-  this.estadoCarga = '';
+  this.procesandoCola = false;
   this.cargandoInicial = false;
+  this.estadoCarga = '';
+  this.refrescarPaginacionSinReinicio();
+}
+
+private priorizarCargaOP(opCodigo: number): void {
+  const op = this.opsConPvs.find(o => o.codigo === opCodigo);
+  if (!op || op.detalleCargado) return;
+
+  this.colaCargaOPs = this.colaCargaOPs.filter(codigo => codigo !== opCodigo);
+  this.colaCargaOPs.unshift(opCodigo);
+  op.estadoCarga = 'Priorizada por usuario...';
+  this.refrescarPaginacionSinReinicio();
+
+  if (!this.procesandoCola) {
+    this.procesarColaOPs();
+  }
+}
+
+private async cargarDetalleDeOP(opUI: any): Promise<void> {
+  const opCodigo = opUI.codigo;
+  opUI.cargando = true;
+  opUI.cargandoDetalle = true;
+
+  try {
+    this.estadoCarga = `OP ${opCodigo}: trayendo PVs...`;
+    opUI.estadoCarga = 'Trayendo PVs...';
+    this.refrescarPaginacionSinReinicio();
+    await this.delay(100);
+
+    const pvsResp: { pvs?: string, clientes?: any[] } | Array<{ pvs?: string, clientes?: any[] }> = await this.terminacionEmpaqueService
+      .listarPVsPorOPDesdeApiLaravel(opCodigo)
+      .toPromise();
+
+    let cadenaPVs = '';
+    let clientes = [];
+    if (Array.isArray(pvsResp)) {
+      cadenaPVs = pvsResp[0]?.pvs || '';
+      clientes = pvsResp[0]?.clientes || [];
+    } else {
+      cadenaPVs = (pvsResp as { pvs?: string, clientes?: any[] })?.pvs || '';
+      clientes = (pvsResp as { pvs?: string, clientes?: any[] })?.clientes || [];
+    }
+
+    const pvClienteMap = new Map<string, any>();
+    clientes.forEach(cliente => {
+      cliente.pvs.forEach((pvNum: number) => {
+        pvClienteMap.set(pvNum.toString(), {
+          nit: cliente.nit,
+          nombre: cliente.nombre
+        });
+      });
+    });
+
+    const numerosPV = (cadenaPVs.match(/\d+/g) || []).map(pv => ({
+      numero_pv: pv,
+      tieneDisponibles: false,
+      tieneAsignaciones: false,
+      cliente: pvClienteMap.get(pv) || null
+    }));
+
+    opUI.pvs = numerosPV;
+    opUI.pvsOriginal = [...numerosPV];
+    opUI.clientes = clientes;
+    this.initPaginadorPV(opUI);
+    this.refrescarPaginacionSinReinicio();
+
+    this.estadoCarga = `OP ${opCodigo}: verificando disponibles...`;
+    opUI.estadoCarga = 'Verificando cantidades disponibles...';
+    await this.delay(100);
+
+    const tieneItemsPendientes = await lastValueFrom(
+      this.terminacionEmpaqueService.verificarSiOPTieneItemsPendientes(opCodigo)
+    );
+    opUI.tieneDisponibles = tieneItemsPendientes['data'];
+
+    if (numerosPV.length > 0) {
+      await this.verificarDisponibilidadPorPV(opCodigo, numerosPV);
+    }
+
+    this.estadoCarga = `OP ${opCodigo}: verificando pendientes...`;
+    opUI.estadoCarga = 'Verificando asignaciones pendientes...';
+    await this.delay(100);
+
+    await this.preCargarAsignacionesPendientes(opCodigo, numerosPV);
+
+    this.ordenarPVs(opUI);
+    this.filtrarPVs(opUI);
+    opUI.detalleCargado = true;
+    opUI.estadoCarga = 'Carga completada';
+  } catch (error) {
+    console.error(`Error procesando OP ${opCodigo}:`, error);
+    opUI.estadoCarga = 'Error cargando detalle';
+  } finally {
+    opUI.cargando = false;
+    opUI.cargandoDetalle = false;
+    this.opsConPvs.sort((a, b) => a.codigo - b.codigo);
+    this.estadoCarga = this.colaCargaOPs.length > 0
+      ? `Pendientes por procesar: ${this.colaCargaOPs.length}`
+      : '';
+    this.refrescarPaginacionSinReinicio();
+  }
+}
+
+private actualizarPVsSiYaEstanCargadas(op: any): void {
+  if (!op.pvsOriginal || op.pvsOriginal.length === 0) return;
+
+  op.cargando = true;
+  this.verificarDisponibilidadPorPV(op.codigo, op.pvsOriginal)
+    .then(() => {
+      op.cargando = false;
+      this.ordenarPVs(op);
+      this.filtrarPVs(op);
+    })
+    .catch(() => {
+      op.cargando = false;
+      this.ordenarPVs(op);
+      this.filtrarPVs(op);
+    });
 }
 
 private refrescarPaginacionSinReinicio(): void {
+  this.opsConPvs.sort((a, b) => a.codigo - b.codigo);
   this.paginationService.updatePaginator(
     this.paginatorId,
     this.opsConPvs,
@@ -901,23 +956,17 @@ obtenerCantidadClientes(op: any): number {
   toggleExpandirOP(op: any): void {
     if (!op.expandir) {
       op.expandir = true;
-      op.cargando = true;
-      
-      this.verificarDisponibilidadPorPV(op.codigo, op.pvsOriginal)
-        .then(() => {
-          op.cargando = false;
-          this.ordenarPVs(op);
-          this.filtrarPVs(op);
-        })
-        .catch(() => {
-          op.cargando = false;
-          this.ordenarPVs(op);
-          this.filtrarPVs(op);
-        });
-        
-    } else {
-      op.expandir = false;
+
+      if (!op.detalleCargado) {
+        this.priorizarCargaOP(op.codigo);
+        return;
+      }
+
+      this.actualizarPVsSiYaEstanCargadas(op);
+      return;
     }
+
+    op.expandir = false;
   }
 
 private ordenarPVs(op: any): void {
