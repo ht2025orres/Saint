@@ -262,7 +262,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let item of itemsFiltrados; let idx = index" 
-                [ngClass]="{'table-success': item.estado === 'CONTADO', 'table-secondary': item.estado === 'PENDIENTE'}">
+                [ngClass]="{'table-success': item.estado !== 'PENDIENTE', 'table-secondary': item.estado === 'PENDIENTE'}">
               <td>
                 <span class="badge bg-info">{{ idx + 1 }}</span>
               </td>
@@ -279,29 +279,29 @@
                 {{ item.existencia_siesa | number:'1.0-2' }}
               </td> -->
               <td class="text-end">
-                <span *ngIf="item.estado === 'CONTADO'" class="fw-bold text-success">
+                <span *ngIf="item.cantidad_contada > 0 || item.estado === 'CONTADO'" class="fw-bold text-success">
                   {{ item.cantidad_contada | number:'1.0-2' }}
                 </span>
-                <span *ngIf="item.estado === 'PENDIENTE'" class="text-muted">-</span>
+                <span *ngIf="item.cantidad_contada == 0" class="text-muted">-</span>
               </td>
               <td>
-                <span *ngIf="item.estado === 'CONTADO'" class="small">
+                <span *ngIf="item.estado !== 'PENDIENTE'" class="small">
                   {{ formatearResponsables(item) }}
                 </span>
                 <span *ngIf="item.estado === 'PENDIENTE'" class="text-muted small">-</span>
               </td>
               <td class="text-center">
                 <span class="badge" [ngClass]="{
-                  'bg-success': item.estado === 'CONTADO',
+                  'bg-success': item.estado !== 'PENDIENTE',
                   'bg-secondary': item.estado === 'PENDIENTE'
                 }">
-                  {{ item.estado }}
+                  {{ getEstadoItemLabel(item.estado) }}
                 </span>
               </td>
               <td>
                 <button class="btn btn-sm btn-outline-primary" 
                         (click)="abrirModalConteo(item)"
-                        [disabled]="item.estado === 'CONTADO' || procesando">
+                        [disabled]="item.estado !== 'PENDIENTE' || procesando">
                   <i class="bi bi-pencil"></i> Contar
                 </button>
               </td>

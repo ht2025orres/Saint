@@ -290,11 +290,11 @@ export class GenerarHojaConteoComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/inventario/hojas-conteo-list']);
+    this.router.navigate(['/hojas-conteo-list']);
   }
 
   verDetalle(): void {
-    this.router.navigate(['/inventario/hojas-conteo-detalle', this.hojaCreada.id]);
+    this.router.navigate(['/hojas-conteo-detalle', this.hojaCreada.id]);
   }
 
   crearOtra(): void {

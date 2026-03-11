@@ -12,6 +12,36 @@ export type Semaforo        = 'rojo' | 'amarillo' | 'verde' | 'gris';
 export type NivelDisplay    = 'gestor' | 'admin' | 'editor' | 'colaborador' | 'lector';
 export type NivelTarea      = 'admin' | 'parcial' | 'basico' | 'sin_acceso';
 
+export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi';
+export type FuenteTarea = OrigenTarea;
+
+export interface TareaConsolidada {
+  id:                   number;
+  origen:               OrigenTarea;
+  origen_label:         string;
+  origen_sub?:          string | null;
+  titulo:               string;
+  descripcion?:         string | null;
+  estado:               string;
+  fecha_limite_entrega?: string | null;
+  fecha_completado?:    string | null;
+  semaforo?:            Semaforo;
+  notas?:               string | null;
+  usuario_id:           number;
+  prioridad?:           number;
+}
+
+export interface TareasConsolidadasResponse {
+  success: boolean;
+  meta: {
+    usuario_id: number;
+    mes:        number;
+    anio:       number;
+    fuentes:    FuenteTarea[];
+  };
+  data: TareaConsolidada[];
+}
+
 export interface MisPermisos {
   puede_crear:              boolean;
   puede_editar:             boolean;
@@ -38,6 +68,7 @@ export interface Proyecto {
   usuario_creador_id: number;
   total_actividades?: number; total_tareas?: number;
   tareas_completadas?: number; tareas_vencidas?: number;
+  tareas_sin_actividad?: Tarea[];
   progreso?: number; semaforo?: Semaforo;
   nivel_usuario?: NivelDisplay;
   mis_permisos?: MisPermisos;
@@ -56,7 +87,7 @@ export interface Actividad {
 }
 
 export interface Tarea {
-  id: number; actividad_id: number; titulo: string; descripcion?: string;
+  id: number; actividad_id?: number; proyecto_id?: number; titulo: string; descripcion?: string;
   estado: EstadoTarea; fecha_limite_entrega?: string; fecha_completado?: string;
   notas?: string; responsables?: number[]; creado_por: number;
   semaforo?: Semaforo;
@@ -64,6 +95,29 @@ export interface Tarea {
 }
 
 // ── SEGUIMIENTO ───────────────────────────────────────────────────────────────
+
+export interface SeguimientoAnual {
+  id: number;
+  titulo: string;
+  anio: number;
+  usuario_gestor_id: number;
+  estado: 'activo' | 'cerrado';
+  es_gestor?: boolean;
+  participantes_count?: number;
+}
+
+export interface VistaMes {
+  id: number;
+  mes: number;
+  anio: number;
+  titulo: string;
+  estado: 'activo' | 'cerrado';
+  es_gestor: boolean;
+  usuario_gestor_id: number;
+  tareas: { [uid: string]: SeguimientoTarea[] } | SeguimientoTarea[];
+  participantes: number[];
+  participantes_info: { id: number; nombre: string }[];
+}
 
 export interface SeguimientoMensual {
   id: number; titulo: string; mes: number; anio: number;
@@ -91,15 +145,27 @@ export interface SeguimientoTarea {
 type ApiResponse<T> = { success: boolean; data: T };
 type ApiMessage     = { success: boolean; message: string };
 
-// ── SERVICIO ──────────────────────────────────────────────────────────────────
-
 @Injectable({ providedIn: 'root' })
 export class ProyectoService {
   private readonly api = environment.URL_API_LARAVEL;
 
   constructor(private http: HttpClient) {}
 
-  // ── CONFIG SEMÁFORO ────────────────────────────────────────────────────────
+  getTareasConsolidadas(
+    usuarioId: number,
+    mes: number,
+    anio: number,
+    fuentes: FuenteTarea[] = ['seguimiento', 'proyecto'],
+  ): Observable<TareasConsolidadasResponse> {
+    const params = new HttpParams()
+      .set('usuario_id', usuarioId)
+      .set('mes', mes)
+      .set('anio', anio)
+      .set('fuentes', fuentes.join(','));
+    return this.http.get<TareasConsolidadasResponse>(
+      `${this.api}/tareas-consolidadas`, { params }
+    );
+  }
 
   getConfigSemaforo(): Observable<ApiResponse<ConfiguracionSemaforo[]>> {
     return this.http.get<ApiResponse<ConfiguracionSemaforo[]>>(`${this.api}/semaforo/configuracion`);
@@ -109,10 +175,12 @@ export class ProyectoService {
     return this.http.put<ApiResponse<ConfiguracionSemaforo>>(`${this.api}/semaforo/configuracion/${tipo}`, data);
   }
 
-  // ── PROYECTOS ──────────────────────────────────────────────────────────────
-
   getDashboard(usuarioId: number): Observable<ApiResponse<any>> {
     return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/dashboard`, { params: { usuario_id: usuarioId } });
+  }
+
+  obtenerDetalleProyecto(id: number, usuarioId: number): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/${id}/detalle-completo`, { params: { usuario_id: usuarioId } });
   }
 
   getProyectos(usuarioId: number, filtros?: { estado?: string; activos?: boolean }): Observable<ApiResponse<Proyecto[]>> {
@@ -152,8 +220,6 @@ export class ProyectoService {
     return this.http.post<ApiMessage>(`${this.api}/${url}`, { usuario_id: usuarioId, asignaciones });
   }
 
-  // ── ACTIVIDADES ────────────────────────────────────────────────────────────
-
   crearActividad(data: Partial<Actividad> & { usuario_id: number }): Observable<ApiResponse<Actividad> & ApiMessage> {
     return this.http.post<any>(`${this.api}/actividades`, data);
   }
@@ -166,9 +232,7 @@ export class ProyectoService {
     return this.http.delete<ApiMessage>(`${this.api}/actividades/${id}`, { params: { usuario_id: usuarioId } });
   }
 
-  // ── TAREAS ─────────────────────────────────────────────────────────────────
-
-  crearTarea(data: Partial<Tarea> & { usuario_id: number }): Observable<ApiResponse<Tarea> & ApiMessage> {
+  crearTarea(data: Partial<Tarea> & { usuario_id: number, proyecto_id?: number }): Observable<ApiResponse<Tarea>> {
     return this.http.post<any>(`${this.api}/tareas`, data);
   }
 
@@ -184,17 +248,25 @@ export class ProyectoService {
     return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { usuario_id: usuarioId });
   }
 
-  // ── SEGUIMIENTOS ───────────────────────────────────────────────────────────
+  getSeguimientos(usuarioId: number): Observable<ApiResponse<SeguimientoAnual[]>> {
+    return this.http.get<ApiResponse<SeguimientoAnual[]>>(`${this.api}/seguimientos`, {
+      params: { usuario_id: usuarioId },
+    });
+  }
 
-  getSeguimientos(usuarioId: number): Observable<ApiResponse<SeguimientoMensual[]>> {
-    return this.http.get<ApiResponse<SeguimientoMensual[]>>(`${this.api}/seguimientos`, { params: { usuario_id: usuarioId } });
+  getVistaMes(id: number, mes: number, usuarioId: number): Observable<ApiResponse<VistaMes>> {
+    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, {
+      params: { usuario_id: usuarioId },
+    });
   }
 
   getDetalleSeguimiento(id: number, usuarioId: number): Observable<ApiResponse<SeguimientoMensual>> {
     return this.http.get<ApiResponse<SeguimientoMensual>>(`${this.api}/seguimientos/${id}`, { params: { usuario_id: usuarioId } });
   }
 
-  crearSeguimiento(data: { mes: number; anio: number; titulo?: string; usuario_id: number; participantes?: number[] }): Observable<ApiResponse<SeguimientoMensual> & ApiMessage> {
+  crearSeguimiento(data: {
+    anio: number; titulo?: string; usuario_id: number; participantes?: number[];
+  }): Observable<ApiResponse<SeguimientoAnual> & ApiMessage> {
     return this.http.post<any>(`${this.api}/seguimientos`, data);
   }
 
@@ -206,7 +278,17 @@ export class ProyectoService {
     return this.http.post<ApiMessage>(`${this.api}/seguimientos/${id}/cerrar`, { usuario_id: usuarioId });
   }
 
-  crearSeguimientoTarea(data: Partial<SeguimientoTarea> & { usuario_id: number }): Observable<ApiResponse<SeguimientoTarea> & ApiMessage> {
+  crearSeguimientoTarea(data: {
+    semana_id?: number;
+    seguimiento_id?: number;
+    usuario_id: number;
+    usuario_asignado_id?: number;
+    titulo: string;
+    descripcion?: string;
+    estado?: string;
+    notas?: string;
+    fecha_limite_entrega?: string;
+  }): Observable<ApiResponse<SeguimientoTarea> & ApiMessage> {
     return this.http.post<any>(`${this.api}/seguimiento-tareas`, data);
   }
 

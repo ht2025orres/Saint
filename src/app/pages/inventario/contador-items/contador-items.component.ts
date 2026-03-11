@@ -136,29 +136,37 @@ export class ContadorItemsComponent implements OnInit {
   cargarItems(): void {
     this.inventarioService.obtenerItemsHoja(this.hojaSeleccionada.id).subscribe({
       next: (res) => {
-        this.itemsHoja = (res['data'] || []).map((item: any) => {
-          let ids: number[] = [];
-          const raw = item.responsables;
-          if (Array.isArray(raw)) {
-            if (raw.length > 0 && typeof raw[0] === 'object') {
-              ids = raw.map(r => r.id).filter(id => id != null);
-            } else {
-              ids = raw.filter(id => typeof id === 'number');
+        this.itemsHoja = (res['data'] || [])
+          .map((item: any) => {
+            let ids: number[] = [];
+            const raw = item.responsables;
+            if (Array.isArray(raw)) {
+              if (raw.length > 0 && typeof raw[0] === 'object') {
+                ids = raw.map(r => r.id).filter(id => id != null);
+              } else {
+                ids = raw.filter(id => typeof id === 'number');
+              }
+            } else if (typeof raw === 'string') {
+              try {
+                const parsed = JSON.parse(raw);
+                ids = Array.isArray(parsed) ? parsed : [];
+              } catch {
+                ids = [];
+              }
             }
-          } else if (typeof raw === 'string') {
-            try {
-              const parsed = JSON.parse(raw);
-              ids = Array.isArray(parsed) ? parsed : [];
-            } catch {
-              ids = [];
-            }
-          }
-          return {
-            ...item,
-            responsables: ids,
-            estado: item.estado || 'PENDIENTE'
-          };
-        });
+            return {
+              ...item,
+              responsables: ids,
+              estado: item.estado || 'PENDIENTE'
+            };
+          })
+          // Ordenar los items por zona
+          .sort((a, b) => {
+            const zonaA = a.zona_nombre || '';
+            const zonaB = b.zona_nombre || '';
+            return this.compararZonas(zonaA, zonaB);
+          });
+        
         this.itemsFiltrados = [...this.itemsHoja];
         this.cargarProgresoLocal();
         this.isLoading = false;
@@ -186,12 +194,47 @@ export class ContadorItemsComponent implements OnInit {
       filtered = filtered.filter(item => item.estado === this.filtroEstado);
     }
 
+    // Importante: mantener el orden original (por zona)
     this.itemsFiltrados = filtered;
   }
 
-  formatearResponsables(item: any): string {
-    if (item.estado !== 'CONTADO') return '-';
+  // Función para extraer partes de un nombre de zona
+  private parsearNombreZona(zona: string): { texto: string; numero: number } {
+    // Busca patrones como "Zona A", "Zona 1", "Canasta 2", etc.
+    const match = zona.match(/^([A-Za-záéíóúÁÉÍÓÚ\s]+?)\s*([0-9]+|[A-Za-z])?$/);
+    
+    if (match) {
+      const texto = match[1].trim().toLowerCase();
+      const identificador = match[2];
+      
+      // Si el identificador es un número
+      if (identificador && !isNaN(Number(identificador))) {
+        return { texto, numero: Number(identificador) };
+      }
+      // Si el identificador es una letra, convertir a número (A=1, B=2, etc.)
+      else if (identificador && identificador.length === 1 && isNaN(Number(identificador))) {
+        return { texto, numero: identificador.toUpperCase().charCodeAt(0) - 64 };
+      }
+    }
+    
+    // Si no hay patrón claro, devolver el texto completo y número 0
+    return { texto: zona.toLowerCase(), numero: 0 };
+  }
 
+  // Función de comparación para ordenar zonas
+  private compararZonas(a: string, b: string): number {
+    const zonaA = this.parsearNombreZona(a);
+    const zonaB = this.parsearNombreZona(b);
+    
+    // Primero ordenar por texto (Zona, Canasta, etc.)
+    if (zonaA.texto < zonaB.texto) return -1;
+    if (zonaA.texto > zonaB.texto) return 1;
+    
+    // Si el texto es igual, ordenar por número/letra
+    return zonaA.numero - zonaB.numero;
+  }
+
+  formatearResponsables(item: any): string {
     let ids: number[] = [];
 
     // 1. Extraer IDs del campo responsables (maneja varios formatos)
@@ -392,7 +435,6 @@ export class ContadorItemsComponent implements OnInit {
         progreso.items.forEach((itemLocal: any) => {
           const itemIndex = this.itemsHoja.findIndex(i => i.id === itemLocal.id);
           if (itemIndex > -1) {
-            this.itemsHoja[itemIndex].estado = itemLocal.estado;
             this.itemsHoja[itemIndex].cantidad_contada = itemLocal.cantidad_contada;
             this.itemsHoja[itemIndex].responsables = itemLocal.responsables; // array de IDs
           }
@@ -414,6 +456,15 @@ export class ContadorItemsComponent implements OnInit {
 
   get itemsContados(): number {
     return this.itemsHoja.filter(i => i.estado === 'CONTADO').length;
+  }
+
+  getEstadoItemLabel(estado: string): string {
+    // Si es cualquier tipo de reconteo, mostrar "CONTADO"
+    if (estado === 'RECONTEO') {
+      return 'CONTADO';
+    }
+    // Para los demás estados, mostrar el estado original
+    return estado;
   }
 
   calcularProgreso(): number {

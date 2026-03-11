@@ -411,7 +411,8 @@ eliminarHojaConteo(id: number, payload: any): Observable<any> {
    * Cambiar estado de un item individual
    */
   cambiarEstadoItem(idHoja: number, idItem: number, payload: any): Observable<any> {
-    return this.http.put(`${this.apiLaravelUrl}/hojas-conteo/${idHoja}/items/${idItem}/estado`, payload);
+    payload.id_item = idItem;
+    return this.http.put(`${this.apiLaravelUrl}/conteo/hojas/${idHoja}/items/${idItem}`, payload);
   }
 
   /**

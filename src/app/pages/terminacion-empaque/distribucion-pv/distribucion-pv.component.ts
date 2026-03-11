@@ -904,10 +904,10 @@ obtenerCantidadClientes(op: any): number {
   }
 
   filterFunction: FilterFunction = (item: any, filtros) => {
-    const texto = filtros.busqueda.toLowerCase().trim();
+    const texto = (filtros.busqueda || '').toLowerCase().trim();
     if (!texto) return true;
-    
-    return item.codigo?.toLowerCase().includes(texto);
+
+    return String(item.codigo ?? '').toLowerCase().includes(texto);
   };
 
   pvFilterFunction: FilterFunction = (pv: any, filtros: any) => {

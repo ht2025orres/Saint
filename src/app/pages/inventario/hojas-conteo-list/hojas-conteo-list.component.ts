@@ -76,6 +76,10 @@ export class HojasConteoListComponent implements OnInit {
     this.cargarInventarios();
   }
 
+  generarHoja(): void {
+    this.router.navigate(['/generar-hoja-conteo']);
+  }
+
   cargarDatosMaestros(): void {
     forkJoin({
       bodegas: this.inventarioService.obtenerResumenBodegas(),
@@ -98,36 +102,38 @@ export class HojasConteoListComponent implements OnInit {
   }
 
   cargarHojas(): void {
-    this.isLoading = true;
-    this.hojas = [];
-    this.currentHojas = [];
+      this.isLoading = true;
+      this.hojas = [];
+      this.currentHojas = [];
 
-    const params: any = {};
-    if (this.filters.codigo_bodega) params.codigo_bodega = this.filters.codigo_bodega;
-    if (this.filters.id_lider) params.id_lider = this.filters.id_lider;
-    if (this.filters.tipo) params.tipo = this.filters.tipo;
-    if (this.filters.estado) params.estado = this.filters.estado;
-    if (this.filters.inventario_id) params.inventario_id = this.filters.inventario_id;
-    if (this.filters.tipo_inventario) params.tipo_inventario = this.filters.tipo_inventario;
+      const params: any = {};
+      if (this.filters.codigo_bodega) params.codigo_bodega = this.filters.codigo_bodega;
+      if (this.filters.id_lider) params.id_lider = this.filters.id_lider;
+      if (this.filters.tipo) params.tipo = this.filters.tipo;
+      if (this.filters.estado) params.estado = this.filters.estado;
+      if (this.filters.inventario_id) params.inventario_id = this.filters.inventario_id;
+      if (this.filters.tipo_inventario) params.tipo_inventario = this.filters.tipo_inventario;
 
-    this.inventarioService.listarHojasConteo(params).subscribe({
-      next: (res) => {
-        this.hojas = (res['data'] || []).map(hoja => {
-          const lider = this.lideres.find(l => l.id === hoja.id_lider);
-          return {
-            ...hoja,
-            lider_nombre: lider ? lider.nombre_completo : 'No asignado'
-          };
-        });
-        this.inicializarPaginacion();
-      },
-      error: () => {
-        Swal.fire('Error', 'No se pudieron cargar las hojas de conteo', 'error');
-      },
-      complete: () => {
-        this.isLoading = false;
-      }
-    });
+      this.inventarioService.listarHojasConteo(params).subscribe({
+          next: (res) => {
+              this.hojas = (res['data'] || []).map(hoja => {
+                  const lider = this.lideres.find(l => l.id === hoja.id_lider);
+                  return {
+                      ...hoja,
+                      lider_nombre: lider ? lider.nombre_completo : 'No asignado',
+                      // Asegurar que el progreso venga calculado del backend
+                      progreso: hoja.progreso || 0
+                  };
+              });
+              this.inicializarPaginacion();
+          },
+          error: () => {
+              Swal.fire('Error', 'No se pudieron cargar las hojas de conteo', 'error');
+          },
+          complete: () => {
+              this.isLoading = false;
+          }
+      });
   }
 
   inicializarPaginacion(): void {
@@ -671,26 +677,202 @@ export class HojasConteoListComponent implements OnInit {
     const nuevoEstado = hoja.estado === 'BORRADOR' ? 'PENDIENTE' : 'FINALIZADO';
     const textoAccion = nuevoEstado === 'PENDIENTE' ? 'enviar a pendiente' : 'finalizar';
     
-    Swal.fire({
-      title: `¿${textoAccion.charAt(0).toUpperCase() + textoAccion.slice(1)} hoja?`,
-      html: nuevoEstado === 'FINALIZADO' 
-        ? `<p>¿Desea finalizar la hoja <strong>${hoja.codigo_hoja}</strong>?</p>
-          <p class="text-muted small">Se detectarán automáticamente los items que requieren reconteo.</p>`
-        : `<p>¿Desea enviar la hoja <strong>${hoja.codigo_hoja}</strong> a estado PENDIENTE?</p>`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: `Sí, ${textoAccion}`,
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.procesando = true;
+    // Si es finalizar, mostrar opciones de reconteo
+    if (nuevoEstado === 'FINALIZADO') {
+      Swal.fire({
+        title: '¿Finalizar hoja?',
+        html: `
+          <p>¿Desea finalizar la hoja <strong>${hoja.codigo_hoja}</strong>?</p>
+          
+          <div class="mt-4">
+            <p class="fw-bold mb-3">Seleccione el método de reconteo:</p>
+            
+            <!-- Opción Manual -->
+            <div class="reconteo-option mb-3 p-3 border rounded" id="optionManual" style="cursor: pointer; transition: all 0.2s;">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <div class="selection-indicator" id="indicatorManual" style="width: 24px; height: 24px; border: 2px solid #6c757d; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #0d6efd; display: none;" id="indicatorManualInner"></div>
+                  </div>
+                </div>
+                <div class="flex-grow-1 text-start">
+                  <h6 class="mb-1 fw-bold">Marcar manualmente</h6>
+                  <p class="mb-0 text-muted small">Seleccione usted los items que requieren reconteo</p>
+                </div>
+                <div class="ms-3">
+                  <i class="bi bi-pencil-square fs-4 text-muted"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Opción Automática -->
+            <div class="reconteo-option mb-3 p-3 border rounded" id="optionAutomatico" style="cursor: pointer; transition: all 0.2s;">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <div class="selection-indicator" id="indicatorAutomatico" style="width: 24px; height: 24px; border: 2px solid #6c757d; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #0d6efd; display: none;" id="indicatorAutomaticoInner"></div>
+                  </div>
+                </div>
+                <div class="flex-grow-1 text-start">
+                  <h6 class="mb-1 fw-bold">Detección automática</h6>
+                  <p class="mb-0 text-muted small">El sistema detectará items que requieren reconteo según umbrales</p>
+                </div>
+                <div class="ms-3">
+                  <i class="bi bi-robot fs-4 text-muted"></i>
+                </div>
+              </div>
+              
+              <!-- Campos de umbral (inicialmente ocultos) -->
+              <div id="umbralesContainer" class="mt-3 p-3 bg-light rounded" style="display: none;">
+                <p class="fw-bold mb-2">Configurar umbrales:</p>
+                <div class="mb-2">
+                  <label class="form-label fw-bold">Umbral de medida/unidades <span class="text-muted">(%)</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-rulers"></i></span>
+                    <input type="number" id="umbralPorcentaje" class="form-control" value="5" min="0" max="100" step="0.1">
+                    <span class="input-group-text">%</span>
+                  </div>
+                  <small class="text-muted">Diferencia porcentual permitida en medidas</small>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label fw-bold">Umbral de precio <span class="text-muted">($)</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                    <input type="number" id="umbralValor" class="form-control" value="100000" min="0" step="1000">
+                    <span class="input-group-text">COP</span>
+                  </div>
+                  <small class="text-muted">Diferencia máxima permitida en valor</small>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        if (nuevoEstado === 'FINALIZADO') {
-          const payload = {
-            umbral_porcentaje: 5,
-            umbral_valor: 100000,
-            crear_reconteo_automatico: true
+          <style>
+            .reconteo-option:hover {
+              background-color: #f8f9fa;
+              border-color: #0d6efd !important;
+            }
+            .reconteo-option.selected {
+              background-color: #e7f1ff;
+              border-color: #0d6efd !important;
+              box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+            }
+            .umbral-input:focus {
+              border-color: #0d6efd;
+              box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            }
+          </style>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `<i class="bi bi-check-circle me-2"></i>Sí, ${textoAccion}`,
+        cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancelar',
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        didOpen: () => {
+          // Elementos del DOM
+          const optionManual = document.getElementById('optionManual');
+          const optionAutomatico = document.getElementById('optionAutomatico');
+          const indicatorManual = document.getElementById('indicatorManual');
+          const indicatorAutomatico = document.getElementById('indicatorAutomatico');
+          const indicatorManualInner = document.getElementById('indicatorManualInner');
+          const indicatorAutomaticoInner = document.getElementById('indicatorAutomaticoInner');
+          const umbralesContainer = document.getElementById('umbralesContainer');
+          
+          let selectedOption = 'manual'; // Opción por defecto
+
+          // Función para actualizar UI
+          const updateSelection = (option: string) => {
+            // Actualizar clases y estilos de las opciones
+            if (option === 'manual') {
+              optionManual?.classList.add('selected');
+              optionAutomatico?.classList.remove('selected');
+              
+              if (indicatorManual) {
+                indicatorManual.style.borderColor = '#0d6efd';
+                if (indicatorManualInner) indicatorManualInner.style.display = 'block';
+              }
+              if (indicatorAutomatico) {
+                indicatorAutomatico.style.borderColor = '#6c757d';
+                if (indicatorAutomaticoInner) indicatorAutomaticoInner.style.display = 'none';
+              }
+              
+              if (umbralesContainer) umbralesContainer.style.display = 'none';
+            } else {
+              optionManual?.classList.remove('selected');
+              optionAutomatico?.classList.add('selected');
+              
+              if (indicatorManual) {
+                indicatorManual.style.borderColor = '#6c757d';
+                if (indicatorManualInner) indicatorManualInner.style.display = 'none';
+              }
+              if (indicatorAutomatico) {
+                indicatorAutomatico.style.borderColor = '#0d6efd';
+                if (indicatorAutomaticoInner) indicatorAutomaticoInner.style.display = 'block';
+              }
+              
+              if (umbralesContainer) umbralesContainer.style.display = 'block';
+            }
+            selectedOption = option;
           };
+
+          // Event listeners
+          optionManual?.addEventListener('click', () => updateSelection('manual'));
+          optionAutomatico?.addEventListener('click', () => updateSelection('automatico'));
+
+          // Inicializar con manual seleccionado
+          updateSelection('manual');
+        },
+        preConfirm: () => {
+          // Determinar opción seleccionada
+          const optionManual = document.getElementById('optionManual');
+          const isManual = optionManual?.classList.contains('selected');
+          
+          if (isManual) {
+            return {
+              tipo: 'manual',
+              umbral_porcentaje: null,
+              umbral_valor: null
+            };
+          } else {
+            const umbralPorcentaje = (document.getElementById('umbralPorcentaje') as HTMLInputElement)?.value;
+            const umbralValor = (document.getElementById('umbralValor') as HTMLInputElement)?.value;
+            
+            if (!umbralPorcentaje || !umbralValor) {
+              Swal.showValidationMessage('Debe ingresar los umbrales para la detección automática');
+              return false;
+            }
+            
+            if (parseFloat(umbralPorcentaje) < 0 || parseFloat(umbralPorcentaje) > 100) {
+              Swal.showValidationMessage('El porcentaje debe estar entre 0 y 100');
+              return false;
+            }
+            
+            if (parseFloat(umbralValor) < 0) {
+              Swal.showValidationMessage('El valor debe ser mayor o igual a 0');
+              return false;
+            }
+            
+            return {
+              tipo: 'automatico',
+              umbral_porcentaje: parseFloat(umbralPorcentaje),
+              umbral_valor: parseFloat(umbralValor)
+            };
+          }
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.procesando = true;
+          
+          const payload: any = {
+            crear_reconteo_automatico: result.value.tipo === 'automatico'
+          };
+          
+          // Si es automático, agregar los umbrales
+          if (result.value.tipo === 'automatico') {
+            payload.umbral_porcentaje = result.value.umbral_porcentaje;
+            payload.umbral_valor = result.value.umbral_valor;
+          }
 
           this.inventarioService.finalizarHojaConteo(hoja.id, payload).subscribe({
             next: (res) => {
@@ -706,7 +888,7 @@ export class HojasConteoListComponent implements OnInit {
 
               if (res['hoja_reconteo_creada']) {
                 mensaje += `<hr><p class="text-success">
-                  <i class="bi bi-check-circle"></i>
+                  <i class="bi bi-check-circle me-2"></i>
                   Se creó automáticamente la hoja de reconteo: 
                   <strong>${res['hoja_reconteo_creada'].codigo_hoja}</strong>
                 </p>`;
@@ -716,18 +898,41 @@ export class HojasConteoListComponent implements OnInit {
                 icon: 'success',
                 title: '¡Finalizada!',
                 html: mensaje,
-                confirmButtonText: 'Aceptar'
+                confirmButtonText: '<i class="bi bi-check-lg me-2"></i>Aceptar',
+                confirmButtonColor: '#198754'
               });
               this.cargarHojas();
             },
             error: (err) => {
-              Swal.fire('Error', err.error?.message || 'No se pudo finalizar la hoja', 'error');
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.error?.message || 'No se pudo finalizar la hoja',
+                confirmButtonText: '<i class="bi bi-x-lg me-2"></i>Cerrar',
+                confirmButtonColor: '#dc3545'
+              });
             },
             complete: () => {
               this.procesando = false;
             }
           });
-        } else {
+        }
+      });
+    } else {
+      // Para cambiar a PENDIENTE (código original con mejoras visuales)
+      Swal.fire({
+        title: `¿${textoAccion.charAt(0).toUpperCase() + textoAccion.slice(1)} hoja?`,
+        html: `<p>¿Desea enviar la hoja <strong>${hoja.codigo_hoja}</strong> a estado PENDIENTE?</p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `<i class="bi bi-check-circle me-2"></i>Sí, ${textoAccion}`,
+        cancelButtonText: '<i class="bi bi-x-circle me-2"></i>Cancelar',
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.procesando = true;
+
           const payload = {
             estado: nuevoEstado,
             usuario_id: this.authService.user.id
@@ -735,19 +940,31 @@ export class HojasConteoListComponent implements OnInit {
 
           this.inventarioService.actualizarEstadoHoja(hoja.id, payload).subscribe({
             next: () => {
-              Swal.fire('¡Éxito!', 'Estado actualizado correctamente', 'success');
+              Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: 'Estado actualizado correctamente',
+                confirmButtonText: '<i class="bi bi-check-lg me-2"></i>Aceptar',
+                confirmButtonColor: '#198754'
+              });
               this.cargarHojas();
             },
             error: (err) => {
-              Swal.fire('Error', err.error?.message || 'No se pudo actualizar el estado', 'error');
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.error?.message || 'No se pudo actualizar el estado',
+                confirmButtonText: '<i class="bi bi-x-lg me-2"></i>Cerrar',
+                confirmButtonColor: '#dc3545'
+              });
             },
             complete: () => {
               this.procesando = false;
             }
           });
         }
-      }
-    });
+      });
+    }
   }
 
   eliminarHoja(hoja: any): void {
