@@ -94,7 +94,10 @@ export class ProyectosComponent implements OnInit {
   // SECCIÓN 2 · ESTADO GENERAL
   // ════════════════════════════════════════════════════════════════
 
-  vista: 'proyectos' | 'seguimientos' = 'proyectos';
+  vista: 'proyectos' | 'seguimientos' | 'informes' = 'proyectos';
+  moduloActual: 'proyectos' | 'seguimientos' | 'informes' = 'proyectos';
+  busquedaProyectos = '';
+  proyectosBase: Proyecto[] = [];
   vistaProyectos: 'tarjetas' | 'lista' = 'tarjetas';
   vistaTareas = true;
 
@@ -169,12 +172,23 @@ export class ProyectosComponent implements OnInit {
   showModalConfig = false;
   configForm: Record<string, ConfiguracionSemaforo> = {};
 
+  calculandoFechas = false;
+  showModalAsignarActividad = false;
+  asignarActividadForm: { actividad_id: number | null; asignado_id: number | null } = { actividad_id: null, asignado_id: null };
+  asignarActividadGuardando = false;
+
   // ════════════════════════════════════════════════════════════════
   // SECCIÓN 9 · SEGUIMIENTOS ANUALES
   // ════════════════════════════════════════════════════════════════
 
   seguimientos: SeguimientoAnual[] = [];
   loadingSeguimientos = false;
+
+  informes: any[] = [];
+  loadingInformes = false;
+  filtroEstadoInforme = 'todos';
+  busquedaInformes = '';
+  vistaInformes: 'tarjetas' | 'lista' = 'tarjetas';
 
   showModalSeguimiento = false;
   seguimientoForm: any = {};
@@ -605,12 +619,9 @@ export class ProyectosComponent implements OnInit {
       const filtros = this.filtroEstado === 'todos' ? { activos: true } : { estado: this.filtroEstado };
       this.proyectoService.getProyectos(this.usuarioId, filtros).subscribe({
           next: res => {
-              this.proyectos = this._ordenarProyectos(res.data);
+              this.proyectosBase = this._ordenarProyectos(res.data);
+              this._aplicarFiltrosProyectos();
               this.loading = false;
-              
-              // Inicializar paginadores para ambas vistas
-              this._inicializarPaginadorTarjetas();
-              this._inicializarPaginadorLista();
           },
           error: () => {
               this.loading = false; 
@@ -619,8 +630,9 @@ export class ProyectosComponent implements OnInit {
       });
   }
 
-  cambiarVista(v: 'proyectos' | 'seguimientos'): void {
+  cambiarVista(v: 'proyectos' | 'seguimientos' | 'informes'): void {
       this.vista = v;
+      this.moduloActual = v;
       if (v === 'proyectos') {
           // Reinicializar paginadores al volver a proyectos
           setTimeout(() => {
@@ -637,6 +649,49 @@ export class ProyectosComponent implements OnInit {
           this.showDetalleMes = false;
           this.vistaCalendario = false;
       }
+  }
+
+  crearProyecto(): void {
+    this.abrirModalCrearProyecto();
+  }
+
+  editarProyecto(proyecto: Proyecto): void {
+    this.abrirModalEditarProyecto(proyecto);
+  }
+
+  cambiarFiltro(filtro: string): void {
+    this.filtroEstado = filtro;
+    this.cargarProyectos();
+  }
+
+  onBusquedaChange(): void {
+    this._aplicarFiltrosProyectos();
+  }
+
+  limpiarBusqueda(): void {
+    this.busquedaProyectos = '';
+    this._aplicarFiltrosProyectos();
+  }
+
+  cargarInformes(): void {
+    this.loadingInformes = false;
+    this.informes = [];
+  }
+
+  abrirModalCrearInforme(): void {
+    Swal.fire('Próximamente', 'La sección de informes quedó separada como módulo, pero su flujo aún está pendiente de integrar.', 'info');
+  }
+
+  abrirModalEditarInforme(informe: any): void {
+    Swal.fire('Próximamente', `La edición del informe "${informe?.titulo ?? ''}" todavía no está conectada.`, 'info');
+  }
+
+  verDetalleInforme(informe: any): void {
+    Swal.fire('Próximamente', `El detalle del informe "${informe?.titulo ?? ''}" todavía no está conectado.`, 'info');
+  }
+
+  eliminarInforme(informe: any): void {
+    Swal.fire('Próximamente', `La eliminación del informe "${informe?.titulo ?? ''}" todavía no está conectada.`, 'info');
   }
 
   cambiarEstadoProyecto(proyecto: Proyecto, nuevoEstado: string): void {
@@ -748,6 +803,31 @@ export class ProyectosComponent implements OnInit {
         error: () => Swal.fire('Error', 'No se pudo mover la tarea', 'error'),
       });
     }
+  }
+
+  calcularFechasTareas(): void {
+    Swal.fire('Pendiente', 'La recálculo automático de fechas aún no fue reconectado en esta refactorización.', 'info');
+  }
+
+  abrirModalEvidencia(tipo: string, id: number, titulo: string): void {
+    Swal.fire('Pendiente', `La evidencia para ${tipo} #${id} (${titulo}) aún no fue reconectada.`, 'info');
+  }
+
+  abrirModalAsignarActividad(actividad: Actividad): void {
+    this.asignarActividadForm = { actividad_id: actividad.id, asignado_id: null };
+    this.asignarActividadGuardando = false;
+    this.showModalAsignarActividad = true;
+    this._cargarUsuariosAsignables();
+  }
+
+  cerrarModalAsignarActividad(): void {
+    this.showModalAsignarActividad = false;
+    this.asignarActividadForm = { actividad_id: null, asignado_id: null };
+  }
+
+  guardarAsignarActividad(): void {
+    Swal.fire('Pendiente', 'La asignación de responsables a actividades aún no fue reconectada.', 'info');
+    this.cerrarModalAsignarActividad();
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -1055,6 +1135,10 @@ export class ProyectosComponent implements OnInit {
     setTimeout(() => this.toasts = this.toasts.filter(t => t.id !== id), 3500);
   }
 
+  onBusquedaAsignableChange(valor: string): void {
+    this.busquedaAsignable = valor;
+  }
+
   agregarResponsable(u: UsuarioOpcion): void {
     if (!this.responsablesSelec.find(r => r.id === u.id)) this.responsablesSelec = [...this.responsablesSelec, u];
     this.busquedaAsignable = '';
@@ -1113,7 +1197,8 @@ export class ProyectosComponent implements OnInit {
     });
   }
 
-  filtrarUsuarios(): void {
+  filtrarUsuarios(query?: string): void {
+    if (typeof query === 'string') this.busquedaUsuario = query;
     const q = this.busquedaUsuario.toLowerCase().trim();
     if (!q) { this.usuariosFiltrados = []; return; }
     const yaAsignados = new Set(this.permisosActuales.map(p => p.usuario_id));
@@ -1477,6 +1562,19 @@ export class ProyectosComponent implements OnInit {
       },
       error: () => {} // silencioso
     });
+  }
+
+  private _aplicarFiltrosProyectos(): void {
+    const termino = this.busquedaProyectos.toLowerCase().trim();
+    this.proyectos = this.proyectosBase.filter((proyecto) => {
+      if (!termino) return true;
+      const titulo = proyecto.titulo?.toLowerCase() ?? '';
+      const descripcion = proyecto.descripcion?.toLowerCase() ?? '';
+      return titulo.includes(termino) || descripcion.includes(termino);
+    });
+
+    this._inicializarPaginadorTarjetas();
+    this._inicializarPaginadorLista();
   }
 
   private _ordenarProyectos(proyectos: Proyecto[]): Proyecto[] {
