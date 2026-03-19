@@ -3,8 +3,7 @@ import { PermisoGranular } from 'src/app/services/proyectos.service';
 
 @Component({
   selector: 'app-modal-permisos',
-  templateUrl: './modal-permisos.component.html',
-  styleUrls: ['./modal-permisos.component.css']
+  templateUrl: './modal-permisos.component.html'
 })
 export class ModalPermisosComponent {
   @Input() showModalPermisos = false;

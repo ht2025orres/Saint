@@ -3,8 +3,7 @@ import { Proyecto, Actividad, Tarea, NivelTarea } from 'src/app/services/proyect
 
 @Component({
   selector: 'app-modal-proyecto',
-  templateUrl: './modal-proyecto.component.html',
-  styleUrls: ['./modal-proyecto.component.css']
+  templateUrl: './modal-proyecto.component.html'
 })
 export class ModalProyectoComponent {
   // Project Modal
