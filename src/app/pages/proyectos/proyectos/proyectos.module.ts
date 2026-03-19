@@ -7,6 +7,7 @@ import { ListaProyectosComponent } from './gestion/proyectos/lista-proyectos.com
 import { DetalleProyectoComponent } from './gestion/proyectos/detalle-proyecto.component';
 import { ModalProyectoComponent } from './gestion/proyectos/modal-proyecto.component';
 import { ModalPermisosComponent } from './gestion/shared/modal-permisos.component';
+import { ModalFlujoDiarioComponent } from './gestion/shared/modal-flujo-diario.component';
 import { ListaSeguimientosComponent } from './gestion/seguimientos/lista-seguimientos.component';
 import { ListaInformesComponent } from './gestion/informes/lista-informes.component';
 import { SharedModule } from 'src/app/shared/shared.module';
@@ -22,6 +23,7 @@ const routes: Routes = [
     DetalleProyectoComponent,
     ModalProyectoComponent,
     ModalPermisosComponent,
+    ModalFlujoDiarioComponent,
     ListaSeguimientosComponent,
     ListaInformesComponent
   ],

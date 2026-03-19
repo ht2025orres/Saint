@@ -21,6 +21,16 @@ import { forkJoin } from 'rxjs';
 
 interface UsuarioOpcion { id: number; nombre: string; }
 
+interface CargaPersonaFlujo {
+  usuario_id: number;
+  nombre: string;
+  total: number;
+  completados: number;
+  en_ejecucion: number;
+  pendientes: number;
+  compromisos: Compromiso[];
+}
+
 interface TareaEnriched extends Tarea {
   actividadTitulo: string;
   actividadId: number | null;
@@ -223,6 +233,8 @@ export class ProyectosComponent implements OnInit {
   loadingTareasExternas = false;
 
   vistaCalendario   = false;
+  vistaCalendarioModo: 'mes' | 'semana' | 'dia' = 'mes';
+  fechaCalendarioActiva: Date = new Date();
   calendarioDias: CalendarioDia[][] = [];
 
   filtroGlobalEstado: string = 'pendiente';
@@ -235,6 +247,11 @@ export class ProyectosComponent implements OnInit {
   flujoActivo: FlujoDiario | null = null;
   flujosHistorial: FlujoDiario[] = [];
   showHistorialFlujos = false;
+  showModalFlujoDiario = false;
+  flujoDiarioForm = { titulo: '', fecha: '' };
+  showModalCompromisoFlujo = false;
+  compromisoFlujoTitulo = 'Nuevo compromiso';
+  compromisoForm = { id: null as number | null, titulo: '', descripcion: '', responsables: [] as number[] };
 
   filtroUsuariosSelec: number[] = [];
   filtroTextoUsuario  = '';
@@ -627,45 +644,58 @@ export class ProyectosComponent implements OnInit {
       .slice(0, 6);
   }
 
+  get compromisosFiltrados(): Compromiso[] {
+    return (this.flujoActivo?.compromisos ?? []).filter(c => this._compromisoVisible(c));
+  }
+
   get compromisosCompletados(): number {
-    return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado === 'completado').length;
+    return this.compromisosFiltrados.filter(c => c.estado === 'completado').length;
   }
 
   get compromisosEnEjecucion(): number {
-    return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado === 'en_ejecucion').length;
+    return this.compromisosFiltrados.filter(c => c.estado === 'en_ejecucion').length;
   }
 
   get compromisosPendientes(): number {
-    return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado === 'pendiente').length;
+    return this.compromisosFiltrados.filter(c => c.estado === 'pendiente').length;
   }
 
   get compromisosDiaAnterior(): Array<{ id: number; titulo: string; estado: string; responsables: number[]; fecha_inicio?: string | null; fecha_completado?: string | null }> {
-    return this.flujoActivo?.snapshot_apertura?.compromisos ?? [];
+    return (this.flujoActivo?.snapshot_apertura?.compromisos ?? []).filter(c => {
+      const coincideEstado = !this.filtroEstadosGlobal.length || this.filtroEstadosGlobal.includes(c.estado);
+      const coincideUsuario = !this.filtroUsuariosSelec.length || (c.responsables ?? []).some(rid => this.filtroUsuariosSelec.includes(rid));
+      return coincideEstado && coincideUsuario;
+    });
   }
 
-  get compromisosPorPersona(): Array<{ usuario_id: number; nombre: string; total: number; completados: number; en_ejecucion: number; pendientes: number; compromisos: Compromiso[] }> {
-    const mapa = new Map<number, { usuario_id: number; nombre: string; total: number; completados: number; en_ejecucion: number; pendientes: number; compromisos: Compromiso[] }>();
-    for (const compromiso of this.flujoActivo?.compromisos ?? []) {
-      for (const rid of compromiso.responsables ?? []) {
-        const actual = mapa.get(rid) ?? {
-          usuario_id: rid,
-          nombre: this.nombreUsuario(rid),
-          total: 0,
-          completados: 0,
-          en_ejecucion: 0,
-          pendientes: 0,
-          compromisos: [],
-        };
-        actual.total += 1;
-        if (compromiso.estado === 'completado') actual.completados += 1;
-        else if (compromiso.estado === 'en_ejecucion') actual.en_ejecucion += 1;
-        else actual.pendientes += 1;
-        actual.compromisos.push(compromiso);
-        mapa.set(rid, actual);
-      }
-    }
-    return Array.from(mapa.values())
-      .sort((a, b) => b.en_ejecucion - a.en_ejecucion || b.total - a.total || a.nombre.localeCompare(b.nombre));
+  get compromisosPorPersona(): CargaPersonaFlujo[] {
+    return this._agruparCompromisosPorPersona(this.compromisosFiltrados);
+  }
+
+  get cargaAnteriorPorPersona(): CargaPersonaFlujo[] {
+    const compromisosBase = (this.flujoActivo?.snapshot_apertura?.compromisos ?? []).map(compromiso => ({
+      id: compromiso.id,
+      flujo_id: this.flujoActivo?.id ?? 0,
+      titulo: compromiso.titulo,
+      descripcion: null,
+      estado: compromiso.estado as Compromiso['estado'],
+      responsables: compromiso.responsables ?? [],
+      notas: null,
+      fecha_inicio: compromiso.fecha_inicio ?? null,
+      fecha_completado: compromiso.fecha_completado ?? null,
+      created_at: compromiso.fecha_inicio ?? this.flujoActivo?.fecha ?? '',
+      updated_at: compromiso.fecha_completado ?? compromiso.fecha_inicio ?? this.flujoActivo?.fecha ?? '',
+    }));
+
+    return this._agruparCompromisosPorPersona(compromisosBase.filter(c => this._compromisoVisible(c)));
+  }
+
+  get cargaMaximaComparativa(): number {
+    return Math.max(
+      ...this.compromisosPorPersona.map(p => p.total),
+      ...this.cargaAnteriorPorPersona.map(p => p.total),
+      1,
+    );
   }
 
   get selectedDayTareasSeg(): { tarea: SeguimientoTarea; nombreUsuario: string }[] {
@@ -1801,6 +1831,8 @@ export class ProyectosComponent implements OnInit {
     this.vistaMes            = null;
     this.showDetalleMes      = true;
     this.vistaCalendario     = false;
+    this.vistaCalendarioModo = 'mes';
+    this.fechaCalendarioActiva = new Date(seg.anio, mes - 1, 1);
     this.filtroUsuariosSelec = [];
     this.filtroTextoUsuario  = '';
     this._cargarVistaMes();
@@ -1820,6 +1852,8 @@ export class ProyectosComponent implements OnInit {
     this.flujoActivo = null;
     this.flujosHistorial = [];
     this.showHistorialFlujos = false;
+    this.showModalFlujoDiario = false;
+    this.showModalCompromisoFlujo = false;
   }
 
   toggleUsuarioFiltro(uid: number): void {
@@ -1872,6 +1906,8 @@ export class ProyectosComponent implements OnInit {
     this.tareasInformeFiltradas = this._filtrarPorEstado(filtByUser, estado);
     this._initPaginador(this.paginadorInformeMesId, this.tareasInformeFiltradas,
       items => this.tareasInformePaginadas = items as InformeTarea[]);
+
+    if (this.vistaCalendario) this._construirCalendarioMes();
   }
 
   cambiarFiltroGlobal(estado: string): void {
@@ -1905,6 +1941,7 @@ export class ProyectosComponent implements OnInit {
 
   aplicarFiltrosGlobales(): void {
     this._aplicarFiltrosGlobales();
+    if (this.vistaCalendario) this._construirCalendarioMes();
   }
 
   abrirVistaFlujo(): void {
@@ -1913,8 +1950,47 @@ export class ProyectosComponent implements OnInit {
     this.cargarFlujoActivo();
   }
 
+  abrirVistaCalendario(modo: 'mes' | 'semana' | 'dia' = 'mes', fecha?: Date): void {
+    this.vistaCalendario = true;
+    this.vistaFlujo = false;
+    this.vistaCalendarioModo = modo;
+    if (fecha) this.fechaCalendarioActiva = new Date(fecha);
+    this._construirCalendarioMes();
+  }
+
   cerrarVistaFlujo(): void {
     this.vistaFlujo = false;
+  }
+
+  cambiarModoCalendario(modo: 'mes' | 'semana' | 'dia'): void {
+    this.vistaCalendarioModo = modo;
+    if (!this.vistaCalendario) this.vistaCalendario = true;
+  }
+
+  navegarCalendario(delta: number): void {
+    const base = new Date(this.fechaCalendarioActiva);
+    if (this.vistaCalendarioModo === 'dia') base.setDate(base.getDate() + delta);
+    else if (this.vistaCalendarioModo === 'semana') base.setDate(base.getDate() + (delta * 7));
+    else base.setMonth(base.getMonth() + delta);
+
+    this.fechaCalendarioActiva = base;
+
+    if (this.vistaCalendarioModo === 'mes' && (base.getMonth() + 1 !== this.mesActual || base.getFullYear() !== (this.seguimientoActual?.anio ?? base.getFullYear()))) {
+      this.mesActual = base.getMonth() + 1;
+      this._cargarVistaMes();
+      return;
+    }
+
+    this._construirCalendarioMes();
+  }
+
+  seleccionarFechaCalendario(dia: CalendarioDia, abrirDetalle = false, event?: Event): void {
+    event?.stopPropagation();
+    if (!dia.esMesActual) return;
+    this.fechaCalendarioActiva = new Date(dia.fecha);
+    if (abrirDetalle && (dia.tareas.length || dia.tareasExternas.length || dia.tareasInforme.length)) {
+      this.abrirModalDia(dia);
+    }
   }
 
   cargarFlujoActivo(): void {
@@ -1943,28 +2019,34 @@ export class ProyectosComponent implements OnInit {
     });
   }
 
-  async abrirModalNuevoFlujo(): Promise<void> {
+  abrirModalNuevoFlujo(): void {
     if (!this.seguimientoActual) return;
-    const { value: titulo } = await Swal.fire({
-      title: 'Nuevo flujo diario',
-      input: 'text',
-      inputLabel: 'Título del flujo',
-      inputValue: `Flujo ${this.nombreMes(this.mesActual)} ${this.seguimientoActual.anio}`,
-      inputPlaceholder: 'Ej. Compromisos del día',
-      showCancelButton: true,
-      confirmButtonText: 'Crear flujo',
-      cancelButtonText: 'Cancelar',
-      inputValidator: (value) => value?.trim() ? null : 'El título es obligatorio',
-    });
-    if (!titulo) return;
+    this.flujoDiarioForm = {
+      titulo: `Flujo ${this.nombreMes(this.mesActual)} ${this.seguimientoActual.anio}`,
+      fecha: new Date().toISOString().slice(0, 10),
+    };
+    this.showModalFlujoDiario = true;
+  }
+
+  cerrarModalNuevoFlujo(): void {
+    this.showModalFlujoDiario = false;
+  }
+
+  guardarFlujoDiario(): void {
+    if (!this.seguimientoActual) return;
+    if (!this.flujoDiarioForm.titulo.trim()) {
+      Swal.fire('Validación', 'El título del flujo es obligatorio', 'warning');
+      return;
+    }
 
     this.proyectoService.crearFlujo({
       seguimiento_id: this.seguimientoActual.id,
-      titulo: titulo.trim(),
-      fecha: new Date().toISOString().slice(0, 10),
+      titulo: this.flujoDiarioForm.titulo.trim(),
+      fecha: this.flujoDiarioForm.fecha || new Date().toISOString().slice(0, 10),
       usuario_id: this.usuarioId,
     }).subscribe({
       next: (res: any) => {
+        this.showModalFlujoDiario = false;
         Swal.fire('Éxito', res.message ?? 'Flujo creado', 'success');
         this.vistaFlujo = true;
         this.cargarFlujoActivo();
@@ -1973,126 +2055,57 @@ export class ProyectosComponent implements OnInit {
     });
   }
 
-  async abrirModalNuevoCompromiso(): Promise<void> {
+  abrirModalNuevoCompromiso(): void {
     if (!this.flujoActivo) return;
-    const responsables = this._participantesOpcionesFlujo();
-    const optionsHtml = responsables.map(p => `
-      <label style="display:flex;align-items:center;gap:8px;margin:6px 0;">
-        <input type="checkbox" value="${p.id}" />
-        <span>${p.nombre}</span>
-      </label>
-    `).join('');
-
-    const { value } = await Swal.fire({
-      title: 'Nuevo compromiso',
-      html: `
-        <input id="swal-compromiso-titulo" class="swal2-input" placeholder="Título" />
-        <textarea id="swal-compromiso-descripcion" class="swal2-textarea" placeholder="Descripción (opcional)"></textarea>
-        <div style="text-align:left;padding:0 1em 1em;">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Responsables</div>
-          ${optionsHtml || '<div style="font-size:13px;color:#6b7280;">No hay participantes disponibles</div>'}
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Guardar',
-      cancelButtonText: 'Cancelar',
-      preConfirm: () => {
-        const popup = Swal.getPopup();
-        const tituloEl = popup?.querySelector('#swal-compromiso-titulo') as HTMLInputElement | null;
-        const descripcionEl = popup?.querySelector('#swal-compromiso-descripcion') as HTMLTextAreaElement | null;
-        const checks = Array.from(popup?.querySelectorAll('input[type="checkbox"]:checked') ?? []) as HTMLInputElement[];
-        const titulo = tituloEl?.value?.trim() ?? '';
-        if (!titulo) {
-          Swal.showValidationMessage('El título es obligatorio');
-          return;
-        }
-        if (!checks.length) {
-          Swal.showValidationMessage('Selecciona al menos un responsable');
-          return;
-        }
-        return {
-          titulo,
-          descripcion: descripcionEl?.value?.trim() ?? '',
-          responsables: checks.map(c => +c.value),
-        };
-      },
-    });
-
-    if (!value) return;
-
-    this.proyectoService.crearCompromiso({
-      flujo_id: this.flujoActivo.id,
-      titulo: value.titulo,
-      descripcion: value.descripcion,
-      responsables: value.responsables,
-      usuario_id: this.usuarioId,
-    }).subscribe({
-      next: (res: any) => {
-        Swal.fire('Éxito', res.message ?? 'Compromiso creado', 'success');
-        this.cargarFlujoActivo();
-      },
-      error: (err) => Swal.fire('Error', err?.error?.message ?? 'No se pudo crear el compromiso', 'error'),
-    });
+    this.compromisoFlujoTitulo = 'Nuevo compromiso';
+    this.compromisoForm = { id: null, titulo: '', descripcion: '', responsables: [] };
+    this.showModalCompromisoFlujo = true;
   }
 
-  async editarCompromiso(compromiso: Compromiso): Promise<void> {
-    const responsables = this._participantesOpcionesFlujo();
-    const optionsHtml = responsables.map(p => `
-      <label style="display:flex;align-items:center;gap:8px;margin:6px 0;">
-        <input type="checkbox" value="${p.id}" ${compromiso.responsables?.includes(p.id) ? 'checked' : ''} />
-        <span>${p.nombre}</span>
-      </label>
-    `).join('');
+  editarCompromiso(compromiso: Compromiso): void {
+    this.compromisoFlujoTitulo = 'Editar compromiso';
+    this.compromisoForm = {
+      id: compromiso.id,
+      titulo: compromiso.titulo,
+      descripcion: compromiso.descripcion ?? '',
+      responsables: [...(compromiso.responsables ?? [])],
+    };
+    this.showModalCompromisoFlujo = true;
+  }
 
-    const { value } = await Swal.fire({
-      title: 'Editar compromiso',
-      html: `
-        <input id="swal-compromiso-titulo" class="swal2-input" placeholder="Título" value="${this._escapeHtml(compromiso.titulo)}" />
-        <textarea id="swal-compromiso-descripcion" class="swal2-textarea" placeholder="Descripción (opcional)">${this._escapeHtml(compromiso.descripcion ?? '')}</textarea>
-        <div style="text-align:left;padding:0 1em 1em;">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Responsables</div>
-          ${optionsHtml}
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Guardar cambios',
-      cancelButtonText: 'Cancelar',
-      preConfirm: () => {
-        const popup = Swal.getPopup();
-        const tituloEl = popup?.querySelector('#swal-compromiso-titulo') as HTMLInputElement | null;
-        const descripcionEl = popup?.querySelector('#swal-compromiso-descripcion') as HTMLTextAreaElement | null;
-        const checks = Array.from(popup?.querySelectorAll('input[type="checkbox"]:checked') ?? []) as HTMLInputElement[];
-        const titulo = tituloEl?.value?.trim() ?? '';
-        if (!titulo) {
-          Swal.showValidationMessage('El título es obligatorio');
-          return;
-        }
-        if (!checks.length) {
-          Swal.showValidationMessage('Selecciona al menos un responsable');
-          return;
-        }
-        return {
-          titulo,
-          descripcion: descripcionEl?.value?.trim() ?? '',
-          responsables: checks.map(c => +c.value),
-        };
-      },
-    });
-    if (!value) return;
+  cerrarModalCompromisoFlujo(): void {
+    this.showModalCompromisoFlujo = false;
+  }
 
-    this.proyectoService.actualizarCompromiso(compromiso.id, {
-      titulo: value.titulo,
-      descripcion: value.descripcion,
-      responsables: value.responsables,
+  guardarCompromisoFlujo(): void {
+    if (!this.flujoActivo) return;
+    if (!this.compromisoForm.titulo.trim()) {
+      Swal.fire('Validación', 'El título es obligatorio', 'warning');
+      return;
+    }
+    if (!this.compromisoForm.responsables.length) {
+      Swal.fire('Validación', 'Selecciona al menos un responsable', 'warning');
+      return;
+    }
+
+    const payload = {
+      titulo: this.compromisoForm.titulo.trim(),
+      descripcion: this.compromisoForm.descripcion.trim(),
+      responsables: this.compromisoForm.responsables,
       usuario_id: this.usuarioId,
-    }).subscribe({
-      next: () => {
-        Swal.fire('Actualizado', 'Compromiso actualizado', 'success');
+    };
+
+    const request = this.compromisoForm.id
+      ? this.proyectoService.actualizarCompromiso(this.compromisoForm.id, payload)
+      : this.proyectoService.crearCompromiso({ flujo_id: this.flujoActivo.id, ...payload });
+
+    request.subscribe({
+      next: (res: any) => {
+        this.showModalCompromisoFlujo = false;
+        this.showToast(res?.message ?? (this.compromisoForm.id ? 'Compromiso actualizado' : 'Compromiso creado'), 'success');
         this.cargarFlujoActivo();
       },
-      error: (err) => Swal.fire('Error', err?.error?.message ?? 'No se pudo actualizar el compromiso', 'error'),
+      error: (err) => Swal.fire('Error', err?.error?.message ?? 'No se pudo guardar el compromiso', 'error'),
     });
   }
 
@@ -2188,9 +2201,51 @@ export class ProyectosComponent implements OnInit {
     })[estado] ?? 'bg-gray-100 text-gray-700 border-gray-200';
   }
 
-  porcentajeCargaPersona(persona: { total: number }): number {
-    const max = Math.max(...this.compromisosPorPersona.map(p => p.total), 1);
-    return Math.round((persona.total / max) * 100);
+  porcentajeCargaPersona(persona: { total: number }, max = this.cargaMaximaComparativa): number {
+    return Math.round((persona.total / Math.max(max, 1)) * 100);
+  }
+
+  get calendarioPlano(): CalendarioDia[] {
+    return this.calendarioDias.flat();
+  }
+
+  get semanaCalendarioVisible(): CalendarioDia[] {
+    const referencia = this.calendarioDiaActivo;
+    if (!referencia) return [];
+
+    const inicio = new Date(referencia.fecha);
+    const dia = inicio.getDay();
+    const diff = dia === 0 ? -6 : 1 - dia;
+    inicio.setDate(inicio.getDate() + diff);
+    inicio.setHours(0, 0, 0, 0);
+
+    const fin = new Date(inicio);
+    fin.setDate(fin.getDate() + 6);
+    fin.setHours(23, 59, 59, 999);
+
+    return this.calendarioPlano.filter(item => item.fecha >= inicio && item.fecha <= fin);
+  }
+
+  get calendarioDiaActivo(): CalendarioDia | null {
+    const fechaActiva = this._fechaClave(this.fechaCalendarioActiva);
+    return this.calendarioPlano.find(item => this._fechaClave(item.fecha) === fechaActiva) ?? this.calendarioPlano.find(item => item.esMesActual) ?? null;
+  }
+
+  get resumenCalendarioActivo(): { total: number; seguimiento: number; proyecto: number; glpi: number; informes: number } {
+    const dias = this.vistaCalendarioModo === 'dia'
+      ? (this.calendarioDiaActivo ? [this.calendarioDiaActivo] : [])
+      : this.vistaCalendarioModo === 'semana'
+        ? this.semanaCalendarioVisible
+        : this.calendarioPlano.filter(dia => dia.esMesActual);
+
+    return dias.reduce((acc, dia) => {
+      acc.total += dia.tareas.length + dia.tareasExternas.length + dia.tareasInforme.length;
+      acc.seguimiento += dia.tareas.length;
+      acc.proyecto += dia.tareasExternas.filter(t => t.origen === 'proyecto').length;
+      acc.glpi += dia.tareasExternas.filter(t => t.origen === 'glpi').length;
+      acc.informes += dia.tareasInforme.length;
+      return acc;
+    }, { total: 0, seguimiento: 0, proyecto: 0, glpi: 0, informes: 0 });
   }
 
   formatearFechaCompromiso(fecha?: string | null): string {
@@ -2500,6 +2555,11 @@ export class ProyectosComponent implements OnInit {
       this._buildMapaExternas(),
       this._buildMapaInforme(),
     );
+
+    const fechaActiva = this.calendarioDiaActivo;
+    if (!fechaActiva || fechaActiva.fecha.getMonth() !== mes - 1) {
+      this.fechaCalendarioActiva = new Date(anio, mes - 1, 1);
+    }
   }
 
   public _construirCalendario(): void {
@@ -2737,6 +2797,55 @@ export class ProyectosComponent implements OnInit {
     });
   }
 
+  get participantesFlujoModal(): UsuarioOpcion[] {
+    return this._participantesOpcionesFlujo();
+  }
+
+  get coloresParticipantesFlujo(): Record<number, string> {
+    return Object.fromEntries(this.participantesFlujoModal.map(p => [p.id, this.getColorPorId(p.id)]));
+  }
+
+  get inicialesParticipantesFlujo(): Record<number, string> {
+    return Object.fromEntries(this.participantesFlujoModal.map(p => [p.id, this.getInicialesResponsable(p.id)]));
+  }
+
+  private _compromisoVisible(compromiso: { estado: string; responsables?: number[] }): boolean {
+    const coincideEstado = !this.filtroEstadosGlobal.length || this.filtroEstadosGlobal.includes(compromiso.estado);
+    const coincideUsuario = !this.filtroUsuariosSelec.length || (compromiso.responsables ?? []).some(rid => this.filtroUsuariosSelec.includes(rid));
+    return coincideEstado && coincideUsuario;
+  }
+
+  private _agruparCompromisosPorPersona(compromisos: Compromiso[]): CargaPersonaFlujo[] {
+    const mapa = new Map<number, CargaPersonaFlujo>();
+    for (const compromiso of compromisos) {
+      for (const rid of compromiso.responsables ?? []) {
+        const actual = mapa.get(rid) ?? {
+          usuario_id: rid,
+          nombre: this.nombreUsuario(rid),
+          total: 0,
+          completados: 0,
+          en_ejecucion: 0,
+          pendientes: 0,
+          compromisos: [],
+        };
+
+        actual.total += 1;
+        if (compromiso.estado === 'completado') actual.completados += 1;
+        else if (compromiso.estado === 'en_ejecucion') actual.en_ejecucion += 1;
+        else actual.pendientes += 1;
+        actual.compromisos.push(compromiso);
+        mapa.set(rid, actual);
+      }
+    }
+
+    return Array.from(mapa.values())
+      .sort((a, b) => b.en_ejecucion - a.en_ejecucion || b.total - a.total || a.nombre.localeCompare(b.nombre));
+  }
+
+  _fechaClave(fecha: Date): string {
+    return fecha.toISOString().slice(0, 10);
+  }
+
   private _participantesOpcionesFlujo(): UsuarioOpcion[] {
     const participantes = this.vistaMes?.participantes_info ?? [];
     if (participantes.length) return participantes.map(p => ({ id: p.id, nombre: p.nombre }));
@@ -2780,6 +2889,8 @@ export class ProyectosComponent implements OnInit {
     this.tareasInformeFiltradas = this._filtrarPorEstados(filtByUser, estados);
     this._initPaginador(this.paginadorInformeMesId, this.tareasInformeFiltradas,
       items => this.tareasInformePaginadas = items as InformeTarea[]);
+
+    if (this.vistaCalendario) this._construirCalendarioMes();
   }
 
   private _inicializarPaginadorSeguimiento(): void {

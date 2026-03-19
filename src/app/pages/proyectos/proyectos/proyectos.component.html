@@ -855,7 +855,7 @@
             Filtrar por persona
           </span>
           <button *ngIf="filtroUsuariosSelec.length"
-            (click)="filtroUsuariosSelec = []; _construirCalendarioMes()"
+            (click)="filtroUsuariosSelec = []; aplicarFiltrosGlobales()"
             class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
             Limpiar
           </button>
@@ -863,7 +863,7 @@
 
         <div *ngFor="let p of participantesDelMes"
           class="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer transition"
-          (click)="toggleUsuarioFiltro(p.id); _construirCalendarioMes()">
+          (click)="toggleUsuarioFiltro(p.id); aplicarFiltrosGlobales()">
           <div class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition"
             [ngClass]="filtroUsuariosSelec.includes(p.id)
               ? 'bg-indigo-600 border-indigo-600'
@@ -888,13 +888,57 @@
         {{ getInicialesResponsable(uid) }}
       </div>
       <span class="text-xs text-indigo-700 mx-0.5">{{ nombreUsuario(uid) }}</span>
-      <button (click)="toggleUsuarioFiltro(uid); _construirCalendarioMes()"
+      <button (click)="toggleUsuarioFiltro(uid); aplicarFiltrosGlobales()"
         class="text-indigo-400 hover:text-red-500 transition leading-none">
         <i class="bi bi-x text-sm"></i>
       </button>
     </div>
   </div>
   <!-- /BARRA FILTROS -->
+
+  <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Vista calendario</p>
+      <p class="text-sm text-gray-600">Los filtros de estado y personas se mantienen sincronizados entre mes, semana y día.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+        <button (click)="cambiarModoCalendario('mes')" class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+          [ngClass]="vistaCalendarioModo === 'mes' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white'">Mes</button>
+        <button (click)="cambiarModoCalendario('semana')" class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+          [ngClass]="vistaCalendarioModo === 'semana' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white'">Semana</button>
+        <button (click)="cambiarModoCalendario('dia')" class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+          [ngClass]="vistaCalendarioModo === 'dia' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white'">Día</button>
+      </div>
+      <div class="flex items-center gap-1">
+        <button (click)="navegarCalendario(-1)" class="rounded-lg border border-gray-200 p-1.5 text-gray-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button (click)="navegarCalendario(1)" class="rounded-lg border border-gray-200 p-1.5 text-gray-500 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-3 md:grid-cols-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total</p>
+      <p class="mt-2 text-2xl font-bold text-gray-900">{{ resumenCalendarioActivo.total }}</p>
+    </div>
+    <div class="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Seguimiento</p>
+      <p class="mt-2 text-2xl font-bold text-indigo-900">{{ resumenCalendarioActivo.seguimiento }}</p>
+    </div>
+    <div class="rounded-xl border border-teal-100 bg-teal-50/70 p-4 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wider text-teal-600">Proyecto / GLPI</p>
+      <p class="mt-2 text-2xl font-bold text-teal-900">{{ resumenCalendarioActivo.proyecto + resumenCalendarioActivo.glpi }}</p>
+    </div>
+    <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-4 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">Informes</p>
+      <p class="mt-2 text-2xl font-bold text-amber-900">{{ resumenCalendarioActivo.informes }}</p>
+    </div>
+  </div>
 
   <!-- ── Loading ────────────────────────────────────────────────────────── -->
   <div *ngIf="loadingVistaMes" class="grid grid-cols-7 gap-1">
@@ -903,80 +947,147 @@
   </div>
 
   <!-- ── Calendario ─────────────────────────────────────────────────────── -->
-  <div *ngIf="!loadingVistaMes" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div *ngIf="!loadingVistaMes" class="bg-white rounded-xl border border-gray-200 overflow-hidden" [ngSwitch]="vistaCalendarioModo">
 
-    <!-- Cabecera días de la semana -->
-    <div class="grid grid-cols-7 border-b border-gray-100">
-      <div *ngFor="let dia of diasSemana"
-        class="py-2 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">
-        {{ dia }}
-      </div>
-    </div>
-
-    <!-- Semanas -->
-    <div *ngFor="let semana of calendarioDias" class="grid grid-cols-7 border-b border-gray-100 last:border-b-0">
-      <div *ngFor="let dia of semana"
-        class="min-h-[90px] p-1.5 border-r border-gray-100 last:border-r-0 relative transition cursor-pointer"
-        [ngClass]="{
-          'bg-gray-50 opacity-50':    !dia.esMesActual,
-          'bg-indigo-50':              dia.esHoy,
-          'hover:bg-gray-50':          dia.esMesActual && !dia.esHoy && (dia.tareas.length || dia.tareasExternas.length || dia.tareasInforme.length),
-          'cursor-default':            !dia.esMesActual
-        }"
-        (click)="abrirModalDia(dia, $event)">
-
-        <!-- Número del día -->
-        <div class="flex justify-end mb-1">
-          <span class="text-xs font-semibold leading-none w-5 h-5 flex items-center justify-center rounded-full"
-            [ngClass]="{
-              'bg-indigo-600 text-white': dia.esHoy,
-              'text-gray-400':            !dia.esMesActual && !dia.esHoy,
-              'text-gray-700':             dia.esMesActual && !dia.esHoy
-            }">
-            {{ dia.fecha.getDate() }}
-          </span>
+    <ng-container *ngSwitchCase="'mes'">
+      <div class="grid grid-cols-7 border-b border-gray-100">
+        <div *ngFor="let dia of diasSemana"
+          class="py-2 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          {{ dia }}
         </div>
+      </div>
 
-        <!-- Resumen por usuario (avatares con semáforo) -->
-        <div *ngIf="dia.esMesActual" class="space-y-0.5">
-          <div *ngFor="let res of dia.resumenPorUsuario.slice(0, 3)"
-            class="flex items-center gap-1 px-1 py-0.5 rounded-md text-xs"
-            [ngClass]="getSemaforoResumenClass(res.semaforo)">
-            <!-- Avatar -->
-            <div class="w-4 h-4 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-              style="font-size:9px"
-              [ngClass]="getColorPorId(res.uid)">
-              {{ res.iniciales }}
-            </div>
-            <!-- Contadores por origen -->
-            <div class="flex items-center gap-1 flex-1 min-w-0">
-              <span *ngIf="res.countSeguimiento" class="flex items-center gap-0.5">
-                <i class="bi bi-calendar3" style="font-size:9px"></i>
-                <span>{{ res.countSeguimiento }}</span>
-              </span>
-              <span *ngIf="res.countProyecto" class="flex items-center gap-0.5">
-                <i class="bi bi-kanban" style="font-size:9px"></i>
-                <span>{{ res.countProyecto }}</span>
-              </span>
-              <span *ngIf="res.countGlpi" class="flex items-center gap-0.5">
-                <i class="bi bi-ticket-perforated" style="font-size:9px"></i>
-                <span>{{ res.countGlpi }}</span>
-              </span>
-              <span *ngIf="res.countInforme" class="flex items-center gap-0.5">
-                <i class="bi bi-file-earmark-text" style="font-size:9px"></i>
-                <span>{{ res.countInforme }}</span>
-              </span>
-            </div>
+      <div *ngFor="let semana of calendarioDias" class="grid grid-cols-7 border-b border-gray-100 last:border-b-0">
+        <div *ngFor="let dia of semana"
+          class="min-h-[90px] p-1.5 border-r border-gray-100 last:border-r-0 relative transition"
+          [ngClass]="{
+            'bg-gray-50 opacity-50': !dia.esMesActual,
+            'bg-indigo-50 ring-1 ring-inset ring-indigo-200': _fechaClave(dia.fecha) === _fechaClave(fechaCalendarioActiva),
+            'hover:bg-gray-50 cursor-pointer': dia.esMesActual,
+            'cursor-default': !dia.esMesActual
+          }"
+          (click)="seleccionarFechaCalendario(dia, true, $event)">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-semibold leading-none w-5 h-5 flex items-center justify-center rounded-full"
+              [ngClass]="{
+                'bg-indigo-600 text-white': dia.esHoy,
+                'text-gray-400': !dia.esMesActual && !dia.esHoy,
+                'text-gray-700': dia.esMesActual && !dia.esHoy
+              }">
+              {{ dia.fecha.getDate() }}
+            </span>
+            <button *ngIf="dia.esMesActual" (click)="seleccionarFechaCalendario(dia, false, $event); cambiarModoCalendario('dia')"
+              class="text-[11px] text-gray-400 transition hover:text-indigo-600">Ver</button>
           </div>
 
-          <!-- Indicador "más usuarios" -->
-          <div *ngIf="dia.resumenPorUsuario.length > 3"
-            class="text-center text-xs text-gray-400 font-medium">
-            +{{ dia.resumenPorUsuario.length - 3 }} más
+          <div *ngIf="dia.esMesActual" class="space-y-0.5">
+            <div *ngFor="let res of dia.resumenPorUsuario.slice(0, 3)"
+              class="flex items-center gap-1 px-1 py-0.5 rounded-md text-xs"
+              [ngClass]="getSemaforoResumenClass(res.semaforo)">
+              <div class="w-4 h-4 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                style="font-size:9px"
+                [ngClass]="getColorPorId(res.uid)">
+                {{ res.iniciales }}
+              </div>
+              <div class="flex items-center gap-1 flex-1 min-w-0">
+                <span *ngIf="res.countSeguimiento">{{ res.countSeguimiento }}S</span>
+                <span *ngIf="res.countProyecto">{{ res.countProyecto }}P</span>
+                <span *ngIf="res.countGlpi">{{ res.countGlpi }}G</span>
+                <span *ngIf="res.countInforme">{{ res.countInforme }}I</span>
+              </div>
+            </div>
+            <div *ngIf="dia.resumenPorUsuario.length > 3" class="text-center text-xs text-gray-400 font-medium">
+              +{{ dia.resumenPorUsuario.length - 3 }} más
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'semana'">
+      <div class="grid gap-3 p-4 md:grid-cols-7">
+        <div *ngFor="let dia of semanaCalendarioVisible; let i = index" class="calendar-focus-card rounded-xl border border-gray-200 p-3"
+          [ngClass]="{ 'border-indigo-300 bg-indigo-50/70': _fechaClave(dia.fecha) === _fechaClave(fechaCalendarioActiva) }">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p class="text-xs uppercase tracking-wider text-gray-400">{{ diasSemana[i] }}</p>
+              <h4 class="text-sm font-semibold text-gray-800">{{ dia.fecha | date:'dd MMM' }}</h4>
+            </div>
+            <button (click)="seleccionarFechaCalendario(dia, true, $event)" class="rounded-lg border border-gray-200 px-2 py-1 text-[11px] text-gray-500 hover:border-indigo-300 hover:text-indigo-600">
+              Detalle
+            </button>
+          </div>
+          <div class="space-y-2 text-xs text-gray-600">
+            <div class="flex items-center justify-between"><span>Seguimiento</span><strong>{{ dia.tareas.length }}</strong></div>
+            <div class="flex items-center justify-between"><span>Proyectos</span><strong>{{ dia.tareasExternas.length }}</strong></div>
+            <div class="flex items-center justify-between"><span>Informes</span><strong>{{ dia.tareasInforme.length }}</strong></div>
+          </div>
+          <div class="mt-3 space-y-1.5">
+            <div *ngFor="let res of dia.resumenPorUsuario.slice(0, 4)" class="flex items-center gap-2 rounded-lg bg-gray-50 px-2 py-1.5 text-xs text-gray-600">
+              <div class="h-5 w-5 rounded-full flex items-center justify-center text-white font-bold" [ngClass]="getColorPorId(res.uid)">{{ res.iniciales }}</div>
+              <span class="truncate flex-1">{{ res.nombre }}</span>
+              <strong>{{ res.total }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngSwitchDefault>
+      <div *ngIf="calendarioDiaActivo as dia" class="p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Vista diaria</p>
+            <h3 class="text-lg font-semibold text-gray-900">{{ dia.fecha | date:'EEEE dd MMMM' }}</h3>
+          </div>
+          <button (click)="abrirModalDia(dia)" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">
+            <i class="bi bi-list-task"></i>Ver detalle del día
+          </button>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-3">
+          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p class="text-xs uppercase tracking-wider text-gray-500">Seguimiento</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ dia.tareas.length }}</p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p class="text-xs uppercase tracking-wider text-gray-500">Proyectos / GLPI</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ dia.tareasExternas.length }}</p>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p class="text-xs uppercase tracking-wider text-gray-500">Informes</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">{{ dia.tareasInforme.length }}</p>
+          </div>
+        </div>
+
+        <div class="grid gap-3 lg:grid-cols-2">
+          <div class="rounded-xl border border-gray-200 p-4">
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">Carga por persona</h4>
+            <div class="space-y-2" *ngIf="dia.resumenPorUsuario.length; else sinCargaDia">
+              <div *ngFor="let res of dia.resumenPorUsuario" class="rounded-xl bg-gray-50 px-3 py-2.5">
+                <div class="flex items-center gap-2">
+                  <div class="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-bold" [ngClass]="getColorPorId(res.uid)">{{ res.iniciales }}</div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-gray-800">{{ res.nombre }}</p>
+                    <p class="text-xs text-gray-500">{{ res.total }} actividades en el día</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ng-template #sinCargaDia>
+              <p class="text-sm text-gray-500">No hay tareas visibles para la fecha seleccionada.</p>
+            </ng-template>
+          </div>
+          <div class="rounded-xl border border-gray-200 p-4">
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">Accesos rápidos</h4>
+            <div class="space-y-2 text-sm text-gray-600">
+              <button (click)="cambiarModoCalendario('semana')" class="calendar-quick-link">Ir a vista semanal</button>
+              <button (click)="cambiarModoCalendario('mes')" class="calendar-quick-link">Volver a vista mensual</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </div>
   <!-- /Calendario -->
 
@@ -1037,10 +1148,10 @@
         <span *ngIf="flujoActivo?.compromisos?.length"
           class="min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full text-xs font-bold leading-none"
           [ngClass]="vistaFlujo ? 'bg-white text-emerald-700' : 'bg-emerald-600 text-white'">
-          {{ flujoActivo!.compromisos!.length }}
+          {{ compromisosFiltrados.length }}
         </span>
       </button>
-      <button *ngIf="!vistaFlujo" (click)="vistaCalendario = true; _construirCalendarioMes()"
+      <button *ngIf="!vistaFlujo" (click)="abrirVistaCalendario(vistaCalendarioModo)"
         class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
         title="Vista calendario">
         <i class="bi bi-calendar3 text-sm"></i>
@@ -1283,12 +1394,12 @@
 
           <div class="grid grid-cols-1 xl:grid-cols-3 gap-0">
             <div class="xl:col-span-2 divide-y divide-gray-100">
-              <div *ngIf="!(flujoActivo.compromisos?.length)" class="text-center py-10 px-4">
+              <div *ngIf="!compromisosFiltrados.length" class="text-center py-10 px-4">
                 <i class="bi bi-list-check text-3xl text-gray-300 block mb-2"></i>
                 <p class="text-sm text-gray-500">Todavía no hay compromisos en este flujo.</p>
               </div>
 
-              <div *ngFor="let c of flujoActivo.compromisos ?? []" class="px-5 py-4 flex items-start gap-3">
+              <div *ngFor="let c of compromisosFiltrados" class="px-5 py-4 flex items-start gap-3">
                 <button
                   [disabled]="c.estado === 'completado'"
                   (click)="completarCompromiso(c)"
@@ -1360,28 +1471,36 @@
                   <div class="flex items-center justify-between"><span class="text-gray-500">Completados</span><strong class="text-gray-800">{{ compromisosCompletados }}</strong></div>
                   <div class="flex items-center justify-between"><span class="text-gray-500">En ejecución</span><strong class="text-gray-800">{{ compromisosEnEjecucion }}</strong></div>
                   <div class="flex items-center justify-between"><span class="text-gray-500">Pendientes</span><strong class="text-gray-800">{{ compromisosPendientes }}</strong></div>
-                  <div class="flex items-center justify-between"><span class="text-gray-500">Total</span><strong class="text-gray-800">{{ flujoActivo.compromisos?.length ?? 0 }}</strong></div>
+                  <div class="flex items-center justify-between"><span class="text-gray-500">Total visible</span><strong class="text-gray-800">{{ compromisosFiltrados.length }}</strong></div>
                 </div>
               </div>
 
               <div *ngIf="compromisosPorPersona.length">
-                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Carga actual por persona</h4>
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Gráfico de carga por persona</h4>
                 <div class="space-y-3">
-                  <div *ngFor="let p of compromisosPorPersona" class="bg-white rounded-lg border border-gray-200 px-3 py-2.5">
+                  <div *ngFor="let p of compromisosPorPersona" class="flow-load-card">
                     <div class="flex items-center gap-2">
-                      <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
                         [ngClass]="getColorPorId(p.usuario_id)">
                         {{ getInicialesResponsable(p.usuario_id) }}
                       </div>
                       <div class="min-w-0 flex-1">
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ p.nombre }}</p>
-                        <p class="text-xs text-gray-500">
-                          {{ p.total }} total · {{ p.pendientes }} pendientes · {{ p.en_ejecucion }} en ejecución · {{ p.completados }} completados
-                        </p>
+                        <div class="flex items-center justify-between gap-2">
+                          <p class="text-sm font-medium text-gray-800 truncate">{{ p.nombre }}</p>
+                          <span class="text-xs font-semibold text-gray-500">{{ p.total }} activos</span>
+                        </div>
+                        <p class="text-xs text-gray-500">{{ p.pendientes }} pendientes · {{ p.en_ejecucion }} en ejecución · {{ p.completados }} completados</p>
                       </div>
                     </div>
-                    <div class="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <div class="h-full rounded-full bg-indigo-500" [style.width.%]="porcentajeCargaPersona(p)"></div>
+                    <div class="mt-3">
+                      <div class="flow-load-bar">
+                        <span class="flow-load-segment flow-load-segment--pending" [style.width.%]="p.total ? (p.pendientes / p.total) * 100 : 0"></span>
+                        <span class="flow-load-segment flow-load-segment--progress" [style.width.%]="p.total ? (p.en_ejecucion / p.total) * 100 : 0"></span>
+                        <span class="flow-load-segment flow-load-segment--done" [style.width.%]="p.total ? (p.completados / p.total) * 100 : 0"></span>
+                      </div>
+                      <div class="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-full rounded-full bg-indigo-500" [style.width.%]="porcentajeCargaPersona(p)"></div>
+                      </div>
                     </div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                       <span *ngFor="let compromiso of p.compromisos"
@@ -1389,6 +1508,21 @@
                         [ngClass]="getEstadoCompromisoClase(compromiso.estado)">
                         {{ compromiso.titulo }}
                       </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="cargaAnteriorPorPersona.length">
+                <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Referencia del día anterior</h4>
+                <div class="space-y-2">
+                  <div *ngFor="let p of cargaAnteriorPorPersona" class="flow-load-compare">
+                    <div class="flex items-center justify-between gap-2 text-xs text-gray-500 mb-1">
+                      <span class="truncate">{{ p.nombre }}</span>
+                      <span>{{ p.total }} al cierre anterior</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div class="h-full rounded-full bg-amber-400" [style.width.%]="porcentajeCargaPersona(p)"></div>
                     </div>
                   </div>
                 </div>
@@ -4747,6 +4881,21 @@
         {{ t.message }}
     </div>
 </div>
+
+<app-modal-flujo-diario
+  [showModalFlujo]="showModalFlujoDiario"
+  [flujoForm]="flujoDiarioForm"
+  [showModalCompromiso]="showModalCompromisoFlujo"
+  [compromisoModalTitle]="compromisoFlujoTitulo"
+  [compromisoForm]="compromisoForm"
+  [participantes]="participantesFlujoModal"
+  [colorPorId]="coloresParticipantesFlujo"
+  [inicialesPorId]="inicialesParticipantesFlujo"
+  (cerrarModalFlujo)="cerrarModalNuevoFlujo()"
+  (guardarFlujo)="guardarFlujoDiario()"
+  (cerrarModalCompromiso)="cerrarModalCompromisoFlujo()"
+  (guardarCompromiso)="guardarCompromisoFlujo()">
+</app-modal-flujo-diario>
 
 <!-- ──────── MODAL: Config Semáforos ──────── -->
 <div *ngIf="showModalConfig" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
