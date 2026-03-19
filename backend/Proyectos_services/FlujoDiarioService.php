@@ -1,12 +1,14 @@
 <?php
 
 namespace App\Services\Proyectos;
- 
+
 use App\Models\Proyectos\FlujoDiario;
 use App\Models\Proyectos\Compromiso;
 use App\Models\Proyectos\SeguimientoMensual;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
- 
+use Illuminate\Support\Facades\Schema;
+
 class FlujoDiarioService
 {
     /**
@@ -20,7 +22,7 @@ class FlujoDiarioService
             ->latest()
             ->first();
     }
- 
+
     /**
      * Historial de flujos cerrados del seguimiento.
      */
@@ -30,7 +32,7 @@ class FlujoDiarioService
             ->orderByDesc('fecha')
             ->get(['id', 'titulo', 'fecha', 'estado', 'snapshot_cierre', 'snapshot_apertura']);
     }
- 
+
     /**
      * Crea un nuevo flujo diario.
      *
@@ -47,21 +49,21 @@ class FlujoDiarioService
             ->with('compromisos')
             ->latest()
             ->first();
- 
+
         $snapshotApertura = null;
- 
+
         if ($flujoAnterior) {
             $snapshotCierre = $this->buildSnapshot($flujoAnterior);
- 
+
             $flujoAnterior->update([
                 'estado'          => 'cerrado',
                 'snapshot_cierre' => $snapshotCierre,
             ]);
- 
+
             // El nuevo flujo abre con la foto de cómo cerró el anterior
             $snapshotApertura = $snapshotCierre;
         }
- 
+
         return FlujoDiario::create([
             'seguimiento_id'    => $data['seguimiento_id'],
             'usuario_gestor_id' => $data['usuario_id'],
@@ -71,7 +73,7 @@ class FlujoDiarioService
             'snapshot_apertura' => $snapshotApertura,
         ]);
     }
- 
+
     /**
      * Cierra explícitamente un flujo activo capturando su snapshot de trazabilidad.
      * (El admin lo usa al final de la reunión antes de crear el siguiente)
@@ -79,50 +81,94 @@ class FlujoDiarioService
     public function cerrarFlujo(FlujoDiario $flujo): void
     {
         $flujo->loadMissing('compromisos');
- 
+
         $flujo->update([
             'estado'          => 'cerrado',
             'snapshot_cierre' => $this->buildSnapshot($flujo),
         ]);
     }
- 
+
     /**
      * Crea un compromiso en el flujo indicado.
      */
     public function crearCompromiso(array $data): Compromiso
     {
-        return Compromiso::create([
+        $payload = [
             'flujo_id'     => $data['flujo_id'],
             'titulo'       => $data['titulo'],
             'descripcion'  => $data['descripcion'] ?? null,
             'estado'       => 'pendiente',
             'responsables' => $data['responsables'] ?? [],
-        ]);
+        ];
+
+        if ($this->compromisosHasColumn('fecha_inicio')) {
+            $payload['fecha_inicio'] = null;
+        }
+
+        if ($this->compromisosHasColumn('fecha_completado')) {
+            $payload['fecha_completado'] = null;
+        }
+
+        return Compromiso::create($payload);
     }
- 
+
     /**
      * Actualiza campos editables de un compromiso.
      */
     public function actualizarCompromiso(Compromiso $compromiso, array $data): void
     {
-        $compromiso->update(array_filter([
+        $payload = array_filter([
             'titulo'       => $data['titulo']       ?? null,
             'descripcion'  => $data['descripcion']  ?? null,
             'responsables' => $data['responsables'] ?? null,
             'notas'        => $data['notas']        ?? null,
-        ], fn ($v) => $v !== null));
+        ], fn ($v) => $v !== null);
+
+        if (array_key_exists('estado', $data) && in_array($data['estado'], ['pendiente', 'en_ejecucion', 'completado'], true)) {
+            $payload['estado'] = $data['estado'];
+        }
+
+        $compromiso->update($payload);
     }
- 
+
+    /**
+     * Marca un compromiso como iniciado.
+     */
+    public function iniciarCompromiso(Compromiso $compromiso): void
+    {
+        $payload = ['estado' => 'en_ejecucion'];
+
+        if ($this->compromisosHasColumn('fecha_inicio') && !$compromiso->fecha_inicio) {
+            $payload['fecha_inicio'] = Carbon::now('America/Bogota');
+        }
+
+        if ($this->compromisosHasColumn('fecha_completado')) {
+            $payload['fecha_completado'] = null;
+        }
+
+        $compromiso->update($payload);
+    }
+
     /**
      * Marca un compromiso como completado (solo puede avanzar, no retroceder).
      */
     public function completarCompromiso(Compromiso $compromiso): void
     {
-        $compromiso->update(['estado' => 'completado']);
+        $payload = ['estado' => 'completado'];
+
+        if ($this->compromisosHasColumn('fecha_inicio') && !$compromiso->fecha_inicio) {
+            $payload['fecha_inicio'] = Carbon::now('America/Bogota');
+        }
+
+        if ($this->compromisosHasColumn('fecha_completado')) {
+            $payload['fecha_completado'] = Carbon::now('America/Bogota');
+        }
+
+        $compromiso->update($payload);
     }
- 
+
     // ── Helpers privados ──────────────────────────────────────────────────────
- 
+
     /**
      * Construye el snapshot de trazabilidad del flujo.
      * Solo almacena user IDs — el front-end resuelve nombres desde usuariosCache.
@@ -130,31 +176,45 @@ class FlujoDiarioService
     private function buildSnapshot(FlujoDiario $flujo): array
     {
         $compromisos = $flujo->compromisos ?? collect();
- 
+
         // Acumular carga por persona
         $cargaMap = [];
         foreach ($compromisos as $c) {
             foreach (($c->responsables ?? []) as $uid) {
                 $uid = (int) $uid;
                 if (!isset($cargaMap[$uid])) {
-                    $cargaMap[$uid] = ['usuario_id' => $uid, 'total' => 0, 'completados' => 0];
+                    $cargaMap[$uid] = [
+                        'usuario_id'    => $uid,
+                        'total'         => 0,
+                        'completados'   => 0,
+                        'en_ejecucion'  => 0,
+                        'pendientes'    => 0,
+                    ];
                 }
                 $cargaMap[$uid]['total']++;
                 if ($c->estado === 'completado') {
                     $cargaMap[$uid]['completados']++;
+                } elseif ($c->estado === 'en_ejecucion') {
+                    $cargaMap[$uid]['en_ejecucion']++;
+                } else {
+                    $cargaMap[$uid]['pendientes']++;
                 }
             }
         }
- 
+
         return [
             'fecha'            => now()->toDateString(),
             'total'            => $compromisos->count(),
             'completados'      => $compromisos->where('estado', 'completado')->count(),
+            'en_ejecucion'     => $compromisos->where('estado', 'en_ejecucion')->count(),
+            'pendientes'       => $compromisos->where('estado', 'pendiente')->count(),
             'compromisos'      => $compromisos->map(fn ($c) => [
                 'id'           => $c->id,
                 'titulo'       => $c->titulo,
                 'estado'       => $c->estado,
                 'responsables' => $c->responsables ?? [],
+                'fecha_inicio' => $c->fecha_inicio?->toIso8601String(),
+                'fecha_completado' => $c->fecha_completado?->toIso8601String(),
             ])->values()->all(),
             'carga_por_persona' => array_values($cargaMap),
         ];
@@ -199,5 +259,10 @@ class FlujoDiarioService
     {
         $compromiso->delete();
     }
+
+    private function compromisosHasColumn(string $column): bool
+    {
+        return Schema::connection('proyectos')->hasColumn('compromisos', $column);
+    }
 }
- 
+

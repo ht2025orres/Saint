@@ -206,9 +206,11 @@ export interface Compromiso {
   flujo_id:     number;
   titulo:       string;
   descripcion?: string | null;
-  estado:       'pendiente' | 'completado';
+  estado:       'pendiente' | 'en_ejecucion' | 'completado';
   responsables: number[];
   notas?:       string | null;
+  fecha_inicio?: string | null;
+  fecha_completado?: string | null;
   created_at:   string;
   updated_at:   string;
 }
@@ -217,8 +219,10 @@ export interface SnapshotFlujo {
   fecha:              string;
   total:              number;
   completados:        number;
-  compromisos:        { id: number; titulo: string; estado: string; responsables: number[] }[];
-  carga_por_persona:  { usuario_id: number; nombre: string; total: number; completados: number }[];
+  en_ejecucion?:      number;
+  pendientes?:        number;
+  compromisos:        { id: number; titulo: string; estado: string; responsables: number[]; fecha_inicio?: string | null; fecha_completado?: string | null }[];
+  carga_por_persona:  { usuario_id: number; nombre?: string; total: number; completados: number; en_ejecucion?: number; pendientes?: number }[];
 }
  
 export interface FlujoDiario {
@@ -525,6 +529,10 @@ export class ProyectoService {
  
   actualizarCompromiso(id: number, data: Partial<Compromiso> & { usuario_id: number }): Observable<ApiMessage> {
     return this.http.put<ApiMessage>(`${this.api}/compromisos/${id}`, data);
+  }
+
+  iniciarCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.api}/compromisos/${id}/iniciar`, { usuario_id: usuarioId });
   }
  
   completarCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
