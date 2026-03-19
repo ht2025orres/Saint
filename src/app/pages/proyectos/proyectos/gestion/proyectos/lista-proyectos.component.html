@@ -1,0 +1,343 @@
+<!-- Filtros y controles de vista -->
+<div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+    <div class="flex flex-wrap gap-2">
+        <button
+            *ngFor="let f of [{v:'todos',l:'Todos',i:'bi-grid'},{v:'pendiente',l:'Pendientes',i:'bi-clock'},{v:'en_ejecucion',l:'En ejecución',i:'bi-play-circle'},{v:'completado',l:'Completados',i:'bi-check-circle'}]"
+            (click)="onCambiarFiltro.emit(f.v)"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition"
+            [ngClass]="filtroEstado === f.v ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+            <i [class]="'bi ' + f.i"></i> {{ f.l }}
+        </button>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="flex-1 max-w-md mx-4">
+        <div class="relative">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input 
+                type="text" 
+                [(ngModel)]="busquedaProyectos"
+                (ngModelChange)="onBusquedaChange.emit($event)"
+                placeholder="Buscar proyectos por título o descripción..."
+                class="w-full pl-9 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            >
+            <button 
+                *ngIf="busquedaProyectos"
+                (click)="onLimpiarBusqueda.emit()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-0.5">
+        <button (click)="onCambiarVistaProy.emit('tarjetas')"
+            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
+            [ngClass]="vistaProyectos === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+            <i class="bi bi-grid-3x3-gap-fill"></i> Tarjetas
+        </button>
+        <button (click)="onCambiarVistaProy.emit('lista')"
+            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
+            [ngClass]="vistaProyectos === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+            <i class="bi bi-list-ul"></i> Lista
+        </button>
+    </div>
+</div>
+
+<!-- Loading skeleton -->
+<div *ngIf="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div *ngFor="let i of [1,2,3,4,5,6]"
+        class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+        <div class="h-3 bg-gray-100 rounded w-1/2 mb-6"></div>
+        <div class="h-2 bg-gray-200 rounded mb-4"></div>
+    </div>
+</div>
+
+<div *ngIf="!loading">
+    <!-- Vista TARJETAS con paginación de 3 en 3 -->
+    <div *ngIf="vistaProyectos === 'tarjetas'" class="space-y-6">
+        <!-- Grid de tarjetas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div *ngFor="let proyecto of proyectosPaginados"
+                class="group bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden flex flex-col relative"
+                [ngClass]="'border-l-4 ' + getSemaforoBorderClass(proyecto.semaforo)"
+                (click)="onVerDetalle.emit(proyecto)">
+                <!-- Contenido de la tarjeta -->
+                <div class="p-5 flex-1 pt-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-gray-900 text-base leading-tight truncate"
+                                [title]="proyecto.titulo">{{ proyecto.titulo }}</h3>
+                            <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
+                                    [ngClass]="getEstadoBadgeClass(proyecto.estado)">
+                                    <i [class]="'bi ' + getEstadoIcon(proyecto.estado)"
+                                        style="font-size:10px"></i>
+                                    {{ proyecto.estado | uppercase }}
+                                </span>
+                                <span *ngIf="proyecto.nivel_usuario && proyecto.nivel_usuario !== 'lector'"
+                                    class="px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                                    <i class="bi bi-person-badge mr-0.5"></i>{{ proyecto.nivel_usuario }}
+                                </span>
+                            </div>
+                        </div>
+                        <span class="ml-2 flex-shrink-0" [title]="getSemaforoLabel(proyecto.semaforo)">
+                            <span class="w-2.5 h-2.5 rounded-full block"
+                                [ngClass]="getSemaforoClass(proyecto.semaforo)"></span>
+                        </span>
+                    </div>
+                    <p *ngIf="proyecto.descripcion" class="text-sm text-gray-500 mb-3 line-clamp-2">{{
+                        proyecto.descripcion | slice:0:120 }}{{ (proyecto.descripcion?.length ?? 0) > 120 ? '…'
+                        : '' }}</p>
+                    <div *ngIf="proyecto.fecha_limite_entrega"
+                        class="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+                        <i class="bi bi-calendar-event text-gray-400"></i>
+                        <span>Límite: <strong>{{ proyecto.fecha_limite_entrega | date:'dd/MM/yyyy HH:mm':'UTC'
+                                }}</strong></span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center mb-4">
+                        <div class="bg-slate-50 rounded-lg p-2">
+                            <div class="text-sm font-bold text-slate-700">{{ proyecto.total_actividades || 0 }}
+                            </div>
+                            <div class="text-xs text-gray-500 truncate">Actividades</div>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-2">
+                            <div class="text-sm font-bold text-slate-700">{{ proyecto.total_tareas || 0 }}</div>
+                            <div class="text-xs text-gray-500 truncate">Tareas</div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-2">
+                            <div class="text-sm font-bold text-green-700">{{ proyecto.tareas_completadas || 0 }}
+                            </div>
+                            <div class="text-xs text-gray-500 truncate">Listas</div>
+                        </div>
+                        <div class="bg-red-50 rounded-lg p-2">
+                            <div class="text-sm font-bold text-red-600">{{ proyecto.tareas_vencidas || 0 }}
+                            </div>
+                            <div class="text-xs text-gray-500 truncate">Vencidas</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Progreso</span><span
+                                class="font-semibold">{{ proyecto.progreso || 0 }}%</span></div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all"
+                                [ngClass]="(proyecto.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-500'"
+                                [style.width.%]="proyecto.progreso || 0"></div>
+                        </div>
+                    </div>
+                    <!-- Responsables -->
+                    <div *ngIf="proyecto.responsables?.length || proyecto.creado_por"
+                        class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                        <span class="text-xs text-gray-400">Resp.:</span>
+                        <div class="flex items-center">
+                            <ng-container *ngIf="proyecto.responsables?.length; else creadoPorAvatar">
+                                <div *ngFor="let rid of (proyecto.responsables || []).slice(0, 4); let i = index"
+                                    class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white"
+                                    [class.-ml-2]="i > 0"
+                                    [ngClass]="getColorPorId(rid)"
+                                    [title]="nombreUsuario(rid)">
+                                    {{ getInicialesResponsable(rid) }}
+                                </div>
+                                <span *ngIf="(proyecto.responsables || []).length > 4"
+                                    class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs ring-2 ring-white -ml-2">
+                                    +{{ (proyecto.responsables || []).length - 4 }}
+                                </span>
+                            </ng-container>
+                            <ng-template #creadoPorAvatar>
+                                <div *ngIf="proyecto.creado_por"
+                                    class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                    [ngClass]="getColorPorId(proyecto.creado_por)"
+                                    [title]="nombreUsuario(proyecto.creado_por)">
+                                    {{ getInicialesResponsable(proyecto.creado_por) }}
+                                </div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between"
+                    (click)="$event.stopPropagation()">
+                    <button (click)="onVerDetalle.emit(proyecto); $event.stopPropagation()"
+                        class="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition"><i
+                            class="bi bi-eye"></i> Ver detalle</button>
+                    <div class="flex gap-1">
+                        <button *ngIf="puedeEditarProyecto(proyecto)"
+                            (click)="onEditar.emit(proyecto); $event.stopPropagation()"
+                            class="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
+                            title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button *ngIf="puedeEditarProyecto(proyecto) && proyecto.estado !== 'completado'"
+                            (click)="onCambiarEstado.emit({proyecto: proyecto, nuevoEstado: 'completado'}); $event.stopPropagation()"
+                            class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                            title="Completar"><i class="bi bi-check-circle"></i></button>
+                        <button *ngIf="esAdminProyecto(proyecto)"
+                            (click)="onAbrirModalPermisos.emit({tipo: 'proyecto', id: proyecto.id}); $event.stopPropagation()"
+                            class="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                            title="Permisos"><i class="bi bi-people"></i></button>
+                        <button *ngIf="puedeEliminarProyecto(proyecto)" (click)="onEliminar.emit(proyecto); $event.stopPropagation()"
+                            class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paginador para vista de tarjetas (3 por página) -->
+        <div class="flex justify-center mt-6">
+            <app-shared-paginator 
+                [instanceId]="'proyectos-tarjetas'"
+                [pageSizeOptions]="[3,6,9,12]" 
+                [defaultPageSize]="3"
+                [showPageSizeSelector]="true" 
+                noDataMessage="No hay proyectos"
+                style="width: 100%;">
+            </app-shared-paginator>
+        </div>
+
+        <!-- Mensaje sin resultados -->
+        <div *ngIf="proyectos.length === 0"
+            class="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
+            <i class="bi bi-folder-x text-blue-400 text-4xl block mb-3"></i>
+            <h3 class="text-gray-700 font-semibold mb-1">No hay proyectos</h3>
+            <p class="text-gray-400 text-sm mb-4">{{ filtroEstado === 'todos' ? 'No tienes proyectos asignados.' : 'No hay proyectos con este estado.' }}</p>
+            <button *ngIf="puedeGestionarModulo" (click)="onCrearProyecto.emit()"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"><i
+                    class="bi bi-plus-lg"></i> Crear primer proyecto</button>
+        </div>
+    </div>
+
+    <!-- Vista LISTA con paginación normal -->
+    <div *ngIf="vistaProyectos === 'lista'" class="space-y-4">
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col"
+                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Proyecto</th>
+                        <th scope="col"
+                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            F. Límite</th>
+                        <th scope="col"
+                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Act / Tar</th>
+                        <th scope="col"
+                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Completadas</th>
+                        <th scope="col"
+                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Vencidas</th>
+                        <th scope="col"
+                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Progreso</th>
+                        <th scope="col"
+                            class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr *ngFor="let proyecto of proyectosPaginados" class="hover:bg-gray-50 transition relative" (click)="onVerDetalle.emit(proyecto)">
+                        <td class="px-4 py-3 whitespace-nowrap pl-5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                    [ngClass]="getSemaforoClass(proyecto.semaforo)"
+                                    [title]="getSemaforoLabel(proyecto.semaforo)"></span>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-sm font-medium text-gray-900 truncate" style="max-width: 200px;"
+                                            [title]="proyecto.titulo">{{ proyecto.titulo }}</span>
+                                        <span
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
+                                            [ngClass]="getEstadoBadgeClass(proyecto.estado)"><i
+                                                [class]="'bi ' + getEstadoIcon(proyecto.estado)"
+                                                style="font-size:9px"></i>{{ proyecto.estado | uppercase
+                                            }}</span>
+                                    </div>
+                                    <!-- Avatares responsables en vista lista -->
+                                    <div *ngIf="proyecto.responsables?.length || proyecto.creado_por"
+                                         class="flex items-center gap-1 mt-0.5">
+                                        <ng-container *ngIf="proyecto.responsables?.length; else listaCreadoPor">
+                                            <div *ngFor="let rid of (proyecto.responsables || []).slice(0, 3); let i = index"
+                                                 class="w-4 h-4 rounded-full flex items-center justify-center text-white ring-1 ring-white"
+                                                 [class.-ml-1]="i > 0"
+                                                 [ngClass]="getColorPorId(rid)"
+                                                 [title]="nombreUsuario(rid)"
+                                                 style="font-size: 8px; font-weight: 700;">
+                                                {{ getInicialesResponsable(rid) }}
+                                            </div>
+                                        </ng-container>
+                                        <ng-template #listaCreadoPor>
+                                            <div *ngIf="proyecto.creado_por"
+                                                 class="w-4 h-4 rounded-full flex items-center justify-center text-white"
+                                                 [ngClass]="getColorPorId(proyecto.creado_por)"
+                                                 [title]="nombreUsuario(proyecto.creado_por)"
+                                                 style="font-size: 8px; font-weight: 700;">
+                                                {{ getInicialesResponsable(proyecto.creado_por) }}
+                                            </div>
+                                        </ng-template>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"><span
+                                *ngIf="proyecto.fecha_limite_entrega"><i
+                                    class="bi bi-calendar-event mr-1 text-gray-400"></i>{{
+                                proyecto.fecha_limite_entrega | date:'dd/MM/yyyy' }}</span><ng-template
+                                #sinF>—</ng-template></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><span
+                                class="font-medium">{{ proyecto.total_actividades || 0 }}</span> / <span
+                                class="font-medium">{{ proyecto.total_tareas || 0 }}</span></td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-medium">{{
+                            proyecto.tareas_completadas || 0 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-medium">{{
+                            proyecto.tareas_vencidas || 0 }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                    <div class="h-1.5 rounded-full transition-all"
+                                        [ngClass]="(proyecto.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-500'"
+                                        [style.width.%]="proyecto.progreso || 0"></div>
+                                </div><span class="text-xs text-gray-600">{{ proyecto.progreso || 0 }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end gap-1">
+                                <button (click)="onVerDetalle.emit(proyecto); $event.stopPropagation()"
+                                    class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                    title="Ver detalle"><i class="bi bi-eye"></i></button>
+                                <button *ngIf="puedeEditarProyecto(proyecto)"
+                                    (click)="onEditar.emit(proyecto); $event.stopPropagation()"
+                                    class="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
+                                    title="Editar"><i class="bi bi-pencil"></i></button>
+                                <button *ngIf="puedeEliminarProyecto(proyecto)"
+                                    (click)="onEliminar.emit(proyecto); $event.stopPropagation()"
+                                    class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                    title="Eliminar"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Mensaje sin resultados en tabla -->
+            <div *ngIf="proyectos.length === 0" class="text-center py-12">
+                <i class="bi bi-folder-x text-blue-400 text-4xl block mb-3"></i>
+                <h3 class="text-gray-700 font-semibold mb-1">No hay proyectos</h3>
+                <p class="text-gray-400 text-sm mb-4">{{ filtroEstado === 'todos' ? 'No tienes proyectos asignados.' : 'No hay proyectos con este estado.' }}</p>
+            </div>
+        </div>
+
+        <!-- Paginador para vista de lista (paginación normal) -->
+        <div class="flex justify-center mt-4">
+            <app-shared-paginator 
+                [instanceId]="'proyectos-lista'"
+                [pageSizeOptions]="[5,10,20,50]" 
+                [defaultPageSize]="10"
+                [showPageSizeSelector]="true" 
+                noDataMessage="No hay proyectos"
+                style="width: 100%;">
+            </app-shared-paginator>
+        </div>
+    </div>
+</div>

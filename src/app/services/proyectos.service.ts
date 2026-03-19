@@ -15,6 +15,18 @@ export type NivelTarea      = 'admin' | 'parcial' | 'basico' | 'sin_acceso';
 export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi';
 export type FuenteTarea = OrigenTarea;
 
+export type EstadoInforme      = 'abierto' | 'en_proceso' | 'cerrado';
+export type EstadoInformeTarea = 'pendiente' | 'en_ejecucion' | 'completado';
+export type TipoInforme =
+  | 'Incidente'
+  | 'Hallazgo de Auditoría'
+  | 'Riesgo Tecnológico'
+  | 'Vulnerabilidad de Seguridad'
+  | 'Mejora del Proceso';
+export type NivelImpacto = 'Crítico' | 'Alto' | 'Medio' | 'Bajo';
+
+// ── INTERFACES ────────────────────────────────────────────────────────────────
+
 export interface TareaConsolidada {
   id:                   number;
   origen:               OrigenTarea;
@@ -29,6 +41,7 @@ export interface TareaConsolidada {
   notas?:               string | null;
   usuario_id:           number;
   prioridad?:           number;
+  proyecto_nombre?:     string;
 }
 
 export interface TareasConsolidadasResponse {
@@ -94,6 +107,49 @@ export interface Tarea {
   created_at: string; updated_at: string;
 }
 
+export interface Informe {
+  id: number;
+  titulo: string;
+  descripcion_hallazgo: string;
+  tipo: TipoInforme;
+  nivel_impacto: NivelImpacto;
+  fecha_evento: string;
+  causa_raiz?: string | null;
+  sistemas_afectados?: string | null;
+  impacto_negocio?: string | null;
+  accion_correctiva?: string | null;
+  accion_preventiva?: string | null;
+  control_tecnologico?: string | null;
+  fecha_implementacion?: string | null;
+  estado: EstadoInforme;
+  creado_por: number;
+  created_at: string;
+  updated_at: string;
+  total_tareas?: number;
+  tareas_completadas?: number;
+  tareas_vencidas?: number;
+  progreso?: number;
+  puede_gestionar?: boolean;
+  es_creador?: boolean;
+  tareas?: InformeTarea[];
+}
+
+export interface InformeTarea {
+  id: number;
+  informe_id: number;
+  responsable_id: number;
+  titulo: string;
+  descripcion?: string | null;
+  estado: EstadoInformeTarea;
+  fecha_limite_entrega?: string | null;
+  fecha_completado?: string | null;
+  semaforo?: string | null;
+  creado_por: number;
+  created_at: string;
+  updated_at: string;
+  informe_titulo?: string;
+}
+
 // ── SEGUIMIENTO ───────────────────────────────────────────────────────────────
 
 export interface SeguimientoAnual {
@@ -140,6 +196,43 @@ export interface SeguimientoTarea {
   titulo: string; descripcion?: string; estado: string;
   notas?: string; fecha_limite_entrega?: string; fecha_completado?: string;
   semaforo?: Semaforo;
+  responsables?: number[];   // ← NUEVO
+}
+
+// ── INTERFACES FLUJOS DIARIOS ─────────────────────────────────────────────────
+ 
+export interface Compromiso {
+  id:           number;
+  flujo_id:     number;
+  titulo:       string;
+  descripcion?: string | null;
+  estado:       'pendiente' | 'completado';
+  responsables: number[];
+  notas?:       string | null;
+  created_at:   string;
+  updated_at:   string;
+}
+ 
+export interface SnapshotFlujo {
+  fecha:              string;
+  total:              number;
+  completados:        number;
+  compromisos:        { id: number; titulo: string; estado: string; responsables: number[] }[];
+  carga_por_persona:  { usuario_id: number; nombre: string; total: number; completados: number }[];
+}
+ 
+export interface FlujoDiario {
+  id:                  number;
+  seguimiento_id:      number;
+  titulo:              string;
+  fecha:               string;
+  usuario_gestor_id:   number;
+  estado:              'activo' | 'cerrado';
+  snapshot_cierre?:    SnapshotFlujo | null;
+  snapshot_apertura?:  SnapshotFlujo | null;
+  compromisos?:        Compromiso[];
+  created_at:          string;
+  updated_at:          string;
 }
 
 type ApiResponse<T> = { success: boolean; data: T };
@@ -150,6 +243,8 @@ export class ProyectoService {
   private readonly api = environment.URL_API_LARAVEL;
 
   constructor(private http: HttpClient) {}
+
+  // ── TAREAS CONSOLIDADAS ───────────────────────────────────────────────────
 
   getTareasConsolidadas(
     usuarioId: number,
@@ -162,10 +257,10 @@ export class ProyectoService {
       .set('mes', mes)
       .set('anio', anio)
       .set('fuentes', fuentes.join(','));
-    return this.http.get<TareasConsolidadasResponse>(
-      `${this.api}/tareas-consolidadas`, { params }
-    );
+    return this.http.get<TareasConsolidadasResponse>(`${this.api}/tareas-consolidadas`, { params });
   }
+
+  // ── SEMÁFOROS ─────────────────────────────────────────────────────────────
 
   getConfigSemaforo(): Observable<ApiResponse<ConfiguracionSemaforo[]>> {
     return this.http.get<ApiResponse<ConfiguracionSemaforo[]>>(`${this.api}/semaforo/configuracion`);
@@ -175,12 +270,18 @@ export class ProyectoService {
     return this.http.put<ApiResponse<ConfiguracionSemaforo>>(`${this.api}/semaforo/configuracion/${tipo}`, data);
   }
 
+  // ── PROYECTOS ─────────────────────────────────────────────────────────────
+
   getDashboard(usuarioId: number): Observable<ApiResponse<any>> {
     return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/dashboard`, { params: { usuario_id: usuarioId } });
   }
 
   obtenerDetalleProyecto(id: number, usuarioId: number): Observable<ApiResponse<any>> {
     return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/${id}/detalle-completo`, { params: { usuario_id: usuarioId } });
+  }
+
+  calcularFechasTareas(proyectoId: number, usuarioId: number, responsables: number[]): Observable<any> {
+    return this.http.post(`${this.api}/proyectos/${proyectoId}/calcular-fechas`, { usuario_id: usuarioId, responsables });
   }
 
   getProyectos(usuarioId: number, filtros?: { estado?: string; activos?: boolean }): Observable<ApiResponse<Proyecto[]>> {
@@ -210,6 +311,8 @@ export class ProyectoService {
     return this.http.get<ApiResponse<Proyecto>>(`${this.api}/proyectos/${id}/detalle-completo`, { params: { usuario_id: usuarioId } });
   }
 
+  // ── PERMISOS ──────────────────────────────────────────────────────────────
+
   getPermisosEntidad(tipo: 'proyecto' | 'actividad' | 'tarea', id: number, usuarioId: number): Observable<ApiResponse<PermisoGranular[]>> {
     const url = tipo === 'proyecto' ? `proyectos/${id}/permisos` : tipo === 'actividad' ? `actividades/${id}/permisos` : `tareas/${id}/permisos`;
     return this.http.get<ApiResponse<PermisoGranular[]>>(`${this.api}/${url}`, { params: { usuario_id: usuarioId } });
@@ -219,6 +322,8 @@ export class ProyectoService {
     const url = tipo === 'proyecto' ? `proyectos/${id}/permisos` : tipo === 'actividad' ? `actividades/${id}/permisos` : `tareas/${id}/permisos`;
     return this.http.post<ApiMessage>(`${this.api}/${url}`, { usuario_id: usuarioId, asignaciones });
   }
+
+  // ── ACTIVIDADES ───────────────────────────────────────────────────────────
 
   crearActividad(data: Partial<Actividad> & { usuario_id: number }): Observable<ApiResponse<Actividad> & ApiMessage> {
     return this.http.post<any>(`${this.api}/actividades`, data);
@@ -232,7 +337,21 @@ export class ProyectoService {
     return this.http.delete<ApiMessage>(`${this.api}/actividades/${id}`, { params: { usuario_id: usuarioId } });
   }
 
-  crearTarea(data: Partial<Tarea> & { usuario_id: number, proyecto_id?: number }): Observable<ApiResponse<Tarea>> {
+  asignarUsuarioActividad(
+    actividadId: number,
+    usuarioId: number,
+    asignadoId: number,
+    nivel: 'admin' | 'gestor' | 'colaborador' | 'visualizador' = 'colaborador'
+  ): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(
+      `${this.api}/actividades/${actividadId}/asignar-usuario`,
+      { usuario_id: usuarioId, asignado_id: asignadoId, nivel }
+    );
+  }
+
+  // ── TAREAS ────────────────────────────────────────────────────────────────
+
+  crearTarea(data: Partial<Tarea> & { usuario_id: number; proyecto_id?: number }): Observable<ApiResponse<Tarea>> {
     return this.http.post<any>(`${this.api}/tareas`, data);
   }
 
@@ -248,25 +367,25 @@ export class ProyectoService {
     return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { usuario_id: usuarioId });
   }
 
+  // ── SEGUIMIENTOS ──────────────────────────────────────────────────────────
+
+  TraerIdSeguimientoDelAnio(anio: number): Observable<ApiResponse<number>> {
+    return this.http.get<ApiResponse<number>>(`${this.api}/seguimiento/anio/${anio}`);
+  }
+
   getSeguimientos(usuarioId: number): Observable<ApiResponse<SeguimientoAnual[]>> {
-    return this.http.get<ApiResponse<SeguimientoAnual[]>>(`${this.api}/seguimientos`, {
-      params: { usuario_id: usuarioId },
-    });
+    return this.http.get<ApiResponse<SeguimientoAnual[]>>(`${this.api}/seguimientos`, { params: { usuario_id: usuarioId } });
   }
 
   getVistaMes(id: number, mes: number, usuarioId: number): Observable<ApiResponse<VistaMes>> {
-    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, {
-      params: { usuario_id: usuarioId },
-    });
+    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, { params: { usuario_id: usuarioId } });
   }
 
   getDetalleSeguimiento(id: number, usuarioId: number): Observable<ApiResponse<SeguimientoMensual>> {
     return this.http.get<ApiResponse<SeguimientoMensual>>(`${this.api}/seguimientos/${id}`, { params: { usuario_id: usuarioId } });
   }
 
-  crearSeguimiento(data: {
-    anio: number; titulo?: string; usuario_id: number; participantes?: number[];
-  }): Observable<ApiResponse<SeguimientoAnual> & ApiMessage> {
+  crearSeguimiento(data: { anio: number; titulo?: string; usuario_id: number; participantes?: number[] }): Observable<ApiResponse<SeguimientoAnual> & ApiMessage> {
     return this.http.post<any>(`${this.api}/seguimientos`, data);
   }
 
@@ -278,16 +397,13 @@ export class ProyectoService {
     return this.http.post<ApiMessage>(`${this.api}/seguimientos/${id}/cerrar`, { usuario_id: usuarioId });
   }
 
+  // ── TAREAS DE SEGUIMIENTO ─────────────────────────────────────────────────
+
   crearSeguimientoTarea(data: {
-    semana_id?: number;
-    seguimiento_id?: number;
-    usuario_id: number;
-    usuario_asignado_id?: number;
-    titulo: string;
-    descripcion?: string;
-    estado?: string;
-    notas?: string;
-    fecha_limite_entrega?: string;
+    semana_id?: number; seguimiento_id?: number; usuario_id: number;
+    responsables?: number[];          // ← NUEVO (reemplaza usuario_asignado_id)
+    titulo: string; descripcion?: string;
+    estado?: string; notas?: string; fecha_limite_entrega?: string;
   }): Observable<ApiResponse<SeguimientoTarea> & ApiMessage> {
     return this.http.post<any>(`${this.api}/seguimiento-tareas`, data);
   }
@@ -303,4 +419,120 @@ export class ProyectoService {
   eliminarSeguimientoTarea(id: number, usuarioId: number): Observable<ApiMessage> {
     return this.http.delete<ApiMessage>(`${this.api}/seguimiento-tareas/${id}`, { params: { usuario_id: usuarioId } });
   }
+
+  // ── EVIDENCIAS ────────────────────────────────────────────────────────────
+
+  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea', id: number): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(
+      `${this.api}/${tipo === 'tarea' ? 'tareas' : 'seguimiento-tareas'}/${id}/evidencias`,
+      { params: { tipo } }
+    );
+  }
+
+  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea', id: number, archivo: File, usuarioId: number): Observable<any> {
+    const form = new FormData();
+    form.append('archivo', archivo);
+    form.append('tipo', tipo);
+    form.append('usuario_id', String(usuarioId));
+    return this.http.post<any>(
+      `${this.api}/${tipo === 'tarea' ? 'tareas' : 'seguimiento-tareas'}/${id}/evidencias`, form
+    );
+  }
+
+  getUrlEvidencia(evidenciaId: number): Observable<{ success: boolean; url: string }> {
+    return this.http.get<any>(`${this.api}/evidencias/${evidenciaId}/url`);
+  }
+
+  eliminarEvidencia(evidenciaId: number, usuarioId: number): Observable<any> {
+    return this.http.delete<any>(`${this.api}/evidencias/${evidenciaId}`, { params: { usuario_id: usuarioId } });
+  }
+
+  // ── INFORMES ──────────────────────────────────────────────────────────────
+
+  getInformes(
+    usuarioId: number,
+    filtros?: { estado?: string; busqueda?: string },
+  ): Observable<ApiResponse<Informe[]>> {
+    let params = new HttpParams().set('usuario_id', usuarioId);
+    if (filtros?.estado && filtros.estado !== 'todos') params = params.set('estado', filtros.estado);
+    if (filtros?.busqueda)                             params = params.set('busqueda', filtros.busqueda);
+    return this.http.get<ApiResponse<Informe[]>>(`${this.api}/informes`, { params });
+  }
+
+  getInformeDetalle(id: number, usuarioId: number): Observable<ApiResponse<Informe>> {
+    return this.http.get<ApiResponse<Informe>>(`${this.api}/informes/${id}`, { params: { usuario_id: usuarioId } });
+  }
+
+  crearInforme(data: Partial<Informe> & { usuario_id: number }): Observable<ApiResponse<Informe> & ApiMessage> {
+    return this.http.post<any>(`${this.api}/informes`, data);
+  }
+
+  actualizarInforme(id: number, data: Partial<Informe> & { usuario_id: number }): Observable<ApiMessage> {
+    return this.http.put<ApiMessage>(`${this.api}/informes/${id}`, data);
+  }
+
+  eliminarInforme(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.delete<ApiMessage>(`${this.api}/informes/${id}`, { params: { usuario_id: usuarioId } });
+  }
+
+  // ── TAREAS DE INFORME ─────────────────────────────────────────────────────
+
+  getInformeTareas(informeId: number, usuarioId: number): Observable<ApiResponse<InformeTarea[]>> {
+    return this.http.get<ApiResponse<InformeTarea[]>>(`${this.api}/informes/${informeId}/tareas`, { params: { usuario_id: usuarioId } });
+  }
+
+  crearInformeTarea(data: Partial<InformeTarea> & { usuario_id: number }): Observable<ApiResponse<InformeTarea> & ApiMessage> {
+    return this.http.post<any>(`${this.api}/informe-tareas`, data);
+  }
+
+  actualizarInformeTarea(id: number, data: Partial<InformeTarea> & { usuario_id: number }): Observable<ApiMessage> {
+    return this.http.put<ApiMessage>(`${this.api}/informe-tareas/${id}`, data);
+  }
+
+  completarInformeTarea(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.api}/informe-tareas/${id}/completar`, { usuario_id: usuarioId });
+  }
+
+  eliminarInformeTarea(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.delete<ApiMessage>(`${this.api}/informe-tareas/${id}`, { params: { usuario_id: usuarioId } });
+  }
+
+  getMisInformeTareas(usuarioId: number): Observable<ApiResponse<InformeTarea[]>> {
+    return this.http.get<ApiResponse<InformeTarea[]>>(`${this.api}/mis-tareas-informe`, { params: { usuario_id: usuarioId } });
+  }
+
+  // ── FLUJOS DIARIOS ────────────────────────────────────────────────────────────
+ 
+  getFlujoActivo(seguimientoId: number, usuarioId: number): Observable<ApiResponse<FlujoDiario | null>> {
+    return this.http.get<any>(`${this.api}/seguimientos/${seguimientoId}/flujo-activo`, { params: { usuario_id: usuarioId } });
+  }
+ 
+  getFlujos(seguimientoId: number, usuarioId: number): Observable<ApiResponse<FlujoDiario[]>> {
+    return this.http.get<ApiResponse<FlujoDiario[]>>(`${this.api}/seguimientos/${seguimientoId}/flujos`, { params: { usuario_id: usuarioId } });
+  }
+ 
+  crearFlujo(data: { seguimiento_id: number; titulo?: string; fecha: string; usuario_id: number }): Observable<ApiResponse<FlujoDiario> & ApiMessage> {
+    return this.http.post<any>(`${this.api}/flujos-diarios`, data);
+  }
+ 
+  cerrarFlujo(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.api}/flujos-diarios/${id}/cerrar`, { usuario_id: usuarioId });
+  }
+ 
+  crearCompromiso(data: { flujo_id: number; titulo: string; descripcion?: string; responsables: number[]; usuario_id: number }): Observable<ApiResponse<Compromiso> & ApiMessage> {
+    return this.http.post<any>(`${this.api}/compromisos`, data);
+  }
+ 
+  actualizarCompromiso(id: number, data: Partial<Compromiso> & { usuario_id: number }): Observable<ApiMessage> {
+    return this.http.put<ApiMessage>(`${this.api}/compromisos/${id}`, data);
+  }
+ 
+  completarCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.api}/compromisos/${id}/completar`, { usuario_id: usuarioId });
+  }
+ 
+  eliminarCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.delete<ApiMessage>(`${this.api}/compromisos/${id}`, { params: { usuario_id: usuarioId } });
+  }
+
 }

@@ -21,6 +21,8 @@ import { NgxPanZoomModule } from 'ngx-panzoom'; // Import the PanzoomModule
 import { GenerarComponent } from './pages/inconsistencias/generar/generar.component';
 import { MisInconsistenciasModule } from './pages/inconsistencias/mis-inconsistencias/mis-inconsistencias.module';
 
+import { TaskPanelComponent } from './shared/task-panel/task-panel.component';
+
 // Technical data sheet
 import { TechnicalDataSheetsReportComponent } from './pages/technical-data-sheets-report/technical-data-sheets-report.component';
 import { CreateTechnicalSheetComponent } from './pages/technicalsheet/create/create-technical-sheet.component';
@@ -73,6 +75,7 @@ registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({ declarations: [
         AppComponent,
+        TaskPanelComponent,
         DashboardComponent,
         MetricCardComponent,
         PagesComponent,
@@ -138,6 +141,9 @@ registerLocaleData(localeEs, 'es-CO');
         /* Proyectos */
         ProyectosModule
     ], 
+    exports: [
+        TaskPanelComponent
+    ],
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },

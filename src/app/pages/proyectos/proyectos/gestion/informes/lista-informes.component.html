@@ -1,0 +1,81 @@
+<!-- Filtros y controles -->
+<div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+    <div class="flex flex-wrap gap-2">
+        <button *ngFor="let f of [
+            {v:'todos',l:'Todos',i:'bi-grid'},
+            {v:'abierto',l:'Abiertos',i:'bi-exclamation-circle'},
+            {v:'en_proceso',l:'En proceso',i:'bi-arrow-repeat'},
+            {v:'cerrado',l:'Cerrados',i:'bi-check-circle'}]"
+            (click)="onCambiarFiltro.emit(f.v)"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition"
+            [ngClass]="filtroEstadoInforme === f.v
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+            <i [class]="'bi ' + f.i"></i> {{ f.l }}
+        </button>
+    </div>
+
+    <div class="flex-1 max-w-md mx-4">
+        <div class="relative">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" [(ngModel)]="busquedaInformes"
+                (ngModelChange)="onBusquedaInformesChange.emit()"
+                placeholder="Buscar informes..."
+                class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        </div>
+    </div>
+
+    <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-0.5">
+        <button (click)="onCambiarVista.emit('tarjetas')"
+            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
+            [ngClass]="vistaInformes === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+        </button>
+        <button (click)="onCambiarVista.emit('lista')"
+            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
+            [ngClass]="vistaInformes === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
+            <i class="bi bi-list-ul"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Loading -->
+<div *ngIf="loadingInformes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div *ngFor="let i of [1,2,3,4,5,6]" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+        <div class="h-3 bg-gray-100 rounded w-1/2 mb-6"></div>
+        <div class="h-2 bg-gray-200 rounded mb-4"></div>
+    </div>
+</div>
+
+<div *ngIf="!loadingInformes">
+    <!-- Vista Tarjetas -->
+    <div *ngIf="vistaInformes === 'tarjetas'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div *ngFor="let inf of informes"
+            class="bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden flex flex-col"
+            (click)="onVerDetalleInforme.emit(inf)">
+            <!-- Contenido similar al original -->
+            <div class="p-5 flex-1">
+                <h3 class="font-bold text-gray-900 text-base leading-tight mb-2">{{ inf.titulo }}</h3>
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <span class="px-2 py-0.5 text-xs rounded-full" [ngClass]="getImpactoBadgeClass(inf.nivel_impacto)">{{ inf.nivel_impacto }}</span>
+                    <span class="px-2 py-0.5 text-xs rounded-full" [ngClass]="getTipoBadgeClass(inf.tipo)">{{ inf.tipo }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="bi bi-calendar-event mr-1"></i>{{ inf.fecha_creacion | date:'dd/MM/yyyy' }}</span>
+                    <span class="font-semibold" [ngClass]="getEstadoBadgeClass(inf.estado)">{{ inf.estado | uppercase }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje sin resultados -->
+    <div *ngIf="informes.length === 0" class="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
+        <i class="bi bi-journal-x text-blue-400 text-4xl block mb-3"></i>
+        <h3 class="text-gray-700 font-semibold mb-1">No hay informes</h3>
+        <button *ngIf="puedeGestionarModulo" (click)="onAbrirModalCrearInforme.emit()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+            Crear informe
+        </button>
+    </div>
+</div>

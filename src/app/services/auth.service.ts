@@ -119,10 +119,17 @@ export class AuthService {
   }
 
   getTokenData(accessToken: string): any {
-    if (accessToken != null) {
-      return JSON.parse(atob(accessToken.split('.')[1]));
-    }
-    return null;
+    if (!accessToken) return null;
+
+    const payload = accessToken.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+
+    const decoded = new TextDecoder().decode(bytes);
+
+    return JSON.parse(decoded);
   }
 
   isAuthenticated(): boolean { /*Metodo que evalua si un pages ya esta autenticado en el sitema */
