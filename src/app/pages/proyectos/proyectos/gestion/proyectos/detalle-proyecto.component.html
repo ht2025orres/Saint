@@ -50,8 +50,8 @@
                         <div class="text-2xl font-bold text-blue-700">{{ detalleProyecto.total_actividades || 0 }}</div>
                         <div class="text-xs text-gray-500 mt-0.5">Actividades</div>
                     </div>
-                    <div class="bg-slate-50 rounded-xl p-3 text-center">
-                        <div class="text-2xl font-bold text-slate-700">{{ detalleProyecto.total_tareas || 0 }}</div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold text-gray-700">{{ detalleProyecto.total_tareas || 0 }}</div>
                         <div class="text-xs text-gray-500 mt-0.5">Tareas</div>
                     </div>
                     <div class="bg-green-50 rounded-xl p-3 text-center">
@@ -143,20 +143,20 @@
                                 <!-- ── MODO EDICIÓN INLINE (lápiz) ── -->
                                 <div *ngIf="inlineEditingTaskId === tarea.id"
                                     data-inline-edit-row
-                                    class="bg-white rounded-lg border-2 border-amber-400 shadow-sm overflow-visible">
+                                    class="bg-white rounded-lg border-2 border-yellow-400 shadow-sm overflow-visible">
                                     <!-- Fila principal -->
                                     <div class="px-3 py-2 flex items-center gap-2">
                                         <span class="w-2 h-2 rounded-full flex-shrink-0"
                                             [ngClass]="getSemaforoClass(tarea.semaforo)"></span>
                                         <input data-edit-title type="text" [(ngModel)]="inlineEditForm.titulo"
                                             (keydown)="onInlineEditKeydown.emit($event)"
-                                            class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-amber-400 pb-0.5 min-w-0">
+                                            class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-yellow-400 pb-0.5 min-w-0">
                                         <!-- Asignado edición -->
                                         <div class="relative flex-shrink-0" data-inline-edit-asignado>
                                             <button
                                                 (click)="showInlineEditAsignado = !showInlineEditAsignado; inlineEditAsignadoBusqueda = ''; $event.stopPropagation()"
                                                 class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border transition"
-                                                [ngClass]="inlineEditForm.asignado_id ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'"
+                                                [ngClass]="inlineEditForm.asignado_id ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'"
                                                 title="Asignar">
                                                 <i class="bi bi-person" style="font-size:10px"></i>
                                                 <span *ngIf="inlineEditForm.asignado_id">{{ inlineEditAsignadoNombre |
@@ -169,7 +169,7 @@
                                                 <div class="px-2 pb-1">
                                                     <input type="text" [(ngModel)]="inlineEditAsignadoBusqueda"
                                                         placeholder="Buscar persona…"
-                                                        class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-amber-400">
+                                                        class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-yellow-400">
                                                 </div>
                                                 <div *ngIf="inlineEditForm.asignado_id"
                                                     (click)="inlineEditForm.asignado_id = null; showInlineEditAsignado = false"
@@ -179,9 +179,9 @@
                                                 <div *ngFor="let u of inlineEditUsuariosFiltrados"
                                                     (click)="inlineEditForm.asignado_id = u.id; showInlineEditAsignado = false"
                                                     class="flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-gray-50 cursor-pointer"
-                                                    [class.bg-amber-50]="inlineEditForm.asignado_id === u.id">
+                                                    [class.bg-yellow-50]="inlineEditForm.asignado_id === u.id">
                                                     <span
-                                                        class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-semibold flex-shrink-0"
+                                                        class="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-semibold flex-shrink-0"
                                                         style="font-size:9px">{{ u.nombre.charAt(0) | uppercase
                                                         }}</span>
                                                     {{ u.nombre }}
@@ -213,7 +213,7 @@
                                         </div>
                                         <!-- Fecha -->
                                         <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega"
-                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-amber-400 text-gray-500 flex-shrink-0">
+                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-yellow-400 text-gray-500 flex-shrink-0">
                                         <!-- Guardar -->
                                         <button (click)="onGuardarEdicionInline.emit(); $event.stopPropagation()"
                                             class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0"
@@ -233,7 +233,7 @@
                                         <input type="text" [(ngModel)]="inlineEditForm.descripcion"
                                             (keydown)="onInlineEditKeydown.emit($event)"
                                             placeholder="Descripción (opcional)…"
-                                            class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-amber-300 pb-0.5 placeholder-gray-400">
+                                            class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-yellow-300 pb-0.5 placeholder-gray-400">
                                     </div>
                                 </div>
 
@@ -297,7 +297,7 @@
                                         <button
                                             *ngIf="tarea.creado_por === usuarioId || puedeEditarProyecto(detalleProyecto)"
                                             (click)="onAbrirEdicionInline.emit(tarea); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                            class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                             title="Editar en línea">
                                             <i class="bi bi-pencil text-sm"></i>
                                         </button>
@@ -313,7 +313,7 @@
                                         <!-- Mover -->
                                         <button *ngIf="esAdminProyecto(detalleProyecto)"
                                             (click)="onMoverTarea.emit(tarea); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                            class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                             title="Mover a actividad">
                                             <i class="bi bi-arrow-left-right text-sm"></i>
                                         </button>

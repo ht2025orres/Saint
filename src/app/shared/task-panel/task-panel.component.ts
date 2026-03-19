@@ -530,7 +530,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getColorPorId(id?: number | null): string {
-    const c = ['bg-violet-500','bg-sky-500','bg-emerald-500','bg-amber-500','bg-rose-500','bg-indigo-500','bg-teal-500','bg-orange-500'];
+    const c = ['bg-purple-500','bg-blue-500','bg-green-500','bg-yellow-500','bg-red-500','bg-indigo-500','bg-teal-500','bg-orange-500'];
     return c[(id ?? 0) % c.length];
   }
 }
