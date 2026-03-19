@@ -58,708 +58,64 @@
         <div [ngSwitch]="vista">
             <!-- ══════════════════ VISTA: PROYECTOS ══════════════════ -->
             <ng-container *ngSwitchCase="'proyectos'">
-                <!-- Filtros y controles de vista -->
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
-                    <div class="flex flex-wrap gap-2">
-                        <button
-                            *ngFor="let f of [{v:'todos',l:'Todos',i:'bi-grid'},{v:'pendiente',l:'Pendientes',i:'bi-clock'},{v:'en_ejecucion',l:'En ejecución',i:'bi-play-circle'},{v:'completado',l:'Completados',i:'bi-check-circle'}]"
-                            (click)="filtroEstado = f.v; cargarProyectos()"
-                            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition"
-                            [ngClass]="filtroEstado === f.v ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
-                            <i [class]="'bi ' + f.i"></i> {{ f.l }}
-                        </button>
-                    </div>
-
-                    <!-- Barra de búsqueda -->
-                    <div class="flex-1 max-w-md mx-4">
-                        <div class="relative">
-                            <i class="bi bi-search absolute left-3 top-1/4 -translate-y-1/2 text-gray-400 text-sm"></i>
-                            <input 
-                                type="text" 
-                                [(ngModel)]="busquedaProyectos"
-                                (ngModelChange)="onBusquedaChange()"
-                                placeholder="Buscar proyectos por título o descripción..."
-                                class="w-full pl-9 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                            >
-                            <button 
-                                *ngIf="busquedaProyectos"
-                                (click)="limpiarBusqueda()"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-0.5">
-                        <button (click)="vistaProyectos = 'tarjetas'"
-                            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
-                            [ngClass]="vistaProyectos === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
-                            <i class="bi bi-grid-3x3-gap-fill"></i> Tarjetas
-                        </button>
-                        <button (click)="vistaProyectos = 'lista'"
-                            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
-                            [ngClass]="vistaProyectos === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
-                            <i class="bi bi-list-ul"></i> Lista
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Loading skeleton -->
-                <div *ngIf="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <div *ngFor="let i of [1,2,3,4,5,6]"
-                        class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
-                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                        <div class="h-3 bg-gray-100 rounded w-1/2 mb-6"></div>
-                        <div class="h-2 bg-gray-200 rounded mb-4"></div>
-                    </div>
-                </div>
-
-                <div *ngIf="!loading">
-                    <!-- Vista TARJETAS con paginación de 3 en 3 -->
-                    <div *ngIf="vistaProyectos === 'tarjetas'" class="space-y-6">
-                        <!-- Grid de tarjetas -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            <div *ngFor="let proyecto of proyectosPaginados"
-                                class="group bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all overflow-hidden flex flex-col relative"
-                                [ngClass]="'border-l-4 ' + getSemaforoBorderClass(proyecto.semaforo)"
-                                (click)="verDetalleProyecto(proyecto)">
-                                <!-- Contenido de la tarjeta (sin cambios) -->
-                                <div class="p-5 flex-1 pt-6">
-                                    <div class="flex items-start justify-between mb-3">
-                                        <div class="flex-1 min-w-0">
-                                            <h3 class="font-bold text-gray-900 text-base leading-tight truncate"
-                                                [title]="proyecto.titulo">{{ proyecto.titulo }}</h3>
-                                            <div class="flex flex-wrap items-center gap-2 mt-1.5">
-                                                <span
-                                                    class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
-                                                    [ngClass]="getEstadoBadgeClass(proyecto.estado)">
-                                                    <i [class]="'bi ' + getEstadoIcon(proyecto.estado)"
-                                                        style="font-size:10px"></i>
-                                                    {{ proyecto.estado | uppercase }}
-                                                </span>
-                                                <span *ngIf="proyecto.nivel_usuario && proyecto.nivel_usuario !== 'lector'"
-                                                    class="px-2 py-0.5 text-xs rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                                                    <i class="bi bi-person-badge mr-0.5"></i>{{ proyecto.nivel_usuario }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <span class="ml-2 flex-shrink-0" [title]="getSemaforoLabel(proyecto.semaforo)">
-                                            <span class="w-2.5 h-2.5 rounded-full block"
-                                                [ngClass]="getSemaforoClass(proyecto.semaforo)"></span>
-                                        </span>
-                                    </div>
-                                    <p *ngIf="proyecto.descripcion" class="text-sm text-gray-500 mb-3 line-clamp-2">{{
-                                        proyecto.descripcion | slice:0:120 }}{{ (proyecto.descripcion?.length ?? 0) > 120 ? '…'
-                                        : '' }}</p>
-                                    <div *ngIf="proyecto.fecha_limite_entrega"
-                                        class="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
-                                        <i class="bi bi-calendar-event text-gray-400"></i>
-                                        <span>Límite: <strong>{{ proyecto.fecha_limite_entrega | date:'dd/MM/yyyy HH:mm':'UTC'
-                                                }}</strong></span>
-                                    </div>
-                                    <div class="grid grid-cols-4 gap-2 text-center mb-4">
-                                        <div class="bg-slate-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-slate-700">{{ proyecto.total_actividades || 0 }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 truncate">Actividades</div>
-                                        </div>
-                                        <div class="bg-slate-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-slate-700">{{ proyecto.total_tareas || 0 }}</div>
-                                            <div class="text-xs text-gray-500 truncate">Tareas</div>
-                                        </div>
-                                        <div class="bg-green-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-green-700">{{ proyecto.tareas_completadas || 0 }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 truncate">Listas</div>
-                                        </div>
-                                        <div class="bg-red-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-red-600">{{ proyecto.tareas_vencidas || 0 }}
-                                            </div>
-                                            <div class="text-xs text-gray-500 truncate">Vencidas</div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Progreso</span><span
-                                                class="font-semibold">{{ proyecto.progreso || 0 }}%</span></div>
-                                        <div class="w-full bg-gray-100 rounded-full h-2">
-                                            <div class="h-2 rounded-full transition-all"
-                                                [ngClass]="(proyecto.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-500'"
-                                                [style.width.%]="proyecto.progreso || 0"></div>
-                                        </div>
-                                    </div>
-                                    <!-- Responsables -->
-                                    <div *ngIf="proyecto.responsables?.length || proyecto.creado_por"
-                                        class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                                        <span class="text-xs text-gray-400">Resp.:</span>
-                                        <div class="flex items-center">
-                                            <ng-container *ngIf="proyecto.responsables?.length; else creadoPorAvatar">
-                                                <div *ngFor="let rid of (proyecto.responsables || []).slice(0, 4); let i = index"
-                                                    class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white"
-                                                    [class.-ml-2]="i > 0"
-                                                    [ngClass]="getColorPorId(rid)"
-                                                    [title]="nombreUsuario(rid)">
-                                                    {{ getInicialesResponsable(rid) }}
-                                                </div>
-                                                <span *ngIf="(proyecto.responsables || []).length > 4"
-                                                    class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs ring-2 ring-white -ml-2">
-                                                    +{{ (proyecto.responsables || []).length - 4 }}
-                                                </span>
-                                            </ng-container>
-                                            <ng-template #creadoPorAvatar>
-                                                <div *ngIf="proyecto.creado_por"
-                                                    class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                                    [ngClass]="getColorPorId(proyecto.creado_por)"
-                                                    [title]="nombreUsuario(proyecto.creado_por)">
-                                                    {{ getInicialesResponsable(proyecto.creado_por) }}
-                                                </div>
-                                            </ng-template>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between"
-                                    (click)="$event.stopPropagation()">
-                                    <button (click)="verDetalleProyecto(proyecto); $event.stopPropagation()"
-                                        class="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition"><i
-                                            class="bi bi-eye"></i> Ver detalle</button>
-                                    <div class="flex gap-1">
-                                        <button *ngIf="puedeEditarProyecto(proyecto)"
-                                            (click)="abrirModalEditarProyecto(proyecto); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
-                                            title="Editar"><i class="bi bi-pencil"></i></button>
-                                        <button *ngIf="puedeEditarProyecto(proyecto) && proyecto.estado !== 'completado'"
-                                            (click)="cambiarEstadoProyecto(proyecto, 'completado'); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
-                                            title="Completar"><i class="bi bi-check-circle"></i></button>
-                                        <button *ngIf="esAdminProyecto(proyecto)"
-                                            (click)="abrirModalPermisos('proyecto', proyecto.id)"
-                                            class="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
-                                            title="Permisos"><i class="bi bi-people"></i></button>
-                                        <button *ngIf="puedeEliminarProyecto(proyecto)" (click)="eliminarProyecto(proyecto)"
-                                            class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                            title="Eliminar"><i class="bi bi-trash"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Paginador para vista de tarjetas (3 por página) -->
-                        <div class="flex justify-center mt-6">
-                            <app-shared-paginator 
-                                [instanceId]="'proyectos-tarjetas'"
-                                [pageSizeOptions]="[3,6,9,12]" 
-                                [defaultPageSize]="3"
-                                [showPageSizeSelector]="true" 
-                                noDataMessage="No hay proyectos"
-                                style="width: 100%;">
-                            </app-shared-paginator>
-                        </div>
-
-                        <!-- Mensaje sin resultados -->
-                        <div *ngIf="proyectos.length === 0"
-                            class="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                            <i class="bi bi-folder-x text-blue-400 text-4xl block mb-3"></i>
-                            <h3 class="text-gray-700 font-semibold mb-1">No hay proyectos</h3>
-                            <p class="text-gray-400 text-sm mb-4">{{ filtroEstado === 'todos' ? 'No tienes proyectos
-                                asignados.' : 'No hay proyectos con este estado.' }}</p>
-                            <button *ngIf="puedeGestionarModulo" (click)="abrirModalCrearProyecto()"
-                                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"><i
-                                    class="bi bi-plus-lg"></i> Crear primer proyecto</button>
-                        </div>
-                    </div>
-
-                    <!-- Vista LISTA con paginación normal -->
-                    <div *ngIf="vistaProyectos === 'lista'" class="space-y-4">
-                        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Proyecto</th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            F. Límite</th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Act / Tar</th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Completadas</th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Vencidas</th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Progreso</th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr *ngFor="let proyecto of proyectosPaginados" class="hover:bg-gray-50 transition relative" (click)="verDetalleProyecto(proyecto)">
-                                        <td class="px-4 py-3 whitespace-nowrap pl-5">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                                    [ngClass]="getSemaforoClass(proyecto.semaforo)"
-                                                    [title]="getSemaforoLabel(proyecto.semaforo)"></span>
-                                                <div class="min-w-0">
-                                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                                        <span class="text-sm font-medium text-gray-900 truncate max-w-[200px]"
-                                                            [title]="proyecto.titulo">{{ proyecto.titulo }}</span>
-                                                        <span
-                                                            class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
-                                                            [ngClass]="getEstadoBadgeClass(proyecto.estado)"><i
-                                                                [class]="'bi ' + getEstadoIcon(proyecto.estado)"
-                                                                style="font-size:9px"></i>{{ proyecto.estado | uppercase
-                                                            }}</span>
-                                                    </div>
-                                                    <!-- Avatares responsables en vista lista -->
-                                                    <div *ngIf="proyecto.responsables?.length || proyecto.creado_por"
-                                                         class="flex items-center gap-1 mt-0.5">
-                                                        <ng-container *ngIf="proyecto.responsables?.length; else listaCreadoPor">
-                                                            <div *ngFor="let rid of (proyecto.responsables || []).slice(0, 3); let i = index"
-                                                                 class="w-4 h-4 rounded-full flex items-center justify-center text-white ring-1 ring-white"
-                                                                 [class.-ml-1]="i > 0"
-                                                                 [ngClass]="getColorPorId(rid)"
-                                                                 [title]="nombreUsuario(rid)"
-                                                                 style="font-size: 8px; font-weight: 700;">
-                                                                {{ getInicialesResponsable(rid) }}
-                                                            </div>
-                                                        </ng-container>
-                                                        <ng-template #listaCreadoPor>
-                                                            <div *ngIf="proyecto.creado_por"
-                                                                 class="w-4 h-4 rounded-full flex items-center justify-center text-white"
-                                                                 [ngClass]="getColorPorId(proyecto.creado_por)"
-                                                                 [title]="nombreUsuario(proyecto.creado_por)"
-                                                                 style="font-size: 8px; font-weight: 700;">
-                                                                {{ getInicialesResponsable(proyecto.creado_por) }}
-                                                            </div>
-                                                        </ng-template>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500"><span
-                                                *ngIf="proyecto.fecha_limite_entrega"><i
-                                                    class="bi bi-calendar-event mr-1 text-gray-400"></i>{{
-                                                proyecto.fecha_limite_entrega | date:'dd/MM/yyyy' }}</span><ng-template
-                                                #sinF>—</ng-template></td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700"><span
-                                                class="font-medium">{{ proyecto.total_actividades || 0 }}</span> / <span
-                                                class="font-medium">{{ proyecto.total_tareas || 0 }}</span></td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-medium">{{
-                                            proyecto.tareas_completadas || 0 }}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-medium">{{
-                                            proyecto.tareas_vencidas || 0 }}</td>
-                                        <td class="px-4 py-3 whitespace-nowrap">
-                                            <div class="flex items-center gap-2">
-                                                <div class="w-16 bg-gray-200 rounded-full h-1.5">
-                                                    <div class="h-1.5 rounded-full transition-all"
-                                                        [ngClass]="(proyecto.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-500'"
-                                                        [style.width.%]="proyecto.progreso || 0"></div>
-                                                </div><span class="text-xs text-gray-600">{{ proyecto.progreso || 0 }}%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex items-center justify-end gap-1">
-                                                <button (click)="verDetalleProyecto(proyecto)"
-                                                    class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                                    title="Ver detalle"><i class="bi bi-eye"></i></button>
-                                                <button *ngIf="puedeEditarProyecto(proyecto)"
-                                                    (click)="abrirModalEditarProyecto(proyecto)"
-                                                    class="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
-                                                    title="Editar"><i class="bi bi-pencil"></i></button>
-                                                <button *ngIf="puedeEliminarProyecto(proyecto)"
-                                                    (click)="eliminarProyecto(proyecto)"
-                                                    class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                    title="Eliminar"><i class="bi bi-trash"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            
-                            <!-- Mensaje sin resultados en tabla -->
-                            <div *ngIf="proyectos.length === 0" class="text-center py-12">
-                                <i class="bi bi-folder-x text-blue-400 text-4xl block mb-3"></i>
-                                <h3 class="text-gray-700 font-semibold mb-1">No hay proyectos</h3>
-                                <p class="text-gray-400 text-sm mb-4">{{ filtroEstado === 'todos' ? 'No tienes proyectos
-                                    asignados.' : 'No hay proyectos con este estado.' }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Paginador para vista de lista (paginación normal) -->
-                        <div class="flex justify-center mt-4">
-                            <app-shared-paginator 
-                                [instanceId]="'proyectos-lista'"
-                                [pageSizeOptions]="[5,10,20,50]" 
-                                [defaultPageSize]="10"
-                                [showPageSizeSelector]="true" 
-                                noDataMessage="No hay proyectos"
-                                style="width: 100%;">
-                            </app-shared-paginator>
-                        </div>
-                    </div>
-                </div>
+                <app-lista-proyectos
+                    [proyectos]="proyectos"
+                    [loading]="loading"
+                    [filtroEstado]="filtroEstado"
+                    [busquedaProyectos]="busquedaProyectos"
+                    [vistaProyectos]="vistaProyectos"
+                    [proyectosPaginados]="proyectosPaginados"
+                    [puedeGestionarModulo]="puedeGestionarModulo"
+                    [esAdminSistema]="esAdminSistema"
+                    [usuariosCache]="usuariosCache"
+                    (onVerDetalle)="verDetalleProyecto($event)"
+                    (onEditar)="abrirModalEditarProyecto($event)"
+                    (onCambiarEstado)="cambiarEstadoProyecto($event.proyecto, $event.nuevoEstado)"
+                    (onEliminar)="eliminarProyecto($event)"
+                    (onCrearProyecto)="abrirModalCrearProyecto()"
+                    (onCambiarFiltro)="filtroEstado = $event; cargarProyectos()"
+                    (onCambiarVistaProy)="vistaProyectos = $event"
+                    (onBusquedaChange)="busquedaProyectos = $event; onBusquedaChange()"
+                    (onLimpiarBusqueda)="limpiarBusqueda()"
+                    (onAbrirModalPermisos)="abrirModalPermisos($event.tipo, $event.id)">
+                </app-lista-proyectos>
             </ng-container>
 
             <!-- ══════════════════ VISTA: SEGUIMIENTOS ══════════════════ -->
             <ng-container *ngSwitchCase="'seguimientos'">
-                <!-- (igual que antes, sin cambios) -->
-                <div *ngIf="loadingSeguimientos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-5">
-                    <div *ngFor="let i of [1,2,3]" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
-                        <div class="h-5 bg-gray-200 rounded w-2/3 mb-3"></div>
-                        <div class="grid grid-cols-6 gap-1.5 mb-4">
-                            <div *ngFor="let j of [1,2,3,4,5,6,7,8,9,10,11,12]" class="h-8 bg-gray-100 rounded-lg"></div>
-                        </div>
-                    </div>
-                </div>
-                <div *ngIf="!loadingSeguimientos && !showDetalleMes"
-                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-5">
-                    <div *ngFor="let seg of seguimientos"
-                        class="bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden flex flex-col">
-                        <div class="p-5 pb-3">
-                            <div class="flex items-start justify-between mb-3">
-                                <div>
-                                    <h3 class="font-bold text-gray-900 text-base leading-tight">{{ seg.titulo }}</h3>
-                                    <p class="text-sm text-indigo-600 font-medium mt-0.5"><i
-                                            class="bi bi-calendar3 mr-1"></i>{{ seg.anio }}</p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full"
-                                        [ngClass]="getEstadoBadgeClass(seg.estado)">{{ seg.estado | uppercase }}</span>
-                                    <span *ngIf="seg.es_gestor"
-                                        class="px-2 py-0.5 text-xs bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200"><i
-                                            class="bi bi-person-badge mr-0.5"></i>Gestor</span>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-4 gap-1.5">
-                                <button *ngFor="let m of meses" (click)="abrirMes(seg, m.v)"
-                                    class="flex flex-col items-center justify-center py-2 rounded-lg text-xs font-semibold transition border"
-                                    [ngClass]="m.v === mesActual && seguimientoActual?.id === seg.id && showDetalleMes ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700'">
-                                    {{ m.l.slice(0, 3) }}
-                                </button>
-                            </div>
-                        </div>
-                        <div
-                            class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between mt-auto">
-                            <span class="text-xs text-gray-500"><i class="bi bi-people mr-1"></i>{{ seg.participantes_count
-                                }} participante(s)</span>
-                            <div class="flex gap-1.5">
-                                <button (click)="abrirModalTareaRapida(seg)"
-                                    class="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 px-2 py-1.5 rounded-lg transition"><i
-                                        class="bi bi-plus-lg"></i>{{ seg.es_gestor ? 'Tarea rápida' : 'Mi tarea' }}</button>
-                                <button *ngIf="seg.es_gestor && seg.estado === 'activo'" (click)="cerrarSeguimiento(seg)"
-                                    class="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 px-2 py-1.5 rounded-lg transition"><i
-                                        class="bi bi-lock"></i>Cerrar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div *ngIf="!loadingSeguimientos && seguimientos.length === 0"
-                    class="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                    <i class="bi bi-calendar-x text-indigo-400 text-4xl block mb-3"></i>
-                    <h3 class="text-gray-700 font-semibold mb-1">No hay seguimientos</h3>
-                    <p class="text-gray-400 text-sm mb-4">Crea un seguimiento anual para organizar tareas mes a mes.</p>
-                    <button *ngIf="puedeGestionarModulo" (click)="abrirModalCrearSeguimiento()"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition"><i
-                            class="bi bi-plus-lg"></i>Crear seguimiento anual</button>
-                </div>
+                <app-lista-seguimientos
+                    [seguimientos]="seguimientos"
+                    [loadingSeguimientos]="loadingSeguimientos"
+                    [showDetalleMes]="showDetalleMes"
+                    [meses]="meses"
+                    [mesActual]="mesActual"
+                    [seguimientoActual]="seguimientoActual"
+                    [puedeGestionarModulo]="puedeGestionarModulo"
+                    moduloActual="proyectos"
+                    (onAbrirMes)="abrirMes($event.seguimiento, $event.mes)"
+                    (onAbrirModalTareaRapida)="abrirModalTareaRapida($event)"
+                    (onCerrarSeguimiento)="cerrarSeguimiento($event)"
+                    (onAbrirModalCrearSeguimiento)="abrirModalCrearSeguimiento()">
+                </app-lista-seguimientos>
             </ng-container>
 
             <!-- ══════════════════ VISTA: INFORMES ══════════════════ -->
             <ng-container *ngSwitchCase="'informes'">
-
-                <!-- Filtros y controles -->
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
-                    <div class="flex flex-wrap gap-2">
-                        <button *ngFor="let f of [
-                            {v:'todos',l:'Todos',i:'bi-grid'},
-                            {v:'abierto',l:'Abiertos',i:'bi-exclamation-circle'},
-                            {v:'en_proceso',l:'En proceso',i:'bi-arrow-repeat'},
-                            {v:'cerrado',l:'Cerrados',i:'bi-check-circle'}]"
-                            (click)="filtroEstadoInforme = f.v; cargarInformes()"
-                            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition"
-                            [ngClass]="filtroEstadoInforme === f.v
-                                ? 'bg-blue-600 text-white border-rose-600'
-                                : 'bg-white text-gray-600 border-gray-300 hover:border-rose-400 hover:text-rose-600'">
-                            <i [class]="'bi ' + f.i"></i> {{ f.l }}
-                        </button>
-                    </div>
-
-                    <div class="flex-1 max-w-md mx-4">
-                        <div class="relative">
-                            <i class="bi bi-search absolute left-3 top-1/4 -translate-y-1/2 text-gray-400 text-sm"></i>
-                            <input type="text" [(ngModel)]="busquedaInformes"
-                                (ngModelChange)="onBusquedaInformesChange()"
-                                placeholder="Buscar informes..."
-                                class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition">
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-lg p-0.5">
-                        <button (click)="vistaInformes = 'tarjetas'"
-                            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
-                            [ngClass]="vistaInformes === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
-                            <i class="bi bi-grid-3x3-gap-fill"></i> Tarjetas
-                        </button>
-                        <button (click)="vistaInformes = 'lista'"
-                            class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition"
-                            [ngClass]="vistaInformes === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'">
-                            <i class="bi bi-list-ul"></i> Lista
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Loading -->
-                <div *ngIf="loadingInformes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <div *ngFor="let i of [1,2,3]" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
-                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                        <div class="h-3 bg-gray-100 rounded w-1/2 mb-6"></div>
-                        <div class="h-2 bg-gray-200 rounded mb-4"></div>
-                    </div>
-                </div>
-
-                <div *ngIf="!loadingInformes">
-
-                    <!-- ── MIS TAREAS DE INFORME ───────────────────────────────────── -->
-                    <div *ngIf="misTareasInforme.length" class="mb-6 bg-white rounded-xl border border-rose-100 overflow-hidden">
-                        <div class="flex items-center gap-2 px-5 py-3 border-b border-rose-100 bg-rose-50">
-                            <i class="bi bi-person-check text-rose-600"></i>
-                            <span class="text-sm font-bold text-blue-700 uppercase tracking-wide">Mis tareas asignadas</span>
-                            <span class="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-medium ml-1">{{ misTareasInforme.length }}</span>
-                        </div>
-                        <div class="divide-y divide-gray-100">
-                            <div *ngFor="let t of misTareasInforme"
-                                class="px-5 py-3 flex items-start justify-between hover:bg-gray-50 transition">
-                                <div class="flex items-start gap-3 min-w-0 flex-1">
-                                    <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" [ngClass]="getSemaforoClass(t.semaforo)"></span>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="text-sm font-medium text-gray-800"
-                                                [ngClass]="{'line-through text-gray-400': t.estado === 'completado'}">
-                                                {{ t.titulo }}
-                                            </span>
-                                            <span class="px-1.5 py-0.5 text-xs rounded-full" [ngClass]="getEstadoBadgeClass(t.estado)">
-                                                {{ t.estado | uppercase }}
-                                            </span>
-                                            <span class="px-1.5 py-0.5 text-xs rounded border bg-rose-50 text-blue-700 border-rose-200">
-                                                {{ t.informe_titulo }}
-                                            </span>
-                                        </div>
-                                        <div *ngIf="t.fecha_limite_entrega" class="text-xs text-gray-400 mt-0.5">
-                                            <i class="bi bi-calendar-event mr-1"></i>
-                                            {{ t.fecha_limite_entrega | date:'dd/MM/yyyy HH:mm':'UTC' }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <button *ngIf="t.estado !== 'completado'" (click)="completarMiInformeTarea(t)"
-                                    class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0 ml-2"
-                                    title="Completar">
-                                    <i class="bi bi-check-circle text-sm"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ── VISTA TARJETAS ─────────────────────────────────────────── -->
-                    <div *ngIf="vistaInformes === 'tarjetas'" class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            <div *ngFor="let informe of informesPaginados"
-                                (click)="verDetalleInforme(informe)"
-                                class="group bg-white rounded-xl border border-gray-200 hover:border-rose-300 hover:shadow-md transition-all overflow-hidden flex flex-col cursor-pointer"
-                                [ngClass]="'border-l-4 ' + (informe.estado === 'abierto' ? 'border-red-500' : informe.estado === 'en_proceso' ? 'border-amber-400' : 'border-green-500')">
-
-                                <div class="p-5 flex-1">
-                                    <div class="flex items-start justify-between mb-2">
-                                        <div class="flex-1 min-w-0">
-                                            <h3 class="font-bold text-gray-900 text-sm leading-tight truncate" [title]="informe.titulo">
-                                                {{ informe.titulo }}
-                                            </h3>
-                                            <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
-                                                    [ngClass]="getEstadoInformeBadgeClass(informe.estado)">
-                                                    <i [class]="'bi ' + getEstadoInformeIcon(informe.estado)" style="font-size:10px"></i>
-                                                    {{ informe.estado | uppercase }}
-                                                </span>
-                                                <span class="px-1.5 py-0.5 text-xs rounded-full" [ngClass]="getImpactoBadgeClass(informe.nivel_impacto)">
-                                                    {{ informe.nivel_impacto }}
-                                                </span>
-                                                <span class="px-1.5 py-0.5 text-xs rounded-full" [ngClass]="getTipoBadgeClass(informe.tipo)">
-                                                    {{ informe.tipo }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <p class="text-xs text-gray-500 mb-3 line-clamp-2">
-                                        {{ informe.descripcion_hallazgo | slice:0:100 }}{{ (informe.descripcion_hallazgo?.length ?? 0) > 100 ? '…' : '' }}
-                                    </p>
-
-                                    <div class="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
-                                        <i class="bi bi-calendar-event"></i>
-                                        <span>Evento: <strong>{{ informe.fecha_evento | date:'dd/MM/yyyy':'UTC' }}</strong></span>
-                                    </div>
-
-                                    <div class="grid grid-cols-3 gap-2 text-center mb-3">
-                                        <div class="bg-slate-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-slate-700">{{ informe.total_tareas || 0 }}</div>
-                                            <div class="text-xs text-gray-500">Tareas</div>
-                                        </div>
-                                        <div class="bg-green-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-green-700">{{ informe.tareas_completadas || 0 }}</div>
-                                            <div class="text-xs text-gray-500">Listas</div>
-                                        </div>
-                                        <div class="bg-red-50 rounded-lg p-2">
-                                            <div class="text-sm font-bold text-red-600">{{ informe.tareas_vencidas || 0 }}</div>
-                                            <div class="text-xs text-gray-500">Vencidas</div>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                            <span>Progreso</span>
-                                            <span class="font-semibold">{{ informe.progreso || 0 }}%</span>
-                                        </div>
-                                        <div class="w-full bg-gray-100 rounded-full h-1.5">
-                                            <div class="h-1.5 rounded-full transition-all"
-                                                [ngClass]="(informe.progreso || 0) === 100 ? 'bg-green-500' : 'bg-rose-500'"
-                                                [style.width.%]="informe.progreso || 0"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between"
-                                    (click)="$event.stopPropagation()">
-                                    <button (click)="verDetalleInforme(informe)"
-                                        class="flex items-center gap-1.5 text-sm text-rose-600 hover:text-rose-800 font-medium transition">
-                                        <i class="bi bi-eye"></i> Ver detalle
-                                    </button>
-                                    <div class="flex gap-1">
-                                        <button
-                                            (click)="abrirModalEditarInforme(informe); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button
-                                            (click)="eliminarInforme(informe); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-center mt-6">
-                            <app-shared-paginator instanceId="informes-tarjetas"
-                                [pageSizeOptions]="[3,6,9,12]" [defaultPageSize]="3"
-                                [showPageSizeSelector]="true" noDataMessage="No hay informes" style="width:100%;">
-                            </app-shared-paginator>
-                        </div>
-
-                        <div *ngIf="informes.length === 0"
-                            class="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                            <i class="bi bi-exclamation-triangle text-rose-400 text-4xl block mb-3"></i>
-                            <h3 class="text-gray-700 font-semibold mb-1">No hay informes</h3>
-                            <p class="text-gray-400 text-sm mb-4">Registra incidentes, hallazgos o riesgos tecnológicos.</p>
-                            <button (click)="abrirModalCrearInforme()"
-                                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
-                                <i class="bi bi-plus-lg"></i> Crear primer informe
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- ── VISTA LISTA ─────────────────────────────────────────────── -->
-                    <div *ngIf="vistaInformes === 'lista'" class="space-y-4">
-                        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Informe</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo / Impacto</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">F. Evento</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tareas</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progreso</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr *ngFor="let informe of informesPaginados"
-                                        class="hover:bg-gray-50 transition cursor-pointer"
-                                        (click)="verDetalleInforme(informe)">
-                                        <td class="px-4 py-3">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                                    [ngClass]="informe.estado === 'abierto' ? 'bg-red-500' : informe.estado === 'en_proceso' ? 'bg-amber-400' : 'bg-green-500'"></span>
-                                                <div>
-                                                    <div class="text-sm font-medium text-gray-900 truncate max-w-[220px]">{{ informe.titulo }}</div>
-                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded-full mt-0.5"
-                                                        [ngClass]="getEstadoInformeBadgeClass(informe.estado)">
-                                                        {{ informe.estado | uppercase }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="flex flex-col gap-1">
-                                                <span class="px-1.5 py-0.5 text-xs rounded-full w-fit" [ngClass]="getTipoBadgeClass(informe.tipo)">{{ informe.tipo }}</span>
-                                                <span class="px-1.5 py-0.5 text-xs rounded-full w-fit" [ngClass]="getImpactoBadgeClass(informe.nivel_impacto)">{{ informe.nivel_impacto }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-500">
-                                            {{ informe.fecha_evento | date:'dd/MM/yyyy':'UTC' }}
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-700">
-                                            <span class="text-green-600 font-medium">{{ informe.tareas_completadas || 0 }}</span>
-                                            / {{ informe.total_tareas || 0 }}
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="flex items-center gap-2">
-                                                <div class="w-16 bg-gray-200 rounded-full h-1.5">
-                                                    <div class="h-1.5 rounded-full"
-                                                        [ngClass]="(informe.progreso || 0) === 100 ? 'bg-green-500' : 'bg-rose-500'"
-                                                        [style.width.%]="informe.progreso || 0"></div>
-                                                </div>
-                                                <span class="text-xs text-gray-600">{{ informe.progreso || 0 }}%</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3 text-right" (click)="$event.stopPropagation()">
-                                            <div class="flex items-center justify-end gap-1">
-                                                <button (click)="verDetalleInforme(informe)"
-                                                    class="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Ver">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                                <button
-                                                    (click)="abrirModalEditarInforme(informe)"
-                                                    class="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition" title="Editar">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button
-                                                    (click)="eliminarInforme(informe)"
-                                                    class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Eliminar">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div *ngIf="informes.length === 0" class="text-center py-12">
-                                <i class="bi bi-exclamation-triangle text-rose-400 text-4xl block mb-3"></i>
-                                <p class="text-gray-500 text-sm">No hay informes registrados.</p>
-                            </div>
-                        </div>
-                        <div class="flex justify-center mt-4">
-                            <app-shared-paginator instanceId="informes-lista"
-                                [pageSizeOptions]="[5,10,20,50]" [defaultPageSize]="10"
-                                [showPageSizeSelector]="true" noDataMessage="No hay informes" style="width:100%;">
-                            </app-shared-paginator>
-                        </div>
-                    </div>
-                </div>
+                <app-lista-informes
+                    [informes]="informes"
+                    [loadingInformes]="loadingInformes"
+                    [filtroEstadoInforme]="filtroEstadoInforme"
+                    [busquedaInformes]="busquedaInformes"
+                    [vistaInformes]="vistaInformes"
+                    [puedeGestionarModulo]="puedeGestionarModulo"
+                    (onBusquedaInformesChange)="busquedaInformes = $event; onBusquedaInformesChange()"
+                    (onVerDetalleInforme)="verDetalleInforme($event)"
+                    (onEditarInforme)="abrirModalEditarInforme($event)"
+                    (onEliminarInforme)="eliminarInforme($event)"
+                    (onAbrirModalCrearInforme)="abrirModalCrearInforme()"
+                    (onCambiarFiltro)="filtroEstadoInforme = $event; cargarInformes()"
+                    (onCambiarVista)="vistaInformes = $event">
+                </app-lista-informes>
             </ng-container>
         </div>
 
@@ -838,7 +194,7 @@
         <i class="bi bi-people text-sm"></i>
         <span>Personas</span>
         <span *ngIf="filtroUsuariosSelec.length"
-          class="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-indigo-600 text-white rounded-full text-xs font-bold leading-none">
+          class="pm-size-badge-18 px-1 flex items-center justify-center bg-indigo-600 text-white rounded-full text-xs font-bold leading-none">
           {{ filtroUsuariosSelec.length }}
         </span>
         <i class="bi text-xs ml-0.5"
@@ -926,17 +282,17 @@
       <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total</p>
       <p class="mt-2 text-2xl font-bold text-gray-900">{{ resumenCalendarioActivo.total }}</p>
     </div>
-    <div class="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 shadow-sm">
+    <div class="rounded-xl border border-indigo-100 pm-bg-indigo-soft p-4 shadow-sm">
       <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Seguimiento</p>
       <p class="mt-2 text-2xl font-bold text-indigo-900">{{ resumenCalendarioActivo.seguimiento }}</p>
     </div>
-    <div class="rounded-xl border border-teal-100 bg-teal-50/70 p-4 shadow-sm">
+    <div class="rounded-xl border border-teal-100 pm-bg-teal-soft p-4 shadow-sm">
       <p class="text-xs font-semibold uppercase tracking-wider text-teal-600">Proyecto / GLPI</p>
       <p class="mt-2 text-2xl font-bold text-teal-900">{{ resumenCalendarioActivo.proyecto + resumenCalendarioActivo.glpi }}</p>
     </div>
-    <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-4 shadow-sm">
-      <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">Informes</p>
-      <p class="mt-2 text-2xl font-bold text-amber-900">{{ resumenCalendarioActivo.informes }}</p>
+    <div class="rounded-xl border border-yellow-100 pm-bg-yellow-soft p-4 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wider text-yellow-600">Informes</p>
+      <p class="mt-2 text-2xl font-bold text-yellow-900">{{ resumenCalendarioActivo.informes }}</p>
     </div>
   </div>
 
@@ -959,7 +315,7 @@
 
       <div *ngFor="let semana of calendarioDias" class="grid grid-cols-7 border-b border-gray-100 last:border-b-0">
         <div *ngFor="let dia of semana"
-          class="min-h-[90px] p-1.5 border-r border-gray-100 last:border-r-0 relative transition"
+          class="pm-min-h-90 p-1.5 border-r border-gray-100 last:border-r-0 relative transition"
           [ngClass]="{
             'bg-gray-50 opacity-50': !dia.esMesActual,
             'bg-indigo-50 ring-1 ring-inset ring-indigo-200': _fechaClave(dia.fecha) === _fechaClave(fechaCalendarioActiva),
@@ -977,7 +333,7 @@
               {{ dia.fecha.getDate() }}
             </span>
             <button *ngIf="dia.esMesActual" (click)="seleccionarFechaCalendario(dia, false, $event); cambiarModoCalendario('dia')"
-              class="text-[11px] text-gray-400 transition hover:text-indigo-600">Ver</button>
+              class="pm-text-11 text-gray-400 transition hover:text-indigo-600">Ver</button>
           </div>
 
           <div *ngIf="dia.esMesActual" class="space-y-0.5">
@@ -1007,13 +363,13 @@
     <ng-container *ngSwitchCase="'semana'">
       <div class="grid gap-3 p-4 md:grid-cols-7">
         <div *ngFor="let dia of semanaCalendarioVisible; let i = index" class="calendar-focus-card rounded-xl border border-gray-200 p-3"
-          [ngClass]="{ 'border-indigo-300 bg-indigo-50/70': _fechaClave(dia.fecha) === _fechaClave(fechaCalendarioActiva) }">
+          [ngClass]="{ 'border-indigo-300 pm-bg-indigo-soft': _fechaClave(dia.fecha) === _fechaClave(fechaCalendarioActiva) }">
           <div class="mb-3 flex items-center justify-between gap-2">
             <div>
               <p class="text-xs uppercase tracking-wider text-gray-400">{{ diasSemana[i] }}</p>
               <h4 class="text-sm font-semibold text-gray-800">{{ dia.fecha | date:'dd MMM' }}</h4>
             </div>
-            <button (click)="seleccionarFechaCalendario(dia, true, $event)" class="rounded-lg border border-gray-200 px-2 py-1 text-[11px] text-gray-500 hover:border-indigo-300 hover:text-indigo-600">
+            <button (click)="seleccionarFechaCalendario(dia, true, $event)" class="rounded-lg border border-gray-200 px-2 py-1 pm-text-11 text-gray-500 hover:border-indigo-300 hover:text-indigo-600">
               Detalle
             </button>
           </div>
@@ -1141,13 +497,13 @@
       <button (click)="vistaFlujo ? cerrarVistaFlujo() : abrirVistaFlujo()"
         class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition"
         [ngClass]="vistaFlujo
-          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-          : 'border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'">
+          ? 'bg-green-600 text-white border-green-600 shadow-sm'
+          : 'border-gray-200 text-gray-600 hover:border-green-400 hover:text-green-600 hover:bg-green-50'">
         <i class="bi bi-lightning-charge-fill text-xs"></i>
         <span>Compromisos</span>
         <span *ngIf="flujoActivo?.compromisos?.length"
-          class="min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full text-xs font-bold leading-none"
-          [ngClass]="vistaFlujo ? 'bg-white text-emerald-700' : 'bg-emerald-600 text-white'">
+          class="pm-size-badge-16 px-1 flex items-center justify-center rounded-full text-xs font-bold leading-none"
+          [ngClass]="vistaFlujo ? 'bg-white text-green-700' : 'bg-green-600 text-white'">
           {{ compromisosFiltrados.length }}
         </span>
       </button>
@@ -1183,7 +539,7 @@
           <i class="bi bi-funnel text-sm"></i>
           <span>Estado</span>
           <span *ngIf="filtroEstadosGlobal.length"
-            class="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-indigo-600 text-white rounded-full text-xs font-bold leading-none">
+            class="pm-size-badge-18 px-1 flex items-center justify-center bg-indigo-600 text-white rounded-full text-xs font-bold leading-none">
             {{ filtroEstadosGlobal.length }}
           </span>
           <i class="bi text-xs ml-0.5"
@@ -1235,7 +591,7 @@
           <i class="bi bi-people text-sm"></i>
           <span>Personas</span>
           <span *ngIf="filtroUsuariosSelec.length"
-            class="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-indigo-600 text-white rounded-full text-xs font-bold leading-none">
+            class="pm-size-badge-18 px-1 flex items-center justify-center bg-indigo-600 text-white rounded-full text-xs font-bold leading-none">
             {{ filtroUsuariosSelec.length }}
           </span>
           <i class="bi text-xs ml-0.5"
@@ -1298,34 +654,34 @@
 
     <div *ngIf="vistaFlujo" class="space-y-4">
       <div *ngIf="loadingFlujo" class="flex items-center justify-center py-16 bg-white rounded-xl border border-gray-200">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
       </div>
 
       <div *ngIf="!loadingFlujo && !flujoActivo" class="text-center py-14 bg-white rounded-xl border border-dashed border-gray-300">
-        <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-          <i class="bi bi-lightning-charge text-emerald-500 text-2xl"></i>
+        <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <i class="bi bi-lightning-charge text-green-500 text-2xl"></i>
         </div>
         <h3 class="text-base font-semibold text-gray-800 mb-1">Sin flujo activo</h3>
         <p class="text-sm text-gray-500 mb-4">Crea un nuevo flujo de compromisos diarios para comenzar la sesión de trabajo.</p>
         <button *ngIf="vistaMes?.es_gestor || puedeGestionarModulo"
           (click)="abrirModalNuevoFlujo()"
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-sm">
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition shadow-sm">
           <i class="bi bi-plus-lg"></i>Nuevo flujo diario
         </button>
       </div>
 
       <ng-container *ngIf="!loadingFlujo && flujoActivo">
-        <div class="bg-white rounded-xl border border-emerald-200 overflow-hidden shadow-sm">
-          <div class="px-5 py-4 border-b border-emerald-100 bg-emerald-50/60 flex flex-wrap items-start justify-between gap-3">
+        <div class="bg-white rounded-xl border border-green-200 overflow-hidden shadow-sm">
+          <div class="px-5 py-4 border-b border-green-100 pm-bg-green-soft flex flex-wrap items-start justify-between gap-3">
             <div>
               <div class="flex items-center gap-2 mb-1">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
                 <h3 class="font-semibold text-gray-900 text-sm truncate">{{ flujoActivo.titulo }}</h3>
               </div>
               <p class="text-xs text-gray-500">{{ flujoActivo.fecha | date:'dd/MM/yyyy' }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <span class="px-2.5 py-1 text-xs rounded-full bg-white border border-emerald-200 text-emerald-700">
+              <span class="px-2.5 py-1 text-xs rounded-full bg-white border border-green-200 text-green-700">
                 {{ compromisosPendientes }} pendientes
               </span>
               <span class="px-2.5 py-1 text-xs rounded-full bg-white border border-blue-200 text-blue-700">
@@ -1336,28 +692,28 @@
               </span>
               <button *ngIf="vistaMes?.estado === 'activo' && (vistaMes?.es_gestor || puedeGestionarModulo)"
                 (click)="abrirModalNuevoCompromiso()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition">
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition">
                 <i class="bi bi-plus-lg"></i>Compromiso
               </button>
               <button *ngIf="flujoActivo.estado === 'activo' && (vistaMes?.es_gestor || puedeGestionarModulo)"
                 (click)="cerrarFlujoActivo()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition">
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-green-300 text-green-700 hover:bg-green-50 transition">
                 <i class="bi bi-check2-circle"></i>Cerrar flujo
               </button>
             </div>
           </div>
 
-          <div *ngIf="flujoActivo.snapshot_apertura" class="px-5 py-4 border-b border-emerald-100 bg-amber-50/60">
+          <div *ngIf="flujoActivo.snapshot_apertura" class="px-5 py-4 border-b border-green-100 pm-bg-yellow-soft">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-amber-700 mb-1">Revisión del día anterior</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-yellow-700 mb-1">Revisión del día anterior</p>
                 <p class="text-sm text-gray-700">
                   Cerró con <strong>{{ flujoActivo.snapshot_apertura.completados }}</strong> completados de
                   <strong>{{ flujoActivo.snapshot_apertura.total }}</strong>.
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
-                <span class="px-2.5 py-1 text-xs rounded-full bg-white border border-amber-200 text-amber-700">
+                <span class="px-2.5 py-1 text-xs rounded-full bg-white border border-yellow-200 text-yellow-700">
                   {{ flujoActivo.snapshot_apertura.pendientes ?? (flujoActivo.snapshot_apertura.total - flujoActivo.snapshot_apertura.completados - (flujoActivo.snapshot_apertura.en_ejecucion ?? 0)) }} pendientes
                 </span>
                 <span class="px-2.5 py-1 text-xs rounded-full bg-white border border-blue-200 text-blue-700">
@@ -1370,10 +726,10 @@
             </div>
             <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-2" *ngIf="compromisosDiaAnterior.length">
               <div *ngFor="let c of compromisosDiaAnterior"
-                class="bg-white rounded-lg border border-amber-100 px-3 py-2.5">
+                class="bg-white rounded-lg border border-yellow-100 px-3 py-2.5">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-800">{{ c.titulo }}</span>
-                  <span class="px-1.5 py-0.5 text-[11px] rounded-full border"
+                  <span class="px-1.5 py-0.5 pm-text-11 rounded-full border"
                     [ngClass]="getEstadoCompromisoClase(c.estado)">
                     {{ getEstadoCompromisoLabel(c.estado) }}
                   </span>
@@ -1381,7 +737,7 @@
                 <div class="flex flex-wrap gap-2 mt-2">
                   <span *ngFor="let rid of c.responsables"
                     class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
-                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-white pm-text-10 font-bold"
                       [ngClass]="getColorPorId(rid)">
                       {{ getInicialesResponsable(rid) }}
                     </span>
@@ -1416,7 +772,7 @@
                       [ngClass]="c.estado === 'completado' ? 'line-through text-gray-400' : ''">
                       {{ c.titulo }}
                     </h4>
-                    <span class="px-1.5 py-0.5 text-[11px] rounded-full border"
+                    <span class="px-1.5 py-0.5 pm-text-11 rounded-full border"
                       [ngClass]="getEstadoCompromisoClase(c.estado)">
                       {{ getEstadoCompromisoLabel(c.estado) }}
                     </span>
@@ -1434,7 +790,7 @@
                   </div>
                   <div class="flex items-center gap-2 flex-wrap mt-2">
                     <div *ngFor="let rid of c.responsables" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-700">
-                      <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                      <span class="w-5 h-5 rounded-full flex items-center justify-center text-white pm-text-10 font-bold"
                         [ngClass]="getColorPorId(rid)">
                         {{ getInicialesResponsable(rid) }}
                       </span>
@@ -1464,7 +820,7 @@
               </div>
             </div>
 
-            <div class="border-t xl:border-t-0 xl:border-l border-gray-100 bg-gray-50/70 p-5 space-y-4">
+            <div class="border-t xl:border-t-0 xl:border-l border-gray-100 pm-bg-gray-soft p-5 space-y-4">
               <div>
                 <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Resumen</h4>
                 <div class="space-y-2 text-sm">
@@ -1504,7 +860,7 @@
                     </div>
                     <div class="mt-2 flex flex-wrap gap-1.5">
                       <span *ngFor="let compromiso of p.compromisos"
-                        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] border"
+                        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full pm-text-11 border"
                         [ngClass]="getEstadoCompromisoClase(compromiso.estado)">
                         {{ compromiso.titulo }}
                       </span>
@@ -1522,7 +878,7 @@
                       <span>{{ p.total }} al cierre anterior</span>
                     </div>
                     <div class="h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <div class="h-full rounded-full bg-amber-400" [style.width.%]="porcentajeCargaPersona(p)"></div>
+                      <div class="h-full rounded-full bg-yellow-400" [style.width.%]="porcentajeCargaPersona(p)"></div>
                     </div>
                   </div>
                 </div>
@@ -1538,7 +894,7 @@
                   <div *ngFor="let f of flujosHistorial" class="bg-white rounded-lg border border-gray-200 px-3 py-2.5">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-sm font-medium text-gray-800 truncate">{{ f.titulo }}</span>
-                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Cerrado</span>
+                      <span class="pm-text-11 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Cerrado</span>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">{{ f.fecha | date:'dd/MM/yyyy' }}</p>
                     <div *ngIf="f.snapshot_cierre" class="mt-2 text-xs text-gray-500 space-y-1">
@@ -1546,7 +902,7 @@
                       <div class="space-y-1">
                         <div *ngFor="let c of f.snapshot_cierre.compromisos" class="flex items-center justify-between gap-2">
                           <span class="truncate text-gray-700">{{ c.titulo }}</span>
-                          <span class="px-1.5 py-0.5 rounded-full border text-[11px]"
+                          <span class="px-1.5 py-0.5 rounded-full border pm-text-11"
                             [ngClass]="getEstadoCompromisoClase(c.estado)">
                             {{ getEstadoCompromisoLabel(c.estado) }}
                           </span>
@@ -1774,7 +1130,7 @@
                   {{ tarea.estado | uppercase }}
                 </span>
                 <span *ngIf="tarea.informe_titulo"
-                  class="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full max-w-[160px] truncate">
+                  class="px-1.5 py-0.5 text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full pm-max-w-160 truncate">
                   {{ tarea.informe_titulo }}
                 </span>
                 <!-- Avatar responsable -->
@@ -1878,7 +1234,7 @@
      ═══════════════════════════════════════════════════════════════════ -->
 <div *ngIf="showDetalleModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-40 p-4"
     style="background-color: rgba(0, 0, 0, var(--tw-bg-opacity)) !important;">
-    <div class="bg-white rounded-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+    <div class="bg-white rounded-2xl max-w-7xl w-full pm-max-h-90vh overflow-hidden flex flex-col shadow-2xl"
         style="max-height: 90vh; height: 85vh; width: 90vw;">
 
         <!-- Cabecera -->
@@ -1928,8 +1284,8 @@
                         <div class="text-2xl font-bold text-blue-700">{{ detalleProyecto.total_actividades || 0 }}</div>
                         <div class="text-xs text-gray-500 mt-0.5">Actividades</div>
                     </div>
-                    <div class="bg-slate-50 rounded-xl p-3 text-center">
-                        <div class="text-2xl font-bold text-slate-700">{{ detalleProyecto.total_tareas || 0 }}</div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-bold text-gray-700">{{ detalleProyecto.total_tareas || 0 }}</div>
                         <div class="text-xs text-gray-500 mt-0.5">Tareas</div>
                     </div>
                     <div class="bg-green-50 rounded-xl p-3 text-center">
@@ -2021,20 +1377,20 @@
                                 <!-- ── MODO EDICIÓN INLINE (lápiz) ── -->
                                 <div *ngIf="inlineEditingTaskId === tarea.id" #inlineEditRow
                                     data-inline-edit-row
-                                    class="bg-white rounded-lg border-2 border-amber-400 shadow-sm overflow-visible">
+                                    class="bg-white rounded-lg border-2 border-yellow-400 shadow-sm overflow-visible">
                                     <!-- Fila principal -->
                                     <div class="px-3 py-2 flex items-center gap-2">
                                         <span class="w-2 h-2 rounded-full flex-shrink-0"
                                             [ngClass]="getSemaforoClass(tarea.semaforo)"></span>
                                         <input data-edit-title type="text" [(ngModel)]="inlineEditForm.titulo"
                                             (keydown)="onInlineEditKeydown($event)"
-                                            class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-amber-400 pb-0.5 min-w-0">
+                                            class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-yellow-400 pb-0.5 min-w-0">
                                         <!-- Asignado edición -->
                                         <div class="relative flex-shrink-0" data-inline-edit-asignado>
                                             <button
                                                 (click)="showInlineEditAsignado = !showInlineEditAsignado; inlineEditAsignadoBusqueda = ''; $event.stopPropagation()"
                                                 class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border transition"
-                                                [ngClass]="inlineEditForm.asignado_id ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'"
+                                                [ngClass]="inlineEditForm.asignado_id ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'"
                                                 title="Asignar">
                                                 <i class="bi bi-person" style="font-size:10px"></i>
                                                 <span *ngIf="inlineEditForm.asignado_id">{{ inlineEditAsignadoNombre |
@@ -2047,7 +1403,7 @@
                                                 <div class="px-2 pb-1">
                                                     <input type="text" [(ngModel)]="inlineEditAsignadoBusqueda"
                                                         placeholder="Buscar persona…"
-                                                        class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-amber-400">
+                                                        class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-yellow-400">
                                                 </div>
                                                 <div *ngIf="inlineEditForm.asignado_id"
                                                     (click)="inlineEditForm.asignado_id = null; showInlineEditAsignado = false"
@@ -2057,9 +1413,9 @@
                                                 <div *ngFor="let u of inlineEditUsuariosFiltrados"
                                                     (click)="inlineEditForm.asignado_id = u.id; showInlineEditAsignado = false"
                                                     class="flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-gray-50 cursor-pointer"
-                                                    [class.bg-amber-50]="inlineEditForm.asignado_id === u.id">
+                                                    [class.bg-yellow-50]="inlineEditForm.asignado_id === u.id">
                                                     <span
-                                                        class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-semibold flex-shrink-0"
+                                                        class="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-semibold flex-shrink-0"
                                                         style="font-size:9px">{{ u.nombre.charAt(0) | uppercase
                                                         }}</span>
                                                     {{ u.nombre }}
@@ -2091,7 +1447,7 @@
                                         </div>
                                         <!-- Fecha -->
                                         <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega"
-                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-amber-400 text-gray-500 flex-shrink-0">
+                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-yellow-400 text-gray-500 flex-shrink-0">
                                         <!-- Guardar -->
                                         <button (click)="guardarEdicionInline(); $event.stopPropagation()"
                                             class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0"
@@ -2111,7 +1467,7 @@
                                         <input type="text" [(ngModel)]="inlineEditForm.descripcion"
                                             (keydown)="onInlineEditKeydown($event)"
                                             placeholder="Descripción (opcional)…"
-                                            class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-amber-300 pb-0.5 placeholder-gray-400">
+                                            class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-yellow-300 pb-0.5 placeholder-gray-400">
                                     </div>
                                 </div>
 
@@ -2176,7 +1532,7 @@
                                         <button
                                             *ngIf="tarea.creado_por === usuarioId || puedeEditarProyecto(detalleProyecto)"
                                             (click)="abrirEdicionInline(tarea); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                            class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                             title="Editar en línea">
                                             <i class="bi bi-pencil text-sm"></i>
                                         </button>
@@ -2192,7 +1548,7 @@
                                         <!-- Mover -->
                                         <button *ngIf="esAdminProyecto(detalleProyecto)"
                                             (click)="moverTarea(tarea); $event.stopPropagation()"
-                                            class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                            class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                             title="Mover a actividad">
                                             <i class="bi bi-arrow-left-right text-sm"></i>
                                         </button>
@@ -2373,19 +1729,19 @@
                                 <ng-container *ngFor="let tarea of detalleProyecto.tareas_sin_actividad">
                                     <!-- Modo edición inline -->
                                     <div *ngIf="inlineEditingTaskId === tarea.id" #inlineEditRow
-                                        class="bg-white rounded-lg border-2 border-amber-400 shadow-sm">
+                                        class="bg-white rounded-lg border-2 border-yellow-400 shadow-sm">
                                         <div class="px-3 py-2 flex items-center gap-2">
                                             <span class="w-2 h-2 rounded-full flex-shrink-0"
                                                 [ngClass]="getSemaforoClass(tarea.semaforo)"></span>
                                             <input data-edit-title type="text" [(ngModel)]="inlineEditForm.titulo"
                                                 (keydown)="onInlineEditKeydown($event)"
-                                                class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-amber-400 pb-0.5 min-w-0">
+                                                class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-yellow-400 pb-0.5 min-w-0">
                                             <!-- Asignado edición -->
                                             <div class="relative flex-shrink-0" data-inline-edit-asignado>
                                                 <button
                                                     (click)="showInlineEditAsignado = !showInlineEditAsignado; inlineEditAsignadoBusqueda = ''; $event.stopPropagation()"
                                                     class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border transition"
-                                                    [ngClass]="inlineEditForm.asignado_id ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 text-gray-400'">
+                                                    [ngClass]="inlineEditForm.asignado_id ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-400'">
                                                     <i class="bi bi-person" style="font-size:10px"></i>
                                                     <span *ngIf="inlineEditForm.asignado_id">{{ inlineEditAsignadoNombre
                                                         | slice:0:12 }}</span>
@@ -2397,7 +1753,7 @@
                                                     <div class="px-2 pb-1"><input type="text"
                                                             [(ngModel)]="inlineEditAsignadoBusqueda"
                                                             placeholder="Buscar…"
-                                                            class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-amber-400">
+                                                            class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-yellow-400">
                                                     </div>
                                                     <div *ngIf="inlineEditForm.asignado_id"
                                                         (click)="inlineEditForm.asignado_id = null; showInlineEditAsignado = false"
@@ -2407,9 +1763,9 @@
                                                     <div *ngFor="let u of inlineEditUsuariosFiltrados"
                                                         (click)="inlineEditForm.asignado_id = u.id; showInlineEditAsignado = false"
                                                         class="flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-gray-50 cursor-pointer"
-                                                        [class.bg-amber-50]="inlineEditForm.asignado_id === u.id">
+                                                        [class.bg-yellow-50]="inlineEditForm.asignado_id === u.id">
                                                         <span
-                                                            class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-semibold flex-shrink-0"
+                                                            class="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-semibold flex-shrink-0"
                                                             style="font-size:9px">{{ u.nombre.charAt(0) | uppercase
                                                             }}</span>{{ u.nombre }}
                                                     </div>
@@ -2437,7 +1793,7 @@
                                             </div>
                                             <input type="datetime-local"
                                                 [(ngModel)]="inlineEditForm.fecha_limite_entrega"
-                                                class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-amber-400 text-gray-500 flex-shrink-0">
+                                                class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-yellow-400 text-gray-500 flex-shrink-0">
                                             <button (click)="guardarEdicionInline(); $event.stopPropagation()"
                                                 class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0"><i
                                                     class="bi bi-check-lg"></i></button>
@@ -2445,11 +1801,11 @@
                                                 class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"><i
                                                     class="bi bi-x"></i></button>
                                         </div>
-                                        <div class="px-3 pb-2 flex items-center gap-2 pl-7 border-t border-amber-50">
-                                            <i class="bi bi-text-left text-amber-200 text-xs flex-shrink-0"></i>
+                                        <div class="px-3 pb-2 flex items-center gap-2 pl-7 border-t border-yellow-50">
+                                            <i class="bi bi-text-left text-yellow-200 text-xs flex-shrink-0"></i>
                                             <input type="text" [(ngModel)]="inlineEditForm.descripcion"
                                                 (keydown)="onInlineEditKeydown($event)" placeholder="Descripción…"
-                                                class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-amber-300 pb-0.5 placeholder-gray-400">
+                                                class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-yellow-300 pb-0.5 placeholder-gray-400">
                                         </div>
                                     </div>
                                     <!-- Modo normal -->
@@ -2496,10 +1852,10 @@
                                             <button
                                                 *ngIf="tarea.creado_por === usuarioId || puedeEditarProyecto(detalleProyecto)"
                                                 (click)="abrirEdicionInline(tarea); $event.stopPropagation()"
-                                                class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                                class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                                 title="Editar en línea"><i class="bi bi-pencil text-sm"></i></button>
                                             <button *ngIf="esAdminProyecto(detalleProyecto)" (click)="moverTarea(tarea)"
-                                                class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                                class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                                 title="Mover a actividad"><i
                                                     class="bi bi-arrow-left-right text-sm"></i></button>
                                             <button
@@ -2622,20 +1978,20 @@
                                                 <!-- Modo edición inline -->
                                                 <div *ngIf="inlineEditingTaskId === tarea.id" #inlineEditRow
                                                     data-inline-edit-row
-                                                    class="bg-white rounded-lg border-2 border-amber-400 shadow-sm overflow-visible">
+                                                    class="bg-white rounded-lg border-2 border-yellow-400 shadow-sm overflow-visible">
                                                     <div class="px-3 py-2 flex items-center gap-2">
                                                         <span class="w-2 h-2 rounded-full flex-shrink-0"
                                                             [ngClass]="getSemaforoClass(tarea.semaforo)"></span>
                                                         <input data-edit-title type="text"
                                                             [(ngModel)]="inlineEditForm.titulo"
                                                             (keydown)="onInlineEditKeydown($event)"
-                                                            class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-amber-400 pb-0.5 min-w-0">
+                                                            class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-yellow-400 pb-0.5 min-w-0">
                                                         <!-- Asignado edición -->
                                                         <div class="relative flex-shrink-0" data-inline-edit-asignado>
                                                             <button
                                                                 (click)="showInlineEditAsignado = !showInlineEditAsignado; inlineEditAsignadoBusqueda = ''; $event.stopPropagation()"
                                                                 class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border transition"
-                                                                [ngClass]="inlineEditForm.asignado_id ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 text-gray-400'">
+                                                                [ngClass]="inlineEditForm.asignado_id ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-400'">
                                                                 <i class="bi bi-person" style="font-size:10px"></i>
                                                                 <span *ngIf="inlineEditForm.asignado_id">{{
                                                                     inlineEditAsignadoNombre | slice:0:12 }}</span>
@@ -2647,7 +2003,7 @@
                                                                 <div class="px-2 pb-1"><input type="text"
                                                                         [(ngModel)]="inlineEditAsignadoBusqueda"
                                                                         placeholder="Buscar…"
-                                                                        class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-amber-400">
+                                                                        class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-yellow-400">
                                                                 </div>
                                                                 <div *ngIf="inlineEditForm.asignado_id"
                                                                     (click)="inlineEditForm.asignado_id = null; showInlineEditAsignado = false"
@@ -2657,9 +2013,9 @@
                                                                 <div *ngFor="let u of inlineEditUsuariosFiltrados"
                                                                     (click)="inlineEditForm.asignado_id = u.id; showInlineEditAsignado = false"
                                                                     class="flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-gray-50 cursor-pointer"
-                                                                    [class.bg-amber-50]="inlineEditForm.asignado_id === u.id">
+                                                                    [class.bg-yellow-50]="inlineEditForm.asignado_id === u.id">
                                                                     <span
-                                                                        class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-semibold flex-shrink-0"
+                                                                        class="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-semibold flex-shrink-0"
                                                                         style="font-size:9px">{{ u.nombre.charAt(0) |
                                                                         uppercase }}</span>{{ u.nombre }}
                                                                 </div>
@@ -2689,7 +2045,7 @@
                                                         </div>
                                                         <input type="datetime-local"
                                                             [(ngModel)]="inlineEditForm.fecha_limite_entrega"
-                                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-amber-400 text-gray-500 flex-shrink-0">
+                                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-yellow-400 text-gray-500 flex-shrink-0">
                                                         <button
                                                             (click)="guardarEdicionInline(); $event.stopPropagation()"
                                                             class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0"><i
@@ -2700,13 +2056,13 @@
                                                                 class="bi bi-x"></i></button>
                                                     </div>
                                                     <div
-                                                        class="px-3 pb-2 flex items-center gap-2 pl-7 border-t border-amber-50">
+                                                        class="px-3 pb-2 flex items-center gap-2 pl-7 border-t border-yellow-50">
                                                         <i
-                                                            class="bi bi-text-left text-amber-200 text-xs flex-shrink-0"></i>
+                                                            class="bi bi-text-left text-yellow-200 text-xs flex-shrink-0"></i>
                                                         <input type="text" [(ngModel)]="inlineEditForm.descripcion"
                                                             (keydown)="onInlineEditKeydown($event)"
                                                             placeholder="Descripción…"
-                                                            class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-amber-300 pb-0.5 placeholder-gray-400">
+                                                            class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100 focus:border-yellow-300 pb-0.5 placeholder-gray-400">
                                                     </div>
                                                 </div>
 
@@ -2763,7 +2119,7 @@
                                                         <button
                                                             *ngIf="tarea.creado_por === usuarioId || puedeEditarProyecto(detalleProyecto)"
                                                             (click)="abrirEdicionInline(tarea); $event.stopPropagation()"
-                                                            class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                                                            class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
                                                             title="Editar en línea"><i
                                                                 class="bi bi-pencil text-sm"></i></button>
                                                         <button *ngIf="esAdminProyecto(detalleProyecto)"
@@ -2960,7 +2316,7 @@
 
         <!-- Descripción -->
         <div *ngIf="tarea.descripcion"
-          class="text-xs text-gray-500 mt-0.5 line-clamp-2">
+          class="text-xs text-gray-500 mt-0.5 pm-line-clamp-2">
           {{ tarea.descripcion }}
         </div>
 
@@ -3050,7 +2406,7 @@
             </div>
 
             <div
-                class="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap text-sm text-gray-700 max-h-[400px] overflow-y-auto">
+                class="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap text-sm text-gray-700 pm-max-h-400 overflow-y-auto">
                 {{ tareaSeleccionada?.notas || 'Sin notas' }}
             </div>
         </div>
@@ -3155,7 +2511,7 @@
 
 <!-- ══ MODAL: PREVIEW EVIDENCIA ══ -->
 <div *ngIf="showModalPreviewEvidencia"
-    class="fixed inset-0 bg-opacity-75 flex items-center justify-center z-[60] p-4" style="z-index: 90;">
+    class="fixed inset-0 bg-opacity-75 flex items-center justify-center pm-z-60 p-4" style="z-index: 90;">
     <div class="bg-white rounded-xl w-full shadow-2xl overflow-hidden flex flex-col"
         style="max-width: 900px; max-height: 90vh;">
 
@@ -3248,7 +2604,7 @@
     </div>
 
     <!-- Contenido -->
-    <div class="px-5 py-4 max-h-[70vh] overflow-y-auto">
+    <div class="px-5 py-4 pm-max-h-70vh overflow-y-auto">
 
       <!-- Título -->
       <div class="mb-3">
@@ -3449,7 +2805,7 @@
           <textarea *ngIf="selectedSegTarea || segTareaForm.notas"
             [(ngModel)]="segTareaForm.notas" rows="2"
             placeholder="Añadir notas..."
-            class="w-full text-sm placeholder-gray-400 border-0 border-b border-gray-200 focus:border-indigo-300 focus:ring-0 outline-none px-0 py-1.5 resize-y min-h-[60px] max-h-[200px]">
+            class="w-full text-sm placeholder-gray-400 border-0 border-b border-gray-200 focus:border-indigo-300 focus:ring-0 outline-none px-0 py-1.5 resize-y pm-min-h-60 pm-max-h-200">
           </textarea>
           <div *ngIf="!selectedSegTarea && !segTareaForm.notas"
             (click)="segTareaForm.notas = ' '"
@@ -3555,7 +2911,7 @@
                 class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"><i
                     class="bi bi-x-lg"></i></button>
         </div>
-        <div class="px-6 py-5 max-h-[75vh] overflow-y-auto">
+        <div class="px-6 py-5 pm-max-h-75vh overflow-y-auto">
             <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-1.5">Título <span
                         class="text-red-500">*</span></label><input type="text" [(ngModel)]="proyectoForm.titulo"
                     placeholder="Nombre descriptivo del proyecto"
@@ -3646,17 +3002,17 @@
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center"><i
-                        class="bi bi-check2-square text-violet-600"></i></div>
+                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center"><i
+                        class="bi bi-check2-square text-purple-600"></i></div>
                 <h2 class="text-base font-bold text-gray-900">{{ modalTareaTitle }}</h2>
             </div>
             <button (click)="cerrarModalTarea()"
                 class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"><i
                     class="bi bi-x-lg"></i></button>
         </div>
-        <div class="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-4">
+        <div class="px-6 py-5 pm-max-h-70vh overflow-y-auto space-y-4">
             <div *ngIf="nivelTareaActual === 'basico'"
-                class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+                class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
                 <i class="bi bi-info-circle-fill"></i><span>Tu acceso solo permite marcar esta tarea como
                     completada.</span>
             </div>
@@ -3758,13 +3114,13 @@
                     class="bi bi-x-lg"></i></button>
         </div>
 
-        <div class="px-6 py-5 max-h-[75vh] overflow-y-auto">
+        <div class="px-6 py-5 pm-max-h-75vh overflow-y-auto">
 
             <!-- Leyenda de acciones -->
             <div class="grid grid-cols-3 gap-1.5 mb-5 text-xs">
                 <div class="bg-blue-50 rounded-lg px-2 py-1.5 text-blue-700"><i
                         class="bi bi-plus-circle mr-1"></i><strong>Crear</strong> nuevas entidades</div>
-                <div class="bg-amber-50 rounded-lg px-2 py-1.5 text-amber-700"><i
+                <div class="bg-yellow-50 rounded-lg px-2 py-1.5 text-yellow-700"><i
                         class="bi bi-pencil mr-1"></i><strong>Editar</strong> título / desc / estado</div>
                 <div class="bg-red-50 rounded-lg px-2 py-1.5 text-red-700"><i
                         class="bi bi-trash mr-1"></i><strong>Eliminar</strong> entidades</div>
@@ -4008,7 +3364,7 @@
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
             <div class="flex items-center gap-3 min-w-0">
                 <span class="w-3 h-3 rounded-full flex-shrink-0"
-                    [ngClass]="detalleInforme?.estado === 'abierto' ? 'bg-red-500' : detalleInforme?.estado === 'en_proceso' ? 'bg-amber-400' : 'bg-green-500'"></span>
+                    [ngClass]="detalleInforme?.estado === 'abierto' ? 'bg-red-500' : detalleInforme?.estado === 'en_proceso' ? 'bg-yellow-400' : 'bg-green-500'"></span>
                 <div class="min-w-0">
                     <h2 class="text-lg font-bold text-gray-900 truncate">{{ detalleInforme?.titulo }}</h2>
                     <div class="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -4041,7 +3397,7 @@
         <!-- Loading -->
         <div *ngIf="loadingDetalleInforme" class="flex-1 flex items-center justify-center">
             <div class="text-center">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-rose-600 mx-auto mb-3"></div>
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-600 mx-auto mb-3"></div>
                 <p class="text-sm text-gray-400">Cargando informe…</p>
             </div>
         </div>
@@ -4049,7 +3405,7 @@
         <ng-container *ngIf="!loadingDetalleInforme && detalleInforme">
             <!-- Stats -->
             <div class="grid grid-cols-4 gap-3 px-6 py-4 border-b border-gray-100 flex-shrink-0">
-                <div class="bg-rose-50 rounded-xl p-3 text-center">
+                <div class="bg-red-50 rounded-xl p-3 text-center">
                     <div class="text-xl font-bold text-blue-700">{{ detalleInforme.total_tareas || 0 }}</div>
                     <div class="text-xs text-gray-500">Tareas</div>
                 </div>
@@ -4061,8 +3417,8 @@
                     <div class="text-xl font-bold text-red-600">{{ detalleInforme.tareas_vencidas || 0 }}</div>
                     <div class="text-xs text-gray-500">Vencidas</div>
                 </div>
-                <div class="bg-slate-50 rounded-xl p-3 text-center">
-                    <div class="text-xl font-bold text-slate-700">{{ detalleInforme.progreso || 0 }}%</div>
+                <div class="bg-gray-50 rounded-xl p-3 text-center">
+                    <div class="text-xl font-bold text-gray-700">{{ detalleInforme.progreso || 0 }}%</div>
                     <div class="text-xs text-gray-500">Progreso</div>
                 </div>
             </div>
@@ -4071,22 +3427,22 @@
             <div class="flex gap-1 px-6 py-2 border-b border-gray-100 flex-shrink-0 flex-wrap">
                 <button (click)="tabInforme = 'tareas'"
                     class="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition"
-                    [ngClass]="tabInforme === 'tareas' ? 'bg-rose-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
+                    [ngClass]="tabInforme === 'tareas' ? 'bg-red-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
                     <i class="bi bi-check2-square"></i> Tareas
                 </button>
                 <button (click)="tabInforme = 'analisis'"
                     class="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition"
-                    [ngClass]="tabInforme === 'analisis' ? 'bg-rose-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
+                    [ngClass]="tabInforme === 'analisis' ? 'bg-red-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
                     <i class="bi bi-search"></i> Análisis técnico
                 </button>
                 <button (click)="tabInforme = 'plan'"
                     class="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition"
-                    [ngClass]="tabInforme === 'plan' ? 'bg-rose-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
+                    [ngClass]="tabInforme === 'plan' ? 'bg-red-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
                     <i class="bi bi-shield-check"></i> Plan de acción
                 </button>
                 <button (click)="tabInforme = 'documentos'; initEditorContent()"
                     class="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg transition"
-                    [ngClass]="tabInforme === 'documentos' ? 'bg-rose-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
+                    [ngClass]="tabInforme === 'documentos' ? 'bg-red-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'">
                     <i class="bi bi-file-richtext"></i> Documentos
                 </button>
             </div>
@@ -4103,17 +3459,17 @@
                             <div *ngIf="inlineEditInformeTareaId === tarea.id"
                                 data-inline-edit-informe-row
                                 #inlineEditRow
-                                class="bg-white rounded-lg border-2 border-amber-400 shadow-sm overflow-visible">
+                                class="bg-white rounded-lg border-2 border-yellow-400 shadow-sm overflow-visible">
                                 <div class="px-3 py-2 flex items-center gap-2">
                                     <span class="w-2 h-2 rounded-full flex-shrink-0" [ngClass]="getSemaforoClass(tarea.semaforo)"></span>
                                     <input type="text" [(ngModel)]="inlineEditInformeTareaForm.titulo"
                                         (keydown)="onInlineEditInformeTareaKeydown($event)"
-                                        class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-amber-400 pb-0.5 min-w-0">
+                                        class="flex-1 text-sm font-medium outline-none bg-transparent border-b border-gray-200 focus:border-yellow-400 pb-0.5 min-w-0">
                                     <!-- Responsable edición -->
                                     <div class="relative flex-shrink-0" data-inline-edit-informe-responsable>
                                         <button (click)="showInlineEditInformeTareaResponsable = !showInlineEditInformeTareaResponsable; inlineEditInformeTareaResponsableBusqueda = ''; $event.stopPropagation()"
                                             class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border transition"
-                                            [ngClass]="inlineEditInformeTareaForm.responsable_id ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 text-gray-400'">
+                                            [ngClass]="inlineEditInformeTareaForm.responsable_id ? 'bg-yellow-50 border-yellow-300 text-yellow-700' : 'border-gray-200 text-gray-400'">
                                             <i class="bi bi-person" style="font-size:10px"></i>
                                             <span *ngIf="inlineEditInformeTareaForm.responsable_id">{{ nombreUsuario(inlineEditInformeTareaForm.responsable_id) | slice:0:12 }}</span>
                                             <span *ngIf="!inlineEditInformeTareaForm.responsable_id">Responsable</span>
@@ -4153,7 +3509,7 @@
                                         </div>
                                     </div>
                                     <input type="datetime-local" [(ngModel)]="inlineEditInformeTareaForm.fecha_limite_entrega"
-                                        class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-amber-400 text-gray-500 flex-shrink-0">
+                                        class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-yellow-400 text-gray-500 flex-shrink-0">
                                     <button (click)="guardarInlineEditInformeTarea()"
                                         class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0">
                                         <i class="bi bi-check-lg"></i>
@@ -4202,7 +3558,7 @@
                                     </button>
                                     <button
                                         (click)="abrirInlineEditInformeTarea(tarea); $event.stopPropagation()"
-                                        class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Editar">
+                                        class="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition" title="Editar">
                                         <i class="bi bi-pencil text-sm"></i>
                                     </button>
                                     <button
@@ -4216,7 +3572,7 @@
 
                         <!-- Fila inline nueva tarea -->
                         <div *ngIf="showInlineInformeTarea"
-                            class="bg-white rounded-lg border-2 border-rose-400 shadow-sm overflow-visible"
+                            class="bg-white rounded-lg border-2 border-red-400 shadow-sm overflow-visible"
                             data-inline-informe-task-row>
                             <div class="px-3 py-2 flex items-center gap-2">
                                 <i class="bi bi-circle text-gray-300 text-xs flex-shrink-0"></i>
@@ -4229,7 +3585,7 @@
                                 <div class="relative flex-shrink-0" data-inline-informe-responsable>
                                     <button (click)="showInlineInformeTareaResponsable = !showInlineInformeTareaResponsable; inlineInformeTareaResponsableBusqueda = ''; $event.stopPropagation()"
                                         class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border transition"
-                                        [ngClass]="inlineInformeTareaForm.responsable_id ? 'bg-rose-50 border-rose-300 text-blue-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'">
+                                        [ngClass]="inlineInformeTareaForm.responsable_id ? 'bg-red-50 border-red-300 text-blue-700' : 'border-gray-200 text-gray-400 hover:border-gray-300'">
                                         <i class="bi bi-person" style="font-size:10px"></i>
                                         <span *ngIf="inlineInformeTareaForm.responsable_id">{{ nombreUsuario(inlineInformeTareaForm.responsable_id) | slice:0:12 }}</span>
                                         <span *ngIf="!inlineInformeTareaForm.responsable_id">Responsable</span>
@@ -4240,7 +3596,7 @@
                                         <div class="px-2 pb-1">
                                             <input type="text" [(ngModel)]="inlineInformeTareaResponsableBusqueda"
                                                 placeholder="Buscar persona…"
-                                                class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-rose-400">
+                                                class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-red-400">
                                         </div>
                                         <div *ngFor="let u of inlineInformeTareaResponsablesFiltrados"
                                             (click)="inlineInformeTareaForm.responsable_id = u.id; showInlineInformeTareaResponsable = false"
@@ -4272,18 +3628,18 @@
                                     </div>
                                 </div>
                                 <input type="datetime-local" [(ngModel)]="inlineInformeTareaForm.fecha_limite_entrega"
-                                    class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-rose-400 text-gray-500 flex-shrink-0">
+                                    class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-red-400 text-gray-500 flex-shrink-0">
                                 <span *ngIf="inlineInformeTareaGuardando"
-                                    class="text-xs text-rose-500 animate-pulse flex-shrink-0 flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping inline-block"></span>Guardando…
+                                    class="text-xs text-red-500 animate-pulse flex-shrink-0 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping inline-block"></span>Guardando…
                                 </span>
                                 <button (click)="cancelarInlineInformeTarea()"
                                     class="p-1.5 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded-lg transition flex-shrink-0">
                                     <i class="bi bi-x text-sm"></i>
                                 </button>
                             </div>
-                            <div class="px-3 pb-2 flex items-center gap-2 pl-7 border-t border-rose-50">
-                                <i class="bi bi-text-left text-rose-200 text-xs flex-shrink-0"></i>
+                            <div class="px-3 pb-2 flex items-center gap-2 pl-7 border-t border-red-50">
+                                <i class="bi bi-text-left text-red-200 text-xs flex-shrink-0"></i>
                                 <input type="text" [(ngModel)]="inlineInformeTareaForm.descripcion"
                                     placeholder="Descripción (opcional)…"
                                     class="flex-1 text-xs outline-none bg-transparent placeholder-gray-400 py-1">
@@ -4294,7 +3650,7 @@
                     <!-- Botón añadir tarea -->
                     <button *ngIf="!showInlineInformeTarea"
                         (click)="abrirInlineInformeTarea(); $event.stopPropagation()"
-                        class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition mt-2 group border border-transparent hover:border-rose-200">
+                        class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition mt-2 group border border-transparent hover:border-red-200">
                         <i class="bi bi-plus-circle group-hover:scale-110 transition-transform"></i>
                         <span>Añadir tarea</span>
                     </button>
@@ -4319,21 +3675,21 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Causa raíz</label>
                         <textarea [(ngModel)]="detalleInforme.causa_raiz" rows="3"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition resize-none"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition resize-none"
                             placeholder="Describe la causa raíz…"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Sistemas afectados</label>
                         <input type="text" [(ngModel)]="detalleInforme.sistemas_afectados"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition"
                             placeholder="ERP, Servidor de Base de Datos…">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Impacto en el negocio</label>
                         <textarea [(ngModel)]="detalleInforme.impacto_negocio" rows="3"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition resize-none"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition resize-none"
                             placeholder="Describe el impacto operativo…"></textarea>
                     </div>
 
@@ -4354,28 +3710,28 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Acción correctiva</label>
                         <textarea [(ngModel)]="detalleInforme.accion_correctiva" rows="3"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition resize-none"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition resize-none"
                             placeholder="Medidas para corregir el problema…"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Acción preventiva</label>
                         <textarea [(ngModel)]="detalleInforme.accion_preventiva" rows="3"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition resize-none"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition resize-none"
                             placeholder="Medidas para evitar que se repita…"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Control tecnológico implementado</label>
                         <input type="text" [(ngModel)]="detalleInforme.control_tecnologico"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition"
                             placeholder="Monitoreo SIEM, Backup Automatizado…">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">Fecha de implementación</label>
                         <input type="date" [(ngModel)]="detalleInforme.fecha_implementacion"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition">
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition">
                     </div>
 
                     <div class="flex justify-end pt-2">
@@ -4465,7 +3821,7 @@
                     <div #richEditor
                         contenteditable="true"
                         (input)="onEditorInput($event)"
-                        class="rich-editor-content w-full border border-gray-300 rounded-b-lg px-4 py-3 min-h-[300px] max-h-[400px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 bg-white">
+                        class="rich-editor-content w-full border border-gray-300 rounded-b-lg px-4 py-3 pm-min-h-300 pm-max-h-400 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white">
                     </div>
 
                     <!-- Estilos básicos para el editor -->
@@ -4511,8 +3867,8 @@
     <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-rose-100 rounded-lg flex items-center justify-center">
-                    <i class="bi bi-exclamation-triangle text-rose-600"></i>
+                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-exclamation-triangle text-red-600"></i>
                 </div>
                 <h2 class="text-base font-bold text-gray-900">{{ modalInformeTitulo }}</h2>
             </div>
@@ -4521,31 +3877,31 @@
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
-        <div class="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div class="px-6 py-5 space-y-4 pm-max-h-70vh overflow-y-auto">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Título <span class="text-red-500">*</span></label>
                 <input type="text" [(ngModel)]="informeForm.titulo"
                     placeholder="Ej: Incidente de disponibilidad del servidor ERP"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition">
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Descripción del hallazgo <span class="text-red-500">*</span></label>
                 <textarea [(ngModel)]="informeForm.descripcion_hallazgo" rows="3"
                     placeholder="Describe el incidente o hallazgo encontrado…"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition resize-none"></textarea>
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition resize-none"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Tipo <span class="text-red-500">*</span></label>
                     <select [(ngModel)]="informeForm.tipo"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition">
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition">
                         <option *ngFor="let t of tiposInforme" [value]="t">{{ t }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Nivel de impacto <span class="text-red-500">*</span></label>
                     <select [(ngModel)]="informeForm.nivel_impacto"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition">
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition">
                         <option *ngFor="let n of nivelesImpacto" [value]="n">{{ n }}</option>
                     </select>
                 </div>
@@ -4553,7 +3909,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Fecha del evento <span class="text-red-500">*</span></label>
                 <input type="date" [(ngModel)]="informeForm.fecha_evento"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition">
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-red-500 outline-none transition">
             </div>
         </div>
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
@@ -4572,7 +3928,7 @@
 <!-- ══ MODAL: DETALLE DÍA ══ -->
 <div *ngIf="showDayModal"
   class="fixed inset-0 bg-black bg-opacity-30 flex items-start justify-center z-30 p-4 pt-16" style="background-color: rgba(0, 0, 0, var(--tw-bg-opacity)) !important;">
-  <div class="bg-white rounded-xl max-w-2xl w-full shadow-xl overflow-hidden max-h-[80vh] flex flex-col" style="max-height: 85vh;">
+  <div class="bg-white rounded-xl max-w-2xl w-full shadow-xl overflow-hidden pm-max-h-80vh flex flex-col" style="max-height: 85vh;">
  
     <!-- Header -->
     <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100 flex-shrink-0">
@@ -4710,7 +4066,7 @@
       <!-- ── INFORMES ──────────────────────────────────────────────── -->
       <div *ngIf="selectedDayTareasInforme.length">
         <div class="flex items-center gap-2 mb-2">
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
           <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Informes ({{ selectedDayTareasInforme.length }})
           </h4>
@@ -4733,7 +4089,7 @@
                       {{ tarea.estado | uppercase }}
                     </span>
                     <span *ngIf="tarea.informe_titulo"
-                      class="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full max-w-[120px] truncate">
+                      class="px-1.5 py-0.5 text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full pm-max-w-120 truncate">
                       {{ tarea.informe_titulo }}
                     </span>
                     <div *ngIf="tarea.responsable_id"
@@ -4873,7 +4229,7 @@
 </div>
 
 <!-- TOASTS (sin cambios) -->
-<div class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none" style="z-index: 9999;">
+<div class="fixed bottom-5 right-5 pm-z-toast flex flex-col gap-2 pointer-events-none" style="z-index: 9999;">
     <div *ngFor="let t of toasts"
         class="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white pointer-events-auto transition-all animate-fade-in"
         [ngClass]="t.type === 'success' ? 'bg-green-600' : 'bg-red-600'">
@@ -4902,8 +4258,8 @@
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center"><i
-                        class="bi bi-sliders text-slate-600"></i></div>
+                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center"><i
+                        class="bi bi-sliders text-gray-600"></i></div>
                 <div>
                     <h2 class="text-base font-bold text-gray-900">Configuración de Semáforos</h2>
                     <p class="text-xs text-gray-500">Horas laborales restantes que activan cada nivel (L–V, 7:00–16:00)
@@ -4914,7 +4270,7 @@
                 class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"><i
                     class="bi bi-x-lg"></i></button>
         </div>
-        <div class="px-6 py-5 max-h-[75vh] overflow-y-auto">
+        <div class="px-6 py-5 pm-max-h-75vh overflow-y-auto">
             <div *ngFor="let tipo of ['proyecto','actividad','tarea']"
                 class="mb-4 p-4 border border-gray-200 rounded-xl">
                 <div class="flex justify-between items-center mb-3">

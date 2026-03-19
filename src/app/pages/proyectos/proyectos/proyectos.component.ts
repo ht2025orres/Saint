@@ -3515,7 +3515,7 @@ this.proyectoService.crearInformeTarea(body).subscribe({
   getImpactoBadgeClass(nivel: string): string {
     return ({
       'Crítico': 'bg-red-100 text-red-800 border border-red-300',
-      'Alto':    'bg-rose-100 text-rose-700 border border-rose-200',
+      'Alto':    'bg-red-100 text-red-700 border border-red-200',
       'Medio':   'bg-orange-100 text-orange-700 border border-orange-200',
       'Bajo':    'bg-yellow-100 text-yellow-700 border border-yellow-200',
     })[nivel] ?? 'bg-gray-100 text-gray-700';
@@ -3526,7 +3526,7 @@ this.proyectoService.crearInformeTarea(body).subscribe({
       'Incidente':                  'bg-red-50 text-red-700 border border-red-200',
       'Hallazgo de Auditoría':      'bg-purple-50 text-purple-700 border border-purple-200',
       'Riesgo Tecnológico':         'bg-orange-50 text-orange-700 border border-orange-200',
-      'Vulnerabilidad de Seguridad':'bg-rose-50 text-rose-700 border border-rose-200',
+      'Vulnerabilidad de Seguridad':'bg-red-50 text-red-700 border border-red-200',
       'Mejora del Proceso':         'bg-teal-50 text-teal-700 border border-teal-200',
     })[tipo] ?? 'bg-gray-100 text-gray-700';
   }
