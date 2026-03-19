@@ -828,6 +828,7 @@ Route::post('/flujos-diarios/{id}/cerrar',     [ProyectoController::class, 'cerr
 // Compromisos
 Route::post('/compromisos',                    [ProyectoController::class, 'storeCompromiso']);
 Route::put('/compromisos/{id}',                [ProyectoController::class, 'updateCompromiso']);
+Route::post('/compromisos/{id}/iniciar',       [ProyectoController::class, 'iniciarCompromiso']);
 Route::post('/compromisos/{id}/completar',     [ProyectoController::class, 'completarCompromiso']);
 Route::delete('/compromisos/{id}',             [ProyectoController::class, 'destroyCompromiso']);
  
