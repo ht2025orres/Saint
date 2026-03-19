@@ -14,7 +14,7 @@ export class ListaInformesComponent {
   @Input() puedeGestionarModulo = false;
 
   @Output() onCargarInformes = new EventEmitter<void>();
-  @Output() onBusquedaInformesChange = new EventEmitter<void>();
+  @Output() onBusquedaInformesChange = new EventEmitter<string>();
   @Output() onVerDetalleInforme = new EventEmitter<any>();
   @Output() onEditarInforme = new EventEmitter<any>();
   @Output() onEliminarInforme = new EventEmitter<any>();
