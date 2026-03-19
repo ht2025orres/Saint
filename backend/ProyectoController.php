@@ -1524,6 +1524,34 @@ class ProyectoController extends Controller
 
     // ── POST /compromisos/{id}/completar ──────────────────────────────────────
 
+    public function iniciarCompromiso(int $id, Request $request): JsonResponse
+    {
+        $request->validate(['usuario_id' => 'required|integer']);
+
+        $compromiso = $this->flujoDiarioService->getCompromisoConFlujo($id);
+
+        abort_if(
+            $compromiso->estado === 'completado',
+            422,
+            'El compromiso ya fue completado'
+        );
+
+        abort_if(
+            $compromiso->estado === 'en_ejecucion',
+            422,
+            'El compromiso ya está en ejecución'
+        );
+
+        $esGestor      = $compromiso->flujo->usuario_gestor_id === (int) $request->usuario_id;
+        $esResponsable = in_array((int) $request->usuario_id, $compromiso->responsables ?? []);
+
+        abort_if(!$esGestor && !$esResponsable, 403, 'Sin permiso para iniciar este compromiso');
+
+        $this->flujoDiarioService->iniciarCompromiso($compromiso);
+
+        return response()->json(['success' => true, 'message' => 'Compromiso iniciado']);
+    }
+
     public function completarCompromiso(int $id, Request $request): JsonResponse
     {
         $request->validate(['usuario_id' => 'required|integer']);

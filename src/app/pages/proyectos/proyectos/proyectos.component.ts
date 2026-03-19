@@ -226,6 +226,8 @@ export class ProyectosComponent implements OnInit {
   calendarioDias: CalendarioDia[][] = [];
 
   filtroGlobalEstado: string = 'pendiente';
+  filtroEstadosGlobal: string[] = ['pendiente'];
+  showFiltroEstadosGlobal = false;
   showFiltroPersonas: boolean = false;
 
   vistaFlujo = false;
@@ -629,12 +631,20 @@ export class ProyectosComponent implements OnInit {
     return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado === 'completado').length;
   }
 
-  get compromisosPendientes(): number {
-    return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado !== 'completado').length;
+  get compromisosEnEjecucion(): number {
+    return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado === 'en_ejecucion').length;
   }
 
-  get compromisosPorPersona(): Array<{ usuario_id: number; nombre: string; total: number; completados: number }> {
-    const mapa = new Map<number, { usuario_id: number; nombre: string; total: number; completados: number }>();
+  get compromisosPendientes(): number {
+    return (this.flujoActivo?.compromisos ?? []).filter(c => c.estado === 'pendiente').length;
+  }
+
+  get compromisosDiaAnterior(): Array<{ id: number; titulo: string; estado: string; responsables: number[]; fecha_inicio?: string | null; fecha_completado?: string | null }> {
+    return this.flujoActivo?.snapshot_apertura?.compromisos ?? [];
+  }
+
+  get compromisosPorPersona(): Array<{ usuario_id: number; nombre: string; total: number; completados: number; en_ejecucion: number; pendientes: number; compromisos: Compromiso[] }> {
+    const mapa = new Map<number, { usuario_id: number; nombre: string; total: number; completados: number; en_ejecucion: number; pendientes: number; compromisos: Compromiso[] }>();
     for (const compromiso of this.flujoActivo?.compromisos ?? []) {
       for (const rid of compromiso.responsables ?? []) {
         const actual = mapa.get(rid) ?? {
@@ -642,13 +652,20 @@ export class ProyectosComponent implements OnInit {
           nombre: this.nombreUsuario(rid),
           total: 0,
           completados: 0,
+          en_ejecucion: 0,
+          pendientes: 0,
+          compromisos: [],
         };
         actual.total += 1;
         if (compromiso.estado === 'completado') actual.completados += 1;
+        else if (compromiso.estado === 'en_ejecucion') actual.en_ejecucion += 1;
+        else actual.pendientes += 1;
+        actual.compromisos.push(compromiso);
         mapa.set(rid, actual);
       }
     }
-    return Array.from(mapa.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return Array.from(mapa.values())
+      .sort((a, b) => b.en_ejecucion - a.en_ejecucion || b.total - a.total || a.nombre.localeCompare(b.nombre));
   }
 
   get selectedDayTareasSeg(): { tarea: SeguimientoTarea; nombreUsuario: string }[] {
@@ -771,6 +788,9 @@ export class ProyectosComponent implements OnInit {
   handleClickOutside(event: Event): void {
     const target = event.target as HTMLElement;
 
+    if (this.showFiltroEstadosGlobal && !target.closest('[data-filtro-estados-global]')) {
+      this.showFiltroEstadosGlobal = false;
+    }
     // Cerrar filtro de personas
     if (this.showFiltroPersonas && !target.closest('[data-filtro-personas]')) {
       this.showFiltroPersonas = false;
@@ -1795,6 +1815,7 @@ export class ProyectosComponent implements OnInit {
     this.showDetalleMes = false;
     this.vistaMes       = null;
     this.calendarioDias = [];
+    this.showFiltroEstadosGlobal = false;
     this.vistaFlujo = false;
     this.flujoActivo = null;
     this.flujosHistorial = [];
@@ -1854,12 +1875,36 @@ export class ProyectosComponent implements OnInit {
   }
 
   cambiarFiltroGlobal(estado: string): void {
-    this.filtroGlobalEstado = estado;
-    const estadoGlpi = estado === 'en_ejecucion' ? 'en_progreso' : estado;
-    this.cambiarFiltroSeg(estado);
-    this.cambiarFiltroProy(estado);
-    this.cambiarFiltroGlpi(estadoGlpi);
-    this.cambiarFiltroInformeMes(estado);
+    this.filtroEstadosGlobal = estado === 'todos' ? [] : [estado];
+    this._aplicarFiltrosGlobales();
+  }
+
+  toggleFiltroEstadoGlobalCheckbox(estado: string): void {
+    if (estado === 'todos') {
+      this.filtroEstadosGlobal = [];
+      this._aplicarFiltrosGlobales();
+      return;
+    }
+
+    const idx = this.filtroEstadosGlobal.indexOf(estado);
+    if (idx >= 0) this.filtroEstadosGlobal.splice(idx, 1);
+    else this.filtroEstadosGlobal.push(estado);
+
+    this._aplicarFiltrosGlobales();
+  }
+
+  limpiarFiltroEstadosGlobal(): void {
+    this.filtroEstadosGlobal = [];
+    this._aplicarFiltrosGlobales();
+  }
+
+  esFiltroEstadoGlobalActivo(estado: string): boolean {
+    if (estado === 'todos') return this.filtroEstadosGlobal.length === 0;
+    return this.filtroEstadosGlobal.includes(estado);
+  }
+
+  aplicarFiltrosGlobales(): void {
+    this._aplicarFiltrosGlobales();
   }
 
   abrirVistaFlujo(): void {
@@ -2051,6 +2096,16 @@ export class ProyectosComponent implements OnInit {
     });
   }
 
+  iniciarCompromiso(compromiso: Compromiso): void {
+    this.proyectoService.iniciarCompromiso(compromiso.id, this.usuarioId).subscribe({
+      next: () => {
+        this.showToast('Compromiso iniciado', 'success');
+        this.cargarFlujoActivo();
+      },
+      error: (err) => Swal.fire('Error', err?.error?.message ?? 'No se pudo iniciar el compromiso', 'error'),
+    });
+  }
+
   completarCompromiso(compromiso: Compromiso): void {
     this.proyectoService.completarCompromiso(compromiso.id, this.usuarioId).subscribe({
       next: () => {
@@ -2109,8 +2164,44 @@ export class ProyectosComponent implements OnInit {
     return !!this.vistaMes?.es_gestor || (compromiso.responsables ?? []).includes(this.usuarioId);
   }
 
+  puedeIniciarCompromiso(compromiso: Compromiso): boolean {
+    return compromiso.estado === 'pendiente' && this.puedeGestionarCompromiso(compromiso);
+  }
+
   nombresResponsablesCompromiso(compromiso: Compromiso): string {
     return (compromiso.responsables ?? []).map(id => this.nombreUsuario(id)).join(', ');
+  }
+
+  getEstadoCompromisoLabel(estado: string): string {
+    return ({
+      pendiente: 'Pendiente',
+      en_ejecucion: 'En ejecución',
+      completado: 'Completado',
+    })[estado] ?? estado;
+  }
+
+  getEstadoCompromisoClase(estado: string): string {
+    return ({
+      pendiente: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      en_ejecucion: 'bg-blue-50 text-blue-700 border-blue-200',
+      completado: 'bg-green-100 text-green-700 border-green-200',
+    })[estado] ?? 'bg-gray-100 text-gray-700 border-gray-200';
+  }
+
+  porcentajeCargaPersona(persona: { total: number }): number {
+    const max = Math.max(...this.compromisosPorPersona.map(p => p.total), 1);
+    return Math.round((persona.total / max) * 100);
+  }
+
+  formatearFechaCompromiso(fecha?: string | null): string {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleString('es-CO', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -2560,7 +2651,12 @@ export class ProyectosComponent implements OnInit {
   }
 
   private _filtrarPorEstado<T extends { estado: string }>(tareas: T[], estado: string): T[] {
-    return estado === 'todos' ? tareas : tareas.filter(t => t.estado === estado);
+    return this._filtrarPorEstados(tareas, estado === 'todos' ? [] : [estado]);
+  }
+
+  private _filtrarPorEstados<T extends { estado: string }>(tareas: T[], estados: string[]): T[] {
+    if (!estados.length) return tareas;
+    return tareas.filter(t => estados.includes(t.estado));
   }
 
   private _initPaginador<T>(id: string, items: T[], cb: (page: T[]) => void): void {
@@ -2656,6 +2752,36 @@ export class ProyectosComponent implements OnInit {
       .replace(/'/g, '&#039;');
   }
 
+  private _aplicarFiltrosGlobales(): void {
+    const estados = [...this.filtroEstadosGlobal];
+    this.filtroGlobalEstado = estados[0] ?? 'todos';
+
+    const sortedSeg = [...this.tareasSegPlanas]
+      .filter(t => this.usuarioVisible(t.usuario_id)
+                || (t.responsables ?? []).some(rid => this.usuarioVisible(rid)))
+      .sort((a, b) => {
+        if (!a.fecha_limite_entrega && !b.fecha_limite_entrega) return 0;
+        if (!a.fecha_limite_entrega) return 1;
+        if (!b.fecha_limite_entrega) return -1;
+        return new Date(a.fecha_limite_entrega).getTime() - new Date(b.fecha_limite_entrega).getTime();
+      });
+    this.tareasSegFiltradas = this._filtrarPorEstados(sortedSeg, estados);
+    this._initPaginador(this.paginadorSegId, this.tareasSegFiltradas, items => this.tareasSegPaginadas = items);
+
+    this.tareasProyFiltradas = this._filtrarPorEstados(this.tareasExternasProyecto, estados);
+    this._initPaginador(this.paginadorProyId, this.tareasProyFiltradas, items => this.tareasProyPaginadas = items);
+
+    const estadosGlpi = estados.map(e => e === 'en_ejecucion' ? 'en_progreso' : e);
+    this.tareasGlpiFiltradas = this._filtrarPorEstados(this.tareasExternasGlpi, estadosGlpi);
+    this._initPaginador(this.paginadorGlpiId, this.tareasGlpiFiltradas, items => this.tareasGlpiPaginadas = items);
+
+    const filtByUser = this.tareasInformeMesList
+      .filter(t => !t.responsable_id || this.usuarioVisible(t.responsable_id));
+    this.tareasInformeFiltradas = this._filtrarPorEstados(filtByUser, estados);
+    this._initPaginador(this.paginadorInformeMesId, this.tareasInformeFiltradas,
+      items => this.tareasInformePaginadas = items as InformeTarea[]);
+  }
+
   private _inicializarPaginadorSeguimiento(): void {
     const sorted = [...this.tareasSegPlanas]
       .sort((a, b) => {
@@ -2665,21 +2791,17 @@ export class ProyectosComponent implements OnInit {
         return new Date(a.fecha_limite_entrega).getTime() - new Date(b.fecha_limite_entrega).getTime();
       });
     this.filtroEstadoSeg    = sorted.some(t => t.estado === 'pendiente') ? 'pendiente' : 'en_ejecucion';
-    this.filtroGlobalEstado = this.filtroEstadoSeg;
-    this.tareasSegFiltradas = this._filtrarPorEstado(sorted, this.filtroEstadoSeg);
-    this._initPaginador(this.paginadorSegId, this.tareasSegFiltradas, items => this.tareasSegPaginadas = items);
+    this.filtroEstadosGlobal = this.filtroEstadoSeg === 'pendiente' ? ['pendiente'] : ['en_ejecucion'];
+    this._aplicarFiltrosGlobales();
   }
 
   private _inicializarPaginadoresExternos(): void {
     const todasProy = this.tareasExternasProyecto;
     this.filtroEstadoProy    = todasProy.some(t => t.estado === 'pendiente') ? 'pendiente' : 'en_ejecucion';
-    this.tareasProyFiltradas = this._filtrarPorEstado(todasProy, this.filtroEstadoProy);
-    this._initPaginador(this.paginadorProyId, this.tareasProyFiltradas, items => this.tareasProyPaginadas = items);
 
     const todasGlpi = this.tareasExternasGlpi;
     this.filtroEstadoGlpi    = todasGlpi.some(t => t.estado === 'pendiente') ? 'pendiente' : 'en_progreso';
-    this.tareasGlpiFiltradas = this._filtrarPorEstado(todasGlpi, this.filtroEstadoGlpi);
-    this._initPaginador(this.paginadorGlpiId, this.tareasGlpiFiltradas, items => this.tareasGlpiPaginadas = items);
+    this._aplicarFiltrosGlobales();
   }
 
   private _inicializarPaginadorTarjetas(): void {
@@ -2697,9 +2819,7 @@ export class ProyectosComponent implements OnInit {
   private _inicializarPaginadorInformeMes(): void {
     this.filtroEstadoInformeMes  = this.tareasInformeMesList.some(t => t.estado === 'pendiente')
       ? 'pendiente' : 'todos';
-    this.tareasInformeFiltradas  = this._filtrarPorEstado(this.tareasInformeMesList, this.filtroEstadoInformeMes);
-    this._initPaginador(this.paginadorInformeMesId, this.tareasInformeFiltradas,
-      items => this.tareasInformePaginadas = items as InformeTarea[]);
+    this._aplicarFiltrosGlobales();
   }
   
   private _buildMapaInforme(): Map<string, (InformeTarea & { nombreUsuario: string })[]> {
