@@ -1,0 +1,185 @@
+<div class="seguimientos-compromisos p-6 animate-in fade-in duration-500">
+
+  <!-- ── CABECERA ───────────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+    <div class="lg:col-span-3 flex items-center gap-4">
+      <div class="w-14 h-14 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 shadow-lg shadow-emerald-100">
+        <i class="bi bi-lightning-charge-fill text-3xl"></i>
+      </div>
+      <div>
+        <h2 class="font-black text-gray-900 text-3xl leading-tight tracking-tight">Compromisos</h2>
+        <p class="text-sm text-gray-500 font-bold uppercase tracking-widest opacity-60">Flujo de trabajo activo • {{ (flujoActivo?.fecha || fechaActual) | date:'dd MMMM' }}</p>
+      </div>
+    </div>
+
+    <div *ngIf="flujoActivo" class="flex items-center justify-end gap-3">
+      <button (click)="cerrarFlujo()" 
+        class="flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-500 bg-white border-2 border-gray-100 rounded-2xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all shadow-sm group">
+        <i class="bi bi-lock-fill group-hover:animate-bounce"></i>
+        Finalizar Día
+      </button>
+      <button (click)="abrirModalNuevoCompromiso()" 
+        class="flex items-center gap-2 px-6 py-3 text-xs font-black uppercase tracking-widest text-white bg-emerald-600 rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 transform hover:-translate-y-0.5 active:translate-y-0">
+        <i class="bi bi-plus-lg"></i>
+        Nuevo
+      </button>
+    </div>
+  </div>
+
+  <!-- ── GRÁFICAS DE CARGA (NUEVO) ─────────────────────────────────────── -->
+  <div *ngIf="flujoActivo" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <div *ngFor="let user of flujoActivo.snapshot_apertura?.carga_por_persona" 
+      class="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg group-hover:scale-110 transition-transform" 
+          [ngClass]="state.getColorPorId(user.usuario_id)">
+          {{ state.getInicialesResponsable(user.usuario_id) }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-black text-gray-400 uppercase tracking-widest truncate">{{ state.nombreUsuario(user.usuario_id) }}</p>
+          <p class="text-lg font-black text-gray-900 leading-none mt-1">{{ getPorcentaje(user.completados, user.total) | number:'1.0-0' }}%</p>
+        </div>
+      </div>
+      <!-- Barra de progreso personalizada -->
+      <div class="h-3 bg-gray-50 rounded-full overflow-hidden p-0.5 border border-gray-100">
+        <div class="h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
+          [ngClass]="(user.completados / user.total) >= 0.8 ? 'bg-emerald-500' : (user.completados / user.total) >= 0.4 ? 'bg-amber-500' : 'bg-blue-500'"
+          [style.width.%]="getPorcentajeWidth(user.completados, user.total)"></div>
+      </div>
+      <div class="flex justify-between mt-3">
+        <span class="text-[10px] font-bold text-gray-400 uppercase">{{ user.completados }} de {{ user.total }} tareas</span>
+        <span class="text-[10px] font-black text-gray-900">{{ user.total - user.completados }} pendientes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONTENIDO PRINCIPAL ───────────────────────────────────────────── -->
+  
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex flex-col items-center justify-center py-32">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
+    <p class="text-gray-500 font-medium">Cargando compromisos...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    
+    <!-- Flujo Activo -->
+    <div *ngIf="flujoActivo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Listado de Compromisos -->
+      <div class="lg:col-span-2 space-y-4">
+        <div *ngFor="let c of flujoActivo.compromisos" 
+          class="bg-white border border-gray-100 rounded-2xl p-5 flex items-start gap-4 hover:shadow-md transition-all group">
+          
+          <button (click)="toggleCompromiso(c)" 
+            class="mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+            [ngClass]="c.estado === 'completado' 
+              ? 'bg-emerald-500 border-emerald-500 text-white' 
+              : 'border-gray-200 hover:border-emerald-400 group-hover:bg-emerald-50'">
+            <i *ngIf="c.estado === 'completado'" class="bi bi-check-lg text-sm"></i>
+          </button>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h4 class="font-bold text-gray-800 text-base leading-snug truncate" 
+                  [ngClass]="{'line-through text-gray-400 opacity-70': c.estado === 'completado'}">
+                  {{ c.titulo }}
+                </h4>
+                <p class="text-sm text-gray-500 mt-1 line-clamp-2" *ngIf="c.descripcion">{{ c.descripcion }}</p>
+              </div>
+              <div class="flex -space-x-2 shrink-0">
+                <div *ngFor="let rid of c.responsables" 
+                  [title]="state.nombreUsuario(rid)"
+                  class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm transition-transform hover:-translate-y-1"
+                  [ngClass]="state.getColorPorId(rid)">
+                  {{ state.getInicialesResponsable(rid) }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4 mt-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              <span class="flex items-center gap-1.5" [ngClass]="{'text-emerald-600': c.estado === 'completado'}">
+                <i class="bi" [ngClass]="c.estado === 'completado' ? 'bi-check-circle-fill' : 'bi-clock-history'"></i>
+                {{ c.estado }}
+              </span>
+              <span *ngIf="c.fecha_inicio" class="flex items-center gap-1.5">
+                <i class="bi bi-play-circle"></i>
+                Iniciado: {{ c.fecha_inicio | date:'HH:mm' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State dentro de flujo -->
+        <div *ngIf="!flujoActivo.compromisos?.length" 
+          class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center">
+          <p class="text-gray-400 font-medium">Aún no hay compromisos registrados para hoy.</p>
+          <button (click)="abrirModalNuevoCompromiso()" class="text-emerald-600 font-bold mt-2 hover:underline">
+            + Agregar el primero
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar de Carga de Trabajo -->
+      <div class="space-y-6">
+        <div class="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+          <h3 class="font-bold text-gray-900 text-sm uppercase tracking-widest mb-6 flex items-center justify-between">
+            Resumen del Día
+            <span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px]">{{ flujoActivo.fecha | date:'dd MMM' }}</span>
+          </h3>
+          
+          <div class="space-y-5">
+            <div *ngFor="let user of flujoActivo.snapshot_apertura?.carga_por_persona" class="space-y-2">
+              <div class="flex items-center justify-between text-xs font-bold">
+                <span class="text-gray-700">{{ state.nombreUsuario(user.usuario_id) }}</span>
+                <span class="text-gray-400">{{ user.completados }}/{{ user.total }}</span>
+              </div>
+              <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-500 transition-all duration-500" 
+                  [style.width.%]="getPorcentajeWidth(user.completados, user.total)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- No hay flujo activo -->
+    <div *ngIf="!flujoActivo" class="bg-white border-2 border-dashed border-gray-200 rounded-[2.5rem] py-24 text-center max-w-2xl mx-auto shadow-sm">
+      <div class="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-gray-300">
+        <i class="bi bi-lightning-charge text-4xl"></i>
+      </div>
+      <h3 class="text-gray-800 font-extrabold text-2xl mb-2">Sin flujo de trabajo activo</h3>
+      <p class="text-gray-400 text-base mb-8 max-w-sm mx-auto">Comienza tu jornada laboral creando un nuevo flujo de compromisos diarios.</p>
+      <button (click)="abrirModalNuevoFlujo()" 
+        class="inline-flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 transform hover:scale-105 active:scale-95">
+        <i class="bi bi-plus-lg text-lg"></i>
+        Nuevo Flujo Diario
+      </button>
+    </div>
+
+  </ng-container>
+
+</div>
+
+<!-- ── MODALES ────────────────────────────────────────────────────── -->
+
+<!-- Modal Compromiso -->
+<app-modal-compromiso
+  [show]="showModalCompromiso"
+  [compromiso]="compromisoParaEditar"
+  [usuarios]="state.usuariosCache"
+  [saving]="savingCompromiso"
+  (onCerrar)="showModalCompromiso = false"
+  (onGuardar)="onGuardarCompromiso($event)">
+</app-modal-compromiso>
+
+<!-- Modal Iniciar Flujo -->
+<app-modal-flujo
+  [show]="showModalFlujo"
+  [saving]="savingFlujo"
+  (onCerrar)="showModalFlujo = false"
+  (onConfirmar)="onConfirmarFlujo()">
+</app-modal-flujo>

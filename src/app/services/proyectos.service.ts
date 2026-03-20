@@ -288,7 +288,7 @@ export class ProyectoService {
     return this.http.post(`${this.api}/proyectos/${proyectoId}/calcular-fechas`, { usuario_id: usuarioId, responsables });
   }
 
-  getProyectos(usuarioId: number, filtros?: { estado?: string; activos?: boolean }): Observable<ApiResponse<Proyecto[]>> {
+  getProyectos(usuarioId: number, filtros?: { estado?: EstadoProyecto; activos?: boolean }): Observable<ApiResponse<Proyecto[]>> {
     let params = new HttpParams().set('usuario_id', usuarioId);
     if (filtros?.estado)  params = params.set('estado', filtros.estado);
     if (filtros?.activos) params = params.set('activos', 'true');
@@ -356,11 +356,11 @@ export class ProyectoService {
   // ── TAREAS ────────────────────────────────────────────────────────────────
 
   crearTarea(data: Partial<Tarea> & { usuario_id: number; proyecto_id?: number }): Observable<ApiResponse<Tarea>> {
-    return this.http.post<any>(`${this.api}/tareas`, data);
+    return this.http.post<ApiResponse<Tarea>>(`${this.api}/tareas`, data);
   }
 
-  actualizarTarea(id: number, data: Partial<Tarea> & { usuario_id: number }): Observable<ApiMessage> {
-    return this.http.put<ApiMessage>(`${this.api}/tareas/${id}`, data);
+  actualizarTarea(id: number, data: Partial<Tarea> & { usuario_id: number }): Observable<ApiResponse<Tarea>> {
+    return this.http.put<ApiResponse<Tarea>>(`${this.api}/tareas/${id}`, data);
   }
 
   eliminarTarea(id: number, usuarioId: number): Observable<ApiMessage> {
@@ -371,18 +371,18 @@ export class ProyectoService {
     return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { usuario_id: usuarioId });
   }
 
-  // ── SEGUIMIENTOS ──────────────────────────────────────────────────────────
+  // ── SEGUIMIENTO ───────────────────────────────────────────────────────────────
 
-  TraerIdSeguimientoDelAnio(anio: number): Observable<ApiResponse<number>> {
-    return this.http.get<ApiResponse<number>>(`${this.api}/seguimiento/anio/${anio}`);
+  obtenerInfoSeguimiento(anio: number): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.api}/seguimiento/anio/${anio}`);
   }
 
-  getSeguimientos(usuarioId: number): Observable<ApiResponse<SeguimientoAnual[]>> {
+  getSeguimientosAnuales(usuarioId: number): Observable<ApiResponse<SeguimientoAnual[]>> {
     return this.http.get<ApiResponse<SeguimientoAnual[]>>(`${this.api}/seguimientos`, { params: { usuario_id: usuarioId } });
   }
 
-  getVistaMes(id: number, mes: number, usuarioId: number): Observable<ApiResponse<VistaMes>> {
-    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, { params: { usuario_id: usuarioId } });
+  getVistaMes(id: number, mes: number, anio: number, usuarioId: number): Observable<ApiResponse<VistaMes>> {
+    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, { params: { usuario_id: usuarioId, anio } });
   }
 
   getDetalleSeguimiento(id: number, usuarioId: number): Observable<ApiResponse<SeguimientoMensual>> {

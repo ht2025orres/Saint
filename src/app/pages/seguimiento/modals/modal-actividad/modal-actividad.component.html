@@ -1,0 +1,87 @@
+<!-- MODAL ACTIVIDAD — Crear / Editar -->
+<div
+  *ngIf="show"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background: rgba(15,23,42,0.55);"
+  (click)="cerrar()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+          [ngClass]="esEdicion ? 'bg-amber-50' : 'bg-teal-50'">
+          <i class="bi text-sm"
+            [ngClass]="esEdicion ? 'bi-pencil text-amber-600' : 'bi-list-task text-teal-600'"></i>
+        </div>
+        <div>
+          <h2 class="font-semibold text-gray-900 text-base">{{ titulo }}</h2>
+          <p *ngIf="proyecto" class="text-xs text-gray-400 leading-tight">{{ proyecto.titulo }}</p>
+        </div>
+      </div>
+      <button (click)="cerrar()"
+        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="px-6 py-5 space-y-4">
+
+      <!-- Título -->
+      <div>
+        <label class="seg-label">Título <span class="text-red-400">*</span></label>
+        <input
+          formControlName="titulo"
+          type="text"
+          placeholder="Nombre de la actividad…"
+          class="seg-input"
+          [class.border-red-300]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
+        >
+        <p *ngIf="form.get('titulo')?.invalid && form.get('titulo')?.touched"
+          class="mt-1 text-xs text-red-500">El título es obligatorio.</p>
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label class="seg-label">Descripción</label>
+        <textarea
+          formControlName="descripcion"
+          rows="3"
+          placeholder="Descripción opcional…"
+          class="seg-input resize-none"
+        ></textarea>
+      </div>
+
+      <!-- Estado + Fecha límite -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="seg-label">Estado</label>
+          <select formControlName="estado" class="seg-input">
+            <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="seg-label">Fecha límite</label>
+          <input formControlName="fecha_limite_entrega" type="datetime-local" class="seg-input">
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">
+        <button type="button" (click)="cerrar()" class="seg-btn-secondary">Cancelar</button>
+        <button type="submit" [disabled]="form.invalid || saving" class="seg-btn-primary">
+          <span *ngIf="saving"
+            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2">
+          </span>
+          {{ saving ? 'Guardando…' : (esEdicion ? 'Actualizar' : 'Crear actividad') }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

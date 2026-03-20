@@ -1,0 +1,125 @@
+<div *ngIf="show" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+  
+  <div class="bg-white rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
+    
+    <!-- Header -->
+    <div class="px-10 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+          <i class="bi bi-file-earmark-text text-2xl"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-gray-900 leading-tight">
+            {{ informe ? 'Editar Informe' : 'Nuevo Informe de Auditoría' }}
+          </h3>
+          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Documentación de hallazgos y riesgos</p>
+        </div>
+      </div>
+      <button (click)="onCerrar.emit()" class="w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors">
+        <i class="bi bi-x-lg text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto p-10">
+      <form [formGroup]="form" id="informeForm" (ngSubmit)="submit()" class="space-y-8">
+        
+        <!-- Sección 1: Identificación -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Título del Informe</label>
+            <input type="text" formControlName="titulo" 
+              class="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-gray-900 font-bold placeholder:text-gray-300 transition-all outline-none"
+              placeholder="Ej: Hallazgo en proceso de autenticación">
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tipo de Informe</label>
+            <select formControlName="tipo" 
+              class="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all appearance-none">
+              <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nivel de Impacto</label>
+            <select formControlName="nivel_impacto" 
+              class="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all appearance-none">
+              <option *ngFor="let n of niveles" [value]="n">{{ n }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sección 2: Descripción -->
+        <div>
+          <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Descripción del Hallazgo</label>
+          <textarea formControlName="descripcion_hallazgo" rows="4"
+            class="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-gray-900 font-bold placeholder:text-gray-300 transition-all outline-none resize-none"
+            placeholder="Detalle los hallazgos encontrados..."></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Fecha del Evento</label>
+            <input type="date" formControlName="fecha_evento" 
+              class="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Fecha Implementación Estimada</label>
+            <input type="date" formControlName="fecha_implementacion" 
+              class="w-full px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all">
+          </div>
+        </div>
+
+        <!-- Sección 3: Detalles Técnicos (Opcionales) -->
+        <div class="p-8 bg-blue-50/50 rounded-[2rem] border border-blue-100/50 space-y-6">
+          <h4 class="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+            <i class="bi bi-info-circle-fill"></i>
+            Análisis y Planes de Acción
+          </h4>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Causa Raíz</label>
+              <textarea formControlName="causa_raiz" rows="2"
+                class="w-full px-5 py-3 bg-white border-2 border-transparent focus:border-blue-500 rounded-xl text-sm font-bold placeholder:text-gray-300 transition-all outline-none resize-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Sistemas Afectados</label>
+              <textarea formControlName="sistemas_afectados" rows="2"
+                class="w-full px-5 py-3 bg-white border-2 border-transparent focus:border-blue-500 rounded-xl text-sm font-bold placeholder:text-gray-300 transition-all outline-none resize-none"></textarea>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Acción Correctiva</label>
+              <textarea formControlName="accion_correctiva" rows="2"
+                class="w-full px-5 py-3 bg-white border-2 border-transparent focus:border-blue-500 rounded-xl text-sm font-bold placeholder:text-gray-300 transition-all outline-none resize-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Acción Preventiva</label>
+              <textarea formControlName="accion_preventiva" rows="2"
+                class="w-full px-5 py-3 bg-white border-2 border-transparent focus:border-blue-500 rounded-xl text-sm font-bold placeholder:text-gray-300 transition-all outline-none resize-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-10 py-8 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-4 shrink-0">
+      <button (click)="onCerrar.emit()" [disabled]="saving"
+        class="px-8 py-4 text-sm font-black text-gray-500 uppercase tracking-widest hover:text-gray-700 transition-colors disabled:opacity-50">
+        Cancelar
+      </button>
+      <button form="informeForm" type="submit" [disabled]="form.invalid || saving"
+        class="px-10 py-4 bg-blue-600 text-white text-sm font-black uppercase tracking-widest rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 disabled:opacity-50 disabled:shadow-none flex items-center gap-3">
+        <i *ngIf="saving" class="bi bi-arrow-repeat animate-spin"></i>
+        {{ saving ? 'Guardando...' : (informe ? 'Actualizar Informe' : 'Crear Informe') }}
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -68,8 +68,9 @@ import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.
 import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
 
 import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
+import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
 
-import { ProyectosModule } from './pages/proyectos/proyectos/proyectos.module';
+// import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
 registerLocaleData(localeEs, 'es-CO');
 
@@ -138,8 +139,10 @@ registerLocaleData(localeEs, 'es-CO');
         PlaneacionModule,
         /* Financiero */
         CentrosCostosModule,
+        /* Seguimiento */
+        SeguimientoModule,
         /* Proyectos */
-        ProyectosModule
+        // ProyectosModule
     ], 
     exports: [
         TaskPanelComponent

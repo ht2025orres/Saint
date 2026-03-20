@@ -1,0 +1,146 @@
+<!-- MODAL TAREA — Crear / Editar -->
+<div
+  *ngIf="show"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background: rgba(15,23,42,0.55);"
+  (click)="cerrar()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+          [ngClass]="esEdicion ? 'bg-amber-50' : 'bg-indigo-50'">
+          <i class="bi text-sm"
+            [ngClass]="esEdicion ? 'bi-pencil text-amber-600' : 'bi-check2-square text-indigo-600'"></i>
+        </div>
+        <h2 class="font-semibold text-gray-900 text-base">{{ titulo }}</h2>
+      </div>
+      <button (click)="cerrar()"
+        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="px-6 py-5 space-y-4">
+
+      <!-- Actividad (si hay opciones) -->
+      <div *ngIf="actividades.length > 0">
+        <label class="seg-label">Actividad</label>
+        <select formControlName="actividad_id" class="seg-input">
+          <option [ngValue]="null">Sin actividad (tarea general)</option>
+          <option *ngFor="let a of actividades" [value]="a.id">{{ a.titulo }}</option>
+        </select>
+      </div>
+
+      <!-- Título -->
+      <div>
+        <label class="seg-label">Título <span class="text-red-400">*</span></label>
+        <input
+          formControlName="titulo"
+          type="text"
+          placeholder="Descripción de la tarea…"
+          class="seg-input"
+          [class.border-red-300]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
+        >
+      </div>
+
+      <!-- Descripción -->
+      <div>
+        <label class="seg-label">Descripción</label>
+        <textarea formControlName="descripcion" rows="2" class="seg-input resize-none"
+          placeholder="Detalles adicionales…"></textarea>
+      </div>
+
+      <!-- Estado + Fecha -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="seg-label">Estado</label>
+          <select formControlName="estado" class="seg-input">
+            <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="seg-label">Fecha límite</label>
+          <input formControlName="fecha_limite_entrega" type="datetime-local" class="seg-input">
+        </div>
+      </div>
+
+      <!-- Responsables -->
+      <div>
+        <label class="seg-label">Responsables</label>
+
+        <!-- Chips de seleccionados -->
+        <div *ngIf="responsablesSelec.length" class="flex flex-wrap gap-1.5 mb-2">
+          <div *ngFor="let r of responsablesSelec"
+            class="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-50
+                   border border-indigo-200 rounded-full text-xs text-indigo-700">
+            <span class="w-4 h-4 rounded-full bg-indigo-500 text-white
+                         flex items-center justify-center font-bold"
+              style="font-size: 9px;">
+              {{ r.nombre.charAt(0).toUpperCase() }}
+            </span>
+            {{ r.nombre }}
+            <button type="button" (click)="quitarResponsable(r.id)"
+              class="text-indigo-300 hover:text-red-400 transition leading-none ml-0.5">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Buscador -->
+        <div class="relative">
+          <input
+            type="text"
+            [(ngModel)]="busquedaResp"
+            [ngModelOptions]="{standalone: true}"
+            (focus)="showRespDropdown = true"
+            placeholder="Buscar y agregar responsable…"
+            class="seg-input pr-8"
+            autocomplete="off"
+          >
+          <i class="bi bi-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+
+          <!-- Dropdown resultados -->
+          <div *ngIf="showRespDropdown && usuariosFiltrados.length"
+            class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl
+                   shadow-xl border border-gray-200 z-20 py-1 max-h-48 overflow-y-auto">
+            <div *ngFor="let u of usuariosFiltrados"
+              (mousedown)="agregarResponsable(u)"
+              class="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+              <div class="w-6 h-6 rounded-full bg-indigo-500 text-white
+                          flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {{ u.nombre.charAt(0).toUpperCase() }}
+              </div>
+              <span class="text-sm text-gray-700">{{ u.nombre }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div *ngIf="esAdmin">
+        <label class="seg-label">Notas internas</label>
+        <textarea formControlName="notas" rows="2" class="seg-input resize-none"
+          placeholder="Notas visibles solo para gestores…"></textarea>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">
+        <button type="button" (click)="cerrar()" class="seg-btn-secondary">Cancelar</button>
+        <button type="submit" [disabled]="form.invalid || saving" class="seg-btn-primary">
+          <span *ngIf="saving"
+            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2">
+          </span>
+          {{ saving ? 'Guardando…' : (esEdicion ? 'Actualizar' : 'Crear tarea') }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

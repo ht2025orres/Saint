@@ -45,7 +45,7 @@ import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-ite
 import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
 import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
 import { InventariosComponent } from './pages/inventario/inventarios/inventarios.component';
-import { ProyectosComponent } from './pages/proyectos/proyectos/proyectos.component';
+// import { ProyectosComponent } from './pages/proyectos/proyectos.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -91,7 +91,8 @@ const routes: Routes = [
       { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
       { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' },
       { path: 'inventarios', component: InventariosComponent, title: 'Inventarios' },
-      { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
+      { path: 'seguimiento', loadChildren: () => import('./pages/seguimiento/seguimiento.module').then(m => m.SeguimientoModule), title: 'Seguimiento' },
+      // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
     ]
   },
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }

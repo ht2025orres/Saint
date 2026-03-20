@@ -322,14 +322,20 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.guardandoNueva = true;
     this.cdr.markForCheck();
 
-    this.proyectoService.TraerIdSeguimientoDelAnio(new Date().getFullYear())
+    this.proyectoService.obtenerInfoSeguimiento(new Date().getFullYear())
       .pipe(
         catchError(err => {
           console.error('Error al obtener ID de seguimiento:', err);
-          return of({ success: false, data: [{ id: 0 }] });
+          return of({ success: false, data: [] });
         }),
         switchMap(resp => {
-          const seguimientoId = resp.data?.[0]?.id || 0;
+          // La API ahora devuelve un array de seguimientos para ese año
+          // Buscamos el primero que esté activo
+          const seguimiento = Array.isArray(resp.data) 
+            ? resp.data.find((s: any) => s.estado === 'activo') 
+            : null;
+          
+          const seguimientoId = seguimiento?.id || 0;
           return this.proyectoService.crearSeguimientoTarea({
             usuario_id: this.userId,
             responsables: this.nuevaTareaForm.asignado_id?.length
