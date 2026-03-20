@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, Observable } from 'rxjs';
 import { 
   ProyectoService, 
   VistaMes, 
@@ -8,10 +8,13 @@ import {
   SeguimientoTarea,
   TareaConsolidada,
   InformeTarea,
-  SeguimientoAnual
+  SeguimientoAnual,
+  Tarea
 } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService, UsuarioCache } from '../seguimiento-state.service';
 import { PaginationService } from 'src/app/shared/pagination/pagination.service';
+import { TareaForm } from '../modals/modal-tarea/modal-tarea.component';
+import { InformeTareaForm } from '../modals/modal-informe-tarea/modal-informe-tarea.component';
 import Swal from 'sweetalert2';
 
 interface CalendarioDia {
@@ -48,6 +51,7 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   // ── ESTADO ──────────────────────────────────────────────────────
   loading = false;
+  mostrandoMes = false; // Nueva variable para controlar la vista de selección de meses
   vistaMes: VistaMes | null = null;
   seguimientoActual: SeguimientoAnual | null = null;
   
@@ -80,9 +84,17 @@ export class TareasComponent implements OnInit, OnDestroy {
   tareasInformeFiltradas: InformeTarea[] = [];
   tareasGlpiFiltradas: TareaConsolidada[] = [];
 
-  // Modal detalle diario
+  // Modales
   showModalDia = false;
   diaSeleccionado: CalendarioDia | null = null;
+
+  showModalTarea = false;
+  tareaParaEditar: Tarea | null = null;
+  savingTarea = false;
+
+  showModalInformeTarea = false;
+  informeTareaParaEditar: InformeTarea | null = null;
+  savingInformeTarea = false;
 
   tareasSegPaginadas: SeguimientoTarea[] = [];
   tareasProyPaginadas: TareaConsolidada[] = [];
@@ -121,7 +133,9 @@ export class TareasComponent implements OnInit, OnDestroy {
         if (seg) {
           this.seguimientoActual = seg;
           this.anioActual = seg.anio;
-          this._cargarDetalleMes(seg.id, this.mesActual, seg.anio);
+          // No cargamos el mes automáticamente para mostrar la selección de meses
+          this.loading = false;
+          this._cdr.markForCheck();
         } else {
           this.loading = false;
           this._cdr.markForCheck();
@@ -135,9 +149,16 @@ export class TareasComponent implements OnInit, OnDestroy {
   }
 
   seleccionarMes(m: number): void {
-    if (this.mesActual === m || !this.seguimientoActual) return;
+    if (!this.seguimientoActual) return;
     this.mesActual = m;
+    this.mostrandoMes = true;
     this._cargarDetalleMes(this.seguimientoActual.id, m, this.anioActual);
+  }
+
+  irAtras(): void {
+    this.mostrandoMes = false;
+    this.vistaMes = null;
+    this._cdr.markForCheck();
   }
 
   private _cargarDetalleMes(seguimientoId: number, mes: number, anio: number): void {
@@ -270,31 +291,105 @@ export class TareasComponent implements OnInit, OnDestroy {
       fecha: new Date(fecha),
       esHoy: this._esHoy(fecha),
       esMesActual: fecha.getMonth() === mesReferencia,
-      tareas: tareasDelDia.seguimiento.map(t => ({ 
+      tareas: (tareasDelDia.seguimiento || []).map(t => ({ 
         tarea: t, 
         nombreUsuario: this.state.nombreUsuario(t.usuario_id),
         iniciales: this.state.getInicialesResponsable(t.usuario_id),
         color: this.state.getColorPorId(t.usuario_id)
       })),
-      tareasExternas: [...tareasDelDia.proyectos, ...tareasDelDia.glpi].map(t => ({
+      tareasExternas: [...(tareasDelDia.proyectos || []), ...(tareasDelDia.glpi || [])].map(t => ({
         ...t,
         iniciales: this.state.getInicialesResponsable(t.usuario_id),
         color: this.state.getColorPorId(t.usuario_id)
       })),
-      tareasInforme: tareasDelDia.informes.map(t => ({ 
+      tareasInforme: (tareasDelDia.informes || []).map(t => ({ 
         ...t, 
         nombreUsuario: this.state.nombreUsuario(t.responsable_id),
         iniciales: this.state.getInicialesResponsable(t.responsable_id),
         color: this.state.getColorPorId(t.responsable_id)
       })),
-      resumenPorUsuario: [] // Se puede llenar si se necesita
+      resumenPorUsuario: []
     };
   }
 
   abrirDetalleDia(dia: CalendarioDia): void {
+    if (this.vistaCalendarioModo === 'dia') return;
     this.diaSeleccionado = dia;
     this.showModalDia = true;
     this._cdr.markForCheck();
+  }
+
+  abrirTareaEspecifica(t: any, origen: string): void {
+    if (origen === 'proyecto') {
+      this.tareaParaEditar = t;
+      this.showModalTarea = true;
+    } else if (origen === 'informe') {
+      this.informeTareaParaEditar = t;
+      this.showModalInformeTarea = true;
+    } else if (origen === 'seguimiento') {
+      this.tareaParaEditar = {
+        ...t,
+        actividad_id: undefined,
+        proyecto_id: undefined,
+        creado_por: t.usuario_id
+      } as any;
+      this.showModalTarea = true;
+    } else {
+      this.state.showToast('Visualización de GLPI no implementada aún', 'info');
+    }
+    this._cdr.markForCheck();
+  }
+
+  onGuardarTarea(form: TareaForm): void {
+    if (!this.tareaParaEditar) return;
+    this.savingTarea = true;
+    this._cdr.markForCheck();
+
+    const body = { ...form, usuario_id: this.usuarioId };
+    const isSeguimiento = !this.tareaParaEditar.proyecto_id;
+    
+    const obs$: Observable<any> = isSeguimiento 
+      ? this._proyectoService.actualizarSeguimientoTarea(this.tareaParaEditar.id, body as any)
+      : this._proyectoService.actualizarTarea(this.tareaParaEditar.id, body as any);
+
+    obs$.subscribe({
+      next: () => {
+        this.savingTarea = false;
+        this.showModalTarea = false;
+        this.state.showToast('Tarea actualizada');
+        if (this.seguimientoActual) {
+          this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+        }
+      },
+      error: () => {
+        this.savingTarea = false;
+        this.state.showToast('Error al actualizar', 'error');
+        this._cdr.markForCheck();
+      }
+    });
+  }
+
+  onGuardarInformeTarea(form: InformeTareaForm): void {
+    if (!this.informeTareaParaEditar) return;
+    this.savingInformeTarea = true;
+    this._cdr.markForCheck();
+
+    const body = { ...form, usuario_id: this.usuarioId };
+    this._proyectoService.actualizarInformeTarea(this.informeTareaParaEditar.id, body).subscribe({
+      next: () => {
+        this.savingInformeTarea = false;
+        this.showModalInformeTarea = false;
+        this.state.showToast('Tarea de informe actualizada');
+        if (this.seguimientoActual) {
+          this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+        }
+      },
+      error: () => {
+        this.savingInformeTarea = false;
+        this.state.showToast('Error al actualizar', 'error');
+        this._cdr.markForCheck();
+      }
+    });
   }
 
   private _getTareasDelDia(fecha: Date) {
@@ -302,11 +397,9 @@ export class TareasComponent implements OnInit, OnDestroy {
     const fechaStr = format(fecha);
 
     const matchDate = (t: any) => {
-      // Si está completado, mostrar en fecha de cierre
       if (t.estado === 'completado' && t.fecha_completado) {
         return t.fecha_completado.startsWith(fechaStr);
       }
-      // Si está pendiente, mostrar en fecha límite
       return t.fecha_limite_entrega && t.fecha_limite_entrega.startsWith(fechaStr);
     };
 
@@ -345,7 +438,9 @@ export class TareasComponent implements OnInit, OnDestroy {
     this.diaActual = hoy.getDate();
     this.mesActual = hoy.getMonth() + 1;
     this.anioActual = hoy.getFullYear();
-    this.cargarDatos();
+    if (this.seguimientoActual) {
+      this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+    }
   }
 
   private _esHoy(d: Date): boolean {
@@ -353,7 +448,6 @@ export class TareasComponent implements OnInit, OnDestroy {
     return d.getDate() === hoy.getDate() && d.getMonth() === hoy.getMonth() && d.getFullYear() === hoy.getFullYear();
   }
 
-  // ── ACCIONES ────────────────────────────────────────────────────
   toggleVistaCalendario(): void {
     this.vistaCalendario = !this.vistaCalendario;
     if (this.vistaCalendario) this._construirCalendario();
