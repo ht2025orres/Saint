@@ -46,6 +46,7 @@ import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.co
 import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
 import { InventariosComponent } from './pages/inventario/inventarios/inventarios.component';
 import { ProyectosComponent } from './pages/proyectos/proyectos/proyectos.component';
+import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -92,6 +93,7 @@ const routes: Routes = [
       { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' },
       { path: 'inventarios', component: InventariosComponent, title: 'Inventarios' },
       { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
+      { path: 'solicitud', component: SolicitudComponent, title: 'Solicitud comercial' },
     ]
   },
 

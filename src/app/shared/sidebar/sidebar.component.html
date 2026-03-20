@@ -1,8 +1,7 @@
 <!-- Overlay para móvil -->
 <div class="sidebar-overlay" *ngIf="isMobile && isMobileOpen" (click)="closeMobileSidebar()" aria-label="Cerrar menú">
 </div>
-<div class="sidebar-overlay" *ngIf="isMobile && isMobileOpen" (click)="closeMobileSidebar()" aria-label="Cerrar menú">
-</div>
+
 
 <aside class="left-sidebar saint-sidebar" [class.collapsed]="!isMobile && isCollapsed"
   [class.mobile-open]="isMobile && isMobileOpen">
@@ -620,6 +619,33 @@
                 <span class="hide-menu saint-menu-label">Proyectos</span>
               </a>
             </li>
+            <li *ngIf="authService.hasRole('Administrador del sistema')">
+              <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false"
+                (mouseenter)="openFloatPanel([
+                  { 
+                    label: 'Solicitud comercial', 
+                    link: '/solicitud',
+                    roles: ['Administrador del sistema']
+                  },
+                  
+                ], $event)" (mouseleave)="closeFloatPanel()">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span class="hide-menu saint-menu-label">Comercial</span>
+                <i class="bi bi-chevron-right arrow-icon"></i>
+              </a>
+              <ul aria-expanded="false" class="collapse sidebar-submenu">
+                <li
+                  *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Gestor reporte ficha tecnica')">
+                  <a class="sidebar-sublink" routerLink="/solicitud" routerLinkActive="active">
+                    Solicitud comercial
+                  </a>
+                </li>
+
+
+
+
+              </ul>
+            </li>
           </ul>
         </nav>
       </div>
@@ -648,7 +674,7 @@
 </aside>
 <!-- Panel flotante cuando sidebar está colapsado -->
 <div class="sidebar-float-panel" *ngIf="isCollapsed && hoveredSubmenu && !isMobile" [style.top.px]="floatPanelTop"
-  (mouseenter)="keepFloatPanelOpen()" (mouseleave)="closeFloatPanel()">
+  (mouseenter)="keepFloatPanelOpen()" (mouseleave)="leaveFloatPanel()">
   <ul class="floating-submenu">
     <li *ngFor="let item of hoveredSubmenu">
       <a [routerLink]="item.link" routerLinkActive="active">{{ item.label }}</a>

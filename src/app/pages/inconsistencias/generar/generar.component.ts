@@ -33,7 +33,8 @@ export class GenerarComponent implements OnInit {
     'faltante_rollo',
     'perdida_insumos',
     'perdida_piezas',
-    'devolucion_materiales'
+    'devolucion_materiales',
+    'error_operario'
   ];
 
   mostrarGrupoImagenes = false;

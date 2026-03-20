@@ -70,6 +70,9 @@ import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-c
 
 import { ProyectosModule } from './pages/proyectos/proyectos/proyectos.module';
 
+// Modulo comerciales
+import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
+
 registerLocaleData(localeEs, 'es-CO');
 
 @NgModule({
@@ -95,6 +98,7 @@ registerLocaleData(localeEs, 'es-CO');
         MiReportListComponent,
         ReportDashboardComponent,
         AuthorizationManagerComponent,
+
     ],
     bootstrap: [AppComponent],
     imports: [
@@ -139,8 +143,10 @@ registerLocaleData(localeEs, 'es-CO');
         /* Financiero */
         CentrosCostosModule,
         /* Proyectos */
-        ProyectosModule
-    ], 
+        ProyectosModule,
+        /* Comerciales */
+        SolicitudComponent
+    ],
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },

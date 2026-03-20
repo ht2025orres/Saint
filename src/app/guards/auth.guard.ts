@@ -8,7 +8,7 @@ import { catchError, map, switchMap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class AuthGuard {
-  constructor(public authService: AuthService, private router: Router) {}
+  constructor(public authService: AuthService, private router: Router) { }
 
   canActivate(
     next: ActivatedRouteSnapshot,
@@ -19,6 +19,7 @@ export class AuthGuard {
     if (this.authService.isAuthenticated()) {
       if (this.isTokenExpired()) {
         // Intentar refrescar token automáticamente
+        console.log("tokenExpired", this.isTokenExpired());
         return this.authService.refreshAccessToken().pipe(
           map(() => true),
           catchError(() => {
