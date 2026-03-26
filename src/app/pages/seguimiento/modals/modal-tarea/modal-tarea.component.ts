@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Tarea, Actividad } from 'src/app/services/proyectos.service';
-import { UsuarioCache } from '../../seguimiento-state.service';
+import { Tarea, Actividad, ProyectoService } from 'src/app/services/proyectos.service';
+import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.service';
+import Swal from 'sweetalert2';
 
 export interface TareaForm {
   actividad_id?:        number | null;
@@ -38,6 +39,10 @@ export class ModalTareaComponent implements OnChanges {
   busquedaResp = '';
   showRespDropdown = false;
 
+  evidencias: any[] = [];
+  loadingEvidencias = false;
+  verHistoricoEvidencias = false;
+
   readonly estadoOpciones = [
     { v: 'pendiente',    l: 'Pendiente'    },
     { v: 'en_ejecucion', l: 'En ejecución' },
@@ -52,12 +57,17 @@ export class ModalTareaComponent implements OnChanges {
   get usuariosFiltrados(): UsuarioCache[] {
     const ids = new Set(this.responsablesSelec.map(r => r.id));
     const q   = this.busquedaResp.toLowerCase().trim();
-    return this.usuariosDisponibles
+    return this.state.usuariosAdministradores
       .filter(u => !ids.has(u.id) && (!q || u.nombre.toLowerCase().includes(q)))
       .slice(0, 8);
   }
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private _proyectoService: ProyectoService,
+    private _cdr: ChangeDetectorRef,
+    public state: SeguimientoStateService
+  ) {
     this.form = this.fb.group({
       actividad_id:         [null],
       titulo:               ['', [Validators.required, Validators.maxLength(250)]],
@@ -71,12 +81,17 @@ export class ModalTareaComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['show']?.currentValue === true) {
       this._resetForm();
+      if (this.tarea) {
+        this.cargarEvidencias();
+      }
     }
   }
 
   private _resetForm(): void {
     this.busquedaResp     = '';
     this.showRespDropdown = false;
+    this.evidencias = [];
+    this.verHistoricoEvidencias = false;
 
     if (this.tarea) {
       this.form.patchValue({
@@ -96,8 +111,107 @@ export class ModalTareaComponent implements OnChanges {
         actividad_id: this.actividadId ?? null,
         titulo: '', descripcion: '', estado: 'pendiente', notas: '', fecha_limite_entrega: '',
       });
-      this.responsablesSelec = [];
+      
+      // Si no es admin, auto-asignarse como único responsable al crear
+      if (!this.esAdmin) {
+        const miId = this._getMiId();
+        const miUsuario = this.usuariosDisponibles.find(u => u.id === miId);
+        if (miUsuario) {
+          this.responsablesSelec = [miUsuario];
+        } else {
+          this.responsablesSelec = [];
+        }
+      } else {
+        this.responsablesSelec = [];
+      }
     }
+  }
+
+  cargarEvidencias(): void {
+    if (!this.tarea) return;
+    this.loadingEvidencias = true;
+    const tipo = this.tarea.origen === 'seguimiento' ? 'seguimiento_tarea' : 'tarea';
+    const miId = this._getMiId();
+    
+    this._proyectoService.getEvidencias(tipo as any, this.tarea.id, this.verHistoricoEvidencias, miId).subscribe({
+      next: (res: any) => {
+        this.evidencias = res.data;
+        this.loadingEvidencias = false;
+        this._cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingEvidencias = false;
+        this._cdr.markForCheck();
+      }
+    });
+  }
+
+  onSubirArchivo(event: any): void {
+    const file = event.target.files[0];
+    if (!file || !this.tarea) return;
+
+    const tipo = this.tarea.origen === 'seguimiento' ? 'seguimiento_tarea' : 'tarea';
+    const miId = this._getMiId();
+
+    this.loadingEvidencias = true;
+    this._proyectoService.subirEvidencia(tipo as any, this.tarea.id, file, miId).subscribe({
+      next: () => {
+        this.state.showToast('Evidencia subida');
+        this.cargarEvidencias();
+      },
+      error: () => {
+        this.loadingEvidencias = false;
+        this.state.showToast('Error al subir evidencia', 'error');
+        this._cdr.markForCheck();
+      }
+    });
+  }
+
+  verEvidencia(ev: any): void {
+    this._proyectoService.getUrlEvidencia(ev.id).subscribe({
+      next: (res) => {
+        if (res.url) {
+          window.open(res.url, '_blank');
+        }
+      },
+      error: () => this.state.showToast('No se pudo obtener el archivo', 'error')
+    });
+  }
+
+  deshabilitarEvidencia(ev: any): void {
+    Swal.fire({
+      title: '¿Deshabilitar evidencia?',
+      text: 'El archivo ya no será visible en la tarea, pero permanecerá en el sistema por auditoría.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, deshabilitar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this._proyectoService.eliminarEvidencia(ev.id, this._getMiId()).subscribe({
+          next: () => {
+            this.state.showToast('Evidencia deshabilitada');
+            this.cargarEvidencias();
+          },
+          error: () => this.state.showToast('Error al deshabilitar', 'error')
+        });
+      }
+    });
+  }
+
+  restaurarEvidencia(ev: any): void {
+    this._proyectoService.restaurarEvidencia(ev.id, this._getMiId()).subscribe({
+      next: () => {
+        this.state.showToast('Evidencia restaurada');
+        this.cargarEvidencias();
+      },
+      error: () => this.state.showToast('Error al restaurar', 'error')
+    });
+  }
+
+  private _getMiId(): number {
+    return Number(localStorage.getItem('userId') || 0);
   }
 
   private _toLocal(v?: string | null): string {

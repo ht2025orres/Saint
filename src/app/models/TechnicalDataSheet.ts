@@ -3,60 +3,55 @@ import { Moment } from 'moment';
 
 export class TechnicalDataSheet{
   public id: number;
-  public idItem: string;
   public id_item: string;
-  public idItemCustomer: string;
-  public itemDescription: string;
-  public item_descripction: string;
-  public idCompany: string;
-  public companyName: string;
-  public userCreated: string;
-  public userValidation: string;
-  public userApproved: string;
-  public dateCreation: Moment;
-  public lastUpdate: Moment;
+  public id_item_customer: string;
+  public item_description: string;
+  public id_company: string;
+  public company_name: string;
+  public user_created: string;
+  public user_validation: string;
+  public user_approved: string;
   public date_creation: Moment;
   public last_update: Moment;
   public status: string;
   public file?: File;
-  public productImage1?: string;
-  public productImage2?: string;
-  public characteristicImage1?: string;
-  public characteristicImage2?: string;
-  public characteristicImage3?: string;
-  public characteristicImage4?: string;
-  public logoTechnicalDataSheet?: string;
-  public productCategory: ProductCategory;
-  public technicalDataSheetType;
-  public technical_data_sheet_type;
+  public product_image_1?: string;
+  public product_image_2?: string;
+  public characteristic_image_1?: string;
+  public characteristic_image_2?: string;
+  public characteristic_image_3?: string;
+  public characteristic_image_4?: string;
+  public logo_technical_data_sheet?: string;
+  public id_product_category: number;
+  public technical_data_sheet_type: string;
   public gender: string; //Genero
-  public mainFabric: string; //Tela principal
-  public contrastFabric: string; //Tela contraste
+  public main_fabric: string; //Tela principal
+  public contrast_fabric: string; //Tela contraste
   public waistband: string; //Pretina
   public button: string; //Boton
   public zipper: string; //Cierre
   public figured: string; //Figurado
   public pins: string; //Pasadores
-  public sidePulls: string; //Tiros
+  public side_pulls: string; //Tiros
   public purses: string; //Carteras
-  public shoulderUnion: string; //Union de los hombros
+  public shoulder_union: string; //Union de los hombros
   public lining: string; //Forro
-  public shirtCollar: string; //Cuello
+  public shirt_collar: string; //Cuello
   public cuffs: string; //Puños
   public pockets: string; //Bolsillos
   public busybody: string; //Cotilla
   public sleeves: string; //Mangas
   public back: string; //Espalda
   public shoulders: string; //Hombros
-  public sleeveConnection: string; //Union de las Mangas
-  public frontAdjustment: string; //Ajuste del frente
+  public sleeve_connection: string; //Union de las Mangas
+  public front_adjustment: string; //Ajuste del frente
   public neckline: string; //Escote
   public finished: string; //Terminado
   public darts: string; //Pinzas
   public opening: string; //Aberturas
   public straps: string; //Tiras
   public cuts: string; //Cortes
-  public closedSides: string; //Cerrado de los Costados
+  public closed_sides: string; //Cerrado de los Costados
   public hem: string; //Dobladillo
   public hood: string; //Capucha
   public crotch: string; //Entrepierna
@@ -73,9 +68,15 @@ export class TechnicalDataSheet{
   public ironing: string; //Descripción del planchado
   public packaging: string; //Descripción del empaque
   public stitching: string; //Pespuntes
-  public criticalPoints: string; //Puntos Criticos
-  public customerDescription: string; //Descripcion cliente
-  public measurementTable: string; //Tabla de medidas
-  public editComments: string; //comentarios de edicion
-  public qaComments: string; //comentarios de qa
+  public critical_points: string; //Puntos Criticos
+  public customer_description: string; //Descripcion cliente
+  public measurement_table: string; //Tabla de medidas
+  public edit_comments: string; //comentarios de edicion
+  public qa_comments: string; //comentarios de qa
+  public version: string;
+  public logo_description: string;
+  public observations: string;
+  public rib: string;
+  public side_stand: string;
+  public bill_materials: string;
 }

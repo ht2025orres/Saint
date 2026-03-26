@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { User } from '../models/User';
 import { environment } from '../../environments/environment';
@@ -17,6 +17,8 @@ export class AuthService {
   private _user: User;
   // tslint:disable-next-line:variable-name
   private _token: string;
+  // tslint:disable-next-line:variable-name
+  private _refreshToken: string;
 
   constructor(
     private http: HttpClient,
@@ -28,7 +30,7 @@ export class AuthService {
     if (this._user != null) {
       return this._user;
     } else if (this._user == null) {
-      const stored = sessionStorage.getItem('user') ?? localStorage.getItem('user');
+      const stored = sessionStorage.getItem('user');
       if (stored != null) {
         this._user = JSON.parse(stored) as User;
         return this._user;
@@ -41,10 +43,23 @@ export class AuthService {
     if (this._token != null) {
       return this._token;
     } else if (this._token == null) {
-      const stored = sessionStorage.getItem('token') ?? localStorage.getItem('token');
+      const stored = sessionStorage.getItem('token');
       if (stored != null) {
         this._token = stored;
         return this._token;
+      }
+    }
+    return null;
+  }
+
+  public get refreshTokenValue(): string {
+    if (this._refreshToken != null) {
+      return this._refreshToken;
+    } else if (this._refreshToken == null) {
+      const stored = sessionStorage.getItem('refresh_token');
+      if (stored != null) {
+        this._refreshToken = stored;
+        return this._refreshToken;
       }
     }
     return null;
@@ -97,7 +112,6 @@ export class AuthService {
     this._user.roles = payload.authorities;  /* Nombre athoriries que genera sprint security oauth2*/
     this._user.id = payload.id;
     sessionStorage.setItem('user', JSON.stringify(this._user));
-    localStorage.setItem('user', JSON.stringify(this._user));
     this.inconsistenciasService.info(payload.email).subscribe({
       next: (res) => {
         this._user.nombre_departamento_Sdp = res.info['nombre_departamento'];
@@ -106,16 +120,38 @@ export class AuthService {
         this._user.id_lider = res.info['lider_id'];
         this._user.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
         sessionStorage.setItem('user', JSON.stringify(this._user));
-        localStorage.setItem('user', JSON.stringify(this._user));
       },
       error: (_) => {}
     });
   }
 
-  saveToken(accessToken: string): void {
+  saveToken(accessToken: string, refreshToken?: string): void {
     this._token = accessToken;
     sessionStorage.setItem('token', accessToken);
-    localStorage.setItem('token', accessToken);
+    if (refreshToken) {
+      this._refreshToken = refreshToken;
+      sessionStorage.setItem('refresh_token', refreshToken);
+    }
+  }
+
+  refreshToken(): Observable<any> {
+    const credenciales = btoa('angularapp' + ':' + 'CF1p1092$#');
+    const httpHeaders = new HttpHeaders({
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: 'Basic ' + credenciales
+    });
+
+    const params = new URLSearchParams();
+    params.set('grant_type', 'refresh_token');
+    params.set('refresh_token', this.refreshTokenValue);
+
+    return this.http.post<any>(this.urlEndPoint, params.toString(), {
+      headers: httpHeaders
+    }).pipe(
+      tap(response => {
+        this.saveToken(response.access_token, response.refresh_token);
+      })
+    );
   }
 
   getTokenData(accessToken: string): any {
@@ -199,8 +235,10 @@ export class AuthService {
 
   logout(): void {
     this._token = null;
+    this._refreshToken = null;
     this._user = null;
     sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refresh_token');
     sessionStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('user');

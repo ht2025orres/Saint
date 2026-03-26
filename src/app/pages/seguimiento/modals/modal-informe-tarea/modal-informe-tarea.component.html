@@ -1,6 +1,8 @@
-<div *ngIf="show" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+<div *ngIf="show" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+  (click)="onCerrar.emit()">
   
-  <div class="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
+  <div class="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300"
+      (click)="$event.stopPropagation()">
     
     <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
       <div class="flex items-center gap-3">
@@ -17,7 +19,7 @@
     </div>
 
     <div class="flex-1 p-8">
-      <form [formGroup]="form" id="tareaForm" (ngSubmit)="submit()" class="space-y-6">
+      <div [formGroup]="form" class="space-y-6">
         
         <div>
           <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Título de la Tarea</label>
@@ -32,7 +34,7 @@
             <select formControlName="responsable_id" 
               class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none">
               <option [ngValue]="null" disabled>Seleccionar...</option>
-              <option *ngFor="let u of usuarios" [value]="u.id">{{ u.nombre }}</option>
+              <option *ngFor="let u of usuariosFiltrados" [value]="u.id">{{ u.nombre }}</option>
             </select>
           </div>
 
@@ -58,15 +60,73 @@
             placeholder="Opcional..."></textarea>
         </div>
 
-      </form>
+      </div>
     </div>
 
-    <div class="px-8 py-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
-      <button (click)="onCerrar.emit()" [disabled]="saving"
+      <!-- Evidencias -->
+      <div class="px-8 py-4 space-y-4 border-t border-gray-50">
+        <div class="flex items-center justify-between">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Evidencias y Documentos</label>
+          <button *ngIf="esAdmin && tarea" 
+            (click)="verHistoricoEvidencias = !verHistoricoEvidencias; cargarEvidencias()"
+            class="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all"
+            [ngClass]="verHistoricoEvidencias ? 'bg-amber-100 text-amber-700' : 'text-gray-400 hover:bg-gray-100'">
+            <i class="bi mr-1" [ngClass]="verHistoricoEvidencias ? 'bi-eye-fill' : 'bi-eye-slash'"></i>
+            {{ verHistoricoEvidencias ? 'Viendo Histórico' : 'Ver Histórico' }}
+          </button>
+        </div>
+
+        <div class="space-y-2" *ngIf="evidencias.length > 0">
+          <div *ngFor="let ev of evidencias" 
+            class="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-2xl transition-all"
+            [ngClass]="{'opacity-60 grayscale bg-gray-100': ev.deleted_at}">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-blue-500 shadow-sm">
+                <i class="bi text-lg" [ngClass]="state.getIconoMime(ev.tipo_mime)"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-gray-700 truncate max-w-[200px]">{{ ev.nombre_archivo }}</p>
+                <p class="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
+                  Subido {{ ev.created_at | date:'dd MMM, hh:mm a' }}
+                  <span *ngIf="ev.deleted_at" class="text-red-500 ml-1 font-black">— DESHABILITADO</span>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button (click)="verEvidencia(ev)" class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-blue-600 flex items-center justify-center transition-all">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button *ngIf="!ev.deleted_at" (click)="deshabilitarEvidencia(ev)" class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-red-500 flex items-center justify-center transition-all">
+                <i class="bi bi-trash"></i>
+              </button>
+              <button *ngIf="ev.deleted_at && esAdmin" (click)="restaurarEvidencia(ev)" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center transition-all">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative" *ngIf="tarea">
+          <input type="file" (change)="onSubirArchivo($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="loadingEvidencias">
+          <div class="w-full p-6 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:bg-gray-50 hover:border-blue-100 transition-all group">
+            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-all">
+              <i class="bi bi-cloud-arrow-up text-xl" *ngIf="!loadingEvidencias"></i>
+              <div *ngIf="loadingEvidencias" class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+              {{ loadingEvidencias ? 'Subiendo...' : 'Subir evidencia' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
+        <button (click)="onCerrar.emit()" [disabled]="saving"
         class="px-6 py-3 text-xs font-black text-gray-500 uppercase tracking-widest hover:text-gray-700 transition-colors disabled:opacity-50">
         Cancelar
       </button>
-      <button form="tareaForm" type="submit" [disabled]="form.invalid || saving"
+      <button type="button" (click)="submit()" [disabled]="form.invalid || saving"
         class="px-8 py-3 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 disabled:opacity-50 disabled:shadow-none flex items-center gap-2">
         <i *ngIf="saving" class="bi bi-arrow-repeat animate-spin"></i>
         {{ saving ? 'Guardando...' : 'Guardar Tarea' }}

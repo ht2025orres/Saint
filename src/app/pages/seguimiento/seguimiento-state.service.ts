@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export interface UsuarioCache { id: number; nombre: string; }
+export interface Role { id: number; nombre: string; }
+export interface UsuarioCache { id: number; nombre: string; roles?: Role[]; }
 export interface Toast { id: number; message: string; type: 'success' | 'error' | 'info' | 'warning'; }
 export type Semaforo = 'rojo' | 'amarillo' | 'verde' | 'gris';
 
@@ -16,6 +17,15 @@ export class SeguimientoStateService {
   readonly usuariosCache$ = this._usuariosCache$.asObservable();
 
   get usuariosCache(): UsuarioCache[] { return this._usuariosCache$.value; }
+
+  /**
+   * Retorna solo los usuarios que tienen el rol de "Administrador del Sistema"
+   */
+  get usuariosAdministradores(): UsuarioCache[] {
+    return this._usuariosCache$.value.filter(u =>
+      u.roles?.some(r => r.nombre.toLowerCase().includes('administrador del sistema'))
+    );
+  }
 
   setUsuariosCache(usuarios: UsuarioCache[]): void {
     this._usuariosCache$.next(usuarios);
@@ -105,12 +115,17 @@ export class SeguimientoStateService {
 
   getEstadoIcon(estado: string): string {
     const map: Record<string, string> = {
-      pendiente: 'bi-clock', en_ejecucion: 'bi-play-circle-fill',
-      en_proceso: 'bi-play-circle-fill', completado: 'bi-check-circle-fill',
-      pausado: 'bi-pause-circle-fill', cancelado: 'bi-x-circle-fill',
-      bloqueado: 'bi-lock-fill', activo: 'bi-circle-fill', cerrado: 'bi-lock-fill',
+      pendiente: 'mdi-clock-outline',
+      en_ejecucion: 'mdi-play-circle-outline',
+      en_proceso: 'mdi-play-circle-outline',
+      completado: 'mdi-check-circle-outline',
+      pausado: 'mdi-pause-circle-outline',
+      cancelado: 'mdi-close-circle-outline',
+      bloqueado: 'mdi-lock-outline',
+      activo: 'mdi-circle-medium',
+      cerrado: 'mdi-lock-outline',
     };
-    return map[estado] ?? 'bi-circle';
+    return map[estado] ?? 'mdi-circle-outline';
   }
 
   getEstadoLabel(estado: string): string {
@@ -140,5 +155,15 @@ export class SeguimientoStateService {
 
   calcularProgreso(completadas: number, total: number): number {
     return total === 0 ? 0 : Math.round((completadas / total) * 100);
+  }
+
+  getIconoMime(mime?: string): string {
+    if (!mime) return 'mdi-file-outline';
+    if (mime.includes('image')) return 'mdi-file-image-outline';
+    if (mime.includes('pdf')) return 'mdi-file-pdf-box';
+    if (mime.includes('spreadsheet') || mime.includes('excel')) return 'mdi-file-excel-outline';
+    if (mime.includes('word')) return 'mdi-file-word-outline';
+    if (mime.includes('zip') || mime.includes('rar')) return 'mdi-file-zip-outline';
+    return 'mdi-file-document-outline';
   }
 }

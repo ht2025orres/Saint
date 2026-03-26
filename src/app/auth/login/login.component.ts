@@ -57,7 +57,7 @@ export class LoginComponent implements OnInit {
             this.user.password = this.formGr.get('password').value;
             this.authService.login(this.user).subscribe(response => {
                 this.authService.saveUser(response.access_token);
-                this.authService.saveToken(response.access_token);
+                this.authService.saveToken(response.access_token, response.refresh_token);
                 const user = this.authService.user;
                 Swal.fire({
                     title: 'Inicio de sesión',

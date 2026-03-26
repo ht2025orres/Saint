@@ -4,67 +4,77 @@
      ══════════════════════════════════════════════════════════════════ -->
 
 <!-- ── BARRA DE ACCIONES + FILTROS ───────────────────────────────── -->
-<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
 
   <!-- Filtros de estado -->
-  <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+  <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
     <button
       *ngFor="let f of [
-        {v:'todos',       l:'Todos',        i:'bi-grid-3x2'},
-        {v:'pendiente',   l:'Pendiente',    i:'bi-clock'},
-        {v:'en_ejecucion',l:'En ejecución', i:'bi-play-circle'},
-        {v:'completado',  l:'Completados',  i:'bi-check-circle'},
-        {v:'pausado',     l:'Pausados',     i:'bi-pause-circle'}
+        {v:'todos',       l:'Todos',        i:'mdi mdi-apps'},
+        {v:'pendiente',   l:'Pendiente',    i:'mdi mdi-clock-outline'},
+        {v:'en_ejecucion',l:'En ejecución', i:'mdi mdi-play-circle-outline'},
+        {v:'completado',  l:'Completados',  i:'mdi mdi-check-circle-outline'},
+        {v:'pausado',     l:'Pausados',     i:'mdi mdi-pause-circle-outline'}
       ]"
       (click)="cambiarFiltro(f.v)"
-      class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+      class="flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all"
       [ngClass]="filtroEstado === f.v
         ? 'bg-blue-600 text-white shadow-sm'
-        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'"
+        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'"
     >
-      <i [class]="'bi ' + f.i"></i>
-      <span class="hidden sm:inline">{{ f.l }}</span>
+      <i [class]="f.i"></i>
+      <span class="hidden md:inline">{{ f.l }}</span>
     </button>
   </div>
 
   <!-- Búsqueda -->
-  <div class="relative flex-1 max-w-xs">
-    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+  <div class="relative flex-1 max-w-[200px]">
+    <i class="mdi mdi-magnify absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
     <input
       type="text"
       [(ngModel)]="busqueda"
       (ngModelChange)="onBusquedaChange()"
-      placeholder="Buscar proyecto…"
-      class="seg-input pl-9 pr-9"
+      placeholder="Buscar..."
+      class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-8 py-1.5 text-xs outline-none focus:border-blue-400 transition-colors"
     >
     <button *ngIf="busqueda" (click)="busqueda = ''; onBusquedaChange()"
-      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
-      <i class="bi bi-x-lg text-xs"></i>
+      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition">
+      <i class="mdi mdi-close text-[10px]"></i>
     </button>
   </div>
 
-  <!-- Vista toggle + Nuevo -->
   <div class="flex items-center gap-2">
-    <div class="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm">
+    <!-- Vista toggle -->
+    <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
       <button (click)="cambiarVista('tarjetas')"
-        class="p-1.5 rounded-md transition text-sm"
-        [ngClass]="vista === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'">
-        <i class="bi bi-grid-3x3-gap-fill"></i>
+        class="p-1.5 rounded-md transition text-xs"
+        [ngClass]="vista === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-50'">
+        <i class="mdi mdi-view-grid"></i>
       </button>
       <button (click)="cambiarVista('lista')"
-        class="p-1.5 rounded-md transition text-sm"
-        [ngClass]="vista === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'">
-        <i class="bi bi-list-ul"></i>
+        class="p-1.5 rounded-md transition text-xs"
+        [ngClass]="vista === 'lista' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-50'">
+        <i class="mdi mdi-format-list-bulleted"></i>
       </button>
     </div>
 
-    <div class="flex items-center gap-3">
-      <button *ngIf="puedeGestionarModulo" (click)="abrirCrearProyecto()"
-        class="flex items-center gap-2.5 px-6 py-3 text-xs font-black uppercase tracking-[0.15em] text-white bg-blue-600 rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 transform hover:-translate-y-0.5 active:translate-y-0 group">
-        <i class="bi bi-plus-lg group-hover:rotate-90 transition-transform duration-300"></i>
-        Nuevo Proyecto
-      </button>
-    </div>
+    <!-- Botón Ver Plantillas -->
+    <button
+      (click)="toggleMostrarPlantillas()"
+      class="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all border shadow-sm"
+      [ngClass]="mostrarPlantillas
+        ? 'bg-amber-500 text-white border-amber-500'
+        : 'bg-white text-slate-400 border-slate-200 hover:border-amber-200 hover:text-amber-600'"
+    >
+      <i class="mdi" [ngClass]="mostrarPlantillas ? 'mdi-star' : 'mdi-star-outline'"></i>
+      <span class="hidden sm:inline">{{ mostrarPlantillas ? 'Plantillas' : 'Ver Plantillas' }}</span>
+    </button>
+
+    <button *ngIf="puedeGestionarModulo" (click)="abrirModalProyecto()"
+      class="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95">
+      <i class="mdi mdi-plus"></i>
+      Nuevo
+    </button>
   </div>
 </div>
 
@@ -83,15 +93,15 @@
 <div *ngIf="!loading && proyectosFiltrados.length === 0"
   class="flex flex-col items-center justify-center py-24 text-center">
   <div class="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-5">
-    <i class="bi bi-folder2-open text-blue-300 text-4xl"></i>
+    <i class="mdi mdi-folder-open text-blue-300 text-4xl"></i>
   </div>
   <h3 class="text-gray-800 font-semibold text-lg mb-1">Sin proyectos</h3>
   <p class="text-sm text-gray-400 mb-5">
     {{ busqueda ? 'Ningún proyecto coincide con la búsqueda.' : 'No hay proyectos con este filtro.' }}
   </p>
-  <button *ngIf="puedeGestionarModulo && !busqueda" (click)="abrirCrearProyecto()"
+  <button *ngIf="puedeGestionarModulo && !busqueda" (click)="abrirModalProyecto()"
     class="seg-btn-primary">
-    <i class="bi bi-plus-lg mr-1.5"></i>Crear primer proyecto
+    <i class="mdi mdi-plus mr-1.5"></i>Crear primer proyecto
   </button>
 </div>
 
@@ -99,126 +109,130 @@
 
   <!-- ── VISTA TARJETAS ────────────────────────────────────────────── -->
   <div *ngIf="vista === 'tarjetas'" class="space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
       <div *ngFor="let p of proyectosPaginados"
-        class="group bg-white rounded-xl border hover:shadow-md transition-all cursor-pointer
-               flex flex-col overflow-hidden"
+        class="group bg-white rounded-3xl border border-slate-100 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 cursor-pointer
+               flex flex-col overflow-hidden relative"
         [ngClass]="'border-l-4 ' + state.getSemaforoBorderClass(p.semaforo)"
-        (click)="verDetalle(p)"
+        (click)="seleccionarProyecto(p)"
       >
         <!-- Cuerpo tarjeta -->
-        <div class="p-5 flex-1">
+        <div class="p-6 flex-1">
 
           <!-- Título + estado -->
-          <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="flex items-start justify-between gap-4 mb-4">
             <div class="min-w-0 flex-1">
-              <h3 class="font-semibold text-gray-900 text-sm leading-snug truncate" [title]="p.titulo">
+              <h3 class="font-black text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors line-clamp-2" [title]="p.titulo">
                 {{ p.titulo }}
               </h3>
-              <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+              <div class="flex flex-wrap items-center gap-2 mt-2">
+                <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-lg font-black uppercase tracking-widest shadow-sm"
                   [ngClass]="state.getEstadoBadgeClass(p.estado)">
-                  <i [class]="'bi ' + state.getEstadoIcon(p.estado)" style="font-size:9px"></i>
-                  {{ p.estado | uppercase }}
+                  <i [class]="'mdi ' + state.getEstadoIcon(p.estado)" class="text-xs"></i>
+                  {{ p.estado }}
                 </span>
                 <span *ngIf="p.nivel_usuario && p.nivel_usuario !== 'lector'"
-                  class="text-xs px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                  class="text-[10px] px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100 font-black uppercase tracking-widest">
                   {{ p.nivel_usuario }}
                 </span>
               </div>
             </div>
-            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
+            <div class="w-3.5 h-3.5 rounded-full flex-shrink-0 shadow-sm animate-pulse"
               [ngClass]="state.getSemaforoClass(p.semaforo)"
               [title]="state.getSemaforoLabel(p.semaforo)">
-            </span>
+            </div>
           </div>
 
-          <!-- Descripción -->
-          <p *ngIf="p.descripcion" class="text-xs text-gray-500 line-clamp-2 mb-3">
+          <!-- Descripción restaurada -->
+          <p *ngIf="p.descripcion" class="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed">
             {{ p.descripcion }}
           </p>
 
           <!-- Fecha límite -->
-          <div *ngIf="p.fecha_limite_entrega" class="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
-            <i class="bi bi-calendar-event"></i>
-            <span>{{ p.fecha_limite_entrega | date:'dd/MM/yyyy':'UTC' }}</span>
+          <div *ngIf="p.fecha_limite_entrega" class="flex items-center gap-2 text-xs font-bold text-slate-400 mb-5 bg-slate-50 w-fit px-3 py-1.5 rounded-xl border border-slate-100">
+            <i class="mdi mdi-calendar-blank text-blue-500"></i>
+            <span>{{ p.fecha_limite_entrega | date:'dd MMM, yyyy':'UTC' }}</span>
           </div>
 
-          <!-- Estadísticas -->
-          <div class="grid grid-cols-4 gap-2 mb-4 text-center">
-            <div class="bg-gray-50 rounded-lg py-2">
-              <p class="text-sm font-bold text-gray-700">{{ p.total_actividades || 0 }}</p>
-              <p class="text-xs text-gray-400 leading-tight">Act.</p>
+          <!-- Estadísticas restauradas grandes -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+            <div class="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-slate-700 leading-none truncate">{{ p.total_actividades || 0 }}</p>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-1.5 truncate">Actividades</p>
             </div>
-            <div class="bg-gray-50 rounded-lg py-2">
-              <p class="text-sm font-bold text-gray-700">{{ p.total_tareas || 0 }}</p>
-              <p class="text-xs text-gray-400 leading-tight">Tar.</p>
+            <div class="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-slate-700 leading-none truncate">{{ p.total_tareas || 0 }}</p>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-1.5 truncate">Tareas</p>
             </div>
-            <div class="bg-green-50 rounded-lg py-2">
-              <p class="text-sm font-bold text-green-700">{{ p.tareas_completadas || 0 }}</p>
-              <p class="text-xs text-gray-400 leading-tight">OK</p>
+            <div class="bg-emerald-50/50 rounded-2xl p-2 text-center border border-emerald-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-emerald-600 leading-none truncate">{{ p.tareas_completadas || 0 }}</p>
+              <p class="text-[8px] font-bold text-emerald-400 uppercase tracking-tight mt-1.5 truncate">Listas</p>
             </div>
-            <div class="bg-red-50 rounded-lg py-2">
-              <p class="text-sm font-bold text-red-600">{{ p.tareas_vencidas || 0 }}</p>
-              <p class="text-xs text-gray-400 leading-tight">Ven.</p>
+            <div class="bg-rose-50/50 rounded-2xl p-2 text-center border border-rose-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-rose-500 leading-none truncate">{{ p.tareas_vencidas || 0 }}</p>
+              <p class="text-[8px] font-bold text-rose-400 uppercase tracking-tight mt-1.5 truncate">Atrasadas</p>
             </div>
           </div>
 
-          <!-- Barra de progreso -->
-          <div>
-            <div class="flex justify-between items-center text-xs mb-1.5">
-              <span class="text-gray-500">Progreso</span>
-              <span class="font-semibold text-blue-600">{{ p.progreso || 0 }}%</span>
+          <!-- Barra de progreso detallada -->
+          <div class="mb-2">
+            <div class="flex justify-between items-end mb-2">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Progreso</span>
+              <span class="text-sm font-black text-blue-600">{{ p.progreso || 0 }}%</span>
             </div>
-            <div class="w-full bg-gray-100 rounded-full h-1.5">
-              <div class="h-1.5 rounded-full transition-all duration-500"
-                [ngClass]="(p.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-600'"
+            <div class="w-full bg-slate-100 rounded-full h-2.5 p-0.5 shadow-inner">
+              <div class="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden shadow-sm"
+                [ngClass]="(p.progreso || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'"
                 [style.width.%]="p.progreso || 0">
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
               </div>
             </div>
           </div>
 
-          <!-- Responsables avatares -->
+          <!-- Responsables restaurados grandes -->
           <div *ngIf="(p.responsables?.length ?? 0) > 0 || p.creado_por"
-            class="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-100">
-            <span class="text-xs text-gray-400">Resp.:</span>
+            class="flex items-center gap-3 mt-6 pt-5 border-t border-slate-100">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Responsables:</span>
             <div class="flex items-center">
               <div *ngFor="let rid of (p.responsables || []).slice(0, 4); let i = index"
-                class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold
-                       ring-2 ring-white flex-shrink-0"
-                [class.-ml-1.5]="i > 0"
+                class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-black
+                       ring-4 ring-white flex-shrink-0 shadow-md hover:scale-110 hover:z-10 transition-all"
+                [class.-ml-2.5]="i > 0"
                 [ngClass]="state.getColorPorId(rid)"
                 [title]="state.nombreUsuario(rid)">
                 {{ state.getInicialesResponsable(rid) }}
               </div>
               <span *ngIf="(p.responsables || []).length > 4"
-                class="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center
-                       text-xs ring-2 ring-white -ml-1.5 font-medium">
+                class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center
+                       text-[10px] ring-4 ring-white -ml-2.5 font-black shadow-sm">
                 +{{ (p.responsables || []).length - 4 }}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- Footer tarjeta -->
-        <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between"
+        <!-- Footer detallado -->
+        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-colors"
           (click)="$event.stopPropagation()">
-          <button (click)="verDetalle(p)"
-            class="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition">
-            <i class="bi bi-eye"></i> Ver detalle
+          <button (click)="seleccionarProyecto(p)"
+            class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-all group/btn">
+            <i class="mdi mdi-eye text-lg group-hover/btn:scale-110 transition-transform"></i> 
+            <span>Ver detalle completo</span>
           </button>
-          <div class="flex items-center gap-0.5">
-            <button *ngIf="puedeEditarProyecto(p)" (click)="abrirEditarProyecto(p)"
-              class="seg-icon-btn" title="Editar"><i class="bi bi-pencil"></i></button>
-            <button *ngIf="puedeEditarProyecto(p) && p.estado !== 'completado'"
-              (click)="cambiarEstado(p, 'completado')"
-              class="seg-icon-btn hover:text-green-600" title="Completar">
-              <i class="bi bi-check-circle"></i>
+          
+          <div class="flex items-center gap-1.5">
+            <button *ngIf="puedeEditarProyecto(p)" (click)="crearPlantillaDesdeProyecto(p)"
+              class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100" title="Crear plantilla">
+              <i class="mdi mdi-file-plus text-lg"></i>
+            </button>
+            <button *ngIf="puedeEditarProyecto(p)" (click)="abrirModalProyecto(p)"
+              class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100" title="Editar">
+              <i class="mdi mdi-pencil text-lg"></i>
             </button>
             <button *ngIf="puedeEliminarProyecto(p)" (click)="eliminarProyecto(p)"
-              class="seg-icon-btn hover:text-red-600" title="Eliminar">
-              <i class="bi bi-trash"></i>
+              class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100" title="Eliminar">
+              <i class="mdi mdi-trash-can text-lg"></i>
             </button>
           </div>
         </div>
@@ -226,7 +240,7 @@
 
     </div>
 
-    <!-- Paginador tarjetas -->
+    <!-- Paginador detallado -->
     <app-shared-paginator
       [instanceId]="'proy-tarjetas'"
       [pageSizeOptions]="[6,12,24]"
@@ -237,43 +251,43 @@
 
   <!-- ── VISTA LISTA ────────────────────────────────────────────────── -->
   <div *ngIf="vista === 'lista'" class="space-y-4">
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-100">
-        <thead class="bg-gray-50">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <table class="min-w-full divide-y divide-slate-100">
+        <thead class="bg-slate-50/50">
           <tr>
-            <th class="seg-th pl-5">Proyecto</th>
-            <th class="seg-th">F. Límite</th>
-            <th class="seg-th">Act / Tar</th>
-            <th class="seg-th text-green-700">Completas</th>
-            <th class="seg-th text-red-600">Vencidas</th>
-            <th class="seg-th">Progreso</th>
-            <th class="seg-th text-right pr-5">Acciones</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Proyecto</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Límite</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">A/T</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-emerald-500 uppercase tracking-widest">OK</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-rose-500 uppercase tracking-widest">Ven</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Progreso</th>
+            <th class="px-4 py-3 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest pr-6">Acciones</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-50">
+        <tbody class="divide-y divide-slate-50 bg-white">
           <tr *ngFor="let p of proyectosPaginados"
-            class="hover:bg-gray-50 transition cursor-pointer"
-            (click)="verDetalle(p)">
+            class="group hover:bg-slate-50/50 transition-all cursor-pointer"
+            (click)="seleccionarProyecto(p)">
 
-            <td class="px-4 py-3 pl-5">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full flex-shrink-0"
                   [ngClass]="state.getSemaforoClass(p.semaforo)"></span>
                 <div class="min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-sm font-medium text-gray-900 truncate max-w-[200px]"
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-800 truncate max-w-[200px]"
                       [title]="p.titulo">{{ p.titulo }}</span>
-                    <span class="text-xs px-1.5 py-0.5 rounded-full"
+                    <span class="text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
                       [ngClass]="state.getEstadoBadgeClass(p.estado)">
-                      {{ p.estado | uppercase }}
+                      {{ p.estado }}
                     </span>
                   </div>
-                  <!-- Avatares -->
-                  <div *ngIf="(p.responsables?.length ?? 0) > 0" class="flex items-center mt-0.5">
-                    <div *ngFor="let rid of (p.responsables || []).slice(0,3); let i = index"
-                      class="w-4 h-4 rounded-full flex items-center justify-center text-white ring-1 ring-white"
-                      [class.-ml-0.5]="i > 0" [ngClass]="state.getColorPorId(rid)"
-                      [title]="state.nombreUsuario(rid)" style="font-size:8px;font-weight:700;">
+                  <!-- Avatares compactos en lista -->
+                  <div *ngIf="(p.responsables?.length ?? 0) > 0" class="flex items-center mt-1">
+                    <div *ngFor="let rid of (p.responsables || []).slice(0,5); let i = index"
+                      class="w-5 h-5 rounded-full flex items-center justify-center text-white font-black ring-1 ring-white shadow-sm"
+                      [class.-ml-1]="i > 0" [ngClass]="state.getColorPorId(rid)"
+                      style="font-size:7px;">
                       {{ state.getInicialesResponsable(rid) }}
                     </div>
                   </div>
@@ -281,622 +295,87 @@
               </div>
             </td>
 
-            <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-              <span *ngIf="p.fecha_limite_entrega">
-                <i class="bi bi-calendar-event mr-1 text-gray-400"></i>
-                {{ p.fecha_limite_entrega | date:'dd/MM/yyyy' }}
+            <td class="px-4 py-2">
+              <span *ngIf="p.fecha_limite_entrega" class="text-[10px] font-bold text-slate-500">
+                {{ p.fecha_limite_entrega | date:'dd/MM/yy' }}
               </span>
-              <span *ngIf="!p.fecha_limite_entrega" class="text-gray-300">—</span>
+              <span *ngIf="!p.fecha_limite_entrega" class="text-slate-300">—</span>
             </td>
 
-            <td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-              <span class="font-medium">{{ p.total_actividades || 0 }}</span>
-              <span class="text-gray-400"> / </span>
-              <span class="font-medium">{{ p.total_tareas || 0 }}</span>
+            <td class="px-4 py-2 text-[10px] text-slate-700 font-bold">
+              {{ p.total_actividades || 0 }}/{{ p.total_tareas || 0 }}
             </td>
 
-            <td class="px-4 py-3 text-sm font-semibold text-green-600 whitespace-nowrap">
+            <td class="px-4 py-2 text-[10px] font-black text-emerald-600">
               {{ p.tareas_completadas || 0 }}
             </td>
 
-            <td class="px-4 py-3 text-sm font-semibold text-red-500 whitespace-nowrap">
+            <td class="px-4 py-2 text-[10px] font-black text-rose-500">
               {{ p.tareas_vencidas || 0 }}
             </td>
 
-            <td class="px-4 py-3 whitespace-nowrap">
+            <td class="px-4 py-2">
               <div class="flex items-center gap-2">
-                <div class="w-20 bg-gray-100 rounded-full h-1.5">
-                  <div class="h-1.5 rounded-full"
-                    [ngClass]="(p.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-500'"
+                <div class="w-16 bg-slate-100 rounded-full h-1">
+                  <div class="h-full rounded-full"
+                    [ngClass]="(p.progreso || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-500'"
                     [style.width.%]="p.progreso || 0">
                   </div>
                 </div>
-                <span class="text-xs text-gray-600 font-medium">{{ p.progreso || 0 }}%</span>
+                <span class="text-[9px] text-slate-600 font-black">{{ p.progreso || 0 }}%</span>
               </div>
             </td>
 
-            <td class="px-4 py-3 pr-5 text-right whitespace-nowrap" (click)="$event.stopPropagation()">
-              <div class="flex items-center justify-end gap-0.5">
-                <button (click)="verDetalle(p)" class="seg-icon-btn" title="Ver"><i class="bi bi-eye"></i></button>
-                <button *ngIf="puedeEditarProyecto(p)" (click)="abrirEditarProyecto(p)"
-                  class="seg-icon-btn" title="Editar"><i class="bi bi-pencil"></i></button>
+            <td class="px-4 py-2 pr-6 text-right" (click)="$event.stopPropagation()">
+              <div class="flex items-center justify-end gap-1 transition-opacity">
+                <button (click)="seleccionarProyecto(p)" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><i class="mdi mdi-eye"></i></button>
+                <button *ngIf="puedeEditarProyecto(p)" (click)="abrirModalProyecto(p)"
+                  class="p-1.5 text-slate-400 hover:text-amber-600 transition-colors"><i class="mdi mdi-pencil"></i></button>
                 <button *ngIf="puedeEliminarProyecto(p)" (click)="eliminarProyecto(p)"
-                  class="seg-icon-btn hover:text-red-600" title="Eliminar"><i class="bi bi-trash"></i></button>
+                  class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"><i class="mdi mdi-trash-can"></i></button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <div *ngIf="proyectosFiltrados.length === 0" class="text-center py-12">
-        <p class="text-sm text-gray-400">No hay proyectos con este filtro.</p>
+      <div *ngIf="proyectosFiltrados.length === 0" class="text-center py-12 bg-slate-50/30">
+        <p class="text-slate-400 font-black uppercase tracking-widest text-[9px]">No hay resultados</p>
       </div>
     </div>
 
     <app-shared-paginator
       [instanceId]="'proy-lista'"
       [pageSizeOptions]="[10,25,50]"
-      [defaultPageSize]="10"
+      [defaultPageSize]="25"
       [showPageSizeSelector]="true">
     </app-shared-paginator>
   </div>
 
 </ng-container>
 
-<!-- ── MODALES ────────────────────────────────────────────────────── -->
-
-<!-- Modal Proyecto -->
-<app-modal-proyecto
-  [show]="showModalProyecto"
-  [proyecto]="proyectoParaEditar"
-  [saving]="savingProyecto"
-  (onCerrar)="showModalProyecto = false"
-  (onGuardar)="onGuardarProyecto($event)">
-</app-modal-proyecto>
-
-<!-- Modal Actividad -->
-<app-modal-actividad
-  [show]="showModalActividad"
-  [actividad]="actividadParaEditar"
-  [proyecto]="actividadProyecto"
-  [saving]="savingActividad"
-  (onCerrar)="showModalActividad = false"
-  (onGuardar)="onGuardarActividad($event)">
-</app-modal-actividad>
-
-<!-- Modal Tarea -->
-<app-modal-tarea
-  [show]="showModalTarea"
-  [tarea]="tareaParaEditar"
-  [actividadId]="tareaActividadId"
-  [proyectoId]="detalle?.id || null"
-  [actividades]="detalle?.actividades || []"
-  [usuariosDisponibles]="usuariosDisponibles"
-  [saving]="savingTarea"
-  [esAdmin]="detalle ? esAdminProyecto(detalle) : false"
-  (onCerrar)="showModalTarea = false"
-  (onGuardar)="onGuardarTarea($event)">
-</app-modal-tarea>
-
 <!-- ══════════════════════════════════════════════════════════════════
      PANEL DETALLE DE PROYECTO (slide-over)
      ══════════════════════════════════════════════════════════════════ -->
-<div *ngIf="showDetalle"
-  class="fixed inset-0 z-40 flex items-stretch"
-  style="background: rgba(15,23,42,0.4);"
-  (click)="cerrarDetalle()">
-
-  <div class="ml-auto bg-white w-full max-w-4xl h-full flex flex-col shadow-2xl overflow-hidden"
-    (click)="$event.stopPropagation()">
-
-    <!-- Header detalle -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-      <div class="flex items-center gap-3 min-w-0">
-        <span *ngIf="detalle" class="w-3 h-3 rounded-full flex-shrink-0"
-          [ngClass]="state.getSemaforoClass(detalle?.semaforo)"></span>
-        <div class="min-w-0">
-          <h2 class="text-base font-bold text-gray-900 truncate">{{ detalle?.titulo }}</h2>
-          <div class="flex items-center gap-2 mt-0.5">
-            <span *ngIf="detalle" class="text-xs px-2 py-0.5 rounded-full"
-              [ngClass]="state.getEstadoBadgeClass(detalle.estado)">
-              {{ detalle.estado | uppercase }}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 flex-shrink-0">
-        <button *ngIf="detalle && esAdminProyecto(detalle) && detalle.fecha_limite_entrega"
-          (click)="calcularFechasTareas()" [disabled]="calculandoFechas"
-          class="seg-icon-btn" title="Calcular fechas automáticas">
-          <i class="bi" [ngClass]="calculandoFechas ? 'bi-hourglass-split animate-spin' : 'bi-clock-history'"></i>
-        </button>
-        <button (click)="cerrarDetalle()"
-          class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading detalle -->
-    <div *ngIf="loadingDetalle" class="flex-1 flex items-center justify-center">
-      <div class="text-center">
-        <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p class="text-sm text-gray-400">Cargando…</p>
-      </div>
-    </div>
-
-    <ng-container *ngIf="!loadingDetalle && detalle">
-
-      <!-- Stats banner -->
-      <div class="grid grid-cols-4 border-b border-gray-100 flex-shrink-0">
-        <div class="px-4 py-3 text-center border-r border-gray-100">
-          <p class="text-xl font-bold text-gray-800">{{ detalle.total_actividades || 0 }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Actividades</p>
-        </div>
-        <div class="px-4 py-3 text-center border-r border-gray-100">
-          <p class="text-xl font-bold text-gray-800">{{ detalle.total_tareas || 0 }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Tareas</p>
-        </div>
-        <div class="px-4 py-3 text-center border-r border-gray-100">
-          <p class="text-xl font-bold text-green-600">{{ detalle.tareas_completadas || 0 }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Completadas</p>
-        </div>
-        <div class="px-4 py-3 text-center">
-          <p class="text-xl font-bold text-red-500">{{ detalle.tareas_vencidas || 0 }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Vencidas</p>
-        </div>
-      </div>
-
-      <!-- Barra de progreso -->
-      <div class="px-6 py-3 border-b border-gray-100 flex-shrink-0">
-        <div class="flex justify-between text-xs mb-1.5">
-          <span class="text-gray-500">Progreso general</span>
-          <span class="font-semibold text-blue-600">{{ detalle.progreso || 0 }}%</span>
-        </div>
-        <div class="w-full bg-gray-100 rounded-full h-2">
-          <div class="h-2 rounded-full transition-all duration-500"
-            [ngClass]="(detalle.progreso || 0) === 100 ? 'bg-green-500' : 'bg-blue-600'"
-            [style.width.%]="detalle.progreso || 0">
-          </div>
-        </div>
-      </div>
-
-      <!-- Toggle vista detalle -->
-      <div class="flex items-center gap-1 px-6 py-2 border-b border-gray-100 flex-shrink-0">
-        <button (click)="vistaDetalle = 'tareas'"
-          class="text-sm font-medium px-3 py-1.5 rounded-lg transition"
-          [ngClass]="vistaDetalle === 'tareas' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100'">
-          <i class="bi bi-check2-square mr-1.5"></i>Lista de tareas
-        </button>
-        <button (click)="vistaDetalle = 'actividades'"
-          class="text-sm font-medium px-3 py-1.5 rounded-lg transition"
-          [ngClass]="vistaDetalle === 'actividades' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100'">
-          <i class="bi bi-diagram-3 mr-1.5"></i>Actividades
-        </button>
-      </div>
-
-      <!-- ── ÁREA SCROLLABLE ─────────────────────────────────────────── -->
-      <div class="flex-1 overflow-y-auto px-6 py-4">
-
-        <!-- ══ VISTA LISTA PLANA ══ -->
-        <ng-container *ngIf="vistaDetalle === 'tareas'">
-
-          <!-- Filtros de tareas -->
-          <div class="flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-            <div class="flex items-center gap-2">
-              <label class="text-xs font-medium text-gray-500">Estado:</label>
-              <select [(ngModel)]="filtroEstadoTarea"
-                class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-1 focus:ring-blue-400">
-                <option value="todos">Todos</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="en_ejecucion">En ejecución</option>
-                <option value="completado">Completado</option>
-                <option value="bloqueado">Bloqueado</option>
-              </select>
-            </div>
-            <div class="flex items-center gap-2">
-              <label class="text-xs font-medium text-gray-500">Tipo:</label>
-              <select [(ngModel)]="filtroTipoTarea"
-                class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-1 focus:ring-blue-400">
-                <option value="todas">Todas</option>
-                <option value="conActividad">Con actividad</option>
-                <option value="sinActividad">Generales</option>
-              </select>
-            </div>
-            <button (click)="limpiarFiltrosTareas()"
-              class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition">
-              <i class="bi bi-x-circle"></i>Limpiar
-            </button>
-          </div>
-
-          <!-- Sin tareas -->
-          <div *ngIf="tareasPlanasFiltradas.length === 0 && !showInlineTask"
-            class="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <i class="bi bi-inbox text-gray-300 text-3xl block mb-2"></i>
-            <p class="text-sm text-gray-400">No hay tareas que coincidan.</p>
-          </div>
-
-          <!-- Lista de tareas -->
-          <div class="space-y-1">
-
-            <ng-container *ngFor="let tarea of tareasPlanasFiltradas">
-
-              <!-- FILA EDICIÓN INLINE -->
-              <div *ngIf="inlineEditId === tarea.id"
-                data-inline-edit-row
-                class="bg-white rounded-xl border-2 border-amber-400 shadow-sm p-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full flex-shrink-0"
-                    [ngClass]="state.getSemaforoClass(tarea.semaforo)"></span>
-
-                  <input data-edit-title type="text" [(ngModel)]="inlineEditForm.titulo"
-                    (keydown)="onInlineEditKeydown($event)"
-                    class="flex-1 text-sm font-medium outline-none border-b border-gray-200
-                           focus:border-amber-400 bg-transparent pb-0.5 min-w-0">
-
-                  <!-- Estado dropdown -->
-                  <div class="relative flex-shrink-0" data-inline-edit-estado>
-                    <button (click)="showInlineEditEstado = !showInlineEditEstado; $event.stopPropagation()"
-                      class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border cursor-pointer"
-                      [ngClass]="state.getEstadoBadgeClass(inlineEditForm.estado)">
-                      {{ state.getEstadoLabel(inlineEditForm.estado) }}
-                      <i class="bi bi-chevron-down" style="font-size:9px"></i>
-                    </button>
-                    <div *ngIf="showInlineEditEstado"
-                      class="absolute top-full right-0 mt-1 w-44 bg-white border border-gray-200
-                             rounded-xl shadow-xl z-50 p-1" (click)="$event.stopPropagation()">
-                      <div *ngFor="let est of [
-                          {v:'pendiente',l:'Pendiente'},{v:'en_ejecucion',l:'En ejecución'},
-                          {v:'completado',l:'Completado'},{v:'bloqueado',l:'Bloqueado'}
-                        ]"
-                        (click)="inlineEditForm.estado = est.v; showInlineEditEstado = false"
-                        class="flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-gray-50 cursor-pointer">
-                        {{ est.l }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Fecha -->
-                  <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega"
-                    class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none
-                           focus:border-amber-400 text-gray-500 flex-shrink-0">
-
-                  <!-- Guardar -->
-                  <button (click)="guardarEdicionInline()"
-                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition flex-shrink-0"
-                    title="Guardar (Enter)">
-                    <i class="bi bi-check-lg"></i>
-                  </button>
-                  <!-- Cancelar -->
-                  <button (click)="cancelarEdicionInline()"
-                    class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
-                    title="Cancelar (Esc)">
-                    <i class="bi bi-x"></i>
-                  </button>
-                </div>
-                <!-- Descripción editable -->
-                <div class="flex items-center gap-2 mt-2 pl-4">
-                  <i class="bi bi-text-left text-gray-300 text-xs"></i>
-                  <input type="text" [(ngModel)]="inlineEditForm.descripcion"
-                    (keydown)="onInlineEditKeydown($event)"
-                    placeholder="Descripción (opcional)…"
-                    class="flex-1 text-xs outline-none bg-transparent border-b border-gray-100
-                           focus:border-amber-300 placeholder-gray-400 pb-0.5">
-                </div>
-              </div>
-
-              <!-- FILA NORMAL -->
-              <div *ngIf="inlineEditId !== tarea.id"
-                class="bg-white rounded-xl border border-gray-200 px-3 py-2.5
-                       flex items-start justify-between hover:border-gray-300 hover:shadow-sm transition">
-
-                <div class="flex items-start gap-2.5 min-w-0 flex-1">
-                  <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                    [ngClass]="state.getSemaforoClass(tarea.semaforo)"></span>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-medium text-gray-800"
-                        [ngClass]="{'line-through text-gray-400': tarea.estado === 'completado'}">
-                        {{ tarea.titulo }}
-                      </span>
-                      <span class="text-xs px-1.5 py-0.5 rounded-full"
-                        [ngClass]="state.getEstadoBadgeClass(tarea.estado)">
-                        {{ tarea.estado | uppercase }}
-                      </span>
-                      <!-- Tag actividad -->
-                      <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full
-                                   flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full"
-                          [ngClass]="state.getSemaforoClass(tarea.actividadSemaforo)"></span>
-                        {{ tarea.actividadTitulo }}
-                      </span>
-                      <!-- Avatares responsables -->
-                      <div *ngIf="(tarea.responsables || []).length" class="flex items-center">
-                        <div *ngFor="let rid of (tarea.responsables || []).slice(0, 3); let i = index"
-                          class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs
-                                 font-bold ring-1 ring-white flex-shrink-0"
-                          [class.-ml-1]="i > 0"
-                          [ngClass]="state.getColorPorId(rid)"
-                          [title]="state.nombreUsuario(rid)">
-                          {{ state.getInicialesResponsable(rid) }}
-                        </div>
-                        <span *ngIf="(tarea.responsables || []).length > 3"
-                          class="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center
-                                 justify-center text-xs ring-1 ring-white -ml-1 font-medium">
-                          +{{ (tarea.responsables || []).length - 3 }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div *ngIf="tarea.descripcion" class="text-xs text-gray-500 mt-0.5 truncate max-w-sm">
-                      {{ tarea.descripcion }}
-                    </div>
-                    <div *ngIf="tarea.fecha_limite_entrega" class="text-xs text-gray-400 mt-0.5">
-                      <i class="bi bi-calendar-event mr-1"></i>
-                      {{ tarea.fecha_limite_entrega | date:'dd/MM/yyyy HH:mm':'UTC' }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Acciones tarea -->
-                <div class="flex items-center gap-0.5 flex-shrink-0 ml-2">
-                  <button *ngIf="puedeCompletarTarea(tarea) && tarea.estado !== 'completado'"
-                    (click)="completarTarea(tarea); $event.stopPropagation()"
-                    class="seg-icon-btn hover:text-green-600" title="Completar">
-                    <i class="bi bi-check-circle"></i>
-                  </button>
-                  <button *ngIf="detalle && (esAdminProyecto(detalle) || tarea.creado_por === usuarioId)"
-                    (click)="activarEdicionInline(tarea); $event.stopPropagation()"
-                    class="seg-icon-btn hover:text-amber-600" title="Editar en línea">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button *ngIf="detalle && esAdminProyecto(detalle)"
-                    (click)="abrirEditarTarea(tarea); $event.stopPropagation()"
-                    class="seg-icon-btn hover:text-blue-600" title="Editar (modal completo)">
-                    <i class="bi bi-three-dots-vertical"></i>
-                  </button>
-                  <button *ngIf="detalle && esAdminProyecto(detalle)"
-                    (click)="moverTarea(tarea); $event.stopPropagation()"
-                    class="seg-icon-btn hover:text-indigo-600" title="Mover a actividad">
-                    <i class="bi bi-arrow-left-right"></i>
-                  </button>
-                  <button *ngIf="detalle && (esAdminProyecto(detalle) || tarea.creado_por === usuarioId)"
-                    (click)="eliminarTarea(tarea); $event.stopPropagation()"
-                    class="seg-icon-btn hover:text-red-600" title="Eliminar">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </div>
-
-            </ng-container>
-
-            <!-- FILA INLINE CREAR (lista plana) -->
-            <div *ngIf="showInlineTask && inlineTaskForm.actividad_id === null"
-              data-inline-task-row
-              class="bg-white rounded-xl border-2 border-blue-400 shadow-sm p-3">
-              <div class="flex items-center gap-2">
-                <i class="bi bi-circle text-gray-300 text-xs flex-shrink-0"></i>
-                <input data-inline-title type="text" [(ngModel)]="inlineTaskForm.titulo"
-                  (keydown)="onInlineKeydown($event)"
-                  placeholder="Nombre de la tarea… (Enter = guardar y continuar, Esc = cerrar)"
-                  class="flex-1 text-sm outline-none placeholder-gray-400 bg-transparent min-w-0">
-
-                <!-- Estado -->
-                <div class="relative flex-shrink-0" data-inline-estado>
-                  <button (click)="showInlineEstado = !showInlineEstado; $event.stopPropagation()"
-                    class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full
-                           border cursor-pointer"
-                    [ngClass]="state.getEstadoBadgeClass(inlineTaskForm.estado)">
-                    {{ state.getEstadoLabel(inlineTaskForm.estado) }}
-                    <i class="bi bi-chevron-down" style="font-size:9px"></i>
-                  </button>
-                  <div *ngIf="showInlineEstado"
-                    class="absolute top-full right-0 mt-1 w-44 bg-white border border-gray-200
-                           rounded-xl shadow-xl z-50 p-1" (click)="$event.stopPropagation()">
-                    <div *ngFor="let est of [
-                        {v:'pendiente',l:'Pendiente'},{v:'en_ejecucion',l:'En ejecución'},
-                        {v:'completado',l:'Completado'},{v:'bloqueado',l:'Bloqueado'}
-                      ]"
-                      (click)="inlineTaskForm.estado = est.v; showInlineEstado = false"
-                      class="flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-gray-50 cursor-pointer">
-                      {{ est.l }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Fecha -->
-                <input type="datetime-local" [(ngModel)]="inlineTaskForm.fecha_limite_entrega"
-                  class="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none
-                         focus:border-blue-400 text-gray-500 flex-shrink-0">
-
-                <!-- Indicador guardando -->
-                <span *ngIf="inlineState === 'saving'"
-                  class="text-xs text-blue-500 animate-pulse flex-shrink-0 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></span>
-                  Guardando…
-                </span>
-
-                <!-- Cerrar -->
-                <button (click)="cancelarFilaInline(); $event.stopPropagation()"
-                  class="p-1.5 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded-lg transition flex-shrink-0"
-                  title="Cerrar (Esc)">
-                  <i class="bi bi-x text-sm"></i>
-                </button>
-              </div>
-
-              <!-- Descripción inline -->
-              <div class="flex items-center gap-2 mt-2 pl-5 border-t border-blue-50 pt-2">
-                <i class="bi bi-text-left text-blue-200 text-xs"></i>
-                <input type="text" [(ngModel)]="inlineTaskForm.descripcion"
-                  placeholder="Descripción (opcional)…"
-                  class="flex-1 text-xs outline-none bg-transparent placeholder-gray-400 py-0.5">
-              </div>
-            </div>
-          </div>
-
-          <!-- Botón + Añadir tarea -->
-          <button *ngIf="!showInlineTask && detalle && puedeCrearEnProyecto(detalle)"
-            (click)="abrirFilaInline(null)"
-            class="w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-gray-400
-                   hover:text-blue-600 hover:bg-blue-50 rounded-xl transition group
-                   border border-transparent hover:border-blue-200">
-            <i class="bi bi-plus-circle group-hover:scale-110 transition-transform"></i>
-            <span>Añadir tarea</span>
-          </button>
-
-        </ng-container>
-
-        <!-- ══ VISTA ACTIVIDADES ══ -->
-        <ng-container *ngIf="vistaDetalle === 'actividades'">
-
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
-              <i class="bi bi-list-task text-gray-400"></i>Actividades
-            </h3>
-            <button *ngIf="detalle && puedeCrearEnProyecto(detalle)" (click)="abrirCrearActividad()"
-              class="flex items-center gap-1.5 text-sm font-medium text-blue-600
-                     hover:bg-blue-50 px-3 py-1.5 rounded-lg transition">
-              <i class="bi bi-plus-lg"></i>Nueva actividad
-            </button>
-          </div>
-
-          <!-- Lista de actividades expandibles -->
-          <div class="space-y-2">
-            <div *ngFor="let act of (detalle?.actividades ?? [])"
-              class="border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition">
-
-              <!-- Cabecera actividad -->
-              <div class="p-4 cursor-pointer hover:bg-gray-50 transition select-none"
-                (click)="toggleActividad(act.id)">
-                <div class="flex items-center gap-3">
-                  <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    [ngClass]="state.getSemaforoClass(act.semaforo)"></span>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="font-semibold text-gray-800 text-sm">{{ act.titulo }}</span>
-                      <span class="text-xs px-2 py-0.5 rounded-full"
-                        [ngClass]="state.getEstadoBadgeClass(act.estado)">
-                        {{ act.estado | uppercase }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-3 flex-shrink-0 text-xs text-gray-500">
-                    <span class="font-medium">
-                      {{ act.tareas_completadas || 0 }}/{{ act.total_tareas || 0 }}
-                    </span>
-                    <span class="font-semibold text-blue-600">
-                      {{ calcularProgreso(act) }}%
-                    </span>
-                    <i class="bi text-gray-400"
-                      [ngClass]="actividadExpandidaId === act.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tareas de la actividad -->
-              <div *ngIf="actividadExpandidaId === act.id" class="border-t border-gray-100 bg-gray-50">
-                <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
-                  <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tareas</span>
-                  <div class="flex gap-1">
-                    <button *ngIf="detalle && puedeEditarProyecto(detalle)"
-                      (click)="abrirEditarActividad(act); $event.stopPropagation()"
-                      class="seg-icon-btn text-xs" title="Editar actividad">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button *ngIf="detalle && esAdminProyecto(detalle)"
-                      (click)="eliminarActividad(act); $event.stopPropagation()"
-                      class="seg-icon-btn text-xs hover:text-red-600" title="Eliminar actividad">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                    <button *ngIf="detalle && puedeCrearEnProyecto(detalle)"
-                      (click)="abrirCrearTarea(act.id); $event.stopPropagation()"
-                      class="flex items-center gap-1 text-xs font-medium text-blue-600
-                             hover:bg-blue-50 px-2 py-1 rounded-lg transition">
-                      <i class="bi bi-plus-lg"></i>Nueva tarea
-                    </button>
-                  </div>
-                </div>
-
-                <div *ngFor="let t of (act.tareas ?? [])"
-                  class="flex items-center justify-between px-4 py-2 border-b border-gray-100 last:border-b-0
-                         hover:bg-white transition">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      [ngClass]="state.getSemaforoClass(t.semaforo)"></span>
-                    <span class="text-sm text-gray-700 truncate"
-                      [ngClass]="{'line-through text-gray-400': t.estado === 'completado'}">
-                      {{ t.titulo }}
-                    </span>
-                    <span class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                      [ngClass]="state.getEstadoBadgeClass(t.estado)">
-                      {{ t.estado | uppercase }}
-                    </span>
-                  </div>
-                  <div class="flex items-center gap-0.5 flex-shrink-0">
-                    <button *ngIf="puedeCompletarTarea(t) && t.estado !== 'completado'"
-                      (click)="completarTarea(t); $event.stopPropagation()"
-                      class="seg-icon-btn text-xs hover:text-green-600" title="Completar">
-                      <i class="bi bi-check-circle"></i>
-                    </button>
-                    <button *ngIf="detalle && esAdminProyecto(detalle)"
-                      (click)="abrirEditarTarea(t); $event.stopPropagation()"
-                      class="seg-icon-btn text-xs hover:text-blue-600" title="Editar">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button *ngIf="detalle && esAdminProyecto(detalle)"
-                      (click)="eliminarTarea(t); $event.stopPropagation()"
-                      class="seg-icon-btn text-xs hover:text-red-600" title="Eliminar">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Inline crear en actividad -->
-                <div *ngIf="showInlineTask && inlineTaskForm.actividad_id === act.id"
-                  data-inline-task-row class="px-3 py-2 border-t border-blue-100 bg-blue-50">
-                  <div class="flex items-center gap-2">
-                    <i class="bi bi-circle text-blue-200 text-xs flex-shrink-0"></i>
-                    <input data-inline-title type="text" [(ngModel)]="inlineTaskForm.titulo"
-                      (keydown)="onInlineKeydown($event)"
-                      placeholder="Nombre de la tarea…"
-                      class="flex-1 text-sm outline-none bg-transparent placeholder-gray-400 min-w-0">
-                    <span *ngIf="inlineState === 'saving'"
-                      class="text-xs text-blue-500 animate-pulse flex-shrink-0">Guardando…</span>
-                    <button (click)="cancelarFilaInline(); $event.stopPropagation()"
-                      class="seg-icon-btn flex-shrink-0">
-                      <i class="bi bi-x"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <button *ngIf="!(showInlineTask && inlineTaskForm.actividad_id === act.id)
-                               && detalle && puedeCrearEnProyecto(detalle)"
-                  (click)="abrirFilaInline(act.id); $event.stopPropagation()"
-                  class="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-gray-400
-                         hover:text-blue-600 hover:bg-blue-50 transition group">
-                  <i class="bi bi-plus-circle group-hover:scale-110 transition-transform"></i>
-                  Añadir tarea a esta actividad
-                </button>
-              </div>
-            </div>
-
-            <!-- Empty actividades -->
-            <div *ngIf="!(detalle?.actividades?.length)"
-              class="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <i class="bi bi-list-task text-gray-300 text-3xl block mb-2"></i>
-              <p class="text-sm text-gray-400">Este proyecto no tiene actividades aún.</p>
-            </div>
-          </div>
-
-        </ng-container>
-
-      </div>
-      <!-- /área scrollable -->
-    </ng-container>
-  </div>
-</div>
-<!-- /Panel detalle -->
-
+<app-proyecto-detalle
+  [show]="showDetalle"
+  [detalle]="detalle"
+  [loading]="loadingDetalle"
+  [vistaDetalle]="vistaDetalle"
+  [tareasPlanas]="tareasPlanasFiltradas"
+  [usuarioId]="usuarioId"
+  [puedeGestionarModulo]="puedeGestionarModulo"
+  [aplicandoPlantilla]="aplicandoPlantilla"
+  [calculandoFechas]="calculandoFechas"
+  (onCerrar)="cerrarDetalle()"
+  (onAbrirPermisos)="abrirModalPermisos()"
+  (onAbrirPlantillas)="abrirModalPlantillas()"
+  (onCalcularFechas)="calcularFechasTareas()"
+  (onRefresh)="_refreshDetalle($event)"
+  (onEditTarea)="abrirModalTarea($event)"
+  (onEditActividad)="abrirModalActividad($event)"
+  (onChangeVista)="vistaDetalle = $event">
+</app-proyecto-detalle>
 
 <!-- ══════════════════════════════════════════════════════════════════
      MODALES
@@ -913,12 +392,13 @@
 <app-modal-actividad
   [show]="showModalActividad"
   [actividad]="actividadParaEditar"
-  [proyecto]="actividadProyecto"
+  [proyecto]="detalle"
   [saving]="savingActividad"
   (onCerrar)="showModalActividad = false"
   (onGuardar)="onGuardarActividad($event)">
 </app-modal-actividad>
 
+<!-- Modal Tarea -->
 <app-modal-tarea
   [show]="showModalTarea"
   [tarea]="tareaParaEditar"
@@ -931,3 +411,31 @@
   (onCerrar)="showModalTarea = false"
   (onGuardar)="onGuardarTarea($event)">
 </app-modal-tarea>
+
+<!-- Modal Permisos -->
+<app-modal-permisos-proyecto
+  [show]="showModalPermisos"
+  [proyectoId]="detalle?.id ?? null"
+  [usuarioId]="usuarioId"
+  [usuarios]="usuariosDisponibles"
+  (onCerrar)="showModalPermisos = false">
+</app-modal-permisos-proyecto>
+
+<!-- Modal Auto-programar Fechas -->
+<app-modal-calcular-fechas
+  [show]="showModalCalcularFechas"
+  [proyectoId]="detalle?.id || null"
+  [usuarioId]="usuarioId"
+  [usuarios]="usuariosDisponibles"
+  (onCerrar)="showModalCalcularFechas = false"
+  (onCalculado)="_refreshDetalle(true)">
+</app-modal-calcular-fechas>
+
+<!-- Modal Selección de Plantilla -->
+<app-modal-plantilla-proyecto
+  [show]="showModalPlantilla"
+  [loading]="loadingPlantillas"
+  [plantillas]="plantillas"
+  (onCerrar)="showModalPlantilla = false"
+  (onSeleccionar)="aplicarPlantillaAProyecto($event)">
+</app-modal-plantilla-proyecto>

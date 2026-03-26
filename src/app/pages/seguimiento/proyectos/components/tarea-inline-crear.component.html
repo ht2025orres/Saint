@@ -1,0 +1,110 @@
+<div data-inline-task-row
+  class="bg-white rounded-2xl border-2 border-blue-400 shadow-xl p-3 animate-in slide-in-from-bottom-4 duration-300">
+  
+  <div class="flex items-center gap-3 mb-2">
+    <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+      <i class="mdi mdi-plus-circle-outline text-lg"></i>
+    </div>
+    <input data-inline-title type="text" [(ngModel)]="inlineTaskForm.titulo"
+      (keydown)="onInlineKeydown($event)"
+      placeholder="¿Qué tarea quieres añadir? (Enter para guardar)"
+      class="flex-1 text-xs font-black text-slate-800 outline-none border-b-2 border-slate-50
+             focus:border-blue-400 bg-transparent pb-1 min-w-0 transition-colors">
+    
+    <div class="flex items-center gap-0.5">
+      <button (click)="guardarTareaInline()" [disabled]="saving"
+        class="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+        title="Guardar (Enter)">
+        <i *ngIf="!saving" class="mdi mdi-check text-lg"></i>
+        <div *ngIf="saving" class="w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+      </button>
+      <button (click)="onCancel.emit()"
+        class="w-8 h-8 flex items-center justify-center text-slate-400 hover:bg-slate-50 rounded-lg transition-all"
+        title="Cancelar (Esc)">
+        <i class="mdi mdi-close text-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-2 pl-10">
+    <!-- Estado -->
+    <div class="relative" data-inline-estado>
+      <label class="block text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Estado</label>
+      <button (click)="showInlineEstado = !showInlineEstado"
+        class="w-full inline-flex items-center justify-between gap-1.5 px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border-2 shadow-sm transition-all"
+        [ngClass]="state.getEstadoBadgeClass(inlineTaskForm.estado)">
+        <span class="flex items-center gap-1.5">
+          <i [class]="'mdi ' + state.getEstadoIcon(inlineTaskForm.estado)"></i>
+          {{ state.getEstadoLabel(inlineTaskForm.estado) }}
+        </span>
+        <i class="mdi mdi-chevron-down opacity-50"></i>
+      </button>
+      <div *ngIf="showInlineEstado"
+        class="absolute top-full left-0 mt-1 w-40 bg-white border border-slate-100
+               rounded-xl shadow-2xl z-50 p-1 animate-in fade-in slide-in-from-top-1" (click)="$event.stopPropagation()">
+        <div *ngFor="let est of [
+            {v:'pendiente',l:'Pendiente',i:'mdi-clock-outline'},
+            {v:'en_ejecucion',l:'En ejecución',i:'mdi-play-circle-outline'},
+            {v:'completado',l:'Completado',i:'mdi-check-circle-outline'},
+            {v:'bloqueado',l:'Bloqueado',i:'mdi-alert-circle-outline'}
+          ]"
+          (click)="inlineTaskForm.estado = est.v; showInlineEstado = false"
+          class="flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+          <i class="mdi" [class]="est.i"></i>
+          {{ est.l }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Fecha -->
+    <div>
+      <label class="block text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Fecha Límite</label>
+      <input type="datetime-local" [(ngModel)]="inlineTaskForm.fecha_limite_entrega"
+        class="w-full text-[9px] font-bold text-slate-600 border-2 border-slate-50 rounded-lg px-2 py-1 outline-none
+               focus:border-blue-400 bg-slate-50/50 focus:bg-white transition-all shadow-sm">
+    </div>
+
+    <!-- Asignado -->
+    <div class="relative" data-inline-asignado>
+      <label class="block text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Responsable</label>
+      <button (click)="showInlineAsignado = !showInlineAsignado"
+        class="w-full flex items-center gap-1.5 px-2 py-1 bg-slate-50/50 border-2 border-slate-50 rounded-lg hover:border-blue-200 transition-all text-left shadow-sm"
+        [ngClass]="{'bg-white border-blue-100': inlineTaskForm.asignado_id}">
+        <div class="w-5 h-5 rounded flex items-center justify-center text-white text-[8px] font-black shadow-sm"
+          [ngClass]="inlineTaskForm.asignado_id ? state.getColorPorId(inlineTaskForm.asignado_id) : 'bg-slate-300'">
+          {{ inlineTaskForm.asignado_id ? state.getInicialesResponsable(inlineTaskForm.asignado_id) : '?' }}
+        </div>
+        <span class="text-[9px] font-bold text-slate-600 truncate">
+          {{ inlineAsignadoNombre || 'Sin asignar' }}
+        </span>
+        <i class="mdi mdi-chevron-down ml-auto text-slate-400"></i>
+      </button>
+      <div *ngIf="showInlineAsignado"
+        class="absolute top-full right-0 mt-1 w-56 bg-white border border-slate-100
+               rounded-xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-1" (click)="$event.stopPropagation()">
+        <div class="relative mb-2">
+          <i class="mdi mdi-magnify absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" [(ngModel)]="inlineBusqResp" placeholder="Buscar..."
+            class="w-full text-[10px] pl-7 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg outline-none focus:border-blue-400">
+        </div>
+        <div class="max-h-40 overflow-y-auto custom-scrollbar">
+          <div *ngFor="let u of inlineUsuariosFiltrados"
+            (click)="inlineTaskForm.asignado_id = u.id; showInlineAsignado = false"
+            class="flex items-center gap-2 px-2 py-1.5 text-[10px] font-bold text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-black shadow-sm"
+              [ngClass]="state.getColorPorId(u.id)">{{ state.getInicialesResponsable(u.id) }}</div>
+            <span class="truncate">{{ u.nombre }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Descripción -->
+  <div class="flex items-center gap-2 mt-3 pl-10 border-t border-slate-50 pt-2">
+    <i class="mdi mdi-text-align-left text-slate-300 text-base"></i>
+    <input type="text" [(ngModel)]="inlineTaskForm.descripcion"
+      placeholder="Descripción opcional..."
+      class="flex-1 text-[9px] font-medium text-slate-500 outline-none bg-transparent placeholder-slate-300 transition-colors">
+  </div>
+</div>

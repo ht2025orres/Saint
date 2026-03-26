@@ -1,146 +1,254 @@
 <!-- MODAL TAREA — Crear / Editar -->
 <div
   *ngIf="show"
-  class="fixed inset-0 z-50 flex items-center justify-center p-4"
-  style="background: rgba(15,23,42,0.55);"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+  style="background: rgba(15,23,42,0.65);"
   (click)="cerrar()"
 >
   <div
-    class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+    class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200"
     (click)="$event.stopPropagation()"
   >
 
-    <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-          [ngClass]="esEdicion ? 'bg-amber-50' : 'bg-indigo-50'">
-          <i class="bi text-sm"
-            [ngClass]="esEdicion ? 'bi-pencil text-amber-600' : 'bi-check2-square text-indigo-600'"></i>
+    <!-- Header Premium -->
+    <div class="relative px-8 py-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-inner"
+            [ngClass]="esEdicion ? 'bg-amber-500 text-white' : 'bg-blue-600 text-white'">
+            <i class="bi text-xl"
+              [ngClass]="esEdicion ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+          </div>
+          <div>
+            <h2 class="font-black text-gray-900 text-xl tracking-tight">{{ titulo }}</h2>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+              {{ esEdicion ? 'Modificar detalles de la tarea existente' : 'Registrar una nueva tarea de seguimiento' }}
+            </p>
+          </div>
         </div>
-        <h2 class="font-semibold text-gray-900 text-base">{{ titulo }}</h2>
+        <button (click)="cerrar()"
+          class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
-      <button (click)="cerrar()"
-        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-        <i class="bi bi-x-lg text-sm"></i>
-      </button>
     </div>
 
-    <!-- Form -->
-    <form [formGroup]="form" (ngSubmit)="guardar()" class="px-6 py-5 space-y-4">
+    <!-- Body Scrollable -->
+    <div [formGroup]="form" class="px-8 py-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
 
-      <!-- Actividad (si hay opciones) -->
-      <div *ngIf="actividades.length > 0">
-        <label class="seg-label">Actividad</label>
-        <select formControlName="actividad_id" class="seg-input">
-          <option [ngValue]="null">Sin actividad (tarea general)</option>
-          <option *ngFor="let a of actividades" [value]="a.id">{{ a.titulo }}</option>
-        </select>
-      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Columna Izquierda: Información Básica -->
+        <div class="space-y-5">
+          <!-- Actividad -->
+          <div *ngIf="actividades.length > 0">
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Actividad Relacionada</label>
+            <div class="relative">
+              <select formControlName="actividad_id" class="w-full pl-4 pr-10 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-sm font-bold text-gray-700 focus:bg-white focus:border-blue-100 transition-all appearance-none outline-none">
+                <option [ngValue]="null">Sin actividad (General)</option>
+                <option *ngFor="let a of actividades" [value]="a.id">{{ a.titulo }}</option>
+              </select>
+              <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            </div>
+          </div>
 
-      <!-- Título -->
-      <div>
-        <label class="seg-label">Título <span class="text-red-400">*</span></label>
-        <input
-          formControlName="titulo"
-          type="text"
-          placeholder="Descripción de la tarea…"
-          class="seg-input"
-          [class.border-red-300]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
-        >
-      </div>
+          <!-- Título -->
+          <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Título de la Tarea <span class="text-red-500">*</span></label>
+            <input
+              formControlName="titulo"
+              type="text"
+              placeholder="Ej: Revisión de informes mensuales..."
+              class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:bg-white focus:border-blue-100 transition-all outline-none"
+              [class.border-red-100]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
+            >
+          </div>
 
-      <!-- Descripción -->
-      <div>
-        <label class="seg-label">Descripción</label>
-        <textarea formControlName="descripcion" rows="2" class="seg-input resize-none"
-          placeholder="Detalles adicionales…"></textarea>
-      </div>
-
-      <!-- Estado + Fecha -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="seg-label">Estado</label>
-          <select formControlName="estado" class="seg-input">
-            <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
-          </select>
-        </div>
-        <div>
-          <label class="seg-label">Fecha límite</label>
-          <input formControlName="fecha_limite_entrega" type="datetime-local" class="seg-input">
-        </div>
-      </div>
-
-      <!-- Responsables -->
-      <div>
-        <label class="seg-label">Responsables</label>
-
-        <!-- Chips de seleccionados -->
-        <div *ngIf="responsablesSelec.length" class="flex flex-wrap gap-1.5 mb-2">
-          <div *ngFor="let r of responsablesSelec"
-            class="inline-flex items-center gap-1.5 px-2 py-1 bg-indigo-50
-                   border border-indigo-200 rounded-full text-xs text-indigo-700">
-            <span class="w-4 h-4 rounded-full bg-indigo-500 text-white
-                         flex items-center justify-center font-bold"
-              style="font-size: 9px;">
-              {{ r.nombre.charAt(0).toUpperCase() }}
-            </span>
-            {{ r.nombre }}
-            <button type="button" (click)="quitarResponsable(r.id)"
-              class="text-indigo-300 hover:text-red-400 transition leading-none ml-0.5">
-              <i class="bi bi-x"></i>
-            </button>
+          <!-- Descripción -->
+          <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Descripción Detallada</label>
+            <textarea formControlName="descripcion" rows="4" 
+              class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:bg-white focus:border-blue-100 transition-all outline-none resize-none"
+              placeholder="Describe los pasos o el objetivo de la tarea..."></textarea>
           </div>
         </div>
 
-        <!-- Buscador -->
-        <div class="relative">
-          <input
-            type="text"
-            [(ngModel)]="busquedaResp"
-            [ngModelOptions]="{standalone: true}"
-            (focus)="showRespDropdown = true"
-            placeholder="Buscar y agregar responsable…"
-            class="seg-input pr-8"
-            autocomplete="off"
-          >
-          <i class="bi bi-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-
-          <!-- Dropdown resultados -->
-          <div *ngIf="showRespDropdown && usuariosFiltrados.length"
-            class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl
-                   shadow-xl border border-gray-200 z-20 py-1 max-h-48 overflow-y-auto">
-            <div *ngFor="let u of usuariosFiltrados"
-              (mousedown)="agregarResponsable(u)"
-              class="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer">
-              <div class="w-6 h-6 rounded-full bg-indigo-500 text-white
-                          flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {{ u.nombre.charAt(0).toUpperCase() }}
+        <!-- Columna Derecha: Estado, Fecha y Responsables -->
+        <div class="space-y-5">
+          <!-- Estado + Fecha -->
+          <div class="grid grid-cols-1 gap-5">
+            <div>
+              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Estado Actual</label>
+              <div class="relative">
+                <select formControlName="estado" class="w-full pl-4 pr-10 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-sm font-bold text-gray-700 focus:bg-white focus:border-blue-100 transition-all appearance-none outline-none">
+                  <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
+                </select>
+                <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
               </div>
-              <span class="text-sm text-gray-700">{{ u.nombre }}</span>
+            </div>
+            <div>
+              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Fecha Límite de Entrega</label>
+              <div class="relative">
+                <input formControlName="fecha_limite_entrega" type="datetime-local" 
+                  class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-sm font-bold text-gray-700 focus:bg-white focus:border-blue-100 transition-all outline-none">
+                <i class="bi bi-calendar-event absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsables (Solo Gestores pueden cambiar) -->
+          <div>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Responsables Asignados</label>
+
+            <!-- Chips de seleccionados -->
+            <div *ngIf="responsablesSelec.length" class="flex flex-wrap gap-2 mb-3">
+              <div *ngFor="let r of responsablesSelec"
+                class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-700 animate-in fade-in zoom-in duration-200">
+                <div class="w-5 h-5 rounded-lg flex items-center justify-center text-[9px] text-white font-black" [ngClass]="'bg-blue-500'">
+                  {{ r.nombre.charAt(0).toUpperCase() }}
+                </div>
+                {{ r.nombre }}
+                <button *ngIf="esAdmin" type="button" (click)="quitarResponsable(r.id)"
+                  class="text-blue-300 hover:text-red-500 transition-colors ml-1">
+                  <i class="bi bi-x-circle-fill"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Buscador (Solo visible para Gestores) -->
+            <div class="relative" *ngIf="esAdmin">
+              <input
+                type="text"
+                [(ngModel)]="busquedaResp"
+                [ngModelOptions]="{standalone: true}"
+                (focus)="showRespDropdown = true"
+                placeholder="Buscar administrador del sistema..."
+                class="w-full pl-10 pr-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-xs font-bold text-gray-700 placeholder:text-gray-300 focus:bg-white focus:border-blue-100 transition-all outline-none"
+                autocomplete="off"
+              >
+              <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+
+              <!-- Dropdown resultados -->
+              <div *ngIf="showRespDropdown && usuariosFiltrados.length"
+                class="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl
+                       shadow-2xl border border-gray-100 z-50 py-2 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2">
+                <div *ngFor="let u of usuariosFiltrados"
+                  (mousedown)="agregarResponsable(u)"
+                  class="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors group">
+                  <div class="w-7 h-7 rounded-xl bg-gray-100 text-gray-500 group-hover:bg-blue-500 group-hover:text-white
+                              flex items-center justify-center text-[10px] font-black transition-all">
+                    {{ u.nombre.charAt(0).toUpperCase() }}
+                  </div>
+                  <span class="text-xs font-bold text-gray-700 group-hover:text-blue-700">{{ u.nombre }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="!esAdmin" class="p-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3 text-gray-400">
+              <i class="bi bi-info-circle"></i>
+              <span class="text-[10px] font-bold uppercase tracking-widest">Solo los gestores pueden reasignar responsables</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Notas -->
-      <div *ngIf="esAdmin">
-        <label class="seg-label">Notas internas</label>
-        <textarea formControlName="notas" rows="2" class="seg-input resize-none"
-          placeholder="Notas visibles solo para gestores…"></textarea>
+      <!-- Notas (Accesibles para todos) -->
+      <div class="pt-2">
+        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Notas de Seguimiento</label>
+        <textarea formControlName="notas" rows="2" 
+          class="w-full px-4 py-3 bg-amber-50/30 border-2 border-amber-50 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-100 transition-all outline-none resize-none"
+          placeholder="Escribe notas relevantes sobre el progreso..."></textarea>
       </div>
 
-      <!-- Footer -->
-      <div class="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">
-        <button type="button" (click)="cerrar()" class="seg-btn-secondary">Cancelar</button>
-        <button type="submit" [disabled]="form.invalid || saving" class="seg-btn-primary">
-          <span *ngIf="saving"
-            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2">
-          </span>
-          {{ saving ? 'Guardando…' : (esEdicion ? 'Actualizar' : 'Crear tarea') }}
-        </button>
+      <!-- Sección de Evidencias -->
+      <div class="pt-2">
+        <div class="flex items-center justify-between mb-3">
+          <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Evidencias y Documentos</label>
+          
+          <!-- Toggle Histórico (Solo Gestores) -->
+          <button *ngIf="esAdmin && esEdicion" 
+            (click)="verHistoricoEvidencias = !verHistoricoEvidencias; cargarEvidencias()"
+            class="text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-all"
+            [ngClass]="verHistoricoEvidencias ? 'bg-amber-100 text-amber-700' : 'text-gray-400 hover:bg-gray-100'">
+            <i class="bi mr-1" [ngClass]="verHistoricoEvidencias ? 'bi-eye-fill' : 'bi-eye-slash'"></i>
+            {{ verHistoricoEvidencias ? 'Viendo Histórico' : 'Ver Histórico' }}
+          </button>
+        </div>
+
+        <!-- Lista de Evidencias Actuales -->
+        <div class="space-y-2 mb-4" *ngIf="evidencias.length > 0">
+          <div *ngFor="let ev of evidencias" 
+            class="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-2xl group transition-all"
+            [ngClass]="{'opacity-60 grayscale bg-gray-100': ev.deleted_at}">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-blue-500 shadow-sm">
+                <i class="bi text-lg" [ngClass]="state.getIconoMime(ev.tipo_mime)"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-gray-700 truncate max-w-[250px]">{{ ev.nombre_archivo }}</p>
+                <p class="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
+                  Subido {{ ev.created_at | date:'dd MMM, hh:mm a' }}
+                  <span *ngIf="ev.deleted_at" class="text-red-500 ml-1 font-black">— DESHABILITADO</span>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button (click)="verEvidencia(ev)" 
+                class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-blue-600 hover:border-blue-100 flex items-center justify-center transition-all shadow-sm"
+                title="Ver archivo">
+                <i class="bi bi-eye"></i>
+              </button>
+              
+              <!-- Botón Deshabilitar (Solo si no está borrado y es dueño o admin) -->
+              <button *ngIf="!ev.deleted_at" (click)="deshabilitarEvidencia(ev)"
+                class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-red-500 hover:border-red-100 flex items-center justify-center transition-all shadow-sm"
+                title="Deshabilitar">
+                <i class="bi bi-trash"></i>
+              </button>
+
+              <!-- Botón Restaurar (Solo si está borrado y es admin) -->
+              <button *ngIf="ev.deleted_at && esAdmin" (click)="restaurarEvidencia(ev)"
+                class="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                title="Restaurar">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zona de Carga (Dropzone) -->
+        <div class="relative">
+          <input type="file" (change)="onSubirArchivo($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="loadingEvidencias">
+          <div class="w-full p-8 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center gap-3 hover:bg-gray-50 hover:border-blue-100 transition-all group">
+            <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+              <i class="bi bi-cloud-arrow-up text-2xl" *ngIf="!loadingEvidencias"></i>
+              <div *ngIf="loadingEvidencias" class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                {{ loadingEvidencias ? 'Subiendo archivo...' : 'Haz clic o arrastra para subir evidencias' }}
+              </p>
+              <p class="text-[9px] text-gray-300 font-bold mt-1">PDF, Imágenes, Excel o Word (Max 20MB)</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-    </form>
+    </div>
+
+    <!-- Footer Premium -->
+    <div class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-3">
+      <button type="button" (click)="cerrar()" 
+        class="px-6 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 rounded-2xl transition-all">
+        Cancelar
+      </button>
+      <button type="button" (click)="guardar()" [disabled]="form.invalid || saving" 
+        class="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 disabled:shadow-none transition-all flex items-center">
+        <span *ngIf="saving"
+          class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-3">
+        </span>
+        {{ saving ? 'Procesando...' : (esEdicion ? 'Actualizar Cambios' : 'Crear Nueva Tarea') }}
+      </button>
+    </div>
+
   </div>
 </div>

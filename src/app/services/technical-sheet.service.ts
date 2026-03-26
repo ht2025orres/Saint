@@ -53,15 +53,15 @@ export class TechnicalSheetService {
     }
 
     saveProductImages(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
-        return this.http.put(`${this.urlEndPoint}/product/images/${id}/${idCompany}/${idItem}`, formData);
+        return this.http.post(`${this.urlEndPoint}/product/images/${id}/${idCompany}/${idItem}`, formData);
     }
 
     saveCharacteristicImages(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
-        return this.http.put(`${this.urlEndPoint}/product/characteristic/images/${id}/${idCompany}/${idItem}`, formData);
+        return this.http.post(`${this.urlEndPoint}/product/characteristic/images/${id}/${idCompany}/${idItem}`, formData);
     }
 
     saveLogoTechnicalDataSheetFile(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
-        return this.http.put(`${this.urlEndPoint}/product/embroidery/files/${id}/${idCompany}/${idItem}`, formData);
+        return this.http.post(`${this.urlEndPoint}/product/embroidery/files/${id}/${idCompany}/${idItem}`, formData);
     }
 
     getById(id: number): Observable<TechnicalDataSheet> {

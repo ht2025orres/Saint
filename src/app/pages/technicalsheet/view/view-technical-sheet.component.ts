@@ -131,6 +131,14 @@ export class ViewTechnicalSheetComponent implements OnInit {
   }
 
   // Load technical sheet by ID
+  goBack(): void {
+    if (this.technicalDataSheetCurrent && this.technicalDataSheetCurrent.status) {
+      this.router.navigate(['/listTechnicalDataSheet/page/0', this.technicalDataSheetCurrent.status], { queryParams: { restoreState: 'true' } });
+    } else {
+      this.router.navigate(['/listTechnicalDataSheet/page/0/DESARROLLO'], { queryParams: { restoreState: 'true' } });
+    }
+  }
+
   loadChip(id: any) {
     this.technicalSheetService.getById(id)
       .subscribe(
@@ -173,17 +181,17 @@ export class ViewTechnicalSheetComponent implements OnInit {
     switch (status) {
       case 'DESARROLLO': {
         this.technicalDataSheetCurrent.status = 'PRIMERA REVISION';
-        this.technicalDataSheetCurrent.qaComments = '';
-        this.technicalDataSheetCurrent.editComments = '';
+        this.technicalDataSheetCurrent.qa_comments = '';
+        this.technicalDataSheetCurrent.edit_comments = '';
         return 'PRIMERA REVISION';
       }
       case 'PRIMERA REVISION': {
-        this.technicalDataSheetCurrent.userValidation = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+        this.technicalDataSheetCurrent.user_validation = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
         this.technicalDataSheetCurrent.status = 'SEGUNDA REVISION';
         return 'SEGUNDA REVISION';
       }
       case 'SEGUNDA REVISION': {
-        this.technicalDataSheetCurrent.userApproved = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+        this.technicalDataSheetCurrent.user_approved = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
         this.technicalDataSheetCurrent.status = 'TERMINADO';
         return 'TERMINADO';
       }
@@ -205,17 +213,17 @@ export class ViewTechnicalSheetComponent implements OnInit {
     switch (status) {
       case 'DESARROLLO': {
         this.technicalDataSheetCurrent.status = 'ELIMINADO';
-        this.technicalDataSheetCurrent.qaComments = '';
-        this.technicalDataSheetCurrent.editComments = '';
+        this.technicalDataSheetCurrent.qa_comments = '';
+        this.technicalDataSheetCurrent.edit_comments = '';
         return 'DESARROLLO';
       }
       case 'PRIMERA REVISION': {
-        this.technicalDataSheetCurrent.userValidation = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
+        this.technicalDataSheetCurrent.user_validation = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
         this.technicalDataSheetCurrent.status = 'DESARROLLO';
         return 'PRIMERA REVISION';
       }
       case 'SEGUNDA REVISION': {
-        this.technicalDataSheetCurrent.userApproved = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
+        this.technicalDataSheetCurrent.user_approved = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
         this.technicalDataSheetCurrent.status = 'DESARROLLO';
         return 'SEGUNDA REVISION';
       }
@@ -261,12 +269,12 @@ export class ViewTechnicalSheetComponent implements OnInit {
     
     // Mapeamos todas las propiedades de imagen del technicalDataSheet
     const imageFields = [
-      { field: 'productImage1', alt: 'Imagen principal del producto 1' },
-      { field: 'productImage2', alt: 'Imagen principal del producto 2' },
-      { field: 'characteristicImage1', alt: 'Imagen caracteristica del producto 1' },
-      { field: 'characteristicImage2', alt: 'Imagen caracteristica del producto 2' },
-      { field: 'characteristicImage3', alt: 'Imagen caracteristica del producto 3' },
-      { field: 'characteristicImage4', alt: 'Imagen caracteristica del producto 4' },
+      { field: 'product_image_1', alt: 'Imagen principal del producto 1' },
+      { field: 'product_image_2', alt: 'Imagen principal del producto 2' },
+      { field: 'characteristic_image_1', alt: 'Imagen caracteristica del producto 1' },
+      { field: 'characteristic_image_2', alt: 'Imagen caracteristica del producto 2' },
+      { field: 'characteristic_image_3', alt: 'Imagen caracteristica del producto 3' },
+      { field: 'characteristic_image_4', alt: 'Imagen caracteristica del producto 4' },
       // Agregar más campos según sea necesario
     ];
     

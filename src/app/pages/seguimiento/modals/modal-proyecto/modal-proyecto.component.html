@@ -1,92 +1,129 @@
 <!-- MODAL PROYECTO — Crear / Editar -->
 <div
   *ngIf="show"
-  class="fixed inset-0 z-50 flex items-center justify-center p-4"
-  style="background: rgba(15,23,42,0.55);"
+  class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
   (click)="cerrar()"
 >
   <div
-    class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+    class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300"
     (click)="$event.stopPropagation()"
   >
 
     <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-          [ngClass]="esEdicion ? 'bg-amber-50' : 'bg-blue-50'">
-          <i class="bi text-sm"
-            [ngClass]="esEdicion ? 'bi-pencil text-amber-600' : 'bi-kanban text-blue-600'"></i>
+    <div class="relative px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110"
+          [ngClass]="esEdicion ? 'bg-amber-500 text-white shadow-amber-200' : 'bg-blue-600 text-white shadow-blue-200'">
+          <i class="bi text-xl"
+            [ngClass]="esEdicion ? 'bi-pencil-square' : 'bi-folder-plus'"></i>
         </div>
-        <h2 class="font-semibold text-gray-900 text-base">{{ titulo }}</h2>
+        <div>
+          <h2 class="font-black text-slate-800 text-xl tracking-tight">{{ tituloModal }}</h2>
+          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+            {{ esEdicion ? 'Actualiza los datos del proyecto' : 'Define los detalles básicos' }}
+          </p>
+        </div>
       </div>
       <button (click)="cerrar()"
-        class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
-        <i class="bi bi-x-lg text-sm"></i>
+        class="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+        <i class="bi bi-x-lg"></i>
       </button>
     </div>
 
     <!-- Form -->
-    <form [formGroup]="form" (ngSubmit)="guardar()" class="px-6 py-5 space-y-4">
+    <div [formGroup]="form" class="px-8 py-8 space-y-6">
 
       <!-- Título -->
-      <div>
-        <label class="seg-label">Título <span class="text-red-400">*</span></label>
-        <input
-          formControlName="titulo"
-          type="text"
-          placeholder="Nombre del proyecto…"
-          class="seg-input"
-          [class.border-red-300]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
-        >
+      <div class="space-y-2">
+        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Título del Proyecto <span class="text-rose-500">*</span></label>
+        <div class="relative group">
+          <i class="bi bi-type absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+          <input
+            formControlName="titulo"
+            type="text"
+            placeholder="Ej: Desarrollo de nueva App"
+            class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-300"
+            [class.border-rose-200]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
+          >
+        </div>
         <p *ngIf="form.get('titulo')?.invalid && form.get('titulo')?.touched"
-          class="mt-1 text-xs text-red-500">El título es obligatorio.</p>
+          class="mt-1 text-[10px] font-bold text-rose-500 uppercase tracking-wider ml-1">
+          <i class="bi bi-exclamation-circle mr-1"></i>El título es obligatorio (mín. 3 caracteres)
+        </p>
       </div>
 
       <!-- Descripción -->
-      <div>
-        <label class="seg-label">Descripción</label>
-        <textarea
-          formControlName="descripcion"
-          rows="3"
-          placeholder="Descripción opcional…"
-          class="seg-input resize-none"
-        ></textarea>
+      <div class="space-y-2">
+        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Descripción</label>
+        <div class="relative group">
+          <i class="bi bi-text-paragraph absolute left-4 top-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+          <textarea
+            formControlName="descripcion"
+            rows="3"
+            placeholder="¿De qué trata este proyecto?..."
+            class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-medium text-slate-600 outline-none focus:border-blue-500 focus:bg-white transition-all resize-none placeholder:text-slate-300"
+          ></textarea>
+        </div>
       </div>
 
       <!-- Estado + Fecha límite -->
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="seg-label">Estado</label>
-          <select formControlName="estado" class="seg-input">
-            <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
-          </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-2">
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Estado</label>
+          <div class="relative group">
+            <i class="bi bi-flag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+            <select formControlName="estado" 
+              class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer">
+              <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
+            </select>
+            <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+          </div>
         </div>
-        <div>
-          <label class="seg-label">Fecha límite</label>
-          <input
-            formControlName="fecha_limite_entrega"
-            type="datetime-local"
-            class="seg-input"
-          >
+        <div class="space-y-2">
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Fecha límite</label>
+          <div class="relative group">
+            <i class="bi bi-calendar-event absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+            <input
+              formControlName="fecha_limite_entrega"
+              type="datetime-local"
+              class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all cursor-pointer"
+            >
+          </div>
         </div>
+      </div>
+
+      <!-- Es Plantilla -->
+      <div class="flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border-2 border-blue-100/50 transition-all hover:bg-blue-50">
+        <div class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer"
+          [ngClass]="form.get('es_plantilla')?.value ? 'bg-blue-600' : 'bg-slate-200'"
+          (click)="form.get('es_plantilla')?.setValue(!form.get('es_plantilla')?.value)">
+          <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out"
+            [ngClass]="form.get('es_plantilla')?.value ? 'translate-x-6' : 'translate-x-1'"></span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <label class="text-sm font-black text-slate-700 cursor-pointer" (click)="form.get('es_plantilla')?.setValue(!form.get('es_plantilla')?.value)">Marcar como plantilla</label>
+          <p class="text-[10px] text-blue-600/70 font-bold uppercase tracking-wider">Permite replicar este proyecto en el futuro</p>
+        </div>
+        <i class="bi bi-bookmark-star-fill text-blue-400 text-lg"></i>
       </div>
 
       <!-- Footer -->
-      <div class="flex justify-end gap-3 pt-2 border-t border-gray-100 mt-4">
+      <div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-100">
         <button type="button" (click)="cerrar()"
-          class="seg-btn-secondary">
+          class="px-6 py-3.5 text-sm font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 hover:bg-slate-100 rounded-2xl transition-all">
           Cancelar
         </button>
-        <button type="submit" [disabled]="form.invalid || saving"
-          class="seg-btn-primary">
+        <button type="button" (click)="guardar()" [disabled]="form.invalid || saving"
+          class="flex items-center gap-2 px-8 py-3.5 text-sm font-black uppercase tracking-[0.15em] text-white rounded-2xl transition-all shadow-xl disabled:opacity-50 disabled:shadow-none transform active:scale-95"
+          [ngClass]="esEdicion ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'">
           <span *ngIf="saving"
-            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2">
+            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin">
           </span>
-          {{ saving ? 'Guardando…' : (esEdicion ? 'Actualizar' : 'Crear proyecto') }}
+          <i *ngIf="!saving" class="bi" [ngClass]="esEdicion ? 'bi-check2-circle' : 'bi-plus-lg'"></i>
+          {{ saving ? 'Guardando...' : (esEdicion ? 'Actualizar Proyecto' : 'Crear Proyecto') }}
         </button>
       </div>
 
-    </form>
+    </div>
   </div>
 </div>

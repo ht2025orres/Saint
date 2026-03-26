@@ -1,15 +1,14 @@
 import {
   Component, Input, OnInit, OnDestroy,
   ChangeDetectionStrategy, ChangeDetectorRef,
-  HostListener,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import {
   ProyectoService,
-  Proyecto, Actividad, Tarea, NivelTarea,
-  MisPermisos, EstadoProyecto, EstadoActividad, EstadoTarea,
+  Proyecto, Actividad, Tarea,
+  EstadoProyecto, EstadoActividad, EstadoTarea,
 } from 'src/app/services/proyectos.service';
 import { PaginationService } from 'src/app/shared/pagination/pagination.service';
 import { SeguimientoStateService, UsuarioCache } from '../seguimiento-state.service';
@@ -22,30 +21,13 @@ import { TareaForm }      from '../modals/modal-tarea/modal-tarea.component';
 type FiltroEstado = 'todos' | 'pendiente' | 'en_ejecucion' | 'completado' | 'pausado';
 type VistaProyectos = 'tarjetas' | 'lista';
 type VistaDetalle = 'tareas' | 'actividades';
-type InlineState = 'idle' | 'creating' | 'saving';
-
-interface InlineTaskForm {
-  titulo:               string;
-  descripcion:          string;
-  estado:               EstadoTarea;
-  fecha_limite_entrega: string;
-  actividad_id:         number | null;
-  asignado_id:          number | null;
-}
-
-interface InlineEditForm {
-  titulo:               string;
-  descripcion:          string;
-  estado:               EstadoTarea;
-  fecha_limite_entrega: string;
-  asignado_id:          number | null;
-}
 
 interface TareaEnriquecida extends Tarea {
-  actividadTitulo:   string;
-  actividadId:       number | null;
-  actividadSemaforo: string | null;
-  esGeneral:         boolean;
+  actividadTitulo:       string;
+  actividadId:           number | null;
+  actividadSemaforo:     string | null;
+  actividadResponsables: number[] | null;
+  esGeneral:             boolean;
 }
 
 // ─── Componente ─────────────────────────────────────────────────────────────
@@ -53,7 +35,6 @@ interface TareaEnriquecida extends Tarea {
 @Component({
   selector:    'app-proyectos',
   templateUrl: './proyectos.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProyectosComponent implements OnInit, OnDestroy {
 
@@ -65,6 +46,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   proyectosPaginados: Proyecto[]  = [];
   loading             = false;
   filtroEstado: FiltroEstado = 'todos';
+  mostrarPlantillas: boolean = false;
   busqueda            = '';
   vista: VistaProyectos = 'tarjetas';
 
@@ -72,16 +54,22 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   showDetalle        = false;
   loadingDetalle     = false;
   detalle: Proyecto | null = null;
+  tareasPlanasFiltradas: TareaEnriquecida[] = [];
   vistaDetalle: VistaDetalle = 'tareas';
-  actividadExpandidaId: number | null = null;
-  filtroEstadoTarea    = 'todos';
-  filtroTipoTarea      = 'todas';
   calculandoFechas     = false;
+  aplicandoPlantilla   = false;
 
   // ── Modales ──────────────────────────────────────────────────────
   showModalProyecto   = false;
   proyectoParaEditar: Proyecto | null = null;
   savingProyecto      = false;
+
+  showModalPlantilla  = false;
+  plantillas: Proyecto[] = [];
+  loadingPlantillas   = false;
+
+  showModalPermisos   = false;
+  showModalCalcularFechas = false;
 
   showModalActividad  = false;
   actividadParaEditar: Actividad | null = null;
@@ -92,22 +80,6 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   tareaParaEditar: Tarea | null = null;
   tareaActividadId: number | null = null;
   savingTarea         = false;
-
-  // ── Inline Task (crear fila en línea) ────────────────────────────
-  showInlineTask      = false;
-  inlineState: InlineState = 'idle';
-  inlineTaskForm: InlineTaskForm = this._emptyInlineTaskForm();
-  showInlineEstado    = false;
-  showInlineAsignado  = false;
-  inlineBusqResp      = '';
-
-  // ── Inline Edit (editar fila en línea) ───────────────────────────
-  inlineEditId: number | null  = null;
-  inlineEditForm: InlineEditForm = this._emptyInlineEditForm();
-  inlineEditOriginal: InlineEditForm | null = null;
-  showInlineEditEstado   = false;
-  showInlineEditAsignado = false;
-  inlineEditBusqResp     = '';
 
   // ── Responsables seleccionados para modal tarea ──────────────────
   responsablesSelec: UsuarioCache[] = [];
@@ -139,132 +111,103 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   get proyectosFiltrados(): Proyecto[] {
     const q = this.busqueda.toLowerCase().trim();
-    return this.proyectos.filter(p =>
+    const filtrados = this.proyectos.filter(p =>
       (!q || p.titulo.toLowerCase().includes(q) ||
        (p.descripcion ?? '').toLowerCase().includes(q)),
     );
+
+    // Si el filtro es "todos", aplicamos el orden solicitado:
+    // 1. en_ejecucion (más importantes primero)
+    // 2. pendiente (añadido para lógica completa)
+    // 3. pausado
+    // 4. completado
+    if (this.filtroEstado === 'todos') {
+      const orden: Record<string, number> = {
+        'en_ejecucion': 1,
+        'pendiente':    2,
+        'pausado':      3,
+        'completado':   4
+      };
+
+      return filtrados.sort((a, b) => {
+        const pesoA = orden[a.estado] ?? 99;
+        const pesoB = orden[b.estado] ?? 99;
+        return pesoA - pesoB;
+      });
+    }
+
+    return filtrados;
   }
 
   get usuariosDisponibles(): UsuarioCache[] {
-    return this.state.usuariosCache;
+    return this.state.usuariosAdministradores;
   }
 
-  get tareasPlanas(): TareaEnriquecida[] {
-    if (!this.detalle) return [];
+  actualizarTareasPlanas(proyecto: Proyecto | null = this.detalle): void {
+    if (!proyecto) {
+      this.tareasPlanasFiltradas = [];
+      return;
+    }
     const tareas: TareaEnriquecida[] = [];
 
-    for (const act of (this.detalle.actividades ?? [])) {
+    for (const act of (proyecto.actividades ?? [])) {
       for (const t of (act.tareas ?? [])) {
-        const enr = t as TareaEnriquecida;
-        enr.actividadTitulo   = act.titulo;
-        enr.actividadId       = act.id;
-        enr.actividadSemaforo = act.semaforo ?? null;
-        enr.esGeneral         = false;
+        const enr = { ...t } as TareaEnriquecida;
+        enr.actividadTitulo       = act.titulo;
+        enr.actividadId           = act.id;
+        enr.actividadSemaforo     = act.semaforo ?? null;
+        enr.actividadResponsables = act.responsables ?? null;
+        enr.esGeneral             = false;
         tareas.push(enr);
       }
     }
-    for (const t of (this.detalle.tareas_sin_actividad ?? [])) {
-      const enr = t as TareaEnriquecida;
-      enr.actividadTitulo   = 'Sin actividad';
-      enr.actividadId       = null;
-      enr.actividadSemaforo = null;
-      enr.esGeneral         = true;
+    for (const t of (proyecto.tareas_sin_actividad ?? [])) {
+      const enr = { ...t } as TareaEnriquecida;
+      enr.actividadTitulo       = 'Sin actividad';
+      enr.actividadId           = null;
+      enr.actividadSemaforo     = null;
+      enr.actividadResponsables = null;
+      enr.esGeneral             = true;
       tareas.push(enr);
     }
-    return tareas;
-  }
 
-  get tareasPlanasFiltradas(): TareaEnriquecida[] {
-    let lista = this.tareasPlanas;
-    if (this.filtroEstadoTarea !== 'todos') lista = lista.filter(t => t.estado === this.filtroEstadoTarea);
-    if (this.filtroTipoTarea === 'conActividad')  lista = lista.filter(t => !t.esGeneral);
-    if (this.filtroTipoTarea === 'sinActividad')  lista = lista.filter(t =>  t.esGeneral);
     const ahora = new Date();
-    return lista.sort((a, b) => this._prioridadTarea(a, ahora) - this._prioridadTarea(b, ahora));
-  }
-
-  // Inline asignado
-  get inlineAsignadoNombre(): string {
-    return this.state.usuariosCache.find(u => u.id === this.inlineTaskForm.asignado_id)?.nombre ?? '';
-  }
-  get inlineEditAsignadoNombre(): string {
-    return this.state.usuariosCache.find(u => u.id === this.inlineEditForm.asignado_id)?.nombre ?? '';
-  }
-  get inlineUsuariosFiltrados(): UsuarioCache[] {
-    const q = this.inlineBusqResp.toLowerCase();
-    return q
-      ? this.state.usuariosCache.filter(u => u.nombre.toLowerCase().includes(q)).slice(0, 8)
-      : this.state.usuariosCache.slice(0, 8);
-  }
-  get inlineEditUsuariosFiltrados(): UsuarioCache[] {
-    const q = this.inlineEditBusqResp.toLowerCase();
-    return q
-      ? this.state.usuariosCache.filter(u => u.nombre.toLowerCase().includes(q)).slice(0, 8)
-      : this.state.usuariosCache.slice(0, 8);
+    const sorted = [...tareas].sort((a, b) => this._prioridadTarea(a, ahora) - this._prioridadTarea(b, ahora));
+    this.tareasPlanasFiltradas = sorted;
+    this.cdr.detectChanges();
   }
 
   // Permisos sobre proyecto
-  esAdminProyecto(p: Proyecto): boolean {
-    return this.puedeGestionarModulo || (p.mis_permisos?.puede_gestionar_permisos ?? false);
-  }
   puedeEditarProyecto(p: Proyecto): boolean {
-    return this.puedeGestionarModulo || (p.mis_permisos?.puede_editar ?? false);
+    if (this.puedeGestionarModulo) return true;
+    if (p.usuario_creador_id === this.usuarioId) return true;
+    return p.mis_permisos?.puede_editar ?? false;
   }
-  puedeEliminarProyecto(p: Proyecto): boolean {
-    return this.puedeGestionarModulo || (p.mis_permisos?.puede_eliminar ?? false);
+
+  puedeGestionarPermisos(p: Proyecto): boolean {
+    if (this.puedeGestionarModulo) return true;
+    if (p.usuario_creador_id === this.usuarioId) return true;
+    return p.mis_permisos?.puede_gestionar_permisos ?? false;
   }
+
   puedeCrearEnProyecto(p: Proyecto | null): boolean {
     if (!p) return false;
-    return this.puedeGestionarModulo || (p.mis_permisos?.puede_crear ?? false);
+    if (this.puedeGestionarModulo) return true;
+    if (p.usuario_creador_id === this.usuarioId) return true;
+    return p.mis_permisos?.puede_crear ?? false;
   }
-  puedeCompletarTarea(t: Tarea): boolean {
-    return this.puedeGestionarModulo || t.creado_por === this.usuarioId
-      || (t.responsables ?? []).includes(this.usuarioId);
+
+  esAdminProyecto(p: Proyecto): boolean {
+    if (this.puedeGestionarModulo) return true;
+    return p.usuario_creador_id === this.usuarioId || (p.mis_permisos?.puede_gestionar_permisos ?? false);
+  }
+
+  puedeEliminarProyecto(p: Proyecto): boolean {
+    return this.puedeGestionarModulo || (p.mis_permisos?.puede_eliminar ?? false);
   }
 
   calcularProgreso(act: Actividad): number {
     return this.state.calcularProgreso(act.tareas_completadas ?? 0, act.total_tareas ?? 0);
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // HOST LISTENER (clic fuera)
-  // ════════════════════════════════════════════════════════════════
-
-  @HostListener('document:click', ['$event'])
-  onDocClick(event: Event): void {
-    const target = event.target as HTMLElement;
-
-    if (this.showInlineEstado && !target.closest('[data-inline-estado]'))
-      this.showInlineEstado = false;
-    if (this.showInlineAsignado && !target.closest('[data-inline-asignado]'))
-      this.showInlineAsignado = false;
-    if (this.showInlineEditEstado && !target.closest('[data-inline-edit-estado]'))
-      this.showInlineEditEstado = false;
-    if (this.showInlineEditAsignado && !target.closest('[data-inline-edit-asignado]'))
-      this.showInlineEditAsignado = false;
-
-    // Guardar/cancelar inline create al hacer clic fuera
-    if (this.showInlineTask) {
-      const row = document.querySelector('[data-inline-task-row]');
-      if (row && !row.contains(target)) {
-        this.inlineTaskForm.titulo?.trim()
-          ? this.guardarTareaInline()
-          : this.cancelarFilaInline();
-      }
-    }
-
-    // Guardar/cancelar inline edit al hacer clic fuera
-    if (this.inlineEditId) {
-      const rows = document.querySelectorAll('[data-inline-edit-row]');
-      const inside = Array.from(rows).some(r => r.contains(target));
-      if (!inside
-        && !target.closest('[data-inline-edit-estado]')
-        && !target.closest('[data-inline-edit-asignado]')) {
-        this.inlineEditForm.titulo?.trim() && this._inlineEditChanged()
-          ? this.guardarEdicionInline()
-          : this.cancelarEdicionInline();
-      }
-    }
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -274,18 +217,22 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   cargarProyectos(): void {
     this.loading = true;
     this.cdr.markForCheck();
-    const filtros = this.filtroEstado === 'todos' ? { activos: true } : { estado: this.filtroEstado };
+
+    const filtros = {
+      estado:       this.filtroEstado === 'todos' ? undefined : this.filtroEstado as EstadoProyecto,
+      es_plantilla: this.mostrarPlantillas,
+    };
 
     this.proyServ.getProyectos(this.usuarioId, filtros).subscribe({
-      next: res => {
-        this.proyectos = this._ordenarProyectos(res.data ?? []);
-        this.loading   = false;
-        this._initPaginadores();
+      next: (res) => {
+        this.proyectos = res.data ?? [];
+        this.onBusquedaChange();
+        this.loading = false;
         this.cdr.markForCheck();
       },
       error: () => {
         this.loading = false;
-        Swal.fire('Error', 'No se pudieron cargar los proyectos', 'error');
+        this.state.showToast('Error al cargar proyectos', 'error');
         this.cdr.markForCheck();
       },
     });
@@ -293,6 +240,11 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   cambiarFiltro(f: FiltroEstado): void {
     this.filtroEstado = f;
+    this.cargarProyectos();
+  }
+
+  toggleMostrarPlantillas(): void {
+    this.mostrarPlantillas = !this.mostrarPlantillas;
     this.cargarProyectos();
   }
 
@@ -337,16 +289,87 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   }
 
   // ════════════════════════════════════════════════════════════════
-  // SECCIÓN · MODAL PROYECTO
+  // SECCIÓN · PLANTILLAS
   // ════════════════════════════════════════════════════════════════
 
-  abrirCrearProyecto(): void {
-    this.proyectoParaEditar = null;
-    this.showModalProyecto  = true;
+  crearPlantillaDesdeProyecto(p: Proyecto): void {
+    Swal.fire({
+      title: '¿Crear plantilla?',
+      text: `Se creará una nueva plantilla basada en "${p.titulo}"`,
+      icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, crear',
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.proyServ.crearPlantilla(p.id, this.usuarioId).subscribe({
+        next: (res) => {
+          this.state.showToast('Plantilla creada exitosamente');
+          this.cdr.markForCheck();
+        },
+        error: () => this.state.showToast('Error al crear plantilla', 'error'),
+      });
+    });
+  }
+
+  abrirModalPlantillas(): void {
+    this.showModalPlantilla = true;
+    this.loadingPlantillas  = true;
+    this.plantillas         = [];
+    this.cdr.markForCheck();
+
+    this.proyServ.getPlantillas(this.usuarioId).subscribe({
+      next: (res) => {
+        this.plantillas = res.data ?? [];
+        this.loadingPlantillas = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingPlantillas = false;
+        this.state.showToast('Error al cargar plantillas', 'error');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  abrirModalPermisos(): void {
+    if (!this.detalle) return;
+    this.showModalPermisos = true;
     this.cdr.markForCheck();
   }
 
-  abrirEditarProyecto(p: Proyecto): void {
+  aplicarPlantillaAProyecto(plantilla: Proyecto): void {
+    if (!this.detalle) return;
+    
+    Swal.fire({
+      title: '¿Aplicar plantilla?',
+      text: `Se agregarán las tareas y actividades de "${plantilla.titulo}" al proyecto "${this.detalle.titulo}". Las tareas actuales no se borrarán.`,
+      icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, aplicar',
+    }).then(r => {
+      if (!r.isConfirmed || !this.detalle) return;
+      
+      this.aplicandoPlantilla = true;
+      this.cdr.markForCheck();
+      
+      this.proyServ.aplicarPlantilla(this.detalle.id, plantilla.id, this.usuarioId).subscribe({
+        next: () => {
+          this.aplicandoPlantilla = false;
+          this.showModalPlantilla = false;
+          this.state.showToast('Plantilla aplicada exitosamente');
+          this._refreshDetalle();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.aplicandoPlantilla = false;
+          this.state.showToast('Error al aplicar plantilla', 'error');
+          this.cdr.markForCheck();
+        },
+      });
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // SECCIÓN · MODAL PROYECTO
+  // ════════════════════════════════════════════════════════════════
+
+  abrirModalProyecto(p: Proyecto | null = null): void {
     this.proyectoParaEditar = p;
     this.showModalProyecto  = true;
     this.cdr.markForCheck();
@@ -361,6 +384,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       descripcion:          form.descripcion,
       estado:               form.estado as EstadoProyecto,
       fecha_limite_entrega: form.fecha_limite_entrega,
+      es_plantilla:         form.es_plantilla,
       usuario_id:           this.usuarioId 
     };
 
@@ -388,22 +412,22 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   // SECCIÓN · DETALLE PROYECTO
   // ════════════════════════════════════════════════════════════════
 
-  verDetalle(p: Proyecto): void {
+  seleccionarProyecto(p: Proyecto): void {
     this.showDetalle   = true;
     this.loadingDetalle = true;
     this.detalle        = null;
     this.cdr.markForCheck();
 
-    this.proyServ.obtenerDetalleProyecto(p.id, this.usuarioId).subscribe({
+    this.proyServ.getDetalleCompleto(p.id, this.usuarioId).subscribe({
       next: (res: any) => {
-        this.detalle              = res.data;
-        this.detalle!.actividades           = res.data.actividades ?? [];
-        this.detalle!.tareas_sin_actividad  = res.data.tareas_sin_actividad ?? [];
+        this.detalle = { ...res.data };
+        this.actualizarTareasPlanas();
         this.loadingDetalle = false;
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.loadingDetalle = false;
+        this.state.showToast('Error al cargar detalle del proyecto', 'error');
         this.cdr.markForCheck();
       },
     });
@@ -412,84 +436,58 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   cerrarDetalle(): void {
     this.showDetalle        = false;
     this.detalle            = null;
-    this.inlineEditId       = null;
-    this.showInlineTask     = false;
-    this.actividadExpandidaId = null;
-    this.cdr.markForCheck();
-  }
-
-  toggleActividad(id: number): void {
-    this.actividadExpandidaId = this.actividadExpandidaId === id ? null : id;
-    this.cancelarEdicionInline();
-    this.cancelarFilaInline();
-    this.cdr.markForCheck();
-  }
-
-  limpiarFiltrosTareas(): void {
-    this.filtroEstadoTarea = 'todos';
-    this.filtroTipoTarea   = 'todas';
     this.cdr.markForCheck();
   }
 
   calcularFechasTareas(): void {
     if (!this.detalle) return;
-    Swal.fire({
-      title: 'Calcular fechas automáticas',
-      text: `Se distribuirán ${this.detalle.total_tareas ?? 0} tareas en días laborales hasta la fecha límite.`,
-      icon: 'question', showCancelButton: true,
-      confirmButtonText: 'Calcular', confirmButtonColor: '#2563eb',
-    }).then(r => {
-      if (!r.isConfirmed || !this.detalle) return;
-      this.calculandoFechas = true;
-      this.cdr.markForCheck();
-      this.proyServ.calcularFechasTareas(this.detalle.id, this.usuarioId, []).subscribe({
-        next: (res: any) => {
-          this.calculandoFechas = false;
-          this.state.showToast(`${res.data?.tareas_actualizadas ?? 0} tareas actualizadas`);
-          this.verDetalle(this.detalle!);
-          this.cdr.markForCheck();
-        },
-        error: (err: any) => {
-          this.calculandoFechas = false;
-          this.state.showToast(err?.error?.message ?? 'Error al calcular fechas', 'error');
-          this.cdr.markForCheck();
-        },
-      });
-    });
+    this.showModalCalcularFechas = true;
+    this.cdr.markForCheck();
   }
 
-  private _refreshDetalle(): void {
+  public _refreshDetalle(silent: boolean = false): void {
     if (!this.detalle) return;
-    this.proyServ.obtenerDetalleProyecto(this.detalle.id, this.usuarioId).subscribe({
-      next: (res: any) => {
-        if (!this.detalle) return;
-        this.detalle.actividades          = res.data.actividades ?? [];
-        this.detalle.tareas_sin_actividad = res.data.tareas_sin_actividad ?? [];
-        this.detalle.total_tareas         = res.data.total_tareas;
-        this.detalle.tareas_completadas   = res.data.tareas_completadas;
-        this.detalle.tareas_vencidas      = res.data.tareas_vencidas;
-        this.detalle.progreso             = res.data.progreso;
-        this.cdr.markForCheck();
-      },
-    });
+    const proyId = this.detalle.id;
+
+    if (!silent) {
+      this.loadingDetalle = true;
+      this.cdr.detectChanges();
+    }
+    
+    // Delay para asegurar que el backend haya procesado la transacción
+    setTimeout(() => {
+      this.proyServ.getDetalleCompleto(proyId, this.usuarioId).subscribe({
+        next: (res: any) => {
+          if (res.data) {
+            this.detalle = res.data;
+            this.actualizarTareasPlanas(res.data);
+          }
+          this.loadingDetalle = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.loadingDetalle = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }, silent ? 150 : 0); // Aumentamos un poco el delay a 500ms
   }
 
   // ════════════════════════════════════════════════════════════════
   // SECCIÓN · MODAL ACTIVIDAD
   // ════════════════════════════════════════════════════════════════
 
-  abrirCrearActividad(): void {
-    this.actividadParaEditar = null;
-    this.actividadProyecto   = this.detalle;
+  abrirModalActividad(data: any = null): void {
+    console.log('Abriendo modal actividad con data:', data);
+    // Si viene un objeto con proyecto_id (desde los nuevos botones de modal)
+    if (data && data.proyecto_id !== undefined && !data.id) {
+      this.actividadParaEditar = null;
+    } else {
+      // Comportamiento normal (edición o creación simple)
+      this.actividadParaEditar = data;
+    }
     this.showModalActividad  = true;
-    this.cdr.markForCheck();
-  }
-
-  abrirEditarActividad(a: Actividad): void {
-    this.actividadParaEditar = a;
-    this.actividadProyecto   = this.detalle;
-    this.showModalActividad  = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges(); // Forzar detección de cambios inmediata
   }
 
   onGuardarActividad(form: ActividadForm): void {
@@ -497,11 +495,12 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
 
     const body = { 
-      proyecto_id:          form.proyecto_id,
+      proyecto_id:          this.detalle!.id,
       titulo:               form.titulo,
       descripcion:          form.descripcion,
       estado:               form.estado as EstadoActividad,
       fecha_limite_entrega: form.fecha_limite_entrega,
+      responsables:         form.responsables,
       usuario_id:           this.usuarioId 
     };
 
@@ -514,7 +513,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         this.savingActividad    = false;
         this.showModalActividad = false;
         this.state.showToast(res.message ?? 'Actividad guardada');
-        this._refreshDetalle();
+        this._refreshDetalle(true); // Refresco silencioso
         this.cdr.markForCheck();
       },
       error: () => {
@@ -525,36 +524,23 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     });
   }
 
-  eliminarActividad(a: Actividad): void {
-    Swal.fire({
-      title: '¿Eliminar actividad?',
-      text: `"${a.titulo}" y todas sus tareas`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonColor: '#dc2626', confirmButtonText: 'Sí, eliminar',
-    }).then(r => r.isConfirmed &&
-      this.proyServ.eliminarActividad(a.id, this.usuarioId).subscribe({
-        next:  () => { this.state.showToast('Actividad eliminada'); this._refreshDetalle(); },
-        error: () => this.state.showToast('No se pudo eliminar', 'error'),
-      }),
-    );
-  }
-
   // ════════════════════════════════════════════════════════════════
   // SECCIÓN · MODAL TAREA
   // ════════════════════════════════════════════════════════════════
 
-  abrirCrearTarea(actividadId: number | null = null): void {
-    this.tareaParaEditar  = null;
-    this.tareaActividadId = actividadId;
+  abrirModalTarea(data: any = null, actividadId: number | null = null): void {
+    console.log('Abriendo modal tarea con data:', data);
+    // Si viene un objeto con actividad_id (desde los nuevos botones de modal)
+    if (data && data.actividad_id !== undefined && !data.id) {
+      this.tareaParaEditar = null;
+      this.tareaActividadId = data.actividad_id;
+    } else {
+      // Comportamiento normal (edición o creación simple)
+      this.tareaParaEditar  = data;
+      this.tareaActividadId = data ? data.actividad_id ?? null : actividadId;
+    }
     this.showModalTarea   = true;
-    this.cdr.markForCheck();
-  }
-
-  abrirEditarTarea(t: Tarea): void {
-    this.tareaParaEditar  = t;
-    this.tareaActividadId = t.actividad_id ?? null;
-    this.showModalTarea   = true;
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   onGuardarTarea(form: TareaForm): void {
@@ -582,7 +568,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         this.savingTarea  = false;
         this.showModalTarea = false;
         this.state.showToast(res.message ?? 'Tarea guardada');
-        this._refreshDetalle();
+        this._refreshDetalle(true); // Refresco silencioso
         this.cdr.markForCheck();
       },
       error: () => {
@@ -591,161 +577,6 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
-  }
-
-  eliminarTarea(t: Tarea): void {
-    Swal.fire({
-      title: '¿Eliminar tarea?',
-      text: `"${t.titulo}"`,
-      icon: 'warning', showCancelButton: true,
-      confirmButtonColor: '#dc2626', confirmButtonText: 'Sí, eliminar',
-    }).then(r => r.isConfirmed &&
-      this.proyServ.eliminarTarea(t.id, this.usuarioId).subscribe({
-        next:  () => { this.state.showToast('Tarea eliminada'); this._refreshDetalle(); },
-        error: () => this.state.showToast('No se pudo eliminar', 'error'),
-      }),
-    );
-  }
-
-  completarTarea(t: Tarea): void {
-    const nuevoEstado: EstadoTarea = t.estado === 'completado' ? 'pendiente' : 'completado';
-    this.proyServ.completarTarea(t.id, this.usuarioId).subscribe({
-      next: () => {
-        this.state.showToast(nuevoEstado === 'completado' ? 'Tarea completada' : 'Tarea pendiente');
-        this._refreshDetalle();
-      },
-      error: () => this.state.showToast('Error al actualizar tarea', 'error'),
-    });
-  }
-
-  moverTarea(t: Tarea): void {
-    // Lógica para mover tarea entre actividades o proyectos si fuera necesario
-    // Por ahora abrimos el modal de edición para que el usuario cambie la actividad
-    this.abrirEditarTarea(t);
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // SECCIÓN · INLINE TAREAS (CREATE)
-  // ════════════════════════════════════════════════════════════════
-
-  abrirFilaInline(actId: number | null = null): void {
-    this.cancelarEdicionInline();
-    this.showInlineTask  = true;
-    this.inlineTaskForm  = this._emptyInlineTaskForm();
-    this.inlineTaskForm.actividad_id = actId;
-    this.cdr.markForCheck();
-    // Foco automático
-    setTimeout(() => document.querySelector<HTMLInputElement>('[data-inline-title]')?.focus(), 50);
-  }
-
-  guardarTareaInline(): void {
-    if (!this.inlineTaskForm.titulo.trim() || this.inlineState === 'saving') return;
-    this.inlineState = 'saving';
-    this.cdr.markForCheck();
-
-    const body = {
-      titulo:               this.inlineTaskForm.titulo,
-      descripcion:          this.inlineTaskForm.descripcion,
-      estado:               this.inlineTaskForm.estado as EstadoTarea,
-      fecha_limite_entrega: this.inlineTaskForm.fecha_limite_entrega,
-      actividad_id:         this.inlineTaskForm.actividad_id,
-      proyecto_id:          this.detalle!.id,
-      usuario_id:           this.usuarioId,
-      responsables:         this.inlineTaskForm.asignado_id ? [this.inlineTaskForm.asignado_id] : [],
-    };
-
-    this.proyServ.crearTarea(body).subscribe({
-      next: () => {
-        this.state.showToast('Tarea creada');
-        this._refreshDetalle();
-        this.cancelarFilaInline();
-      },
-      error: () => {
-        this.inlineState = 'idle';
-        this.state.showToast('Error al crear tarea', 'error');
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  cancelarFilaInline(): void {
-    this.showInlineTask = false;
-    this.inlineState    = 'idle';
-    this.cdr.markForCheck();
-  }
-
-  onInlineKeydown(ev: KeyboardEvent): void {
-    if (ev.key === 'Enter')  this.guardarTareaInline();
-    if (ev.key === 'Escape') this.cancelarFilaInline();
-  }
-
-  private _emptyInlineTaskForm(): InlineTaskForm {
-    return {
-      titulo: '', descripcion: '', estado: 'pendiente',
-      fecha_limite_entrega: '', actividad_id: null, asignado_id: this.usuarioId,
-    };
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // SECCIÓN · INLINE TAREAS (EDIT)
-  // ════════════════════════════════════════════════════════════════
-
-  activarEdicionInline(t: Tarea): void {
-    this.cancelarFilaInline();
-    this.inlineEditId   = t.id;
-    this.inlineEditForm = {
-      titulo:               t.titulo,
-      descripcion:          t.descripcion ?? '',
-      estado:               t.estado ?? 'pendiente',
-      fecha_limite_entrega: this._toLocal(t.fecha_limite_entrega),
-      asignado_id:          (t.responsables && t.responsables.length > 0) ? t.responsables[0] : null,
-    };
-    this.inlineEditOriginal = { ...this.inlineEditForm };
-    this.cdr.markForCheck();
-    setTimeout(() => document.querySelector<HTMLInputElement>('[data-edit-title]')?.focus(), 50);
-  }
-
-  guardarEdicionInline(): void {
-    if (!this.inlineEditId || !this.inlineEditForm.titulo.trim()) return;
-    if (!this._inlineEditChanged()) return this.cancelarEdicionInline();
-
-    const body = {
-      titulo:               this.inlineEditForm.titulo,
-      descripcion:          this.inlineEditForm.descripcion,
-      estado:               this.inlineEditForm.estado as EstadoTarea,
-      fecha_limite_entrega: this.inlineEditForm.fecha_limite_entrega,
-      usuario_id:           this.usuarioId,
-      responsables:         this.inlineEditForm.asignado_id ? [this.inlineEditForm.asignado_id] : [],
-    };
-
-    this.proyServ.actualizarTarea(this.inlineEditId, body).subscribe({
-      next: () => {
-        this.state.showToast('Tarea actualizada');
-        this._refreshDetalle();
-        this.cancelarEdicionInline();
-      },
-      error: () => this.state.showToast('Error al actualizar', 'error'),
-    });
-  }
-
-  cancelarEdicionInline(): void {
-    this.inlineEditId       = null;
-    this.inlineEditOriginal = null;
-    this.cdr.markForCheck();
-  }
-
-  onInlineEditKeydown(ev: KeyboardEvent): void {
-    if (ev.key === 'Enter')  this.guardarEdicionInline();
-    if (ev.key === 'Escape') this.cancelarEdicionInline();
-  }
-
-  private _inlineEditChanged(): boolean {
-    if (!this.inlineEditOriginal) return false;
-    return JSON.stringify(this.inlineEditForm) !== JSON.stringify(this.inlineEditOriginal);
-  }
-
-  private _emptyInlineEditForm(): InlineEditForm {
-    return { titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '', asignado_id: null };
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -761,24 +592,10 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     });
   }
 
-  private _ordenarProyectos(list: Proyecto[]): Proyecto[] {
-    return list.sort((a, b) => {
-      if (a.semaforo === 'rojo' && b.semaforo !== 'rojo') return -1;
-      if (a.semaforo !== 'rojo' && b.semaforo === 'rojo') return 1;
-      return (b.progreso || 0) - (a.progreso || 0);
-    });
-  }
-
   private _prioridadTarea(t: Tarea, ahora: Date): number {
     if (t.estado === 'completado') return 1000;
     if (t.semaforo === 'rojo')     return 1;
     if (t.semaforo === 'amarillo') return 2;
     return 10;
-  }
-
-  private _toLocal(v?: string | null): string {
-    if (!v) return '';
-    const [d, t] = v.split('T');
-    return `${d}T${t?.substring(0, 5) ?? ''}`;
   }
 }

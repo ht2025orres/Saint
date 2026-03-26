@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Actividad, Proyecto } from 'src/app/services/proyectos.service';
+import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.service';
 
 export interface ActividadForm {
   proyecto_id:          number | null;
@@ -8,6 +9,7 @@ export interface ActividadForm {
   descripcion:          string;
   estado:               string;
   fecha_limite_entrega: string;
+  responsables:         number[];
 }
 
 @Component({
@@ -25,6 +27,9 @@ export class ModalActividadComponent implements OnChanges {
   @Output() onGuardar = new EventEmitter<ActividadForm>();
 
   form: FormGroup;
+  responsablesSelec: UsuarioCache[] = [];
+  busquedaResp = '';
+  showRespDropdown = false;
 
   readonly estadoOpciones = [
     { v: 'pendiente',    l: 'Pendiente'    },
@@ -36,7 +41,18 @@ export class ModalActividadComponent implements OnChanges {
   get esEdicion(): boolean { return !!this.actividad; }
   get titulo():    string  { return this.esEdicion ? 'Editar Actividad' : 'Nueva Actividad'; }
 
-  constructor(private fb: FormBuilder) {
+  get usuariosFiltrados(): UsuarioCache[] {
+    const ids = new Set(this.responsablesSelec.map(r => r.id));
+    const q   = this.busquedaResp.toLowerCase().trim();
+    return this.state.usuariosAdministradores
+      .filter(u => !ids.has(u.id) && (!q || u.nombre.toLowerCase().includes(q)))
+      .slice(0, 8);
+  }
+
+  constructor(
+    private fb: FormBuilder,
+    public state: SeguimientoStateService
+  ) {
     this.form = this.fb.group({
       proyecto_id:          [null],
       titulo:               ['', [Validators.required, Validators.maxLength(200)]],
@@ -53,6 +69,9 @@ export class ModalActividadComponent implements OnChanges {
   }
 
   private _resetForm(): void {
+    this.busquedaResp     = '';
+    this.showRespDropdown = false;
+
     if (this.actividad) {
       this.form.patchValue({
         proyecto_id:          this.proyecto?.id ?? null,
@@ -61,11 +80,16 @@ export class ModalActividadComponent implements OnChanges {
         estado:               this.actividad.estado ?? 'pendiente',
         fecha_limite_entrega: this._toLocal(this.actividad.fecha_limite_entrega),
       });
+      // Resolver responsables
+      this.responsablesSelec = (this.actividad.responsables ?? [])
+        .map(id => this.state.usuariosCache.find(u => u.id === id))
+        .filter((u): u is UsuarioCache => !!u);
     } else {
       this.form.reset({
         proyecto_id: this.proyecto?.id ?? null,
         titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '',
       });
+      this.responsablesSelec = [];
     }
   }
 
@@ -75,9 +99,23 @@ export class ModalActividadComponent implements OnChanges {
     return `${date}T${time?.substring(0, 5) ?? ''}`;
   }
 
+  agregarResponsable(u: UsuarioCache): void {
+    if (!this.responsablesSelec.find(r => r.id === u.id))
+      this.responsablesSelec = [...this.responsablesSelec, u];
+    this.busquedaResp     = '';
+    this.showRespDropdown = false;
+  }
+
+  quitarResponsable(id: number): void {
+    this.responsablesSelec = this.responsablesSelec.filter(r => r.id !== id);
+  }
+
   guardar(): void {
     if (this.form.invalid || this.saving) return;
-    this.onGuardar.emit(this.form.value as ActividadForm);
+    this.onGuardar.emit({
+      ...this.form.value,
+      responsables: this.responsablesSelec.map(r => r.id)
+    } as ActividadForm);
   }
 
   cerrar(): void { this.onCerrar.emit(); }

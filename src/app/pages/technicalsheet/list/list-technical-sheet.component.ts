@@ -74,9 +74,42 @@ export class ListTechnicalSheetComponent implements OnInit {
 
     ngOnInit(): void {
       this.activatedRoute.paramMap.subscribe(params => {
-          this.statusSearch = params.get('status');
-          this.loadAllData();
+          const newStatus = params.get('status');
+          
+          // Si el estado cambia (ej: de Desarrollo a Calidad), reseteamos filtros
+          if (this.statusSearch !== newStatus) {
+              this.statusSearch = newStatus;
+              this.currentSearchTerm = '';
+              this.paginator.number = 0;
+          }
+
+          // Verificar si debemos restaurar el estado (solo si viene de un "atrás")
+          this.activatedRoute.queryParamMap.subscribe(queryParams => {
+              if (queryParams.get('restoreState') === 'true') {
+                  this.loadStateFromStorage();
+              }
+              this.loadAllData();
+          });
       });  
+    }
+
+    private saveStateToStorage(): void {
+        const state = {
+            page: this.paginator.number,
+            pageSize: this.currentPageSize,
+            searchTerm: this.currentSearchTerm
+        };
+        sessionStorage.setItem(`technicalSheetState_${this.statusSearch}`, JSON.stringify(state));
+    }
+
+    private loadStateFromStorage(): void {
+        const savedState = sessionStorage.getItem(`technicalSheetState_${this.statusSearch}`);
+        if (savedState) {
+            const state = JSON.parse(savedState);
+            this.paginator.number = state.page || 0;
+            this.currentPageSize = state.pageSize || 10;
+            this.currentSearchTerm = state.searchTerm || '';
+        }
     }
 
 bloquearAtajos = (event: KeyboardEvent): void => {
@@ -278,13 +311,15 @@ cerrarPdf(): void {
                 next: (response: TechnicalDataSheet[]) => {
                     console.log('Datos cargados:', response);
                     this.allTechnicalDataSheet = Array.isArray(response['data']) ? response['data'] : [];
-                    this.initializeLocalPagination();
+                    
+                    // Si ya tenemos un estado cargado (ej: restaurando), lo mantenemos
+                    this.updateLocalPagination();
                 },
                 error: (error) => {
                     console.error('Error al obtener los datos:', error);
                     Swal.fire('Error al cargar datos', 'No se han podido cargar las fichas técnicas', 'error');
                     this.allTechnicalDataSheet = [];
-                    this.initializeLocalPagination();
+                    this.updateLocalPagination();
                 }
             });
     }
@@ -293,14 +328,12 @@ cerrarPdf(): void {
      * Inicializa la paginación local con todos los datos
      */
     private initializeLocalPagination(): void {
-        // Resetear filtros y página actual
+        // Este método ya no es necesario llamarlo directamente desde loadAllData
+        // ya que updateLocalPagination se encarga de aplicar los filtros y la paginación
+        // basándose en el estado actual (sea restaurado o inicial).
         this.currentSearchTerm = '';
         this.paginator.number = 0;
-        
-        // Aplicar paginación inicial
         this.updateLocalPagination();
-        
-        console.log(`Datos cargados: ${this.allTechnicalDataSheet.length} fichas técnicas`);
     }
 
     /**
@@ -348,6 +381,9 @@ cerrarPdf(): void {
             first: currentPage === 0,
             last: currentPage === totalPages - 1 || totalPages === 0
         };
+
+        // Guardar estado actual en sessionStorage
+        this.saveStateToStorage();
 
         console.log(`Página ${currentPage + 1} de ${totalPages} - Mostrando ${this.listaTechnicalDataSheet.length} de ${totalElements} elementos`);
         console.log(this.listaTechnicalDataSheet);
@@ -429,7 +465,7 @@ cerrarPdf(): void {
                 <html lang="en">
                 <head>
                     <meta charset="utf-8">
-                    <title>${this.technicalDataSheetCurrent.idItem}</title>
+                    <title>${this.technicalDataSheetCurrent.id_item}</title>
                     ${HTML_HEAD}
                 <body onload="setTimeout(function () { window.print(); }, 500); window.onmouseover = function () { setTimeout(function () { window.close(); }, 500); }">
                     ${printContents}
@@ -444,8 +480,8 @@ cerrarPdf(): void {
     }
 
     downloadLogoTechnicalDataSheet(): void {
-        if (this.technicalDataSheetCurrent.logoTechnicalDataSheet != null) {
-            window.location.href = this.technicalDataSheetCurrent.logoTechnicalDataSheet;
+        if (this.technicalDataSheetCurrent.logo_technical_data_sheet != null) {
+            window.location.href = this.technicalDataSheetCurrent.logo_technical_data_sheet;
         } else {
             Swal.fire('Error al descargar ficha técnica de bordado', 'No se encontro el documento', 'error');
         }        

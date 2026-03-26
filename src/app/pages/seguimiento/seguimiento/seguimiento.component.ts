@@ -99,6 +99,7 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
           us.map(u => ({
             id: u.id,
             nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+            roles: u.roles?.map((r: any) => ({ id: r.id, nombre: r.name || r.nombre }))
           })),
         );
         this.cdr.markForCheck();

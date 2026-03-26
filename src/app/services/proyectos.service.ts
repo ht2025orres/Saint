@@ -56,6 +56,7 @@ export interface TareasConsolidadasResponse {
 }
 
 export interface MisPermisos {
+  puede_ver:                boolean;
   puede_crear:              boolean;
   puede_editar:             boolean;
   puede_eliminar:           boolean;
@@ -79,13 +80,14 @@ export interface Proyecto {
   id: number; titulo: string; descripcion?: string;
   estado: EstadoProyecto; fecha_limite_entrega?: string;
   usuario_creador_id: number;
+  es_plantilla?: boolean;
   total_actividades?: number; total_tareas?: number;
   tareas_completadas?: number; tareas_vencidas?: number;
   tareas_sin_actividad?: Tarea[];
   progreso?: number; semaforo?: Semaforo;
-  nivel_usuario?: NivelDisplay;
-  mis_permisos?: MisPermisos;
   actividades?: Actividad[];
+  mis_permisos?: MisPermisos;
+  nivel_usuario?: string;
   created_at: string; updated_at: string;
 }
 
@@ -96,6 +98,7 @@ export interface Actividad {
   progreso?: number; semaforo?: Semaforo;
   mis_permisos?: MisPermisos;
   tareas?: Tarea[];
+  responsables?: number[];
   created_at: string; updated_at: string;
 }
 
@@ -104,6 +107,8 @@ export interface Tarea {
   estado: EstadoTarea; fecha_limite_entrega?: string; fecha_completado?: string;
   notas?: string; responsables?: number[]; creado_por: number;
   semaforo?: Semaforo;
+  origen?: string;
+  evidencias_count?: number;
   created_at: string; updated_at: string;
 }
 
@@ -148,6 +153,7 @@ export interface InformeTarea {
   created_at: string;
   updated_at: string;
   informe_titulo?: string;
+  origen?: string;
 }
 
 // ── SEGUIMIENTO ───────────────────────────────────────────────────────────────
@@ -280,19 +286,38 @@ export class ProyectoService {
     return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/dashboard`, { params: { usuario_id: usuarioId } });
   }
 
-  obtenerDetalleProyecto(id: number, usuarioId: number): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/${id}/detalle-completo`, { params: { usuario_id: usuarioId } });
+  getDetalleCompleto(proyectoId: number, usuarioId: number): Observable<ApiResponse<Proyecto>> {
+    return this.http.get<ApiResponse<Proyecto>>(`${this.api}/proyectos/${proyectoId}/detalle-completo`, {
+      params: new HttpParams().set('usuario_id', usuarioId)
+    });
   }
 
   calcularFechasTareas(proyectoId: number, usuarioId: number, responsables: number[]): Observable<any> {
     return this.http.post(`${this.api}/proyectos/${proyectoId}/calcular-fechas`, { usuario_id: usuarioId, responsables });
   }
 
-  getProyectos(usuarioId: number, filtros?: { estado?: EstadoProyecto; activos?: boolean }): Observable<ApiResponse<Proyecto[]>> {
+  getProyectos(usuarioId: number, filtros?: { estado?: EstadoProyecto; activos?: boolean; es_plantilla?: boolean }): Observable<ApiResponse<Proyecto[]>> {
     let params = new HttpParams().set('usuario_id', usuarioId);
     if (filtros?.estado)  params = params.set('estado', filtros.estado);
     if (filtros?.activos) params = params.set('activos', 'true');
+    if (filtros?.es_plantilla !== undefined) params = params.set('es_plantilla', filtros.es_plantilla ? 'true' : 'false');
     return this.http.get<ApiResponse<Proyecto[]>>(`${this.api}/proyectos`, { params });
+  }
+
+  getPlantillas(usuarioId: number): Observable<ApiResponse<Proyecto[]>> {
+    const params = new HttpParams().set('usuario_id', usuarioId);
+    return this.http.get<ApiResponse<Proyecto[]>>(`${this.api}/proyectos/plantillas`, { params });
+  }
+
+  crearPlantilla(proyectoId: number, usuarioId: number): Observable<ApiResponse<Proyecto>> {
+    return this.http.post<ApiResponse<Proyecto>>(`${this.api}/proyectos/${proyectoId}/crear-plantilla`, { usuario_id: usuarioId });
+  }
+
+  aplicarPlantilla(proyectoId: number, plantillaId: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.api}/proyectos/${proyectoId}/aplicar-plantilla`, {
+      usuario_id: usuarioId,
+      plantilla_id: plantillaId
+    });
   }
 
   crearProyecto(data: Partial<Proyecto> & { usuario_id: number }): Observable<ApiResponse<Proyecto> & ApiMessage> {
@@ -309,10 +334,6 @@ export class ProyectoService {
 
   cambiarEstadoProyecto(id: number, estado: string, usuarioId: number): Observable<ApiMessage> {
     return this.http.post<ApiMessage>(`${this.api}/proyectos/${id}/cambiar-estado`, { estado, usuario_id: usuarioId });
-  }
-
-  getDetalleCompleto(id: number, usuarioId: number): Observable<ApiResponse<Proyecto>> {
-    return this.http.get<ApiResponse<Proyecto>>(`${this.api}/proyectos/${id}/detalle-completo`, { params: { usuario_id: usuarioId } });
   }
 
   // ── PERMISOS ──────────────────────────────────────────────────────────────
@@ -367,8 +388,12 @@ export class ProyectoService {
     return this.http.delete<ApiMessage>(`${this.api}/tareas/${id}`, { params: { usuario_id: usuarioId } });
   }
 
-  completarTarea(id: number, usuarioId: number): Observable<ApiMessage> {
-    return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { usuario_id: usuarioId });
+  completarTarea(id: number, usuarioId: number, data?: FormData | { notas?: string }): Observable<ApiMessage> {
+    if (data instanceof FormData) {
+      if (!data.has('usuario_id')) data.append('usuario_id', String(usuarioId));
+      return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, data);
+    }
+    return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { ...data, usuario_id: usuarioId });
   }
 
   // ── SEGUIMIENTO ───────────────────────────────────────────────────────────────
@@ -426,21 +451,35 @@ export class ProyectoService {
 
   // ── EVIDENCIAS ────────────────────────────────────────────────────────────
 
-  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea', id: number): Observable<ApiResponse<any[]>> {
-    return this.http.get<ApiResponse<any[]>>(
-      `${this.api}/${tipo === 'tarea' ? 'tareas' : 'seguimiento-tareas'}/${id}/evidencias`,
-      { params: { tipo } }
-    );
+  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea', id: number, historico = false, usuarioId?: number): Observable<ApiResponse<any[]>> {
+    let params = new HttpParams().set('tipo', tipo);
+    if (historico) params = params.set('historico', 'true');
+    if (usuarioId) params = params.set('usuario_id', String(usuarioId));
+
+    let endpoint = '';
+    switch (tipo) {
+      case 'tarea':             endpoint = 'tareas'; break;
+      case 'seguimiento_tarea': endpoint = 'seguimiento-tareas'; break;
+      case 'informe_tarea':     endpoint = 'informe-tareas'; break;
+    }
+
+    return this.http.get<ApiResponse<any[]>>(`${this.api}/${endpoint}/${id}/evidencias`, { params });
   }
 
-  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea', id: number, archivo: File, usuarioId: number): Observable<any> {
+  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea', id: number, archivo: File, usuarioId: number): Observable<any> {
     const form = new FormData();
     form.append('archivo', archivo);
     form.append('tipo', tipo);
     form.append('usuario_id', String(usuarioId));
-    return this.http.post<any>(
-      `${this.api}/${tipo === 'tarea' ? 'tareas' : 'seguimiento-tareas'}/${id}/evidencias`, form
-    );
+
+    let endpoint = '';
+    switch (tipo) {
+      case 'tarea':             endpoint = 'tareas'; break;
+      case 'seguimiento_tarea': endpoint = 'seguimiento-tareas'; break;
+      case 'informe_tarea':     endpoint = 'informe-tareas'; break;
+    }
+
+    return this.http.post<any>(`${this.api}/${endpoint}/${id}/evidencias`, form);
   }
 
   getUrlEvidencia(evidenciaId: number): Observable<{ success: boolean; url: string }> {
@@ -449,6 +488,10 @@ export class ProyectoService {
 
   eliminarEvidencia(evidenciaId: number, usuarioId: number): Observable<any> {
     return this.http.delete<any>(`${this.api}/evidencias/${evidenciaId}`, { params: { usuario_id: usuarioId } });
+  }
+
+  restaurarEvidencia(evidenciaId: number, usuarioId: number): Observable<any> {
+    return this.http.post<any>(`${this.api}/evidencias/${evidenciaId}/restaurar`, { usuario_id: usuarioId });
   }
 
   // ── INFORMES ──────────────────────────────────────────────────────────────

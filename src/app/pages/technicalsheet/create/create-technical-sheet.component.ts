@@ -12,6 +12,7 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
 import { ProductCategory } from '../../../models/ProductCategory';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { PanZoomComponent } from 'ngx-panzoom';
+import { forkJoin } from 'rxjs';
 
 @Component({
     selector: 'app-technical-sheet',
@@ -48,24 +49,25 @@ export class CreateTechnicalSheetComponent implements OnInit {
     }
 
     get codigoItemNoValid() {
-        return this.formGr.get('idItem').invalid && this.formGr.get('idItem').touched;
+        return this.formGr.get('id_item').invalid && this.formGr.get('id_item').touched;
     }
 
 
     get descripcionItemNoValid() {
-        return this.formGr.get('itemDescription').invalid && this.formGr.get('itemDescription').touched;
+        return this.formGr.get('item_description').invalid && this.formGr.get('item_description').touched;
     }
 
 
     get codigoCompaniaNoValid() {
-        return this.formGr.get('idCompany').invalid && this.formGr.get('idCompany').touched;
+        return this.formGr.get('id_company').invalid && this.formGr.get('id_company').touched;
     }
 
 
     get descripcionCompaniaNoValid() {
-        return this.formGr.get('companyName').invalid && this.formGr.get('companyName').touched;
+        return this.formGr.get('company_name').invalid && this.formGr.get('company_name').touched;
     }
     technicalDataSheetCurrent: TechnicalDataSheet;
+    isEdition: boolean = false;
     title = 'Guardar ficha técnica';
     file: File = null; // Variable to store file
     loading = false; // Flag variable
@@ -167,71 +169,85 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
 
     loadChip(id: any, operation: string) {
-        this.productCategoryService.getAll()
-            .subscribe(resp => this.productCategories = resp, error => {
-                Swal.fire('Error en el formulario', 'error al obtener la lista de categorias', 'error');
-            }
-            );
         this.genderTypes = ['masculino', 'femenino'];
         this.technicalDataSheetTypes = ['FICHA TECNICA', 'OPM'];
+
+        const categories$ = this.productCategoryService.getAll();
+
         if (id === 'new') {
-            this.technicalDataSheetCurrent.productCategory = new ProductCategory();
+            this.isEdition = false;
+            categories$.subscribe(resp => {
+                this.productCategories = resp;
+                this.technicalDataSheetCurrent = new TechnicalDataSheet();
+                this.technicalDataSheetCurrent.id_product_category = null;
+                this.createForm();
+            }, error => {
+                Swal.fire('Error en el formulario', 'error al obtener la lista de categorias', 'error');
+            });
             return;
         }
-        this.technicalSheetService.getById(id)
-            .subscribe(resp => {
-                this.technicalDataSheetCurrent = resp;
+
+        const sheet$ = this.technicalSheetService.getById(id);
+
+        forkJoin([categories$, sheet$]).subscribe({
+            next: ([categories, sheet]) => {
+                this.isEdition = operation !== 'duplicate';
+                this.productCategories = categories;
+                this.technicalDataSheetCurrent = sheet;
+                if (this.technicalDataSheetCurrent.id_product_category) {
+                    this.technicalDataSheetCurrent.id_product_category = Number(this.technicalDataSheetCurrent.id_product_category);
+                }
                 if (operation === 'duplicate') {
                     this.technicalDataSheetCurrent.id = null;
-                    this.technicalDataSheetCurrent.idItem = null;
-                    this.technicalDataSheetCurrent.itemDescription = null;
-                } 
+                    this.technicalDataSheetCurrent.id_item = null;
+                    this.technicalDataSheetCurrent.item_description = null;
+                }
                 this.setFormValues();
-            }, error => {
-                Swal.fire('Error de carga', 'La información de la ficha no se ha cargado correctamente', 'error');
-            });
-
-
+            },
+            error: (error) => {
+                Swal.fire('Error de carga', 'La información necesaria no se ha cargado correctamente', 'error');
+            }
+        });
     }
 
     createForm() {
         this.formGr = this.fb.group({
-            idItem: ['', Validators.required],
-            itemDescription: ['', Validators.required],
-            idCompany: '',
-            companyName: ['', Validators.required],
-            productCategorySelect: ['', Validators.required],
-            technicalDataSheetTypesSelect: ['', Validators.required],
-            companySearch: '',
-            idItemCustomer: '',
+            id_item: ['', Validators.required],
+            item_description: ['', Validators.required],
+            id_company: '',
+            company_name: ['', Validators.required],
+            product_category_select: ['', Validators.required],
+            technical_data_sheet_types_select: ['', Validators.required],
+            company_search: '',
+            id_item_customer: '',
             gender: '',
-            mainFabric: '',
-            contrastFabric: '',
+            main_fabric: '',
+            contrast_fabric: '',
             waistband: '',
             button: '',
             zipper: '',
             figured: '',
             pins: '',
-            sidePulls: '',
+            side_pulls: '',
             purses: '',
-            shoulderUnion: '',
+            shoulder_union: '',
             lining: '',
-            shirtCollar: '',
+            shirt_collar: '',
             cuffs: '',
             pockets: '',
             busybody: '',
             sleeves: '',
             back: '',
             shoulders: '',
-            sleeveConnection: '',
-            frontAdjustment: '',
+            sleeve_connection: '',
+            front_adjustment: '',
             neckline: '',
             finished: '',
             darts: '',
             opening: '',
             straps: '',
             cuts: '',
-            closedSides: '',
+            closed_sides: '',
             hem: '',
             hood: '',
             crotch: '',
@@ -248,9 +264,9 @@ export class CreateTechnicalSheetComponent implements OnInit {
             ironing: '',
             packaging: '',
             stitching: '',
-            criticalPoints: '',
-            customerDescription: '',
-            measurementTable: ''
+            critical_points: '',
+            customer_description: '',
+            measurement_table: ''
         });
     }
 
@@ -296,39 +312,39 @@ export class CreateTechnicalSheetComponent implements OnInit {
         console.log(this.formGr);
         console.log("formulario enviado")
         if (this.formGr.valid) {
-            this.technicalDataSheetCurrent.idItem = this.formGr.get('idItem').value;
-            this.technicalDataSheetCurrent.itemDescription = this.formGr.get('itemDescription').value;
-            this.technicalDataSheetCurrent.idCompany = this.formGr.get('idCompany').value;
-            this.technicalDataSheetCurrent.companyName = this.formGr.get('companyName').value;
-            this.technicalDataSheetCurrent.idItemCustomer = this.formGr.get('idItemCustomer').value;
+            this.technicalDataSheetCurrent.id_item = this.formGr.get('id_item').value;
+            this.technicalDataSheetCurrent.item_description = this.formGr.get('item_description').value;
+            this.technicalDataSheetCurrent.id_company = this.formGr.get('id_company').value;
+            this.technicalDataSheetCurrent.company_name = this.formGr.get('company_name').value;
+            this.technicalDataSheetCurrent.id_item_customer = this.formGr.get('id_item_customer').value;
             this.technicalDataSheetCurrent.gender = this.formGr.get('gender').value;
-            this.technicalDataSheetCurrent.mainFabric = this.formGr.get('mainFabric').value;
-            this.technicalDataSheetCurrent.contrastFabric = this.formGr.get('contrastFabric').value;
+            this.technicalDataSheetCurrent.main_fabric = this.formGr.get('main_fabric').value;
+            this.technicalDataSheetCurrent.contrast_fabric = this.formGr.get('contrast_fabric').value;
             this.technicalDataSheetCurrent.waistband = this.formGr.get('waistband').value;
             this.technicalDataSheetCurrent.button = this.formGr.get('button').value;
             this.technicalDataSheetCurrent.zipper = this.formGr.get('zipper').value;
             this.technicalDataSheetCurrent.figured = this.formGr.get('figured').value;
             this.technicalDataSheetCurrent.pins = this.formGr.get('pins').value;
-            this.technicalDataSheetCurrent.sidePulls = this.formGr.get('sidePulls').value;
+            this.technicalDataSheetCurrent.side_pulls = this.formGr.get('side_pulls').value;
             this.technicalDataSheetCurrent.purses = this.formGr.get('purses').value;
-            this.technicalDataSheetCurrent.shoulderUnion = this.formGr.get('shoulderUnion').value;
+            this.technicalDataSheetCurrent.shoulder_union = this.formGr.get('shoulder_union').value;
             this.technicalDataSheetCurrent.lining = this.formGr.get('lining').value;
-            this.technicalDataSheetCurrent.shirtCollar = this.formGr.get('shirtCollar').value;
+            this.technicalDataSheetCurrent.shirt_collar = this.formGr.get('shirt_collar').value;
             this.technicalDataSheetCurrent.cuffs = this.formGr.get('cuffs').value;
             this.technicalDataSheetCurrent.pockets = this.formGr.get('pockets').value;
             this.technicalDataSheetCurrent.busybody = this.formGr.get('busybody').value;
             this.technicalDataSheetCurrent.sleeves = this.formGr.get('sleeves').value;
             this.technicalDataSheetCurrent.back = this.formGr.get('back').value;
             this.technicalDataSheetCurrent.shoulders = this.formGr.get('shoulders').value;
-            this.technicalDataSheetCurrent.sleeveConnection = this.formGr.get('sleeveConnection').value;
-            this.technicalDataSheetCurrent.frontAdjustment = this.formGr.get('frontAdjustment').value;
+            this.technicalDataSheetCurrent.sleeve_connection = this.formGr.get('sleeve_connection').value;
+            this.technicalDataSheetCurrent.front_adjustment = this.formGr.get('front_adjustment').value;
             this.technicalDataSheetCurrent.neckline = this.formGr.get('neckline').value;
             this.technicalDataSheetCurrent.finished = this.formGr.get('finished').value;
             this.technicalDataSheetCurrent.darts = this.formGr.get('darts').value;
             this.technicalDataSheetCurrent.opening = this.formGr.get('opening').value;
             this.technicalDataSheetCurrent.straps = this.formGr.get('straps').value;
             this.technicalDataSheetCurrent.cuts = this.formGr.get('cuts').value;
-            this.technicalDataSheetCurrent.closedSides = this.formGr.get('closedSides').value;
+            this.technicalDataSheetCurrent.closed_sides = this.formGr.get('closed_sides').value;
             this.technicalDataSheetCurrent.hem = this.formGr.get('hem').value;
             this.technicalDataSheetCurrent.hood = this.formGr.get('hood').value;
             this.technicalDataSheetCurrent.crotch = this.formGr.get('crotch').value;
@@ -345,12 +361,12 @@ export class CreateTechnicalSheetComponent implements OnInit {
             this.technicalDataSheetCurrent.ironing = this.formGr.get('ironing').value;
             this.technicalDataSheetCurrent.packaging = this.formGr.get('packaging').value;
             this.technicalDataSheetCurrent.stitching = this.formGr.get('stitching').value;
-            this.technicalDataSheetCurrent.criticalPoints = this.formGr.get('criticalPoints').value;
-            this.technicalDataSheetCurrent.customerDescription = this.formGr.get('customerDescription').value;
-            this.technicalDataSheetCurrent.measurementTable = this.formGr.get('measurementTable').value;
-            this.technicalDataSheetCurrent.userCreated = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
-            this.technicalDataSheetCurrent.userValidation = '';
-            this.technicalDataSheetCurrent.userApproved = '';
+            this.technicalDataSheetCurrent.critical_points = this.formGr.get('critical_points').value;
+            this.technicalDataSheetCurrent.customer_description = this.formGr.get('customer_description').value;
+            this.technicalDataSheetCurrent.measurement_table = this.formGr.get('measurement_table').value;
+            this.technicalDataSheetCurrent.user_created = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+            this.technicalDataSheetCurrent.user_validation = '';
+            this.technicalDataSheetCurrent.user_approved = '';
 
             this.loading = true;
             this.technicalSheetService.saveFicha(this.technicalDataSheetCurrent)
@@ -466,42 +482,42 @@ export class CreateTechnicalSheetComponent implements OnInit {
             const companieSelected = this.customers.find(obj => obj.customerName === content.value);
 
             this.formGr.setValue({
-                idItem: this.technicalDataSheetCurrent.idItem || '',
-                itemDescription: this.technicalDataSheetCurrent.itemDescription || '',
-                idCompany: companieSelected.customerId || this.technicalDataSheetCurrent.idCompany,
-                companyName: companieSelected.customerName || this.technicalDataSheetCurrent.companyName,
-                productCategorySelect: this.technicalDataSheetCurrent.productCategory.description || '',
-                technicalDataSheetTypesSelect : this.technicalDataSheetCurrent.technicalDataSheetType || '',
-                companySearch: '',
+                id_item: this.technicalDataSheetCurrent.id_item || '',
+                item_description: this.technicalDataSheetCurrent.item_description || '',
+                id_company: companieSelected.customerId || this.technicalDataSheetCurrent.id_company,
+                company_name: companieSelected.customerName || this.technicalDataSheetCurrent.company_name,
+                product_category_select: this.technicalDataSheetCurrent.id_product_category || '',
+                technical_data_sheet_types_select : this.technicalDataSheetCurrent.technical_data_sheet_type || '',
+                company_search: '',
                 gender: this.technicalDataSheetCurrent.gender || '',
-                idItemCustomer: this.technicalDataSheetCurrent.idItemCustomer || '',
-                mainFabric: this.technicalDataSheetCurrent.mainFabric || '',
-                contrastFabric: this.technicalDataSheetCurrent.contrastFabric || '',
+                id_item_customer: this.technicalDataSheetCurrent.id_item_customer || '',
+                main_fabric: this.technicalDataSheetCurrent.main_fabric || '',
+                contrast_fabric: this.technicalDataSheetCurrent.contrast_fabric || '',
                 waistband: this.technicalDataSheetCurrent.waistband || '',
                 button: this.technicalDataSheetCurrent.button || '',
                 zipper: this.technicalDataSheetCurrent.zipper || '',
                 figured: this.technicalDataSheetCurrent.figured || '',
                 pins: this.technicalDataSheetCurrent.pins || '',
-                sidePulls: this.technicalDataSheetCurrent.sidePulls || '',
+                side_pulls: this.technicalDataSheetCurrent.side_pulls || '',
                 purses: this.technicalDataSheetCurrent.purses || '',
-                shoulderUnion: this.technicalDataSheetCurrent.shoulderUnion || '',
+                shoulder_union: this.technicalDataSheetCurrent.shoulder_union || '',
                 lining: this.technicalDataSheetCurrent.lining || '',
-                shirtCollar: this.technicalDataSheetCurrent.shirtCollar || '',
+                shirt_collar: this.technicalDataSheetCurrent.shirt_collar || '',
                 cuffs: this.technicalDataSheetCurrent.cuffs || '',
                 pockets: this.technicalDataSheetCurrent.pockets || '',
                 busybody: this.technicalDataSheetCurrent.busybody || '',
                 sleeves: this.technicalDataSheetCurrent.sleeves || '',
                 back: this.technicalDataSheetCurrent.back || '',
                 shoulders: this.technicalDataSheetCurrent.shoulders || '',
-                sleeveConnection: this.technicalDataSheetCurrent.sleeveConnection || '',
-                frontAdjustment: this.technicalDataSheetCurrent.frontAdjustment || '',
+                sleeve_connection: this.technicalDataSheetCurrent.sleeve_connection || '',
+                front_adjustment: this.technicalDataSheetCurrent.front_adjustment || '',
                 neckline: this.technicalDataSheetCurrent.neckline || '',
                 finished: this.technicalDataSheetCurrent.finished || '',
                 darts: this.technicalDataSheetCurrent.darts || '',
                 opening: this.technicalDataSheetCurrent.opening || '',
                 straps: this.technicalDataSheetCurrent.straps || '',
                 cuts: this.technicalDataSheetCurrent.cuts || '',
-                closedSides: this.technicalDataSheetCurrent.closedSides || '',
+                closed_sides: this.technicalDataSheetCurrent.closed_sides || '',
                 hem: this.technicalDataSheetCurrent.hem || '',
                 hood: this.technicalDataSheetCurrent.hood || '',
                 crotch: this.technicalDataSheetCurrent.crotch || '',
@@ -518,9 +534,9 @@ export class CreateTechnicalSheetComponent implements OnInit {
                 ironing: this.technicalDataSheetCurrent.ironing || '',
                 packaging: this.technicalDataSheetCurrent.packaging || '',
                 stitching: this.technicalDataSheetCurrent.stitching || '',
-                criticalPoints: this.technicalDataSheetCurrent.criticalPoints || '',
-                customerDescription: this.technicalDataSheetCurrent.customerDescription || '',
-                measurementTable: this.technicalDataSheetCurrent.measurementTable || '',
+                critical_points: this.technicalDataSheetCurrent.critical_points || '',
+                customer_description: this.technicalDataSheetCurrent.customer_description || '',
+                measurement_table: this.technicalDataSheetCurrent.measurement_table || '',
             });
         } else {
             this.setFormValues();
@@ -530,17 +546,36 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
     assingValueProductCategory(content) {
         if (content.value.trim() !== '') {
-            this.technicalDataSheetCurrent.productCategory = this.productCategories.find(obj => obj.description === content.value);
+            // Buscamos primero por descripción
+            let category = this.productCategories.find(obj => obj.description === content.value);
+            
+            // Si no se encuentra por descripción, probamos buscar por ID (por si acaso el input tiene el ID)
+            if (!category) {
+                category = this.productCategories.find(obj => 
+                    (obj.idProductCategory && obj.idProductCategory == content.value) ||
+                    ((obj as any).id && (obj as any).id == content.value)
+                );
+            }
+
+            if (category) {
+                this.technicalDataSheetCurrent.id_product_category = category.idProductCategory || (category as any).id;
+            } else {
+                // Si aún así no se encuentra, y el valor es un número, lo asignamos directamente
+                if (!isNaN(content.value) && content.value !== '') {
+                    this.technicalDataSheetCurrent.id_product_category = Number(content.value);
+                }
+            }
+            
             this.setFormValues();
             this.customers = [];
-            this.technicalDataSheetCurrent.companyName = '';
-            this.technicalDataSheetCurrent.idCompany = '';
+            this.technicalDataSheetCurrent.company_name = '';
+            this.technicalDataSheetCurrent.id_company = '';
         }
     }
 
     assingTechnicalDataSheetType(content) {
         if (content.value.trim() !== '') {
-            this.technicalDataSheetCurrent.technicalDataSheetType = content.value;
+            this.technicalDataSheetCurrent.technical_data_sheet_type = content.value;
         }
     }
 
@@ -552,9 +587,10 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
     saveProductImages() {
         this.loading = true;
+        console.log(this.technicalDataSheetCurrent);
         this.technicalSheetService.saveProductImages(this.technicalDataSheetCurrent.id,
-            this.technicalDataSheetCurrent.companyName,
-            this.technicalDataSheetCurrent.idItem, this.formData)
+            this.technicalDataSheetCurrent.id_company,
+            this.technicalDataSheetCurrent.id_item, this.formData)
             .subscribe(obj => {
                 this.loading = false;
                 this.technicalDataSheetCurrent = obj;
@@ -580,8 +616,8 @@ export class CreateTechnicalSheetComponent implements OnInit {
     saveCharacteristicImages() {
         this.loading = true;
         this.technicalSheetService.saveCharacteristicImages(this.technicalDataSheetCurrent.id,
-            this.technicalDataSheetCurrent.companyName,
-            this.technicalDataSheetCurrent.idItem, this.formData)
+            this.technicalDataSheetCurrent.company_name,
+            this.technicalDataSheetCurrent.id_item, this.formData)
             .subscribe(obj => {
                 this.loading = false;
                 this.technicalDataSheetCurrent = obj;
@@ -609,8 +645,8 @@ export class CreateTechnicalSheetComponent implements OnInit {
     saveLogoTechnicalDataSheetFile() {
         this.loading = true;
         this.technicalSheetService.saveLogoTechnicalDataSheetFile(this.technicalDataSheetCurrent.id,
-            this.technicalDataSheetCurrent.companyName,
-            this.technicalDataSheetCurrent.idItem, this.formData)
+            this.technicalDataSheetCurrent.company_name,
+            this.technicalDataSheetCurrent.id_item, this.formData)
             .subscribe(obj => {
                 this.loading = false;
                 this.technicalDataSheetCurrent = obj;
@@ -661,43 +697,57 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
 
     setFormValues(): void {
-        this.formGr.setValue({
-            idItem: this.technicalDataSheetCurrent.idItem || '',
-            itemDescription: this.technicalDataSheetCurrent.itemDescription || '',
-            idCompany: this.technicalDataSheetCurrent.idCompany || '',
-            companyName: this.technicalDataSheetCurrent.companyName || '',
-            productCategorySelect: this.technicalDataSheetCurrent.productCategory.description || '',
-            technicalDataSheetTypesSelect: this.technicalDataSheetCurrent.technicalDataSheetType || '',
-            companySearch: '',
+        if (!this.technicalDataSheetCurrent) {
+            return;
+        }
+
+        let categoryValue = '';
+        if (this.productCategories && this.technicalDataSheetCurrent.id_product_category) {
+            const category = this.productCategories.find(c => 
+                (c.idProductCategory && c.idProductCategory == this.technicalDataSheetCurrent.id_product_category) ||
+                ((c as any).id && (c as any).id == this.technicalDataSheetCurrent.id_product_category) ||
+                ((c as any).id_product_category && (c as any).id_product_category == this.technicalDataSheetCurrent.id_product_category)
+            );
+            categoryValue = category ? category.description : this.technicalDataSheetCurrent.id_product_category.toString();
+        }
+
+        this.formGr.patchValue({
+            id_item: this.technicalDataSheetCurrent.id_item || '',
+            item_description: this.technicalDataSheetCurrent.item_description || '',
+            id_company: this.technicalDataSheetCurrent.id_company || '',
+            company_name: this.technicalDataSheetCurrent.company_name || '',
+            product_category_select: categoryValue,
+            technical_data_sheet_types_select: this.technicalDataSheetCurrent.technical_data_sheet_type || '',
+            company_search: '',
             gender: this.technicalDataSheetCurrent.gender || '',
-            idItemCustomer: this.technicalDataSheetCurrent.idItemCustomer || '',
-            mainFabric: this.technicalDataSheetCurrent.mainFabric || '',
-            contrastFabric: this.technicalDataSheetCurrent.contrastFabric || '',
+            id_item_customer: this.technicalDataSheetCurrent.id_item_customer || '',
+            main_fabric: this.technicalDataSheetCurrent.main_fabric || '',
+            contrast_fabric: this.technicalDataSheetCurrent.contrast_fabric || '',
             waistband: this.technicalDataSheetCurrent.waistband || '',
             button: this.technicalDataSheetCurrent.button || '',
             zipper: this.technicalDataSheetCurrent.zipper || '',
             figured: this.technicalDataSheetCurrent.figured || '',
             pins: this.technicalDataSheetCurrent.pins || '',
-            sidePulls: this.technicalDataSheetCurrent.sidePulls || '',
+            side_pulls: this.technicalDataSheetCurrent.side_pulls || '',
             purses: this.technicalDataSheetCurrent.purses || '',
-            shoulderUnion: this.technicalDataSheetCurrent.shoulderUnion || '',
+            shoulder_union: this.technicalDataSheetCurrent.shoulder_union || '',
             lining: this.technicalDataSheetCurrent.lining || '',
-            shirtCollar: this.technicalDataSheetCurrent.shirtCollar || '',
+            shirt_collar: this.technicalDataSheetCurrent.shirt_collar || '',
             cuffs: this.technicalDataSheetCurrent.cuffs || '',
             pockets: this.technicalDataSheetCurrent.pockets || '',
             busybody: this.technicalDataSheetCurrent.busybody || '',
             sleeves: this.technicalDataSheetCurrent.sleeves || '',
             back: this.technicalDataSheetCurrent.back || '',
             shoulders: this.technicalDataSheetCurrent.shoulders || '',
-            sleeveConnection: this.technicalDataSheetCurrent.sleeveConnection || '',
-            frontAdjustment: this.technicalDataSheetCurrent.frontAdjustment || '',
+            sleeve_connection: this.technicalDataSheetCurrent.sleeve_connection || '',
+            front_adjustment: this.technicalDataSheetCurrent.front_adjustment || '',
             neckline: this.technicalDataSheetCurrent.neckline || '',
             finished: this.technicalDataSheetCurrent.finished || '',
             darts: this.technicalDataSheetCurrent.darts || '',
             opening: this.technicalDataSheetCurrent.opening || '',
             straps: this.technicalDataSheetCurrent.straps || '',
             cuts: this.technicalDataSheetCurrent.cuts || '',
-            closedSides: this.technicalDataSheetCurrent.closedSides || '',
+            closed_sides: this.technicalDataSheetCurrent.closed_sides || '',
             hem: this.technicalDataSheetCurrent.hem || '',
             hood: this.technicalDataSheetCurrent.hood || '',
             crotch: this.technicalDataSheetCurrent.crotch || '',
@@ -714,9 +764,27 @@ export class CreateTechnicalSheetComponent implements OnInit {
             ironing: this.technicalDataSheetCurrent.ironing || '',
             packaging: this.technicalDataSheetCurrent.packaging || '' ,
             stitching: this.technicalDataSheetCurrent.stitching || '',
-            criticalPoints: this.technicalDataSheetCurrent.criticalPoints || '',
-            customerDescription: this.technicalDataSheetCurrent.customerDescription || '',
-            measurementTable: this.technicalDataSheetCurrent.measurementTable || '',
+            critical_points: this.technicalDataSheetCurrent.critical_points || '',
+            customer_description: this.technicalDataSheetCurrent.customer_description || '',
+            measurement_table: this.technicalDataSheetCurrent.measurement_table || '',
         });
+    }
+
+    goBack(): void {
+        if (this.technicalDataSheetCurrent && this.technicalDataSheetCurrent.status) {
+            this.router.navigate(['/listTechnicalDataSheet/page/0', this.technicalDataSheetCurrent.status], { queryParams: { restoreState: 'true' } });
+        } else {
+            this.router.navigate(['/listTechnicalDataSheet/page/0/DESARROLLO'], { queryParams: { restoreState: 'true' } });
+        }
+    }
+
+    getCategoryDescription(id: any): string {
+        if (!this.productCategories || !id) return '';
+        const category = this.productCategories.find(c => 
+            (c.idProductCategory && c.idProductCategory == id) ||
+            ((c as any).id && (c as any).id == id) ||
+            ((c as any).id_product_category && (c as any).id_product_category == id)
+        );
+        return category ? category.description : id.toString();
     }
 }

@@ -7,6 +7,7 @@ export interface ProyectoForm {
   descripcion:          string;
   estado:               string;
   fecha_limite_entrega: string;
+  es_plantilla:         boolean;
 }
 
 @Component({
@@ -33,14 +34,15 @@ export class ModalProyectoComponent implements OnChanges {
   ];
 
   get esEdicion(): boolean { return !!this.proyecto; }
-  get titulo():    string  { return this.esEdicion ? 'Editar Proyecto' : 'Nuevo Proyecto'; }
+  get tituloModal(): string  { return this.esEdicion ? 'Editar Proyecto' : 'Nuevo Proyecto'; }
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
-      titulo:               ['', [Validators.required, Validators.maxLength(200)]],
+      titulo:               ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
       descripcion:          [''],
       estado:               ['pendiente'],
       fecha_limite_entrega: [''],
+      es_plantilla:         [false],
     });
   }
 
@@ -57,9 +59,16 @@ export class ModalProyectoComponent implements OnChanges {
         descripcion:          this.proyecto.descripcion ?? '',
         estado:               this.proyecto.estado ?? 'pendiente',
         fecha_limite_entrega: this._toLocal(this.proyecto.fecha_limite_entrega),
+        es_plantilla:         this.proyecto.es_plantilla ?? false,
       });
     } else {
-      this.form.reset({ titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '' });
+      this.form.reset({ 
+        titulo: '', 
+        descripcion: '', 
+        estado: 'pendiente', 
+        fecha_limite_entrega: '',
+        es_plantilla: false 
+      });
     }
   }
 
