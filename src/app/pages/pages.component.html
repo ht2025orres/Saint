@@ -3,6 +3,16 @@
 
   <app-header></app-header>
 
+  <!-- Banner de Personificación -->
+  <div *ngIf="authService.isImpersonating" 
+       class="impersonation-banner d-flex align-items-center justify-content-center p-2 bg-warning text-dark font-weight-bold">
+    <i class="fa fa-user-secret mr-2"></i>
+    <span>Estás actuando como: <strong>{{ authService.user.firstName }} {{ authService.user.lastName }}</strong></span>
+    <button class="btn btn-sm btn-dark ml-3" (click)="stopImpersonating()">
+      <i class="fa fa-sign-out mr-1"></i> Salir de personificación
+    </button>
+  </div>
+
   <app-sidebar></app-sidebar>
 
   <div class="page-wrapper">

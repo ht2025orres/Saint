@@ -114,6 +114,37 @@ export class ListUserComponent implements OnInit, OnDestroy {
         });
     }
 
+    impersonate(user: User): void {
+        Swal.fire({
+            title: '¿Personificar usuario?',
+            text: `Iniciará sesión como ${user.firstName} ${user.lastName}. Podrá volver a su sesión de administrador en cualquier momento.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, personificar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.authService.impersonate(user.email).subscribe({
+                    next: () => {
+                        Swal.fire({
+                            title: 'Sesión cambiada',
+                            text: `Ahora estás actuando como ${user.firstName}`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        this.router.navigate(['/dashboard']).then(() => {
+                            window.location.reload(); // Recargar para actualizar todos los estados
+                        });
+                    },
+                    error: () => {
+                        Swal.fire('Error', 'No se pudo personificar al usuario. Verifique la configuración del servidor.', 'error');
+                    }
+                });
+            }
+        });
+    }
+
         enableUser(user: User) {
         Swal.fire({
             title: '¿Activar usuario?',

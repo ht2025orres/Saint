@@ -46,6 +46,24 @@ export class TechnicalSheetService {
     // }
 
     saveFicha(technicalDataSheet: TechnicalDataSheet): Observable<any> {
+        // Aseguramos que los campos obligatorios no sean nulos antes de enviar al backend
+        const fieldsToEnsure = [
+            'id_item_customer', 'additional', 'boot', 'rib', 'button', 'buttonhole', 
+            'composition', 'contrast_fabric', 'critical_points', 'crotch', 'cuffs', 
+            'cuts', 'darts', 'edit_comments', 'embroidery', 'figured', 'finished', 
+            'front_adjustment', 'gender', 'hem', 'hood', 'ironing', 'lining', 
+            'loops', 'neckline', 'opening', 'packaging', 'pins', 'prewash', 
+            'purses', 'qa_comments', 'reflective', 'shirt_collar', 'shoulder_union', 
+            'shoulders', 'side_pulls', 'sleeve_connection', 'sleeves', 'stamped', 
+            'stitching', 'straps', 'waistband', 'zipper', 'observations', 'logo_description'
+        ];
+
+        fieldsToEnsure.forEach(field => {
+            if (technicalDataSheet[field] == null) {
+                technicalDataSheet[field] = '';
+            }
+        });
+
         if (technicalDataSheet.id != null){
             return this.http.put(`${this.urlEndPoint}`, technicalDataSheet);
         }

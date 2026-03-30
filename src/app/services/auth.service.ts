@@ -244,6 +244,51 @@ export class AuthService {
     localStorage.removeItem('user');
   }
 
+  public get isImpersonating(): boolean {
+    return sessionStorage.getItem('admin_token') !== null;
+  }
+
+  impersonate(username: string): Observable<any> {
+    const httpHeaders = new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + this.token
+    });
+
+    const body = { username: username };
+    const urlImpersonate = `${this.apiLaravelUrl}/auth/impersonate`;
+
+    return this.http.post<any>(urlImpersonate, body, {
+      headers: httpHeaders
+    }).pipe(
+      tap(response => {
+        // Guardamos la sesión del admin antes de cambiar
+        sessionStorage.setItem('admin_token', this.token);
+        sessionStorage.setItem('admin_refresh_token', this.refreshTokenValue);
+        sessionStorage.setItem('admin_user', JSON.stringify(this.user));
+
+        // Cargamos la sesión del usuario personificado
+        this.saveToken(response.access_token, response.refresh_token);
+        this.saveUser(response.access_token);
+      })
+    );
+  }
+
+  stopImpersonating(): void {
+    const adminToken = sessionStorage.getItem('admin_token');
+    const adminRefreshToken = sessionStorage.getItem('admin_refresh_token');
+    const adminUser = sessionStorage.getItem('admin_user');
+
+    if (adminToken && adminUser) {
+      this.saveToken(adminToken, adminRefreshToken);
+      this._user = JSON.parse(adminUser);
+      sessionStorage.setItem('user', adminUser);
+      
+      sessionStorage.removeItem('admin_token');
+      sessionStorage.removeItem('admin_refresh_token');
+      sessionStorage.removeItem('admin_user');
+    }
+  }
+
   getNormalizePayload(payload: string): string {
     return payload.replace("Ã±","ñ")
   }

@@ -106,6 +106,13 @@
                             <td class="d-flex align-items-center justify-content-center">
                                 <div class="d-flex" style="padding-right: 0!important;">
 
+                                    <!-- Personificar (Solo Admin) -->
+                                    <button *ngIf="authService.hasRole('Administrador del sistema') && user.id !== authService.user.id"
+                                        class="nav-link mx-1 btn btn-cicle-sheet btn-warning sombra-buttoms"
+                                        (click)="impersonate(user)" title="Personificar usuario">
+                                        <i class="fa fa-user-secret fa-3x text-white"></i>
+                                    </button>
+
                                     <!-- Editar -->
                                     <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor sombra-buttoms"
                                         [routerLink]="['/createUser', user.id]">
