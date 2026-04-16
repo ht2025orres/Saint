@@ -29,6 +29,40 @@
     <!-- Body -->
     <div [formGroup]="form" class="p-8 space-y-6 overflow-y-auto max-h-[70vh]">
 
+      <!-- Alerta Proyecto Completado -->
+      <div *ngIf="proyecto?.estado === 'completado'" 
+        class="bg-amber-50 border border-amber-100 p-4 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top-4 duration-300">
+        <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+          <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-black text-amber-800 uppercase tracking-widest">Proyecto Finalizado</h4>
+          <p class="text-[10px] font-bold text-amber-600 mt-1 leading-relaxed">
+            Este proyecto ya está marcado como completado. Para añadir una nueva actividad, debes indicar el motivo de la reapertura o nuevo requerimiento.
+          </p>
+        </div>
+      </div>
+
+      <!-- Reapertura (Solo si el proyecto está completado) -->
+      <div *ngIf="proyecto?.estado === 'completado'" class="space-y-4">
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">Título del Requerimiento <span class="text-red-500">*</span></label>
+          <div class="relative group">
+            <i class="mdi mdi-tag-plus absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 group-focus-within:text-amber-500 transition-colors text-lg"></i>
+            <input type="text" formControlName="titulo_reapertura" placeholder="Ej: Nueva función de QRs"
+              class="w-full pl-11 pr-4 py-3.5 bg-amber-50/50 border-2 border-amber-100 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-300 transition-all outline-none shadow-sm">
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">Descripción del Requerimiento</label>
+          <div class="relative group">
+            <i class="mdi mdi-comment-alert absolute left-4 top-4 text-amber-400 group-focus-within:text-amber-500 transition-colors text-lg"></i>
+            <textarea formControlName="descripcion_reapertura" rows="2" placeholder="Explica los detalles del nuevo requerimiento..."
+              class="w-full pl-11 pr-4 py-3.5 bg-amber-50/50 border-2 border-amber-100 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-300 transition-all outline-none resize-none shadow-sm"></textarea>
+          </div>
+        </div>
+      </div>
+
       <!-- Título con diseño moderno -->
       <div class="space-y-2">
         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Título de la Actividad</label>

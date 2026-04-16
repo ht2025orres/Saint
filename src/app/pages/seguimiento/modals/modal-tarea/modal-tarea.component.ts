@@ -13,6 +13,8 @@ export interface TareaForm {
   notas:                string;
   fecha_limite_entrega: string;
   responsables:         number[];
+  titulo_reapertura?:    string;
+  descripcion_reapertura?: string;
 }
 
 @Component({
@@ -25,6 +27,7 @@ export class ModalTareaComponent implements OnChanges {
   @Input() tarea: Tarea | null    = null;
   @Input() actividadId: number | null = null;
   @Input() proyectoId: number  | null = null;
+  @Input() proyecto: any | null = null;
   @Input() actividades: Actividad[]   = [];
   @Input() usuariosDisponibles: UsuarioCache[] = [];
   @Input() saving = false;
@@ -69,12 +72,15 @@ export class ModalTareaComponent implements OnChanges {
     public state: SeguimientoStateService
   ) {
     this.form = this.fb.group({
+      proyecto_id:          [null],
       actividad_id:         [null],
       titulo:               ['', [Validators.required, Validators.maxLength(250)]],
       descripcion:          [''],
       estado:               ['pendiente'],
       notas:                [''],
       fecha_limite_entrega: [''],
+      titulo_reapertura:    [''],
+      descripcion_reapertura: [''],
     });
   }
 
@@ -95,12 +101,15 @@ export class ModalTareaComponent implements OnChanges {
 
     if (this.tarea) {
       this.form.patchValue({
+        proyecto_id:          this.tarea.proyecto_id ?? null,
         actividad_id:         this.tarea.actividad_id ?? null,
         titulo:               this.tarea.titulo ?? '',
         descripcion:          this.tarea.descripcion ?? '',
         estado:               this.tarea.estado ?? 'pendiente',
         notas:                this.tarea.notas ?? '',
         fecha_limite_entrega: this._toLocal(this.tarea.fecha_limite_entrega),
+        titulo_reapertura:    '',
+        descripcion_reapertura: '',
       });
       // Resolver responsables desde cache
       this.responsablesSelec = (this.tarea.responsables ?? [])
@@ -108,8 +117,11 @@ export class ModalTareaComponent implements OnChanges {
         .filter((u): u is UsuarioCache => !!u);
     } else {
       this.form.reset({
+        proyecto_id:  this.proyectoId ?? null,
         actividad_id: this.actividadId ?? null,
         titulo: '', descripcion: '', estado: 'pendiente', notas: '', fecha_limite_entrega: '',
+        titulo_reapertura: '',
+        descripcion_reapertura: '',
       });
       
       // Si no es admin, auto-asignarse como único responsable al crear

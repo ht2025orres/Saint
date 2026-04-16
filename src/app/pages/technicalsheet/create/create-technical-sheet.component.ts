@@ -333,12 +333,18 @@ export class CreateTechnicalSheetComponent implements OnInit {
             this.technicalDataSheetCurrent.company_name = this.formGr.get('company_name').value;
             this.technicalDataSheetCurrent.technical_data_sheet_type = this.formGr.get('technical_data_sheet_types_select').value;
 
-            // Aseguramos que la categoría esté bien mapeada antes de guardar
-            const categoryDesc = this.formGr.get('product_category_select').value;
-            if (categoryDesc) {
-                const category = this.productCategories.find(c => c.description === categoryDesc);
-                if (category) {
-                    this.technicalDataSheetCurrent.id_product_category = category.idProductCategory || (category as any).id;
+            // Aseguramos que el id_product_category se tome del formulario si el modelo no lo tiene actualizado
+            const formCategoryId = this.formGr.get('id_product_category').value;
+            if (formCategoryId) {
+                this.technicalDataSheetCurrent.id_product_category = String(formCategoryId);
+            } else {
+                // Si no hay ID en el campo oculto, intentamos recuperarlo por la descripción seleccionada
+                const categoryDesc = this.formGr.get('product_category_select').value;
+                if (categoryDesc) {
+                    const category = this.productCategories.find(c => c.description === categoryDesc);
+                    if (category) {
+                        this.technicalDataSheetCurrent.id_product_category = String(this.getCategoryId(category));
+                    }
                 }
             }
 
@@ -415,8 +421,12 @@ export class CreateTechnicalSheetComponent implements OnInit {
                         this.technicalDataSheetCurrent.id = result.id;
                     },
                     error => {
-                        Swal.fire('Error guardar ficha', 'La ficha técnica no se ha podido guardar', 'error');
                         this.loading = false;
+                        let errorMessage = 'La ficha técnica no se ha podido guardar';
+                        if (error.error && error.error.errors && error.error.errors.id_item) {
+                            errorMessage = error.error.errors.id_item[0];
+                        }
+                        Swal.fire('Error al guardar ficha', errorMessage, 'error');
                     }
                 );
         }

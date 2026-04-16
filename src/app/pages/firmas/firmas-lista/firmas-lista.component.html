@@ -1,0 +1,60 @@
+<div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="bg-light">
+      <tr>
+        <th class="ps-4">Firmante</th>
+        <th>Fecha de Firma</th>
+        <th>Motivo</th>
+        <th>Estado</th>
+        <th class="text-end pe-4">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let doc of documentos">
+        <td class="ps-4">
+          <div class="d-flex align-items-center">
+            <div class="avatar-sm bg-primary-soft text-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: rgba(13, 110, 253, 0.1);">
+              <i class="bi bi-person"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold">{{doc.nombre_firmante}}</h6>
+              <small class="text-muted">{{doc.email_firmante}}</small>
+            </div>
+          </div>
+        </td>
+        <td>{{doc.firmado_at | date:'short'}}</td>
+        <td>{{doc.motivo_firma}}</td>
+        <td>
+          <span class="badge" [class.bg-success]="doc.estado === 'firmado'" [class.bg-warning]="doc.estado === 'pendiente'" [class.bg-danger]="doc.estado === 'error'">
+            {{doc.estado | uppercase}}
+          </span>
+        </td>
+        <td class="text-end pe-4">
+          <div class="btn-group">
+            <button class="btn btn-sm btn-outline-primary" (click)="descargar(doc)" title="Descargar">
+              <i class="bi bi-download"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="eliminar(doc)" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="documentos.length === 0 && !loading">
+        <td colspan="5" class="text-center py-5">
+          <div class="text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+            No se han encontrado documentos firmados
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="loading">
+        <td colspan="5" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

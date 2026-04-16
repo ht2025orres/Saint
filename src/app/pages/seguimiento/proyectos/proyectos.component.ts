@@ -101,6 +101,16 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarProyectos();
+    
+    // Suscripción a cambios globales para recarga automática
+    this._subs.add(
+      this.proyServ.refresh$.subscribe(() => {
+        this.cargarProyectos();
+        if (this.showDetalle && this.detalle) {
+          this._refreshDetalle(true);
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void { this._subs.unsubscribe(); }
@@ -268,7 +278,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, cambiar',
     }).then(r => r.isConfirmed &&
       this.proyServ.cambiarEstadoProyecto(p.id, estado, this.usuarioId).subscribe({
-        next:  () => { this.state.showToast('Estado actualizado', 'success'); this.cargarProyectos(); },
+        next:  () => { this.state.showToast('Estado actualizado', 'success'); },
         error: () => this.state.showToast('No se pudo cambiar el estado', 'error'),
       }),
     );
@@ -282,7 +292,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       confirmButtonColor: '#dc2626', confirmButtonText: 'Sí, eliminar',
     }).then(r => r.isConfirmed &&
       this.proyServ.eliminarProyecto(p.id, this.usuarioId).subscribe({
-        next:  () => { this.state.showToast('Proyecto eliminado'); this.cargarProyectos(); },
+        next:  () => { this.state.showToast('Proyecto eliminado'); },
         error: () => this.state.showToast('No se pudo eliminar', 'error'),
       }),
     );
@@ -501,7 +511,9 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       estado:               form.estado as EstadoActividad,
       fecha_limite_entrega: form.fecha_limite_entrega,
       responsables:         form.responsables,
-      usuario_id:           this.usuarioId 
+      usuario_id:           this.usuarioId,
+      titulo_reapertura:      form.titulo_reapertura,
+      descripcion_reapertura: form.descripcion_reapertura
     };
 
     const req$ = this.actividadParaEditar
@@ -513,7 +525,6 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         this.savingActividad    = false;
         this.showModalActividad = false;
         this.state.showToast(res.message ?? 'Actividad guardada');
-        this._refreshDetalle(true); // Refresco silencioso
         this.cdr.markForCheck();
       },
       error: () => {
@@ -556,7 +567,9 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       notas:                form.notas,
       fecha_limite_entrega: form.fecha_limite_entrega,
       responsables:         form.responsables,
-      usuario_id:           this.usuarioId 
+      usuario_id:           this.usuarioId,
+      titulo_reapertura:      form.titulo_reapertura,
+      descripcion_reapertura: form.descripcion_reapertura
     };
 
     const req$ = this.tareaParaEditar
@@ -568,7 +581,6 @@ export class ProyectosComponent implements OnInit, OnDestroy {
         this.savingTarea  = false;
         this.showModalTarea = false;
         this.state.showToast(res.message ?? 'Tarea guardada');
-        this._refreshDetalle(true); // Refresco silencioso
         this.cdr.markForCheck();
       },
       error: () => {

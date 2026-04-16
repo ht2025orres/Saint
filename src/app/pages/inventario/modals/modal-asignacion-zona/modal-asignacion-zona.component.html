@@ -1,0 +1,63 @@
+<div *ngIf="show" 
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+     (click)="cerrar()">
+    
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300"
+         (click)="$event.stopPropagation()">
+        
+        <!-- Header -->
+        <div class="relative px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="bi bi-person-plus text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="font-black text-slate-800 text-xl tracking-tight">Asignar Zona</h2>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Vincule una zona a un contador</p>
+                </div>
+            </div>
+            <button (click)="cerrar()" class="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="px-8 py-8 space-y-6">
+            <div class="space-y-2">
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Zona a Asignar <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <select [(ngModel)]="asignacion.id_zona"
+                            class="w-full pl-4 pr-10 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer">
+                        <option [ngValue]="null">Seleccione una zona...</option>
+                        <option *ngFor="let z of zonas" [value]="z.id">{{z.nombre}} (Bodega: {{z.codigo_bodega}})</option>
+                    </select>
+                    <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Contador / Persona <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <select [(ngModel)]="asignacion.id_usuario"
+                            class="w-full pl-4 pr-10 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer">
+                        <option [ngValue]="null">Seleccione una persona...</option>
+                        <option *ngFor="let c of contadores" [value]="c.id">{{c.nombres}} {{c.apellidos}}</option>
+                    </select>
+                    <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3">
+            <button (click)="cerrar()" 
+                    class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors">
+                Cancelar
+            </button>
+            <button (click)="guardar()" [disabled]="!asignacion.id_zona || !asignacion.id_usuario || saving"
+                    class="px-8 py-3 bg-blue-600 text-white text-sm font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 active:scale-95">
+                {{ saving ? 'Asignando...' : 'Confirmar Asignación' }}
+            </button>
+        </div>
+    </div>
+</div>

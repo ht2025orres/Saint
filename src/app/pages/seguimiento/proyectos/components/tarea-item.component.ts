@@ -249,7 +249,6 @@ export class TareaItemComponent {
       next: () => {
         this.state.showToast(nuevoEstado === 'completado' ? 'Tarea completada' : 'Tarea pendiente');
         this.saving = false;
-        this.onRefresh.emit(true); // Silent refresh
       },
       error: () => {
         // Revertir
@@ -277,7 +276,6 @@ export class TareaItemComponent {
       this.proyServ.eliminarTarea(this.tarea.id, this.usuarioId).subscribe({
         next:  () => { 
           this.state.showToast('Tarea eliminada'); 
-          this.onRefresh.emit(true); // Silent refresh
         },
         error: () => {
           this.isDeleted = false; // Revertir si falla

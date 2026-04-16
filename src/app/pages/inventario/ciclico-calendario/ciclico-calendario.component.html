@@ -1,0 +1,124 @@
+<div class="p-6 bg-slate-50 min-h-screen">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+            <div class="p-3 bg-indigo-800 rounded-xl shadow-lg shadow-indigo-200">
+                <i class="bi bi-calendar3 text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-800 tracking-tight">Calendario de Auditoría</h1>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Seguimiento Cíclico</p>
+            </div>
+        </div>
+
+        <!-- Botón Volver Inteligente -->
+        <button class="btn btn-secondary shadow-md shadow-slate-100 px-5 py-2.5 rounded-xl flex items-center gap-2 text-xs font-bold" 
+                [routerLink]="bodegaOrigen ? ['/inventario/inventario-ciclico'] : ['/inventario/gestion-bodegas']"
+                [queryParams]="bodegaOrigen ? {bodega: bodegaOrigen} : {}">
+            <i class="bi bi-arrow-left"></i> Volver
+        </button>
+    </div>
+
+    <!-- Tamaño del Calendario Ajustado a max-w-6xl para mayor equilibrio -->
+    <div class="max-w-6xl mx-auto bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden shadow-indigo-100/30">
+        <!-- Calendar Navigation -->
+        <div class="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <!-- Selector de Mes y Año Estilo Nativo -->
+                <div class="flex items-center gap-3">
+                    <select class="form-select bg-white border border-slate-200 rounded-xl font-black text-lg text-slate-800 cursor-pointer focus:ring-4 focus:ring-indigo-50 px-4 py-2 shadow-sm" 
+                            [ngModel]="viewDate.getMonth()" (change)="onMonthChange($event.target.value)">
+                        <option *ngFor="let month of monthNames; let i = index" [value]="i">{{ month }}</option>
+                    </select>
+                    <select class="form-select bg-white border border-slate-200 rounded-xl font-black text-lg text-indigo-600 cursor-pointer focus:ring-4 focus:ring-indigo-50 px-4 py-2 shadow-sm" 
+                            [ngModel]="viewDate.getFullYear()" (change)="onYearChange($event.target.value)">
+                        <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+                    </select>
+                </div>
+
+                <div class="flex bg-white rounded-xl border border-slate-200 p-1.5 shadow-sm">
+                    <button (click)="prevMonth()" class="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button (click)="nextMonth()" class="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div *ngIf="startDate" class="flex items-center gap-3 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl">
+                    <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Selección:</span>
+                    <span class="text-xs font-black text-indigo-800">{{ startDate | date:'dd/MM' }} {{ endDate ? ' - ' + (endDate | date:'dd/MM') : '' }}</span>
+                    <button (click)="consultarSeleccion()" [disabled]="loadingItems"
+                            class="btn btn-sm btn-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <i class="bi" [ngClass]="loadingItems ? 'bi-hourglass-split animate-spin' : 'bi-search'"></i>
+                        {{ loadingItems ? 'Consultando...' : (endDate ? 'Consultar Rango' : 'Consultar Día') }}
+                    </button>
+                    <button (click)="resetSelection()" 
+                            class="btn btn-sm btn-outline-danger p-2 rounded-lg hover:bg-rose-50 border-0">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+                
+                <div class="hidden md:flex items-center gap-3 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Registros de Auditoría Activos</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div class="p-8">
+            <div class="grid grid-cols-7 gap-4">
+                <!-- Day Headers -->
+                <div *ngFor="let dayName of ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']" 
+                    class="text-center py-3 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                    {{ dayName }}
+                </div>
+
+                <!-- Empty cells -->
+                <div *ngFor="let empty of [].constructor(firstDayOffset)" class="aspect-square bg-slate-50/30 rounded-3xl border border-transparent"></div>
+
+                <!-- Day cells -->
+                <div *ngFor="let day of days" 
+                    (click)="verDetallesDia(day)"
+                    class="aspect-square relative rounded-3xl border transition-all p-4 group overflow-hidden"
+                    [ngClass]="{
+                        'bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50/20 cursor-pointer': !day.hasEvents,
+                        'bg-indigo-50 border-indigo-100 hover:bg-indigo-100 cursor-pointer shadow-sm': day.hasEvents,
+                        'ring-4 ring-indigo-400 border-indigo-500 !bg-indigo-600 !text-white z-10': isStartDate(day.date) || isEndDate(day.date),
+                        'bg-indigo-100 border-indigo-200': isInRange(day.date)
+                    }">
+                    
+                    <span class="text-sm font-black transition-colors"
+                        [ngClass]="{
+                            'text-white': isStartDate(day.date) || isEndDate(day.date),
+                            'text-indigo-600': day.hasEvents && !isStartDate(day.date) && !isEndDate(day.date),
+                            'text-slate-300 group-hover:text-slate-500': !day.hasEvents && !isStartDate(day.date) && !isEndDate(day.date)
+                        }">
+                        {{ day.day }}
+                    </span>
+
+                    <div *ngIf="day.hasEvents" class="mt-3">
+                        <div class="flex flex-col">
+                            <span class="text-2xl font-black leading-none"
+                                [ngClass]="isStartDate(day.date) || isEndDate(day.date) ? 'text-white' : 'text-indigo-800'">
+                                {{ day.totalEvents }}
+                            </span>
+                            <span class="text-[9px] font-black uppercase tracking-tighter mt-1"
+                                [ngClass]="isStartDate(day.date) || isEndDate(day.date) ? 'text-indigo-100' : 'text-indigo-400'">
+                                Conteos
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Today Indicator -->
+                    <div *ngIf="isToday(day.date)" class="absolute top-4 right-4 w-2 h-2 rounded-full shadow-[0_0_12px_rgba(79,70,229,0.6)] ring-4"
+                        [ngClass]="isStartDate(day.date) || isEndDate(day.date) ? 'bg-white ring-indigo-700' : 'bg-indigo-600 ring-indigo-50'">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

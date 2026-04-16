@@ -228,6 +228,65 @@ export class PaginationService {
   }
 
   /**
+   * Reinicia un paginador a su estado inicial vacío
+   */
+  resetPaginator(instanceId: string): void {
+    const subject = this.paginationStates.get(instanceId);
+    if (!subject) return;
+
+    const initialState: PaginationState = {
+      currentData: [],
+      paginator: {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        number: 0,
+        numberOfElements: 0,
+        size: subject.value.paginator.size
+      },
+      pages: []
+    };
+    subject.next(initialState);
+  }
+
+  /**
+   * Obtiene el observable de un paginador, creándolo si no existe
+   */
+  getOrCreateObservable(instanceId: string, defaultPageSize: number = 10): Observable<PaginationState> {
+    if (!this.paginationStates.has(instanceId)) {
+      const initialState: PaginationState = {
+        currentData: [],
+        paginator: {
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          number: 0,
+          numberOfElements: 0,
+          size: defaultPageSize
+        },
+        pages: []
+      };
+      this.paginationStates.set(instanceId, new BehaviorSubject(initialState));
+    }
+    return this.paginationStates.get(instanceId)!.asObservable();
+  }
+
+  /**
+   * Obtiene el número de página actual
+   */
+  getCurrentPage(instanceId: string): number {
+    const state = this.getPaginatorState(instanceId);
+    return state ? state.paginator.number : 0;
+  }
+
+  /**
+   * Cambia a una página específica (Alias de changePage)
+   */
+  goToPage(instanceId: string, page: number): void {
+    this.changePage(instanceId, page);
+  }
+
+  /**
    * Destruye un paginador (limpia memoria)
    */
   destroyPaginator(instanceId: string): void {
@@ -244,13 +303,13 @@ export class PaginationService {
   private calculateVisiblePages(paginator: PaginatorConfig): number[] {
     const maxVisible = 6;
     const totalPages = paginator.totalPages;
-    const currentPage = paginator.number + 1;
+    // const currentPage = paginator.number + 1; // Removed as it was not being used
 
     if (totalPages <= maxVisible) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let start = Math.max(1, (paginator.number + 1) - Math.floor(maxVisible / 2));
     let end = start + maxVisible - 1;
 
     if (end > totalPages) {

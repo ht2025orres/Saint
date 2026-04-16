@@ -4,7 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 export interface Role { id: number; nombre: string; }
 export interface UsuarioCache { id: number; nombre: string; roles?: Role[]; }
 export interface Toast { id: number; message: string; type: 'success' | 'error' | 'info' | 'warning'; }
-export type Semaforo = 'rojo' | 'amarillo' | 'verde' | 'gris';
+export type Semaforo = 'rojo' | 'amarillo' | 'verde' | 'gris' | 'azul' | 'rojo_tarde';
 
 @Injectable({ providedIn: 'root' })
 export class SeguimientoStateService {
@@ -19,11 +19,15 @@ export class SeguimientoStateService {
   get usuariosCache(): UsuarioCache[] { return this._usuariosCache$.value; }
 
   /**
-   * Retorna solo los usuarios que tienen el rol de "Administrador del Sistema"
+   * Retorna solo los usuarios que tienen el rol de "Administrador del sistema"
+   * Se hace una búsqueda flexible por si el nombre del rol tiene prefijos (ej: "-")
    */
   get usuariosAdministradores(): UsuarioCache[] {
     return this._usuariosCache$.value.filter(u =>
-      u.roles?.some(r => r.nombre.toLowerCase().includes('administrador del sistema'))
+      u.roles?.some(r => {
+        const nombre = (r.nombre || '').toLowerCase();
+        return nombre.includes('administrador del sistema');
+      })
     );
   }
 
@@ -76,6 +80,7 @@ export class SeguimientoStateService {
     const map: Record<string, string> = {
       rojo: 'bg-red-500', amarillo: 'bg-yellow-400',
       verde: 'bg-green-500', gris: 'bg-gray-300',
+      azul: 'bg-sky-400', rojo_tarde: 'bg-rose-600',
     };
     return map[semaforo ?? 'gris'] ?? 'bg-gray-300';
   }
@@ -84,6 +89,7 @@ export class SeguimientoStateService {
     const map: Record<string, string> = {
       rojo: 'border-red-400', amarillo: 'border-yellow-400',
       verde: 'border-green-400', gris: 'border-gray-200',
+      azul: 'border-sky-300', rojo_tarde: 'border-rose-400',
     };
     return map[semaforo ?? 'gris'] ?? 'border-gray-200';
   }
@@ -94,6 +100,8 @@ export class SeguimientoStateService {
       amarillo: 'Próximo vencimiento',
       verde: 'A tiempo',
       gris: 'Sin fecha límite',
+      azul: 'Completado',
+      rojo_tarde: 'Completado fuera de tiempo',
     };
     return map[semaforo ?? 'gris'] ?? '';
   }
@@ -130,9 +138,14 @@ export class SeguimientoStateService {
 
   getEstadoLabel(estado: string): string {
     const map: Record<string, string> = {
-      pendiente: 'Pendiente', en_ejecucion: 'En ejecución',
-      completado: 'Completado', bloqueado: 'Bloqueado',
-      pausado: 'Pausado', cancelado: 'Cancelado', activo: 'Activo',
+      pendiente: 'Pendiente', 
+      en_ejecucion: 'En ejecución',
+      en_proceso: 'En ejecución',
+      completado: 'Completado', 
+      bloqueado: 'Bloqueado',
+      pausado: 'Pausado', 
+      cancelado: 'Cancelado', 
+      activo: 'Activo',
     };
     return map[estado] ?? estado;
   }

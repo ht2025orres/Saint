@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Compromiso } from 'src/app/services/proyectos.service';
-import { UsuarioCache } from '../../seguimiento-state.service';
+import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.service';
 
 export interface CompromisoForm {
   titulo:       string;
@@ -24,12 +24,28 @@ export class ModalCompromisoComponent implements OnChanges {
 
   form: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, public state: SeguimientoStateService) {
     this.form = this.fb.group({
       titulo:       ['', [Validators.required, Validators.minLength(3)]],
       descripcion:  [''],
       responsables: [[], [Validators.required]],
     });
+  }
+
+  isUsuarioSeleccionado(uid: number): boolean {
+    const responsables = this.form.get('responsables')?.value || [];
+    return responsables.includes(uid);
+  }
+
+  toggleUsuario(uid: number): void {
+    const control = this.form.get('responsables');
+    if (!control) return;
+    const actuales = [...(control.value || [])];
+    const index = actuales.indexOf(uid);
+    if (index > -1) actuales.splice(index, 1);
+    else actuales.push(uid);
+    control.setValue(actuales);
+    control.markAsDirty();
   }
 
   ngOnChanges(changes: SimpleChanges): void {

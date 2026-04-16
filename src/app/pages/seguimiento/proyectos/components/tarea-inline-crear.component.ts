@@ -91,7 +91,6 @@ export class TareaInlineCrearComponent {
     this.proyServ.crearTarea(body).subscribe({
       next: () => {
         this.state.showToast('Tarea creada');
-        this.onRefresh.emit(true);  // ✅ padre escucha
         this.onCancel.emit();       // ✅ cierra después
       },
       error: () => {

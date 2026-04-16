@@ -10,7 +10,8 @@ import {
   InformeTarea,
   SeguimientoAnual,
   Tarea,
-  Actividad
+  Actividad,
+  Proyecto
 } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService, UsuarioCache } from '../seguimiento-state.service';
 import { PaginationService } from 'src/app/shared/pagination/pagination.service';
@@ -25,6 +26,7 @@ interface CalendarioDia {
   tareas: { tarea: SeguimientoTarea; nombreUsuario: string; iniciales: string; color: string }[];
   tareasExternas: (TareaConsolidada & { iniciales: string; color: string })[];
   tareasInforme: (InformeTarea & { nombreUsuario: string; iniciales: string; color: string })[];
+  compromisos: (Compromiso & { iniciales: string; color: string })[];
   resumenPorUsuario: ResumenUsuarioDia[];
 }
 
@@ -39,6 +41,7 @@ interface ResumenUsuarioDia {
   countProyecto: number;
   countGlpi: number;
   countInforme: number;
+  countCompromiso: number;
 }
 
 @Component({
@@ -83,19 +86,23 @@ export class TareasComponent implements OnInit, OnDestroy {
   showFiltroOrigenes = false;
 
   modoListaDirecta = false;
-  filtroOrigenesSelec: string[] = ['seguimiento', 'proyecto', 'informe', 'glpi'];
+  filtroOrigenesSelec: string[] = ['seguimiento', 'proyecto', 'informe', 'glpi', 'compromiso'];
 
   // Tareas originales (sin filtrar)
   tareasSegRaw: SeguimientoTarea[] = [];
   tareasProyRaw: TareaConsolidada[] = [];
   tareasInformeRaw: InformeTarea[] = [];
   tareasGlpiRaw: TareaConsolidada[] = [];
+  tareasCompromisoRaw: any[] = [];
+
+  proyectosRaw: Proyecto[] = [];
 
   // Tareas filtradas y paginadas
   tareasSegFiltradas: SeguimientoTarea[] = [];
   tareasProyFiltradas: TareaConsolidada[] = [];
   tareasInformeFiltradas: InformeTarea[] = [];
   tareasGlpiFiltradas: TareaConsolidada[] = [];
+  tareasCompromisoFiltradas: any[] = [];
 
   // Lista directa (unificada)
   tareasUnificadasFiltradas: any[] = [];
@@ -108,11 +115,16 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   showModalTarea = false;
   tareaParaEditar: Tarea | null = null;
+  proyectoSeleccionado: Proyecto | null = null;
   savingTarea = false;
 
   showModalInformeTarea = false;
   informeTareaParaEditar: InformeTarea | null = null;
   savingInformeTarea = false;
+
+  showModalCompromiso = false;
+  compromisoParaEditar: Compromiso | null = null;
+  savingCompromiso = false;
 
   actividadesProyecto: Actividad[] = [];
 
@@ -120,11 +132,13 @@ export class TareasComponent implements OnInit, OnDestroy {
   tareasProyPaginadas: TareaConsolidada[] = [];
   tareasInformePaginadas: InformeTarea[] = [];
   tareasGlpiPaginadas: TareaConsolidada[] = [];
+  tareasCompromisoPaginadas: any[] = [];
 
   readonly paginadorSegId = 'seg-tareas';
   readonly paginadorProyId = 'proy-tareas';
   readonly paginadorInfId = 'inf-tareas';
   readonly paginadorGlpiId = 'glpi-tareas';
+  readonly paginadorCompId = 'comp-tareas';
 
   private _subs = new Subscription();
 
@@ -184,6 +198,16 @@ export class TareasComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarConfiguracion();
     this.cargarDatos();
+
+    this._subs.add(
+      this._proyectoService.refresh$.subscribe(() => {
+        if (this.mostrandoMes && this.seguimientoActual) {
+          this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+        } else {
+          this.cargarDatos();
+        }
+      })
+    );
   }
 
   private cargarConfiguracion(): void {
@@ -194,7 +218,18 @@ export class TareasComponent implements OnInit, OnDestroy {
         this.filtroGlobalEstados = parsed.estados || ['pendiente', 'en_progreso'];
         this.filtroUsuariosSelec = parsed.usuarios || [];
         this.modoListaDirecta = parsed.modoListaDirecta || false;
-        this.filtroOrigenesSelec = parsed.origenes || ['seguimiento', 'proyecto', 'informe', 'glpi'];
+        
+        // Manejo robusto de orígenes para evitar problemas de caché con nuevos tipos (como compromisos)
+        const orígenesDefault = ['seguimiento', 'proyecto', 'informe', 'glpi', 'compromiso'];
+        this.filtroOrigenesSelec = parsed.origenes || orígenesDefault;
+        
+        // Si la configuración guardada es antigua y le faltan orígenes nuevos, los forzamos
+        orígenesDefault.forEach(orig => {
+          if (!this.filtroOrigenesSelec.includes(orig)) {
+            this.filtroOrigenesSelec.push(orig);
+          }
+        });
+
         this.vistaCalendario = parsed.vistaCalendario ?? false;
       } catch (e) {
         console.error('Error al cargar configuración de filtros:', e);
@@ -261,16 +296,17 @@ export class TareasComponent implements OnInit, OnDestroy {
     // Cargar vista mes y tareas consolidadas en paralelo
     forkJoin({
       vistaMes: this._proyectoService.getVistaMes(seguimientoId, mes, anio, this.usuarioId),
-      consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['proyecto', 'glpi']),
+      consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['proyecto', 'glpi', 'compromiso']),
       informes: this._proyectoService.getMisInformeTareas(this.usuarioId),
-      proyectos: this._proyectoService.getProyectos(this.usuarioId, { activos: true })
+      proyectos: this._proyectoService.getProyectos(this.usuarioId)
     }).subscribe({
       next: (res: any) => {
         this.vistaMes = res.vistaMes.data;
         const consolidadas = res.consolidadas.data || [];
+        this.proyectosRaw = res.proyectos?.data || [];
         
         // Intentar obtener actividades de un proyecto activo para el modal
-        const proyectoConActividades = res.proyectos?.data?.find((p: any) => p.total_actividades > 0);
+        const proyectoConActividades = this.proyectosRaw.find((p: any) => p.total_actividades > 0);
         if (proyectoConActividades) {
           this._proyectoService.getDetalleCompleto(proyectoConActividades.id, this.usuarioId).subscribe({
             next: (det: any) => {
@@ -283,6 +319,7 @@ export class TareasComponent implements OnInit, OnDestroy {
         // Separar tareas consolidadas
         this.tareasProyRaw = consolidadas.filter((t: any) => t.origen === 'proyecto');
         this.tareasGlpiRaw = consolidadas.filter((t: any) => t.origen === 'glpi');
+        this.tareasCompromisoRaw = consolidadas.filter((t: any) => t.origen === 'compromiso');
         
         // Tareas de seguimiento (desde vistaMes)
         if (this.vistaMes?.tareas) {
@@ -318,8 +355,25 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   public _aplicarFiltrosYPaginar(): void {
     const filtrarPorEstadoYUsuario = (t: any, uidKey: string = 'usuario_id') => {
-      const cumpleEstado = this.filtroGlobalEstados.length === 0 || this.filtroGlobalEstados.includes(t.estado);
-      const cumpleUsuario = this.filtroUsuariosSelec.length === 0 || this.filtroUsuariosSelec.includes(t[uidKey]);
+      // Normalizar el estado de la tarea para el filtro
+      // Soporta tanto 'en_ejecucion' como 'en_proceso' normalizándolos a 'en_progreso'
+      let estadoTareaNormalizado = t.estado;
+      if (t.estado === 'en_ejecucion' || t.estado === 'en_proceso') {
+        estadoTareaNormalizado = 'en_progreso';
+      }
+      
+      const cumpleEstado = this.filtroGlobalEstados.length === 0 || this.filtroGlobalEstados.includes(estadoTareaNormalizado);
+      
+      let cumpleUsuario = this.filtroUsuariosSelec.length === 0;
+      if (!cumpleUsuario) {
+        // Si tiene un array de responsables, verificamos si alguno coincide
+        if (Array.isArray(t.responsables) && t.responsables.length > 0) {
+          cumpleUsuario = t.responsables.some((rId: any) => this.filtroUsuariosSelec.includes(Number(rId)));
+        } else {
+          cumpleUsuario = this.filtroUsuariosSelec.includes(t[uidKey]);
+        }
+      }
+
       return cumpleEstado && cumpleUsuario;
     };
 
@@ -328,6 +382,21 @@ export class TareasComponent implements OnInit, OnDestroy {
     this.tareasProyFiltradas = this.tareasProyRaw.filter(t => filtrarPorEstadoYUsuario(t));
     this.tareasInformeFiltradas = this.tareasInformeRaw.filter(t => filtrarPorEstadoYUsuario(t, 'responsable_id'));
     this.tareasGlpiFiltradas = this.tareasGlpiRaw.filter(t => filtrarPorEstadoYUsuario(t));
+    this.tareasCompromisoFiltradas = this.tareasCompromisoRaw
+      .filter(t => filtrarPorEstadoYUsuario(t))
+      .map(t => {
+        const responsableId = t.responsable_id || (t.responsables && t.responsables.length > 0 ? t.responsables[0] : t.usuario_id);
+        
+        // El backend envía la fecha en el campo 'fecha'. La usamos como fecha límite.
+        // Como ya está en hora local según el usuario, la tratamos como tal.
+        const fechaOriginal = t.fecha || t.created_at;
+        
+        return {
+          ...t,
+          responsable_id: responsableId,
+          fecha_limite_entrega: fechaOriginal
+        };
+      });
 
     if (this.modoListaDirecta) {
       // Unificar todas las tareas filtradas por origen
@@ -344,12 +413,22 @@ export class TareasComponent implements OnInit, OnDestroy {
       if (this.filtroOrigenesSelec.includes('glpi')) {
         unificadas = [...unificadas, ...this.tareasGlpiFiltradas.map(t => ({ ...t, _origen_label: 'GLPI', _color: 'bg-orange-600', origen: 'glpi' }))];
       }
+      if (this.filtroOrigenesSelec.includes('compromiso')) {
+        unificadas = [...unificadas, ...this.tareasCompromisoFiltradas.map(t => {
+          return { 
+            ...t, 
+            _origen_label: 'Compromiso', 
+            _color: 'bg-blue-600', 
+            origen: 'compromiso'
+          };
+        })];
+      }
 
       // Ordenar por fecha límite de entrega
       unificadas.sort((a, b) => {
-        if (!a.fecha_limite_entrega) return 1;
-        if (!b.fecha_limite_entrega) return -1;
-        return new Date(a.fecha_limite_entrega).getTime() - new Date(b.fecha_limite_entrega).getTime();
+        const dateA = a.fecha_limite_entrega ? new Date(a.fecha_limite_entrega).getTime() : 0;
+        const dateB = b.fecha_limite_entrega ? new Date(b.fecha_limite_entrega).getTime() : 0;
+        return dateA - dateB;
       });
 
       this.tareasUnificadasFiltradas = unificadas;
@@ -360,6 +439,7 @@ export class TareasComponent implements OnInit, OnDestroy {
       this._initPaginador(this.paginadorProyId, this.tareasProyFiltradas, items => this.tareasProyPaginadas = items);
       this._initPaginador(this.paginadorInfId, this.tareasInformeFiltradas, items => this.tareasInformePaginadas = items);
       this._initPaginador(this.paginadorGlpiId, this.tareasGlpiFiltradas, items => this.tareasGlpiPaginadas = items);
+      this._initPaginador(this.paginadorCompId, this.tareasCompromisoFiltradas, items => this.tareasCompromisoPaginadas = items);
     }
   }
 
@@ -476,6 +556,62 @@ export class TareasComponent implements OnInit, OnDestroy {
   private _crearDiaCalendario(fecha: Date, mesReferencia: number): CalendarioDia {
     const tareasDelDia = this._getTareasDelDia(fecha);
     
+    const resumenMap: { [uid: number]: ResumenUsuarioDia } = {};
+
+    const getResumen = (uid: number) => {
+      if (!uid) return null;
+      if (!resumenMap[uid]) {
+        resumenMap[uid] = {
+          uid,
+          iniciales: this.state.getInicialesResponsable(uid),
+          nombre: this.state.nombreUsuario(uid),
+          total: 0,
+          completadas: 0,
+          semaforo: 'gris',
+          countSeguimiento: 0,
+          countProyecto: 0,
+          countGlpi: 0,
+          countInforme: 0,
+          countCompromiso: 0
+        };
+      }
+      return resumenMap[uid];
+    };
+
+    // Acumular conteos para el resumen
+    (tareasDelDia.seguimiento || []).forEach(t => {
+      const r = getResumen(t.usuario_id);
+      if (r) { r.countSeguimiento++; r.total++; if (t.estado === 'completado') r.completadas++; }
+    });
+    (tareasDelDia.proyectos || []).forEach(t => {
+      const r = getResumen(t.usuario_id);
+      if (r) { r.countProyecto++; r.total++; if (t.estado === 'completado') r.completadas++; }
+    });
+    (tareasDelDia.glpi || []).forEach(t => {
+      const r = getResumen(t.usuario_id);
+      if (r) { r.countGlpi++; r.total++; if (t.estado === 'completado') r.completadas++; }
+    });
+    (tareasDelDia.informes || []).forEach(t => {
+      const r = getResumen(t.responsable_id);
+      if (r) { r.countInforme++; r.total++; if (t.estado === 'completado') r.completadas++; }
+    });
+    
+    // Compromisos (pueden tener múltiples responsables)
+    (tareasDelDia.compromisos || []).forEach(t => {
+      const responsables = Array.isArray(t.responsables) && t.responsables.length > 0 
+        ? t.responsables 
+        : [t.responsable_id || t.usuario_id];
+        
+      responsables.forEach((uid: any) => {
+        const r = getResumen(Number(uid));
+        if (r) { 
+          r.countCompromiso++; 
+          r.total++; 
+          if (t.estado === 'completado') r.completadas++; 
+        }
+      });
+    });
+
     return {
       fecha: new Date(fecha),
       esHoy: this._esHoy(fecha),
@@ -497,7 +633,16 @@ export class TareasComponent implements OnInit, OnDestroy {
         iniciales: this.state.getInicialesResponsable(t.responsable_id),
         color: this.state.getColorPorId(t.responsable_id)
       })),
-      resumenPorUsuario: []
+      compromisos: (tareasDelDia.compromisos || []).map(t => {
+        const rId = t.responsable_id || (t.responsables && t.responsables.length > 0 ? t.responsables[0] : t.usuario_id);
+        return {
+          ...t,
+          responsable_id: rId,
+          iniciales: this.state.getInicialesResponsable(rId),
+          color: this.state.getColorPorId(rId)
+        };
+      }),
+      resumenPorUsuario: Object.values(resumenMap)
     };
   }
 
@@ -509,22 +654,82 @@ export class TareasComponent implements OnInit, OnDestroy {
   }
 
   abrirTareaEspecifica(t: any, origen: string): void {
+    this.proyectoSeleccionado = null; // Reset
+
     if (origen === 'proyecto') {
-      this.tareaParaEditar = { ...t, proyecto_id: t.proyecto_id || 1 }; // Asegurar que tenga proyecto_id para el modal
-      this.showModalTarea = true;
+      // 1. Intentar obtener el proyecto_id desde el objeto consolidado, o buscarlo por nombre
+      let pId = t.proyecto_id;
+      if (!pId && t.proyecto_nombre) {
+        const pMatch = this.proyectosRaw.find(p => p.titulo === t.proyecto_nombre);
+        pId = pMatch?.id;
+        this.proyectoSeleccionado = pMatch || null;
+      } else if (pId) {
+        this.proyectoSeleccionado = this.proyectosRaw.find(p => p.id === pId) || null;
+      }
+      
+      // Si aún no tenemos pId, no podemos llamar al detalle completo
+      if (!pId) {
+        console.warn('No se pudo encontrar el proyecto para la tarea:', t);
+        // Al menos abrimos el modal con lo básico que tenemos
+        this.tareaParaEditar = { ...t, origen: 'proyecto' };
+        this.showModalTarea = true;
+        this._cdr.markForCheck();
+        return;
+      }
+
+      // 2. Cargar el detalle completo para obtener responsables reales y actividades
+      this._proyectoService.getDetalleCompleto(pId, this.usuarioId).subscribe({
+        next: (det: any) => {
+          this.actividadesProyecto = det.data?.actividades || [];
+          
+          // 3. Buscar la tarea REAL en el árbol del proyecto para tener sus responsables
+          let tareaReal: any = null;
+          // Buscar en actividades
+          this.actividadesProyecto.forEach(act => {
+            const found = act.tareas?.find(ts => ts.id === t.id);
+            if (found) tareaReal = found;
+          });
+          // Si no, buscar en tareas sin actividad
+          if (!tareaReal && det.data?.tareas_sin_actividad) {
+            tareaReal = det.data.tareas_sin_actividad.find((ts: any) => ts.id === t.id);
+          }
+
+          // Si encontramos la tarea real, la usamos (contiene responsables[] y más detalle)
+          // Si no, usamos la consolidada como fallback
+          this.tareaParaEditar = tareaReal 
+            ? { ...tareaReal, proyecto_id: pId, origen: 'proyecto' }
+            : { ...t, proyecto_id: pId, origen: 'proyecto' };
+          
+          this.showModalTarea = true;
+          this._cdr.markForCheck();
+        },
+        error: () => {
+          this.tareaParaEditar = { ...t, proyecto_id: pId, origen: 'proyecto' };
+          this.showModalTarea = true;
+          this._cdr.markForCheck();
+        }
+      });
+
     } else if (origen === 'informe') {
       this.informeTareaParaEditar = t;
       this.showModalInformeTarea = true;
     } else if (origen === 'seguimiento') {
+      // Intentar encontrar la tarea real en la lista de seguimiento (que tiene los responsables reales)
+      const tareaSegReal = this.tareasSegRaw.find(ts => ts.id === t.id);
+      
       this.tareaParaEditar = {
-        ...t,
+        ...(tareaSegReal || t),
         actividad_id: undefined,
         proyecto_id: undefined,
-        creado_por: t.usuario_id
+        creado_por: (tareaSegReal || t).usuario_id,
+        origen: 'seguimiento'
       } as any;
       this.showModalTarea = true;
     } else if (origen === 'glpi') {
       this.abrirDetalleGlpi(t);
+    } else if (origen === 'compromiso') {
+      this.compromisoParaEditar = t;
+      this.showModalCompromiso = true;
     }
     this._cdr.markForCheck();
   }
@@ -602,6 +807,7 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   crearNuevaTareaSeguimiento(): void {
     this.tareaParaEditar = null; // null indica creación
+    this.proyectoSeleccionado = null;
     this.showModalTarea = true;
     this._cdr.markForCheck();
   }
@@ -626,6 +832,8 @@ export class TareasComponent implements OnInit, OnDestroy {
           obs$ = this._proyectoService.completarTarea(t.id, this.usuarioId);
         } else if (origen === 'informe') {
           obs$ = this._proyectoService.completarInformeTarea(t.id, this.usuarioId);
+        } else if (origen === 'compromiso') {
+          obs$ = this._proyectoService.completarCompromiso(t.id, this.usuarioId);
         } else {
           return;
         }
@@ -643,16 +851,54 @@ export class TareasComponent implements OnInit, OnDestroy {
     });
   }
 
+  reabrirTareaRapido(t: any, origen: string, event: MouseEvent): void {
+    event.stopPropagation();
+    
+    Swal.fire({
+      title: '¿Reabrir tarea?',
+      text: `Vas a marcar como pendiente: ${t.titulo}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reabrir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3b82f6',
+    }).then(result => {
+      if (result.value) {
+        let obs$: Observable<any>;
+        if (origen === 'compromiso') {
+          obs$ = this._proyectoService.reabrirCompromiso(t.id, this.usuarioId);
+        } else {
+          return;
+        }
+
+        obs$.subscribe({
+          next: () => {
+            this.state.showToast('Tarea reabierta con éxito');
+            if (this.seguimientoActual) {
+              this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+            }
+          },
+          error: () => this.state.showToast('Error al reabrir la tarea', 'error')
+        });
+      }
+    });
+  }
+
   onGuardarTarea(form: TareaForm): void {
     this.savingTarea = true;
     this._cdr.markForCheck();
 
-    const body = { ...form, usuario_id: this.usuarioId };
+    const body = { 
+      ...form, 
+      usuario_id: this.usuarioId,
+      titulo_reapertura:      form.titulo_reapertura,
+      descripcion_reapertura: form.descripcion_reapertura
+    };
     
     let obs$: Observable<any>;
     if (this.tareaParaEditar) {
       // EDICIÓN
-      const isSeguimiento = !this.tareaParaEditar.proyecto_id || this.tareaParaEditar.proyecto_id === 1;
+      const isSeguimiento = this.tareaParaEditar.origen === 'seguimiento';
       obs$ = isSeguimiento 
         ? this._proyectoService.actualizarSeguimientoTarea(this.tareaParaEditar.id, body as any)
         : this._proyectoService.actualizarTarea(this.tareaParaEditar.id, body as any);
@@ -704,6 +950,35 @@ export class TareasComponent implements OnInit, OnDestroy {
     });
   }
 
+  onGuardarCompromiso(form: any): void {
+    if (!this.compromisoParaEditar) return;
+    this.savingCompromiso = true;
+    this._cdr.markForCheck();
+
+    const body = { 
+      ...form, 
+      usuario_id: this.usuarioId,
+      anio: this.anioActual,
+      mes: this.mesActual
+    };
+    
+    this._proyectoService.actualizarCompromiso(this.compromisoParaEditar.id, body).subscribe({
+      next: () => {
+        this.savingCompromiso = false;
+        this.showModalCompromiso = false;
+        this.state.showToast('Compromiso actualizado');
+        if (this.seguimientoActual) {
+          this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+        }
+      },
+      error: () => {
+        this.savingCompromiso = false;
+        this.state.showToast('Error al actualizar compromiso', 'error');
+        this._cdr.markForCheck();
+      }
+    });
+  }
+
   private _getTareasDelDia(fecha: Date) {
     const format = (d: Date) => {
       const year = d.getFullYear();
@@ -714,19 +989,26 @@ export class TareasComponent implements OnInit, OnDestroy {
     const fechaStr = format(fecha);
 
     const matchDate = (t: any) => {
+      // Si está completada y tiene fecha_completado, usamos esa para el calendario
       if (t.estado === 'completado' && t.fecha_completado) {
         return t.fecha_completado.startsWith(fechaStr);
       }
-      // Manejar fechas con T o espacio
-      const fLimite = t.fecha_limite_entrega ? t.fecha_limite_entrega.split('T')[0].split(' ')[0] : null;
+      
+      // Obtenemos la fecha límite (ya mapeada para compromisos)
+      // Usamos split para evitar cualquier conversión de zona horaria si la fecha viene con T o offset
+      const dateRaw = t.fecha_limite_entrega || t.fecha;
+      if (!dateRaw) return false;
+
+      const fLimite = dateRaw.split('T')[0].split(' ')[0];
       return fLimite === fechaStr;
     };
 
     return {
-      seguimiento: this.tareasSegFiltradas.filter(matchDate),
-      proyectos: this.tareasProyFiltradas.filter(matchDate),
-      glpi: this.tareasGlpiFiltradas.filter(matchDate),
-      informes: this.tareasInformeFiltradas.filter(matchDate)
+      seguimiento: this.tareasSegFiltradas.filter(t => matchDate(t)),
+      proyectos: this.tareasProyFiltradas.filter(t => matchDate(t)),
+      glpi: this.tareasGlpiFiltradas.filter(t => matchDate(t)),
+      informes: this.tareasInformeFiltradas.filter(t => matchDate(t)),
+      compromisos: this.tareasCompromisoFiltradas.filter(t => matchDate(t))
     };
   }
 

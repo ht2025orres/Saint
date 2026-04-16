@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MetricsService } from 'src/app/services/metrics.service';
 import { BillingService } from 'src/app/services/billing.service';
 import { InventarioService, BodegaSummary, ItemBodega } from 'src/app/services/inventario.service';
-import { ProcessMetric } from 'src/app/models/process-metric.model';
 import { AuthService } from 'src/app/services/auth.service';
+import { ProcessMetric } from 'src/app/models/process-metric.model';
 import Chart, { ChartConfiguration } from 'chart.js/auto';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 

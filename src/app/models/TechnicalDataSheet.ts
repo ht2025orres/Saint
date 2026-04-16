@@ -22,7 +22,7 @@ export class TechnicalDataSheet{
   public characteristic_image_3?: string;
   public characteristic_image_4?: string;
   public logo_technical_data_sheet?: string;
-  public id_product_category: number;
+  public id_product_category: number | string;
   public technical_data_sheet_type: string;
   public gender: string; //Genero
   public main_fabric: string; //Tela principal

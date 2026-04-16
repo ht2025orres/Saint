@@ -3,11 +3,12 @@
   *ngIf="show"
   class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
   style="background: rgba(15,23,42,0.65);"
-  (click)="cerrar()"
+  (dblclick)="cerrar()"
 >
   <div
     class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200"
     (click)="$event.stopPropagation()"
+    (dblclick)="$event.stopPropagation()"
   >
 
     <!-- Header Premium -->
@@ -36,9 +37,50 @@
     <!-- Body Scrollable -->
     <div [formGroup]="form" class="px-8 py-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
 
+      <!-- Alerta Proyecto Completado -->
+      <div *ngIf="proyecto?.estado === 'completado'" 
+        class="bg-amber-50 border border-amber-100 p-4 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top-4 duration-300">
+        <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+          <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-black text-amber-800 uppercase tracking-widest">Proyecto Finalizado</h4>
+          <p class="text-[10px] font-bold text-amber-600 mt-1 leading-relaxed">
+            Este proyecto ya está marcado como completado. Para añadir una nueva tarea, debes indicar el motivo de la reapertura o nuevo requerimiento.
+          </p>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Columna Izquierda: Información Básica -->
         <div class="space-y-5">
+          
+          <!-- Reapertura (Solo si el proyecto está completado) -->
+          <div *ngIf="proyecto?.estado === 'completado'" class="space-y-4">
+            <div>
+              <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 mb-2 block">
+                Título del Requerimiento <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                formControlName="titulo_reapertura"
+                placeholder="Ej: Nueva función de QRs"
+                class="w-full px-4 py-3 bg-amber-50/50 border-2 border-amber-100 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-300 transition-all outline-none"
+              >
+            </div>
+            <div>
+              <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1 mb-2 block">
+                Descripción del Requerimiento
+              </label>
+              <textarea
+                formControlName="descripcion_reapertura"
+                rows="3"
+                placeholder="Explica los detalles del nuevo requerimiento..."
+                class="w-full px-4 py-3 bg-amber-50/50 border-2 border-amber-100 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-300 transition-all outline-none resize-none"
+              ></textarea>
+            </div>
+          </div>
+
           <!-- Actividad -->
           <div *ngIf="actividades.length > 0">
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Actividad Relacionada</label>

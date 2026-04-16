@@ -11,7 +11,6 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { MetricCardComponent } from './pages/dashboard/components/metric-card/metric-card.component';
 import { PagesComponent } from './pages/pages.component';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { TokenInterceptor } from './interceptors/tokenInterceptor';
 import { AuthInterceptor } from './interceptors/authInterceptor';
 import { LoadingInterceptor } from './interceptors/loading.interceptor';
 import { registerLocaleData } from '@angular/common';
@@ -50,14 +49,14 @@ import { GestionEmpacadoresModule } from './pages/terminacion-empaque/gestion-em
 import { RegistrarEmpaqueModule } from './pages/terminacion-empaque/registrar-empaque/registrar-empaque.module';
 import { DashboardEmpaqueModule } from './pages/terminacion-empaque/dashboard-empaque/dashboard-empaque.module';
 import { DistribucionPvModule } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.module';
-import { BodegasModule } from './pages/inventario/bodegas/bodegas.module';
-import { ZonasModule } from './pages/inventario/zonas/zonas.module';
-import { ContadoresModule } from './pages/inventario/contadores/contadores.module';
-import { GenerarHojaConteoModule } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.module';
-import { HojasConteoListModule } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.module';
-import { HojasConteoDetalleModule } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
-import { ContadorItemsModule } from './pages/inventario/contador-items/contador-items.module';
-import { InventariosModule } from './pages/inventario/inventarios/inventarios.module';
+import { BodegasModule } from './pages/old-inventario/bodegas/bodegas.module';
+import { ZonasModule } from './pages/old-inventario/zonas/zonas.module';
+import { ContadoresModule } from './pages/old-inventario/contadores/contadores.module';
+import { GenerarHojaConteoModule } from './pages/old-inventario/generar-hoja-conteo/generar-hoja-conteo.module';
+import { HojasConteoListModule } from './pages/old-inventario/hojas-conteo-list/hojas-conteo-list.module';
+import { HojasConteoDetalleModule } from './pages/old-inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
+import { ContadorItemsModule } from './pages/old-inventario/contador-items/contador-items.module';
+import { InventariosModule } from './pages/old-inventario/inventarios/inventarios.module';
 
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
@@ -150,7 +149,6 @@ registerLocaleData(localeEs, 'es-CO');
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },
-        { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi())

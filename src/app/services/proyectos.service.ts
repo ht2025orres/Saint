@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 // ── TIPOS ─────────────────────────────────────────────────────────────────────
@@ -12,7 +13,7 @@ export type Semaforo        = 'rojo' | 'amarillo' | 'verde' | 'gris';
 export type NivelDisplay    = 'gestor' | 'admin' | 'editor' | 'colaborador' | 'lector';
 export type NivelTarea      = 'admin' | 'parcial' | 'basico' | 'sin_acceso';
 
-export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi';
+export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi' | 'compromiso';
 export type FuenteTarea = OrigenTarea;
 
 export type EstadoInforme      = 'abierto' | 'en_proceso' | 'cerrado';
@@ -245,12 +246,21 @@ export interface FlujoDiario {
   updated_at:          string;
 }
 
-type ApiResponse<T> = { success: boolean; data: T };
-type ApiMessage     = { success: boolean; message: string };
+export type ApiResponse<T> = { success: boolean; data: T };
+export type ApiMessage     = { success: boolean; message: string };
 
 @Injectable({ providedIn: 'root' })
 export class ProyectoService {
   private readonly api = environment.URL_API_LARAVEL;
+
+  // ── REACCIÓN GLOBAL ───────────────────────────────────────────────────────
+  /** Emite cada vez que se crea, edita o elimina algo relevante (proyecto, actividad, tarea) */
+  private _refresh$ = new Subject<void>();
+  readonly refresh$ = this._refresh$.asObservable();
+
+  notifyRefresh(): void {
+    this._refresh$.next();
+  }
 
   constructor(private http: HttpClient) {}
 
@@ -321,19 +331,19 @@ export class ProyectoService {
   }
 
   crearProyecto(data: Partial<Proyecto> & { usuario_id: number }): Observable<ApiResponse<Proyecto> & ApiMessage> {
-    return this.http.post<any>(`${this.api}/proyectos`, data);
+    return this.http.post<any>(`${this.api}/proyectos`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   actualizarProyecto(id: number, data: Partial<Proyecto> & { usuario_id: number }): Observable<ApiMessage> {
-    return this.http.put<ApiMessage>(`${this.api}/proyectos/${id}`, data);
+    return this.http.put<ApiMessage>(`${this.api}/proyectos/${id}`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   eliminarProyecto(id: number, usuarioId: number): Observable<ApiMessage> {
-    return this.http.delete<ApiMessage>(`${this.api}/proyectos/${id}`, { params: { usuario_id: usuarioId } });
+    return this.http.delete<ApiMessage>(`${this.api}/proyectos/${id}`, { params: { usuario_id: usuarioId } }).pipe(tap(() => this.notifyRefresh()));
   }
 
   cambiarEstadoProyecto(id: number, estado: string, usuarioId: number): Observable<ApiMessage> {
-    return this.http.post<ApiMessage>(`${this.api}/proyectos/${id}/cambiar-estado`, { estado, usuario_id: usuarioId });
+    return this.http.post<ApiMessage>(`${this.api}/proyectos/${id}/cambiar-estado`, { estado, usuario_id: usuarioId }).pipe(tap(() => this.notifyRefresh()));
   }
 
   // ── PERMISOS ──────────────────────────────────────────────────────────────
@@ -351,15 +361,15 @@ export class ProyectoService {
   // ── ACTIVIDADES ───────────────────────────────────────────────────────────
 
   crearActividad(data: Partial<Actividad> & { usuario_id: number }): Observable<ApiResponse<Actividad> & ApiMessage> {
-    return this.http.post<any>(`${this.api}/actividades`, data);
+    return this.http.post<any>(`${this.api}/actividades`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   actualizarActividad(id: number, data: Partial<Actividad> & { usuario_id: number }): Observable<ApiMessage> {
-    return this.http.put<ApiMessage>(`${this.api}/actividades/${id}`, data);
+    return this.http.put<ApiMessage>(`${this.api}/actividades/${id}`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   eliminarActividad(id: number, usuarioId: number): Observable<ApiMessage> {
-    return this.http.delete<ApiMessage>(`${this.api}/actividades/${id}`, { params: { usuario_id: usuarioId } });
+    return this.http.delete<ApiMessage>(`${this.api}/actividades/${id}`, { params: { usuario_id: usuarioId } }).pipe(tap(() => this.notifyRefresh()));
   }
 
   asignarUsuarioActividad(
@@ -377,23 +387,23 @@ export class ProyectoService {
   // ── TAREAS ────────────────────────────────────────────────────────────────
 
   crearTarea(data: Partial<Tarea> & { usuario_id: number; proyecto_id?: number }): Observable<ApiResponse<Tarea>> {
-    return this.http.post<ApiResponse<Tarea>>(`${this.api}/tareas`, data);
+    return this.http.post<ApiResponse<Tarea>>(`${this.api}/tareas`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   actualizarTarea(id: number, data: Partial<Tarea> & { usuario_id: number }): Observable<ApiResponse<Tarea>> {
-    return this.http.put<ApiResponse<Tarea>>(`${this.api}/tareas/${id}`, data);
+    return this.http.put<ApiResponse<Tarea>>(`${this.api}/tareas/${id}`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   eliminarTarea(id: number, usuarioId: number): Observable<ApiMessage> {
-    return this.http.delete<ApiMessage>(`${this.api}/tareas/${id}`, { params: { usuario_id: usuarioId } });
+    return this.http.delete<ApiMessage>(`${this.api}/tareas/${id}`, { params: { usuario_id: usuarioId } }).pipe(tap(() => this.notifyRefresh()));
   }
 
   completarTarea(id: number, usuarioId: number, data?: FormData | { notas?: string }): Observable<ApiMessage> {
     if (data instanceof FormData) {
       if (!data.has('usuario_id')) data.append('usuario_id', String(usuarioId));
-      return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, data);
+      return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, data).pipe(tap(() => this.notifyRefresh()));
     }
-    return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { ...data, usuario_id: usuarioId });
+    return this.http.post<ApiMessage>(`${this.api}/tareas/${id}/completar`, { ...data, usuario_id: usuarioId }).pipe(tap(() => this.notifyRefresh()));
   }
 
   // ── SEGUIMIENTO ───────────────────────────────────────────────────────────────
@@ -434,19 +444,19 @@ export class ProyectoService {
     titulo: string; descripcion?: string;
     estado?: string; notas?: string; fecha_limite_entrega?: string;
   }): Observable<ApiResponse<SeguimientoTarea> & ApiMessage> {
-    return this.http.post<any>(`${this.api}/seguimiento-tareas`, data);
+    return this.http.post<any>(`${this.api}/seguimiento-tareas`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   actualizarSeguimientoTarea(id: number, data: Partial<SeguimientoTarea> & { usuario_id: number }): Observable<ApiMessage> {
-    return this.http.put<ApiMessage>(`${this.api}/seguimiento-tareas/${id}`, data);
+    return this.http.put<ApiMessage>(`${this.api}/seguimiento-tareas/${id}`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   completarSeguimientoTarea(id: number, usuarioId: number): Observable<ApiMessage> {
-    return this.http.post<ApiMessage>(`${this.api}/seguimiento-tareas/${id}/completar`, { usuario_id: usuarioId });
+    return this.http.post<ApiMessage>(`${this.api}/seguimiento-tareas/${id}/completar`, { usuario_id: usuarioId }).pipe(tap(() => this.notifyRefresh()));
   }
 
   eliminarSeguimientoTarea(id: number, usuarioId: number): Observable<ApiMessage> {
-    return this.http.delete<ApiMessage>(`${this.api}/seguimiento-tareas/${id}`, { params: { usuario_id: usuarioId } });
+    return this.http.delete<ApiMessage>(`${this.api}/seguimiento-tareas/${id}`, { params: { usuario_id: usuarioId } }).pipe(tap(() => this.notifyRefresh()));
   }
 
   // ── EVIDENCIAS ────────────────────────────────────────────────────────────
@@ -550,8 +560,10 @@ export class ProyectoService {
 
   // ── FLUJOS DIARIOS ────────────────────────────────────────────────────────────
  
-  getFlujoActivo(seguimientoId: number, usuarioId: number): Observable<ApiResponse<FlujoDiario | null>> {
-    return this.http.get<any>(`${this.api}/seguimientos/${seguimientoId}/flujo-activo`, { params: { usuario_id: usuarioId } });
+  getFlujoActivo(seguimientoId: number, usuarioId: number, fecha?: string): Observable<ApiResponse<FlujoDiario | null>> {
+    let params = new HttpParams().set('usuario_id', usuarioId);
+    if (fecha) params = params.set('fecha', fecha);
+    return this.http.get<any>(`${this.api}/seguimientos/${seguimientoId}/flujo-activo`, { params });
   }
  
   getFlujos(seguimientoId: number, usuarioId: number): Observable<ApiResponse<FlujoDiario[]>> {
@@ -570,7 +582,7 @@ export class ProyectoService {
     return this.http.post<any>(`${this.api}/compromisos`, data);
   }
  
-  actualizarCompromiso(id: number, data: Partial<Compromiso> & { usuario_id: number }): Observable<ApiMessage> {
+  actualizarCompromiso(id: number, data: { anio: number; mes: number; titulo?: string; usuario_id: number; responsables?: number[]; notas?: string }): Observable<ApiMessage> {
     return this.http.put<ApiMessage>(`${this.api}/compromisos/${id}`, data);
   }
 
@@ -581,9 +593,19 @@ export class ProyectoService {
   completarCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
     return this.http.post<ApiMessage>(`${this.api}/compromisos/${id}/completar`, { usuario_id: usuarioId });
   }
+
+  reabrirCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.api}/compromisos/${id}/reabrir`, { usuario_id: usuarioId });
+  }
  
   eliminarCompromiso(id: number, usuarioId: number): Observable<ApiMessage> {
     return this.http.delete<ApiMessage>(`${this.api}/compromisos/${id}`, { params: { usuario_id: usuarioId } });
   }
 
+  getSaturacionParticipantes(seguimientoId: number, usuarioId: number): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(
+      `${this.api}/seguimientos/${seguimientoId}/saturacion`,
+      { params: new HttpParams().set('usuario_id', usuarioId) }
+    );
+  }
 }

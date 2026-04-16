@@ -106,6 +106,15 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         this.cdr.markForCheck();
       });
+
+    // Suscripción a cambios globales para recarga automática
+    this.proyectoService.refresh$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (this.isOpen) {
+          this.cargarDatos();
+        }
+      });
   }
 
   ngOnDestroy(): void {

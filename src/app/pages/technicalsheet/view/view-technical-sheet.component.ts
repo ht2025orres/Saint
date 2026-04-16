@@ -175,6 +175,10 @@ export class ViewTechnicalSheetComponent implements OnInit {
     this.loading = true;
     let currentStatus = this.technicalDataSheetCurrent.status;
     let status: string = this.calculateApproveNewStatus(this.technicalDataSheetCurrent.status);
+    // Asegurarse de que id_product_category sea una cadena antes de enviar
+    if (this.technicalDataSheetCurrent.id_product_category !== undefined && this.technicalDataSheetCurrent.id_product_category !== null) {
+      this.technicalDataSheetCurrent.id_product_category = String(this.technicalDataSheetCurrent.id_product_category);
+    }
     this.technicalSheetService.saveFicha(this.technicalDataSheetCurrent)
       .subscribe(obj => {
         this.loading = false;
@@ -263,6 +267,10 @@ export class ViewTechnicalSheetComponent implements OnInit {
     this.loading = true;
     let currentStatus = this.technicalDataSheetCurrent.status;
     let status: string = this.calculateDisapproveNewStatus(this.technicalDataSheetCurrent.status);
+    // Asegurarse de que id_product_category sea una cadena antes de enviar
+    if (this.technicalDataSheetCurrent.id_product_category !== undefined && this.technicalDataSheetCurrent.id_product_category !== null) {
+      this.technicalDataSheetCurrent.id_product_category = String(this.technicalDataSheetCurrent.id_product_category);
+    }
     this.technicalSheetService.saveFicha(this.technicalDataSheetCurrent)
       .subscribe(obj => {
         this.loading = false;

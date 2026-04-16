@@ -10,6 +10,8 @@ export interface ActividadForm {
   estado:               string;
   fecha_limite_entrega: string;
   responsables:         number[];
+  titulo_reapertura?:    string;
+  descripcion_reapertura?: string;
 }
 
 @Component({
@@ -59,6 +61,8 @@ export class ModalActividadComponent implements OnChanges {
       descripcion:          [''],
       estado:               ['pendiente'],
       fecha_limite_entrega: [''],
+      titulo_reapertura:    [''],
+      descripcion_reapertura: [''],
     });
   }
 
@@ -79,6 +83,8 @@ export class ModalActividadComponent implements OnChanges {
         descripcion:          this.actividad.descripcion ?? '',
         estado:               this.actividad.estado ?? 'pendiente',
         fecha_limite_entrega: this._toLocal(this.actividad.fecha_limite_entrega),
+        titulo_reapertura:    '',
+        descripcion_reapertura: '',
       });
       // Resolver responsables
       this.responsablesSelec = (this.actividad.responsables ?? [])
@@ -88,6 +94,8 @@ export class ModalActividadComponent implements OnChanges {
       this.form.reset({
         proyecto_id: this.proyecto?.id ?? null,
         titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '',
+        titulo_reapertura: '',
+        descripcion_reapertura: '',
       });
       this.responsablesSelec = [];
     }

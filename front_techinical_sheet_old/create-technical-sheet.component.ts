@@ -374,8 +374,12 @@ export class CreateTechnicalSheetComponent implements OnInit {
                         this.technicalDataSheetCurrent.id = result.id;
                     },
                     error => {
-                        Swal.fire('Error guardar ficha', 'La ficha técnica no se ha podido guardar', 'error');
                         this.loading = false;
+                        let errorMessage = 'La ficha técnica no se ha podido guardar';
+                        if (error.error && error.error.errors && error.error.errors.id_item) {
+                            errorMessage = error.error.errors.id_item[0];
+                        }
+                        Swal.fire('Error al guardar ficha', errorMessage, 'error');
                     }
                 );
         }

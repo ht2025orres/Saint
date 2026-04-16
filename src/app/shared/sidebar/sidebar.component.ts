@@ -101,6 +101,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         roles: ['Administrador del sistema', 'Gestor de Proyectos']
       },
       {
+        label: 'Firmas Digitales',
+        icon: 'bi bi-pencil-square',
+        link: '/firmas',
+        roles: ['Administrador del sistema']
+      },
+      {
         label: 'Reporte de Fichas',
         icon: 'bi bi-file-earmark-bar-graph',
         roles: ['Administrador del sistema', 'Reporte ficha tecnica', 'Gestor reporte ficha tecnica'],
@@ -340,45 +346,58 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           'Admin (inventario)'
         ],
         submenu: [
+          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas' },
+          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas' },
+          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios' },
+          { label: 'Conteo de Inventario', link: '/inventario/conteo' },
+          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', roles: ['Administrador del sistema', 'Admin (inventario)'] },
+        ]
+      },
+      {
+        label: 'Inventario (Anterior)',
+        icon: 'bi bi-archive',
+        roles: [
+          'Administrador del sistema',
+          'Gestor de bodega (MP001)',
+          'Gestor de bodega (MP003)',
+          'Gestor de bodega (BT001)',
+          'Admin (inventario)'
+        ],
+        submenu: [
           {
             label: 'Bodegas',
-            link: '/bodegas',
+            link: '/inventario-old/bodegas',
             roles: ['Administrador del sistema', 'Admin (inventario)', 'Gestor de bodega (MP001)', 'Gestor de bodega (MP003)', 'Gestor de bodega (BT001)']
           },
           {
             label: 'Zonas',
-            link: '/zonas',
+            link: '/inventario-old/zonas',
             roles: ['Administrador del sistema', 'Admin (inventario)', 'Gestor de bodega (MP001)', 'Gestor de bodega (MP003)', 'Gestor de bodega (BT001)']
           },
           {
             label: 'Contadores',
-            link: '/contadores',
+            link: '/inventario-old/contadores',
             roles: ['Administrador del sistema', 'Admin (inventario)']
           },
           {
             label: 'Inventarios',
-            link: '/inventarios',
+            link: '/inventario-old/inventarios',
             roles: ['Administrador del sistema', 'Admin (inventario)']
           },
           {
             label: 'Generar hoja de conteo',
-            link: '/generar-hoja-conteo',
+            link: '/inventario-old/generar-hoja-conteo',
             roles: ['Administrador del sistema', 'Admin (inventario)']
           },
           {
             label: 'Listado de hojas de conteo',
-            link: '/hojas-conteo-list',
+            link: '/inventario-old/hojas-conteo-list',
             roles: ['Administrador del sistema', 'Admin (inventario)']
           },
           {
             label: 'Hojas de Conteo',
-            link: '/contador-items',
+            link: '/inventario-old/contador-items',
             roles: ['Administrador del sistema', 'Admin (inventario)', 'Lider Contador (inventario)']
-          },
-          {
-            label: 'Movimientos de inventario',
-            link: '/movimientos-inventario',
-            roles: ['Administrador del sistema']
           }
         ]
       },

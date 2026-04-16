@@ -338,9 +338,10 @@
       <span *ngIf="tarea.origen !== 'seguimiento'"
         class="task-semaforo task-semaforo--readonly"
         [ngClass]="{
-          'is-vencida': vencida,
+          'is-completado': tarea.estado === 'completado',
+          'is-vencida': vencida && tarea.estado !== 'completado',
           'is-hoy':     esHoy(tarea) && !vencida,
-          'is-normal':  !vencida && !esHoy(tarea)
+          'is-normal':  !vencida && !esHoy(tarea) && tarea.estado !== 'completado'
         }"
         title="{{ tarea.origen === 'proyecto' ? 'Tarea de proyecto' : 'Ticket GLPI' }}">
       </span>

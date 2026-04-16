@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
-import { switchMap, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { User } from '../models/User';
 import { environment } from '../../environments/environment';
@@ -70,37 +70,21 @@ export class AuthService {
   }
 
   login(user: User): Observable<any> {
+    const credenciales = btoa('angularapp' + ':' + 'CF1p1092$#');
 
-    // 1️⃣ Primero verificamos si el usuario está habilitado en Laravel
-    return this.checkUserEnabled(user.email).pipe(
-      switchMap((resp: any) => {
+    const httpHeaders = new HttpHeaders({
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: 'Basic ' + credenciales
+    });
 
-        if (!resp.enabled) {
-          return throwError(() => ({
-            error: {
-              message: 'Usuario deshabilitado'
-            }
-          }));
-        }
+    const params = new URLSearchParams();
+    params.set('grant_type', 'password');
+    params.set('username', user.email);
+    params.set('password', user.password);
 
-        // 2️⃣ Si está habilitado, procedemos con el login normal
-        const credenciales = btoa('angularapp' + ':' + 'CF1p1092$#');
-
-        const httpHeaders = new HttpHeaders({
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: 'Basic ' + credenciales
-        });
-
-        const params = new URLSearchParams();
-        params.set('grant_type', 'password');
-        params.set('username', user.email);
-        params.set('password', user.password);
-
-        return this.http.post<any>(this.urlEndPoint, params.toString(), {
-          headers: httpHeaders
-        });
-      })
-    );
+    return this.http.post<any>(this.urlEndPoint, params.toString(), {
+      headers: httpHeaders
+    });
   }
 
   saveUser(accessToken: string): void {

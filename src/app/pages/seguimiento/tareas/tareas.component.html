@@ -161,7 +161,7 @@
             <!-- Dropdown Orígenes -->
             <div *ngIf="showFiltroOrigenes" class="absolute top-full left-0 mt-3 w-60 bg-white border border-gray-100 rounded-3xl shadow-2xl z-[100] p-4 animate-in fade-in slide-in-from-top-3">
               <div class="space-y-1.5">
-                <label *ngFor="let orig of [{v:'seguimiento', l:'Seguimiento'}, {v:'proyecto', l:'Proyectos'}, {v:'informe', l:'Informes'}, {v:'glpi', l:'GLPI'}]" 
+                <label *ngFor="let orig of [{v:'seguimiento', l:'Seguimiento'}, {v:'proyecto', l:'Proyectos'}, {v:'informe', l:'Informes'}, {v:'glpi', l:'GLPI'}, {v:'compromiso', l:'Compromisos'}]" 
                   class="flex items-center gap-4 p-3 hover:bg-emerald-50/50 rounded-2xl cursor-pointer transition-all border border-transparent"
                   [ngClass]="{'bg-emerald-50 border-emerald-100': filtroOrigenesSelec.includes(orig.v)}">
                   <div class="relative flex items-center justify-center">
@@ -255,45 +255,102 @@
               </span>
             </div>
 
-            <!-- Listado de Tareas en el Calendario -->
+            <!-- Listado de Tareas en el Calendario (Resumen por Usuario) -->
             <div class="space-y-2 overflow-y-auto max-h-[120px]" [ngClass]="{'max-h-full': vistaCalendarioModo !== 'mes'}">
-              <!-- Tareas Seguimiento -->
-              <div *ngFor="let t of dia.tareas" 
-                (click)="abrirTareaEspecifica(t.tarea, 'seguimiento'); $event.stopPropagation()"
-                class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate bg-indigo-50/80 border-indigo-500 text-indigo-700 shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
-                [title]="t.tarea.titulo">
-                <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="t.color">
-                  {{ t.iniciales }}
-                </div>
-                <span class="truncate">{{ t.tarea.titulo }}</span>
-              </div>
               
-              <!-- Tareas Proyectos/GLPI -->
-              <div *ngFor="let t of dia.tareasExternas" 
-                (click)="abrirTareaEspecifica(t, t.origen); $event.stopPropagation()"
-                class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
-                [ngClass]="t.origen === 'proyecto' ? 'bg-teal-50/80 border-teal-500 text-teal-700' : 'bg-orange-50/80 border-orange-500 text-orange-700'"
-                [title]="t.titulo">
-                <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="t.color">
-                  {{ t.iniciales }}
+              <!-- Vista Resumen (Mes y Semana) -->
+              <ng-container *ngIf="vistaCalendarioModo !== 'dia'">
+                <div *ngFor="let r of dia.resumenPorUsuario" class="flex flex-col gap-1.5 p-1.5 rounded-xl bg-gray-50/50 border border-gray-100/50 hover:bg-white hover:shadow-sm transition-all group/user">
+                  <div class="flex items-center gap-2">
+                    <!-- Avatar Usuario -->
+                    <div class="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center text-[9px] text-white font-black shadow-sm group-hover/user:scale-110 transition-transform" 
+                      [ngClass]="state.getColorPorId(r.uid)" [title]="r.nombre">
+                      {{ r.iniciales }}
+                    </div>
+                    
+                    <!-- Contadores por Tipo -->
+                    <div class="flex flex-wrap gap-1 items-center">
+                      <!-- Seguimiento -->
+                      <div *ngIf="r.countSeguimiento > 0" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[9px] font-black border border-indigo-100/50" title="Seguimiento">
+                        <i class="bi bi-check2-square"></i>
+                        <span>{{ r.countSeguimiento }}</span>
+                      </div>
+                      <!-- Proyectos -->
+                      <div *ngIf="r.countProyecto > 0" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-teal-50 text-teal-600 text-[9px] font-black border border-teal-100/50" title="Proyectos">
+                        <i class="bi bi-folder2-open"></i>
+                        <span>{{ r.countProyecto }}</span>
+                      </div>
+                      <!-- Informes -->
+                      <div *ngIf="r.countInforme > 0" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[9px] font-black border border-amber-100/50" title="Informes">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>{{ r.countInforme }}</span>
+                      </div>
+                      <!-- GLPI -->
+                      <div *ngIf="r.countGlpi > 0" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[9px] font-black border border-orange-100/50" title="GLPI">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>{{ r.countGlpi }}</span>
+                      </div>
+                      <!-- Compromisos -->
+                      <div *ngIf="r.countCompromiso > 0" class="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[9px] font-black border border-blue-100/50" title="Compromisos">
+                        <i class="bi bi-lightning-charge"></i>
+                        <span>{{ r.countCompromiso }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span class="truncate">{{ t.titulo }}</span>
-              </div>
+              </ng-container>
 
-              <!-- Tareas Informe -->
-              <div *ngFor="let t of dia.tareasInforme" 
-                (click)="abrirTareaEspecifica(t, 'informe'); $event.stopPropagation()"
-                class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate bg-amber-50/80 border-amber-500 text-amber-700 shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
-                [title]="t.titulo">
-                <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="t.color">
-                  {{ t.iniciales }}
+              <!-- Vista Detallada (Solo Día) -->
+              <ng-container *ngIf="vistaCalendarioModo === 'dia'">
+                <!-- Tareas Seguimiento -->
+                <div *ngFor="let t of dia.tareas" 
+                  (click)="abrirTareaEspecifica(t.tarea, 'seguimiento'); $event.stopPropagation()"
+                  class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate bg-indigo-50/80 border-indigo-500 text-indigo-700 shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
+                  [title]="t.tarea.titulo">
+                  <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="t.color">
+                    {{ t.iniciales }}
+                  </div>
+                  <span class="truncate">{{ t.tarea.titulo }}</span>
                 </div>
-                <span class="truncate">{{ t.titulo }}</span>
-              </div>
+                
+                <!-- Tareas Proyectos/GLPI -->
+                <div *ngFor="let t of dia.tareasExternas" 
+                  (click)="abrirTareaEspecifica(t, t.origen); $event.stopPropagation()"
+                  class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
+                  [ngClass]="t.origen === 'proyecto' ? 'bg-teal-50/80 border-teal-500 text-teal-700' : 'bg-orange-50/80 border-orange-500 text-orange-700'"
+                  [title]="t.titulo">
+                  <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="t.color">
+                    {{ t.iniciales }}
+                  </div>
+                  <span class="truncate">{{ t.titulo }}</span>
+                </div>
+
+                <!-- Tareas Informe -->
+                <div *ngFor="let t of dia.tareasInforme" 
+                  (click)="abrirTareaEspecifica(t, 'informe'); $event.stopPropagation()"
+                  class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate bg-amber-50/80 border-amber-500 text-amber-700 shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
+                  [title]="t.titulo">
+                  <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="t.color">
+                    {{ t.iniciales }}
+                  </div>
+                  <span class="truncate">{{ t.titulo }}</span>
+                </div>
+
+                <!-- Compromisos -->
+                <div *ngFor="let c of dia.compromisos" 
+                  (click)="abrirTareaEspecifica(c, 'compromiso'); $event.stopPropagation()"
+                  class="px-3 py-2 rounded-xl border-l-4 text-[10px] font-black truncate bg-blue-50/80 border-blue-500 text-blue-700 shadow-sm flex items-center gap-2 hover:translate-x-1 transition-transform"
+                  [title]="c.titulo">
+                  <div class="w-5 h-5 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-black shadow-inner" [ngClass]="c.color">
+                    {{ c.iniciales }}
+                  </div>
+                  <span class="truncate">{{ c.titulo }}</span>
+                </div>
+              </ng-container>
             </div>
 
             <!-- Empty state para el día (solo en vista diaria) -->
-            <div *ngIf="vistaCalendarioModo === 'dia' && !dia.tareas.length && !dia.tareasExternas.length && !dia.tareasInforme.length"
+            <div *ngIf="vistaCalendarioModo === 'dia' && !dia.tareas.length && !dia.tareasExternas.length && !dia.tareasInforme.length && !dia.compromisos.length"
               class="flex flex-col items-center justify-center h-[500px] text-gray-300">
               <div class="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mb-6 text-gray-200">
                 <i class="bi bi-clipboard-check text-5xl"></i>
@@ -344,7 +401,7 @@
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
                     </span>
                     <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy' }}
+                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
                     </span>
                   </div>
                   <h4 class="text-base font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ t.titulo }}</h4>
@@ -367,10 +424,10 @@
                 </div>
 
                 <div class="flex -space-x-2">
-                  <div *ngIf="t.usuario_id || t.responsable_id" class="w-8 h-8 rounded-xl border-2 border-white flex items-center justify-center text-[10px] text-white font-black shadow-sm" 
-                    [ngClass]="state.getColorPorId(t.usuario_id || t.responsable_id)"
-                    [title]="state.nombreUsuario(t.usuario_id || t.responsable_id)">
-                    {{ state.getInicialesResponsable(t.usuario_id || t.responsable_id) }}
+                  <div *ngIf="t.responsable_id || t.usuario_id" class="w-8 h-8 rounded-xl border-2 border-white flex items-center justify-center text-[10px] text-white font-black shadow-sm" 
+                    [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
+                    [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
+                    {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
                   </div>
                 </div>
                 
@@ -382,6 +439,14 @@
                     title="Completar tarea">
                     <i class="bi bi-check-lg text-base"></i>
                   </button>
+
+                  <button *ngIf="t.estado === 'completado' && t.origen === 'compromiso'" 
+                    (click)="reabrirTareaRapido(t, 'compromiso', $event)"
+                    class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                    title="Descompletar compromiso">
+                    <i class="bi bi-arrow-counterclockwise text-base"></i>
+                  </button>
+
                   <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
                 </div>
                 
@@ -424,6 +489,9 @@
                     <span *ngIf="t.actividad_titulo" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
                     </span>
+                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
+                    </span>
                     <p class="text-xs text-gray-400 font-medium truncate">{{ t.descripcion || 'Sin descripción' }}</p>
                   </div>
                 </div>
@@ -452,10 +520,10 @@
                 </button>
 
                 <div class="flex -space-x-2">
-                  <div *ngIf="t.usuario_id || t.responsable_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
-                    [ngClass]="state.getColorPorId(t.usuario_id || t.responsable_id)"
-                    [title]="state.nombreUsuario(t.usuario_id || t.responsable_id)">
-                    {{ state.getInicialesResponsable(t.usuario_id || t.responsable_id) }}
+                  <div *ngIf="t.responsable_id || t.usuario_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
+                    [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
+                    [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
+                    {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
                   </div>
                 </div>
 
@@ -497,6 +565,9 @@
                     <span *ngIf="t.actividad_titulo" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
                     </span>
+                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -524,13 +595,14 @@
                   </button>
 
                   <div class="flex -space-x-2">
-                    <div *ngIf="t.usuario_id || t.responsable_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
-                      [ngClass]="state.getColorPorId(t.usuario_id || t.responsable_id)"
-                      [title]="state.nombreUsuario(t.usuario_id || t.responsable_id)">
-                      {{ state.getInicialesResponsable(t.usuario_id || t.responsable_id) }}
+                    <div *ngIf="t.responsable_id || t.usuario_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
+                      [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
+                      [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
+                      {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
                     </div>
                   </div>
 
+                  <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
                   <i class="bi bi-chevron-right text-gray-300 group-hover:text-teal-600 transition-all group-hover:translate-x-1"></i>
                 </div>
               </div>
@@ -568,6 +640,9 @@
                     <span *ngIf="t.actividad_titulo" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
                     </span>
+                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -595,13 +670,14 @@
                   </button>
 
                   <div class="flex -space-x-2">
-                    <div *ngIf="t.usuario_id || t.responsable_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
-                      [ngClass]="state.getColorPorId(t.usuario_id || t.responsable_id)"
-                      [title]="state.nombreUsuario(t.usuario_id || t.responsable_id)">
-                      {{ state.getInicialesResponsable(t.usuario_id || t.responsable_id) }}
+                    <div *ngIf="t.responsable_id || t.usuario_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
+                      [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
+                      [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
+                      {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
                     </div>
                   </div>
 
+                  <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
                   <i class="bi bi-chevron-right text-gray-300 group-hover:text-amber-600 transition-all group-hover:translate-x-1"></i>
                 </div>
               </div>
@@ -614,7 +690,82 @@
             </div>
           </div>
 
-          <!-- SECCIÓN: GLPI -->
+          <!-- SECCIÓN: COMPROMISOS -->
+          <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
+            <div class="px-8 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
+                  <i class="bi bi-lightning-charge"></i>
+                </div>
+                <span class="text-lg font-black text-gray-900">Compromisos Diarios</span>
+              </div>
+              <span class="text-xs font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-xl uppercase tracking-widest">{{ tareasCompromisoFiltradas.length }} Compromisos</span>
+            </div>
+            <div class="divide-y divide-gray-50">
+              <div *ngFor="let t of tareasCompromisoPaginadas" class="px-8 py-3 flex items-center justify-between hover:bg-gray-50 transition group cursor-pointer"
+                (click)="abrirTareaEspecifica(t, 'compromiso')">
+                <div class="flex items-center gap-4 min-w-0">
+                  <div class="w-2 h-2 rounded-full flex-shrink-0 bg-blue-400 shadow-sm"></div>
+                  <div class="min-w-0">
+                    <h4 class="text-base font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ t.titulo }}</h4>
+                    <span class="inline-flex items-center gap-1.5 text-[10px] text-blue-600 font-black uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md mt-1">
+                      <i class="bi bi-tag"></i> {{ t.origen_sub }}
+                    </span>
+                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 ml-2">
+                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="flex -space-x-2">
+                    <!-- Si hay responsables (array), los mostramos todos -->
+                    <ng-container *ngIf="t.responsables && t.responsables.length > 0; else singleUser">
+                      <div *ngFor="let uid of t.responsables" 
+                        class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
+                        [ngClass]="state.getColorPorId(uid)"
+                        [title]="state.nombreUsuario(uid)">
+                        {{ state.getInicialesResponsable(uid) }}
+                      </div>
+                    </ng-container>
+                    
+                    <!-- Si no hay responsables, mostramos el usuario_id o responsable_id -->
+                    <ng-template #singleUser>
+                      <div *ngIf="t.responsable_id || t.usuario_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
+                        [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
+                        [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
+                        {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
+                      </div>
+                    </ng-template>
+                  </div>
+                  <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
+                  
+                  <button *ngIf="t.estado === 'completado'" 
+                    (click)="reabrirTareaRapido(t, 'compromiso', $event)"
+                    class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                    title="Descompletar compromiso">
+                    <i class="bi bi-arrow-counterclockwise text-base"></i>
+                  </button>
+
+                  <button *ngIf="t.estado !== 'completado'" 
+                    (click)="completarTareaRapido(t, 'compromiso', $event)"
+                    class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                    title="Completar compromiso">
+                    <i class="bi bi-check-lg text-base"></i>
+                  </button>
+
+                  <i class="bi bi-chevron-right text-gray-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1"></i>
+                </div>
+              </div>
+              <div *ngIf="!tareasCompromisoFiltradas.length" class="py-20 text-center">
+                <p class="text-gray-400 font-bold italic">No hay compromisos registrados</p>
+              </div>
+            </div>
+            <div class="px-8 py-4 bg-gray-50/50 border-t border-gray-100">
+              <app-shared-paginator [instanceId]="paginadorCompId"></app-shared-paginator>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: TICKETS GLPI -->
           <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
             <div class="px-8 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -635,14 +786,17 @@
                     <span class="inline-flex items-center gap-1.5 text-[10px] text-orange-600 font-black uppercase tracking-widest bg-orange-50 px-2 py-0.5 rounded-md mt-1">
                       <i class="bi bi-tag"></i> GLPI #{{ t.id }}
                     </span>
+                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 ml-2">
+                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
+                    </span>
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
                   <div class="flex -space-x-2">
-                    <div *ngIf="t.usuario_id || t.responsable_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
-                      [ngClass]="state.getColorPorId(t.usuario_id || t.responsable_id)"
-                      [title]="state.nombreUsuario(t.usuario_id || t.responsable_id)">
-                      {{ state.getInicialesResponsable(t.usuario_id || t.responsable_id) }}
+                    <div *ngIf="t.responsable_id || t.usuario_id" class="w-7 h-7 rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm" 
+                      [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
+                      [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
+                      {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
                     </div>
                   </div>
                   <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
@@ -675,8 +829,9 @@
     [show]="showModalTarea"
     [tarea]="tareaParaEditar"
     [proyectoId]="tareaParaEditar?.proyecto_id || 1"
+    [proyecto]="proyectoSeleccionado"
     [actividades]="actividadesProyecto"
-    [usuariosDisponibles]="state.usuariosCache"
+    [usuariosDisponibles]="state.usuariosAdministradores"
     [saving]="savingTarea"
     [esAdmin]="vistaMes?.es_gestor ?? false"
     (onCerrar)="showModalTarea = false"
@@ -686,12 +841,21 @@
   <app-modal-informe-tarea
     [show]="showModalInformeTarea"
     [tarea]="informeTareaParaEditar"
-    [usuarios]="state.usuariosCache"
+    [usuarios]="state.usuariosAdministradores"
     [saving]="savingInformeTarea"
     [esAdmin]="vistaMes?.es_gestor ?? false"
     (onCerrar)="showModalInformeTarea = false"
     (onGuardar)="onGuardarInformeTarea($event)">
   </app-modal-informe-tarea>
+
+  <app-modal-compromiso
+    [show]="showModalCompromiso"
+    [compromiso]="compromisoParaEditar"
+    [usuarios]="state.usuariosAdministradores"
+    [saving]="savingCompromiso"
+    (onCerrar)="showModalCompromiso = false"
+    (onGuardar)="onGuardarCompromiso($event)">
+  </app-modal-compromiso>
 
 </div>
 
