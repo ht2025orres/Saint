@@ -1,0 +1,442 @@
+<!-- ══════════════════════════════════════════════════════════════════
+     APP-PROYECTOS
+     Sub-interfaz de gestión de proyectos.
+     ══════════════════════════════════════════════════════════════════ -->
+
+<!-- ── BARRA DE ACCIONES + FILTROS ───────────────────────────────── -->
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+
+  <!-- Filtros de estado -->
+  <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+    <button
+      *ngFor="let f of [
+        {v:'todos',       l:'Todos',        i:'mdi mdi-apps'},
+        {v:'pendiente',   l:'Pendiente',    i:'mdi mdi-clock-outline'},
+        {v:'en_ejecucion',l:'En ejecución', i:'mdi mdi-play-circle-outline'},
+        {v:'completado',  l:'Completados',  i:'mdi mdi-check-circle-outline'},
+        {v:'pausado',     l:'Pausados',     i:'mdi mdi-pause-circle-outline'}
+      ]"
+      (click)="cambiarFiltro(f.v)"
+      class="flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all"
+      [ngClass]="filtroEstado === f.v
+        ? 'bg-blue-600 text-white shadow-sm'
+        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'"
+    >
+      <i [class]="f.i"></i>
+      <span class="hidden md:inline">{{ f.l }}</span>
+    </button>
+  </div>
+
+  <!-- Búsqueda -->
+  <div class="relative flex-1 max-w-[200px]">
+    <i class="mdi mdi-magnify absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+    <input
+      type="text"
+      [(ngModel)]="busqueda"
+      (ngModelChange)="onBusquedaChange()"
+      placeholder="Buscar..."
+      class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-8 py-1.5 text-xs outline-none focus:border-blue-400 transition-colors"
+    >
+    <button *ngIf="busqueda" (click)="busqueda = ''; onBusquedaChange()"
+      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition">
+      <i class="mdi mdi-close text-[10px]"></i>
+    </button>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <!-- Vista toggle -->
+    <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+      <button (click)="cambiarVista('tarjetas')"
+        class="p-1.5 rounded-md transition text-xs"
+        [ngClass]="vista === 'tarjetas' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-50'">
+        <i class="mdi mdi-view-grid"></i>
+      </button>
+      <button (click)="cambiarVista('lista')"
+        class="p-1.5 rounded-md transition text-xs"
+        [ngClass]="vista === 'lista' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-50'">
+        <i class="mdi mdi-format-list-bulleted"></i>
+      </button>
+    </div>
+
+    <!-- Botón Ver Plantillas -->
+    <button
+      (click)="toggleMostrarPlantillas()"
+      class="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all border shadow-sm"
+      [ngClass]="mostrarPlantillas
+        ? 'bg-amber-500 text-white border-amber-500'
+        : 'bg-white text-slate-400 border-slate-200 hover:border-amber-200 hover:text-amber-600'"
+    >
+      <i class="mdi" [ngClass]="mostrarPlantillas ? 'mdi-star' : 'mdi-star-outline'"></i>
+      <span class="hidden sm:inline">{{ mostrarPlantillas ? 'Plantillas' : 'Ver Plantillas' }}</span>
+    </button>
+
+    <button *ngIf="puedeGestionarModulo" (click)="abrirModalProyecto()"
+      class="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95">
+      <i class="mdi mdi-plus"></i>
+      Nuevo
+    </button>
+  </div>
+</div>
+
+<!-- ── LOADING SKELETON ──────────────────────────────────────────── -->
+<div *ngIf="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+  <div *ngFor="let i of [1,2,3,4,5,6]"
+    class="bg-white rounded-xl border border-gray-200 p-5 h-56 animate-pulse">
+    <div class="h-4 bg-gray-200 rounded-lg w-3/4 mb-3"></div>
+    <div class="h-3 bg-gray-100 rounded-lg w-1/2 mb-6"></div>
+    <div class="h-2 bg-gray-200 rounded-full mb-2"></div>
+    <div class="h-2 bg-gray-100 rounded-full w-3/4"></div>
+  </div>
+</div>
+
+<!-- ── SIN RESULTADOS ─────────────────────────────────────────────── -->
+<div *ngIf="!loading && proyectosFiltrados.length === 0"
+  class="flex flex-col items-center justify-center py-24 text-center">
+  <div class="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-5">
+    <i class="mdi mdi-folder-open text-blue-300 text-4xl"></i>
+  </div>
+  <h3 class="text-gray-800 font-semibold text-lg mb-1">Sin proyectos</h3>
+  <p class="text-sm text-gray-400 mb-5">
+    {{ busqueda ? 'Ningún proyecto coincide con la búsqueda.' : 'No hay proyectos con este filtro.' }}
+  </p>
+  <button *ngIf="puedeGestionarModulo && !busqueda" (click)="abrirModalProyecto()"
+    class="seg-btn-primary">
+    <i class="mdi mdi-plus mr-1.5"></i>Crear primer proyecto
+  </button>
+</div>
+
+<ng-container *ngIf="!loading && proyectosFiltrados.length > 0">
+
+  <!-- ── VISTA TARJETAS ────────────────────────────────────────────── -->
+  <div *ngIf="vista === 'tarjetas'" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+      <div *ngFor="let p of proyectosPaginados"
+        class="group bg-white rounded-3xl border border-slate-100 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 cursor-pointer
+               flex flex-col overflow-hidden relative"
+        [ngClass]="'border-l-4 ' + state.getSemaforoBorderClass(p.semaforo)"
+        (click)="seleccionarProyecto(p)"
+      >
+        <!-- Cuerpo tarjeta -->
+        <div class="p-6 flex-1">
+
+          <!-- Título + estado -->
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div class="min-w-0 flex-1">
+              <h3 class="font-black text-slate-800 text-base leading-tight group-hover:text-blue-600 transition-colors line-clamp-2" [title]="p.titulo">
+                {{ p.titulo }}
+              </h3>
+              <div class="flex flex-wrap items-center gap-2 mt-2">
+                <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-lg font-black uppercase tracking-widest shadow-sm"
+                  [ngClass]="state.getEstadoBadgeClass(p.estado)">
+                  <i [class]="'mdi ' + state.getEstadoIcon(p.estado)" class="text-xs"></i>
+                  {{ p.estado }}
+                </span>
+                <span *ngIf="p.nivel_usuario && p.nivel_usuario !== 'lector'"
+                  class="text-[10px] px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100 font-black uppercase tracking-widest">
+                  {{ p.nivel_usuario }}
+                </span>
+              </div>
+            </div>
+            <div class="w-3.5 h-3.5 rounded-full flex-shrink-0 shadow-sm animate-pulse"
+              [ngClass]="state.getSemaforoClass(p.semaforo)"
+              [title]="state.getSemaforoLabel(p.semaforo)">
+            </div>
+          </div>
+
+          <!-- Descripción restaurada -->
+          <p *ngIf="p.descripcion" class="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed">
+            {{ p.descripcion }}
+          </p>
+
+          <!-- Fecha límite -->
+          <div *ngIf="p.fecha_limite_entrega" class="flex items-center gap-2 text-xs font-bold text-slate-400 mb-5 bg-slate-50 w-fit px-3 py-1.5 rounded-xl border border-slate-100">
+            <i class="mdi mdi-calendar-blank text-blue-500"></i>
+            <span>{{ p.fecha_limite_entrega | date:'dd MMM, yyyy':'UTC' }}</span>
+          </div>
+
+          <!-- Estadísticas restauradas grandes -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+            <div class="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-slate-700 leading-none truncate">{{ p.total_actividades || 0 }}</p>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-1.5 truncate">Actividades</p>
+            </div>
+            <div class="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-slate-700 leading-none truncate">{{ p.total_tareas || 0 }}</p>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-1.5 truncate">Tareas</p>
+            </div>
+            <div class="bg-emerald-50/50 rounded-2xl p-2 text-center border border-emerald-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-emerald-600 leading-none truncate">{{ p.tareas_completadas || 0 }}</p>
+              <p class="text-[8px] font-bold text-emerald-400 uppercase tracking-tight mt-1.5 truncate">Listas</p>
+            </div>
+            <div class="bg-rose-50/50 rounded-2xl p-2 text-center border border-rose-100 group-hover:bg-white transition-colors shadow-sm min-w-0">
+              <p class="text-sm font-black text-rose-500 leading-none truncate">{{ p.tareas_vencidas || 0 }}</p>
+              <p class="text-[8px] font-bold text-rose-400 uppercase tracking-tight mt-1.5 truncate">Atrasadas</p>
+            </div>
+          </div>
+
+          <!-- Barra de progreso detallada -->
+          <div class="mb-2">
+            <div class="flex justify-between items-end mb-2">
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Progreso</span>
+              <span class="text-sm font-black text-blue-600">{{ p.progreso || 0 }}%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5 p-0.5 shadow-inner">
+              <div class="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden shadow-sm"
+                [ngClass]="(p.progreso || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-600'"
+                [style.width.%]="p.progreso || 0">
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsables restaurados grandes -->
+          <div *ngIf="(p.responsables?.length ?? 0) > 0 || p.creado_por"
+            class="flex items-center gap-3 mt-6 pt-5 border-t border-slate-100">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Responsables:</span>
+            <div class="flex items-center">
+              <div *ngFor="let rid of (p.responsables || []).slice(0, 4); let i = index"
+                class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-black
+                       ring-4 ring-white flex-shrink-0 shadow-md hover:scale-110 hover:z-10 transition-all"
+                [class.-ml-2.5]="i > 0"
+                [ngClass]="state.getColorPorId(rid)"
+                [title]="state.nombreUsuario(rid)">
+                {{ state.getInicialesResponsable(rid) }}
+              </div>
+              <span *ngIf="(p.responsables || []).length > 4"
+                class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center
+                       text-[10px] ring-4 ring-white -ml-2.5 font-black shadow-sm">
+                +{{ (p.responsables || []).length - 4 }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer detallado -->
+        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-colors"
+          (click)="$event.stopPropagation()">
+          <button (click)="seleccionarProyecto(p)"
+            class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-all group/btn">
+            <i class="mdi mdi-eye text-lg group-hover/btn:scale-110 transition-transform"></i> 
+            <span>Ver detalle completo</span>
+          </button>
+          
+          <div class="flex items-center gap-1.5">
+            <button *ngIf="puedeEditarProyecto(p)" (click)="crearPlantillaDesdeProyecto(p)"
+              class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100" title="Crear plantilla">
+              <i class="mdi mdi-file-plus text-lg"></i>
+            </button>
+            <button *ngIf="puedeEditarProyecto(p)" (click)="abrirModalProyecto(p)"
+              class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100" title="Editar">
+              <i class="mdi mdi-pencil text-lg"></i>
+            </button>
+            <button *ngIf="puedeEliminarProyecto(p)" (click)="eliminarProyecto(p)"
+              class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100" title="Eliminar">
+              <i class="mdi mdi-trash-can text-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Paginador detallado -->
+    <app-shared-paginator
+      [instanceId]="'proy-tarjetas'"
+      [pageSizeOptions]="[6,12,24]"
+      [defaultPageSize]="6"
+      [showPageSizeSelector]="true">
+    </app-shared-paginator>
+  </div>
+
+  <!-- ── VISTA LISTA ────────────────────────────────────────────────── -->
+  <div *ngIf="vista === 'lista'" class="space-y-4">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <table class="min-w-full divide-y divide-slate-100">
+        <thead class="bg-slate-50/50">
+          <tr>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Proyecto</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Límite</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">A/T</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-emerald-500 uppercase tracking-widest">OK</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-rose-500 uppercase tracking-widest">Ven</th>
+            <th class="px-4 py-3 text-left text-[9px] font-black text-slate-400 uppercase tracking-widest">Progreso</th>
+            <th class="px-4 py-3 text-right text-[9px] font-black text-slate-400 uppercase tracking-widest pr-6">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 bg-white">
+          <tr *ngFor="let p of proyectosPaginados"
+            class="group hover:bg-slate-50/50 transition-all cursor-pointer"
+            (click)="seleccionarProyecto(p)">
+
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full flex-shrink-0"
+                  [ngClass]="state.getSemaforoClass(p.semaforo)"></span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-800 truncate max-w-[200px]"
+                      [title]="p.titulo">{{ p.titulo }}</span>
+                    <span class="text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
+                      [ngClass]="state.getEstadoBadgeClass(p.estado)">
+                      {{ p.estado }}
+                    </span>
+                  </div>
+                  <!-- Avatares compactos en lista -->
+                  <div *ngIf="(p.responsables?.length ?? 0) > 0" class="flex items-center mt-1">
+                    <div *ngFor="let rid of (p.responsables || []).slice(0,5); let i = index"
+                      class="w-5 h-5 rounded-full flex items-center justify-center text-white font-black ring-1 ring-white shadow-sm"
+                      [class.-ml-1]="i > 0" [ngClass]="state.getColorPorId(rid)"
+                      style="font-size:7px;">
+                      {{ state.getInicialesResponsable(rid) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-4 py-2">
+              <span *ngIf="p.fecha_limite_entrega" class="text-[10px] font-bold text-slate-500">
+                {{ p.fecha_limite_entrega | date:'dd/MM/yy' }}
+              </span>
+              <span *ngIf="!p.fecha_limite_entrega" class="text-slate-300">—</span>
+            </td>
+
+            <td class="px-4 py-2 text-[10px] text-slate-700 font-bold">
+              {{ p.total_actividades || 0 }}/{{ p.total_tareas || 0 }}
+            </td>
+
+            <td class="px-4 py-2 text-[10px] font-black text-emerald-600">
+              {{ p.tareas_completadas || 0 }}
+            </td>
+
+            <td class="px-4 py-2 text-[10px] font-black text-rose-500">
+              {{ p.tareas_vencidas || 0 }}
+            </td>
+
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-2">
+                <div class="w-16 bg-slate-100 rounded-full h-1">
+                  <div class="h-full rounded-full"
+                    [ngClass]="(p.progreso || 0) === 100 ? 'bg-emerald-500' : 'bg-blue-500'"
+                    [style.width.%]="p.progreso || 0">
+                  </div>
+                </div>
+                <span class="text-[9px] text-slate-600 font-black">{{ p.progreso || 0 }}%</span>
+              </div>
+            </td>
+
+            <td class="px-4 py-2 pr-6 text-right" (click)="$event.stopPropagation()">
+              <div class="flex items-center justify-end gap-1 transition-opacity">
+                <button (click)="seleccionarProyecto(p)" class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><i class="mdi mdi-eye"></i></button>
+                <button *ngIf="puedeEditarProyecto(p)" (click)="abrirModalProyecto(p)"
+                  class="p-1.5 text-slate-400 hover:text-amber-600 transition-colors"><i class="mdi mdi-pencil"></i></button>
+                <button *ngIf="puedeEliminarProyecto(p)" (click)="eliminarProyecto(p)"
+                  class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"><i class="mdi mdi-trash-can"></i></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="proyectosFiltrados.length === 0" class="text-center py-12 bg-slate-50/30">
+        <p class="text-slate-400 font-black uppercase tracking-widest text-[9px]">No hay resultados</p>
+      </div>
+    </div>
+
+    <app-shared-paginator
+      [instanceId]="'proy-lista'"
+      [pageSizeOptions]="[10,25,50]"
+      [defaultPageSize]="25"
+      [showPageSizeSelector]="true">
+    </app-shared-paginator>
+  </div>
+
+</ng-container>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PANEL DETALLE DE PROYECTO (slide-over)
+     ══════════════════════════════════════════════════════════════════ -->
+<app-proyecto-detalle
+  [show]="showDetalle"
+  [detalle]="detalle"
+  [loading]="loadingDetalle"
+  [vistaDetalle]="vistaDetalle"
+  [tareasPlanas]="tareasPlanasFiltradas"
+  [usuarioId]="usuarioId"
+  [puedeGestionarModulo]="puedeGestionarModulo"
+  [aplicandoPlantilla]="aplicandoPlantilla"
+  [calculandoFechas]="calculandoFechas"
+  (onCerrar)="cerrarDetalle()"
+  (onAbrirPermisos)="abrirModalPermisos()"
+  (onAbrirPlantillas)="abrirModalPlantillas()"
+  (onCalcularFechas)="calcularFechasTareas()"
+  (onRefresh)="_refreshDetalle($event)"
+  (onEditTarea)="abrirModalTarea($event)"
+  (onEditActividad)="abrirModalActividad($event)"
+  (onChangeVista)="vistaDetalle = $event">
+</app-proyecto-detalle>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     MODALES
+     ══════════════════════════════════════════════════════════════════ -->
+
+<app-modal-proyecto
+  [show]="showModalProyecto"
+  [proyecto]="proyectoParaEditar"
+  [saving]="savingProyecto"
+  (onCerrar)="showModalProyecto = false"
+  (onGuardar)="onGuardarProyecto($event)">
+</app-modal-proyecto>
+
+<app-modal-actividad
+  [show]="showModalActividad"
+  [actividad]="actividadParaEditar"
+  [proyecto]="detalle"
+  [saving]="savingActividad"
+  (onCerrar)="showModalActividad = false"
+  (onGuardar)="onGuardarActividad($event)">
+</app-modal-actividad>
+
+<!-- Modal Tarea -->
+<app-modal-tarea
+  [show]="showModalTarea"
+  [tarea]="tareaParaEditar"
+  [actividadId]="tareaActividadId"
+  [proyectoId]="detalle?.id ?? null"
+  [proyecto]="detalle"
+  [actividades]="detalle?.actividades ?? []"
+  [usuariosDisponibles]="usuariosDisponibles"
+  [esAdmin]="puedeGestionarModulo"
+  [saving]="savingTarea"
+  (onCerrar)="showModalTarea = false"
+  (onGuardar)="onGuardarTarea($event)">
+</app-modal-tarea>
+
+<!-- Modal Permisos -->
+<app-modal-permisos-proyecto
+  [show]="showModalPermisos"
+  [proyectoId]="detalle?.id ?? null"
+  [usuarioId]="usuarioId"
+  [usuarios]="usuariosDisponibles"
+  (onCerrar)="showModalPermisos = false">
+</app-modal-permisos-proyecto>
+
+<!-- Modal Auto-programar Fechas -->
+<app-modal-calcular-fechas
+  [show]="showModalCalcularFechas"
+  [proyectoId]="detalle?.id || null"
+  [usuarioId]="usuarioId"
+  [usuarios]="usuariosDisponibles"
+  (onCerrar)="showModalCalcularFechas = false"
+  (onCalculado)="_refreshDetalle(true)">
+</app-modal-calcular-fechas>
+
+<!-- Modal Selección de Plantilla -->
+<app-modal-plantilla-proyecto
+  [show]="showModalPlantilla"
+  [loading]="loadingPlantillas"
+  [plantillas]="plantillas"
+  (onCerrar)="showModalPlantilla = false"
+  (onSeleccionar)="aplicarPlantillaAProyecto($event)">
+</app-modal-plantilla-proyecto>

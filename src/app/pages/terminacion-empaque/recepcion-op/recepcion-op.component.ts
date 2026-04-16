@@ -355,17 +355,35 @@ export class RecepcionOpComponent implements OnInit {
           return;
         }
 
-        // ====== Extraer número de PV desde las notas ======
-        const notaEjemplo = res[0]?.notas_completas || '';
+        // ====== Extraer número de PV desde las notas con lógica ROBUSTA ======
+        const notaLimpia = (res[0]?.notas_completas || '').toString().toUpperCase().trim();
 
-        let match =
-          notaEjemplo.match(/complementa\s+la\s+(\d+)/i) || // 1️⃣ prioridad
-          notaEjemplo.match(/PV\s*(\d+)/i) ||                // 2️⃣ segunda opción
-          notaEjemplo.match(/(\d+)/);                        // 3️⃣ fallback
+        // 1. Prioridad: Complemento (maneja variaciones de digitación)
+        // Busca: 'COMPLEMENTA', 'COMPLEMENTO', 'COMPLE', 'COMP' seguido opcionalmente de 'LA', 'DE', 'DE LA' y un número
+        const complementaRegex = /\bCOMP(?:LEMENT[AO]|LE|L)?\s*(?:LA|DE|DE\s*LA)?\s*(\d+)\b/i;
+        const complementaMatch = notaLimpia.match(complementaRegex);
 
-        if (match) {
-          this.modalRecepcionPTs.pv = match[1];
-          console.log('Número detectado desde notas:', this.modalRecepcionPTs.pv);
+        // 2. Prioridad: Producto Terminado (maneja variaciones de digitación)
+        // Busca: 'P. TERMINADO', 'P TERMINADO', 'PRODUCTO TERMINADO', 'PV DE PT', 'PV PT'
+        const terminadoRegex = /\b(?:P\.?\s*TERMINADO|PRODUCTO\s*TERMINADO|PV\s*DE\s*PT|PV\s*PT|P\.?T\.?)\b/i;
+        const terminadoMatch = notaLimpia.match(terminadoRegex);
+
+        if (complementaMatch) {
+          this.modalRecepcionPTs.pv = complementaMatch[1];
+          console.log('Detectado como COMPLEMENTO (Robusto):', this.modalRecepcionPTs.pv);
+        } else if (terminadoMatch) {
+          this.modalRecepcionPTs.pv = pt;
+          console.log('Detectado como PRODUCTO TERMINADO (Robusto). Usando PT como PV:', this.modalRecepcionPTs.pv);
+        } else {
+          // Fallback final: Buscar cualquier número si no hay coincidencias claras
+          const fallbackMatch =
+            notaLimpia.match(/PV\s*(\d+)/i) ||
+            notaLimpia.match(/(\d+)/);
+            
+          if (fallbackMatch) {
+            this.modalRecepcionPTs.pv = fallbackMatch[1];
+            console.log('Detectado mediante fallback robusto:', this.modalRecepcionPTs.pv);
+          }
         }
 
         // ====== Unificar ítems por hash ======

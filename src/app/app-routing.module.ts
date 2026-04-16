@@ -24,18 +24,18 @@ import { GestionEmpacadoresComponent } from './pages/terminacion-empaque/gestion
 import { RegistrarEmpaqueComponent } from './pages/terminacion-empaque/registrar-empaque/registrar-empaque.component';
 import { DashboardEmpaqueComponent } from './pages/terminacion-empaque/dashboard-empaque/dashboard-empaque.component';
 import { DistribucionPvComponent } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.component';
-import { BodegasComponent } from './pages/inventario/bodegas/bodegas.component';
-import { ZonasComponent } from './pages/inventario/zonas/zonas.component';
+import { BodegasComponent } from './pages/old-inventario/bodegas/bodegas.component';
+import { ZonasComponent } from './pages/old-inventario/zonas/zonas.component';
 import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
 import { TechnicalPrecintosBigbagComponent } from './pages/technical-report-bigbag/technical-precintos-bigbag/technical-precintos-bigbag.component';
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
 import { ViewPrecintoBigbagComponent } from './pages/technical-report-bigbag/view-precinto-bigbag/view-precinto-bigbag.component';
-import { ContadoresComponent } from './pages/inventario/contadores/contadores.component';
-import { GenerarHojaConteoComponent } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.component';
-import { HojasConteoListComponent } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.component';
-import { HojasConteoDetalleComponent } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.component';
-import { ContadorItemsComponent } from './pages/inventario/contador-items/contador-items.component';
+import { ContadoresComponent } from './pages/old-inventario/contadores/contadores.component';
+import { GenerarHojaConteoComponent } from './pages/old-inventario/generar-hoja-conteo/generar-hoja-conteo.component';
+import { HojasConteoListComponent } from './pages/old-inventario/hojas-conteo-list/hojas-conteo-list.component';
+import { HojasConteoDetalleComponent } from './pages/old-inventario/hojas-conteo-detalle/hojas-conteo-detalle.component';
+import { ContadorItemsComponent } from './pages/old-inventario/contador-items/contador-items.component';
 import { ReportCreateComponent } from './pages/report/report-create/report-create.component';
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
@@ -44,8 +44,8 @@ import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-com
 import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-items.component';
 import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
 import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
-import { InventariosComponent } from './pages/inventario/inventarios/inventarios.component';
-import { ProyectosComponent } from './pages/proyectos/proyectos/proyectos.component';
+import { InventariosComponent } from './pages/old-inventario/inventarios/inventarios.component';
+// import { ProyectosComponent } from './pages/proyectos/proyectos.component';
 import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
 
 const routes: Routes = [
@@ -71,18 +71,18 @@ const routes: Routes = [
       { path: 'registrar-empaque', component: RegistrarEmpaqueComponent, title: 'Registrar empaque' },
       { path: 'dashboard-empaque', component: DashboardEmpaqueComponent, title: 'Dashboard de empaque' },
       { path: 'distribucion-pv', component: DistribucionPvComponent, title: 'Distribución de PV' },
-      { path: 'bodegas', component: BodegasComponent, title: 'Bodegas' },
-      { path: 'zonas', component: ZonasComponent, title: 'Zonas' },
+      { path: 'inventario-old/bodegas', component: BodegasComponent, title: 'Bodegas (Old)' },
+      { path: 'inventario-old/zonas', component: ZonasComponent, title: 'Zonas (Old)' },
       { path: 'dashboard-bigbag', component: DashboardBigbagComponent, title: 'Dashboard BigBag' },
       { path: 'technical-precintos-bigbag', component: TechnicalPrecintosBigbagComponent, title: 'Precintos BigBag' },
       { path: 'technical-report-bigbag', component: TechnicalReportBigbagComponent, title: 'Crear reporte BigBag' },
       { path: 'view-report-bigbag', component: ViewReportBigbagComponent, title: 'Ver reporte BigBag' },
       { path: 'view-precinto-bigbag', component: ViewPrecintoBigbagComponent, title: 'Ver precinto BigBag' },
-      { path: 'contadores', component: ContadoresComponent, title: 'Contadores' },
-      { path: 'generar-hoja-conteo', component: GenerarHojaConteoComponent, title: 'Generar hoja de conteo' },
-      { path: 'hojas-conteo-list', component: HojasConteoListComponent, title: 'Listado hojas de conteo' },
-      { path: 'hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo' },
-      { path: 'contador-items', component: ContadorItemsComponent, title: 'Contador de ítems' },
+      { path: 'inventario-old/contadores', component: ContadoresComponent, title: 'Contadores (Old)' },
+      { path: 'inventario-old/generar-hoja-conteo', component: GenerarHojaConteoComponent, title: 'Generar hoja de conteo (Old)' },
+      { path: 'inventario-old/hojas-conteo-list', component: HojasConteoListComponent, title: 'Listado hojas de conteo (Old)' },
+      { path: 'inventario-old/hojas-conteo-detalle/:id', component: HojasConteoDetalleComponent, title: 'Detalle hoja de conteo (Old)' },
+      { path: 'inventario-old/contador-items', component: ContadorItemsComponent, title: 'Contador de ítems (Old)' },
       { path: 'create-report', component: ReportCreateComponent, title: 'Crear reporte' },
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes' },
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes' },
@@ -91,8 +91,11 @@ const routes: Routes = [
       { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
       { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
       { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' },
-      { path: 'inventarios', component: InventariosComponent, title: 'Inventarios' },
-      { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
+      { path: 'inventario-old/inventarios', component: InventariosComponent, title: 'Inventarios (Old)' },
+      { path: 'inventario', loadChildren: () => import('./pages/inventario/inventario.module').then(m => m.InventarioModule), title: 'Inventario' },
+      { path: 'seguimiento', loadChildren: () => import('./pages/seguimiento/seguimiento.module').then(m => m.SeguimientoModule), title: 'Seguimiento' },
+      { path: 'firmas', loadChildren: () => import('./pages/firmas/firmas.module').then(m => m.FirmasModule), title: 'Firmas Digitales' },
+      // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
       { path: 'solicitud', component: SolicitudComponent, title: 'Solicitud comercial' },
     ]
   },

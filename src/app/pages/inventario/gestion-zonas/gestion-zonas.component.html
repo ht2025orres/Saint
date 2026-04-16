@@ -1,0 +1,262 @@
+<div class="p-6 bg-slate-50 min-h-screen">
+    <style>
+        /* Estilos base para checkboxes nativos para que no se vean */
+        input[type="checkbox"] {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            position: relative !important;
+            left: 0 !important;
+            opacity: 1 !important;
+            width: 1.25rem !important;
+            height: 1.25rem !important;
+            cursor: pointer;
+            border: 2px solid #cbd5e1 !important;
+            border-radius: 0.4rem !important;
+            background-color: #fff !important;
+            transition: all 0.2s ease;
+            display: inline-block !important;
+            vertical-align: middle;
+            visibility: visible !important;
+        }
+
+        /* Ocultar cualquier pseudo-elemento que genere checkboxes duplicados */
+        input[type="checkbox"]::before,
+        input[type="checkbox"]::after {
+            display: none !important;
+            content: none !important;
+        }
+        
+        input[type="checkbox"]:checked {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+            background-size: 80% 80% !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+        
+        input[type="checkbox"]:focus {
+            outline: none !important;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+        }
+
+        input[type="checkbox"]:hover {
+            border-color: #94a3b8 !important;
+        }
+    </style>
+    <!-- BARRA DE ACCIONES + FILTROS -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-blue-600 rounded-xl shadow-lg shadow-blue-200">
+                <i class="bi bi-map text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Gestión de Zonas</h1>
+                <p class="text-sm text-slate-500">Administre ítems por zona de forma masiva</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button (click)="colapsado = !colapsado" 
+                class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200">
+                <i class="bi" [ngClass]="colapsado ? 'bi-layout-sidebar-inset' : 'bi-layout-sidebar'"></i>
+            </button>
+            <button (click)="abrirModalNuevaZona()" 
+                class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95">
+                <i class="bi bi-plus-lg mr-2"></i>Nueva Zona
+            </button>
+        </div>
+    </div>
+
+    <div class="flex gap-6 h-[calc(100vh-10rem)] overflow-hidden">
+        <!-- Panel Izquierdo: Lista de Zonas (Colapsable) -->
+        <div [class]="colapsado ? 'w-0 opacity-0 invisible' : 'w-80 opacity-100 visible'" 
+             class="flex-shrink-0 space-y-6 transition-all duration-500 ease-in-out">
+            
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zonas Activas</h3>
+                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-black rounded-full">{{zonasFiltradas.length}}</span>
+                    </div>
+                    
+                    <!-- Filtros de Zonas -->
+                    <div class="space-y-2">
+                        <div class="relative">
+                            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" [(ngModel)]="busquedaZonas" placeholder="Buscar zona..."
+                                class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all">
+                        </div>
+                        <select [(ngModel)]="bodegaFiltro" 
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all cursor-pointer">
+                            <option value="">Todas las Bodegas</option>
+                            <option *ngFor="let b of bodegas" [value]="b.codigo">{{b.nombre_bodega}}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
+                    <div *ngFor="let z of zonasFiltradas" 
+                        [class.bg-blue-50]="zonaSeleccionada?.id === z.id"
+                        class="p-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+                        (click)="seleccionarZona(z)">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-blue-200 transition-all">
+                                    <i class="bi bi-box-seam text-slate-400 group-hover:text-blue-500"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800">{{z.nombre}}</h4>
+                                    <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">{{getNombreBodega(z.codigo_bodega)}}</p>
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right text-slate-300 group-hover:text-blue-400 transition-all" [class.rotate-90]="zonaSeleccionada?.id === z.id"></i>
+                        </div>
+                    </div>
+                    <div *ngIf="zonas.length === 0" class="p-10 text-center">
+                        <i class="bi bi-inbox text-slate-200 text-3xl block mb-2"></i>
+                        <p class="text-xs text-slate-400">Sin zonas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Ítems de la Zona -->
+        <div class="flex-1 min-w-0">
+            <div *ngIf="zonaSeleccionada" class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
+                <!-- Header Panel Items -->
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
+                            <i class="bi bi-geo-alt-fill text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-slate-800 tracking-tight">{{zonaSeleccionada.nombre}}</h3>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bodega: {{getNombreBodega(zonaSeleccionada.codigo_bodega)}}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <!-- Acciones Masivas -->
+                        <div *ngIf="selectedItems.length > 0" class="flex items-center gap-2 p-1 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-100 animate-in slide-in-from-top-4">
+                            <span class="px-4 text-[10px] font-black text-white uppercase">{{selectedItems.length}} seleccionados</span>
+                            <button (click)="abrirModalMigrar()" class="px-4 py-2 bg-white text-indigo-600 text-[10px] font-black rounded-xl hover:bg-slate-50 transition-colors uppercase">
+                                Mover a Zona
+                            </button>
+                            <button (click)="quitarDeZonaMasivo()" class="px-4 py-2 bg-rose-500 text-white text-[10px] font-black rounded-xl hover:bg-rose-600 transition-colors uppercase">
+                                Sacar de Zona
+                            </button>
+                        </div>
+
+                        <div class="relative">
+                            <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="text" [(ngModel)]="filters.busquedaItem" (input)="applyFilters()" placeholder="Filtrar en esta zona..."
+                                class="pl-10 pr-6 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all w-64 shadow-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Items con Full Info -->
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-white shadow-sm z-10">
+                            <tr class="border-b border-slate-100 bg-slate-50/30">
+                                <th class="px-6 py-4 w-10">
+                                    <input type="checkbox" (change)="toggleAll($event)" 
+                                        class="w-5 h-5 rounded-lg border-2 border-slate-200 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer">
+                                </th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ítem / Referencia</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Variante (Color/Talla)</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                        <tr *ngFor="let item of itemsPaginados" 
+                            class="hover:bg-slate-50/50 transition-colors group"
+                            [ngClass]="{'bg-blue-50/30': item.seleccionado}">
+                            <td class="px-6 py-4">
+                                    <input type="checkbox" [(ngModel)]="item.seleccionado" (change)="toggleItem(item)"
+                                        class="w-5 h-5 rounded-lg border-2 border-slate-200 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col">
+                                        <span class="text-sm font-black text-slate-800">{{item.id_item}}</span>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase">{{item.referencia}}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-xs text-slate-500 font-medium line-clamp-1 italic">{{item.descripcion}}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-[9px] font-black text-slate-300 uppercase mb-0.5">Color</span>
+                                            <span class="text-xs font-bold text-slate-600">{{item.id_color}} - {{item.color}}</span>
+                                        </div>
+                                        <div class="flex flex-col border-l border-slate-100 pl-4">
+                                            <span class="text-[9px] font-black text-slate-300 uppercase mb-0.5">Talla</span>
+                                            <span class="text-xs font-black text-slate-700">{{item.id_talla}}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="px-3 py-1 bg-white border border-slate-100 rounded-lg text-xs font-black text-slate-700 shadow-sm">
+                                        {{item.cantidad | number}}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Loading / Empty States -->
+                    <div *ngIf="cargandoItems" class="p-20 text-center">
+                        <div class="inline-block animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+                        <p class="text-sm font-black text-slate-400 uppercase tracking-widest">Cargando ítems de la zona...</p>
+                    </div>
+                    <div *ngIf="!cargandoItems && itemsPaginados.length === 0" class="p-32 text-center">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                            <i class="bi bi-box-seam text-slate-200 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-slate-800">Esta zona está vacía</h3>
+                        <p class="text-xs text-slate-400 mt-1">Asigna ítems desde la gestión de bodegas.</p>
+                    </div>
+                </div>
+
+                <!-- Footer Paginación -->
+                    <div class="p-4 border-t border-slate-100 bg-slate-50/30">
+                        <app-shared-paginator [instanceId]="instanceId" [loading]="cargandoItems"></app-shared-paginator>
+                    </div>
+            </div>
+
+            <!-- Empty State Principal -->
+            <div *ngIf="!zonaSeleccionada" class="h-full flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200 border-dashed animate-in fade-in duration-500">
+                <div class="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
+                    <i class="bi bi-geo-alt text-slate-200 text-4xl"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 tracking-tight">Seleccione una Zona</h3>
+                <p class="text-sm text-slate-400 font-medium">Para ver y gestionar los ítems asignados</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales -->
+<app-modal-zona
+    [show]="mostrarModalZona"
+    [bodegas]="bodegas"
+    [saving]="guardandoZona"
+    (onCerrar)="mostrarModalZona = false"
+    (onGuardar)="crearZona($event)">
+</app-modal-zona>
+
+<app-modal-migrar-items
+    [show]="mostrarModalMigrar"
+    [zonas]="zonas"
+    [itemsCount]="selectedItems.length"
+    [saving]="guardandoMigracion"
+    (onCerrar)="mostrarModalMigrar = false"
+    (onGuardar)="procesarMigracion($event)">
+</app-modal-migrar-items>

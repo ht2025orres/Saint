@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
 import { Role } from '../models/Role';
 
 
@@ -18,7 +17,6 @@ export class InconsistenciaService {
     private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
 
     constructor(
-        private authService: AuthService,
         private http: HttpClient
 
     ) { }

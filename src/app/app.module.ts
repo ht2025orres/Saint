@@ -11,7 +11,6 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { MetricCardComponent } from './pages/dashboard/components/metric-card/metric-card.component';
 import { PagesComponent } from './pages/pages.component';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { TokenInterceptor } from './interceptors/tokenInterceptor';
 import { AuthInterceptor } from './interceptors/authInterceptor';
 import { LoadingInterceptor } from './interceptors/loading.interceptor';
 import { registerLocaleData } from '@angular/common';
@@ -20,6 +19,8 @@ import localeEs from '@angular/common/locales/es-CO';
 import { NgxPanZoomModule } from 'ngx-panzoom'; // Import the PanzoomModule
 import { GenerarComponent } from './pages/inconsistencias/generar/generar.component';
 import { MisInconsistenciasModule } from './pages/inconsistencias/mis-inconsistencias/mis-inconsistencias.module';
+
+import { TaskPanelComponent } from './shared/task-panel/task-panel.component';
 
 // Technical data sheet
 import { TechnicalDataSheetsReportComponent } from './pages/technical-data-sheets-report/technical-data-sheets-report.component';
@@ -49,14 +50,14 @@ import { GestionEmpacadoresModule } from './pages/terminacion-empaque/gestion-em
 import { RegistrarEmpaqueModule } from './pages/terminacion-empaque/registrar-empaque/registrar-empaque.module';
 import { DashboardEmpaqueModule } from './pages/terminacion-empaque/dashboard-empaque/dashboard-empaque.module';
 import { DistribucionPvModule } from './pages/terminacion-empaque/distribucion-pv/distribucion-pv.module';
-import { BodegasModule } from './pages/inventario/bodegas/bodegas.module';
-import { ZonasModule } from './pages/inventario/zonas/zonas.module';
-import { ContadoresModule } from './pages/inventario/contadores/contadores.module';
-import { GenerarHojaConteoModule } from './pages/inventario/generar-hoja-conteo/generar-hoja-conteo.module';
-import { HojasConteoListModule } from './pages/inventario/hojas-conteo-list/hojas-conteo-list.module';
-import { HojasConteoDetalleModule } from './pages/inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
-import { ContadorItemsModule } from './pages/inventario/contador-items/contador-items.module';
-import { InventariosModule } from './pages/inventario/inventarios/inventarios.module';
+import { BodegasModule } from './pages/old-inventario/bodegas/bodegas.module';
+import { ZonasModule } from './pages/old-inventario/zonas/zonas.module';
+import { ContadoresModule } from './pages/old-inventario/contadores/contadores.module';
+import { GenerarHojaConteoModule } from './pages/old-inventario/generar-hoja-conteo/generar-hoja-conteo.module';
+import { HojasConteoListModule } from './pages/old-inventario/hojas-conteo-list/hojas-conteo-list.module';
+import { HojasConteoDetalleModule } from './pages/old-inventario/hojas-conteo-detalle/hojas-conteo-detalle.module';
+import { ContadorItemsModule } from './pages/old-inventario/contador-items/contador-items.module';
+import { InventariosModule } from './pages/old-inventario/inventarios/inventarios.module';
 
 import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/create-report-bigbag/technical-report-bigbag.component';
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
@@ -67,8 +68,9 @@ import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.
 import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
 
 import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
+import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
 
-import { ProyectosModule } from './pages/proyectos/proyectos/proyectos.module';
+// import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
 // Modulo comerciales
 import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
@@ -78,6 +80,7 @@ registerLocaleData(localeEs, 'es-CO');
 @NgModule({
     declarations: [
         AppComponent,
+        TaskPanelComponent,
         DashboardComponent,
         MetricCardComponent,
         PagesComponent,
@@ -142,15 +145,17 @@ registerLocaleData(localeEs, 'es-CO');
         PlaneacionModule,
         /* Financiero */
         CentrosCostosModule,
+        /* Seguimiento */
+        SeguimientoModule,
         /* Proyectos */
-        ProyectosModule,
-        /* Comerciales */
-        SolicitudComponent
+        // ProyectosModule
+    ], 
+    exports: [
+        TaskPanelComponent
     ],
     providers: [
         { provide: LOCALE_ID, useValue: 'es-CO' },
         { provide: DEFAULT_CURRENCY_CODE, useValue: 'COP' },
-        { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi())

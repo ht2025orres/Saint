@@ -1,0 +1,111 @@
+<!-- ══════════════════════════════════════════════════════════════════
+     SEGUIMIENTO — COMPONENTE PRINCIPAL
+     Shell de navegación. Cada vista es un componente independiente.
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="seguimiento-shell min-h-screen bg-gray-50">
+
+  <!-- ── TOP NAVIGATION BAR ─────────────────────────────────────── -->
+  <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-screen-xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16 gap-4">
+
+        <!-- Logo + título -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700
+                      rounded-lg flex items-center justify-center shadow-sm">
+            <i class="bi bi-diagram-3-fill text-white text-sm"></i>
+          </div>
+          <span class="text-base font-semibold text-gray-900 hidden sm:block tracking-tight">
+            Seguimiento
+          </span>
+        </div>
+
+        <!-- Tabs de navegación -->
+        <nav class="flex items-center gap-0.5 bg-gray-100 p-1 rounded-xl flex-1 max-w-lg">
+          <button
+            *ngFor="let tab of tabs"
+            (click)="cambiarVista(tab.id)"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
+                   transition-all duration-150 flex-1 justify-center"
+            [ngClass]="vista === tab.id
+              ? 'bg-white text-blue-700 shadow-sm'
+              : 'text-gray-500 hover:text-gray-800 hover:bg-white/60'"
+          >
+            <i [class]="'bi ' + tab.icon + ' text-sm'"></i>
+            <span class="hidden sm:inline">{{ tab.label }}</span>
+            <span *ngIf="tab.badge"
+              class="ml-0.5 px-1.5 py-0.5 text-xs font-bold rounded-full
+                     bg-blue-600 text-white leading-none">
+              {{ tab.badge }}
+            </span>
+          </button>
+        </nav>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ── CONTENIDO DE CADA VISTA ────────────────────────────────── -->
+  <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-6">
+
+    <!-- Proyectos -->
+    <ng-container *ngIf="vista === 'proyectos'">
+      <app-proyectos
+        [usuarioId]="usuarioId"
+        [puedeGestionarModulo]="puedeGestionarModulo">
+      </app-proyectos>
+    </ng-container>
+
+    <!-- Seguimientos -->
+    <ng-container *ngIf="vista === 'seguimientos'">
+      <app-seguimientos
+        [usuarioId]="usuarioId"
+        [puedeGestionarModulo]="puedeGestionarModulo">
+      </app-seguimientos>
+    </ng-container>
+
+    <!-- Tareas -->
+    <ng-container *ngIf="vista === 'tareas'">
+      <app-tareas
+        [usuarioId]="usuarioId"
+        [puedeGestionarModulo]="puedeGestionarModulo">
+      </app-tareas>
+    </ng-container>
+
+    <!-- Informes -->
+    <ng-container *ngIf="vista === 'informes'">
+      <app-informes
+        [usuarioId]="usuarioId"
+        [puedeGestionarModulo]="puedeGestionarModulo">
+      </app-informes>
+    </ng-container>
+
+  </main>
+
+</div>
+
+<!-- ── TOAST CONTAINER ────────────────────────────────────────────── -->
+<div class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none">
+  <div
+    *ngFor="let t of toasts"
+    class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl
+           shadow-xl border text-sm font-medium
+           animate-slide-up max-w-sm"
+    [ngClass]="{
+      'bg-green-50 border-green-200 text-green-800': t.type === 'success',
+      'bg-red-50   border-red-200   text-red-800'  : t.type === 'error',
+      'bg-amber-50 border-amber-200 text-amber-800': t.type === 'warning',
+      'bg-blue-50  border-blue-200  text-blue-800' : t.type === 'info'
+    }"
+  >
+    <i class="bi text-lg"
+      [ngClass]="{
+        'bi-check-circle-fill text-green-500' : t.type === 'success',
+        'bi-x-circle-fill     text-red-500'   : t.type === 'error',
+        'bi-exclamation-triangle-fill text-amber-500': t.type === 'warning',
+        'bi-info-circle-fill  text-blue-500'  : t.type === 'info'
+      }">
+    </i>
+    <span class="flex-1">{{ t.message }}</span>
+  </div>
+</div>

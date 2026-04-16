@@ -20,7 +20,7 @@ export class AuthGuard {
       if (this.isTokenExpired()) {
         // Intentar refrescar token automáticamente
         console.log("tokenExpired", this.isTokenExpired());
-        return this.authService.refreshAccessToken().pipe(
+        return this.authService.refreshToken().pipe(
           map(() => true),
           catchError(() => {
             this.authService.logout();

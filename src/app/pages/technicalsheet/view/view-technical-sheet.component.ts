@@ -3,7 +3,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TechnicalDataSheet } from '../../../models/TechnicalDataSheet';
 import { TechnicalSheetService } from '../../../services/technical-sheet.service';
 import { AuthService } from '../../../services/auth.service';
+import { ProductCategoryService } from '../../../services/product-category.service';
+import { ProductCategory } from '../../../models/ProductCategory';
 import { PanZoomComponent, PanZoomModel } from 'ngx-panzoom';
+import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
 
 // Extended interface for PanZoom model with additional properties
@@ -21,6 +24,7 @@ interface PanZoomModelExtended extends PanZoomModel {
 })
 export class ViewTechnicalSheetComponent implements OnInit {
   technicalDataSheetCurrent: TechnicalDataSheet;
+  productCategories: ProductCategory[] = [];
   title = 'Vista previa de ficha técnica';
   loading = false;
   
@@ -58,6 +62,7 @@ export class ViewTechnicalSheetComponent implements OnInit {
 
   constructor(
     private technicalSheetService: TechnicalSheetService,
+    private productCategoryService: ProductCategoryService,
     private activatedRoute: ActivatedRoute,
     private router: Router,
     public authService: AuthService,
@@ -131,24 +136,49 @@ export class ViewTechnicalSheetComponent implements OnInit {
   }
 
   // Load technical sheet by ID
+  goBack(): void {
+    if (this.technicalDataSheetCurrent && this.technicalDataSheetCurrent.status) {
+      this.router.navigate(['/listTechnicalDataSheet/page/0', this.technicalDataSheetCurrent.status], { queryParams: { restoreState: 'true' } });
+    } else {
+      this.router.navigate(['/listTechnicalDataSheet/page/0/DESARROLLO'], { queryParams: { restoreState: 'true' } });
+    }
+  }
+
   loadChip(id: any) {
-    this.technicalSheetService.getById(id)
-      .subscribe(
-        resp => {
-          this.technicalDataSheetCurrent = resp;
-          console.log(this.technicalDataSheetCurrent);
-          this.loadProductImages();
-        }, 
-        error => {
-          Swal.fire('Error de carga', 'La información de la ficha no se ha cargado correctamente', 'error');
-        }
-      );
+    const categories$ = this.productCategoryService.getAll();
+    const sheet$ = this.technicalSheetService.getById(id);
+
+    forkJoin([categories$, sheet$]).subscribe({
+      next: ([categories, sheet]) => {
+        this.productCategories = categories;
+        this.technicalDataSheetCurrent = sheet;
+        console.log(this.technicalDataSheetCurrent);
+        this.loadProductImages();
+      },
+      error: (error) => {
+        Swal.fire('Error de carga', 'La información necesaria no se ha cargado correctamente', 'error');
+      }
+    });
+  }
+
+  getCategoryDescription(id: any): string {
+    if (!this.productCategories || !id) return '';
+    const category = this.productCategories.find(c => 
+        (c.idProductCategory && c.idProductCategory == id) ||
+        ((c as any).id && (c as any).id == id) ||
+        ((c as any).id_product_category && (c as any).id_product_category == id)
+    );
+    return category ? category.description : id.toString();
   }
 
   approveTechnicalSheet() {
     this.loading = true;
     let currentStatus = this.technicalDataSheetCurrent.status;
     let status: string = this.calculateApproveNewStatus(this.technicalDataSheetCurrent.status);
+    // Asegurarse de que id_product_category sea una cadena antes de enviar
+    if (this.technicalDataSheetCurrent.id_product_category !== undefined && this.technicalDataSheetCurrent.id_product_category !== null) {
+      this.technicalDataSheetCurrent.id_product_category = String(this.technicalDataSheetCurrent.id_product_category);
+    }
     this.technicalSheetService.saveFicha(this.technicalDataSheetCurrent)
       .subscribe(obj => {
         this.loading = false;
@@ -173,17 +203,17 @@ export class ViewTechnicalSheetComponent implements OnInit {
     switch (status) {
       case 'DESARROLLO': {
         this.technicalDataSheetCurrent.status = 'PRIMERA REVISION';
-        this.technicalDataSheetCurrent.qaComments = '';
-        this.technicalDataSheetCurrent.editComments = '';
+        this.technicalDataSheetCurrent.qa_comments = '';
+        this.technicalDataSheetCurrent.edit_comments = '';
         return 'PRIMERA REVISION';
       }
       case 'PRIMERA REVISION': {
-        this.technicalDataSheetCurrent.userValidation = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+        this.technicalDataSheetCurrent.user_validation = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
         this.technicalDataSheetCurrent.status = 'SEGUNDA REVISION';
         return 'SEGUNDA REVISION';
       }
       case 'SEGUNDA REVISION': {
-        this.technicalDataSheetCurrent.userApproved = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+        this.technicalDataSheetCurrent.user_approved = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
         this.technicalDataSheetCurrent.status = 'TERMINADO';
         return 'TERMINADO';
       }
@@ -205,17 +235,17 @@ export class ViewTechnicalSheetComponent implements OnInit {
     switch (status) {
       case 'DESARROLLO': {
         this.technicalDataSheetCurrent.status = 'ELIMINADO';
-        this.technicalDataSheetCurrent.qaComments = '';
-        this.technicalDataSheetCurrent.editComments = '';
+        this.technicalDataSheetCurrent.qa_comments = '';
+        this.technicalDataSheetCurrent.edit_comments = '';
         return 'DESARROLLO';
       }
       case 'PRIMERA REVISION': {
-        this.technicalDataSheetCurrent.userValidation = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
+        this.technicalDataSheetCurrent.user_validation = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
         this.technicalDataSheetCurrent.status = 'DESARROLLO';
         return 'PRIMERA REVISION';
       }
       case 'SEGUNDA REVISION': {
-        this.technicalDataSheetCurrent.userApproved = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
+        this.technicalDataSheetCurrent.user_approved = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
         this.technicalDataSheetCurrent.status = 'DESARROLLO';
         return 'SEGUNDA REVISION';
       }
@@ -237,6 +267,10 @@ export class ViewTechnicalSheetComponent implements OnInit {
     this.loading = true;
     let currentStatus = this.technicalDataSheetCurrent.status;
     let status: string = this.calculateDisapproveNewStatus(this.technicalDataSheetCurrent.status);
+    // Asegurarse de que id_product_category sea una cadena antes de enviar
+    if (this.technicalDataSheetCurrent.id_product_category !== undefined && this.technicalDataSheetCurrent.id_product_category !== null) {
+      this.technicalDataSheetCurrent.id_product_category = String(this.technicalDataSheetCurrent.id_product_category);
+    }
     this.technicalSheetService.saveFicha(this.technicalDataSheetCurrent)
       .subscribe(obj => {
         this.loading = false;
@@ -261,12 +295,12 @@ export class ViewTechnicalSheetComponent implements OnInit {
     
     // Mapeamos todas las propiedades de imagen del technicalDataSheet
     const imageFields = [
-      { field: 'productImage1', alt: 'Imagen principal del producto 1' },
-      { field: 'productImage2', alt: 'Imagen principal del producto 2' },
-      { field: 'characteristicImage1', alt: 'Imagen caracteristica del producto 1' },
-      { field: 'characteristicImage2', alt: 'Imagen caracteristica del producto 2' },
-      { field: 'characteristicImage3', alt: 'Imagen caracteristica del producto 3' },
-      { field: 'characteristicImage4', alt: 'Imagen caracteristica del producto 4' },
+      { field: 'product_image_1', alt: 'Imagen principal del producto 1' },
+      { field: 'product_image_2', alt: 'Imagen principal del producto 2' },
+      { field: 'characteristic_image_1', alt: 'Imagen caracteristica del producto 1' },
+      { field: 'characteristic_image_2', alt: 'Imagen caracteristica del producto 2' },
+      { field: 'characteristic_image_3', alt: 'Imagen caracteristica del producto 3' },
+      { field: 'characteristic_image_4', alt: 'Imagen caracteristica del producto 4' },
       // Agregar más campos según sea necesario
     ];
     

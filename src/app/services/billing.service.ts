@@ -94,6 +94,26 @@ export class BillingService {
     return this.http.get<any[]>(`${this.apiUrl}/pending-shipments`, { params });
   }
 
+  getPendingShipmentsByMonth(
+    unidad?: string,
+    anio?: number,
+    mes?: number
+  ) {
+    let params: any = {
+      anio: anio,
+      mes: mes
+    };
+
+    if (unidad) {
+      params.unidad = unidad;
+    }
+
+    return this.http.get<any>(
+      `${this.apiUrl}/pending-shipments-by-month`,
+      { params }
+    );
+  }
+
   /**
    * Obtiene histórico mensual de facturación
    */

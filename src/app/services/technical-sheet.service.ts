@@ -46,6 +46,24 @@ export class TechnicalSheetService {
     // }
 
     saveFicha(technicalDataSheet: TechnicalDataSheet): Observable<any> {
+        // Aseguramos que los campos obligatorios no sean nulos antes de enviar al backend
+        const fieldsToEnsure = [
+            'id_item_customer', 'additional', 'boot', 'rib', 'button', 'buttonhole', 
+            'composition', 'contrast_fabric', 'critical_points', 'crotch', 'cuffs', 
+            'cuts', 'darts', 'edit_comments', 'embroidery', 'figured', 'finished', 
+            'front_adjustment', 'gender', 'hem', 'hood', 'ironing', 'lining', 
+            'loops', 'neckline', 'opening', 'packaging', 'pins', 'prewash', 
+            'purses', 'qa_comments', 'reflective', 'shirt_collar', 'shoulder_union', 
+            'shoulders', 'side_pulls', 'sleeve_connection', 'sleeves', 'stamped', 
+            'stitching', 'straps', 'waistband', 'zipper', 'observations', 'logo_description'
+        ];
+
+        fieldsToEnsure.forEach(field => {
+            if (technicalDataSheet[field] == null) {
+                technicalDataSheet[field] = '';
+            }
+        });
+
         if (technicalDataSheet.id != null){
             return this.http.put(`${this.urlEndPoint}`, technicalDataSheet);
         }
@@ -53,15 +71,15 @@ export class TechnicalSheetService {
     }
 
     saveProductImages(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
-        return this.http.put(`${this.urlEndPoint}/product/images/${id}/${idCompany}/${idItem}`, formData);
+        return this.http.post(`${this.urlEndPoint}/product/images/${id}/${idCompany}/${idItem}`, formData);
     }
 
     saveCharacteristicImages(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
-        return this.http.put(`${this.urlEndPoint}/product/characteristic/images/${id}/${idCompany}/${idItem}`, formData);
+        return this.http.post(`${this.urlEndPoint}/product/characteristic/images/${id}/${idCompany}/${idItem}`, formData);
     }
 
     saveLogoTechnicalDataSheetFile(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
-        return this.http.put(`${this.urlEndPoint}/product/embroidery/files/${id}/${idCompany}/${idItem}`, formData);
+        return this.http.post(`${this.urlEndPoint}/product/embroidery/files/${id}/${idCompany}/${idItem}`, formData);
     }
 
     getById(id: number): Observable<TechnicalDataSheet> {

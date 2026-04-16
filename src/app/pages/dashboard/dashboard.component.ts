@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MetricsService } from 'src/app/services/metrics.service';
 import { BillingService } from 'src/app/services/billing.service';
 import { InventarioService, BodegaSummary, ItemBodega } from 'src/app/services/inventario.service';
-import { ProcessMetric } from 'src/app/models/process-metric.model';
 import { AuthService } from 'src/app/services/auth.service';
+import { ProcessMetric } from 'src/app/models/process-metric.model';
 import Chart, { ChartConfiguration } from 'chart.js/auto';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
@@ -566,6 +566,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadShipmentDetails();
   }
 
+  openShipmentModalByMonth(unidad?: string): void {
+    this.selectedUnit = unidad || '';
+    this.showShipmentModal = true;
+    this.shipmentCurrentPage = 1;
+    this.shipmentSearchTerm = '';
+    this.shipmentFilterByUN = unidad || '';
+    this.loadShipmentDetailsMonth();
+  }
+
   closeShipmentModal(): void {
     this.showShipmentModal = false;
     this.shipmentDetails = [];
@@ -574,6 +583,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.shipmentSearchTerm = '';
     this.shipmentFilterByUN = '';
     this.shipmentCurrentPage = 1;
+  }
+
+  loadShipmentDetailsMonth(): void {
+
+    if (!this.selectedYear || !this.selectedMonth) {
+      console.warn('Debe seleccionar año y mes');
+      return;
+    }
+
+    this.billingService.getPendingShipmentsByMonth(
+      this.selectedUnit || undefined,
+      this.selectedYear,
+      this.selectedMonth
+    ).subscribe({
+      next: (data) => {
+        this.groupShipments(data);
+      },
+      error: (error) => {
+        console.error('Error loading shipment details:', error);
+      }
+    });
   }
 
   loadShipmentDetails(): void {

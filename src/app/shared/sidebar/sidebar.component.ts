@@ -5,10 +5,21 @@ import { SidebarService } from '../../services/sidebar.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
+interface MenuItem {
+  label: string;
+  icon?: string;
+  link?: string;
+  roles?: string[];
+  submenu?: SubmenuItem[];
+  isOpen?: boolean;
+  condition?: () => boolean;
+}
+
 interface SubmenuItem {
   label: string;
   link: string;
   roles?: string[];
+  condition?: () => boolean;
 }
 
 @Component({
@@ -25,6 +36,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   userName = '';
   userRole = '';
   userInitials = '';
+
+  menuItems: MenuItem[] = [];
 
   hoveredSubmenu: SubmenuItem[] | null = null;
   floatPanelTop = 0;
@@ -68,7 +81,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.buildUserSummary();
     this.setupResizeListener();
-
+    this.initMenuStructure();
+    
     this.sidebarToggleSubscription = this.sidebarService.toggle$.subscribe(() => {
       this.toggleSidebar();
     });
@@ -80,7 +94,358 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe(() => {
         setTimeout(() => this.updateActiveParentStates(), 100);
       });
+  }
 
+  private initMenuStructure(): void {
+    this.menuItems = [
+      {
+        label: 'Inicio',
+        icon: 'bi bi-speedometer2',
+        link: '/dashboard'
+      },
+      {
+        label: 'Seguimiento',
+        icon: 'bi bi-kanban',
+        link: '/seguimiento',
+        roles: ['Administrador del sistema', 'Gestor de Proyectos']
+      },
+      {
+        label: 'Firmas Digitales',
+        icon: 'bi bi-pencil-square',
+        link: '/firmas',
+        roles: ['Administrador del sistema']
+      },
+      {
+        label: 'Reporte de Fichas',
+        icon: 'bi bi-file-earmark-bar-graph',
+        roles: ['Administrador del sistema', 'Reporte ficha tecnica', 'Gestor reporte ficha tecnica'],
+        submenu: [
+          {
+            label: 'Análisis por Mes',
+            link: '/technical-data-sheets-report',
+            roles: ['Administrador del sistema', 'Gestor reporte ficha tecnica']
+          },
+          {
+            label: 'Dashboard',
+            link: '/report-dashboard'
+          },
+          {
+            label: 'Generar reporte',
+            link: '/create-report',
+            roles: ['Administrador del sistema', 'Reporte ficha tecnica'],
+            condition: () => this.puedeMostrarBoton()
+          },
+          {
+            label: 'Mis reportes',
+            link: '/mi-lista-report',
+            roles: ['Administrador del sistema', 'Reporte ficha tecnica']
+          },
+          {
+            label: 'Gestión de reportes',
+            link: '/list-report',
+            roles: ['Administrador del sistema', 'Gestor reporte ficha tecnica']
+          }
+        ]
+      },
+      {
+        label: 'Admin Usuarios',
+        icon: 'bi bi-people',
+        link: '/users/page/0',
+        roles: ['Administrador del sistema']
+      },
+      {
+        label: 'Fichas tecnicas',
+        icon: 'bi bi-file-earmark-text',
+        roles: [
+          'Administrador del sistema',
+          'Creacion de fichas tecnica',
+          'Aprobacion ficha tecnica (primera revision)',
+          'Aprobacion ficha tecnica (Segunda revision)',
+          'Calidad ficha tecnica',
+          'Gestor reporte ficha tecnica',
+          'Reporte ficha tecnica',
+          'Consulta'
+        ],
+        submenu: [
+          {
+            label: 'Crear ficha técnica',
+            link: '/createTechnicalDataSheet/new/create',
+            roles: ['Administrador del sistema', 'Creacion de fichas tecnica']
+          },
+          {
+            label: 'Fichas técnicas terminadas',
+            link: '/listTechnicalDataSheet/page/0/TERMINADO',
+            roles: [
+              'Administrador del sistema',
+              'Creacion de fichas tecnica',
+              'Aprobacion ficha tecnica (primera revision)',
+              'Aprobacion ficha tecnica (Segunda revision)',
+              'Calidad ficha tecnica',
+              'Gestor reporte ficha tecnica',
+              'Reporte ficha tecnica',
+              'Consulta'
+            ]
+          },
+          {
+            label: 'Fichas técnicas primera revisión',
+            link: '/listTechnicalDataSheet/page/0/PRIMERA REVISION',
+            roles: ['Administrador del sistema', 'Aprobacion ficha tecnica (primera revision)']
+          },
+          {
+            label: 'Fichas técnicas segunda revisión',
+            link: '/listTechnicalDataSheet/page/0/SEGUNDA REVISION',
+            roles: ['Administrador del sistema', 'Aprobacion ficha tecnica (Segunda revision)']
+          },
+          {
+            label: 'Fichas técnicas en calidad',
+            link: '/listTechnicalDataSheet/page/0/CALIDAD',
+            roles: ['Administrador del sistema', 'Calidad ficha tecnica']
+          },
+          {
+            label: 'Fichas técnicas en desarrollo',
+            link: '/listTechnicalDataSheet/page/0/DESARROLLO',
+            roles: ['Administrador del sistema', 'Creacion de fichas tecnica']
+          }
+        ]
+      },
+      {
+        label: 'Inconsistencias',
+        icon: 'bi bi-exclamation-triangle',
+        roles: [
+          'Administrador del sistema',
+          'Lider Aprobador (inconsistencias)',
+          'Matriz de Remplazo (inconsistencias)',
+          'Calidad (inconsistencias)',
+          'Contabilidad (inconsistencias)',
+          'Logistica (inconsistencias)',
+          'Trazo (inconsistencias)',
+          'Patronista (inconsistencias)',
+          'Solicitante (inconsistencias)',
+          'Revision Consumo (inconsistencias)',
+          'Cartera (inconsistencias)',
+          'Patronaje (inconsistencias)'
+        ],
+        submenu: [
+          {
+            label: 'Mis Inconsistencias',
+            link: '/mis-inconsistencias',
+            roles: ['Administrador del sistema', 'Solicitante (inconsistencias)']
+          },
+          {
+            label: 'Generar Inconsistencias',
+            link: '/generar-inconsistencias',
+            roles: ['Administrador del sistema', 'Solicitante (inconsistencias)']
+          },
+          {
+            label: 'Aprobar Inconsistencias',
+            link: '/aprobar-inconsistencias',
+            roles: [
+              'Administrador del sistema',
+              'Lider Aprobador (inconsistencias)',
+              'Matriz de Remplazo (inconsistencias)',
+              'Calidad (inconsistencias)',
+              'Contabilidad (inconsistencias)',
+              'Logistica (inconsistencias)',
+              'Trazo (inconsistencias)',
+              'Patronista (inconsistencias)',
+              'Cartera (inconsistencias)',
+              'Patronaje (inconsistencias)'
+            ]
+          },
+          {
+            label: 'Histórico Inconsistencias',
+            link: '/historico-inconsistencias',
+            roles: [
+              'Administrador del sistema',
+              'Lider Aprobador (inconsistencias)',
+              'Matriz de Remplazo (inconsistencias)',
+              'Calidad (inconsistencias)',
+              'Contabilidad (inconsistencias)',
+              'Logistica (inconsistencias)',
+              'Trazo (inconsistencias)',
+              'Patronista (inconsistencias)',
+              'Cartera (inconsistencias)',
+              'Patronaje (inconsistencias)'
+            ]
+          },
+          {
+            label: 'Revisión de Consumo',
+            link: '/revision-consumo',
+            roles: ['Administrador del sistema', 'Revision Consumo (inconsistencias)']
+          },
+          {
+            label: 'Reporte de Inconsistencias',
+            link: '/reporte-inconsistencias',
+            roles: ['Administrador del sistema', 'Calidad (inconsistencias)', 'Consulta KPIs Facturación']
+          }
+        ]
+      },
+      {
+        label: 'Terminación ',
+        icon: 'bi bi-box-seam',
+        roles: [
+          'Administrador del sistema',
+          'Receptor OP (Terminación y Empaque)',
+          'Distribuidor PV (Terminación y Empaque)',
+          'Gestion empacadores (Terminación y Empaque)',
+          'Empacador (Terminación y Empaque)',
+          'Jefe (Terminación y Empaque)'
+        ],
+        submenu: [
+          {
+            label: 'Recepción de OP',
+            link: '/recepcion-op',
+            roles: ['Administrador del sistema', 'Receptor OP (Terminación y Empaque)']
+          },
+          {
+            label: 'Distribución de PV',
+            link: '/distribucion-pv',
+            roles: ['Administrador del sistema', 'Distribuidor PV (Terminación y Empaque)', 'Distribuidor PV Directo (Terminación y Empaque)']
+          },
+          {
+            label: 'Gestión de empacadores',
+            link: '/gestion-empacadores',
+            roles: ['Administrador del sistema', 'Gestion empacadores (Terminación y Empaque)']
+          },
+          {
+            label: 'Registrar empaque',
+            link: '/registrar-empaque',
+            roles: ['Administrador del sistema', 'Empacador (Terminación y Empaque)']
+          },
+          {
+            label: 'Dashboard',
+            link: '/dashboard-empaque',
+            roles: ['Administrador del sistema', 'Jefe (Terminación y Empaque)']
+          }
+        ]
+      },
+      {
+        label: 'Renueva',
+        icon: 'bi bi-truck',
+        roles: ['Administrador del sistema', 'Auxiliar (renueva)', 'Operario (renueva)', 'Jefe Renueva'],
+        submenu: [
+          {
+            label: 'Dashboard',
+            link: '/dashboard-bigbag',
+            roles: ['Administrador del sistema', 'Jefe Renueva', 'Auxiliar (renueva)']
+          },
+          {
+            label: 'Ingreso Renueva',
+            link: '/technical-report-bigbag'
+          },
+          {
+            label: 'Ver llegada empaques',
+            link: '/view-report-bigbag'
+          },
+          {
+            label: 'Precintos',
+            link: '/view-precinto-bigbag',
+            roles: ['Administrador del sistema', 'Operario (renueva)']
+          }
+        ]
+      },
+      {
+        label: 'Inventario',
+        icon: 'bi bi-boxes',
+        roles: [
+          'Administrador del sistema',
+          'Gestor de bodega (MP001)',
+          'Gestor de bodega (MP003)',
+          'Gestor de bodega (BT001)',
+          'Admin (inventario)'
+        ],
+        submenu: [
+          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas' },
+          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas' },
+          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios' },
+          { label: 'Conteo de Inventario', link: '/inventario/conteo' },
+          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', roles: ['Administrador del sistema', 'Admin (inventario)'] },
+        ]
+      },
+      {
+        label: 'Inventario (Anterior)',
+        icon: 'bi bi-archive',
+        roles: [
+          'Administrador del sistema',
+          'Gestor de bodega (MP001)',
+          'Gestor de bodega (MP003)',
+          'Gestor de bodega (BT001)',
+          'Admin (inventario)'
+        ],
+        submenu: [
+          {
+            label: 'Bodegas',
+            link: '/inventario-old/bodegas',
+            roles: ['Administrador del sistema', 'Admin (inventario)', 'Gestor de bodega (MP001)', 'Gestor de bodega (MP003)', 'Gestor de bodega (BT001)']
+          },
+          {
+            label: 'Zonas',
+            link: '/inventario-old/zonas',
+            roles: ['Administrador del sistema', 'Admin (inventario)', 'Gestor de bodega (MP001)', 'Gestor de bodega (MP003)', 'Gestor de bodega (BT001)']
+          },
+          {
+            label: 'Contadores',
+            link: '/inventario-old/contadores',
+            roles: ['Administrador del sistema', 'Admin (inventario)']
+          },
+          {
+            label: 'Inventarios',
+            link: '/inventario-old/inventarios',
+            roles: ['Administrador del sistema', 'Admin (inventario)']
+          },
+          {
+            label: 'Generar hoja de conteo',
+            link: '/inventario-old/generar-hoja-conteo',
+            roles: ['Administrador del sistema', 'Admin (inventario)']
+          },
+          {
+            label: 'Listado de hojas de conteo',
+            link: '/inventario-old/hojas-conteo-list',
+            roles: ['Administrador del sistema', 'Admin (inventario)']
+          },
+          {
+            label: 'Hojas de Conteo',
+            link: '/inventario-old/contador-items',
+            roles: ['Administrador del sistema', 'Admin (inventario)', 'Lider Contador (inventario)']
+          }
+        ]
+      },
+      {
+        label: 'Órdenes',
+        icon: 'bi bi-file-earmark-text',
+        link: '/orden-compra',
+        roles: ['Administrador del sistema']
+      },
+      {
+        label: 'Tiempos Ítems',
+        icon: 'bi bi-clock-history',
+        link: '/tiempos-items',
+        roles: ['Administrador del sistema']
+      },
+      {
+        label: 'Planeación',
+        icon: 'bi bi-calendar-check',
+        link: '/planeacion',
+        roles: ['Administrador del sistema']
+      },
+      {
+        label: 'Centros de Costos',
+        icon: 'bi bi-building',
+        link: '/centros-costos',
+        roles: ['Administrador del sistema']
+      }
+    ];
+  }
+
+  toggleSubmenu(item: MenuItem): void {
+    if (this.isCollapsed && !this.isMobile) return;
+    
+    // Close other menus
+    this.menuItems.forEach(m => {
+      if (m !== item) m.isOpen = false;
+    });
+    
+    item.isOpen = !item.isOpen;
   }
 
   ngAfterViewInit(): void {
@@ -113,37 +478,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     if (rect) {
       this.floatPanelTop = rect.top;
     }
-
   }
 
-  closeFloatPanel() {
-
-    clearTimeout(this.floatCloseTimeout);
-
-    this.floatCloseTimeout = setTimeout(() => {
-
-      if (!this.isMouseInsidePanel) {
-        this.hoveredSubmenu = null;
-      }
-
-    }, 250);
-
-  }
-
-  keepFloatPanelOpen() {
-
-    this.isMouseInsidePanel = true;
-    clearTimeout(this.floatCloseTimeout);
-
-  }
-
-  leaveFloatPanel() {
-
-    this.isMouseInsidePanel = false;
-    this.closeFloatPanel();
-
-  }
-
+  /**
+   * Filtra las opciones del submenú según los roles del usuario
+   */
   private filterSubmenuByRoles(submenu: SubmenuItem[]): SubmenuItem[] {
 
     return submenu.filter(item => {
@@ -164,6 +503,26 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return this.authService.hasAnyRole(roles);
 
+    });
+  }
+
+  closeFloatPanel() {
+    this.floatCloseTimeout = setTimeout(() => {
+      this.hoveredSubmenu = null;
+    }, 300);
+  }
+
+  keepFloatPanelOpen() {
+    clearTimeout(this.floatCloseTimeout);
+  }
+
+  /**
+   * Verifica si una opción debe mostrarse según roles y condición opcional
+   */
+  canShowMenuItem(roles?: string[], condition?: () => boolean): boolean {
+    const hasRole = !roles || roles.length === 0 || this.authService.hasAnyRole(roles);
+    const hasCondition = !condition || condition();
+    return hasRole && hasCondition;
   }
 
   /* ===========================================================

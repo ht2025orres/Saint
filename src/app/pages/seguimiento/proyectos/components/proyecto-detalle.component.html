@@ -1,0 +1,150 @@
+<!-- ══════════════════════════════════════════════════════════════════
+     PANEL DETALLE DE PROYECTO (slide-over)
+     ══════════════════════════════════════════════════════════════════ -->
+<div *ngIf="show"
+  class="fixed inset-0 z-40 flex items-stretch"
+  style="background: rgba(15,23,42,0.4);"
+  (click)="onCerrar.emit()">
+
+  <div class="m-auto bg-white w-full max-w-6xl h-full flex flex-col shadow-2xl overflow-hidden"
+    (click)="$event.stopPropagation()">
+
+    <!-- Header detalle -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <span *ngIf="detalle" class="w-3 h-3 rounded-full flex-shrink-0"
+          [ngClass]="state.getSemaforoClass(detalle?.semaforo)"></span>
+        <div class="min-w-0">
+          <h2 class="text-base font-bold text-gray-900 truncate">{{ detalle?.titulo }}</h2>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span *ngIf="detalle" class="text-xs px-2 py-0.5 rounded-full"
+              [ngClass]="state.getEstadoBadgeClass(detalle.estado)">
+              {{ detalle.estado | uppercase }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button *ngIf="detalle && puedeGestionarPermisos(detalle)"
+          (click)="onAbrirPermisos.emit()"
+          class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-all" title="Gestionar permisos">
+          <i class="mdi mdi-shield-account text-lg"></i>
+        </button>
+        <button *ngIf="detalle && puedeEditarProyecto(detalle)"
+          (click)="onAbrirPlantillas.emit()" [disabled]="aplicandoPlantilla"
+          class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-slate-50 rounded-xl transition-all" title="Aplicar plantilla">
+          <i class="mdi text-lg" [ngClass]="aplicandoPlantilla ? 'mdi-loading mdi-spin' : 'mdi-download'"></i>
+        </button>
+        <button *ngIf="detalle && esAdminProyecto(detalle) && detalle.fecha_limite_entrega"
+          (click)="onCalcularFechas.emit()" [disabled]="calculandoFechas"
+          class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-all" title="Cálculo automático">
+          <i class="mdi text-lg" [ngClass]="calculandoFechas ? 'mdi-loading mdi-spin' : 'mdi-history'"></i>
+        </button>
+        <div class="w-px h-6 bg-slate-100 mx-1"></div>
+        <button (click)="onCerrar.emit()"
+          class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+          <i class="mdi mdi-close text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading detalle -->
+    <div *ngIf="loading" class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-sm text-gray-400">Cargando…</p>
+      </div>
+    </div>
+
+    <ng-container *ngIf="!loading && detalle">
+
+      <!-- Stats banner compacto -->
+      <div class="grid grid-cols-4 border-b border-slate-100 flex-shrink-0 bg-slate-50/50">
+        <div class="px-3 py-3 text-center border-r border-slate-100 hover:bg-white transition-colors group/stat">
+          <i class="mdi mdi-sitemap-outline text-slate-300 group-hover/stat:text-blue-500 transition-colors block text-xs mb-1"></i>
+          <p class="text-lg font-black text-slate-700 leading-none">{{ detalle.total_actividades || 0 }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Actividades</p>
+        </div>
+        <div class="px-3 py-3 text-center border-r border-slate-100 hover:bg-white transition-colors group/stat">
+          <i class="mdi mdi-clipboard-list-outline text-slate-300 group-hover/stat:text-blue-500 transition-colors block text-xs mb-1"></i>
+          <p class="text-lg font-black text-slate-700 leading-none">{{ detalle.total_tareas || 0 }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Tareas</p>
+        </div>
+        <div class="px-3 py-3 text-center border-r border-slate-100 hover:bg-white transition-colors group/stat">
+          <i class="mdi mdi-check-circle-outline text-slate-300 group-hover/stat:text-emerald-500 transition-colors block text-xs mb-1"></i>
+          <p class="text-lg font-black text-emerald-600 leading-none">{{ detalle.tareas_completadas || 0 }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Completas</p>
+        </div>
+        <div class="px-3 py-3 text-center hover:bg-white transition-colors group/stat">
+          <i class="mdi mdi-alert-circle-outline text-slate-300 group-hover/stat:text-rose-500 transition-colors block text-xs mb-1"></i>
+          <p class="text-lg font-black text-rose-500 leading-none">{{ detalle.tareas_vencidas || 0 }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Vencidas</p>
+        </div>
+      </div>
+
+      <!-- Barra de progreso compacta -->
+      <div class="px-6 py-4 border-b border-slate-100 flex-shrink-0 bg-white">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-3">
+            <h4 class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Progreso General</h4>
+            <span class="text-base font-black text-blue-600">{{ detalle.progreso || 0 }}%</span>
+          </div>
+          <p class="text-[10px] text-slate-400">Tareas finalizadas</p>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+          <div class="h-full rounded-full transition-all duration-700 ease-out bg-blue-600"
+            [style.width.%]="detalle.progreso || 0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs de Navegación compactos -->
+      <div class="flex items-center gap-1 px-6 py-2 border-b border-slate-100 flex-shrink-0 bg-slate-50/30">
+        <button (click)="onChangeVista.emit('tareas')"
+          class="flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-wider py-2 rounded-lg transition-all"
+          [ngClass]="vistaDetalle === 'tareas' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'">
+          <i class="mdi mdi-clipboard-list text-lg"></i>
+          <span>Tareas</span>
+        </button>
+        <button (click)="onChangeVista.emit('actividades')"
+          class="flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-wider py-2 rounded-lg transition-all"
+          [ngClass]="vistaDetalle === 'actividades' ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'">
+          <i class="mdi mdi-sitemap text-lg"></i>
+          <span>Actividades</span>
+        </button>
+      </div>
+
+      <!-- ── ÁREA SCROLLABLE ─────────────────────────────────────────── -->
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+
+        <!-- ══ VISTA LISTA PLANA (Tareas Directas) ══ -->
+        <app-proyecto-tareas-view
+          *ngIf="vistaDetalle === 'tareas'"
+          [tareas]="tareasPlanas"
+          [usuarioId]="usuarioId"
+          [proyectoId]="detalle.id"
+          [puedeGestionarModulo]="puedeGestionarModulo"
+          [puedeCrear]="puedeCrearEnProyecto(detalle)"
+          [puedeEditarProyecto]="puedeEditarProyecto(detalle)"
+          (onRefresh)="onRefresh.emit($event)"
+          (onEditModal)="onEditTarea.emit($event)">
+        </app-proyecto-tareas-view>
+
+        <!-- ══ VISTA ACTIVIDADES REDISEÑADA (Mapa Estratégico) ══ -->
+        <app-proyecto-actividades-view
+          *ngIf="vistaDetalle === 'actividades'"
+          [proyecto]="detalle"
+          [usuarioId]="usuarioId"
+          [puedeGestionarModulo]="puedeGestionarModulo"
+          [puedeCrear]="puedeCrearEnProyecto(detalle)"
+          [puedeEditarProyecto]="puedeEditarProyecto(detalle)"
+          (onRefresh)="onRefresh.emit($event)"
+          (onEditModalActividad)="onEditActividad.emit($event)"
+          (onEditModalTarea)="onEditTarea.emit($event)">
+        </app-proyecto-actividades-view>
+
+      </div>
+      <!-- /área scrollable -->
+    </ng-container>
+  </div>
+</div>

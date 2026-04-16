@@ -1,0 +1,392 @@
+<div class="container py-4">
+  <!-- Encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="display-6">
+      <i class="bi bi-clipboard-check me-2"></i>
+      Mis Hojas de Conteo
+    </h2>
+  </div>
+
+  <!-- Indicador de carga -->
+  <ng-container *ngIf="isLoading; else listContent">
+    <div class="alert alert-secondary text-center mt-4">
+      <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+      Cargando hojas...
+    </div>
+  </ng-container>
+
+  <!-- Contenido de Lista -->
+  <ng-template #listContent>
+    <ng-container *ngIf="!hojaSeleccionada; else registroConteo">
+      
+      <!-- Filtros -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Tipo</label>
+              <select class="form-select" [(ngModel)]="filtros.tipo" (change)="aplicarFiltros()">
+                <option [ngValue]="null">Todos</option>
+                <option value="CONTEO">Conteo</option>
+                <option value="RECONTEO1">Reconteo 1</option>
+                <option value="RECONTEO2">Reconteo 2</option>
+                <option value="RECONTEO3">Reconteo 3</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="filtros.estado" (change)="aplicarFiltros()">
+                <option [ngValue]="null">Todos</option>
+                <option value="BORRADOR">Borrador</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="EN_PROCESO">En Proceso</option>
+                <option value="FINALIZADO">Finalizado</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Buscar</label>
+              <input type="text" class="form-control" 
+                     placeholder="Código de hoja..."
+                     [(ngModel)]="filtros.busqueda"
+                     (input)="aplicarFiltros()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de Hojas -->
+      <div *ngIf="hojasFiltradas.length > 0; else sinHojas">
+        <div *ngFor="let hoja of hojasFiltradas" class="card mb-3 shadow-sm border-light">
+          <div class="card-body">
+            <div class="row align-items-center">
+              
+              <!-- Información Básica -->
+              <div class="col-md-4">
+                <h5 class="mb-1">
+                  <i class="bi bi-file-text me-2"></i>
+                  {{ hoja.codigo_hoja }}
+                </h5>
+                <div class="mt-2">
+                  <span class="badge" [ngClass]="{
+                    'bg-secondary': hoja.estado === 'BORRADOR',
+                    'bg-warning text-dark': hoja.estado === 'PENDIENTE',
+                    'bg-info': hoja.estado === 'EN_PROCESO',
+                    'bg-success': hoja.estado === 'FINALIZADO'
+                  }">
+                    {{ getEstadoLabel(hoja.estado) }}
+                  </span>
+                  <span class="badge bg-primary ms-1">
+                    {{ getTipoLabel(hoja.tipo) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Estadísticas -->
+              <div class="col-md-5">
+                <div class="row text-center">
+                  <div class="col-4">
+                    <small class="text-muted d-block">Items:</small>
+                    <strong>{{ hoja.total_items || 0 }}</strong>
+                  </div>
+                  <div class="col-4">
+                    <small class="text-muted d-block">Contados:</small>
+                    <strong class="text-success">{{ hoja.items_contados || 0 }}</strong>
+                  </div>
+                  <div class="col-4">
+                    <small class="text-muted d-block">Pendientes:</small>
+                    <strong class="text-warning">{{ (hoja.total_items || 0) - (hoja.items_contados || 0) }}</strong>
+                  </div>
+                </div>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-success" 
+                       [style.width.%]="calcularProgresoHoja(hoja)">
+                  </div>
+                </div>
+                <small class="text-muted">{{ calcularProgresoHoja(hoja) | number:'1.0-1' }}% completado</small>
+              </div>
+
+              <!-- Acciones -->
+              <div class="col-md-3">
+                <small class="text-muted d-block mb-2">
+                  <i class="bi bi-calendar3 me-1"></i>
+                  {{ hoja.created_at | date:'dd/MM/yyyy HH:mm' }}
+                </small>
+                <button class="btn btn-sm btn-primary w-100" 
+                        (click)="abrirRegistroConteo(hoja)"
+                        [disabled]="hoja.estado === 'FINALIZADO' || hoja.estado === 'BORRADOR'">
+                  <i class="bi bi-pencil me-1"></i> 
+                  {{ hoja.estado === 'FINALIZADO' ? 'Finalizada' : hoja.estado === 'BORRADOR' ? 'Borrador' : 'Contar' }}
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Observaciones -->
+            <div *ngIf="hoja.observaciones" class="mt-3 pt-3 border-top">
+              <small class="text-muted">
+                <i class="bi bi-chat-left-text me-1"></i>
+                <strong>Observaciones:</strong> {{ hoja.observaciones }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sin Hojas -->
+      <ng-template #sinHojas>
+        <div class="alert alert-info text-center mt-4">
+          <i class="bi bi-info-circle me-2"></i>
+          No hay hojas de conteo disponibles
+        </div>
+      </ng-template>
+
+    </ng-container>
+
+    <!-- Registro de Conteo -->
+    <ng-template #registroConteo>
+      <div class="mb-3">
+        <button class="btn btn-outline-secondary" (click)="volverALista()">
+          <i class="bi bi-arrow-left me-1"></i> Volver a lista
+        </button>
+      </div>
+
+      <!-- Encabezado de la hoja seleccionada -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <h4 class="mb-3">
+                <i class="bi bi-file-text me-2"></i>
+                {{ hojaSeleccionada.codigo_hoja }}
+              </h4>
+              <div class="mb-2">
+                <span class="badge" [ngClass]="{
+                  'bg-secondary': hojaSeleccionada.estado === 'BORRADOR',
+                  'bg-warning text-dark': hojaSeleccionada.estado === 'PENDIENTE',
+                  'bg-info': hojaSeleccionada.estado === 'EN_PROCESO',
+                  'bg-success': hojaSeleccionada.estado === 'FINALIZADO'
+                }">
+                  {{ getEstadoLabel(hojaSeleccionada.estado) }}
+                </span>
+                <span class="badge bg-primary ms-2">
+                  {{ getTipoLabel(hojaSeleccionada.tipo) }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="row">
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Bodega:</small>
+                  <strong>{{ hojaSeleccionada.bodegas.join(', ') }}</strong>
+                </div>
+                <div class="col-md-6">
+                  <small class="text-muted d-block">Creado:</small>
+                  <strong>{{ hojaSeleccionada.created_at | date:'dd/MM/yyyy HH:mm' }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progreso -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-3">
+              <small class="text-muted d-block">Total Items</small>
+              <h4 class="text-primary">{{ itemsHoja.length }}</h4>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Contados</small>
+              <h4 class="text-success">{{ itemsContados }}</h4>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Pendientes</small>
+              <h4 class="text-warning">{{ itemsHoja.length - itemsContados }}</h4>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted d-block">Progreso</small>
+              <h4 class="text-info">{{ calcularProgreso() | number:'1.0-0' }}%</h4>
+            </div>
+          </div>
+          <div class="progress mt-3" style="height: 8px;">
+            <div class="progress-bar bg-success" [style.width.%]="calcularProgreso()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Búsqueda y filtros -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <input type="text" class="form-control" 
+                     placeholder="Buscar item..."
+                     [(ngModel)]="busqueda"
+                     (input)="filtrarItems()">
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" [(ngModel)]="filtroEstado" (change)="filtrarItems()">
+                <option value="">Todos</option>
+                <option value="CONTADO">Contados</option>
+                <option value="PENDIENTE">Pendientes</option>
+              </select>
+            </div>
+            <div class="col-md-3 text-end">
+              <button class="btn btn-primary" (click)="guardarProgreso()" [disabled]="procesando">
+                <i class="bi bi-cloud-check me-1"></i> Guardar Progreso
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de items -->
+      <div class="table-responsive">
+        <table class="table table-hover table-sm">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th style="width: 30px;"></th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Zona</th>
+              <!-- <th class="text-end">Exist. SIESA</th> -->
+              <th class="text-end">Contado</th>
+              <th>Responsables</th>
+              <th class="text-center">Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of itemsFiltrados; let idx = index" 
+                [ngClass]="{'table-success': item.estado !== 'PENDIENTE', 'table-secondary': item.estado === 'PENDIENTE'}">
+              <td>
+                <span class="badge bg-info">{{ idx + 1 }}</span>
+              </td>
+              <td>
+                <code>{{ item.codigo_item }}<span *ngIf="item.id_color">-{{ item.id_color }}</span><span *ngIf="item.id_talla">-{{ item.id_talla }}</span></code>
+              </td>
+              <td>
+                <small>{{ item.descripcion }} | {{ item.color }} | {{ item.talla }}</small>
+              </td>
+              <td>
+                <span class="badge bg-info">{{ item.zona_nombre }}</span>
+              </td>
+              <!-- <td class="text-end">
+                {{ item.existencia_siesa | number:'1.0-2' }}
+              </td> -->
+              <td class="text-end">
+                <span *ngIf="item.cantidad_contada > 0 || item.estado === 'CONTADO'" class="fw-bold text-success">
+                  {{ item.cantidad_contada | number:'1.0-2' }}
+                </span>
+                <span *ngIf="item.cantidad_contada == 0" class="text-muted">-</span>
+              </td>
+              <td>
+                <span *ngIf="item.estado !== 'PENDIENTE'" class="small">
+                  {{ formatearResponsables(item) }}
+                </span>
+                <span *ngIf="item.estado === 'PENDIENTE'" class="text-muted small">-</span>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="{
+                  'bg-success': item.estado !== 'PENDIENTE',
+                  'bg-secondary': item.estado === 'PENDIENTE'
+                }">
+                  {{ getEstadoItemLabel(item.estado) }}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" 
+                        (click)="abrirModalConteo(item)"
+                        [disabled]="item.estado !== 'PENDIENTE' || procesando">
+                  <i class="bi bi-pencil"></i> Contar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="itemsFiltrados.length === 0" class="alert alert-info text-center mt-4">
+        No hay items que cumplan con los filtros
+      </div>
+
+    </ng-template>
+
+<!-- Modal: Registrar Conteo -->
+<div class="modal fade" [class.show]="modalConteo" 
+     [style.display]="modalConteo ? 'block' : 'none'"
+     tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-pencil me-2"></i>
+          Registrar Conteo - {{ itemActual?.codigo_item }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalConteo()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Descripción:</label>
+          <p class="text-muted">{{ itemActual?.descripcion }}</p>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Responsables *</label>
+          <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+            <div *ngFor="let contador of contadoresAsignados" class="form-check">
+              <input 
+                class="form-check-input"
+                type="checkbox"
+                [id]="'contador_' + contador.id_contador"
+                [checked]="conteoForm.responsables.includes(contador.id_contador)"
+                (change)="toggleResponsable(contador.id_contador, $event.target.checked)"
+              />
+              <label class="form-check-label" [for]="'contador_' + contador.id_contador">
+                {{ contador.nombres }} {{ contador.apellidos }} - {{ contador.cedula }}
+              </label>
+            </div>
+          </div>
+          <small class="text-danger" *ngIf="conteoForm.responsables.length === 0">
+            Debe seleccionar al menos un responsable
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Cantidad Contada *</label>
+          <input type="number" class="form-control" 
+                 [(ngModel)]="conteoForm.cantidad_contada"
+                 placeholder="0.00"
+                 step="0.01"
+                 min="0">
+          <small class="text-muted">Formato: decimales separados por punto</small>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalConteo()">Cancelar</button>
+        <button class="btn btn-primary" 
+                [disabled]="!puedeGuardarConteo() || procesando"
+                (click)="confirmarConteo()">
+          <span *ngIf="procesando">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Guardando...
+          </span>
+          <span *ngIf="!procesando">
+            <i class="bi bi-check me-1"></i> Guardar
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div class="modal-backdrop fade" 
+     [class.show]="modalConteo"
+     *ngIf="modalConteo">
+</div>

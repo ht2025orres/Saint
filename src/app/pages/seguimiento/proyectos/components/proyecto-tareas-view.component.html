@@ -1,0 +1,81 @@
+<!-- Filtros de tareas -->
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4 p-2.5 bg-slate-50/80 rounded-2xl border border-slate-100 shadow-sm">
+  <div class="flex items-center gap-3">
+    <div class="flex items-center gap-1.5">
+      <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Estado</span>
+      <select [(ngModel)]="filtroEstadoTarea"
+        class="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-100 focus:border-blue-400 transition-all cursor-pointer">
+        <option value="todos">Todos</option>
+        <option value="pendiente">Pendientes</option>
+        <option value="en_ejecucion">En ejecución</option>
+        <option value="completado">Completados</option>
+        <option value="bloqueado">Bloqueados</option>
+      </select>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Tipo</span>
+      <select [(ngModel)]="filtroTipoTarea"
+        class="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-100 focus:border-blue-400 transition-all cursor-pointer">
+        <option value="todas">Todas</option>
+        <option value="conActividad">De actividad</option>
+        <option value="sinActividad">Generales</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="flex items-center gap-2">
+    <button *ngIf="puedeCrear" (click)="onEditModal.emit({ actividad_id: null })"
+      class="flex items-center gap-1 px-2.5 py-1.5 text-[8px] font-black text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all uppercase tracking-widest shadow-sm">
+      <i class="mdi mdi-plus-box-outline text-xs"></i>
+      Nueva Tarea (Modal)
+    </button>
+
+    <button (click)="limpiarFiltros()"
+      class="flex items-center gap-1 px-2 py-1 text-[8px] font-black text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all uppercase tracking-widest">
+      <i class="mdi mdi-filter-off-outline text-xs"></i>
+      Limpiar
+    </button>
+  </div>
+</div>
+
+<!-- Sin tareas -->
+<div *ngIf="tareasFiltradas.length === 0 && !showInlineTask"
+  class="flex flex-col items-center justify-center py-20 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200">
+  <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
+    <i class="mdi mdi-clipboard-text-outline text-slate-300 text-3xl"></i>
+  </div>
+  <p class="text-sm font-bold text-slate-400">No hay tareas que coincidan con los filtros</p>
+</div>
+
+<!-- Lista de tareas -->
+<div class="space-y-3">
+  <app-tarea-item 
+    *ngFor="let tarea of tareasFiltradas"
+    [tarea]="tarea"
+    [usuarioId]="usuarioId"
+    [proyectoId]="proyectoId"
+    [puedeGestionarModulo]="puedeGestionarModulo"
+    [puedeEditarProyecto]="puedeEditarProyecto"
+    [esGeneral]="tarea.esGeneral"
+    (onRefresh)="onRefresh.emit($event)"
+    (onEditModal)="onEditModal.emit($event)">
+  </app-tarea-item>
+
+  <!-- FILA INLINE CREAR -->
+  <app-tarea-inline-crear
+    *ngIf="showInlineTask"
+    [proyectoId]="proyectoId"
+    [usuarioId]="usuarioId"
+    (onRefresh)="onRefresh.emit($event); showInlineTask = false"
+    (onCancel)="showInlineTask = false">
+  </app-tarea-inline-crear>
+</div>
+
+<!-- Botón + Añadir tarea -->
+<button *ngIf="!showInlineTask && puedeCrear"
+  (click)="showInlineTask = true"
+  class="w-full flex items-center justify-center gap-2 px-4 py-3 mt-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400
+         hover:text-blue-600 hover:bg-blue-50/50 rounded-2xl transition-all border-2 border-dashed border-slate-100 hover:border-blue-200 group">
+  <i class="mdi mdi-plus-circle-outline text-lg group-hover:scale-110 transition-transform"></i>
+  <span>Nueva tarea general</span>
+</button>

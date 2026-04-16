@@ -1,0 +1,76 @@
+<div *ngIf="show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" (click)="onCerrar.emit()"></div>
+  
+  <div class="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-300 flex flex-col">
+    
+    <!-- Header -->
+    <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xl shadow-inner">
+          {{ dia?.fecha | date:'dd' }}
+        </div>
+        <div>
+          <h3 class="font-black text-gray-900 text-xl leading-tight capitalize">
+            {{ dia?.fecha | date:'EEEE, d MMMM' }}
+          </h3>
+          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Tareas programadas para este día</p>
+        </div>
+      </div>
+      <button (click)="onCerrar.emit()" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all">
+        <i class="bi bi-x-lg text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Contenido -->
+    <div class="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+      
+      <div *ngFor="let grupo of tareasAgrupadas" class="animate-in slide-in-from-left-4 duration-300">
+        <!-- Usuario Header -->
+        <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-gray-200" [ngClass]="grupo.color">
+            {{ grupo.iniciales }}
+          </div>
+          <div>
+            <h4 class="font-black text-gray-900 text-lg leading-tight">{{ grupo.nombre }}</h4>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{{ grupo.tareas.length }} Tareas asignadas</p>
+          </div>
+        </div>
+
+        <!-- Lista de Tareas del Usuario -->
+        <div class="grid gap-3 pl-2">
+          <div *ngFor="let t of grupo.tareas" 
+            class="bg-white border border-gray-100 p-5 rounded-2xl flex items-center justify-between gap-4 group hover:shadow-md hover:border-blue-100 transition-all">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md" [ngClass]="t.colorEstado">
+                  {{ t.origen }}
+                </span>
+              </div>
+              <p class="font-bold text-gray-800 text-sm leading-snug">{{ t.titulo }}</p>
+            </div>
+            <span class="px-3 py-1.5 bg-gray-50 rounded-xl text-[10px] font-black text-gray-500 uppercase tracking-tight">{{ t.estado }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!tareasAgrupadas.length" 
+        class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="w-24 h-24 bg-gray-50 rounded-3xl flex items-center justify-center mb-6 text-gray-200 shadow-inner">
+          <i class="bi bi-clipboard-check text-5xl"></i>
+        </div>
+        <h3 class="text-xl font-black text-gray-800 mb-2">Día sin actividades</h3>
+        <p class="text-gray-400 font-bold max-w-xs mx-auto">No hay tareas o compromisos registrados para esta fecha.</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-8 py-6 bg-gray-50 border-t border-gray-100 shrink-0 text-right">
+      <button (click)="onCerrar.emit()" class="px-6 py-2.5 bg-gray-900 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-black transition-all shadow-lg shadow-gray-200">
+        Entendido
+      </button>
+    </div>
+
+  </div>
+</div>

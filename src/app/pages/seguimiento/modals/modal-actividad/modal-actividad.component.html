@@ -1,0 +1,182 @@
+<!-- MODAL ACTIVIDAD — Crear / Editar -->
+<div *ngIf="show"
+  class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+  (click)="cerrar()">
+
+  <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300 flex flex-col"
+    (click)="$event.stopPropagation()">
+
+    <!-- Header Profesional -->
+    <div class="relative px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-500"
+          [ngClass]="esEdicion ? 'bg-amber-500 text-white shadow-amber-100' : 'bg-blue-600 text-white shadow-blue-100'">
+          <i class="mdi text-2xl" [ngClass]="esEdicion ? 'mdi-pencil-box-outline' : 'mdi-sitemap-outline'"></i>
+        </div>
+        <div>
+          <h2 class="font-black text-slate-800 text-xl tracking-tight">{{ esEdicion ? 'Editar Actividad' : 'Nueva Actividad' }}</h2>
+          <p *ngIf="proyecto" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+            Proyecto: <span class="text-blue-600">{{ proyecto.titulo }}</span>
+          </p>
+        </div>
+      </div>
+      <button (click)="cerrar()"
+        class="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all shadow-sm border border-transparent hover:border-slate-100">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div [formGroup]="form" class="p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+
+      <!-- Alerta Proyecto Completado -->
+      <div *ngIf="proyecto?.estado === 'completado'" 
+        class="bg-amber-50 border border-amber-100 p-4 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top-4 duration-300">
+        <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+          <i class="bi bi-exclamation-triangle-fill text-xl"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-black text-amber-800 uppercase tracking-widest">Proyecto Finalizado</h4>
+          <p class="text-[10px] font-bold text-amber-600 mt-1 leading-relaxed">
+            Este proyecto ya está marcado como completado. Para añadir una nueva actividad, debes indicar el motivo de la reapertura o nuevo requerimiento.
+          </p>
+        </div>
+      </div>
+
+      <!-- Reapertura (Solo si el proyecto está completado) -->
+      <div *ngIf="proyecto?.estado === 'completado'" class="space-y-4">
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">Título del Requerimiento <span class="text-red-500">*</span></label>
+          <div class="relative group">
+            <i class="mdi mdi-tag-plus absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 group-focus-within:text-amber-500 transition-colors text-lg"></i>
+            <input type="text" formControlName="titulo_reapertura" placeholder="Ej: Nueva función de QRs"
+              class="w-full pl-11 pr-4 py-3.5 bg-amber-50/50 border-2 border-amber-100 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-300 transition-all outline-none shadow-sm">
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black text-amber-500 uppercase tracking-widest ml-1">Descripción del Requerimiento</label>
+          <div class="relative group">
+            <i class="mdi mdi-comment-alert absolute left-4 top-4 text-amber-400 group-focus-within:text-amber-500 transition-colors text-lg"></i>
+            <textarea formControlName="descripcion_reapertura" rows="2" placeholder="Explica los detalles del nuevo requerimiento..."
+              class="w-full pl-11 pr-4 py-3.5 bg-amber-50/50 border-2 border-amber-100 rounded-2xl text-sm font-bold text-amber-900 placeholder:text-amber-200 focus:bg-white focus:border-amber-300 transition-all outline-none resize-none shadow-sm"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Título con diseño moderno -->
+      <div class="space-y-2">
+        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Título de la Actividad</label>
+        <div class="relative group">
+          <i class="mdi mdi-format-title absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors text-lg"></i>
+          <input formControlName="titulo" type="text" placeholder="Ej: Fase de Diseño Inicial..."
+            class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm"
+            [class.border-red-300]="form.get('titulo')?.invalid && form.get('titulo')?.touched">
+        </div>
+        <p *ngIf="form.get('titulo')?.invalid && form.get('titulo')?.touched" class="text-[10px] text-rose-500 font-bold ml-1">El título es obligatorio</p>
+      </div>
+
+      <!-- Descripción -->
+      <div class="space-y-2">
+        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Descripción / Objetivos</label>
+        <div class="relative group">
+          <i class="mdi mdi-text-subject absolute left-4 top-4 text-slate-400 group-focus-within:text-blue-500 transition-colors text-lg"></i>
+          <textarea formControlName="descripcion" rows="3" placeholder="Detalla los alcances de esta actividad..."
+            class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-medium text-slate-600 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm resize-none"></textarea>
+        </div>
+      </div>
+
+      <!-- Grid de Configuración -->
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Estado -->
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Estado</label>
+          <div class="relative group">
+            <i class="mdi mdi-progress-check absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors text-lg"></i>
+            <select formControlName="estado"
+              class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm appearance-none cursor-pointer">
+              <option *ngFor="let op of estadoOpciones" [value]="op.v">{{ op.l }}</option>
+            </select>
+            <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- Fecha Límite -->
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Fecha Límite</label>
+          <div class="relative group">
+            <i class="mdi mdi-calendar-clock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors text-lg"></i>
+            <input formControlName="fecha_limite_entrega" type="datetime-local"
+              class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-sm">
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsables Modernos -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between ml-1">
+          <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Responsables Asignados</label>
+          <span class="text-[9px] text-blue-500 font-black uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">Propaga a tareas</span>
+        </div>
+        
+        <div class="relative">
+          <div class="flex flex-wrap gap-2 p-3 bg-slate-50 border-2 border-slate-50 rounded-[1.5rem] focus-within:border-blue-500 focus-within:bg-white transition-all shadow-inner min-h-[60px]">
+            <div *ngFor="let r of responsablesSelec" 
+              class="flex items-center gap-2 pl-1 pr-2 py-1 bg-white border border-slate-100 rounded-xl shadow-sm animate-in zoom-in-95">
+              <div class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow-sm"
+                [ngClass]="state.getColorPorId(r.id)">
+                {{ state.getInicialesResponsable(r.id) }}
+              </div>
+              <span class="text-xs font-bold text-slate-700">{{ r.nombre }}</span>
+              <button (click)="quitarResponsable(r.id)" class="w-5 h-5 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
+                <i class="bi bi-x-lg text-[10px]"></i>
+              </button>
+            </div>
+            
+            <input type="text" [(ngModel)]="busquedaResp" [ngModelOptions]="{standalone: true}" (focus)="showRespDropdown = true"
+              placeholder="Añadir responsable..."
+              class="flex-1 bg-transparent border-none outline-none text-sm font-bold text-slate-700 min-w-[150px] placeholder:text-slate-300 placeholder:font-medium">
+          </div>
+
+          <!-- Dropdown responsabilidades Premium -->
+          <div *ngIf="showRespDropdown && usuariosFiltrados.length > 0" 
+            class="absolute z-[120] w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl max-h-60 overflow-y-auto animate-in slide-in-from-top-2 p-2">
+            <button *ngFor="let u of usuariosFiltrados" (click)="agregarResponsable(u)"
+              class="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all text-left group">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black text-white shadow-md group-hover:scale-110 transition-transform"
+                [ngClass]="state.getColorPorId(u.id)">
+                {{ state.getInicialesResponsable(u.id) }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-black text-slate-700 truncate group-hover:text-blue-600 transition-colors">{{ u.nombre }}</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Colaborador</p>
+              </div>
+            </button>
+          </div>
+          
+          <div *ngIf="showRespDropdown && busquedaResp && usuariosFiltrados.length === 0"
+            class="absolute z-[120] w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl p-6 text-center">
+            <i class="mdi mdi-account-search-outline text-slate-200 text-4xl block mb-2"></i>
+            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">No se encontraron usuarios</p>
+          </div>
+        </div>
+        <div *ngIf="showRespDropdown" class="fixed inset-0 z-[115]" (click)="showRespDropdown = false"></div>
+      </div>
+    </div>
+
+    <!-- Footer Premium -->
+    <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+      <button (click)="cerrar()"
+        class="px-6 py-3.5 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 hover:bg-white rounded-2xl transition-all shadow-sm border border-transparent hover:border-slate-100">
+        Cancelar
+      </button>
+      <button (click)="guardar()" [disabled]="form.invalid || saving"
+        class="px-8 py-3.5 text-white text-xs font-black uppercase tracking-[0.15em] rounded-2xl transition-all shadow-xl flex items-center gap-3 active:scale-95 disabled:opacity-50 disabled:shadow-none"
+        [ngClass]="esEdicion ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'">
+        <span *ngIf="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        <i *ngIf="!saving" class="mdi" [class]="esEdicion ? 'mdi-content-save-edit-outline' : 'mdi-plus-circle-outline'"></i>
+        {{ saving ? 'Guardando...' : (esEdicion ? 'Guardar Cambios' : 'Crear Actividad') }}
+      </button>
+    </div>
+
+  </div>
+</div>

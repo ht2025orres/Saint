@@ -1,0 +1,455 @@
+<!-- generar-hoja-conteo.component.html - VERSIÓN OPTIMIZADA -->
+<div class="container py-4">
+  <h2 class="mb-4 display-6">Generar Hoja de Conteo Inteligente</h2>
+
+  <!-- Paso 1: Configuración inicial -->
+  <div *ngIf="paso === 1" class="card shadow-sm">
+    <div class="card-header bg-primary">
+      <h5 class="mb-0 text-white">
+        <i class="bi bi-1-circle me-2"></i>
+        Configuración de la Hoja
+      </h5>
+    </div>
+    <div class="card-body">
+      <form>
+        <!-- Selección de bodega -->
+        <div class="mb-3">
+          <label class="form-label">Bodega <span class="text-danger">*</span></label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="configuracion.codigo_bodega" 
+            name="bodega">
+            <option [ngValue]="null">-- Seleccione una bodega --</option>
+            <option 
+              *ngFor="let bodega of bodegas; trackBy: trackByCodigoBodega" 
+              [ngValue]="bodega.codigo">
+              {{ bodega.codigo }} - {{ bodega.nombre_bodega }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Selección de líder -->
+        <div class="mb-3">
+          <label class="form-label">Líder de Conteo <span class="text-danger">*</span></label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="configuracion.id_lider" 
+            name="lider">
+            <option [ngValue]="null">-- Seleccione un líder --</option>
+            <option 
+              *ngFor="let lider of lideres; trackBy: trackByIdLider" 
+              [ngValue]="lider.id">
+              {{ lider.nombre_completo }}
+            </option>
+          </select>
+        </div>
+
+        <!-- 🔥 NUEVO: Tipo de Hoja -->
+        <div class="mb-3">
+          <label class="form-label">
+            <i class="bi bi-clipboard-check me-1"></i>
+            Tipo de Hoja <span class="text-danger">*</span>
+          </label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="configuracion.tipo" 
+            name="tipo">
+            <option value="CONTEO">Primer Conteo</option>
+            <option value="RECONTEO1">Primer Reconteo</option>
+            <option value="RECONTEO2">Segundo Reconteo</option>
+            <option value="RECONTEO3">Tercer Reconteo</option>
+          </select>
+          <small class="text-muted d-block mt-1">
+            <span *ngIf="configuracion.tipo === 'CONTEO'">
+              Se excluirán ítems en hojas de CONTEO activas
+            </span>
+            <span *ngIf="configuracion.tipo !== 'CONTEO'">
+              Solo incluirá ítems marcados para reconteo en hojas previas
+            </span>
+          </small>
+        </div>
+
+        <!-- Selección de inventario -->
+        <div class="mb-3">
+          <label class="form-label">Inventario <span class="text-danger">*</span></label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="inventarioSeleccionado" 
+            name="inventario"
+            (change)="onInventarioChange()">
+            <option [ngValue]="null">-- Seleccione un inventario activo --</option>
+            <option 
+              *ngFor="let inv of inventariosActivos" 
+              [ngValue]="inv.id">
+              {{ inv.codigo }} - {{ inv.tipo }} {{ inv.fecha_inicio | date:'dd/MM/yyyy':'UTC' }} | {{ inv.fecha_fin | date:'dd/MM/yyyy':'UTC' }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Estrategia de agrupación -->
+        <div class="mb-3">
+          <label class="form-label">
+            <i class="bi bi-puzzle me-1"></i>
+            Estrategia de Agrupación
+          </label>
+          <select 
+            class="form-select" 
+            [(ngModel)]="configuracion.estrategia" 
+            name="estrategia">
+            <option 
+              *ngFor="let est of estrategias" 
+              [value]="est.valor">
+              {{ est.nombre }} - {{ est.descripcion }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Agrupar por cercanía -->
+        <div class="mb-3 form-check">
+          <input 
+            class="form-check-input" 
+            type="checkbox" 
+            id="agruparCercania"
+            [(ngModel)]="configuracion.agrupar_por_cercania"
+            name="agruparCercania">
+          <label class="form-check-label" for="agruparCercania">
+            <i class="bi bi-geo-alt me-1"></i>
+            Priorizar zonas cercanas (recomendado)
+          </label>
+          <small class="d-block text-muted ms-4">
+            Agrupa ítems de zonas contiguas para facilitar el conteo físico
+          </small>
+        </div>
+
+        <!-- ❌ Excluir ítems sin zona -->
+        <div class="mb-3 form-check">
+          <input 
+            class="form-check-input" 
+            type="checkbox" 
+            id="excluirSinZona"
+            [(ngModel)]="configuracion.excluir_sin_zona"
+            name="excluirSinZona">
+          <label class="form-check-label" for="excluirSinZona">
+            <i class="bi bi-x-circle me-1"></i>
+            Excluir ítems sin zona asignada
+          </label>
+          <small class="d-block text-muted ms-4">
+            Evita incluir ítems que aún no tienen zona configurada en el inventario
+          </small>
+        </div>
+
+        <!-- Selección de zonas (opcional) -->
+        <div class="mb-3">
+          <label class="form-label">Zonas Específicas (Opcional)</label>
+          <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+            <div *ngFor="let zona of zonas" class="form-check">
+              <input 
+                class="form-check-input"
+                type="checkbox"
+                [id]="'zona_' + zona.id"
+                [value]="zona.id"
+                [(ngModel)]="zona.seleccionada"
+                [name]="'zona_' + zona.id"
+                (change)="onZonaChange(zona)">
+              <label class="form-check-label" [for]="'zona_' + zona.id">
+                {{ zona.nombre }}
+              </label>
+            </div>
+          </div>
+          <small class="text-muted">
+            Deja vacío para incluir todas las zonas
+          </small>
+        </div>
+
+        <!-- Parámetros de límites -->
+        <div class="card bg-light mb-3">
+          <div class="card-body">
+            <h6 class="card-title">
+              <i class="bi bi-sliders me-1"></i>
+              Límites y Filtros
+            </h6>
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  Máximo de ítems por hoja
+                  <i class="bi bi-info-circle text-muted" 
+                     title="Cantidad máxima de ítems a incluir"></i>
+                </label>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  [(ngModel)]="configuracion.max_items"
+                  name="max_items"
+                  min="1"
+                  max="200"
+                  placeholder="Ejemplo: 50">
+                <small class="text-muted">Recomendado: 30-80 ítems</small>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  Valor máximo de existencias
+                  <i class="bi bi-info-circle text-muted" 
+                     title="Límite en pesos del valor total"></i>
+                </label>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  [(ngModel)]="configuracion.max_valor_existencia"
+                  name="max_valor"
+                  placeholder="Ejemplo: 50000000">
+                <small class="text-muted">Limita el valor total de la hoja</small>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">
+                  Existencia mínima
+                  <i class="bi bi-info-circle text-muted" 
+                     title="Excluye ítems con existencia menor"></i>
+                </label>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  [(ngModel)]="configuracion.umbral_existencia_minima"
+                  name="umbral_minimo"
+                  placeholder="Ejemplo: 100000">
+                <small class="text-muted">Filtra ítems de bajo valor</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="text-end">
+          <button 
+            type="button" 
+            class="btn btn-secondary me-2"
+            (click)="volver()">
+            <i class="bi bi-arrow-left me-1"></i> Cancelar
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary"
+            [disabled]="!puedeGenerar()"
+            (click)="generarSugerencia()">
+            <span *ngIf="generandoSugerencia">
+              <span class="spinner-border spinner-border-sm me-1"></span>
+              Generando...
+            </span>
+            <span *ngIf="!generandoSugerencia">
+              <i class="bi bi-magic me-1"></i>
+              Generar Sugerencia Inteligente
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Paso 2: Revisión de sugerencia -->
+  <div *ngIf="paso === 2" class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-2-circle me-2"></i>
+        Revisión de Ítems Sugeridos
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Resumen mejorado -->
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h6 class="card-title">Total Ítems</h6>
+              <h3 class="text-white">{{ itemsSeleccionados.length }}</h3>
+              <small>de {{ itemsSugeridos.length }} sugeridos</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h6 class="card-title">Existencias</h6>
+              <h3 class="text-white">{{ calcularTotalExistencias() | number:'1.0-0':'es-CO' }}</h3>
+              <small>unidades</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+              <h6 class="card-title">Valor Total</h6>
+              <h3 class="text-white">{{ calcularTotalValor() | currency:'COP':'symbol-narrow':'1.0-0':'es-CO' }}</h3>
+              <small>pesos</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-secondary text-white">
+            <div class="card-body text-center">
+              <h6 class="card-title">Zonas</h6>
+              <h3 class="text-white">{{ metadatos?.total_zonas || 0 }}</h3>
+              <small>diferentes</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas por zona -->
+      <div class="mb-3" *ngIf="zonasAgrupadas.length > 0">
+        <label class="form-label">
+          <i class="bi bi-bar-chart me-1"></i>
+          Distribución por Zonas
+        </label>
+        <div class="table-responsive" style="max-height: 300px;">
+            <table class="table table-sm">
+                <thead class="table-light">
+                    <tr>
+                    <th>Zona</th>
+                    <th class="text-end">Ítems</th>
+                    <th class="text-end">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let zona of zonasAgrupadas">
+                    <td>
+                        <span class="badge bg-info">{{ zona.nombre }}</span>
+                    </td>
+                    <td class="text-end">{{ zona.cantidad_items }}</td>
+                    <td class="text-end">{{ zona.valor_total | currency:'COP':'symbol-narrow':'1.0-0':'es-CO' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+      <!-- Búsqueda -->
+      <div class="mb-3">
+        <input 
+          type="text" 
+          class="form-control" 
+          placeholder="🔍 Buscar por código, referencia, descripción o zona..."
+          [(ngModel)]="busquedaItems"
+          (input)="filtrarItems()">
+      </div>
+
+      <!-- Tabla de ítems -->
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-sm table-hover">
+          <thead class="table-light sticky-top" style="z-index: 0;">
+            <tr>
+              <th style="width: 40px;">
+                <input 
+                  type="checkbox" 
+                  [checked]="todosSeleccionados"
+                  (change)="toggleTodos()">
+              </th>
+              <th>Código</th>
+              <th>Referencia</th>
+              <th>Descripción</th>
+              <th>Zonas</th>
+              <th class="text-end">Existencia</th>
+              <th class="text-end">Valor Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of itemsFiltrados; trackBy: trackByItemId">
+              <td>
+                <input 
+                  type="checkbox" 
+                  [(ngModel)]="item.seleccionado">
+              </td>
+              <td>
+                <code>{{ item.id_item }} - {{ item.id_color?? '' }} - {{ item.id_talla?? '' }}</code>
+                <!-- Badge si está en múltiples zonas -->
+                <span *ngIf="item.zonas?.length > 1" 
+                      class="badge bg-warning text-dark ms-1"
+                      title="Este ítem está en {{ item.zonas.length }} zonas">
+                  {{ item.zonas.length }}
+                </span>
+              </td>
+              <td>{{ item.referencia?.trim() }}</td>
+              <td>
+                <small>{{ item.descripcion | slice:0:40 }}{{ item.descripcion?.length > 40 ? '...' : '' }}  - {{ item.color?? '' }} - {{ item.id_talla?? '' }}</small>
+              </td>
+              <td>
+                <!-- Mostrar cada zona -->
+                <span class="badge bg-info me-1" *ngFor="let z of item.zonas">
+                {{ z.zona_nombre }}
+                </span>
+              </td>
+              <!-- Cantidad -->
+              <td class="text-end">{{ item.cantidad | number:'1.0-2':'es-CO' }}</td>
+              <!-- Valor Total -->
+              <td class="text-end">
+                {{ item.costo_prom_total | currency:'COP':'symbol-narrow':'1.0-0':'es-CO' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="mb-3 mt-3">
+        <label class="form-label">Observaciones</label>
+        <textarea 
+          class="form-control" 
+          rows="3"
+          [(ngModel)]="configuracion.observaciones"
+          placeholder="Agrega comentarios sobre esta hoja de conteo..."></textarea>
+      </div>
+
+      <!-- Botones -->
+      <div class="text-end">
+        <button 
+          type="button" 
+          class="btn btn-secondary me-2"
+          (click)="volverAPaso1()">
+          <i class="bi bi-arrow-left me-1"></i> Volver
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-success"
+          [disabled]="itemsSeleccionados.length === 0 || creandoHoja"
+          (click)="confirmarCreacion()">
+          <span *ngIf="creandoHoja">
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            Creando...
+          </span>
+          <span *ngIf="!creandoHoja">
+            <i class="bi bi-check-circle me-1"></i>
+            Crear Hoja ({{ itemsSeleccionados.length }} ítems)
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paso 3: Confirmación -->
+  <div *ngIf="paso === 3" class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-check-circle me-2"></i>
+        Hoja Creada Exitosamente
+      </h5>
+    </div>
+    <div class="card-body text-center">
+      <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+      <h4 class="mt-3">¡Hoja de conteo creada!</h4>
+      <p class="text-muted">
+        Código: <strong>{{ hojaCreada?.codigo_hoja }}</strong>
+      </p>
+      <div class="mt-4">
+        <button class="btn btn-primary me-2" (click)="verDetalle()">
+          <i class="bi bi-eye me-1"></i> Ver Detalle
+        </button>
+        <button class="btn btn-outline-secondary" (click)="crearOtra()">
+          <i class="bi bi-plus-circle me-1"></i> Crear Otra
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
