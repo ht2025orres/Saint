@@ -23,9 +23,6 @@ export class PagesComponent implements OnInit {
 
   stopImpersonating(): void {
     this.authService.stopImpersonating();
-    this.router.navigate(['/dashboard']).then(() => {
-      window.location.reload();
-    });
   }
 
 }

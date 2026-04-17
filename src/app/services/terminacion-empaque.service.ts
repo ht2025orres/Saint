@@ -189,8 +189,8 @@ export class TerminacionEmpaqueService {
   /**
    * Obtiene los ítems de una PV desde la API Laravel
   */
- obtenerItemsPV(pv_codigo: string, empacador_id: number): Observable<any[]> {
-    return this.http.post<any[]>(`${this.apiLaravelUrl}/pv/empacadorId/items-empaque`,{pv_codigo,empacador_id});
+ obtenerItemsPV(pv_codigo: string, empacador_id: number, forViewOnly: boolean = false): Observable<any[]> {
+    return this.http.post<any[]>(`${this.apiLaravelUrl}/pv/empacadorId/items-empaque`,{pv_codigo, empacador_id, for_view_only: forViewOnly});
   }
   
   /**

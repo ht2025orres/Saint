@@ -351,7 +351,7 @@
                     <td class="fw-bold">OP-{{ op.codigo }}</td>
                     <td>
                       <span class="badge" [ngClass]="{
-                        'bg-success': op.estado === 'completada',
+                        'bg-success': op.estado === 'Completada',
                         'bg-warning': op.estado === 'en_proceso' || op.estado === 'activo',
                         'bg-secondary': op.estado === 'pendiente'
                       }">
@@ -424,7 +424,7 @@
                   <tr *ngIf="expandedOPs.has(op.codigo)" class="bg-light">
                     <td colspan="9" class="p-0">
                       <div class="p-3">
-                        <div *ngFor="let pv of op.pvs" class="mb-3 border-start border-3 border-primary ps-3">
+                        <div *ngFor="let pv of op.pvs" class="mb-3 border-start border-3 border-primary ps-3" style="border-radius: 7px;">
                           <div class="d-flex align-items-center mb-2">
                             <button class="btn btn-sm btn-link p-0 me-2" (click)="togglePV(pv.codigo)">
                               <i class="bi" [class.bi-chevron-down]="expandedPVs.has(pv.codigo)" 
@@ -432,6 +432,20 @@
                             </button>
                             <span class="fw-bold me-2">PV: {{ pv.codigo }}</span>
                             <span class="badge bg-info me-2">{{ pv.items?.length || 0 }} items</span>
+
+                            <!-- Progreso para PV -->
+                            <div class="d-flex align-items-center me-3">
+                              <div class="progress flex-grow-1 me-2" style="height: 8px; width: 80px;">
+                                <div class="progress-bar"
+                                    [ngClass]="{
+                                      'bg-success': pv.progreso_pv === 100,
+                                      'bg-warning': pv.progreso_pv > 0 && pv.progreso_pv < 100,
+                                      'bg-secondary': pv.progreso_pv === 0
+                                    }"
+                                    [style.width]="pv.progreso_pv + '%'"></div>
+                              </div>
+                              <span class="text-nowrap">{{ pv.progreso_pv | number:'1.0-1' }}%</span>
+                            </div>
                             <span class="badge bg-secondary me-2" *ngIf="pv.pts?.length > 0">{{ pv.pts?.length }} PTs</span>
                             
                             <!-- Costo para PV -->
