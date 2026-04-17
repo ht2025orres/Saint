@@ -2,7 +2,6 @@
 <div class="sidebar-overlay" *ngIf="isMobile && isMobileOpen" (click)="closeMobileSidebar()" aria-label="Cerrar menú">
 </div>
 
-
 <aside class="left-sidebar saint-sidebar" [class.collapsed]="!isMobile && isCollapsed"
   [class.mobile-open]="isMobile && isMobileOpen">
   <div class="sidebar-surface">
@@ -20,7 +19,7 @@
         <nav class="sidebar-nav saint-sidebar-nav">
           <ul id="sidebarnav" class="sidebar-list saint-sidebar-list">
             <ng-container *ngFor="let item of menuItems">
-              <li *ngIf="canShowMenuItem(item.roles, item.condition)">
+              <li *ngIf="canShowMenuItem(item)">
                 <!-- Item sin submenú -->
                 <a *ngIf="!item.submenu" 
                    class="sidebar-link waves-effect waves-dark" 
@@ -44,7 +43,7 @@
                   </a>
                   <ul [class.show]="item.isOpen" class="collapse sidebar-submenu">
                     <ng-container *ngFor="let sub of item.submenu">
-                      <li *ngIf="canShowMenuItem(sub.roles, sub.condition)">
+                      <li *ngIf="canShowMenuItem(sub)">
                         <a class="sidebar-sublink" 
                            [routerLink]="sub.link" 
                            routerLinkActive="active">
@@ -62,19 +61,24 @@
     </div>
     <div class="sidebar-footer">
 
-      <a class="sidebar-utility" [routerLink]="['/createUser', authService.user?.id]" routerLinkActive="active">
+      <a class="sidebar-utility"
+        [routerLink]="['/createUser', authService.user?.id]"
+        routerLinkActive="active">
         <i class="bi bi-gear utility-icon"></i>
         <span class="utility-text collapse-label">Configuración</span>
       </a>
 
       <div class="sidebar-user-card">
-        <div class="user-avatar">{{ userInitials }}</div>
-        <div class="user-meta collapse-label">
-          <span class="user-name">{{ userName }}</span>
+          <div class="user-avatar">{{ userInitials }}</div>
+          <div class="user-meta collapse-label">
+            <span class="user-name">{{ userName }}</span>
 
-        </div>
+          </div>
 
-        <a (click)="logout()" style="cursor: pointer" class="user-action" title="Cerrar sesión"
+          <a (click)="logout()"
+          style="cursor: pointer"
+          class="user-action"
+          title="Cerrar sesión"
           aria-label="Cerrar sesión">
           <i class="bi bi-box-arrow-right"></i>
         </a>
@@ -84,7 +88,7 @@
 </aside>
 <!-- Panel flotante cuando sidebar está colapsado -->
 <div class="sidebar-float-panel" *ngIf="isCollapsed && hoveredSubmenu && !isMobile" [style.top.px]="floatPanelTop"
-  (mouseenter)="keepFloatPanelOpen()" (mouseleave)="leaveFloatPanel()">
+  (mouseenter)="keepFloatPanelOpen()" (mouseleave)="closeFloatPanel()">
   <ul class="floating-submenu">
     <li *ngFor="let item of hoveredSubmenu">
       <a [routerLink]="item.link" routerLinkActive="active">{{ item.label }}</a>

@@ -50,8 +50,8 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
 
   // ── Getters de permisos ─────────────────────────────────────────
   get usuarioId():            number  { return this.authService.user?.id ?? 0; }
-  get esAdminSistema():       boolean { return this.authService.hasRole('-Administrador del sistema'); }
-  get esGestor():             boolean { return this.authService.hasRole('Gestor de Proyectos'); }
+  get esAdminSistema():       boolean { return this.authService.hasPermission(1); }
+  get esGestor():             boolean { return this.authService.hasPermission(39); }
   get puedeGestionarModulo(): boolean { return this.esAdminSistema || this.esGestor; }
 
   // ── Lifecycle ────────────────────────────────────────────────────

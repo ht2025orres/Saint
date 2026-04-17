@@ -34,7 +34,7 @@ interface StepStates {
   styleUrls: ['./technical-report-bigbag.component.css']
 })
 export class TechnicalReportBigbagComponent implements OnInit {
-  
+
   customers: Customer[] = [];
 
   // Listas estáticas para datalists
@@ -99,7 +99,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
     'POSTOBON YUMBO',
     'OTRO'
   ];
-  
+
   bigbagForm: FormGroup;
   currentStep: number = 1;
   readonly totalSteps: number = 3;
@@ -139,9 +139,9 @@ export class TechnicalReportBigbagComponent implements OnInit {
   private initializeStepStates(): void {
     this.stepStates = {};
     for (let i = 1; i <= this.totalSteps; i++) {
-      this.stepStates[i] = { 
-        active: i === 1, 
-        completed: false 
+      this.stepStates[i] = {
+        active: i === 1,
+        completed: false
       };
     }
   }
@@ -155,6 +155,8 @@ export class TechnicalReportBigbagComponent implements OnInit {
       password: '',
       enabled: true,
       roles: [],
+      permissions: this.authService.user.permissions || [],
+      modules: this.authService.user.modules || [],
       id_Sdp: this.authService.user.id_Sdp,
       nombre_departamento_Sdp: this.authService.user.nombre_departamento_Sdp ?? '',
       id_departamento_Sdp: this.authService.user.id_departamento_Sdp,
@@ -185,7 +187,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
       firmaConductor: ['', Validators.required],
       cantidadFisico: ['', [Validators.required, Validators.min(0)]],
       diferenciaReportada: [''],
-      cliente:['', Validators.required]
+      cliente: ['', Validators.required]
     });
 
     // Suscripciones para cálculo automático
@@ -194,7 +196,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
 
   private setupCalculationSubscriptions(): void {
     const cantidadFields = ['cantidadRelacionada', 'cantidadFisico'];
-    
+
     cantidadFields.forEach(field => {
       this.bigbagForm.get(field)?.valueChanges.subscribe(() => {
         this.calcularDiferenciaReportada();
@@ -311,7 +313,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
 
   private handleSignatureData(dataURL: string, fieldName: string, logMessage: string): void {
     console.log(logMessage + ':', dataURL);
-    
+
     if (dataURL && dataURL.startsWith('data:image/')) {
       this.bigbagForm.get(fieldName)?.setValue(dataURL);
     } else {
@@ -328,7 +330,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
     if (!isNaN(cantidadRelacionada) && !isNaN(cantidadFisico)) {
       const diferencia = cantidadFisico - cantidadRelacionada;
       const mensaje = this.generateDifferenceMessage(diferencia);
-      
+
       this.bigbagForm.patchValue({ diferenciaReportada: mensaje });
     }
   }
@@ -349,30 +351,30 @@ export class TechnicalReportBigbagComponent implements OnInit {
    * Construir FormData con los datos del formulario
    */
   private buildFormData(formData: any): FormData {
-  const formDataToSend = new FormData();
+    const formDataToSend = new FormData();
 
-  // Datos del usuario
-  formDataToSend.append('userId', this.currentUser!.id.toString());
-  formDataToSend.append('firstName', this.currentUser!.firstName);
-  formDataToSend.append('lastName', this.currentUser!.lastName);
+    // Datos del usuario
+    formDataToSend.append('userId', this.currentUser!.id.toString());
+    formDataToSend.append('firstName', this.currentUser!.firstName);
+    formDataToSend.append('lastName', this.currentUser!.lastName);
 
-  // Datos del formulario
-  Object.keys(formData).forEach(key => {
-    if (formData[key] !== null && formData[key] !== '') {
-      // CAMBIO PRINCIPAL: Las firmas se envían como strings base64, no como archivos
-      if (key === 'firma' || key === 'firmaConductor') {
-        // Enviar directamente el data URL como string
-        formDataToSend.append(key, formData[key]);
-        console.log(`${key} enviada como base64 string`);
-      } else {
-        formDataToSend.append(key, formData[key]);
+    // Datos del formulario
+    Object.keys(formData).forEach(key => {
+      if (formData[key] !== null && formData[key] !== '') {
+        // CAMBIO PRINCIPAL: Las firmas se envían como strings base64, no como archivos
+        if (key === 'firma' || key === 'firmaConductor') {
+          // Enviar directamente el data URL como string
+          formDataToSend.append(key, formData[key]);
+          console.log(`${key} enviada como base64 string`);
+        } else {
+          formDataToSend.append(key, formData[key]);
+        }
       }
-    }
-  });
+    });
 
-  formDataToSend.append('timestamp', new Date().toISOString());
-  return formDataToSend;
-}
+    formDataToSend.append('timestamp', new Date().toISOString());
+    return formDataToSend;
+  }
 
   /**
    * Convertir dataURL a File
@@ -433,7 +435,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
   private submitForm(): void {
     this.isSubmitting = true;
     this.resetSubmissionState();
-    
+
     const formData = this.buildFormData(this.bigbagForm.value);
     this.logFormDataForDebug(this.bigbagForm.value);
 
@@ -450,24 +452,24 @@ export class TechnicalReportBigbagComponent implements OnInit {
   }
 
   private logFormDataForDebug(formData: any): void {
-  console.log('Datos del formulario a enviar:', {
-    ...formData,
-    firma: formData.firma ? 
-      `data:image/png;base64... (${formData.firma.length} caracteres)` : 
-      'No hay firma',
-    firmaConductor: formData.firmaConductor ? 
-      `data:image/png;base64... (${formData.firmaConductor.length} caracteres)` : 
-      'No hay firma conductor'
-  });
+    console.log('Datos del formulario a enviar:', {
+      ...formData,
+      firma: formData.firma ?
+        `data:image/png;base64... (${formData.firma.length} caracteres)` :
+        'No hay firma',
+      firmaConductor: formData.firmaConductor ?
+        `data:image/png;base64... (${formData.firmaConductor.length} caracteres)` :
+        'No hay firma conductor'
+    });
 
-  // Log adicional para verificar que las firmas son data URLs válidos
-  if (formData.firma) {
-    console.log('Firma válida:', formData.firma.startsWith('data:image/'));
+    // Log adicional para verificar que las firmas son data URLs válidos
+    if (formData.firma) {
+      console.log('Firma válida:', formData.firma.startsWith('data:image/'));
+    }
+    if (formData.firmaConductor) {
+      console.log('Firma conductor válida:', formData.firmaConductor.startsWith('data:image/'));
+    }
   }
-  if (formData.firmaConductor) {
-    console.log('Firma conductor válida:', formData.firmaConductor.startsWith('data:image/'));
-  }
-}
 
   private handleSubmissionResponse(response: BigBagResponse): void {
     this.isSubmitting = false;
@@ -510,7 +512,7 @@ export class TechnicalReportBigbagComponent implements OnInit {
     this.bigbagForm.reset();
     this.initializeStepStates();
     this.currentStep = 1;
-    
+
     // Reset de estados
     this.submitError = '';
     this.submitSuccess = false;

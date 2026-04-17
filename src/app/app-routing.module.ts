@@ -47,6 +47,7 @@ import { CentrosCostosComponent } from './pages/financiero/centros-costos/centro
 import { InventariosComponent } from './pages/old-inventario/inventarios/inventarios.component';
 // import { ProyectosComponent } from './pages/proyectos/proyectos.component';
 import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
+import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -97,6 +98,7 @@ const routes: Routes = [
       { path: 'firmas', loadChildren: () => import('./pages/firmas/firmas.module').then(m => m.FirmasModule), title: 'Firmas Digitales' },
       // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
       { path: 'solicitud', component: SolicitudComponent, title: 'Solicitud comercial' },
+      { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' }
     ]
   },
 

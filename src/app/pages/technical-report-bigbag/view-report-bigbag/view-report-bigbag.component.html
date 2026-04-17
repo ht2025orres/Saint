@@ -199,7 +199,7 @@
           <i class="mdi mdi-pencil"></i>
         </button>
         <button (click)="irADetalle(doc)" class="icon-button info"
-          *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Auxiliar (renueva)')">
+          *ngIf="authService.hasAnyPermission([1, 17])">
           <i class="mdi mdi-package-variant"></i>
         </button>
         </div>
@@ -516,7 +516,7 @@
             <!-- Grid de campos de entrada -->
             <div class="campos-grid">
               <div class="campo-grupo"
-                *ngIf="authService.hasRole('Lider Aprobador (inconsistencias)') || authService.hasRole('Matriz de remplazo (inconsistencias)'); else otroContenido ">
+                *ngIf="authService.hasAnyPermission([7, 8]); else otroContenido ">
                 <label for="cant_relacionada" class="campo-label">
                   <i class="mdi mdi-clipboard-list-outline"></i>
                   Cantidad Relacionada

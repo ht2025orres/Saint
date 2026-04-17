@@ -8,6 +8,8 @@ export class User {
   public password: string;
   public enabled: boolean;
   public roles: Role[] = [];
+  public permissions: number[] = [];
+  public modules: number[] = [];
   public id_Sdp: number;
   public nombre_departamento_Sdp: string;
   public id_departamento_Sdp: string;

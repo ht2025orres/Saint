@@ -94,10 +94,10 @@ export class DistribucionPvComponent implements OnInit {
   }
 
   tieneRolEmpacadores(): boolean {
-    if (this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')) {
+    if (this.AuthService.hasPermission(33)) {
       return false;
     }
-    return this.AuthService.hasRole('Gestion empacadores (Terminación y Empaque)');
+    return this.AuthService.hasPermission(21);
   }
 
   // ===== MÉTODOS PARA VERIFICACIÓN =====
@@ -1206,7 +1206,7 @@ private ordenarPVs(op: any): void {
     }
 
     this.usuario_que_registra = this.AuthService.user.id;
-    const esDistribuidorPvDirecto = this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)');
+    const esDistribuidorPvDirecto = this.AuthService.hasPermission(33);
     
     this.guardandoAsignacion = true;
 

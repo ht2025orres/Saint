@@ -31,23 +31,23 @@ export class PermissionsService {
 
   // Asignaciones
   assignToUser(user_id: number, permission_id: number, allow: 'ALLOW' | 'DENY') {
-    return this.http.post(`${this.base}/assign/permission-to-user`, { user_id, permission_id, allow }, { headers: { 'X-Requires-User-Email': 'true' } });
+    return this.http.post(`${environment.URL_API_LARAVEL}/asignacion/assign/permission-to-user`, { user_id, permission_id, allow }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   removeFromUser(user_id: number, permission_id: number) {
-    return this.http.post(`${this.base}/remove/permission-from-user`, { user_id, permission_id }, { headers: { 'X-Requires-User-Email': 'true' } });
+    return this.http.post(`${environment.URL_API_LARAVEL}/asignacion/remove/permission-from-user`, { user_id, permission_id }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   assignToPerfil(perfil_id: number, permission_id: number, allow: 'ALLOW' | 'DENY') {
-    return this.http.post(`${this.base}/assign/permission-to-perfil`, { perfil_id, permission_id, allow }, { headers: { 'X-Requires-User-Email': 'true' } });
+    return this.http.post(`${environment.URL_API_LARAVEL}/asignacion/assign/permission-to-perfil`, { perfil_id, permission_id, allow }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   removeFromPerfil(perfil_id: number, permission_id: number) {
-    return this.http.post(`${this.base}/remove/permission-from-perfil`, { perfil_id, permission_id }, { headers: { 'X-Requires-User-Email': 'true' } });
+    return this.http.post(`${environment.URL_API_LARAVEL}/asignacion/remove/permission-from-perfil`, { perfil_id, permission_id }, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 
   // Obtener permisos efectivos / debug (si está en otro controlador)
   getEffectivePermissions(userId: number) {
-    return this.http.get<any>(`${this.base}/user/${userId}/effective-permissions`, { headers: { 'X-Requires-User-Email': 'true' } });
+    return this.http.get<any>(`${environment.URL_API_LARAVEL}/user/${userId}/effective-permissions`, { headers: { 'X-Requires-User-Email': 'true' } });
   }
 }

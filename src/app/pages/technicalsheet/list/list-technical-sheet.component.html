@@ -205,7 +205,7 @@
                                 <div class="col-md-7 d-flex" style="padding-right: 0!important;">
 
                                     <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor justify-content-center align-items-center sombra-buttoms"
-                                        *ngIf="this.statusSearch != 'TERMINADO' && this.statusSearch != 'CALIDAD' || authService.hasRole('Administrador del sistema') || authService.hasRole('aprobacion ficha tecnica (primera revision)') || authService.hasRole('aprobacion ficha tecnica (segunda revision)')"    
+                                        *ngIf="this.statusSearch != 'TERMINADO' && this.statusSearch != 'CALIDAD' || authService.hasAnyPermission([1, 3, 4])"    
                                         [routerLink]="['/createTechnicalDataSheet', ficha.id, 'edit']">
                                         <i class="fa fa-pencil text-white fa-1"></i>
                                     </a>
@@ -217,7 +217,7 @@
                                     </a>
 
                                     <a class="nav-link ml-1 btn btn-cicle-sheet btn-secondary justify-content-center align-items-center sombra-buttoms"
-                                        *ngIf="this.statusSearch != 'TERMINADO' && this.statusSearch != 'CALIDAD' || authService.hasRole('creacion de fichas tecnica')"    
+                                        *ngIf="this.statusSearch != 'TERMINADO' && this.statusSearch != 'CALIDAD' || authService.hasPermission(2)"    
                                         [routerLink]="['/createTechnicalDataSheet', ficha.id, 'duplicate']">
                                         <i class="fa fa-clone text-dark fa-1x"></i>
                                     </a>
@@ -227,7 +227,7 @@
                                         <i class="fa fa-search text-white fa-1x"></i>
                                     </a>
 
-                                    <ng-container  *ngIf="authService.hasRole('Administrador del sistema') || authService.hasRole('Creacion de fichas tecnica')">
+                                    <ng-container  *ngIf="authService.hasAnyPermission([1, 2])">
                                         <!-- Botón para seleccionar y subir documento -->
                                         
                                         <input type="file" hidden #fileInput accept="application/pdf" (change)="onFileSelected($event, ficha.id)" />
