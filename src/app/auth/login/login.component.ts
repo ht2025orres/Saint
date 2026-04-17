@@ -6,50 +6,50 @@ import Swal from 'sweetalert2';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
-    selector: 'app-login',
-    templateUrl: './login.component.html',
-    styleUrls: ['./login.component.css']
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
 
-    user: User;
-    errorMessage = '';
-    formGr: FormGroup;
-    stylesObj;
+  user: User;
+  errorMessage = '';
+  formGr: FormGroup;
+  stylesObj;
 
-    constructor(private authService: AuthService, private router: Router,
-        private fb: FormBuilder) {
-        this.user = new User();
-        this.createForm();
-    }
+  constructor(private authService: AuthService, private router: Router,
+    private fb: FormBuilder) {
+    this.user = new User();
+    this.createForm();
+  }
 
-    ngOnInit(): void {
-        if (this.authService.isAuthenticated()) { /* Cada vez que llega a la pagina de login valida si el pages esta autenticado */
-            Swal.fire({
-                title: 'Login',
-                html: `Hola ${this.authService.user.firstName}, ya estás autenticado en el sistema`,
-                icon: 'info',
-                timer: 2000,
-                timerProgressBar: true
-            });
-            this.router.navigate(['/dashboard']);
-        }
+  ngOnInit(): void {
+    if (this.authService.isAuthenticated()) { /* Cada vez que llega a la pagina de login valida si el pages esta autenticado */
+      Swal.fire({
+        title: 'Login',
+        html: `Hola ${this.authService.user.firstName}, ya estás autenticado en el sistema`,
+        icon: 'info',
+        timer: 2000,
+        timerProgressBar: true
+      });
+      this.router.navigate(['/dashboard']);
     }
+  }
 
-    get emailNoValid() {
-        return this.formGr.get('email').invalid && this.formGr.get('email').touched;
-    }
+  get emailNoValid() {
+    return this.formGr.get('email').invalid && this.formGr.get('email').touched;
+  }
 
-    get passwordNoValid() {
-        return this.formGr.get('password').invalid && this.formGr.get('password').touched;
-    }
+  get passwordNoValid() {
+    return this.formGr.get('password').invalid && this.formGr.get('password').touched;
+  }
 
-    createForm() {
-        this.formGr = this.fb.group({
-            email: ['', [Validators.required, Validators.pattern('[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$')]],
-            password: ['', Validators.required]
-        });
-    }
+  createForm() {
+    this.formGr = this.fb.group({
+      email: ['', [Validators.required, Validators.pattern('[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$')]],
+      password: ['', Validators.required]
+    });
+  }
 
     login(): void {
         if (this.formGr.valid) {
@@ -124,11 +124,11 @@ export class LoginComponent implements OnInit {
         }
     }
 
-    validateCursor() {
-        if (this.formGr.invalid) {
-            return 'unset';
-        } else {
-            return 'pointer';
-        }
+  validateCursor() {
+    if (this.formGr.invalid) {
+      return 'unset';
+    } else {
+      return 'pointer';
     }
+  }
 }

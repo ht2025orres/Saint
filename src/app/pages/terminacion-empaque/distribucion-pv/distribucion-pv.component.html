@@ -84,16 +84,16 @@
                 'list-group-item-success':
                   !tieneRolEmpacadores() && pv.tieneDisponibles && !pv.tieneAsignaciones,
                 'list-group-item-warning':
-                  (!tieneRolEmpacadores() && pv.tieneAsignaciones) && !this.AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')
+                  (!tieneRolEmpacadores() && pv.tieneAsignaciones) && !this.AuthService.hasPermission(33)
               }">
 
             <div class="d-flex flex-column">
               <div class="fw-medium">
                 PV: {{ pv.numero_pv || 'Desconocida' }}
                   <span
-                    *ngIf="AuthService.hasRole('Gestion empacadores (Terminación y Empaque)') 
+                    *ngIf="AuthService.hasPermission(21) 
                             && pv.tieneAsignaciones 
-                            && !AuthService.hasRole('Distribuidor PV Directo (Terminación y Empaque)')"
+                            && !AuthService.hasPermission(33)"
                     class="badge bg-warning text-dark ms-2">
                     <i class="bi bi-exclamation-triangle"></i> Pendiente verificación
                   </span>

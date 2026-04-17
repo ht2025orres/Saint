@@ -54,7 +54,7 @@
                                 <div class="invalid-feedback d-block" *ngIf="apellidoNoValid">El apellido es requerido</div>
                             </div>
 
-                            <div class="col-12 col-md-6" *ngIf="authService.hasRole('Administrador del sistema')">
+                            <div class="col-12 col-md-6" *ngIf="authService.hasPermission(1)">
                                 <label for="inputEmail" class="form-label">Correo electrónico <abbr title="obligatorio">*</abbr></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="ti-email"></i></span>
@@ -101,7 +101,7 @@
                     </fieldset>
 
                     <!-- Roles (Admin) -->
-                    <fieldset class="form-section mb-4" *ngIf="authService.hasRole('Administrador del sistema')">
+                    <fieldset class="form-section mb-4" *ngIf="authService.hasPermission(1)">
                         <legend class="form-section-title h5 mb-3 pb-2 border-bottom">Permisos y Roles</legend>
 
                         <div class="row g-3">
@@ -175,7 +175,7 @@
                     </fieldset>
 
                     <!-- Roles actuales (No Admin) -->
-                    <fieldset class="form-section mb-4" *ngIf="!authService.hasRole('Administrador del sistema') && userCurrent.id">
+                    <fieldset class="form-section mb-4" *ngIf="!authService.hasPermission(1) && userCurrent.id">
                         <legend class="form-section-title h5 mb-3 pb-2 border-bottom">Roles Asignados</legend>
                         <div class="roles-display">
                             <span *ngFor="let role of userCurrent.roles">

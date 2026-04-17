@@ -99,7 +99,7 @@ export class CreateUserComponent implements OnInit {
     }
 
     createForm(): void {
-        const isAdmin = this.authService.hasRole('Administrador del sistema');
+        const isAdmin = this.authService.hasPermission(1);
         
         this.formGr = this.fb.group({
             nombre: ['', Validators.required],
@@ -217,7 +217,7 @@ export class CreateUserComponent implements OnInit {
             return;
         }
 
-        const isAdmin = this.authService.hasRole('Administrador del sistema');
+        const isAdmin = this.authService.hasPermission(1);
         if (isAdmin && this.selectedRoles.length === 0) {
             Swal.fire('Error', 'Debe seleccionar al menos un rol', 'error');
             return;
@@ -238,7 +238,7 @@ export class CreateUserComponent implements OnInit {
             delete this.userCurrent.password;
         }
 
-        const isAdmin = this.authService.hasRole('Administrador del sistema');
+        const isAdmin = this.authService.hasPermission(1);
         this.userCurrent.roles = isAdmin ? this.selectedRoles : (this.userCurrent.roles || []);
 
         this.loading = true;
@@ -430,14 +430,14 @@ export class CreateUserComponent implements OnInit {
     }
 
     validateAccess(id: any): void {
-        if (id != this.authService.user.id && !this.authService.hasRole('Administrador del sistema')) {
+        if (id != this.authService.user.id && !this.authService.hasPermission(1)) {
             Swal.fire('Acceso denegado', 'No tiene permisos suficientes', 'warning');
             this.router.navigate(['dashboard']);
         }
     }
 
     navigateBack(): void {
-        this.authService.hasRole('Administrador del sistema') 
+        this.authService.hasPermission(1) 
             ? this.router.navigate(['/users/page/0']) 
             : this.router.navigate(['dashboard']);
     }
@@ -468,7 +468,7 @@ export class CreateUserComponent implements OnInit {
     }
 
     get roleNovalid(): boolean {
-        if (!this.authService.hasRole('Administrador del sistema')) return false;
+        if (!this.authService.hasPermission(1)) return false;
         const c = this.formGr.get('role');
         return c.invalid && c.touched;
     }

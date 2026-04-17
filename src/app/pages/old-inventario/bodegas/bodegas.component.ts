@@ -95,20 +95,18 @@ export class BodegasComponent implements OnInit {
       next: (res) => {
         let bodegas = res['data'] || [];
 
-        if (!this.authService.hasAnyRole(['Admin (inventario)', 'Administrador del sistema'])) {
-          const rolesGestores = [
-            'Gestor de bodega (MP001)',
-            'Gestor de bodega (MP003)',
-            'Gestor de bodega (BT001)'
+        if (!this.authService.hasAnyPermission([27, 1])) {
+          const gestoresMap = [
+            { id: 24, codigo: 'MP001' },
+            { id: 25, codigo: 'MP003' },
+            { id: 26, codigo: 'BT001' }
           ];
 
           const codigosPermitidos: string[] = [];
 
-          rolesGestores.forEach(rol => {
-            if (this.authService.hasRole(rol)) {
-              const match = rol.match(/\((.*?)\)/);
-              const codigo = match ? match[1] : null;
-              if (codigo) codigosPermitidos.push(codigo);
+          gestoresMap.forEach(gestor => {
+            if (this.authService.hasPermission(gestor.id)) {
+              codigosPermitidos.push(gestor.codigo);
             }
           });
 

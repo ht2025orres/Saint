@@ -1,0 +1,451 @@
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 text-secondary fw-bold">Gestión de Acceso y Autorizaciones</h2>
+
+    <div>
+      <button class="btn btn-outline-primary" (click)="openStructureModal()">
+        <i class="bi bi-gear-fill me-1"></i> Gestión de Estructura
+      </button>
+    </div>
+  </div>
+
+  <!-- BUSCADOR -->
+  <div class="row mb-3">
+    <div class="col-md-5">
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <input class="form-control" placeholder="Buscar usuario..."
+               [(ngModel)]="searchTerm" (ngModelChange)="applyFiltersAndPaginate()" />
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="perPage" (change)="applyFiltersAndPaginate()">
+        <option [value]="5">5 / pág</option>
+        <option [value]="8">8 / pág</option>
+        <option [value]="15">15 / pág</option>
+        <option [value]="50">50 / pág</option>
+      </select>
+    </div>
+
+    <div class="col-md-5 text-end pt-2">
+      <small class="text-muted">Total usuarios: {{ users.length }}</small>
+    </div>
+  </div>
+
+  <!-- TABLA DE USUARIOS -->
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-borderless align-middle m-0">
+          <thead class="table-light text-muted">
+            <tr>
+              <th class="ps-4">ID</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Estado</th>
+              <th class="text-end pe-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of pagedUsers" class="border-bottom">
+              <td class="ps-4 text-muted">#{{ u.id }}</td>
+              <td><strong>{{ u.firstName || u.name }} {{ u.lastName || '' }}</strong></td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="badge" [ngClass]="u.enabled ? 'bg-success' : 'bg-danger'">
+                  {{ u.enabled ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="text-end pe-4">
+                <button class="btn btn-sm btn-outline-info rounded-pill px-3 me-2" (click)="impersonateUser(u)" title="Entrar como este usuario">
+                  <i class="bi bi-incognito"></i>
+                </button>
+                <button class="btn btn-sm btn-primary rounded-pill px-3" (click)="openManageUser(u)">
+                  <i class="bi bi-pencil-square me-1"></i> Gestionar
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="pagedUsers.length === 0">
+              <td colspan="5" class="text-center py-4 text-muted">No se encontraron usuarios.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGINACIÓN SIMPLE -->
+    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
+      <div>
+        <button class="btn btn-sm btn-outline-secondary me-2 rounded-pill" (click)="changePage(-1)" [disabled]="page === 1">Anterior</button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="changePage(1)" [disabled]="page === totalPages">Siguiente</button>
+      </div>
+      <div class="text-muted small fw-bold"> Página {{ page }} de {{ totalPages }} </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: MEGA GESTIÓN DE USUARIO                 -->
+  <!-- ============================================== -->
+  <div class="modal show d-block" *ngIf="showUserManageModal" style="background: rgba(0,0,0,0.5); overflow-y: auto;">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+        
+        <div class="modal-header bg-primary text-white" style="border-radius: 12px 12px 0 0;">
+          <h5 class="modal-title fw-bold d-flex align-items-center">
+            <i class="bi bi-person-gear me-2"></i> 
+            <span>Gestión de Usuario: {{ editingUser?.firstName || editingUser?.name }}</span>
+            <span class="badge ms-3 fs-6" [ngClass]="editingUser?.enabled ? 'bg-success' : 'bg-danger'">
+               {{ editingUser?.enabled ? 'Activo' : 'Inactivo' }}
+            </span>
+          </h5>
+          <button class="btn-close btn-close-white" (click)="closeUserMegaModal()"></button>
+        </div>
+
+        <div class="modal-body p-3 bg-light" style="max-height: 80vh; overflow-y: auto;">
+          
+          <!-- SECCIÓN: INFO PERSONAL -->
+          <div class="card border-0 shadow-sm mb-2">
+            <div class="card-body p-2">
+              <h6 class="card-title fw-bold text-secondary mb-2" style="font-size: 0.9rem;">Información Personal</h6>
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                    <input class="form-control bg-white form-control-sm" placeholder="Nombre *" [(ngModel)]="editingUser.firstName">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                    <input class="form-control bg-white form-control-sm" placeholder="Apellido *" [(ngModel)]="editingUser.lastName">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
+                    <input class="form-control bg-white form-control-sm" placeholder="Correo *" [(ngModel)]="editingUser.email">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: CONTRASEÑA -->
+          <div class="card border-0 shadow-sm mb-2">
+            <div class="card-body p-2">
+              <h6 class="card-title fw-bold text-secondary mb-2" style="font-size: 0.9rem;">Contraseña y Seguridad</h6>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control form-control-sm" placeholder="Nueva Contraseña" [(ngModel)]="userPassword">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control form-control-sm" placeholder="Repetir nueva contraseña" [(ngModel)]="userPasswordConfirm">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: PERFILES ASIGNADOS -->
+          <div class="card border-0 shadow-sm mb-2">
+            <div class="card-body p-2 d-flex align-items-center flex-wrap">
+              <h6 class="card-title fw-bold text-secondary mb-0 me-3" style="font-size: 0.9rem;">Perfiles:</h6>
+              <div class="d-flex flex-wrap gap-2">
+                <!-- Se asume que el arreglo profiles es filtrado en el TS para empujar a la cima los que tengan hasProfile = true -->
+                <div class="form-check custom-checkbox-form mb-0" *ngFor="let prof of getSortedProfiles()">
+                  <input class="form-check-input" type="checkbox" 
+                         [id]="'prof_' + prof.id" 
+                         [checked]="hasProfile(prof.id)"
+                         (change)="toggleProfile(prof, $event)"
+                         style="cursor: pointer;">
+                  <label class="form-check-label ms-1 text-secondary" style="font-size: 0.85rem; cursor: pointer;" [for]="'prof_' + prof.id" [ngClass]="{'fw-bold text-dark': hasProfile(prof.id)}">
+                    {{ prof.name }}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: MÓDULOS Y PERMISOS -->
+          <div class="card border-0 shadow-sm mb-2">
+            <div class="card-body p-2 flex-grow-1 d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="card-title fw-bold text-secondary mb-0" style="font-size: 0.9rem;">Módulos y Permisos</h6>
+                <button class="btn btn-sm btn-outline-primary rounded-3" style="font-size: 0.75rem" (click)="askDuplicateTarget()">
+                  <i class="bi bi-files me-1"></i> Duplicar permisos
+                </button>
+              </div>
+              
+              <!-- Tabs / Botones por Módulo (Diseño Original Inyectado) -->
+              <div class="d-flex flex-wrap border rounded mb-2" style="overflow: hidden; max-width: fit-content; background: #fff;">
+                <button class="btn btn-sm border-end border-0 px-3 py-2 fw-semibold" style="border-radius: 0;"
+                        [ngClass]="selectedModuleFilter === 'all' ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                        (click)="selectedModuleFilter = 'all'">
+                  Todos ({{ permissions.length }})
+                </button>
+                <button *ngFor="let mod of modules" 
+                        class="btn btn-sm border-end border-0 px-3 py-2 fw-semibold" style="border-radius: 0;"
+                        [ngClass]="selectedModuleFilter === mod.id ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                        (click)="selectedModuleFilter = mod.id">
+                  {{ mod.name }} ({{ getPermissionsCountByModule(mod.id) }})
+                </button>
+              </div>
+
+              <!-- Grid de Permisos -->
+              <div class="row bg-white p-2 border rounded shadow-sm m-0" style="min-height: 120px; overflow-y: auto;">
+                <div class="col-md-4 mb-2" *ngFor="let p of getFilteredPermissions()">
+                  <div class="d-flex flex-column p-2 border rounded bg-light h-100 justify-content-between">
+                    <div class="d-flex justify-content-between">
+                      <div class="small fw-bold text-dark mb-2 text-truncate" [title]="p.name">{{ p.name }}</div>
+                      <i class="bi bi-shield-check text-info" *ngIf="isInherited(p.id)" title="Heredado de perfil"></i>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="btn-group btn-group-sm w-100" role="group">
+                        <!-- Botón ALLOW -->
+                        <button type="button" class="btn btn-outline-success border-end-0 flex-grow-1" 
+                                [class.active]="getPermissionStatus(p.id) === 'ALLOW'" 
+                                (click)="assignPermission(p, 'ALLOW')"
+                                title="Permitir">
+                          <i class="bi bi-check-lg" *ngIf="getPermissionStatus(p.id) === 'ALLOW'"></i>
+                          <span *ngIf="getPermissionStatus(p.id) !== 'ALLOW'">Allow</span>
+                        </button>
+                        
+                        <!-- Botón DENY -->
+                        <button type="button" class="btn btn-outline-danger border-start-0 border-end-0 flex-grow-1" 
+                                [class.active]="getPermissionStatus(p.id) === 'DENY'" 
+                                (click)="assignPermission(p, 'DENY')"
+                                title="Denegar">
+                          <i class="bi bi-x-lg" *ngIf="getPermissionStatus(p.id) === 'DENY'"></i>
+                          <span *ngIf="getPermissionStatus(p.id) !== 'DENY'">Deny</span>
+                        </button>
+                        
+                        <!-- Botón REMOVE (solo si tiene asignación directa) -->
+                        <button type="button" class="btn btn-outline-secondary border-start-0 flex-grow-0" 
+                                *ngIf="getPermissionStatus(p.id)"
+                                (click)="removePermission(p)"
+                                title="Quitar asignación">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 text-center text-muted py-4" *ngIf="getFilteredPermissions().length === 0">
+                  No hay opciones en esta sección.
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer bg-white py-2" style="border-radius: 0 0 12px 12px;">
+          <button class="btn btn-sm border-0 px-3 me-auto" 
+                  [ngClass]="editingUser?.enabled ? 'btn-outline-danger' : 'btn-outline-success'"
+                  (click)="toggleUserStatus()">
+             <i class="bi" [ngClass]="editingUser?.enabled ? 'bi-person-x-fill' : 'bi-person-check-fill'"></i>
+             {{ editingUser?.enabled ? 'Desactivar Cuenta' : 'Activar Cuenta' }}
+          </button>
+          
+          <button class="btn btn-sm btn-light rounded-pill px-4 fw-bold text-muted border" (click)="closeUserMegaModal()">Cancelar</button>
+          <button class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" (click)="saveMegaUser()">
+            <i class="bi bi-save me-1"></i> Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- MODAL: GESTIÓN DE ESTRUCTURA                   -->
+  <!-- ============================================== -->
+  <div class="modal show d-block" *ngIf="showStructureModal" style="background: rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content shadow-lg border-0">
+        
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3 me-2"></i> Gestión Estructural</h5>
+          <button class="btn-close btn-close-white" (click)="closeStructureModal()"></button>
+        </div>
+
+        <div class="modal-body p-0">
+          <div class="d-flex h-100">
+            <!-- Pestañas Laterales -->
+            <div class="nav flex-column nav-pills p-3 bg-light border-end" style="width: 200px;">
+              <button class="nav-link text-start mb-2 fw-semibold" [class.active]="activeStructureTab==='modules'" (click)="activeStructureTab='modules'">Módulos</button>
+              <button class="nav-link text-start mb-2 fw-semibold" [class.active]="activeStructureTab==='profiles'" (click)="activeStructureTab='profiles'">Perfiles</button>
+              <button class="nav-link text-start fw-semibold" [class.active]="activeStructureTab==='permissions'" (click)="activeStructureTab='permissions'">Permisos</button>
+            </div>
+
+            <!-- Contenido Pestañas -->
+            <div class="flex-grow-1 p-4 bg-white" style="max-height: 60vh; overflow-y: auto;">
+              
+              <!-- PANEL: MÓDULOS -->
+              <div *ngIf="activeStructureTab==='modules'">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold m-0 text-secondary">Módulos del Sistema</h6>
+                  <button class="btn btn-sm btn-primary" (click)="openCreateModule()">+ Crear Módulo</button>
+                </div>
+
+                <div *ngIf="editingModule" class="card bg-light border-0 mb-3 p-3 shadow-sm">
+                  <h6 class="fw-bold">{{ editingModule.id ? 'Editar Módulo' : 'Nuevo Módulo' }}</h6>
+                  <input class="form-control mb-2" placeholder="Nombre (ej. Inventario)" [(ngModel)]="editingModule.name">
+                  <input class="form-control mb-2" placeholder="Descripción" [(ngModel)]="editingModule.description">
+                  <div>
+                    <button class="btn btn-sm btn-success me-2" (click)="saveModule()">Guardar</button>
+                    <button class="btn btn-sm btn-light" (click)="cancelEditModule()">Cancelar</button>
+                  </div>
+                </div>
+
+                <table class="table table-sm table-hover align-middle">
+                  <thead class="table-light"><tr><th>ID</th><th>Nombre</th><th>Opciones</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let m of modules">
+                      <td>{{m.id}}</td><td>{{m.name}}</td>
+                      <td>
+                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditModule(m)"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm text-danger p-0" (click)="deleteModule(m)"><i class="bi bi-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- PANEL: PERFILES -->
+              <div *ngIf="activeStructureTab==='profiles'">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold m-0 text-secondary">Perfiles</h6>
+                  <button class="btn btn-sm btn-primary" (click)="openCreatePerfil()">+ Crear Perfil</button>
+                </div>
+
+                <div *ngIf="editingPerfil" class="card bg-light border-0 mb-3 shadow-sm">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                       <h6 class="fw-bold m-0">{{ editingPerfil.id ? 'Editar Perfil y Permisos' : 'Nuevo Perfil' }}</h6>
+                       <span>
+                         <button class="btn btn-sm btn-success me-2" (click)="savePerfil()">Guardar</button>
+                         <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditPerfil()">Terminar Edición</button>
+                       </span>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-md-6">
+                        <input class="form-control form-control-sm" placeholder="Nombre" [(ngModel)]="editingPerfil.name">
+                      </div>
+                      <div class="col-md-6">
+                        <input class="form-control form-control-sm" placeholder="Descripción" [(ngModel)]="editingPerfil.description">
+                      </div>
+                    </div>
+
+                    <!-- MATRIZ DE PERMISOS PARA ESTE PERFIL -->
+                    <div *ngIf="editingPerfil.id" class="border rounded p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
+                      <p class="text-secondary small fw-bold mb-2">Permisos del Perfil:</p>
+                      
+                      <!-- Filtro de Módulo Local -->
+                      <div class="d-flex flex-wrap border rounded mb-2" style="overflow: hidden; max-width: fit-content;">
+                        <button class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold" style="border-radius: 0;"
+                                [ngClass]="selectedModuleFilter === 'all' ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                                (click)="selectedModuleFilter = 'all'">
+                          Todos
+                        </button>
+                        <button *ngFor="let mod of modules" 
+                                class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold" style="border-radius: 0;"
+                                [ngClass]="selectedModuleFilter === mod.id ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                                (click)="selectedModuleFilter = mod.id">
+                          {{ mod.name }}
+                        </button>
+                      </div>
+
+                      <div class="row g-2 m-0">
+                         <div class="col-md-6 col-lg-4 mb-2" *ngFor="let p of getFilteredPermissions()">
+                            <div class="form-check custom-checkbox-form mb-0">
+                              <input class="form-check-input mt-1" type="checkbox" 
+                                     [id]="'p_perm_' + p.id" 
+                                     [checked]="isPerfilPermissionChecked(p.id)"
+                                     (change)="togglePerfilPermission(p, $event)"
+                                     style="transform: scale(1.1); cursor: pointer;">
+                              <label class="form-check-label ms-1 text-secondary" style="font-size: 0.85rem; cursor: pointer;" [for]="'p_perm_' + p.id">
+                                <span *ngIf="isPerfilPermissionChecked(p.id)" class="text-success fw-bold me-1">✓</span>
+                                {{ p.name }}
+                              </label>
+                            </div>
+                         </div>
+                         <div class="col-12 text-center text-muted small py-2" *ngIf="getFilteredPermissions().length === 0">
+                           No hay permisos configurados.
+                         </div>
+                      </div>
+                    </div>
+                    <div *ngIf="!editingPerfil.id" class="alert alert-info py-2 small mt-2 m-0">
+                       <i class="bi bi-info-circle me-1"></i> Guarda el perfil primero para poder asignarle permisos.
+                    </div>
+                  </div>
+                </div>
+
+                <table class="table table-sm table-hover align-middle">
+                  <thead class="table-light"><tr><th>ID</th><th>Nombre</th><th>Opciones</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let p of profiles">
+                      <td>{{p.id}}</td><td>{{p.name}}</td>
+                      <td>
+                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditPerfil(p)"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm text-danger p-0" (click)="deletePerfil(p)"><i class="bi bi-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- PANEL: PERMISOS -->
+              <div *ngIf="activeStructureTab==='permissions'">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold m-0 text-secondary">Lista de Permisos Locales</h6>
+                  <button class="btn btn-sm btn-primary" (click)="openCreatePermission()">+ Crear Permiso</button>
+                </div>
+
+                <div *ngIf="editingPermission" class="card bg-light border-0 mb-3 p-3 shadow-sm">
+                  <h6 class="fw-bold">{{ editingPermission.id ? 'Editar Permiso' : 'Nuevo Permiso' }}</h6>
+                  <select class="form-select mb-2" [(ngModel)]="editingPermission.module_id">
+                    <option [value]="null">Seleccione Módulo</option>
+                    <option *ngFor="let m of modules" [value]="m.id">{{m.name}}</option>
+                  </select>
+                  <input class="form-control mb-2" placeholder="Nombre Literal" [(ngModel)]="editingPermission.name">
+                  <input class="form-control mb-2" placeholder="Descripción" [(ngModel)]="editingPermission.description">
+                  <div>
+                    <button class="btn btn-sm btn-success me-2" (click)="savePermission()">Guardar</button>
+                    <button class="btn btn-sm btn-light" (click)="cancelEditPermission()">Cancelar</button>
+                  </div>
+                </div>
+
+                <table class="table table-sm table-hover align-middle">
+                  <thead class="table-light"><tr><th>ID</th><th>Nombre</th><th>Módulo</th><th>Opciones</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let pq of permissions">
+                      <td>{{pq.id}}</td><td>{{pq.name}}</td>
+                      <td><span class="badge bg-secondary">{{ pq.module?.name || 'N/A' }}</span></td>
+                      <td>
+                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditPermission(pq)"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm text-danger p-0" (click)="deletePermission(pq)"><i class="bi bi-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

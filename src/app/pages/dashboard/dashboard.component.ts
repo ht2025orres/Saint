@@ -147,8 +147,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Verificar roles
-    this.isAdmin = this.authService.hasRole('Administrador del sistema');
-    this.isBillingConsultant = this.authService.hasRole('Consulta KPIs Facturación');
+    this.isAdmin = this.authService.hasPermission(1);
+    this.isBillingConsultant = this.authService.hasPermission(35);
     
     // Determinar el tab inicial según el rol
     if (this.isAdmin || this.isBillingConsultant) {

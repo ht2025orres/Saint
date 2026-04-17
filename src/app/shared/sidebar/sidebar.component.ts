@@ -9,7 +9,9 @@ interface MenuItem {
   label: string;
   icon?: string;
   link?: string;
-  roles?: string[];
+  perfiles?: string[];
+  permissions?: number[];
+  modules?: number[];
   submenu?: SubmenuItem[];
   isOpen?: boolean;
   condition?: () => boolean;
@@ -18,7 +20,9 @@ interface MenuItem {
 interface SubmenuItem {
   label: string;
   link: string;
-  roles?: string[];
+  perfiles?: string[];
+  permissions?: number[];
+  modules?: number[];
   condition?: () => boolean;
 }
 
@@ -32,7 +36,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   isMobileOpen = false;
   isMobile = false;
   userName = '';
-  userRole = '';
+  userPerfil = '';
   userInitials = '';
 
   menuItems: MenuItem[] = [];
@@ -52,11 +56,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     private renderer: Renderer2
   ) {
     this.checkMobile();
-    
+
     if (!this.isMobile) {
       const saved = localStorage.getItem('sidebarCollapsed');
       this.isCollapsed = saved ? JSON.parse(saved) : true;
-      
+
       if (this.isCollapsed) {
         this.renderer.addClass(document.body, 'mini-sidebar');
       } else {
@@ -73,13 +77,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.buildUserSummary();
     this.setupResizeListener();
     this.initMenuStructure();
-    
+
     this.sidebarToggleSubscription = this.sidebarService.toggle$.subscribe(() => {
       this.toggleSidebar();
     });
-    
+
     this.updateActiveParentStates();
-    
+
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
@@ -95,26 +99,34 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         link: '/dashboard'
       },
       {
+        label: 'Security',
+        icon: 'bi bi-speedometer2',
+        link: '/security',
+        permissions: [1]
+      },
+      {
         label: 'Seguimiento',
         icon: 'bi bi-kanban',
         link: '/seguimiento',
-        roles: ['Administrador del sistema', 'Gestor de Proyectos']
+        modules: [8],
+        permissions: [1]
       },
       {
         label: 'Firmas Digitales',
         icon: 'bi bi-pencil-square',
         link: '/firmas',
-        roles: ['Administrador del sistema']
+        permissions: [1]
       },
       {
         label: 'Reporte de Fichas',
         icon: 'bi bi-file-earmark-bar-graph',
-        roles: ['Administrador del sistema', 'Reporte ficha tecnica', 'Gestor reporte ficha tecnica'],
+        modules: [6],
+        permissions: [1],
         submenu: [
           {
             label: 'Análisis por Mes',
             link: '/technical-data-sheets-report',
-            roles: ['Administrador del sistema', 'Gestor reporte ficha tecnica']
+            permissions: [1, 32]
           },
           {
             label: 'Dashboard',
@@ -123,18 +135,18 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'Generar reporte',
             link: '/create-report',
-            roles: ['Administrador del sistema', 'Reporte ficha tecnica'],
+            permissions: [1, 31],
             condition: () => this.puedeMostrarBoton()
           },
           {
             label: 'Mis reportes',
             link: '/mi-lista-report',
-            roles: ['Administrador del sistema', 'Reporte ficha tecnica']
+            permissions: [1, 31]
           },
           {
             label: 'Gestión de reportes',
             link: '/list-report',
-            roles: ['Administrador del sistema', 'Gestor reporte ficha tecnica']
+            permissions: [1, 32]
           }
         ]
       },
@@ -142,183 +154,127 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         label: 'Admin Usuarios',
         icon: 'bi bi-people',
         link: '/users/page/0',
-        roles: ['Administrador del sistema']
+        permissions: [1]
       },
       {
         label: 'Fichas tecnicas',
         icon: 'bi bi-file-earmark-text',
-        roles: [
-          'Administrador del sistema',
-          'Creacion de fichas tecnica',
-          'Aprobacion ficha tecnica (primera revision)',
-          'Aprobacion ficha tecnica (Segunda revision)',
-          'Calidad ficha tecnica',
-          'Gestor reporte ficha tecnica',
-          'Reporte ficha tecnica',
-          'Consulta'
-        ],
+        modules: [6],
+        permissions: [1],
         submenu: [
           {
             label: 'Crear ficha técnica',
             link: '/createTechnicalDataSheet/new/create',
-            roles: ['Administrador del sistema', 'Creacion de fichas tecnica']
+            permissions: [1, 2]
           },
           {
             label: 'Fichas técnicas terminadas',
             link: '/listTechnicalDataSheet/page/0/TERMINADO',
-            roles: [
-              'Administrador del sistema',
-              'Creacion de fichas tecnica',
-              'Aprobacion ficha tecnica (primera revision)',
-              'Aprobacion ficha tecnica (Segunda revision)',
-              'Calidad ficha tecnica',
-              'Gestor reporte ficha tecnica',
-              'Reporte ficha tecnica',
-              'Consulta'
-            ]
+            permissions: [1, 2, 3, 4, 5, 31, 32, 6]
           },
           {
             label: 'Fichas técnicas primera revisión',
             link: '/listTechnicalDataSheet/page/0/PRIMERA REVISION',
-            roles: ['Administrador del sistema', 'Aprobacion ficha tecnica (primera revision)']
+            permissions: [1, 3]
           },
           {
             label: 'Fichas técnicas segunda revisión',
             link: '/listTechnicalDataSheet/page/0/SEGUNDA REVISION',
-            roles: ['Administrador del sistema', 'Aprobacion ficha tecnica (Segunda revision)']
+            permissions: [1, 4]
           },
           {
             label: 'Fichas técnicas en calidad',
             link: '/listTechnicalDataSheet/page/0/CALIDAD',
-            roles: ['Administrador del sistema', 'Calidad ficha tecnica']
+            permissions: [1, 5]
           },
           {
             label: 'Fichas técnicas en desarrollo',
             link: '/listTechnicalDataSheet/page/0/DESARROLLO',
-            roles: ['Administrador del sistema', 'Creacion de fichas tecnica']
+            permissions: [1, 2]
           }
         ]
       },
       {
         label: 'Inconsistencias',
         icon: 'bi bi-exclamation-triangle',
-        roles: [
-          'Administrador del sistema',
-          'Lider Aprobador (inconsistencias)',
-          'Matriz de Remplazo (inconsistencias)',
-          'Calidad (inconsistencias)',
-          'Contabilidad (inconsistencias)',
-          'Logistica (inconsistencias)',
-          'Trazo (inconsistencias)',
-          'Patronista (inconsistencias)',
-          'Solicitante (inconsistencias)',
-          'Revision Consumo (inconsistencias)',
-          'Cartera (inconsistencias)',
-          'Patronaje (inconsistencias)'
-        ],
+        modules: [2],
+        permissions: [1],
         submenu: [
           {
             label: 'Mis Inconsistencias',
             link: '/mis-inconsistencias',
-            roles: ['Administrador del sistema', 'Solicitante (inconsistencias)']
+            permissions: [1, 15]
           },
           {
             label: 'Generar Inconsistencias',
             link: '/generar-inconsistencias',
-            roles: ['Administrador del sistema', 'Solicitante (inconsistencias)']
+            permissions: [1, 15]
           },
           {
             label: 'Aprobar Inconsistencias',
             link: '/aprobar-inconsistencias',
-            roles: [
-              'Administrador del sistema',
-              'Lider Aprobador (inconsistencias)',
-              'Matriz de Remplazo (inconsistencias)',
-              'Calidad (inconsistencias)',
-              'Contabilidad (inconsistencias)',
-              'Logistica (inconsistencias)',
-              'Trazo (inconsistencias)',
-              'Patronista (inconsistencias)',
-              'Cartera (inconsistencias)',
-              'Patronaje (inconsistencias)'
-            ]
+            permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
           },
           {
             label: 'Histórico Inconsistencias',
             link: '/historico-inconsistencias',
-            roles: [
-              'Administrador del sistema',
-              'Lider Aprobador (inconsistencias)',
-              'Matriz de Remplazo (inconsistencias)',
-              'Calidad (inconsistencias)',
-              'Contabilidad (inconsistencias)',
-              'Logistica (inconsistencias)',
-              'Trazo (inconsistencias)',
-              'Patronista (inconsistencias)',
-              'Cartera (inconsistencias)',
-              'Patronaje (inconsistencias)'
-            ]
+            permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
           },
           {
             label: 'Revisión de Consumo',
             link: '/revision-consumo',
-            roles: ['Administrador del sistema', 'Revision Consumo (inconsistencias)']
+            permissions: [1, 14]
           },
           {
             label: 'Reporte de Inconsistencias',
             link: '/reporte-inconsistencias',
-            roles: ['Administrador del sistema', 'Calidad (inconsistencias)', 'Consulta KPIs Facturación']
+            permissions: [1, 9, 35]
           }
         ]
       },
       {
         label: 'Terminación ',
         icon: 'bi bi-box-seam',
-        roles: [
-          'Administrador del sistema',
-          'Receptor OP (Terminación y Empaque)',
-          'Distribuidor PV (Terminación y Empaque)',
-          'Gestion empacadores (Terminación y Empaque)',
-          'Empacador (Terminación y Empaque)',
-          'Jefe (Terminación y Empaque)'
-        ],
+        modules: [3],
+        permissions: [1],
         submenu: [
           {
             label: 'Recepción de OP',
             link: '/recepcion-op',
-            roles: ['Administrador del sistema', 'Receptor OP (Terminación y Empaque)']
+            permissions: [1, 19]
           },
           {
             label: 'Distribución de PV',
             link: '/distribucion-pv',
-            roles: ['Administrador del sistema', 'Distribuidor PV (Terminación y Empaque)', 'Distribuidor PV Directo (Terminación y Empaque)']
+            permissions: [1, 20, 33]
           },
           {
             label: 'Gestión de empacadores',
             link: '/gestion-empacadores',
-            roles: ['Administrador del sistema', 'Gestion empacadores (Terminación y Empaque)']
+            permissions: [1, 21]
           },
           {
             label: 'Registrar empaque',
             link: '/registrar-empaque',
-            roles: ['Administrador del sistema', 'Empacador (Terminación y Empaque)']
+            permissions: [1, 16]
           },
           {
             label: 'Dashboard',
             link: '/dashboard-empaque',
-            roles: ['Administrador del sistema', 'Jefe (Terminación y Empaque)']
+            permissions: [1, 22]
           }
         ]
       },
       {
         label: 'Renueva',
         icon: 'bi bi-truck',
-        roles: ['Administrador del sistema', 'Auxiliar (renueva)', 'Operario (renueva)', 'Jefe Renueva'],
+        modules: [4],
+        permissions: [1],
         submenu: [
           {
             label: 'Dashboard',
             link: '/dashboard-bigbag',
-            roles: ['Administrador del sistema', 'Jefe Renueva', 'Auxiliar (renueva)']
+            permissions: [1, 23, 17]
           },
           {
             label: 'Ingreso Renueva',
@@ -331,73 +287,63 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'Precintos',
             link: '/view-precinto-bigbag',
-            roles: ['Administrador del sistema', 'Operario (renueva)']
+            permissions: [1, 18]
           }
         ]
       },
       {
         label: 'Inventario',
         icon: 'bi bi-boxes',
-        roles: [
-          'Administrador del sistema',
-          'Gestor de bodega (MP001)',
-          'Gestor de bodega (MP003)',
-          'Gestor de bodega (BT001)',
-          'Admin (inventario)'
-        ],
+        modules: [5],
+        permissions: [1],
         submenu: [
           { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas' },
           { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas' },
           { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios' },
           { label: 'Conteo de Inventario', link: '/inventario/conteo' },
-          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', roles: ['Administrador del sistema', 'Admin (inventario)'] },
+          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
         ]
       },
       {
         label: 'Inventario (Anterior)',
         icon: 'bi bi-archive',
-        roles: [
-          'Administrador del sistema',
-          'Gestor de bodega (MP001)',
-          'Gestor de bodega (MP003)',
-          'Gestor de bodega (BT001)',
-          'Admin (inventario)'
-        ],
+        modules: [5],
+        permissions: [1],
         submenu: [
           {
             label: 'Bodegas',
             link: '/inventario-old/bodegas',
-            roles: ['Administrador del sistema', 'Admin (inventario)', 'Gestor de bodega (MP001)', 'Gestor de bodega (MP003)', 'Gestor de bodega (BT001)']
+            permissions: [1, 27, 24, 25, 26]
           },
           {
             label: 'Zonas',
             link: '/inventario-old/zonas',
-            roles: ['Administrador del sistema', 'Admin (inventario)', 'Gestor de bodega (MP001)', 'Gestor de bodega (MP003)', 'Gestor de bodega (BT001)']
+            permissions: [1, 27, 24, 25, 26]
           },
           {
             label: 'Contadores',
             link: '/inventario-old/contadores',
-            roles: ['Administrador del sistema', 'Admin (inventario)']
+            permissions: [1, 27]
           },
           {
             label: 'Inventarios',
             link: '/inventario-old/inventarios',
-            roles: ['Administrador del sistema', 'Admin (inventario)']
+            permissions: [1, 27]
           },
           {
             label: 'Generar hoja de conteo',
             link: '/inventario-old/generar-hoja-conteo',
-            roles: ['Administrador del sistema', 'Admin (inventario)']
+            permissions: [1, 27]
           },
           {
             label: 'Listado de hojas de conteo',
             link: '/inventario-old/hojas-conteo-list',
-            roles: ['Administrador del sistema', 'Admin (inventario)']
+            permissions: [1, 27]
           },
           {
             label: 'Hojas de Conteo',
             link: '/inventario-old/contador-items',
-            roles: ['Administrador del sistema', 'Admin (inventario)', 'Lider Contador (inventario)']
+            permissions: [1, 27, 34]
           }
         ]
       },
@@ -405,37 +351,38 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         label: 'Órdenes',
         icon: 'bi bi-file-earmark-text',
         link: '/orden-compra',
-        roles: ['Administrador del sistema']
+        modules: [7],
+        permissions: [1]
       },
       {
         label: 'Tiempos Ítems',
         icon: 'bi bi-clock-history',
         link: '/tiempos-items',
-        roles: ['Administrador del sistema']
+        permissions: [1]
       },
       {
         label: 'Planeación',
         icon: 'bi bi-calendar-check',
         link: '/planeacion',
-        roles: ['Administrador del sistema']
+        permissions: [1]
       },
       {
         label: 'Centros de Costos',
         icon: 'bi bi-building',
         link: '/centros-costos',
-        roles: ['Administrador del sistema']
+        permissions: [1]
       }
     ];
   }
 
   toggleSubmenu(item: MenuItem): void {
     if (this.isCollapsed && !this.isMobile) return;
-    
+
     // Close other menus
     this.menuItems.forEach(m => {
       if (m !== item) m.isOpen = false;
     });
-    
+
     item.isOpen = !item.isOpen;
   }
 
@@ -451,10 +398,10 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isCollapsed || this.isMobile) return;
 
     clearTimeout(this.floatCloseTimeout);
-    
-    // Filtrar opciones según roles del usuario
-    this.hoveredSubmenu = this.filterSubmenuByRoles(submenu);
-    
+
+    // Filtrar opciones según perfiles del usuario
+    this.hoveredSubmenu = this.filterSubmenuByPerfiles(submenu);
+
     // Solo mostrar si hay al menos una opción visible
     if (this.hoveredSubmenu.length === 0) {
       this.hoveredSubmenu = null;
@@ -469,17 +416,23 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Filtra las opciones del submenú según los roles del usuario
+   * Filtra las opciones del submenú según los perfiles del usuario
    */
-  private filterSubmenuByRoles(submenu: SubmenuItem[]): SubmenuItem[] {
+  private filterSubmenuByPerfiles(submenu: SubmenuItem[]): SubmenuItem[] {
     return submenu.filter(item => {
-      // Si no tiene roles definidos, es visible para todos
-      if (!item.roles || item.roles.length === 0) {
+      // Si no tiene perfiles, permisos ni módulos definidos, es visible para todos
+      if ((!item.perfiles || item.perfiles.length === 0) && (!item.permissions || item.permissions.length === 0) && (!item.modules || item.modules.length === 0)) {
         return true;
       }
-      
-      // Verificar si el usuario tiene alguno de los roles requeridos
-      return this.authService.hasAnyRole(item.roles);
+
+      // Verificar si el usuario tiene alguno de los perfiles requeridos
+      const perfilMatch = item.perfiles && item.perfiles.length > 0 && this.authService.hasAnyRole(item.perfiles);
+      // Verificar si el usuario tiene alguno de los permisos requeridos
+      const permissionMatch = item.permissions && item.permissions.length > 0 && this.authService.hasAnyPermission(item.permissions);
+      // Verificar si el usuario tiene acceso a alguno de los módulos requeridos
+      const moduleMatch = item.modules && item.modules.length > 0 && this.authService.hasAnyModule(item.modules);
+
+      return perfilMatch || permissionMatch || moduleMatch;
     });
   }
 
@@ -496,18 +449,34 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
    * Verifica si una opción debe mostrarse según roles y condición opcional
    */
-  canShowMenuItem(roles?: string[], condition?: () => boolean): boolean {
-    const hasRole = !roles || roles.length === 0 || this.authService.hasAnyRole(roles);
-    const hasCondition = !condition || condition();
-    return hasRole && hasCondition;
+  canShowMenuItem(item: MenuItem | SubmenuItem): boolean {
+    const perfiles = item.perfiles || [];
+    const permissions = item.permissions || [];
+    const modules = item.modules || [];
+    
+    // 1. Si NO hay ninguna restricción técnica definida, el item es público para logueados
+    if (perfiles.length === 0 && permissions.length === 0 && modules.length === 0) return true;
+
+    // 2. Verificar cumplimiento de cada criterio (solo si el criterio está definido)
+    const perfilMatch = perfiles.length > 0 && this.authService.hasAnyRole(perfiles);
+    const permissionMatch = permissions.length > 0 && this.authService.hasAnyPermission(permissions);
+    const moduleMatch = modules.length > 0 && this.authService.hasAnyModule(modules);
+
+    // 3. Si cumple CUALQUIERA de las restricciones definidas, tiene acceso
+    const hasAccess = perfilMatch || permissionMatch || moduleMatch;
+
+    // 4. Se suma la condición lógica extra (si existe, como la de horario)
+    const conditionMatch = !item.condition || item.condition();
+
+    return hasAccess && conditionMatch;
   }
-  
+
   private updateActiveParentStates(): void {
     const parentMenuItems = document.querySelectorAll('app-sidebar .sidebar-list > li');
-    
+
     parentMenuItems.forEach((parentLi) => {
       const hasActiveSubmenu = parentLi.querySelector('.sidebar-sublink.active') !== null;
-      
+
       if (hasActiveSubmenu) {
         parentLi.classList.add('active-parent');
       } else {
@@ -530,7 +499,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resizeListener = () => {
       const wasMobile = this.isMobile;
       this.checkMobile();
-      
+
       if (wasMobile && !this.isMobile) {
         this.isMobileOpen = false;
         this.updateBodyClass();
@@ -542,13 +511,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   private checkMobile(): void {
     const wasMobile = this.isMobile;
     this.isMobile = window.innerWidth < 768;
-    
+
     if (!wasMobile && this.isMobile) {
       this.isMobileOpen = false;
       this.isCollapsed = false;
       this.updateBodyClass();
     }
-    
+
     if (wasMobile && !this.isMobile) {
       this.isMobileOpen = false;
       this.updateBodyClass();
@@ -575,7 +544,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private updateBodyClass(): void {
     const body = document.body;
-    
+
     if (this.isMobile) {
       if (this.isMobileOpen) {
         this.renderer.addClass(body, 'sidebar-mobile-open');
@@ -600,22 +569,22 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     const displayName = `${firstName} ${lastName}`.replace(/\s+/g, ' ').trim();
     this.userName = displayName || 'Usuario';
 
-    const primaryRoleRaw = Array.isArray(user?.roles) && user.roles.length > 0 ? user.roles[0] : '';
-    const primaryRole = this.getRoleAsString(primaryRoleRaw);
-    const formattedRole = this.formatRole(primaryRole);
-    this.userRole = formattedRole || 'Sin rol asignado';
+    const primaryPerfilRaw = Array.isArray(user?.roles) && user.roles.length > 0 ? user.roles[0] : '';
+    const primaryPerfil = this.getPerfilAsString(primaryPerfilRaw);
+    const formattedPerfil = this.formatPerfil(primaryPerfil);
+    this.userPerfil = formattedPerfil || 'Sin perfil asignado';
 
-    const initialsSource = displayName || formattedRole || 'Usuario';
+    const initialsSource = displayName || formattedPerfil || 'Usuario';
     this.userInitials = this.getInitials(initialsSource);
   }
 
-  private getRoleAsString(role: any): string {
-    if (!role) return '';
-    if (typeof role === 'string') return role;
-    if (typeof role === 'object' && role !== null && 'name' in role) {
-      return role.name || '';
+  private getPerfilAsString(perfil: any): string {
+    if (!perfil) return '';
+    if (typeof perfil === 'string') return perfil;
+    if (typeof perfil === 'object' && perfil !== null && 'name' in perfil) {
+      return perfil.name || '';
     }
-    return String(role);
+    return String(perfil);
   }
 
   private getInitials(text: string): string {
@@ -629,9 +598,9 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     return initials || 'US';
   }
 
-  private formatRole(role: string): string {
-    if (!role) return '';
-    const cleaned = role
+  private formatPerfil(perfil: string): string {
+    if (!perfil) return '';
+    const cleaned = perfil
       .replace(/\(.*?\)/g, '')
       .replace(/[-_]/g, ' ')
       .toLowerCase();

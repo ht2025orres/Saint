@@ -41,9 +41,9 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
   guardandoNueva = false;
 
   // ── Auth ────────────────────────────────────────────────────────────────────
-  get esAdmin():  boolean { return this.authService.hasRole('Administrador del sistema'); }
+  get esAdmin():  boolean { return this.authService.hasPermission(1); }
   get esGestor(): boolean {
-    return this.authService.hasAnyRole(['Gestor de proyectos', '-Administrador del sistema']);
+    return this.authService.hasAnyPermission([39, 1]);
   }
   get userId():   number { return this.authService.user?.id ?? 0; }
   get userName(): string {

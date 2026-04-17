@@ -307,10 +307,7 @@
         <div class="row">
             <div class="col-md-12" >
                 <div class="form-group row"
-                *ngIf="authService.hasRole('Administrador del sistema') || 
-                        authService.hasRole('Creacion de fichas tecnica') ||
-                        authService.hasRole('Aprobacion ficha tecnica (primera revision)') ||
-                        authService.hasRole('Aprobacion ficha tecnica (Segunda revision)')">
+                *ngIf="authService.hasAnyPermission([1, 2, 3, 4])">
                     <label class="control-label text-right col-md-3">Descripción aprobación:</label>
                     <div class="col-md-8">
                         <textarea type="text" rows="5" class="form-control" placeholder=""
@@ -347,8 +344,7 @@
                 <button class="btn btn-success btn-rounded float-right " role="button"
                     (click)="approveTechnicalSheet()"
                     *ngIf="this.technicalDataSheetCurrent.status == 'TERMINADO' && 
-                    authService.hasRole('Administrador del sistema') || 
-                    authService.hasRole('Creacion de fichas tecnica')">
+                    authService.hasAnyPermission([1, 2])">
                     Solicitar edición
                 </button>
             </div>

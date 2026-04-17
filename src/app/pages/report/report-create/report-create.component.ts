@@ -13,9 +13,9 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
   styleUrls: ['./report-create.component.css']
 })
 export class ReportCreateComponent {
-  
+
   @ViewChild('reportForm') reportForm: NgForm; // Referencia al formulario
-  
+
   report: Report = {
     id: 0,
     origen: 'calidad',
@@ -38,7 +38,7 @@ export class ReportCreateComponent {
     private reportService: ReportService,
     private authService: AuthService,
     private erpIntegrationService: ErpIntegrationService
-  ) {}
+  ) { }
 
   // ==========================
   // CONSULTAR OP
@@ -190,7 +190,7 @@ export class ReportCreateComponent {
         const control = this.reportForm.controls[key];
         control.markAsTouched();
       });
-      
+
       Swal.fire({
         icon: 'warning',
         title: 'Formulario incompleto',
@@ -263,7 +263,7 @@ export class ReportCreateComponent {
     if (this.reportForm) {
       this.reportForm.resetForm();
     }
-    
+
     // Resetear el modelo
     this.report = {
       id: 0,
@@ -280,6 +280,8 @@ export class ReportCreateComponent {
     };
 
     this.itemsOP = [];
+
+    this.itemsOP = [];
     this.selectedFile = null;
   }
 
@@ -289,7 +291,6 @@ export class ReportCreateComponent {
   searchCustomer(event: Event): void {
     const input = event.target as HTMLInputElement;
     const term = input.value.trim();
-
     if (term.length > 2) {
       this.erpIntegrationService.searchCustomer(term).subscribe({
         next: (resp) => this.customers = resp,

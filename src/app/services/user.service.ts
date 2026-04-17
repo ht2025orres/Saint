@@ -41,4 +41,12 @@ export class UserService {
   enableUser(user: User) {
     return this.http.put(`${this.apiLaravelUrl}/users/enable/${user.id}`, {});
   }
+
+  assignPerfil(userId: number, perfilId: number): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/users/${userId}/assign-perfil`, { perfil_id: perfilId });
+  }
+
+  duplicatePermissions(sourceId: number, targetId: number): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/users/duplicate-permissions`, { source_id: sourceId, target_id: targetId });
+  }
 }

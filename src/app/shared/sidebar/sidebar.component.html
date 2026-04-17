@@ -19,7 +19,7 @@
         <nav class="sidebar-nav saint-sidebar-nav">
           <ul id="sidebarnav" class="sidebar-list saint-sidebar-list">
             <ng-container *ngFor="let item of menuItems">
-              <li *ngIf="canShowMenuItem(item.roles, item.condition)">
+              <li *ngIf="canShowMenuItem(item)">
                 <!-- Item sin submenú -->
                 <a *ngIf="!item.submenu" 
                    class="sidebar-link waves-effect waves-dark" 
@@ -43,7 +43,7 @@
                   </a>
                   <ul [class.show]="item.isOpen" class="collapse sidebar-submenu">
                     <ng-container *ngFor="let sub of item.submenu">
-                      <li *ngIf="canShowMenuItem(sub.roles, sub.condition)">
+                      <li *ngIf="canShowMenuItem(sub)">
                         <a class="sidebar-sublink" 
                            [routerLink]="sub.link" 
                            routerLinkActive="active">

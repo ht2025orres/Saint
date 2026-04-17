@@ -36,6 +36,7 @@ import { AngularEditorModule } from '@kolkov/angular-editor';
 // Users
 import { ListUserComponent } from './pages/user/list-user/list-user.component';
 import { CreateUserComponent } from './pages/user/create-user/create-user.component';
+import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthModule } from './auth/auth.module';
@@ -71,9 +72,13 @@ import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
 
 // import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
+// Modulo comerciales
+import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
+
 registerLocaleData(localeEs, 'es-CO');
 
-@NgModule({ declarations: [
+@NgModule({
+    declarations: [
         AppComponent,
         TaskPanelComponent,
         DashboardComponent,
@@ -90,13 +95,15 @@ registerLocaleData(localeEs, 'es-CO');
         SignaturePadComponent,
         TechnicalReportBigbagComponent,
         ViewReportBigbagComponent,
-        DashboardBigbagComponent,        
+        DashboardBigbagComponent,
         ReportCreateComponent,
         ReportListComponent,
         MiReportListComponent,
-        ReportDashboardComponent
+        ReportDashboardComponent,
+        AuthorizationManagerComponent,
+
     ],
-    bootstrap: [AppComponent], 
+    bootstrap: [AppComponent],
     imports: [
         BrowserModule,
         AppRoutingModule,
@@ -152,5 +159,6 @@ registerLocaleData(localeEs, 'es-CO');
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
         provideHttpClient(withInterceptorsFromDi())
-    ] })
+    ]
+})
 export class AppModule { }

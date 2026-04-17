@@ -96,6 +96,8 @@ export class AuthService {
     this._user.lastName = this.getNormalizePayload(payload.last_name);
     this._user.email = payload.email;
     this._user.roles = payload.authorities;  /* Nombre athoriries que genera sprint security oauth2*/
+    this._user.permissions = payload.permissions || [];
+    this._user.modules = payload.modules || [];
     this._user.id = payload.id;
     sessionStorage.setItem('user', JSON.stringify(this._user));
     this.inconsistenciasService.info(payload.email).subscribe({
@@ -107,7 +109,7 @@ export class AuthService {
         this._user.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
         sessionStorage.setItem('user', JSON.stringify(this._user));
       },
-      error: (_) => {}
+      error: (_) => { }
     });
   }
 
@@ -167,7 +169,7 @@ export class AuthService {
     try {
       const fixed = decodeURIComponent(escape(input));
       if (fixed && fixed !== input) return fixed;
-    } catch (_) {}
+    } catch (_) { }
 
     // 2) Reemplazos manuales de los casos más comunes
     const replacements: [RegExp, string][] = [
@@ -211,6 +213,26 @@ export class AuthService {
     if (!Array.isArray(roles) || roles.length === 0) return false;
     const normalizedUserRoles = this.getNormalizedUserRoles();
     return roles.some(r => normalizedUserRoles.has(this.normalize(String(r))));
+  }
+
+  hasPermission(permissionId: number): boolean {
+    if (!this.user || !this.user.permissions) return false;
+    return this.user.permissions.includes(Number(permissionId));
+  }
+
+  hasAnyPermission(permissionIds: number[]): boolean {
+    if (!this.user || !this.user.permissions || !Array.isArray(permissionIds)) return false;
+    return permissionIds.some(id => this.user.permissions.includes(Number(id)));
+  }
+
+  hasModule(moduleId: number): boolean {
+    if (!this.user || !this.user.modules) return false;
+    return this.user.modules.includes(Number(moduleId));
+  }
+
+  hasAnyModule(moduleIds: number[]): boolean {
+    if (!this.user || !this.user.modules || !Array.isArray(moduleIds)) return false;
+    return moduleIds.some(id => this.user.modules.includes(Number(id)));
   }
 
   hasOnlyRole(role: string): boolean {
@@ -268,7 +290,7 @@ export class AuthService {
       this.saveToken(adminToken, adminRefreshToken);
       this._user = JSON.parse(adminUser);
       sessionStorage.setItem('user', adminUser);
-      
+
       sessionStorage.removeItem('admin_token');
       sessionStorage.removeItem('admin_refresh_token');
       sessionStorage.removeItem('admin_user');
@@ -279,7 +301,7 @@ export class AuthService {
   }
 
   getNormalizePayload(payload: string): string {
-    return payload.replace("Ã±","ñ")
+    return payload.replace("Ã±", "ñ")
   }
 
 }
