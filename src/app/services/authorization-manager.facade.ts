@@ -1,27 +1,24 @@
 import { Injectable } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import { UserService } from './user.service';
-import { PermissionsService } from './permissions.service';
-import { ProfilesService } from './profiles.service';
-import { ModulesService } from './modules.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthorizationManagerFacade {
-  constructor(
-    private users: UserService,
-    private permissions: PermissionsService,
-    private profiles: ProfilesService,
-    private modules: ModulesService
-  ) {}
+  private initUrl = `${environment.URL_API_LARAVEL}/init-data`;
 
-  loadInitialData() {
-    return forkJoin({
-      users: this.users.getAll(),
-      profiles: this.profiles.list(),
-      modules: this.modules.list(),
-      permissions: this.permissions.list()
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Carga TODOS los datos del Authorization Manager en una sola
+   * petición HTTP, evitando las 4 llamadas paralelas (forkJoin).
+   * Retorna: { users, profiles, modules, permissions }
+   */
+  loadInitialData(): Observable<any> {
+    return this.http.get<any>(this.initUrl, {
+      headers: { 'X-Requires-User-Email': 'true' }
     });
   }
 }

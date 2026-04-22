@@ -3,7 +3,11 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0 text-secondary fw-bold">Gestión de Acceso y Autorizaciones</h2>
 
-    <div>
+    <div class="d-flex gap-2">
+      <!-- Botón Trazabilidad General -->
+      <button class="btn btn-outline-secondary" (click)="openAuditModal()" title="Ver trazabilidad general de cambios">
+        <i class="bi bi-clock-history me-1"></i> Trazabilidad
+      </button>
       <button class="btn btn-outline-primary" (click)="openStructureModal()">
         <i class="bi bi-gear-fill me-1"></i> Gestión de Estructura
       </button>
@@ -15,17 +19,17 @@
     <div class="col-md-5">
       <div class="input-group">
         <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-        <input class="form-control" placeholder="Buscar usuario..."
-               [(ngModel)]="searchTerm" (ngModelChange)="applyFiltersAndPaginate()" />
+        <input class="form-control" placeholder="Buscar usuario..." [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFiltersAndPaginate()" />
       </div>
     </div>
 
     <div class="col-md-2">
       <select class="form-select" [(ngModel)]="perPage" (change)="applyFiltersAndPaginate()">
-        <option [value]="5">5 / pág</option>
-        <option [value]="8">8 / pág</option>
         <option [value]="15">15 / pág</option>
+        <option [value]="20">20 / pág</option>
         <option [value]="50">50 / pág</option>
+        <option [value]="100">100 / pág</option>
       </select>
     </div>
 
@@ -59,7 +63,12 @@
                 </span>
               </td>
               <td class="text-end pe-4">
-                <button class="btn btn-sm btn-outline-info rounded-pill px-3 me-2" (click)="impersonateUser(u)" title="Entrar como este usuario">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 me-1" (click)="openAuditModal(u)"
+                  title="Ver trazabilidad de este usuario">
+                  <i class="bi bi-clock-history"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-info rounded-pill px-2 me-1" (click)="impersonateUser(u)"
+                  title="Entrar como este usuario">
                   <i class="bi bi-incognito"></i>
                 </button>
                 <button class="btn btn-sm btn-primary rounded-pill px-3" (click)="openManageUser(u)">
@@ -78,8 +87,10 @@
     <!-- PAGINACIÓN SIMPLE -->
     <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
       <div>
-        <button class="btn btn-sm btn-outline-secondary me-2 rounded-pill" (click)="changePage(-1)" [disabled]="page === 1">Anterior</button>
-        <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="changePage(1)" [disabled]="page === totalPages">Siguiente</button>
+        <button class="btn btn-sm btn-outline-secondary me-2 rounded-pill" (click)="changePage(-1)"
+          [disabled]="page === 1">Anterior</button>
+        <button class="btn btn-sm btn-outline-secondary rounded-pill" (click)="changePage(1)"
+          [disabled]="page === totalPages">Siguiente</button>
       </div>
       <div class="text-muted small fw-bold"> Página {{ page }} de {{ totalPages }} </div>
     </div>
@@ -90,82 +101,102 @@
   <!-- ============================================== -->
   <div class="modal show d-block" *ngIf="showUserManageModal" style="background: rgba(0,0,0,0.5); overflow-y: auto;">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-        
-        <div class="modal-header bg-primary text-white" style="border-radius: 12px 12px 0 0;">
-          <h5 class="modal-title fw-bold d-flex align-items-center">
-            <i class="bi bi-person-gear me-2"></i> 
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 8px;">
+
+        <!-- HEADER más compacto -->
+        <div class="modal-header bg-primary text-white py-2 px-3" style="border-radius: 8px 8px 0 0;">
+          <h6 class="modal-title fw-semibold d-flex align-items-center mb-0" style="color: #fff; font-size: 0.95rem;">
+            <i class="bi bi-person-gear me-2" style="font-size: 1rem;"></i>
             <span>Gestión de Usuario: {{ editingUser?.firstName || editingUser?.name }}</span>
-            <span class="badge ms-3 fs-6" [ngClass]="editingUser?.enabled ? 'bg-success' : 'bg-danger'">
-               {{ editingUser?.enabled ? 'Activo' : 'Inactivo' }}
+            <span class="badge ms-2 px-2 py-1" style="font-size: 0.7rem;"
+              [ngClass]="editingUser?.enabled ? 'bg-success' : 'bg-danger'">
+              {{ editingUser?.enabled ? 'Activo' : 'Inactivo' }}
             </span>
-          </h5>
-          <button class="btn-close btn-close-white" (click)="closeUserMegaModal()"></button>
+          </h6>
+          <button class="btn-close btn-close-white" style="font-size: 0.75rem;" (click)="closeUserMegaModal()"></button>
         </div>
 
-        <div class="modal-body p-3 bg-light" style="max-height: 80vh; overflow-y: auto;">
-          
-          <!-- SECCIÓN: INFO PERSONAL -->
-          <div class="card border-0 shadow-sm mb-2">
+        <div class="modal-body p-2 bg-light" style="max-height: 75vh; overflow-y: auto;">
+
+          <!-- INFO PERSONAL - más compacta -->
+          <div class="card border-0 shadow-sm mb-2" style="border-radius: 6px;">
             <div class="card-body p-2">
-              <h6 class="card-title fw-bold text-secondary mb-2" style="font-size: 0.9rem;">Información Personal</h6>
+              <h6 class="fw-semibold text-secondary mb-2" style="font-size: 0.8rem;">Información Personal</h6>
               <div class="row g-2">
                 <div class="col-md-5">
                   <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
-                    <input class="form-control bg-white form-control-sm" placeholder="Nombre *" [(ngModel)]="editingUser.firstName">
+                    <span class="input-group-text bg-white border-end-0" style="font-size: 0.75rem;">
+                      <i class="bi bi-person" style="font-size: 0.85rem;"></i>
+                    </span>
+                    <input class="form-control bg-white border-start-0"
+                      style="font-size: 0.8rem; padding: 0.35rem 0.5rem;" placeholder="Nombre *"
+                      [(ngModel)]="editingUser.firstName">
                   </div>
                 </div>
                 <div class="col-md-4">
                   <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
-                    <input class="form-control bg-white form-control-sm" placeholder="Apellido *" [(ngModel)]="editingUser.lastName">
+                    <span class="input-group-text bg-white border-end-0" style="font-size: 0.75rem;">
+                      <i class="bi bi-person" style="font-size: 0.85rem;"></i>
+                    </span>
+                    <input class="form-control bg-white border-start-0"
+                      style="font-size: 0.8rem; padding: 0.35rem 0.5rem;" placeholder="Apellido *"
+                      [(ngModel)]="editingUser.lastName">
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
-                    <input class="form-control bg-white form-control-sm" placeholder="Correo *" [(ngModel)]="editingUser.email">
+                    <span class="input-group-text bg-white border-end-0" style="font-size: 0.75rem;">
+                      <i class="bi bi-envelope" style="font-size: 0.85rem;"></i>
+                    </span>
+                    <input class="form-control bg-white border-start-0"
+                      style="font-size: 0.8rem; padding: 0.35rem 0.5rem;" placeholder="Correo *"
+                      [(ngModel)]="editingUser.email">
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- SECCIÓN: CONTRASEÑA -->
-          <div class="card border-0 shadow-sm mb-2">
+          <!-- CONTRASEÑA -->
+          <div class="card border-0 shadow-sm mb-2" style="border-radius: 6px;">
             <div class="card-body p-2">
-              <h6 class="card-title fw-bold text-secondary mb-2" style="font-size: 0.9rem;">Contraseña y Seguridad</h6>
+              <h6 class="fw-semibold text-secondary mb-2" style="font-size: 0.8rem;">Contraseña y Seguridad</h6>
               <div class="row g-2">
                 <div class="col-md-6">
                   <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control form-control-sm" placeholder="Nueva Contraseña" [(ngModel)]="userPassword">
+                    <span class="input-group-text bg-white border-end-0" style="font-size: 0.75rem;">
+                      <i class="bi bi-lock" style="font-size: 0.85rem;"></i>
+                    </span>
+                    <input type="password" class="form-control border-start-0"
+                      style="font-size: 0.8rem; padding: 0.35rem 0.5rem;" placeholder="Nueva Contraseña"
+                      [(ngModel)]="userPassword">
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control form-control-sm" placeholder="Repetir nueva contraseña" [(ngModel)]="userPasswordConfirm">
+                    <span class="input-group-text bg-white border-end-0" style="font-size: 0.75rem;">
+                      <i class="bi bi-lock" style="font-size: 0.85rem;"></i>
+                    </span>
+                    <input type="password" class="form-control border-start-0"
+                      style="font-size: 0.8rem; padding: 0.35rem 0.5rem;" placeholder="Repetir nueva contraseña"
+                      [(ngModel)]="userPasswordConfirm">
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- SECCIÓN: PERFILES ASIGNADOS -->
-          <div class="card border-0 shadow-sm mb-2">
+          <!-- PERFILES - más compactos -->
+          <div class="card border-0 shadow-sm mb-2" style="border-radius: 6px;">
             <div class="card-body p-2 d-flex align-items-center flex-wrap">
-              <h6 class="card-title fw-bold text-secondary mb-0 me-3" style="font-size: 0.9rem;">Perfiles:</h6>
+              <h6 class="fw-semibold text-secondary mb-0 me-3" style="font-size: 0.8rem;">Perfiles:</h6>
               <div class="d-flex flex-wrap gap-2">
-                <!-- Se asume que el arreglo profiles es filtrado en el TS para empujar a la cima los que tengan hasProfile = true -->
-                <div class="form-check custom-checkbox-form mb-0" *ngFor="let prof of getSortedProfiles()">
-                  <input class="form-check-input" type="checkbox" 
-                         [id]="'prof_' + prof.id" 
-                         [checked]="hasProfile(prof.id)"
-                         (change)="toggleProfile(prof, $event)"
-                         style="cursor: pointer;">
-                  <label class="form-check-label ms-1 text-secondary" style="font-size: 0.85rem; cursor: pointer;" [for]="'prof_' + prof.id" [ngClass]="{'fw-bold text-dark': hasProfile(prof.id)}">
+                <div class="form-check mb-0" *ngFor="let prof of getSortedProfiles()">
+                  <input class="form-check-input" type="checkbox" [id]="'prof_' + prof.id"
+                    style="cursor: pointer; width: 14px; height: 14px; margin-top: 0.15rem;"
+                    [checked]="hasProfile(prof.id)" (change)="toggleProfile(prof, $event)">
+                  <label class="form-check-label ms-1 text-secondary" style="font-size: 0.75rem; cursor: pointer;"
+                    [for]="'prof_' + prof.id" [ngClass]="{'fw-semibold text-dark': hasProfile(prof.id)}">
                     {{ prof.name }}
                   </label>
                 </div>
@@ -173,73 +204,113 @@
             </div>
           </div>
 
-          <!-- SECCIÓN: MÓDULOS Y PERMISOS -->
-          <div class="card border-0 shadow-sm mb-2">
-            <div class="card-body p-2 flex-grow-1 d-flex flex-column">
+          <!-- MÓDULOS Y PERMISOS -->
+          <div class="card border-0 shadow-sm mb-2" style="border-radius: 6px;">
+            <div class="card-body p-2">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="card-title fw-bold text-secondary mb-0" style="font-size: 0.9rem;">Módulos y Permisos</h6>
-                <button class="btn btn-sm btn-outline-primary rounded-3" style="font-size: 0.75rem" (click)="askDuplicateTarget()">
-                  <i class="bi bi-files me-1"></i> Duplicar permisos
-                </button>
-              </div>
-              
-              <!-- Tabs / Botones por Módulo (Diseño Original Inyectado) -->
-              <div class="d-flex flex-wrap border rounded mb-2" style="overflow: hidden; max-width: fit-content; background: #fff;">
-                <button class="btn btn-sm border-end border-0 px-3 py-2 fw-semibold" style="border-radius: 0;"
-                        [ngClass]="selectedModuleFilter === 'all' ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
-                        (click)="selectedModuleFilter = 'all'">
-                  Todos ({{ permissions.length }})
-                </button>
-                <button *ngFor="let mod of modules" 
-                        class="btn btn-sm border-end border-0 px-3 py-2 fw-semibold" style="border-radius: 0;"
-                        [ngClass]="selectedModuleFilter === mod.id ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
-                        (click)="selectedModuleFilter = mod.id">
-                  {{ mod.name }} ({{ getPermissionsCountByModule(mod.id) }})
+                <h6 class="fw-semibold text-secondary mb-0" style="font-size: 0.8rem;">Módulos y Permisos</h6>
+                <button class="btn btn-sm btn-outline-primary px-2 py-1" style="font-size: 0.7rem; border-radius: 4px;"
+                  (click)="askDuplicateTarget()">
+                  <i class="bi bi-files me-1" style="font-size: 0.75rem;"></i> Duplicar permisos
                 </button>
               </div>
 
-              <!-- Grid de Permisos -->
-              <div class="row bg-white p-2 border rounded shadow-sm m-0" style="min-height: 120px; overflow-y: auto;">
-                <div class="col-md-4 mb-2" *ngFor="let p of getFilteredPermissions()">
-                  <div class="d-flex flex-column p-2 border rounded bg-light h-100 justify-content-between">
-                    <div class="d-flex justify-content-between">
-                      <div class="small fw-bold text-dark mb-2 text-truncate" [title]="p.name">{{ p.name }}</div>
-                      <i class="bi bi-shield-check text-info" *ngIf="isInherited(p.id)" title="Heredado de perfil"></i>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div class="btn-group btn-group-sm w-100" role="group">
-                        <!-- Botón ALLOW -->
-                        <button type="button" class="btn btn-outline-success border-end-0 flex-grow-1" 
-                                [class.active]="getPermissionStatus(p.id) === 'ALLOW'" 
-                                (click)="assignPermission(p, 'ALLOW')"
-                                title="Permitir">
-                          <i class="bi bi-check-lg" *ngIf="getPermissionStatus(p.id) === 'ALLOW'"></i>
-                          <span *ngIf="getPermissionStatus(p.id) !== 'ALLOW'">Allow</span>
-                        </button>
-                        
-                        <!-- Botón DENY -->
-                        <button type="button" class="btn btn-outline-danger border-start-0 border-end-0 flex-grow-1" 
-                                [class.active]="getPermissionStatus(p.id) === 'DENY'" 
-                                (click)="assignPermission(p, 'DENY')"
-                                title="Denegar">
-                          <i class="bi bi-x-lg" *ngIf="getPermissionStatus(p.id) === 'DENY'"></i>
-                          <span *ngIf="getPermissionStatus(p.id) !== 'DENY'">Deny</span>
-                        </button>
-                        
-                        <!-- Botón REMOVE (solo si tiene asignación directa) -->
-                        <button type="button" class="btn btn-outline-secondary border-start-0 flex-grow-0" 
-                                *ngIf="getPermissionStatus(p.id)"
-                                (click)="removePermission(p)"
-                                title="Quitar asignación">
-                          <i class="bi bi-trash"></i>
-                        </button>
+              <!-- Buscador de permisos -->
+              <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text border-end-0 bg-light" style="font-size: 0.75rem;">
+                  <i class="bi bi-search text-secondary"></i>
+                </span>
+                <input type="text" class="form-control border-start-0 bg-light"
+                  style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" placeholder="Buscar permiso por nombre..."
+                  [(ngModel)]="permSearchTerm">
+                <button *ngIf="permSearchTerm" class="btn btn-sm btn-outline-secondary border-start-0"
+                  style="font-size: 0.7rem;" (click)="permSearchTerm = ''" title="Limpiar">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+
+              <!-- Tabs de módulos (se ocultan al buscar) -->
+              <div *ngIf="!permSearchTerm" class="d-flex flex-wrap border rounded mb-2"
+                style="overflow: hidden; background: #fff; border-radius: 4px;">
+                <button class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold"
+                  style="border-radius: 0; font-size: 0.7rem;"
+                  [ngClass]="selectedModuleFilter === 'all' ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                  (click)="selectedModuleFilter = 'all'">
+                  Todos ({{ permissions.length }})
+                </button>
+                <button *ngFor="let mod of modules" class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold"
+                  style="border-radius: 0; font-size: 0.7rem;"
+                  [ngClass]="selectedModuleFilter === mod.id ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                  (click)="selectedModuleFilter = mod.id">
+                  {{ mod.name }} ({{ getPermissionsCountByModule(mod.id) }})
+                </button>
+              </div>
+              <div *ngIf="permSearchTerm" class="text-muted mb-2" style="font-size: 0.72rem;">
+                <i class="bi bi-filter"></i> {{ getFilteredPermissions().length }} resultado(s) para "{{ permSearchTerm
+                }}"
+              </div>
+
+              <!-- Grid de Permisos optimizado -->
+              <div class="border rounded overflow-hidden bg-white" style="border-radius: 4px;">
+                <div class="row g-0">
+
+                  <ng-container *ngFor="let p of getFilteredPermissions(); let i = index; let last = last">
+                    <div class="col-6" [class.border-end]="i % 2 === 0"
+                      [class.border-bottom]="!last && !(i === getFilteredPermissions().length - 2 && i % 2 === 0)">
+
+                      <div class="d-flex align-items-center gap-1 px-2 py-1">
+
+                        <!-- Indicador heredado más pequeño -->
+                        <span *ngIf="isInherited(p.id)" class="badge rounded-pill bg-info-subtle flex-shrink-0"
+                          style="width:6px; height:6px; padding:0;" title="Heredado de perfil">
+                        </span>
+                        <span *ngIf="!isInherited(p.id)" style="width:6px;" class="flex-shrink-0"></span>
+
+                        <!-- Nombre más pequeño -->
+                        <span class="text-truncate flex-grow-1" style="font-size: 0.75rem;" [title]="p.name">
+                          {{ p.name }}
+                        </span>
+
+                        <!-- Botones más pequeños -->
+                        <div class="d-flex gap-1 flex-shrink-0">
+
+                          <!-- Allow -->
+                          <button type="button" class="btn btn-sm d-flex align-items-center justify-content-center p-0"
+                            style="width:24px; height:24px;" [class.btn-success]="getPermissionStatus(p.id) === 'ALLOW'"
+                            [class.btn-outline-secondary]="getPermissionStatus(p.id) !== 'ALLOW'"
+                            [class.text-secondary]="getPermissionStatus(p.id) !== 'ALLOW'"
+                            (click)="assignPermission(p, 'ALLOW')" title="Permitir">
+                            <i class="bi bi-check-lg" style="font-size: 0.75rem;"></i>
+                          </button>
+
+                          <!-- Deny -->
+                          <button type="button" class="btn btn-sm d-flex align-items-center justify-content-center p-0"
+                            style="width:24px; height:24px;" [class.btn-danger]="getPermissionStatus(p.id) === 'DENY'"
+                            [class.btn-outline-secondary]="getPermissionStatus(p.id) !== 'DENY'"
+                            [class.text-secondary]="getPermissionStatus(p.id) !== 'DENY'"
+                            (click)="assignPermission(p, 'DENY')" title="Denegar">
+                            <i class="bi bi-x-lg" style="font-size: 0.75rem;"></i>
+                          </button>
+
+                          <!-- Quitar -->
+                          <button type="button"
+                            class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center p-0"
+                            style="width:24px; height:24px;" [class.invisible]="!getPermissionStatus(p.id)"
+                            (click)="removePermission(p)" title="Quitar asignación">
+                            <i class="bi bi-trash" style="font-size: 0.7rem;"></i>
+                          </button>
+
+                        </div>
                       </div>
                     </div>
+                  </ng-container>
+
+                  <!-- Vacío -->
+                  <div class="col-12 text-center text-muted py-3" style="font-size: 0.75rem;"
+                    *ngIf="getFilteredPermissions().length === 0">
+                    No hay permisos en esta sección.
                   </div>
-                </div>
-                <div class="col-12 text-center text-muted py-4" *ngIf="getFilteredPermissions().length === 0">
-                  No hay opciones en esta sección.
+
                 </div>
               </div>
 
@@ -248,48 +319,73 @@
 
         </div>
 
-        <div class="modal-footer bg-white py-2" style="border-radius: 0 0 12px 12px;">
-          <button class="btn btn-sm border-0 px-3 me-auto" 
-                  [ngClass]="editingUser?.enabled ? 'btn-outline-danger' : 'btn-outline-success'"
-                  (click)="toggleUserStatus()">
-             <i class="bi" [ngClass]="editingUser?.enabled ? 'bi-person-x-fill' : 'bi-person-check-fill'"></i>
-             {{ editingUser?.enabled ? 'Desactivar Cuenta' : 'Activar Cuenta' }}
+        <!-- FOOTER más compacto -->
+        <div class="modal-footer bg-white py-2 px-3" style="border-radius: 0 0 8px 8px;">
+          <button class="btn btn-sm border px-2 py-1 me-auto" style="font-size: 0.75rem;"
+            [ngClass]="editingUser?.enabled ? 'btn-outline-danger' : 'btn-outline-success'"
+            (click)="toggleUserStatus()">
+            <i class="bi" style="font-size: 0.8rem;"
+              [ngClass]="editingUser?.enabled ? 'bi-person-x-fill' : 'bi-person-check-fill'"></i>
+            {{ editingUser?.enabled ? 'Desactivar' : 'Activar' }}
           </button>
-          
-          <button class="btn btn-sm btn-light rounded-pill px-4 fw-bold text-muted border" (click)="closeUserMegaModal()">Cancelar</button>
-          <button class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" (click)="saveMegaUser()">
-            <i class="bi bi-save me-1"></i> Guardar Cambios
+
+          <button class="btn btn-sm btn-light rounded-pill px-3 py-1 border" style="font-size: 0.75rem;"
+            (click)="closeUserMegaModal()">
+            Cancelar
+          </button>
+          <button class="btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm" style="font-size: 0.75rem;"
+            (click)="saveMegaUser()">
+            <i class="bi bi-save me-1" style="font-size: 0.75rem;"></i> Guardar
           </button>
         </div>
+
       </div>
     </div>
   </div>
-
 
   <!-- ============================================== -->
   <!-- MODAL: GESTIÓN DE ESTRUCTURA                   -->
   <!-- ============================================== -->
   <div class="modal show d-block" *ngIf="showStructureModal" style="background: rgba(0,0,0,0.5)">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content shadow-lg border-0">
-        
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3 me-2"></i> Gestión Estructural</h5>
+    <!-- Tamaño fijo: 85vh de alto, sin scroll en el dialog, el scroll va dentro del panel -->
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="height: 85vh; max-height: 85vh;">
+      <div class="modal-content shadow-lg border-0 d-flex flex-column" style="height: 100%; max-height: 100%;">
+
+        <div class="modal-header bg-primary text-white d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
+          <h5 class="modal-title fw-bold flex-grow-1" style="color: #fff; font-size: 0.95rem;">
+            <i class="bi bi-diagram-3 me-2"></i> Gestión Estructural
+          </h5>
+          <!-- Buscador global dentro del modal estructural -->
+          <div class="input-group input-group-sm" style="max-width: 260px;">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="bi bi-search text-secondary" style="font-size: 0.75rem;"></i>
+            </span>
+            <input type="text" class="form-control border-start-0" style="font-size: 0.8rem;"
+              placeholder="Buscar por nombre..." [(ngModel)]="structureSearch">
+            <button *ngIf="structureSearch" class="btn btn-sm btn-outline-light" (click)="structureSearch = ''"
+              title="Limpiar">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
           <button class="btn-close btn-close-white" (click)="closeStructureModal()"></button>
         </div>
 
-        <div class="modal-body p-0">
-          <div class="d-flex h-100">
-            <!-- Pestañas Laterales -->
-            <div class="nav flex-column nav-pills p-3 bg-light border-end" style="width: 200px;">
-              <button class="nav-link text-start mb-2 fw-semibold" [class.active]="activeStructureTab==='modules'" (click)="activeStructureTab='modules'">Módulos</button>
-              <button class="nav-link text-start mb-2 fw-semibold" [class.active]="activeStructureTab==='profiles'" (click)="activeStructureTab='profiles'">Perfiles</button>
-              <button class="nav-link text-start fw-semibold" [class.active]="activeStructureTab==='permissions'" (click)="activeStructureTab='permissions'">Permisos</button>
+        <!-- modal-body ocupa todo el espacio restante y gestiona su propio scroll internamente -->
+        <div class="modal-body p-0 flex-grow-1 overflow-hidden">
+          <div class="d-flex" style="height: 100%;">
+            <!-- Pestañas Laterales — altura fija, sin scroll -->
+            <div class="nav flex-column nav-pills p-3 bg-light border-end flex-shrink-0" style="width: 180px;">
+              <button class="nav-link text-start mb-2 fw-semibold" [class.active]="activeStructureTab==='modules'"
+                (click)="activeStructureTab='modules'">Módulos</button>
+              <button class="nav-link text-start mb-2 fw-semibold" [class.active]="activeStructureTab==='profiles'"
+                (click)="activeStructureTab='profiles'">Perfiles</button>
+              <button class="nav-link text-start fw-semibold" [class.active]="activeStructureTab==='permissions'"
+                (click)="activeStructureTab='permissions'">Permisos</button>
             </div>
 
-            <!-- Contenido Pestañas -->
-            <div class="flex-grow-1 p-4 bg-white" style="max-height: 60vh; overflow-y: auto;">
-              
+            <!-- Contenido Pestañas — scroll solo aquí -->
+            <div class="flex-grow-1 p-4 bg-white overflow-y-auto" style="overflow-y: auto;">
+
               <!-- PANEL: MÓDULOS -->
               <div *ngIf="activeStructureTab==='modules'">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -299,7 +395,8 @@
 
                 <div *ngIf="editingModule" class="card bg-light border-0 mb-3 p-3 shadow-sm">
                   <h6 class="fw-bold">{{ editingModule.id ? 'Editar Módulo' : 'Nuevo Módulo' }}</h6>
-                  <input class="form-control mb-2" placeholder="Nombre (ej. Inventario)" [(ngModel)]="editingModule.name">
+                  <input class="form-control mb-2" placeholder="Nombre (ej. Inventario)"
+                    [(ngModel)]="editingModule.name">
                   <input class="form-control mb-2" placeholder="Descripción" [(ngModel)]="editingModule.description">
                   <div>
                     <button class="btn btn-sm btn-success me-2" (click)="saveModule()">Guardar</button>
@@ -308,13 +405,22 @@
                 </div>
 
                 <table class="table table-sm table-hover align-middle">
-                  <thead class="table-light"><tr><th>ID</th><th>Nombre</th><th>Opciones</th></tr></thead>
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Opciones</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    <tr *ngFor="let m of modules">
-                      <td>{{m.id}}</td><td>{{m.name}}</td>
+                    <tr *ngFor="let m of getFilteredModules()">
+                      <td>{{m.id}}</td>
+                      <td>{{m.name}}</td>
                       <td>
-                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditModule(m)"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm text-danger p-0" (click)="deleteModule(m)"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditModule(m)"><i
+                            class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm text-danger p-0" (click)="deleteModule(m)"><i
+                            class="bi bi-trash"></i></button>
                       </td>
                     </tr>
                   </tbody>
@@ -331,73 +437,91 @@
                 <div *ngIf="editingPerfil" class="card bg-light border-0 mb-3 shadow-sm">
                   <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                       <h6 class="fw-bold m-0">{{ editingPerfil.id ? 'Editar Perfil y Permisos' : 'Nuevo Perfil' }}</h6>
-                       <span>
-                         <button class="btn btn-sm btn-success me-2" (click)="savePerfil()">Guardar</button>
-                         <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditPerfil()">Terminar Edición</button>
-                       </span>
+                      <h6 class="fw-bold m-0">{{ editingPerfil.id ? 'Editar Perfil y Permisos' : 'Nuevo Perfil' }}</h6>
+                      <span>
+                        <button class="btn btn-sm btn-success me-2" (click)="savePerfil()">Guardar</button>
+                        <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditPerfil()">Terminar
+                          Edición</button>
+                      </span>
                     </div>
                     <div class="row g-2 mb-3">
                       <div class="col-md-6">
-                        <input class="form-control form-control-sm" placeholder="Nombre" [(ngModel)]="editingPerfil.name">
+                        <input class="form-control form-control-sm" placeholder="Nombre"
+                          [(ngModel)]="editingPerfil.name">
                       </div>
                       <div class="col-md-6">
-                        <input class="form-control form-control-sm" placeholder="Descripción" [(ngModel)]="editingPerfil.description">
+                        <input class="form-control form-control-sm" placeholder="Descripción"
+                          [(ngModel)]="editingPerfil.description">
                       </div>
                     </div>
 
                     <!-- MATRIZ DE PERMISOS PARA ESTE PERFIL -->
-                    <div *ngIf="editingPerfil.id" class="border rounded p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
+                    <div *ngIf="editingPerfil.id" class="border rounded p-2 bg-white"
+                      style="max-height: 300px; overflow-y: auto;">
                       <p class="text-secondary small fw-bold mb-2">Permisos del Perfil:</p>
-                      
+
                       <!-- Filtro de Módulo Local -->
-                      <div class="d-flex flex-wrap border rounded mb-2" style="overflow: hidden; max-width: fit-content;">
+                      <div class="d-flex flex-wrap border rounded mb-2"
+                        style="overflow: hidden; max-width: fit-content;">
                         <button class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold" style="border-radius: 0;"
-                                [ngClass]="selectedModuleFilter === 'all' ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
-                                (click)="selectedModuleFilter = 'all'">
+                          [ngClass]="selectedModuleFilter === 'all' ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                          (click)="selectedModuleFilter = 'all'">
                           Todos
                         </button>
-                        <button *ngFor="let mod of modules" 
-                                class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold" style="border-radius: 0;"
-                                [ngClass]="selectedModuleFilter === mod.id ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
-                                (click)="selectedModuleFilter = mod.id">
+                        <button *ngFor="let mod of modules" class="btn btn-sm border-end border-0 px-2 py-1 fw-semibold"
+                          style="border-radius: 0;"
+                          [ngClass]="selectedModuleFilter === mod.id ? 'bg-primary text-white' : 'bg-transparent text-secondary'"
+                          (click)="selectedModuleFilter = mod.id">
                           {{ mod.name }}
                         </button>
                       </div>
 
-                      <div class="row g-2 m-0">
-                         <div class="col-md-6 col-lg-4 mb-2" *ngFor="let p of getFilteredPermissions()">
-                            <div class="form-check custom-checkbox-form mb-0">
-                              <input class="form-check-input mt-1" type="checkbox" 
-                                     [id]="'p_perm_' + p.id" 
-                                     [checked]="isPerfilPermissionChecked(p.id)"
-                                     (change)="togglePerfilPermission(p, $event)"
-                                     style="transform: scale(1.1); cursor: pointer;">
-                              <label class="form-check-label ms-1 text-secondary" style="font-size: 0.85rem; cursor: pointer;" [for]="'p_perm_' + p.id">
-                                <span *ngIf="isPerfilPermissionChecked(p.id)" class="text-success fw-bold me-1">✓</span>
-                                {{ p.name }}
-                              </label>
+                      <div class="row g-1 m-0 mt-2">
+                        <div class="col-xl-2 col-lg-3 col-md-4 col-6" *ngFor="let p of getFilteredPermissions()">
+                          <div
+                            class="d-flex align-items-center p-1 px-2 border rounded mb-1 position-relative transition-all"
+                            [ngClass]="isPerfilPermissionChecked(p.id) ? 'border-primary bg-primary-subtle text-primary shadow-sm' : 'border-light-subtle bg-white text-secondary'"
+                            style="font-size: 0.65rem; min-height: 28px; cursor: pointer;"
+                            (click)="togglePerfilPermission(p, {target: {checked: !isPerfilPermissionChecked(p.id)}})">
+
+                            <div class="text-truncate flex-grow-1" [title]="p.name">
+                              {{ p.name }}
                             </div>
-                         </div>
-                         <div class="col-12 text-center text-muted small py-2" *ngIf="getFilteredPermissions().length === 0">
-                           No hay permisos configurados.
-                         </div>
+
+                            <div *ngIf="isPerfilPermissionChecked(p.id)" class="ms-1">
+                              <i class="bi bi-check-circle-fill" style="font-size: 0.75rem;"></i>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-12 text-center text-muted small py-3"
+                          *ngIf="getFilteredPermissions().length === 0">
+                          No hay permisos que coincidan con la búsqueda.
+                        </div>
                       </div>
                     </div>
                     <div *ngIf="!editingPerfil.id" class="alert alert-info py-2 small mt-2 m-0">
-                       <i class="bi bi-info-circle me-1"></i> Guarda el perfil primero para poder asignarle permisos.
+                      <i class="bi bi-info-circle me-1"></i> Guarda el perfil primero para poder asignarle permisos.
                     </div>
                   </div>
                 </div>
 
                 <table class="table table-sm table-hover align-middle">
-                  <thead class="table-light"><tr><th>ID</th><th>Nombre</th><th>Opciones</th></tr></thead>
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Opciones</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    <tr *ngFor="let p of profiles">
-                      <td>{{p.id}}</td><td>{{p.name}}</td>
+                    <tr *ngFor="let p of getFilteredProfiles()">
+                      <td>{{p.id}}</td>
+                      <td>{{p.name}}</td>
                       <td>
-                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditPerfil(p)"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm text-danger p-0" (click)="deletePerfil(p)"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditPerfil(p)"><i
+                            class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm text-danger p-0" (click)="deletePerfil(p)"><i
+                            class="bi bi-trash"></i></button>
                       </td>
                     </tr>
                   </tbody>
@@ -411,29 +535,56 @@
                   <button class="btn btn-sm btn-primary" (click)="openCreatePermission()">+ Crear Permiso</button>
                 </div>
 
-                <div *ngIf="editingPermission" class="card bg-light border-0 mb-3 p-3 shadow-sm">
-                  <h6 class="fw-bold">{{ editingPermission.id ? 'Editar Permiso' : 'Nuevo Permiso' }}</h6>
-                  <select class="form-select mb-2" [(ngModel)]="editingPermission.module_id">
-                    <option [value]="null">Seleccione Módulo</option>
-                    <option *ngFor="let m of modules" [value]="m.id">{{m.name}}</option>
-                  </select>
-                  <input class="form-control mb-2" placeholder="Nombre Literal" [(ngModel)]="editingPermission.name">
-                  <input class="form-control mb-2" placeholder="Descripción" [(ngModel)]="editingPermission.description">
-                  <div>
-                    <button class="btn btn-sm btn-success me-2" (click)="savePermission()">Guardar</button>
-                    <button class="btn btn-sm btn-light" (click)="cancelEditPermission()">Cancelar</button>
+                <div *ngIf="editingPermission" class="card bg-light border-0 mb-3 shadow-sm">
+                  <div class="card-body p-3">
+                    <h6 class="fw-bold mb-3 text-primary">{{ editingPermission.id ? 'Editar Permiso' : 'Nuevo Permiso'
+                      }}</h6>
+                    <div class="row g-3">
+                      <div class="col-md-12">
+                        <label class="form-label small fw-bold text-secondary mb-1">Módulo del Sistema</label>
+                        <select class="form-select form-select-sm" [(ngModel)]="editingPermission.module_id">
+                          <option [value]="null">Seleccione Módulo</option>
+                          <option *ngFor="let m of modules" [value]="m.id">{{m.name}}</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-bold text-secondary mb-1">Nombre Literal (Código)</label>
+                        <input class="form-control form-control-sm" placeholder="ej: crear_usuario"
+                          [(ngModel)]="editingPermission.name">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-bold text-secondary mb-1">Descripción del Permiso</label>
+                        <input class="form-control form-control-sm" placeholder="ej: Permite crear nuevos usuarios"
+                          [(ngModel)]="editingPermission.description">
+                      </div>
+                    </div>
+                    <div class="mt-3 text-end">
+                      <button class="btn btn-sm btn-light border px-3 me-2"
+                        (click)="cancelEditPermission()">Cancelar</button>
+                      <button class="btn btn-sm btn-success px-4" (click)="savePermission()">Guardar</button>
+                    </div>
                   </div>
                 </div>
 
                 <table class="table table-sm table-hover align-middle">
-                  <thead class="table-light"><tr><th>ID</th><th>Nombre</th><th>Módulo</th><th>Opciones</th></tr></thead>
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Módulo</th>
+                      <th>Opciones</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    <tr *ngFor="let pq of permissions">
-                      <td>{{pq.id}}</td><td>{{pq.name}}</td>
+                    <tr *ngFor="let pq of getFilteredStructurePermissions()">
+                      <td>{{pq.id}}</td>
+                      <td>{{pq.name}}</td>
                       <td><span class="badge bg-secondary">{{ pq.module?.name || 'N/A' }}</span></td>
                       <td>
-                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditPermission(pq)"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm text-danger p-0" (click)="deletePermission(pq)"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm text-primary p-0 me-2" (click)="openEditPermission(pq)"><i
+                            class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm text-danger p-0" (click)="deletePermission(pq)"><i
+                            class="bi bi-trash"></i></button>
                       </td>
                     </tr>
                   </tbody>
@@ -442,6 +593,104 @@
 
             </div>
           </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: TRAZABILIDAD (AUDITORÍA)                -->
+  <!-- ============================================== -->
+  <div class="modal show d-block" *ngIf="showAuditModal" style="background: rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
+      style="height: 85vh; max-height: 85vh;">
+      <div class="modal-content shadow-lg border-0 d-flex flex-column" style="height: 100%; max-height: 100%;">
+
+        <div class="modal-header bg-dark text-white py-2 px-3 flex-shrink-0">
+          <h6 class="modal-title fw-bold d-flex align-items-center mb-0" style="color: #fff; font-size: 0.95rem;">
+            <i class="bi bi-clock-history me-2" style="color: #fff; font-size: 0.95rem;"></i> Trazabilidad de Cambios
+            <span *ngIf="auditTargetUser" class="badge bg-secondary ms-2">
+              Usuario: {{ getAuditUserDisplay(auditTargetUser) }}
+            </span>
+          </h6>
+          <button class="btn-close btn-close-white" (click)="closeAuditModal()"></button>
+        </div>
+
+        <div class="modal-body p-0 flex-grow-1 overflow-hidden d-flex flex-column bg-light">
+          <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0 bg-white">
+              <thead class="table-dark sticky-top" style="font-size: 0.75rem;">
+                <tr>
+                  <th class="ps-3 py-2">Fecha</th>
+                  <th class="py-2">Actor (Quién realizó)</th>
+                  <th class="py-2">Acción</th>
+                  <th class="py-2">Usuario afectado (A quién se aplicó)</th>
+                  <th class="py-2">Cambios</th>
+                </tr>
+              </thead>
+              <tbody style="font-size: 0.75rem;">
+                <tr *ngFor="let log of auditLogs" class="border-bottom">
+                  <td class="ps-3 text-muted" style="width: 140px;">{{ log.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td>
+                    <div class="fw-bold text-dark">{{ getAuditUserDisplay(log.actor) }}</div>
+                  </td>
+                  <td>
+                    <span class="text-dark fw-bold" style="font-size: 0.7rem;">
+                      {{ translateAction(log.action) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-bold text-dark" *ngIf="log.target; else syst">{{ getAuditUserDisplay(log.target) }}
+                    </div>
+                    <ng-template #syst><span class="badge bg-light text-dark border">Sistema /
+                        Config</span></ng-template>
+                  </td>
+                  <td>
+                    <!-- Lista de cambios sobria -->
+                    <div class="d-flex flex-column gap-1">
+                      <div *ngFor="let item of getAuditDetailedChanges(log)" class="d-flex align-items-center py-1"
+                        style="font-size: 0.75rem;">
+                        <span class="me-2" style="width: 7px; height: 7px; border-radius: 50%; display: inline-block;"
+                          [ngClass]="{
+                                'bg-success': item.status === 'added', 
+                                'bg-danger': item.status === 'removed',
+                                'bg-warning': item.status === 'warning',
+                                'bg-secondary': item.status === 'neutral'
+                              }"
+                          [title]="item.status === 'added' ? 'Permitido' : (item.status === 'removed' ? 'Retirado' : (item.status === 'warning' ? 'Denegado' : 'Modificado'))">
+                        </span>
+                        <span class="text-black fw-medium">
+                          {{ item.name }}
+                        </span>
+                      </div>
+
+                      <!-- Si no hay cambios detectados por el parser detallado, mostrar resumen simple -->
+                      <div *ngIf="getAuditDetailedChanges(log).length === 0" class="text-muted small italic">
+                        {{ renderAuditDetails(log.after_data) }}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="auditLogs.length === 0">
+                  <td colspan="5" class="text-center py-5 text-muted">
+                    <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                    No hay registros de trazabilidad para mostrar.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-white border-top py-2 px-3 flex-shrink-0">
+          <div class="me-auto text-muted small">
+            Página {{ auditPage }} de {{ auditTotalPages }}
+          </div>
+          <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" (click)="changeAuditPage(-1)"
+            [disabled]="auditPage === 1">Anterior</button>
+          <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" (click)="changeAuditPage(1)"
+            [disabled]="auditPage === auditTotalPages">Siguiente</button>
         </div>
 
       </div>

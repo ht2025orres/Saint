@@ -14,27 +14,27 @@ export class GestionEmpacadoresComponent implements OnInit {
 
   /* ----------  Paginadores independientes  ---------- */
   paginadorDisponibles = 'emp-disponibles-paginator';
-  paginadorAsignados   = 'emp-asignados-paginator';
+  paginadorAsignados = 'emp-asignados-paginator';
 
   /* ----------  Estados de datos  ---------- */
   empacadoresDisponibles: any[] = [];
-  currentDisponibles:    any[] = [];
+  currentDisponibles: any[] = [];
 
-  empacadoresAsignados:  any[] = [];
-  currentAsignados:      any[] = [];
+  empacadoresAsignados: any[] = [];
+  currentAsignados: any[] = [];
 
   pvsPendientes: any[] = []; // Lista de PVs pendientes para asignar
 
   /* ----------  Filtros  ---------- */
   filtersDisponibles = { busqueda: '' };
-  filtersAsignados   = { busqueda: '' };
-  
+  filtersAsignados = { busqueda: '' };
+
   constructor(
     private userService: UserService,
     private terminacionEmpaqueService: TerminacionEmpaqueService,
-    public  paginationService: PaginationService,
+    public paginationService: PaginationService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.cargarEmpacadores();
@@ -60,7 +60,7 @@ export class GestionEmpacadoresComponent implements OnInit {
         if (empacadores.length === 0) {
           Swal.fire('Info', 'No hay empacadores registrados.', 'info');
           this.empacadoresDisponibles = [];
-          this.empacadoresAsignados  = [];
+          this.empacadoresAsignados = [];
           return;
         }
 
@@ -69,7 +69,7 @@ export class GestionEmpacadoresComponent implements OnInit {
         this.terminacionEmpaqueService.obtenerAsignacionesMultiples(ids).subscribe({
           next: (mapa) => {
             this.empacadoresDisponibles = [];
-            this.empacadoresAsignados   = [];
+            this.empacadoresAsignados = [];
 
             empacadores.forEach(emp => {
               const asign = mapa[emp.id] || { pvs: [], total_empacado: 0, total_teorico: 0, total_asignado: 0 };
@@ -81,7 +81,7 @@ export class GestionEmpacadoresComponent implements OnInit {
                   total_asignado_pv: pv.items?.reduce((sum: number, item: any) => sum + (item.cantidad_asignada || 0), 0)
                 })),
                 total_empacado: asign.total_empacado,
-                total_teorico:  asign.total_teorico,
+                total_teorico: asign.total_teorico,
                 total_asignado: asign.total_asignado || 0
               };
 
@@ -288,9 +288,9 @@ export class GestionEmpacadoresComponent implements OnInit {
     const texto = filtros.busqueda.toLowerCase();
     if (!texto) return true;
 
-    const coincideNombre = `${ item.firstName } ${ item.lastName }`.toLowerCase().includes(texto);
+    const coincideNombre = `${item.firstName} ${item.lastName}`.toLowerCase().includes(texto);
     const coincideCorreo = item.email?.toLowerCase().includes(texto);
-    const coincidePV     = item.pvs?.some((pv: any) => pv.codigo?.toLowerCase().includes(texto));
+    const coincidePV = item.pvs?.some((pv: any) => pv.codigo?.toLowerCase().includes(texto));
 
     return coincideNombre || coincideCorreo || coincidePV;
   };
