@@ -162,7 +162,7 @@ export class RegistrarEmpaqueComponent implements OnInit {
     this.ptSeleccionada = pv.pt || null;
     const empacadorId = this.authService.user.id;
 
-    this.terminacionEmpaqueService.obtenerItemsPV(pv.pv_codigo, empacadorId).subscribe({
+    this.terminacionEmpaqueService.obtenerItemsPV(pv.pv_codigo, empacadorId, true).subscribe({
       next: (res: any) => {
         if (res.success) {
           // Marcar de dónde viene cada ítem
@@ -202,7 +202,7 @@ export class RegistrarEmpaqueComponent implements OnInit {
     this.ptSeleccionada = pv.pt || null;
     const empacadorId = this.authService.user.id;
 
-    this.terminacionEmpaqueService.obtenerItemsPV(pv.pv_codigo, empacadorId).subscribe({
+    this.terminacionEmpaqueService.obtenerItemsPV(pv.pv_codigo, empacadorId, false).subscribe({
       next: (res: any) => {
         if (res.success) {
           const distribucion = res.items_distribucion.map((i: any) => ({

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -23,7 +24,8 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private inconsistenciasService: InconsistenciaService,
-  ) { }
+    private router: Router
+  ) {}
 
 
   public get user(): User {
@@ -292,6 +294,9 @@ export class AuthService {
       sessionStorage.removeItem('admin_token');
       sessionStorage.removeItem('admin_refresh_token');
       sessionStorage.removeItem('admin_user');
+
+      // Redirect to the user list page after stopping impersonation
+      this.router.navigate(['/users/page/0']);
     }
   }
 
