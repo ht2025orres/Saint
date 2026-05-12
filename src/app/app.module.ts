@@ -37,6 +37,7 @@ import { AngularEditorModule } from '@kolkov/angular-editor';
 import { ListUserComponent } from './pages/user/list-user/list-user.component';
 import { CreateUserComponent } from './pages/user/create-user/create-user.component';
 import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
+import { WorkflowManagerComponent } from './pages/authorization-manager/workflow-manager/workflow-manager.component';
 
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthModule } from './auth/auth.module';
@@ -148,7 +149,8 @@ registerLocaleData(localeEs, 'es-CO');
         /* Seguimiento */
         SeguimientoModule,
         /* Proyectos */
-        // ProyectosModule
+        // ProyectosModule,
+        WorkflowManagerComponent
     ], 
     exports: [
         TaskPanelComponent

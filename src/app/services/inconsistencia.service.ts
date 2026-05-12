@@ -15,6 +15,7 @@ export class InconsistenciaService {
 
     private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
     private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
+    public sdpProxyUrl = `${environment.URL_API_LARAVEL}/sdp-files/stream?path=`;
 
     constructor(
         private http: HttpClient
@@ -119,36 +120,31 @@ export class InconsistenciaService {
 
 
 
-    aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string, accionTomar?: string | null): Observable<any> {
+    aprobarInconsistencia(id_inconsistencia: string, motivo: string = ''): Observable<any> {
         const body = {
             id_inconsistencia,
-            id_Sdp,
-            tipo_inconsistencia,
             accion: 'aprobar',
-            accion_tomar: accionTomar  // ✅ Cambiado a snake_case
+            motivo: motivo
         };
         return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
     }
 
-    denegarInconsistencia(id_inconsistencia: number, id_Sdp: number, motivo: string): Observable<any> {
+    denegarInconsistencia(id_inconsistencia: number, motivo: string): Observable<any> {
         const body = {
             id_inconsistencia,
-            id_Sdp,
             accion: 'denegar',
             motivo
         };
         return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
     }
 
-  // En inconsistencia.service.ts
-ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Observable<any> {
-  return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, {
-    id_inconsistencia,
-    id_Sdp: id_usuario,
-    accion: 'en_espera',
-    motivo
-  });
-}
+    ponerEnEspera(id_inconsistencia: number, motivo: string): Observable<any> {
+        return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, {
+            id_inconsistencia,
+            accion: 'en_espera',
+            motivo
+        });
+    }
 
 
     //Historico inconsistencias //

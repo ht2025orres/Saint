@@ -100,8 +100,14 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         label: 'Security',
-        icon: 'bi bi-speedometer2',
+        icon: 'bi bi-shield-lock',
         link: '/security',
+        permissions: [1]
+      },
+      {
+        label: 'Workflows',
+        icon: 'bi bi-diagram-3',
+        link: '/workflows',
         permissions: [1]
       },
       {
@@ -344,6 +350,19 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
             label: 'Hojas de Conteo',
             link: '/inventario-old/contador-items',
             permissions: [1, 27, 34]
+          }
+        ]
+      },
+       {
+        label: 'Comercial',
+        icon: 'bi bi-archive',
+        modules: [1],
+        permissions: [1],
+        submenu: [
+          {
+            label: 'Recepción de pedidos',
+            link: '/recepcion-pedidos',
+            permissions: [1]
           }
         ]
       },
