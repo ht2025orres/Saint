@@ -48,14 +48,16 @@ export class TechnicalSheetService {
     saveFicha(technicalDataSheet: TechnicalDataSheet): Observable<any> {
         // Aseguramos que los campos obligatorios no sean nulos antes de enviar al backend
         const fieldsToEnsure = [
-            'id_item_customer', 'additional', 'boot', 'rib', 'button', 'buttonhole', 
-            'composition', 'contrast_fabric', 'critical_points', 'crotch', 'cuffs', 
-            'cuts', 'darts', 'edit_comments', 'embroidery', 'figured', 'finished', 
-            'front_adjustment', 'gender', 'hem', 'hood', 'ironing', 'lining', 
-            'loops', 'neckline', 'opening', 'packaging', 'pins', 'prewash', 
-            'purses', 'qa_comments', 'reflective', 'shirt_collar', 'shoulder_union', 
-            'shoulders', 'side_pulls', 'sleeve_connection', 'sleeves', 'stamped', 
-            'stitching', 'straps', 'waistband', 'zipper', 'observations', 'logo_description'
+            'id_item_customer', 'additional', 'boot', 'rib', 'busybody', 'button', 'buttonhole',
+            'composition', 'contrast_fabric', 'critical_points', 'crotch', 'cuffs',
+            'cuts', 'darts', 'edit_comments', 'embroidery', 'figured', 'finished',
+            'front_adjustment', 'gender', 'hem', 'hood', 'ironing', 'lining',
+            'loops', 'neckline', 'opening', 'packaging', 'pins', 'prewash',
+            'purses', 'qa_comments', 'reflective', 'shirt_collar', 'shoulder_union',
+            'shoulders', 'side_pulls', 'sleeve_connection', 'sleeves', 'stamped',
+            'stitching', 'straps', 'waistband', 'zipper', 'observations', 'logo_description', 'bill_materials', 'characteristic_image_1', 'characteristic_image_2',
+            'characteristic_image_3', 'characteristic_image_4', 'logo_technical_data_sheet',
+            'product_image_1', 'product_image_2', 'side_stand', 'version'
         ];
 
         fieldsToEnsure.forEach(field => {
@@ -64,10 +66,22 @@ export class TechnicalSheetService {
             }
         });
 
-        if (technicalDataSheet.id != null){
-            return this.http.put(`${this.urlEndPoint}`, technicalDataSheet);
+        const technicalDataSheetToSend = { ...technicalDataSheet };
+        if (technicalDataSheetToSend.file) {
+            delete technicalDataSheetToSend.file;
         }
-        return this.http.post(`${this.urlEndPoint}`, technicalDataSheet);
+
+        // 'busybody' es el nombre del campo en el form/Java (cotilla), pero la columna
+        // en BD se llama 'rib'. El backend Laravel espera/guarda 'rib'.
+        // Sincronizamos ambos para compatibilidad total.
+        technicalDataSheetToSend.rib = technicalDataSheetToSend.busybody || technicalDataSheetToSend.rib || '';
+
+        console.log('Sending technicalDataSheet to backend:', technicalDataSheetToSend);
+
+        if (technicalDataSheetToSend.id != null){
+            return this.http.put(`${this.urlEndPoint}`, technicalDataSheetToSend);
+        }
+        return this.http.post(`${this.urlEndPoint}`, technicalDataSheetToSend);
     }
 
     saveProductImages(id: number, idCompany: string, idItem: string, formData: FormData): Observable<any>{
@@ -83,7 +97,17 @@ export class TechnicalSheetService {
     }
 
     getById(id: number): Observable<TechnicalDataSheet> {
-        return this.http.get<TechnicalDataSheet>(`${this.urlEndPoint}/${id}`);
+        return this.http.get<TechnicalDataSheet>(`${this.urlEndPoint}/${id}`).pipe(
+            map((sheet: any) => {
+                // La BD devuelve la columna 'rib' (nombre en postgres).
+                // El formulario usa el campo 'busybody' (alias legacy del Java).
+                // Si la API no devuelve busybody explícitamente, lo mapeamos desde rib.
+                if (sheet && sheet.rib !== undefined && !sheet.busybody) {
+                    sheet.busybody = sheet.rib;
+                }
+                return sheet as TechnicalDataSheet;
+            })
+        );
     }
 
     deleteFicha(ficha: TechnicalDataSheet) {

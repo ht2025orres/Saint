@@ -1,0 +1,67 @@
+<div class="flex-1 overflow-auto">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="border-b border-slate-100 bg-slate-50/30">
+                <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ítem / Referencia</th>
+                <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+                <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Color / Talla</th>
+                <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Stock SIESA</th>
+                <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Zona(s)</th>
+                <th class="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Último Mov.</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+            <tr *ngIf="loading">
+                <td colspan="6" class="px-8 py-20 text-center">
+                    <div class="inline-block animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultando movimientos en SIESA...</p>
+                </td>
+            </tr>
+            <tr *ngIf="!loading && itemsPaginados.length === 0">
+                <td colspan="6" class="px-8 py-20 text-center">
+                    <i class="bi bi-info-circle text-4xl text-slate-200 mb-4 block"></i>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No se encontraron ítems con movimientos</p>
+                </td>
+            </tr>
+            <tr *ngFor="let item of itemsPaginados" class="hover:bg-slate-50/50 transition-colors group">
+                <td class="px-8 py-5">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-black text-slate-800">{{item.id_item}}</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">{{item.referencia}}</span>
+                    </div>
+                </td>
+                <td class="px-8 py-5">
+                    <span class="text-xs text-slate-500 font-medium italic">{{item.descripcion}}</span>
+                </td>
+                <td class="px-8 py-5">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-black text-slate-700 uppercase">{{item.color || 'N/A'}}</span>
+                        <span class="text-[9px] font-bold text-slate-400 uppercase">Talla: {{item.talla || 'N/A'}}</span>
+                    </div>
+                </td>
+                <td class="px-8 py-5 text-center">
+                    <span class="px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-700 shadow-sm">
+                        {{item.cantidad | number}}
+                    </span>
+                </td>
+                <td class="px-8 py-5">
+                    <div class="flex flex-wrap gap-1">
+                        <span *ngFor="let zona of getItemZonas(item)" 
+                            class="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-black uppercase tracking-widest">
+                            {{ zona }}
+                        </span>
+                    </div>
+                </td>
+                <td class="px-8 py-5">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                        {{item.fecha_ultimo_movimiento_formatted}}
+                    </span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="p-4 border-t border-slate-100 bg-slate-50/30">
+    <app-shared-paginator [instanceId]="instanceId" [loading]="loading"></app-shared-paginator>
+</div>

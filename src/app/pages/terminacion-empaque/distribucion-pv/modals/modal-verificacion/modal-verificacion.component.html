@@ -1,0 +1,160 @@
+<!-- Modal Verificación de Asignaciones -->
+<div class="modal fade" id="verificacionModal" tabindex="-1" aria-labelledby="verificacionModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-white rounded-xl shadow-2xl border-0 overflow-hidden">
+      <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <h4 class="text-xl font-bold text-gray-800" id="verificacionModalLabel">
+          Verificación de Asignaciones <span class="text-gray-500 font-normal">- PV {{ pvVerificacion }}</span>
+        </h4>
+        <button type="button" class="text-gray-400 hover:text-gray-700 transition" data-bs-dismiss="modal"
+          aria-label="Cerrar">
+          <i class="bi bi-x-lg text-xl"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto max-h-[70vh]">
+
+        <!-- Filtros -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6" *ngIf="itemsVerificacion?.length > 0">
+          <div class="flex-grow">
+            <input type="text"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="Buscar por descripción, item, color, talla..." [(ngModel)]="verFilters.busqueda"
+              (input)="applyVerFilters()">
+          </div>
+          <div class="flex items-center">
+            <label class="flex items-center cursor-pointer text-gray-700">
+              <input type="checkbox"
+                class="form-checkbox h-5 w-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                [(ngModel)]="verFilters.soloPendientes" (change)="applyVerFilters()">
+              <span class="ml-2">Solo pendientes de verificar</span>
+            </label>
+          </div>
+        </div>
+
+        <div *ngIf="currentVerItems?.length > 0; else sinItemsVer">
+          <div class="mb-4 text-sm text-gray-500">
+            Mostrando {{ currentVerItems.length }} de {{ itemsVerificacion.length }} ítems
+            <span *ngIf="verFilters.busqueda || verFilters.soloPendientes" class="italic">(filtrados)</span>
+          </div>
+
+          <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+            <table class="min-w-full text-sm text-left whitespace-nowrap">
+              <thead class="bg-gray-100 text-gray-600 font-semibold border-b border-gray-200">
+                <tr>
+                  <th class="px-3 py-3">Item</th>
+                  <th class="px-3 py-3">Descripción</th>
+                  <th class="px-3 py-3 text-center">Talla</th>
+                  <th class="px-3 py-3 text-center">Color</th>
+                  <th class="px-3 py-3 text-right">Cant. Solicitada</th>
+                  <th class="px-3 py-3 text-right">Cant. Asignada</th>
+                  <th class="px-3 py-3 text-center">Cant. Física</th>
+                  <th class="px-3 py-3 text-right">Diferencia</th>
+                  <th class="px-3 py-3">Notas</th>
+                  <th class="px-3 py-3 text-center">Estado</th>
+                  <th class="px-3 py-3 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let item of currentVerItems" class="transition" [ngClass]="{
+                      'bg-green-50': item.verificado && item.cantidad_fisica === item.cantidad_asignada,
+                      'bg-yellow-50': item.verificado && item.cantidad_fisica !== item.cantidad_asignada,
+                      'bg-white hover:bg-gray-50': !item.verificado
+                    }">
+                  <td class="px-3 py-3 font-medium">{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}
+                  </td>
+                  <td class="px-3 py-3 max-w-[200px] truncate" [title]="item.descripcion">{{ item.descripcion_corta }}
+                  </td>
+                  <td class="px-3 py-3 text-center">{{ item.id_talla }}</td>
+                  <td class="px-3 py-3 text-center">{{ item.id_color }}</td>
+                  <td class="px-3 py-3 text-right">{{ item.cantidad_teorica }}</td>
+                  <td class="px-3 py-3 text-right font-bold text-gray-800">{{ item.cantidad_asignada | number:'1.2-2'
+                    }}</td>
+                  <td class="px-3 py-3 justify-center flex">
+                    <input type="number"
+                      class="w-24 border border-gray-300 rounded px-2 py-1 text-center focus:ring-2"
+                      [(ngModel)]="item.cantidad_fisica" min="0" [max]="item.cantidad_asignada">
+                  </td>
+                  <td class="px-3 py-3 text-right font-medium" [ngClass]="{
+                        'text-red-600 font-bold': getDiferencia(item) < 0,
+                        'text-green-600': getDiferencia(item) === 0
+                      }">
+                    {{ getDiferencia(item) | number:'1.2-2' }}
+                  </td>
+                  <td class="px-3 py-3">
+                    <textarea class="w-48 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2" rows="1"
+                      [(ngModel)]="item.nota_inconsistencia" placeholder="Inconsistencia..."></textarea>
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    <span *ngIf="item.verificado"
+                      class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full flex items-center justify-center gap-1">
+                      <i class="bi bi-check-circle"></i> Verificado
+                    </span>
+                    <span *ngIf="!item.verificado" class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                      Pendiente
+                    </span>
+                  </td>
+                  <td class="px-3 py-3 text-center">
+                    <button *ngIf="!item.verificado" type="button"
+                      class="w-24 bg-green-600 text-white hover:bg-green-700 text-xs py-1.5 px-2 rounded font-medium transition disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                      [disabled]="!esVerificacionValida(item)" (click)="verificarItem(item)">
+                      <i class="bi bi-check-lg"></i> Verificar
+                    </button>
+                    <button *ngIf="item.verificado" type="button"
+                      class="w-24 border border-gray-300 text-gray-700 hover:bg-gray-100 text-xs py-1.5 px-2 rounded font-medium transition flex items-center justify-center gap-1"
+                      (click)="desverificarItem(item)">
+                      <i class="bi bi-arrow-counterclockwise"></i> Revertir
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <div class="mt-4 flex justify-center bg-white p-2 rounded shadow-sm border border-gray-200">
+            <app-shared-paginator *ngIf="paginationService.getPaginatorState(verPaginatorId)"
+              [instanceId]="verPaginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 20, 50]">
+            </app-shared-paginator>
+          </div>
+        </div>
+
+        <ng-template #sinItemsVer>
+          <div class="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg">
+            <span *ngIf="verFilters.busqueda || verFilters.soloPendientes; else noItemsVerAll">
+              No hay ítems que coincidan con los filtros aplicados.
+            </span>
+            <ng-template #noItemsVerAll>
+              No hay ítems con asignaciones para verificar.
+            </ng-template>
+          </div>
+        </ng-template>
+
+      </div>
+      <div class="bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-between items-center rounded-b-xl">
+        <div class="text-sm text-gray-600">
+          Verificados: <strong class="text-green-600">{{ getItemsVerificados() }}</strong> / {{
+          itemsVerificacion?.length || 0 }}
+        </div>
+        <div class="flex gap-2">
+          <button type="button"
+            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
+            data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="button"
+            class="px-5 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition disabled:opacity-50 flex items-center"
+            [disabled]="getItemsVerificados() === 0 || guardandoVerificacion" (click)="confirmarVerificacion()">
+            <span *ngIf="!guardandoVerificacion" class="flex items-center gap-2">
+              <i class="bi bi-save"></i> Confirmar Verificación
+            </span>
+            <span *ngIf="guardandoVerificacion" class="flex items-center">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Guardando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

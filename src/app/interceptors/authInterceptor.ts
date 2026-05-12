@@ -54,6 +54,26 @@ export class AuthInterceptor implements HttpInterceptor {
           });
         }
 
+        if (error.status === 503 && error.error?.error === 'MAINTENANCE_ACTIVE') {
+          this.authService.logout();
+          this.router.navigate(['/login'], { 
+            queryParams: { maintenance: true },
+            replaceUrl: true 
+          });
+          
+          const errorMessage = error.error?.message || 'El sistema ha entrado en mantenimiento. Por favor, intente más tarde.';
+
+          Swal.fire({
+            icon: 'warning',
+            title: 'Sistema en Mantenimiento',
+            text: errorMessage,
+            confirmButtonText: 'Entendido',
+            allowOutsideClick: false
+          });
+          
+          return throwError(() => error);
+        }
+
         return throwError(() => error);
       })
     );

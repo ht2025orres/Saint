@@ -60,7 +60,7 @@ export class ModalTareaComponent implements OnChanges {
   get usuariosFiltrados(): UsuarioCache[] {
     const ids = new Set(this.responsablesSelec.map(r => r.id));
     const q   = this.busquedaResp.toLowerCase().trim();
-    return this.state.usuariosAdministradores
+    return this.state.usuariosResponsables
       .filter(u => !ids.has(u.id) && (!q || u.nombre.toLowerCase().includes(q)))
       .slice(0, 8);
   }

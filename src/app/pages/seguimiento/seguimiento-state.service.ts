@@ -23,12 +23,16 @@ export class SeguimientoStateService {
    * Se hace una búsqueda flexible por si el nombre del rol tiene prefijos (ej: "-")
    */
   get usuariosAdministradores(): UsuarioCache[] {
-    return this._usuariosCache$.value.filter(u =>
-      u.roles?.some(r => {
-        const nombre = (r.nombre || '').toLowerCase();
-        return nombre.includes('administrador del sistema');
-      })
-    );
+    // Si la carga inicial de usuarios ya se filtra por permiso 1 (administradores),
+    // entonces esta lista ya contiene solo a esos usuarios.
+    // El filtro adicional por nombre de rol ya no es necesario o podría ser redundante.
+    // Devolvemos directamente el caché para que coincida con la definición de "responsables" del usuario.
+    return this._usuariosCache$.value;
+  }
+
+  // Nuevo getter para la lista de responsables, que ahora son los usuarios con permiso 1
+  get usuariosResponsables(): UsuarioCache[] {
+    return this._usuariosCache$.value;
   }
 
   setUsuariosCache(usuarios: UsuarioCache[]): void {

@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { User } from '../../models/User';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MaintenanceService } from '../../services/maintenance.service';
 
 @Component({
   selector: 'app-login',
@@ -17,13 +18,30 @@ export class LoginComponent implements OnInit {
   formGr: FormGroup;
   stylesObj;
 
-  constructor(private authService: AuthService, private router: Router,
-    private fb: FormBuilder) {
+  maintenanceActive = false;
+  maintenanceData: any = null;
+
+  constructor(
+    private authService: AuthService, 
+    private router: Router,
+    private route: ActivatedRoute,
+    private fb: FormBuilder,
+    private extMaintenanceService: MaintenanceService
+  ) {
     this.user = new User();
     this.createForm();
   }
 
   ngOnInit(): void {
+    // Check if kicked out by maintenance
+    this.route.queryParams.subscribe(params => {
+      if (params['maintenance']) {
+        this.checkMaintenanceStatus();
+      }
+    });
+
+    this.checkMaintenanceStatus();
+    
     if (this.authService.isAuthenticated()) { /* Cada vez que llega a la pagina de login valida si el pages esta autenticado */
       Swal.fire({
         title: 'Login',
@@ -34,6 +52,21 @@ export class LoginComponent implements OnInit {
       });
       this.router.navigate(['/dashboard']);
     }
+  }
+
+  checkMaintenanceStatus(): void {
+    this.extMaintenanceService.getStatus().subscribe({
+      next: (res) => {
+        if (res.active) {
+          this.maintenanceActive = true;
+          this.maintenanceData = res.data;
+        } else {
+          this.maintenanceActive = false;
+          this.maintenanceData = null;
+        }
+      },
+      error: (err) => console.error('Error checking maintenance', err)
+    });
   }
 
   get emailNoValid() {
@@ -112,12 +145,14 @@ export class LoginComponent implements OnInit {
                 return;
                 }
 
-                // 🟥 4. Error Genérico
-                Swal.fire({
-                title: 'Error inesperado',
-                html: 'Ha ocurrido un error al procesar la solicitud',
-                icon: 'error'
-                });
+                // 🟥 4. Error Genérico (sólo si no es un error de mantenimiento, ya que el interceptor lo maneja)
+                if (!(err.status === 503 && err.error?.error === 'MAINTENANCE_ACTIVE')) {
+                    Swal.fire({
+                        title: 'Error inesperado',
+                        html: 'Ha ocurrido un error al procesar la solicitud',
+                        icon: 'error'
+                    });
+                }
 
                 console.error('Login error:', err);
             });

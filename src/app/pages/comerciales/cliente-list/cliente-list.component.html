@@ -1,0 +1,203 @@
+<div class="comerciales-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <div class="header-icon">
+          <i class="bi bi-briefcase-fill"></i>
+        </div>
+        <div>
+          <h1 class="page-title">Módulo Comercial</h1>
+          <p class="page-subtitle">Gestión de clientes, ítems y cotizaciones</p>
+        </div>
+      </div>
+      <button class="btn-new-costeo" (click)="nuevaSolicitud()">
+        <i class="bi bi-plus-lg"></i>
+        Nueva Solicitud
+      </button>
+    </div>
+
+    <!-- View Toggle -->
+    <div class="view-toggle">
+      <button class="toggle-btn" [class.active]="viewMode === 'clientes'" (click)="switchView('clientes')">
+        <i class="bi bi-people"></i> Clientes
+      </button>
+      <button class="toggle-btn" [class.active]="viewMode === 'solicitudes'" (click)="switchView('solicitudes')">
+        <i class="bi bi-file-earmark-text"></i> Mis Solicitudes
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA CLIENTES ==================== -->
+  <div *ngIf="viewMode === 'clientes'" class="content-section">
+    <!-- Search Bar -->
+    <div class="search-wrapper">
+      <div class="search-input-group">
+        <i class="bi bi-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar por nombre o NIT..."
+          [(ngModel)]="searchTerm"
+          (input)="applyClienteFilters()"
+          (keyup.enter)="searchClientes()"
+          id="search-clientes"
+        />
+        <button *ngIf="searchTerm" class="search-clear" (click)="searchTerm = ''; loadClientes()">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Alphabet Filter -->
+    <div class="alphabet-bar">
+      <button
+        *ngFor="let letter of alphabet"
+        class="letter-btn"
+        [class.active]="letterFilter === letter"
+        (click)="setLetterFilter(letter)"
+      >{{ letter }}</button>
+      <button class="letter-btn letter-clear" [class.active]="!letterFilter" (click)="setLetterFilter('')">
+        Todos
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="skeleton-grid">
+        <div *ngFor="let i of [1,2,3,4,5,6,7,8]" class="skeleton-card">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-subtitle"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client Cards (PAGINATED) -->
+    <div *ngIf="!isLoading" class="clients-grid">
+      <div
+        *ngFor="let cliente of pagedClientes; let i = index"
+        class="client-card"
+        (click)="goToCliente(cliente)"
+        [style.animation-delay]="(i * 30) + 'ms'"
+      >
+        <div class="client-avatar">
+          {{ cliente.razon_social?.charAt(0)?.toUpperCase() }}
+        </div>
+        <div class="client-info">
+          <h3 class="client-name">{{ cliente.razon_social }}</h3>
+          <span class="client-nit">
+            <i class="bi bi-hash"></i> {{ cliente.nit }}
+          </span>
+        </div>
+        <div class="client-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginator -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(clientesPaginatorId)"
+      [instanceId]="clientesPaginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      [loading]="isLoading"
+      [noDataMessage]="'No se encontraron clientes'">
+    </app-shared-paginator>
+  </div>
+
+  <!-- ==================== VISTA SOLICITUDES ==================== -->
+  <div *ngIf="viewMode === 'solicitudes'" class="content-section">
+    <!-- Search & Filters -->
+    <div class="costeo-filters">
+      <div class="search-input-group">
+        <i class="bi bi-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar por código o cliente..."
+          [(ngModel)]="solicitudSearch"
+          (input)="applySolicitudFilters()"
+          id="search-solicitudes"
+        />
+      </div>
+      <select class="filter-select" [(ngModel)]="solicitudEstadoFilter" (change)="applySolicitudFilters()">
+        <option value="">Todos los estados</option>
+        <option value="BORRADOR">Borrador</option>
+        <option value="ENVIADO">Enviado</option>
+        <option value="EN_COSTEO">En Costeo</option>
+        <option value="COSTEADO">Costeado</option>
+        <option value="APROBADO">Aprobado</option>
+        <option value="RECHAZADO">Rechazado</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoadingSolicitudes" class="loading-container">
+      <div class="skeleton-grid">
+        <div *ngFor="let i of [1,2,3,4]" class="skeleton-card skeleton-wide">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-subtitle"></div>
+          <div class="skeleton-line skeleton-meta"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solicitud Cards (PAGINATED) -->
+    <div *ngIf="!isLoadingSolicitudes" class="costeos-list">
+      <div
+        *ngFor="let sol of pagedSolicitudes; let i = index"
+        class="costeo-card"
+        (click)="goToSolicitud(sol)"
+        [style.animation-delay]="(i * 40) + 'ms'"
+      >
+        <div class="costeo-header">
+          <div class="costeo-code">
+            <i class="bi bi-receipt"></i>
+            {{ sol.codigo }}
+          </div>
+          <span class="estado-badge" [ngClass]="getEstadoBadge(sol.estado || '')">
+            {{ getEstadoLabel(sol.estado || '') }}
+          </span>
+        </div>
+        <div class="costeo-body">
+          <div class="costeo-client">
+            <i class="bi bi-building"></i>
+            {{ sol.cliente_nombre }}
+          </div>
+          <div class="costeo-meta">
+            <span *ngIf="sol.items_count">
+              <i class="bi bi-box"></i> {{ sol.items_count }} ítem{{ sol.items_count !== 1 ? 's' : '' }}
+            </span>
+            <span *ngIf="sol.requiere_costeo" class="costeo-badge-mini">
+              <i class="bi bi-calculator"></i> Costeo
+            </span>
+            <span *ngIf="sol.requiere_muestra" class="muestra-badge">
+              <i class="bi bi-scissors"></i> Muestra
+            </span>
+          </div>
+        </div>
+        <div class="costeo-footer">
+          <span class="costeo-date">
+            <i class="bi bi-calendar3"></i>
+            {{ sol.created_at | date:'dd/MM/yyyy' }}
+          </span>
+          <span *ngIf="sol.fecha_entrega_cotizacion" class="costeo-delivery">
+            <i class="bi bi-clock"></i>
+            Entrega: {{ sol.fecha_entrega_cotizacion | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginator -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(solicitudesPaginatorId)"
+      [instanceId]="solicitudesPaginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25, 50]"
+      [loading]="isLoadingSolicitudes"
+      [noDataMessage]="'No hay solicitudes registradas'">
+    </app-shared-paginator>
+  </div>
+</div>

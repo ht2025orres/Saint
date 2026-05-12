@@ -261,11 +261,13 @@
 
       <!-- ── COMPROMISOS DEL FLUJO ACTIVO ──────────────────────────────── -->
       <ng-container *ngIf="flujoActivo">
+        
+        <!-- COMPROMISOS DEL DÍA -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-3">
-            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Compromisos del Día</h3>
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Compromisos</h3>
             <span class="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 rounded-lg">
-              {{ flujoActivo.compromisos?.length || 0 }}
+              {{ compromisosUnificados.length }}
             </span>
           </div>
           
@@ -291,7 +293,7 @@
 
           <ng-container *ngIf="!loadingFlujo && flujoActivo">
             
-            <div *ngFor="let c of flujoActivo.compromisos">
+            <div *ngFor="let c of compromisosUnificados">
               <!-- Edición Inline (Existente) -->
               <div *ngIf="compromisoInline && compromisoInline.id === c.id" 
                 class="bg-white border-2 border-blue-400 rounded-xl p-2.5 shadow-lg animate-in zoom-in-95 duration-200 mb-1.5">
@@ -323,13 +325,13 @@
                     <label class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Descripción detallada</label>
                     <textarea [(ngModel)]="compromisoInline.descripcion" placeholder="Explica los detalles del compromiso..." rows="2"
                       class="w-full text-[10px] font-medium text-slate-600 outline-none bg-slate-50/50 px-2 py-1.5 rounded-lg border border-slate-100 focus:border-blue-300 transition-colors resize-none"></textarea>
-                  </div>
-                  <div>
-                    <label class="block text-[8px] font-black text-amber-500 uppercase tracking-widest mb-1">Notas del responsable</label>
-                    <input type="text" [(ngModel)]="compromisoInline.notas" placeholder="Escribe una nota rápida..."
-                      class="w-full text-[10px] font-medium text-amber-700 outline-none bg-amber-50/30 px-2 py-1.5 rounded-lg border border-amber-100 focus:border-amber-300 transition-colors">
-                  </div>
                 </div>
+                <div>
+                  <label class="block text-[8px] font-black text-amber-500 uppercase tracking-widest mb-1">Notas del responsable</label>
+                  <input type="text" [(ngModel)]="compromisoInline.notas" placeholder="Escribe una nota rápida..."
+                    class="w-full text-[10px] font-medium text-amber-700 outline-none bg-amber-50/30 px-2 py-1.5 rounded-lg border border-amber-100 focus:border-amber-300 transition-colors">
+                </div>
+              </div>
 
                 <div class="flex items-center justify-between gap-3 mt-2 pl-1 border-t border-slate-50 pt-2">
                   <div class="flex items-center gap-1 overflow-x-auto pb-0.5">
@@ -348,8 +350,9 @@
 
               <!-- Vista Normal -->
                <div *ngIf="!compromisoInline || compromisoInline.id !== c.id"
-                 class="bg-white border border-slate-100 rounded-xl p-2.5 flex items-start gap-3
-                        hover:border-blue-100 hover:shadow-sm transition-all group mb-1.5 cursor-pointer"
+                 class="bg-white border rounded-xl p-2.5 flex items-start gap-3
+                        hover:shadow-sm transition-all group mb-1.5 cursor-pointer"
+                 [ngClass]="c.esPasado ? 'border-rose-100 hover:border-rose-200' : 'border-slate-100 hover:border-blue-100'"
                  (click)="onCompromisoClick(c, $event)">
 
                 <!-- Checkbox completar -->
@@ -374,11 +377,20 @@
                         <span class="text-[8px] font-black px-1.5 py-0.5 rounded-lg uppercase tracking-widest border"
                           [ngClass]="{
                             'bg-emerald-50 text-emerald-600 border-emerald-200': c.estado === 'completado',
-                            'bg-blue-50 text-blue-600 border-blue-200': c.estado === 'en_ejecucion' || c.estado === 'en_proceso',
-                            'bg-slate-100 text-slate-500 border-slate-200': c.estado === 'pendiente'
+                            'bg-blue-50 text-blue-600 border-blue-200': (c.estado === 'en_ejecucion' || c.estado === 'en_proceso') && !c.esPasado,
+                            'bg-rose-50 text-rose-600 border-rose-200': (c.estado === 'en_ejecucion' || c.estado === 'en_proceso' || c.estado === 'pendiente') && c.esPasado,
+                            'bg-slate-100 text-slate-500 border-slate-200': c.estado === 'pendiente' && !c.esPasado
                           }">
                           {{ c.estado }}
                         </span>
+                        
+                        <!-- Badge Fecha Pasada -->
+                        <span *ngIf="c.esPasado" 
+                          class="text-[8px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-lg uppercase tracking-widest flex items-center gap-1">
+                          <i class="bi bi-calendar-event text-[7px]"></i>
+                          {{ c.flujo?.fecha | date:'d MMM' }}
+                        </span>
+
                         <!-- Indicador Notas -->
                         <span *ngIf="c.notas || c.descripcion" (click)="verNotaCompromiso(c, $event)"
                           class="text-[8px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-lg border border-amber-100 uppercase tracking-widest flex items-center gap-1 cursor-help hover:bg-amber-100 transition-colors">

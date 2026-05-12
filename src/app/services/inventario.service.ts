@@ -31,11 +31,18 @@ export interface ItemBodega {
   color: string;
   id_color: string;
   id_talla: string;
+  ultimo_movimiento_naturaleza?: number; // 1: entrada, 2: salida
+  fecha_ultimo_movimiento?: number; // Formato YYYYMMDD
+  fecha_ultimo_movimiento_formatted?: string;
   zonas: Array<{
     id: number | null;
     nombre: string;
     descripcion: string | null;
   }>;
+  hasEntradasMes?: boolean;
+  hasSalidasMes?: boolean;
+  contadoReciente?: boolean;
+  ultimoConteo?: string | null;
 }
 
 @Injectable({
@@ -136,8 +143,10 @@ export class InventarioService {
     return this.http.get(`${this.apiLaravelUrl}/inventario/usuarios-saint`);
   }
 
-  getItemsPorBodega(codigoBodega: string): Observable<any> {
-    return this.http.get(`${this.apiLaravelUrl}/inventario/bodegas/${codigoBodega}/items`);
+  getItemsPorBodega(codigoBodega: string, includeMovements: boolean = false): Observable<any> {
+    let params = new HttpParams();
+    params = params.set('include_movements', includeMovements.toString());
+    return this.http.get(`${this.apiLaravelUrl}/inventario/bodegas/${codigoBodega}/items`, { params });
   }
 
   // Alias para compatibilidad con Dashboard
@@ -177,12 +186,23 @@ export class InventarioService {
   }
 
   // Inventario Cíclico
-  getMovimientosCiclico(bodega: string, fechaInicio: string, fechaFin: string): Observable<any> {
-    const params = new HttpParams()
+  getMovimientosCiclico(bodega: string, fechaInicio: string, fechaFin: string, tipoMovimiento: string = '', referencia: string = ''): Observable<ItemBodega[]> {
+    let params = new HttpParams()
       .set('bodega', bodega)
       .set('fecha_inicio', fechaInicio)
       .set('fecha_fin', fechaFin);
-    return this.http.get(`${this.apiLaravelUrl}/inventario/ciclico/movimientos`, { params });
+
+    if (tipoMovimiento) {
+      params = params.set('tipo_movimiento', tipoMovimiento);
+    }
+    if (referencia) {
+      params = params.set('referencia', referencia);
+    }
+
+    return this.http.get<{ success: boolean, data: ItemBodega[] }>(`${this.apiLaravelUrl}/inventario/ciclico/movimientos`, { params })
+      .pipe(
+        map(response => response.data)
+      );
   }
 
   storeCiclico(conteo: any): Observable<any> {
@@ -215,5 +235,37 @@ export class InventarioService {
       .set('bodega', bodega)
       .set('page', page.toString());
     return this.http.get(`${this.apiLaravelUrl}/inventario/ciclico/item-movimientos`, { params });
+  }
+
+  exportarMovimientosCiclicoExcel(
+    bodega: string,
+    fechaInicio: string,
+    fechaFin: string,
+    tipoMovimiento: string = '',
+    referencia: string = ''
+  ): Observable<Blob> {
+    let params = new HttpParams()
+      .set('bodega', bodega)
+      .set('fecha_inicio', fechaInicio)
+      .set('fecha_fin', fechaFin);
+
+    if (tipoMovimiento) {
+      params = params.set('tipo_movimiento', tipoMovimiento);
+    }
+    if (referencia) {
+      params = params.set('referencia', referencia);
+    }
+
+    return this.http.get(`${this.apiLaravelUrl}/inventario/ciclico/exportar-excel`, {
+      params,
+      responseType: 'blob' // Important for file downloads
+    });
+  }
+
+  getItemsContadosRecientes(bodega: string, dias: number = 15): Observable<any> {
+    let params = new HttpParams()
+      .set('bodega', bodega)
+      .set('dias', dias.toString());
+    return this.http.get(`${this.apiLaravelUrl}/inventario/ciclico/items-contados-recientes`, { params });
   }
 }

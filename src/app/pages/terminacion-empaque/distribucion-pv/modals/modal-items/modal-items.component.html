@@ -1,0 +1,191 @@
+<!-- Modal Items (Asignación de distribución) -->
+<div class="modal fade" id="itemsModal" tabindex="-1" aria-labelledby="itemsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 96vw;">
+    <div class="modal-content bg-white rounded-xl shadow-2xl border-0 overflow-hidden text-sm">
+      <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <h4 class="text-xl font-bold text-gray-800" id="itemsModalLabel">
+          Ítems de PV {{ pvSeleccionada }} <span class="text-gray-500 font-normal">- OC {{ ocCliente }}</span>
+        </h4>
+        <button type="button" class="text-gray-400 hover:text-gray-700 transition" data-bs-dismiss="modal"
+          aria-label="Cerrar">
+          <i class="bi bi-x-lg text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto max-h-[80vh]">
+        <!-- Controles de filtrado -->
+        <div class="flex flex-col md:flex-row gap-4 mb-4" *ngIf="items?.length > 0">
+          <div class="flex-grow">
+            <input type="text"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Buscar por descripción, item, cliente, color, talla..." [(ngModel)]="itemFilters.busqueda"
+              (input)="applyItemFilters()">
+          </div>
+          <div class="flex items-center">
+            <label
+              class="flex items-center cursor-pointer text-gray-700 px-4 py-2.5 rounded-lg border hover:bg-gray-100 transition-colors"
+              [ngClass]="itemFilters.soloDisponibles ? 'bg-blue-50 border-blue-400 font-semibold' : 'bg-gray-50 border-gray-200'">
+              <input type="checkbox"
+                class="w-5 h-5 text-blue-600 bg-white border-2 border-gray-400 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                [(ngModel)]="itemFilters.soloDisponibles" (change)="applyItemFilters()">
+              <span class="ml-2" [ngClass]="itemFilters.soloDisponibles ? 'text-blue-800' : 'text-gray-700'">Solo
+                ítems con cantidad disponible</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Mostrar PT si existe -->
+        <div *ngIf="items?.length > 0 && items[0].PT !== 'N/A'"
+          class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-2 rounded-lg mb-4 flex items-center">
+          <i class="bi bi-info-circle mr-2"></i>
+          <span>Complementa con: <span class="font-bold">{{ items[0].PT }}</span></span>
+        </div>
+
+        <div *ngIf="currentItems?.length > 0; else sinItems">
+          <!-- Información de resultados -->
+          <div
+            class="mb-3 text-sm text-gray-600 font-medium bg-gray-50 p-2 px-3 rounded inline-block border border-gray-200">
+            Mostrando {{ currentItems.length }} de {{ items.length }} ítems
+            <span *ngIf="itemFilters.busqueda || itemFilters.soloDisponibles"
+              class="italic font-normal">(filtrados)</span>
+          </div>
+
+          <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+            <table class="min-w-full text-xs text-left whitespace-nowrap">
+              <thead class="bg-gray-100 text-gray-600 font-semibold border-b border-gray-200">
+                <tr>
+                  <th class="px-3 py-2">Item</th>
+                  <th class="px-3 py-2">Descripción</th>
+                  <th class="px-3 py-2">Cliente</th>
+                  <th class="px-2 py-2 text-center">Talla</th>
+                  <th class="px-2 py-2 text-center">Color</th>
+                  <th class="px-3 py-2 text-right">Cant. Teórica</th>
+                  <th class="px-3 py-2 text-right">Recibidos</th>
+                  <th class="px-3 py-2 text-right">Cant. Asignada</th>
+                  <th class="px-3 py-2 text-right">Disponible</th>
+                  <th class="px-3 py-2" *ngIf="!tieneRolEmpacadores()">Asignar cantidad</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let item of currentItems" class="hover:bg-gray-50 transition" [ngClass]="{
+                      'bg-green-50': getCantidadDisponible(item) > 0 && !itemCompletoTeorico(item),
+                      'bg-gray-50 text-gray-500': getCantidadDisponible(item) === 0 && !itemCompletoTeorico(item),
+                      'bg-red-50': itemCompletoTeorico(item)
+                    }">
+                  <td class="px-3 py-2 font-medium">{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}
+                  </td>
+                  <td class="px-3 py-2">
+                    <div class="truncate max-w-[200px]" [title]="item.descripcion">{{ item.descripcion_corta }}</div>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">{{ item.cliente }}</td>
+                  <td class="px-2 py-2 text-center">{{ item.id_talla }}</td>
+                  <td class="px-2 py-2 text-center">{{ item.id_color }}</td>
+                  <td class="px-3 py-2 text-right font-medium">{{ item.cantidad | number:'1.2-2' }}</td>
+                  <td class="px-3 py-2 text-right">
+                    <span class="font-medium">{{ (item.cantidad_asignada_total - item.cantidad_asignada_otros) |
+                      number:'1.2-2' }}</span>
+                    <div *ngIf="item.cantidad_recibida_total > 0" class="text-[10px] text-gray-400 mt-0.5">
+                      ({{ item.cantidad_recibida | number:'1.2-2' }})
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 text-right">{{ item.cantidad_asignada || 0 | number:'1.2-2' }}</td>
+                  <td class="px-3 py-2 text-right font-bold" [ngClass]="{
+                        'text-green-600': getCantidadDisponible(item) > 0,
+                        'text-gray-400': getCantidadDisponible(item) === 0
+                      }">
+                    {{ getCantidadDisponible(item) | number:'1.2-2' }}
+                  </td>
+                  <td class="px-3 py-2" *ngIf="!tieneRolEmpacadores()">
+                    <div class="relative flex items-center max-w-[120px]">
+                      <input type="number"
+                        class="w-full border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 px-2 py-1 text-xs pr-8"
+                        [(ngModel)]="item.cantidad_a_asignar" min="0" [max]="getMaximoPermitido(item)"
+                        [disabled]="getCantidadDisponible(item) === 0">
+
+                      <button type="button"
+                        class="absolute right-0 bg-blue-100 text-blue-700 hover:bg-blue-200 px-1.5 py-1 text-[10px] uppercase font-bold rounded-r border-l border-blue-200"
+                        (click)="asignarMaximoItem(item)" [disabled]="getCantidadDisponible(item) === 0">
+                        Max
+                      </button>
+
+                      <!-- iconos -->
+                      <div class="absolute -right-5">
+                        <i *ngIf="esCantidadValida(item)" class="bi bi-check-circle-fill text-green-500"></i>
+                        <i *ngIf="!esCantidadValida(item) && (item.cantidad_a_asignar > 0)"
+                          class="bi bi-x-circle-fill text-red-500"></i>
+                      </div>
+                    </div>
+                    <div *ngIf="item.cantidad_a_asignar > 0 && item.cantidad_a_asignar > getMaximoPermitido(item)"
+                      class="text-red-500 text-[10px] mt-1 absolute">
+                      Excede (máx: {{ getMaximoPermitido(item) | number:'1.2-2' }})
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Notas completas -->
+          <div class="mt-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <h5 class="text-sm font-semibold text-gray-700 mb-2">Notas completas:</h5>
+            <div class="text-gray-600 text-sm whitespace-pre-wrap">{{ items[0].notas_completas }}</div>
+          </div>
+
+          <!-- Paginación de items -->
+          <div
+            class="mt-8 mb-4 border border-blue-100 bg-white shadow-sm p-4 rounded-xl flex items-center justify-between">
+            <app-shared-paginator *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
+              [instanceId]="itemsPaginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 20, 50]">
+            </app-shared-paginator>
+          </div>
+        </div>
+
+        <ng-template #sinItems>
+          <div class="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg">
+            <span *ngIf="itemFilters.busqueda || itemFilters.soloDisponibles; else noItemsAtAll">
+              No hay ítems que coincidan con los filtros aplicados.
+            </span>
+            <ng-template #noItemsAtAll>
+              No hay ítems disponibles en esta PV.
+            </ng-template>
+          </div>
+        </ng-template>
+
+      </div>
+      <div
+        class="bg-gray-50 border-t border-gray-200 px-6 py-4 flex flex-col sm:flex-row justify-between items-center rounded-b-xl">
+        <div class="mb-3 sm:mb-0 text-sm text-gray-600" *ngIf="!tieneRolEmpacadores()">
+          Total ítems con cantidad para asignar:
+          <span class="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">{{
+            getItemsConCantidadParaAsignar() }}</span>
+        </div>
+        <div class="flex gap-2">
+          <button type="button"
+            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
+            data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <!-- Botón global: asignar máximos -->
+          <button type="button"
+            class="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition"
+            (click)="asignarMaximos()" [disabled]="!(items?.length > 0)" *ngIf="!tieneRolEmpacadores()">
+            Asignar máximos
+          </button>
+
+          <!-- Botón Asignar -->
+          <button type="button"
+            class="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            [disabled]="!tieneItemsValidosParaGuardar() || guardandoAsignacion"
+            (click)="prepararYValidarAsignaciones()" *ngIf="!tieneRolEmpacadores()">
+            <span *ngIf="!guardandoAsignacion">Asignar</span>
+            <span *ngIf="guardandoAsignacion" class="flex items-center">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Guardando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

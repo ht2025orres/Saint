@@ -33,4 +33,8 @@ export class ModulesService {
   getWithPermissions(): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/modules`, { headers: { 'X-Requires-User-Email': 'true' } });
   }
+
+  getModulesByIds(ids: number[]): Observable<any[]> {
+    return this.http.post<any[]>(`${this.base}/modules/by-ids`, { ids }, { headers: { 'X-Requires-User-Email': 'true' } });
+  }
 }

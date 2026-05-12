@@ -70,7 +70,7 @@ export class TareaItemComponent {
   }
 
   get inlineEditAsignadoNombre(): string {
-    return this.state.usuariosAdministradores.find(u => u.id === this.inlineEditForm.asignado_id)?.nombre ?? '';
+    return this.state.usuariosResponsables.find(u => u.id === this.inlineEditForm.asignado_id)?.nombre ?? '';
   }
 
   get inlineEditUsuariosFiltrados(): UsuarioCache[] {

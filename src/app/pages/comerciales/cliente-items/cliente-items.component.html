@@ -1,0 +1,180 @@
+<div class="items-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-row">
+      <button class="btn-back" (click)="goBack()">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <div class="header-info">
+        <h1 class="page-title">{{ clienteNombre }}</h1>
+        <div class="client-meta">
+          <span class="meta-tag"><i class="bi bi-hash"></i> NIT: {{ clienteNit }}</span>
+          <span class="meta-tag"><i class="bi bi-box-seam"></i> {{ items.length }} ítems</span>
+          <span class="meta-tag"><i class="bi bi-receipt"></i> {{ solicitudes.length }} solicitudes</span>
+        </div>
+      </div>
+      <button class="btn-new-costeo" (click)="nuevaSolicitud()">
+        <i class="bi bi-plus-lg"></i>
+        Nueva Solicitud
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="activeTab = 'items'">
+        <i class="bi bi-box-seam"></i> Ítems (vía PVs)
+        <span *ngIf="items.length" class="tab-badge">{{ items.length }}</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'solicitudes'" (click)="activeTab = 'solicitudes'">
+        <i class="bi bi-file-earmark-text"></i> Solicitudes
+        <span *ngIf="solicitudes.length" class="tab-badge">{{ solicitudes.length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== ITEMS TAB ==================== -->
+  <div *ngIf="activeTab === 'items'" class="content-section">
+    <div class="search-wrapper">
+      <div class="search-input-group">
+        <i class="bi bi-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar ítem por referencia, descripción, color o talla..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          (keyup.enter)="searchItems()"
+        />
+        <button *ngIf="searchTerm && !isDeepSearch" class="btn-deep-link" (click)="deepSearch()" title="Buscar en historial profundo">
+          ¿No lo encuentras? Búsqueda profunda
+        </button>
+        <span *ngIf="isDeepSearch" class="deep-badge">
+          <i class="bi bi-info-circle"></i> Historial Profundo
+        </span>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="skeleton-list">
+        <div *ngFor="let i of [1,2,3,4,5]" class="skeleton-row"></div>
+      </div>
+    </div>
+
+    <!-- Items Table (PAGINATED) -->
+    <div *ngIf="!isLoading && filteredItems.length > 0" class="table-wrapper">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Referencia</th>
+            <th>Descripción</th>
+            <th>Color</th>
+            <th>Talla</th>
+            <th>Pedidos</th>
+            <th>Cant. Total</th>
+            <th>Última PV</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of pagedItems; let i = index"
+              class="item-row"
+              [style.animation-delay]="(i * 20) + 'ms'">
+            <td>
+              <span class="ref-badge">{{ getItemRef(item) }}</span>
+            </td>
+            <td class="desc-cell">{{ getItemDesc(item) }}</td>
+            <td>
+              <span *ngIf="item.color" class="color-tag">
+                <span class="color-dot" [style.background]="item.id_color === 'BLA' ? '#fff' : item.id_color === 'NGR' ? '#333' : '#2563EB'"></span>
+                {{ item.color }}
+              </span>
+              <span *ngIf="!item.color" class="text-muted">—</span>
+            </td>
+            <td>
+              <span *ngIf="item.talla" class="talla-tag">{{ item.talla }}</span>
+              <span *ngIf="!item.talla" class="text-muted">—</span>
+            </td>
+            <td>
+              <span class="pedido-count">{{ item.veces_pedido || '—' }}</span>
+            </td>
+            <td>
+              <span class="total-qty">{{ item.total_pedido ? (item.total_pedido | number) : '—' }}</span>
+            </td>
+            <td>
+              <span *ngIf="item.ultima_pv" class="pv-tag">PV {{ item.ultima_pv }}</span>
+              <span *ngIf="!item.ultima_pv" class="text-muted">—</span>
+            </td>
+            <td>
+              <div class="action-btns">
+                <button class="action-btn action-costeo" title="Crear solicitud con este ítem"
+                        (click)="nuevaSolicitud(item)">
+                  <i class="bi bi-calculator"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Items Paginator -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
+      [instanceId]="itemsPaginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      [loading]="isLoading"
+      [noDataMessage]="'No hay PVs registradas para este cliente'">
+    </app-shared-paginator>
+  </div>
+
+  <!-- ==================== SOLICITUDES TAB ==================== -->
+  <div *ngIf="activeTab === 'solicitudes'" class="content-section">
+    <div *ngIf="isLoadingSolicitudes" class="loading-container">
+      <div class="skeleton-list">
+        <div *ngFor="let i of [1,2,3]" class="skeleton-row"></div>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingSolicitudes && solicitudes.length > 0" class="costeos-list">
+      <div *ngFor="let sol of pagedSolicitudes" class="costeo-card" (click)="goToSolicitud(sol)">
+        <div class="costeo-header">
+          <span class="costeo-code"><i class="bi bi-receipt"></i> {{ sol.codigo }}</span>
+          <span class="estado-badge" [ngClass]="getEstadoBadge(sol.estado || '')">
+            {{ getEstadoLabel(sol.estado || '') }}
+          </span>
+        </div>
+        <div class="costeo-meta">
+          <span><i class="bi bi-box"></i> {{ sol.items_count || 0 }} ítems</span>
+          <span><i class="bi bi-calendar3"></i> {{ sol.created_at | date:'dd/MM/yyyy' }}</span>
+          <span *ngIf="sol.requiere_costeo" class="costeo-badge-mini">
+            <i class="bi bi-calculator"></i> Costeo
+          </span>
+          <span *ngIf="sol.requiere_muestra" class="muestra-tag">
+            <i class="bi bi-scissors"></i> Muestra
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solicitudes Paginator -->
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(solicitudesPaginatorId)"
+      [instanceId]="solicitudesPaginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25]"
+      [loading]="isLoadingSolicitudes"
+      [noDataMessage]="'Este cliente no tiene solicitudes registradas aún'">
+    </app-shared-paginator>
+
+    <div *ngIf="!isLoadingSolicitudes && solicitudes.length === 0" class="empty-state">
+      <i class="bi bi-file-earmark-text empty-icon"></i>
+      <h3>Sin solicitudes</h3>
+      <p>Este cliente no tiene solicitudes registradas aún</p>
+      <button class="btn-new-costeo-inline" (click)="nuevaSolicitud()">
+        <i class="bi bi-plus-lg"></i> Crear primera solicitud
+      </button>
+    </div>
+  </div>
+</div>

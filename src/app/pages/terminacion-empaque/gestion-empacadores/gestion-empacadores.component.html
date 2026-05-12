@@ -1,129 +1,173 @@
-<div class="container mt-4">
-  <h2 class="mb-4">Gestión de Empacadores</h2>
+<div class="min-h-screen bg-gray-100 p-8">
+  <h1 class="text-4xl font-extrabold text-gray-900 mb-8 pb-4 border-b-2 border-gray-300">Gestión de Empacadores</h1>
 
-  <!-- 🔹 SECCIÓN 1: EMPACADORES DISPONIBLES -->
-  <div class="card shadow mb-5">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <strong>Empacadores disponibles</strong>
-      <input type="text" class="form-control w-50"
-             placeholder="Buscar empacador..."
-             [(ngModel)]="filtersDisponibles.busqueda"
-             (input)="applyFiltersDisponibles()">
+  <!-- Empacadores Asignados -->
+  <div class="mt-6 bg-white p-6 rounded-lg shadow-xl border border-gray-200">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Empacadores Asignados</h2>
+    <!-- Search input for Asignados -->
+    <div class="flex items-center space-x-2 mb-4">
+      <div class="relative flex-grow">
+        <input type="text" [(ngModel)]="filtersAsignados.busqueda" (input)="applyFiltersAsignados()"
+               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+               placeholder="Buscar empacador o PV...">
+        <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+      </div>
     </div>
 
-    <div class="card-body table-responsive p-0">
-      <table class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Nombre</th>
-            <th style="width: 150px;">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="currentDisponibles.length === 0">
-            <td colspan="2" class="text-center py-4">No se encontraron empacadores.</td>
-          </tr>
-          <tr *ngFor="let emp of currentDisponibles">
-            <td>{{ emp.firstName }} {{ emp.lastName }}</td>
-            <td>
-              <button class="btn btn-sm btn-success w-100"
-                      (click)="asignarPV(emp)">
-                ➕ Asignar PV
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <div *ngIf="currentAsignados.length > 0; else noEmpacadoresAsignados" class="flex flex-col gap-3">
+      <div *ngFor="let emp of currentAsignados" class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow transition-shadow overflow-hidden">
+        <!-- Empacador Header (mimicking distribucion-pv OP header) -->
+        <div class="px-4 py-3 border-l-4 cursor-pointer hover:bg-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-3 transition"
+             [ngClass]="{'border-indigo-500': emp.pvs?.length > 0, 'border-gray-400': emp.pvs?.length === 0}"
+             (click)="toggleExpand(emp)">
+          <!-- Info Principal Data -->
+          <div class="flex items-center gap-3 flex-grow">
+            <div class="flex-grow">
+              <h2 class="text-lg font-bold flex items-center gap-2 m-0 text-gray-800">
+                {{ emp.firstName }} {{ emp.lastName }}
+              </h2>
+              <div class="text-xs text-gray-600 flex items-center gap-2 mt-1">
+                <i class="bi bi-envelope text-gray-400"></i>
+                <span class="font-medium text-gray-700">{{ emp.email }}</span>
+              </div>
+            </div>
+          </div>
 
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(paginadorDisponibles)"
-      [instanceId]="paginadorDisponibles"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25]">
-    </app-shared-paginator>
-  </div>
-
-  <!-- 🔸 SECCIÓN 2: EMPACADORES CON PVs ASIGNADAS -->
-  <div class="card shadow">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <strong>Empacadores con PVs asignadas</strong>
-      <input type="text" class="form-control w-50"
-             placeholder="Buscar empacador o PV…"
-             [(ngModel)]="filtersAsignados.busqueda"
-             (input)="applyFiltersAsignados()">
-    </div>
-
-    <div class="card-body table-responsive p-0">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Empacador</th>
-            <th style="min-width: 240px;">PVs asignadas / Progreso</th>
-            <th class="text-center">Avance total</th>
-            <th style="width: 150px;">Acción</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngIf="currentAsignados.length === 0">
-            <td colspan="4" class="text-center py-4">No hay empacadores con PVs asignadas.</td>
-          </tr>
-          <tr *ngFor="let emp of currentAsignados">
-            <td>{{ emp.firstName }} {{ emp.lastName }}</td>
-
-          <td>
-            <ul class="list-unstyled mb-0">
-              <li *ngFor="let pv of emp.pvs" class="mb-1">
-                <strong>{{ pv.codigo }}</strong>
-                
-                <span class="small text-muted ms-1">
-                  ({{ pv.asignado }}/{{ pv.teorico }})
-                </span>
-                
-                <!-- Mostrar indicador PT solo si existe -->
-                <span *ngIf="pv.pt" class="small text-primary ms-1">
-                  PT: {{ pv.pt }}
-                </span>
-
-                <div class="progress" style="height: 6px;">
-                  <div class="progress-bar"
-                      [style.width.%]="pv.teorico ? (pv.asignado / pv.teorico * 100) : 0">
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </td>
-
-            <td class="text-center">
-              {{ emp.total_asignado }} / {{ emp.total_teorico }}
-              <div class="progress mt-1" style="height: 6px;">
-                <div class="progress-bar bg-success"
+          <div class="flex items-center gap-2 self-end md:self-auto">
+            <!-- Progress Bar for total empacador progress -->
+            <div class="flex-col items-end hidden sm:flex">
+              <span class="text-xs text-gray-500 font-semibold mb-0.5">Progreso Total</span>
+              <div class="w-32 bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                <div class="h-1.5 rounded-full bg-blue-500"
                      [style.width.%]="(emp.total_teorico ? (emp.total_asignado / emp.total_teorico * 100) : 0)">
                 </div>
               </div>
-            </td>
-            <td class="d-flex flex-column gap-1">
-              <button class="btn btn-sm btn-primary w-100"
+              <span class="text-xs text-blue-600 font-semibold mt-0.5">{{ (emp.total_teorico ? (emp.total_asignado / emp.total_teorico * 100) : 0) | number:'1.0-0' }}%</span>
+            </div>
+
+            <!-- Expand/Collapse Icon -->
+            <div class="text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-full h-7 w-7 flex items-center justify-center transition-colors">
+              <i class="bi" [ngClass]="emp.isExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empacador Details / Expanded PVs -->
+        <div *ngIf="emp.isExpanded" class="bg-gray-50 border-t border-gray-200 p-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-end gap-1 mb-3">
+              <button class="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition text-xs font-bold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
                       (click)="asignarPV(emp)">
                 ➕ Asignar PV
               </button>
-
-              <button class="btn btn-outline-danger btn-sm w-100"
+              <button class="px-3 py-1.5 border border-red-500 text-red-500 rounded-md hover:bg-red-50 transition text-xs font-bold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75"
                       (click)="desasignarPVDesdeLista(emp)">
                 ❌ Desasignar PV
               </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </div>
+
+          <div class="max-h-80 overflow-y-auto border border-gray-200 rounded-md">
+            <div *ngIf="emp.pvs?.length > 0; else noPvsExpanded">
+              <div *ngFor="let pv of emp.pvs" class="p-2 border-b border-gray-200 last:border-b-0 hover:bg-gray-100 transition flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <!-- Info PV -->
+                <div class="flex-grow min-w-0">
+                  <div class="flex flex-wrap items-center gap-1 mb-1">
+                    <span class="font-bold text-gray-800 text-xs">PV: {{ pv.codigo }}</span>
+                    <span class="text-xs text-gray-500 ml-0.5">({{ pv.asignado | number:'1.0-0' }}/{{ pv.teorico | number:'1.0-0' }})</span>
+                    <span *ngIf="pv.pt" class="text-xs text-blue-600 ml-0.5">PT: {{ pv.pt | number:'1.0-0' }}</span>
+                  </div>
+                  <!-- Progreso Bar -->
+                  <div class="w-full">
+                    <div class="flex justify-between text-gray-400 text-[9px] uppercase font-bold mb-0.5 tracking-wider">
+                      <span>Progreso</span>
+                      <span class="text-blue-600">{{ (pv.teorico ? (pv.asignado / pv.teorico * 100) : 0) | number:'1.0-0' }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                      <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                        [style.width.%]="pv.teorico ? (pv.asignado / pv.teorico * 100) : 0"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Acciones PV -->
+                <div class="flex gap-1 flex-shrink-0 w-full sm:w-auto justify-end">
+                  <button class="px-2 py-1 text-[10px] font-semibold rounded-md shadow-sm border border-red-300 text-red-600 bg-white hover:bg-red-50 transition focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 flex items-center gap-0.5"
+                          (click)="desasignarPVDesdeLista(emp, pv)">
+                    <i class="bi bi-trash"></i> Desasignar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <ng-template #noPvsExpanded>
+              <div class="text-center text-gray-500 text-xs italic py-3">Sin PVs asignadas para este empacador.</div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(paginadorAsignados)"
-      [instanceId]="paginadorAsignados"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25]">
-    </app-shared-paginator>
+    <div class="mt-6 flex justify-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginadorAsignados)" [instanceId]="paginadorAsignados"
+        [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50]">
+      </app-shared-paginator>
+    </div>
   </div>
+
+  <ng-template #noEmpacadoresAsignados>
+    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded mt-4" role="alert">
+      No hay empacadores con PVs asignadas.
+    </div>
+  </ng-template>
+
+  <!-- Empacadores Disponibles -->
+  <div class="mt-8 bg-white p-6 rounded-lg shadow-xl border border-gray-200">
+    <h2 class="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Empacadores Disponibles</h2>
+    <!-- Search input for Disponibles -->
+    <div class="flex items-center space-x-2 mb-4">
+      <div class="relative flex-grow">
+        <input type="text" [(ngModel)]="filtersDisponibles.busqueda" (input)="applyFiltersDisponibles()"
+               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+               placeholder="Buscar empacador...">
+        <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+      </div>
+    </div>
+
+    <div *ngIf="currentDisponibles.length > 0; else noEmpacadoresDisponibles" class="flex flex-col gap-3">
+      <div *ngFor="let emp of currentDisponibles" class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow transition-shadow overflow-hidden">
+        <div class="px-4 py-3 border-l-4 border-green-500 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex items-center gap-3 flex-grow">
+            <div class="flex-grow">
+              <h2 class="text-lg font-bold flex items-center gap-2 m-0 text-gray-800">
+                {{ emp.firstName }} {{ emp.lastName }}
+              </h2>
+              <div class="text-xs text-gray-600 flex items-center gap-2 mt-1">
+                <i class="bi bi-envelope text-gray-400"></i>
+                <span class="font-medium text-gray-700">{{ emp.email }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            <button class="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-xs font-bold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
+                    (click)="asignarPV(emp)">
+              ➕ Asignar PV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginadorDisponibles)" [instanceId]="paginadorDisponibles"
+        [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50]">
+      </app-shared-paginator>
+    </div>
+  </div>
+
+  <ng-template #noEmpacadoresDisponibles>
+    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded mt-4" role="alert">
+      No hay empacadores disponibles.
+    </div>
+  </ng-template>
+
+  <!-- Modales -->
+  <app-asignar-pv-modal #asignarPvModal [pvsPendientes]="pvsPendientes" (pvAsignada)="onPvAsignada()"></app-asignar-pv-modal>
+  <app-desasignar-pv-modal #desasignarPvModal (pvDesasignada)="onPvDesasignada()"></app-desasignar-pv-modal>
 </div>

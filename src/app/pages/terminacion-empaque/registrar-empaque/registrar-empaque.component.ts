@@ -236,8 +236,42 @@ export class RegistrarEmpaqueComponent implements OnInit {
     });
   }
 
+  validarNumeroEmpaque(item: any): boolean {
+    // Valida si el numero_empaque existe y no está vacío (solo si la cantidad a registrar es > 0)
+    return !!item.numero_empaque && item.numero_empaque.trim().length > 0;
+  }
+
+  formularioEsValido(): boolean {
+    // Verificar que al menos una cantidad a registrar sea mayor que 0
+    const hayCantidadARegistrar = this.itemsPV.some(item => Number(item.cantidad_a_registrar || 0) > 0);
+    if (!hayCantidadARegistrar) {
+      return false;
+    }
+
+    // Verificar que todas las cantidades a registrar válidas tengan un número de empaque
+    const todosLosNumerosEmpaqueValidos = this.itemsPV.every(item => {
+      const cantidadARegistrar = Number(item.cantidad_a_registrar || 0);
+      if (cantidadARegistrar > 0) {
+        return this.validarNumeroEmpaque(item);
+      }
+      return true; // Si no hay cantidad a registrar, no se requiere número de empaque
+    });
+
+    return todosLosNumerosEmpaqueValidos;
+  }
+
   registrarEmpaque(): void {
     if (this.guardandoEmpaque) return;
+
+    // Validación adicional para número de empaque
+    if (!this.formularioEsValido()) {
+      Swal.fire({
+        title: 'Formulario incompleto',
+        html: 'Por favor, asegúrate de que todos los ítems con cantidad a registrar tengan un número de empaque válido.',
+        icon: 'error'
+      });
+      return;
+    }
 
     const itemsInvalidos = this.itemsPV.filter(item => {
       const asignado = Number(item.asignado) || 0;

@@ -62,7 +62,7 @@ export class TareaInlineCrearComponent {
   }
 
   get inlineAsignadoNombre(): string {
-    return this.state.usuariosAdministradores.find(u => u.id === this.inlineTaskForm.asignado_id)?.nombre ?? '';
+    return this.state.usuariosResponsables.find(u => u.id === this.inlineTaskForm.asignado_id)?.nombre ?? '';
   }
 
   get inlineUsuariosFiltrados(): UsuarioCache[] {

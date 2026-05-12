@@ -39,7 +39,6 @@ export class TechnicalDataSheet{
   public shirt_collar: string; //Cuello
   public cuffs: string; //Puños
   public pockets: string; //Bolsillos
-  public busybody: string; //Cotilla
   public sleeves: string; //Mangas
   public back: string; //Espalda
   public shoulders: string; //Hombros
@@ -77,6 +76,7 @@ export class TechnicalDataSheet{
   public logo_description: string;
   public observations: string;
   public rib: string;
+  public busybody: string; // Cotilla - columna 'rib' en BD (alias legado del Java)
   public side_stand: string;
   public bill_materials: string;
 }

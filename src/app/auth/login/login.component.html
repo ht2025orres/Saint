@@ -14,6 +14,27 @@
             <img src="../../../assets/images/logo.png" class="img-responsive">
           </div>
 
+          <!-- Banner de Mantenimiento -->
+          <div *ngIf="maintenanceActive" class="alert alert-warning text-dark text-center mt-3 shadow-sm rounded-lg" style="background-color: #fff3cd; border-color: #ffecb5; padding: 15px;">
+            <div class="mb-2">
+              <i class="bi bi-tools" style="font-size: 2rem; color: #856404;"></i>
+            </div>
+            <h4 class="alert-heading font-weight-bold" style="color: #856404;">Sistema en Mantenimiento</h4>
+            <p class="mb-2" style="font-size: 0.9rem;">
+              <strong>Motivo:</strong> {{ maintenanceData?.reason || 'Actualización programada' }}
+            </p>
+            <hr style="border-top: 1px solid #ffeeba;">
+            <div class="text-left" style="font-size: 0.85rem;">
+              <p class="mb-1"><i class="bi bi-play-circle text-primary"></i> <strong>Iniciado:</strong> {{ maintenanceData?.start_time | date:'shortTime' }}</p>
+              <p class="mb-1" *ngIf="maintenanceData?.estimated_duration_minutes">
+                <i class="bi bi-hourglass-split text-info"></i> <strong>Tiempo estimado total:</strong> {{ maintenanceData?.estimated_duration_minutes }} minutos
+              </p>
+              <p class="mb-0 text-danger mt-2 font-italic text-center">
+                * El acceso está restringido únicamente a usuarios Administradores hasta que el aviso desaparezca.
+              </p>
+            </div>
+          </div>
+
           <div class="form-group" [class.has-danger]="emailNoValid">
             <div class="col-xs-12">
               <label

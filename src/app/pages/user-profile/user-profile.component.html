@@ -1,0 +1,207 @@
+<div class="p-4 sm:p-6 md:p-8 bg-slate-50 min-h-screen">
+    <!-- Header Section -->
+    <div class="max-w-7xl mx-auto mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="p-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl shadow-blue-200">
+                    <i class="bi bi-person-vcard text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Mi Perfil</h1>
+                    <p class="text-slate-500 font-medium">Gestiona tu información personal y revisa tus accesos</p>
+                </div>
+            </div>
+            <div *ngIf="currentUser" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-sm font-bold text-slate-700 uppercase">{{ currentUser.email }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading && !editingUser" class="max-w-7xl mx-auto flex flex-col items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-slate-600 font-medium italic">Cargando información del perfil...</p>
+    </div>
+
+    <div *ngIf="editingUser" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Column: User Card & Personal Info -->
+        <div class="lg:col-span-2 space-y-8">
+            
+            <!-- Personal Info Card -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="bi bi-info-circle text-blue-600"></i>
+                        Información Personal
+                    </h2>
+                </div>
+                <div class="p-8">
+                    <form (ngSubmit)="saveProfile()" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label for="firstName" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nombre</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <input type="text" class="w-full pl-11 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="firstName" [(ngModel)]="editingUser.firstName" name="firstName" required>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="lastName" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Apellido</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <input type="text" class="w-full pl-11 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="lastName" [(ngModel)]="editingUser.lastName" name="lastName" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="email" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Correo Electrónico</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input type="email" class="w-full pl-11 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="email" [(ngModel)]="editingUser.email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="pt-6 border-t border-slate-100">
+                            <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <i class="bi bi-shield-lock text-blue-600"></i>
+                                Seguridad
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label for="password" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Nueva Contraseña</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                            <i class="bi bi-key"></i>
+                                        </span>
+                                        <input type="password" class="w-full pl-11 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="password" [(ngModel)]="userPassword" name="password" placeholder="••••••••">
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label for="confirmPassword" class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirmar Contraseña</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                                            <i class="bi bi-key-fill"></i>
+                                        </span>
+                                        <input type="password" class="w-full pl-11 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" id="confirmPassword" [(ngModel)]="userPasswordConfirm" name="confirmPassword" placeholder="••••••••">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="submit" class="group flex items-center gap-2 px-8 py-3.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none" [disabled]="loading">
+                                <i class="bi bi-check2-circle text-lg" *ngIf="!loading"></i>
+                                <span *ngIf="!loading">Actualizar Perfil</span>
+                                <span *ngIf="loading" class="flex items-center gap-2">
+                                    <div class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div>
+                                    Guardando...
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Roles, Modules & Permissions -->
+        <div class="space-y-8">
+            
+            <!-- User Summary Card -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-8 text-center">
+                <div class="relative inline-block mb-4">
+                    <div class="h-24 w-24 bg-gradient-to-tr from-blue-100 to-indigo-50 rounded-full flex items-center justify-center border-4 border-white shadow-md mx-auto">
+                        <span class="text-3xl font-black text-blue-600">{{ editingUser.firstName.charAt(0) }}{{ editingUser.lastName.charAt(0) }}</span>
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 h-8 w-8 bg-blue-600 rounded-full border-4 border-white flex items-center justify-center">
+                        <i class="bi bi-camera-fill text-white text-[10px]"></i>
+                    </div>
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-900">{{ editingUser.firstName }} {{ editingUser.lastName }}</h3>
+                <p class="text-sm text-slate-500 font-medium mb-4">{{ editingUser.email }}</p>
+                
+                <div class="flex flex-wrap justify-center gap-2">
+                    <span *ngFor="let profile of userProfiles" class="px-3 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-wider rounded-full border border-blue-100">
+                        {{ profile.name }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Modules Section -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="bi bi-grid-1x2 text-indigo-600"></i>
+                        Módulos Asignados
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div *ngIf="userModules.length === 0" class="text-center py-4">
+                        <p class="text-xs text-slate-400 italic">No tienes módulos asignados</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div *ngFor="let mod of userModules" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group hover:border-blue-200 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-white rounded-lg shadow-sm group-hover:bg-blue-50 transition-colors">
+                                    <i class="bi bi-box text-blue-600"></i>
+                                </div>
+                                <span class="text-sm font-bold text-slate-700">{{ mod.name }}</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-slate-300 text-xs" *ngIf="mod.name !== 'Módulo ' + mod.id"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Section -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="bi bi-shield-check text-green-600"></i>
+                        Permisos Efectivos
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div *ngIf="userPermissions.length === 0" class="text-center py-4">
+                        <p class="text-xs text-slate-400 italic">No tienes permisos específicos asignados</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span *ngFor="let perm of userPermissions" class="px-3 py-1.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-lg border border-slate-200 flex items-center gap-1.5">
+                            <i class="bi bi-dot text-lg text-slate-400"></i>
+                            {{ perm.name }}
+                        </span>
+                    </div>
+                    <p class="mt-6 text-[10px] text-slate-400 text-center leading-relaxed">
+                        Los permisos mostrados son aquellos asignados directamente a tu cuenta o heredados por tu perfil actual.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Error/Empty State -->
+    <div *ngIf="!editingUser && !loading" class="max-w-7xl mx-auto py-20">
+        <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-sm">
+            <div class="inline-flex items-center justify-center h-20 w-20 bg-red-50 text-red-500 rounded-full mb-6">
+                <i class="bi bi-exclamation-triangle text-4xl"></i>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800 mb-2">¡Ups! Algo salió mal</h3>
+            <p class="text-slate-500 mb-8 max-w-md mx-auto">No pudimos cargar la información de tu perfil. Por favor, intenta recargar la página o contacta con soporte.</p>
+            <button (click)="loadCurrentUser()" class="px-8 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg">
+                Reintentar Carga
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,60 @@
+<div class="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in" (click)="close()">
+  <div class="w-[95%] max-w-[1000px] h-[80vh] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95" (click)="$event.stopPropagation()">
+    <div class="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
+      <h2 class="text-lg font-black text-slate-900 min-w-max uppercase tracking-tight">
+        <i class="bi bi-search text-indigo-600"></i> Bodega {{ selectedBodega }}
+      </h2>
+      <div class="flex-1 relative">
+        <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Buscar material..." 
+               class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:border-indigo-500 outline-none transition-all" 
+               (input)="filterResults()" (keyup.enter)="search()" />
+      </div>
+      <button class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-white" (click)="close()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+      <div class="flex flex-col items-center justify-center py-20" *ngIf="loading">
+        <div class="w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+        <p class="text-[10px] text-slate-400 font-black uppercase">Consultando Siesa...</p>
+      </div>
+
+      <div class="flex flex-col items-center justify-center py-20" *ngIf="!loading && results.length === 0 && searchQuery && isLoaded">
+        <i class="bi bi-search text-4xl text-slate-200 mb-2"></i>
+        <p class="text-[10px] text-slate-400 font-black uppercase">No se encontraron resultados</p>
+      </div>
+
+      <div class="flex flex-col items-center justify-center py-20" *ngIf="!loading && !isLoaded && !searchQuery">
+        <i class="bi bi-keyboard text-4xl text-slate-200 mb-2"></i>
+        <p class="text-[10px] text-slate-400 font-black uppercase">Escribe algo para buscar</p>
+      </div>
+
+      <div class="overflow-x-auto rounded-2xl border border-slate-100" *ngIf="!loading && results.length > 0">
+        <table class="w-full text-left text-[11px] border-collapse">
+          <thead>
+            <tr class="bg-slate-50">
+              <th class="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Referencia</th>
+              <th class="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">ID Item</th>
+              <th class="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+              <th class="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-center">ID Color</th>
+              <th class="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-right">Color</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            <tr *ngFor="let item of results" (click)="selectItem(item)" class="group hover:bg-emerald-50 cursor-pointer transition-colors">
+              <td class="px-4 py-3 font-black text-indigo-600">{{ item.referencia }}</td>
+              <td class="px-4 py-3 font-medium text-slate-400">{{ item.id_item }}</td>
+              <td class="px-4 py-3 font-bold text-slate-700">{{ item.descripcion }}</td>
+              <td class="px-4 py-3 text-center font-medium text-slate-400">{{ item.id_color }}</td>
+              <td class="px-4 py-3 text-right font-black text-slate-800">{{ item.color }}</td>
+              <td class="px-4 py-3 text-right"><i class="bi bi-plus-circle text-indigo-400 transition-all"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -93,7 +93,7 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   // ── Usuarios (carga única, compartida con sub-componentes) ──────
   private _cargarUsuarios(): void {
     if (this.state.usuariosCache.length) return;
-    this.userService.getAll().subscribe({
+    this.userService.getUsersByPermission(1).subscribe({
       next: (us: any[]) => {
         this.state.setUsuariosCache(
           us.map(u => ({

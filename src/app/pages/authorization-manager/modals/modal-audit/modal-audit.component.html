@@ -1,0 +1,92 @@
+<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+  <div (click)="$event.stopPropagation()" class="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[85vh] flex flex-col border border-slate-100 overflow-hidden">
+    
+    <!-- HEADER -->
+    <div class="px-4 py-3 bg-slate-800 flex justify-between items-center shrink-0">
+      <div class="flex items-center">
+        <i class="bi bi-clock-history mr-2 text-lg text-white"></i>
+        <h2 class="text-base font-black uppercase tracking-widest text-white">Trazabilidad de Cambios</h2>
+        <span *ngIf="auditTargetUser" class="ml-3 px-2 py-0.5 bg-slate-700 rounded text-[10px] font-bold text-white">
+          Usuario: {{ getAuditUserDisplay(auditTargetUser) }}
+        </span>
+      </div>
+      <button (click)="cerrar()" class="text-white/70 hover:text-white transition-colors">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-1 bg-slate-50 flex flex-col overflow-hidden relative">
+      <div *ngIf="loading" class="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+        <div class="text-slate-500 font-bold text-xs uppercase tracking-widest"><i class="bi bi-arrow-repeat animate-spin mr-2"></i> Cargando...</div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-100 sticky top-0 z-20">
+            <tr class="border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <th class="p-3 w-32">Fecha</th>
+              <th class="p-3 w-48">Actor</th>
+              <th class="p-3 w-48">Acción</th>
+              <th class="p-3 w-48">Afectado</th>
+              <th class="p-3">Detalle Cambios</th>
+            </tr>
+          </thead>
+          <tbody class="text-xs text-slate-700">
+            <tr *ngFor="let log of auditLogs" class="border-b border-slate-100 hover:bg-slate-50">
+              <td class="p-3 text-slate-500">{{ log.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="p-3 font-medium">{{ getAuditUserDisplay(log.actor) }}</td>
+              <td class="p-3 font-bold text-[10px] uppercase tracking-wider text-slate-600">{{ translateAction(log.action) }}</td>
+              <td class="p-3">
+                <div class="font-medium text-slate-800" *ngIf="log.target; else syst">{{ getAuditUserDisplay(log.target) }}</div>
+                <ng-template #syst><span class="px-2 py-0.5 bg-slate-200 rounded text-[10px] text-slate-600">Sistema / Config</span></ng-template>
+              </td>
+              <td class="p-3">
+                <div class="flex flex-col gap-1.5">
+                  <div *ngFor="let item of getAuditDetailedChanges(log)" class="flex items-center text-[11px]">
+                    <span class="w-1.5 h-1.5 rounded-full shrink-0 mr-2"
+                      [ngClass]="{
+                        'bg-emerald-500': item.status === 'added', 
+                        'bg-red-500': item.status === 'removed',
+                        'bg-amber-500': item.status === 'warning',
+                        'bg-slate-400': item.status === 'neutral'
+                      }"
+                      [title]="item.status"></span>
+                    <span class="font-medium text-slate-700">{{ item.name }}</span>
+                  </div>
+                  <div *ngIf="getAuditDetailedChanges(log).length === 0" class="text-slate-400 text-[10px] italic">
+                    {{ renderAuditDetails(log.after_data) }}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="auditLogs.length === 0 && !loading">
+              <td colspan="5" class="text-center py-10 text-slate-400">
+                <i class="bi bi-info-circle text-2xl block mb-2"></i>
+                <span class="text-xs uppercase tracking-widest font-bold">No hay registros</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="px-4 py-3 bg-white border-t border-slate-100 flex justify-between items-center shrink-0">
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        Página {{ auditPage }} de {{ auditTotalPages }}
+      </div>
+      <div class="flex gap-2">
+        <button (click)="changeAuditPage(-1)" [disabled]="auditPage === 1"
+          class="px-4 py-1.5 border border-slate-200 rounded text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 transition-colors disabled:opacity-50">
+          Anterior
+        </button>
+        <button (click)="changeAuditPage(1)" [disabled]="auditPage === auditTotalPages"
+          class="px-4 py-1.5 border border-slate-200 rounded text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 transition-colors disabled:opacity-50">
+          Siguiente
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

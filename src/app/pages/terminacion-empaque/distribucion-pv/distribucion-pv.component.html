@@ -1,174 +1,220 @@
-<!-- distribucion-pv.component.html -->
-<div class="container py-4">
-  <h2 class="mb-4 display-6">Distribución de Ítems</h2>
-
-  <div *ngIf="cargandoInicial || estadoCarga" class="alert alert-info d-flex align-items-center gap-2" role="status">
-    <span class="spinner-border spinner-border-sm" *ngIf="cargandoInicial"></span>
-    <span>{{ estadoCarga || 'Procesando información...' }}</span>
+<div class="container mx-auto px-4 py-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Distribución de Ítems</h1>
+    <button type="button"
+      class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition"
+      (click)="abrirModalUbicacionesDistintas()">
+      <i class="bi bi-box-arrow-in-right"></i> Ubicaciones Distintas
+    </button>
   </div>
 
-  <!-- Barra de búsqueda y botón ubicaciones -->
-  <div class="row mb-3" *ngIf="opsConPvs?.length > 0">
-    <div class="col-md-9">
-      <input type="text"
-             class="form-control"
-             placeholder="Buscar por código de OP..."
-             [(ngModel)]="filters.busqueda"
-             (input)="applyFilters()">
-    </div>
-    <div class="col-md-3">
-      <button 
-        type="button" 
-        class="btn btn-info w-100"
-        (click)="abrirModalUbicacionesDistintas()">
-        <i class="bi bi-box-arrow-in-right"></i> Ver Ubicaciones Distintas
-      </button>
-    </div>
+  <div *ngIf="cargandoInicial" class="bg-blue-50 text-blue-800 p-4 rounded-xl flex items-center gap-2 mb-6">
+    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+    <span>Cargando OPs pendientes...</span>
+  </div>
+
+  <!-- Barra de búsqueda -->
+  <div class="mb-6" *ngIf="opsConPvs?.length > 0">
+    <input type="text"
+      class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      placeholder="Buscar por código de OP..." [(ngModel)]="filters.busqueda" (input)="applyFilters()">
   </div>
 
   <div *ngIf="currentOps?.length > 0; else cargandoOps">
-    <div *ngFor="let op of currentOps" class="card mb-3 shadow-sm"
-        style="border: double;" 
-        [ngClass]="{
-          'border-warning': tienePVsConAsignacionesPendientes(op) && tieneRolEmpacadores(),
-          'border-success': !tienePVsConAsignacionesPendientes(op) && op.tieneDisponibles == true && !tieneRolEmpacadores(),
-          'border-secondary': !tienePVsConAsignacionesPendientes(op) && op.tieneDisponibles == false
-        }">
-      <div class="card-header d-flex justify-content-between align-items-center bg-light"
-          (click)="toggleExpandirOP(op)"
-          style="cursor: pointer;">
-        <div class="d-flex flex-column">
-          <span class="fs-5 fw-semibold" 
-            [ngClass]="{
-              'text-success': op.tieneDisponibles?.data === true,
-              'text-secondary': op.tieneDisponibles?.data === false
-            }">
-            OP: {{ op?.codigo || 'Sin código' }}
-          </span>
-          
-          <!-- Mostrar clientes de la OP -->
-          <div *ngIf="op.clientes && op.clientes.length > 0" class="mt-1">
-            <small class="text-muted">
-              <i class="bi bi-building"></i>
-              <span *ngIf="!tieneMultiplesClientes(op)">
-                {{ obtenerPrimerCliente(op)?.nombre }}
-              </span>
-              <span *ngIf="tieneMultiplesClientes(op)">
-                {{ obtenerCantidadClientes(op) }} clientes: {{ obtenerNombresClientes(op) }}
-              </span>
-            </small>
-          </div>
-        </div>
-        
-        <i class="bi fs-4" 
-        [ngClass]="op.expandir ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-      </div>
+    <div class="flex flex-col gap-3">
+      <div *ngFor="let op of currentOps"
+        class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow transition-shadow overflow-hidden">
 
-      <div *ngIf="op.expandir" class="card-body pt-2">
-        <div *ngIf="op.cargandoDetalle" class="small text-info mb-2 d-flex align-items-center gap-2">
-          <span class="spinner-border spinner-border-sm"></span>
-          <span>{{ op.estadoCarga || 'Procesando OP...' }}</span>
-        </div>
+        <!-- Header OP -->
+        <div
+          class="px-5 py-4 border-l-4 cursor-pointer hover:bg-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4 transition"
+          [ngClass]="{
+                'border-yellow-500': tienePVsConAsignacionesPendientes(op) && tieneRolEmpacadores(),
+                'border-green-500': !tienePVsConAsignacionesPendientes(op) && op.tieneDisponibles === true && !tieneRolEmpacadores(),
+                'border-gray-400': op.indicadoresCargados && !tienePVsConAsignacionesPendientes(op) && op.tieneDisponibles !== true,
+                'border-gray-200': !op.indicadoresCargados
+             }" (click)="toggleExpandirOP(op)">
 
-        <ul class="list-group" *ngIf="!op.cargando; else cargandoPVs">
-          <div class="mb-2">
-            <input type="text" class="form-control form-control-sm" placeholder="Buscar PV..."
-                  [(ngModel)]="pvFilters[op.codigo]" (input)="filtrarPVs(op)">
-          </div>
-          <li *ngFor="let pv of op.pvsPaged"
-              class="list-group-item d-flex justify-content-between align-items-center"
-              [ngClass]="{
-                'list-group-item-secondary':
-                  tieneRolEmpacadores() ||
-                  (!tieneRolEmpacadores() && !pv.tieneDisponibles && !pv.tieneAsignaciones),
-                'list-group-item-success':
-                  !tieneRolEmpacadores() && pv.tieneDisponibles && !pv.tieneAsignaciones,
-                'list-group-item-warning':
-                  (!tieneRolEmpacadores() && pv.tieneAsignaciones) && !this.AuthService.hasPermission(33)
-              }">
+          <!-- Info Principal Data -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex-shrink-0 bg-gray-100 text-gray-500 rounded-md font-bold px-3 py-2 text-sm tracking-widest text-center border border-gray-200 shadow-inner min-w-[60px]">
+              OP
+            </div>
+            <div>
+              <div class="flex items-center flex-wrap gap-2 mb-1">
+                <h2 class="text-xl font-bold flex items-center gap-2 m-0" [ngClass]="{
+                      'text-green-700': op.tieneDisponibles === true,
+                      'text-gray-800': !op.indicadoresCargados || op.tieneDisponibles !== true
+                    }">
+                  {{ op?.codigo || 'Sin código' }}
+                </h2>
 
-            <div class="d-flex flex-column">
-              <div class="fw-medium">
-                PV: {{ pv.numero_pv || 'Desconocida' }}
-                  <span
-                    *ngIf="AuthService.hasPermission(21) 
-                            && pv.tieneAsignaciones 
-                            && !AuthService.hasPermission(33)"
-                    class="badge bg-warning text-dark ms-2">
-                    <i class="bi bi-exclamation-triangle"></i> Pendiente verificación
-                  </span>
+                <!-- ESTADO OP ("Completa" vs "Activa") -->
+                <span *ngIf="op.indicadoresCargados"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide"
+                  [ngClass]="!isOpCompleta(op) ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'">
+                  {{ !isOpCompleta(op) ? 'Activa' : 'Completa' }}
+                </span>
+
+                <!-- ITEMS PENDIENTES -->
+                <span *ngIf="op.indicadoresCargados && op.tieneDisponibles"
+                  class="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wide">
+                  <i class="bi bi-box-seam"></i> Pendiente Distribuir
+                </span>
               </div>
-              
-              <!-- Mostrar cliente específico de esta PV -->
-              <small *ngIf="pv.cliente" class="text-muted mt-1">
-                <i class="bi bi-person-badge"></i> {{ pv.cliente.nombre }} ({{ pv.cliente.nit }})
-              </small>
+
+              <div *ngIf="op.clientes && op.clientes.length > 0" class="text-sm text-gray-600 flex items-center gap-2">
+                <i class="bi bi-person-badge text-gray-400"></i>
+                <span *ngIf="!tieneMultiplesClientes(op)" class="font-medium text-gray-700">
+                  {{ obtenerPrimerCliente(op)?.nombre }}
+                </span>
+                <span *ngIf="tieneMultiplesClientes(op)" class="font-medium text-gray-700">
+                  <span class="bg-gray-200 text-gray-800 text-xs px-2 py-0.5 rounded-full mr-1">{{
+                    obtenerCantidadClientes(op) }} clientes</span> {{ obtenerNombresClientes(op) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 self-end md:self-auto">
+            <span *ngIf="!op.indicadoresCargados && !op.cargandoIndicadores"
+              class="text-xs text-gray-400 italic hidden md:inline-block">Click para desplegar</span>
+            <span *ngIf="op.cargandoIndicadores" class="text-xs text-blue-600 italic hidden md:inline-block">
+              <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 inline-block mr-1"></div>
+              Cargando...
+            </span>
+            <div
+              class="text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-full h-8 w-8 flex items-center justify-center transition-colors">
+              <i class="bi" [ngClass]="op.expandir ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalle OP -->
+        <div *ngIf="op.expandir" class="bg-gray-50 border-t border-gray-200">
+          <div *ngIf="op.cargandoIndicadores" class="p-3 text-blue-600 text-sm flex items-center gap-2 justify-center">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span>Cargando indicadores...</span>
+          </div>
+
+          <div *ngIf="!op.indicadoresCargados && !op.cargandoIndicadores && !op.cargando"
+            class="p-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center text-sm">
+            <span class="text-blue-800">OP sin indicadores recientes</span>
+            <button type="button"
+              class="bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 px-3 py-1 rounded"
+              (click)="cargarIndicadoresAsync(op)">
+              <i class="bi bi-arrow-clockwise mr-1"></i> Cargar
+            </button>
+          </div>
+
+          <div *ngIf="!op.cargando; else cargandoPVs">
+            <div class="p-3 bg-white border-b border-gray-200">
+              <input type="text"
+                class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
+                placeholder="Buscar PV..." [(ngModel)]="pvFilters[op.codigo].busqueda" (input)="filtrarPVs(op)">
             </div>
 
-              <div class="btn-group" role="group">
+            <div class="max-h-96 overflow-y-auto">
+              <div *ngFor="let pv of op.pvsPaged"
+                class="p-3 border-b border-gray-200 hover:bg-gray-100 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                [ngClass]="{
+                    'bg-gray-100': pv.indicadoresCargados && (tieneRolEmpacadores() || (!tieneRolEmpacadores() && !pv.tieneDisponibles && !pv.tieneAsignaciones)),
+                    'bg-green-50': pv.indicadoresCargados && !tieneRolEmpacadores() && pv.tieneDisponibles && !pv.tieneAsignaciones,
+                    'bg-yellow-50': pv.indicadoresCargados && (!tieneRolEmpacadores() && pv.tieneAsignaciones) && !this.AuthService.hasPermission(33)
+                  }">
 
-                <!-- 🔹 Ver detalle: solo si NO tiene el rol de gestión empacadores -->
-                <button 
-                  type="button"
-                  class="btn btn-sm btn-primary"
-                  (click)="verItemsDePV(op.codigo, pv.numero_pv)"
-                  title="Ver items">
-                  <i class="bi bi-eye"></i> Ver Detalle
-                </button>
+                <!-- Info PV -->
+                <div class="flex-grow min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <span class="font-bold text-gray-800 text-sm">PV: {{ pv.numero_pv || 'Desc.' }}</span>
+                    <span *ngIf="pv.indicadoresCargados && pv.tieneItemsPendientesDistribuir"
+                      class="border border-amber-300 text-amber-700 bg-amber-50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap hidden sm:inline-block">
+                      Con pendientes para distribuir
+                    </span>
+                    <span
+                      *ngIf="pv.indicadoresCargados && AuthService.hasPermission(21) && pv.tieneAsignaciones && !AuthService.hasPermission(33)"
+                      class="bg-yellow-200 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
+                      Pendiente Verif.
+                    </span>
+                    <span *ngIf="pv.cliente" class="text-gray-500 text-xs font-medium" [title]="pv.cliente.nombre">
+                      {{ pv.cliente.nombre.length > 30 ? (pv.cliente.nombre | slice:0:40) + '...' : pv.cliente.nombre }}
+                    </span>
+                  </div>
 
-                <!-- 🔸 Verificar: solo si tiene el rol y la PV tiene asignaciones -->
-                <button 
-                  type="button"
-                  class="btn btn-sm btn-warning"
-                  (click)="abrirVerificacion(op.codigo, pv.numero_pv)"
-                  title="Verificar asignaciones pendientes"
-                  *ngIf="tieneRolEmpacadores() && pv.tieneAsignaciones">
-                  <i class="bi bi-check2-square"></i> Verificar
-                </button>
+                  <!-- Progreso Bar (Siempre visible si se cargó) -->
+                  <div *ngIf="pv.indicadoresCargados" class="w-full">
+                    <div
+                      class="flex justify-between text-gray-400 text-[10px] uppercase font-bold mb-0.5 tracking-wider">
+                      <span>Teórico vs Distribuido</span>
+                      <span class="text-blue-600">{{ (pv.progreso_pv || 0) | number:'1.2-2' }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                      <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                        [style.width.%]="pv.progreso_pv || 0"></div>
+                    </div>
+                  </div>
+                </div>
 
+                <!-- Botones PV -->
+                <div class="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
+                  <button type="button"
+                    class="text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded transition text-xs font-semibold flex items-center gap-1 shadow-sm"
+                    (click)="verItemsDePV(op.codigo, pv.numero_pv)">
+                    <i class="bi bi-eye"></i> Ver
+                  </button>
+                  <button type="button"
+                    class="border border-yellow-400 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 px-3 py-1.5 rounded transition text-xs font-semibold flex items-center gap-1 shadow-sm"
+                    (click)="abrirVerificacion(op.codigo, pv.numero_pv)"
+                    *ngIf="tieneRolEmpacadores() && pv.tieneAsignaciones">
+                    <i class="bi bi-check2-square"></i> Verificar
+                  </button>
+                </div>
               </div>
-            </li>
-            <app-shared-paginator
-              *ngIf="paginationService.getPaginatorState('pv_' + op.codigo)"
-              [instanceId]="'pv_' + op.codigo"
-              [showPageSizeSelector]="true"
-              [pageSizeOptions]="[5, 10, 25]">
-            </app-shared-paginator>
-          </ul>
+            </div>
+
+            <!-- Paginador PVs -->
+            <div class="p-3 bg-white flex justify-center text-xs"
+              *ngIf="paginationService.getPaginatorState('pv_' + op.codigo)">
+              <app-shared-paginator [instanceId]="'pv_' + op.codigo" [showPageSizeSelector]="true"
+                [pageSizeOptions]="[5, 10, 25]">
+              </app-shared-paginator>
+            </div>
+          </div>
 
           <ng-template #cargandoPVs>
-            <div class="p-3 text-center">
-              <div class="spinner-border text-primary" role="status"></div>
-              <p class="mt-2 mb-0">Cargando PVs...</p>
+            <div class="p-6 text-center text-gray-500 flex flex-col items-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+              <span class="text-sm">Cargando PVs...</span>
             </div>
           </ng-template>
 
           <ng-template #sinPVs>
-              <div class="alert alert-warning mt-3 mb-0" role="alert">
-              No hay PVs asociadas a esta OP.
-              </div>
+            <div class="text-gray-500 p-6 text-center text-sm bg-white">No hay PVs.</div>
           </ng-template>
         </div>
+      </div>
     </div>
 
-    <!-- Paginación -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(paginatorId)"
-      [instanceId]="paginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25, 50]">
-    </app-shared-paginator>
+    <!-- Paginación Global -->
+    <div class="mt-6 flex justify-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+      <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)" [instanceId]="paginatorId"
+        [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50]">
+      </app-shared-paginator>
+    </div>
   </div>
 
   <ng-template #cargandoOps>
-    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-      <div class="spinner-border text-primary" role="status"></div>
-      <span class="ms-2">Cargando órdenes de producción...</span>
+    <div class="flex flex-col justify-center items-center h-48 bg-white rounded-xl shadow-sm border border-gray-200">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+      <span class="text-gray-600 font-medium">Cargando órdenes de producción...</span>
     </div>
   </ng-template>
+
   <!-- Si no hay OPs -->
   <ng-template #sinOps>
-    <div class="alert alert-info mt-4 text-center" role="alert">
+    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded mt-4" role="alert">
       <span *ngIf="filters.busqueda && opsConPvs?.length > 0; else noOpsMessage">
         No se encontraron OPs que coincidan con la búsqueda "{{ filters.busqueda }}".
       </span>
@@ -178,582 +224,13 @@
     </div>
   </ng-template>
 
-  <!-- Modal Items -->
-<div class="modal fade" id="itemsModal" tabindex="-1" aria-labelledby="itemsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="itemsModalLabel">
-          Ítems de PV {{ pvSeleccionada }} - OC {{ ocCliente }}
-        </h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
+  <!-- Modal Items (Asignación) -->
+  <app-modal-items #modalItems></app-modal-items>
 
-        
-        <!-- Controles de filtrado -->
-        <div class="row mb-3" *ngIf="items?.length > 0">
-          <div class="col-md-8">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Buscar por descripción, item, cliente, color, talla..."
-                   [(ngModel)]="itemFilters.busqueda"
-                   (input)="applyItemFilters()">
-          </div>
-          <div class="col-md-4">
-            <div class="form-check">
-              <input class="form-check-input" 
-              type="checkbox" 
-                     id="soloDisponibles"
-                     [(ngModel)]="itemFilters.soloDisponibles"
-                     (change)="applyItemFilters()">
-                     <label class="form-check-label" for="soloDisponibles">
-                Solo ítems con cantidad disponible
-              </label>
-            </div>
-          </div>
-        </div>
+  <!-- Modal Verificación -->
+  <app-modal-verificacion #modalVerificacion></app-modal-verificacion>
 
-        <!-- Mostrar PT si existe -->
-        <div *ngIf="items?.length > 0 && items[0].PT !== 'N/A'" class="mb-3">
-          <label class="form-label">
-            Complementa con: 
-            <span class="fw-bold text-primary">{{ items[0].PT }}</span>
-          </label>
-        </div>
+  <!-- Modal Ubicaciones Distintas -->
+  <app-modal-ubicaciones #modalUbicaciones></app-modal-ubicaciones>
 
-        <div *ngIf="currentItems?.length > 0; else sinItems">
-          <!-- Información de resultados -->
-          <div class="mb-3">
-            <small class="text-muted">
-              Mostrando {{ currentItems.length }} de {{ items.length }} ítems
-              <span *ngIf="itemFilters.busqueda || itemFilters.soloDisponibles"> 
-                (filtrados)
-              </span>
-            </small>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm">
-              <thead class="table-light">
-                <tr>
-                  <th>Item</th>
-                  <th>Descripción</th>
-                  <th>Descripción larga</th>
-                  <th>Cliente</th>
-                  <th>Unidad de medida</th>
-                  <th>Talla</th>
-                  <th>Color</th>
-                  <th>Cantidad teórica</th>
-                  <th>Cantidad recibida</th>
-                  <th>Cantidad asignada total</th>
-                  <th>Cantidad disponible</th>
-                  <th style="padding: 0 20px 0 20px;" 
-                  *ngIf="!tieneRolEmpacadores()">Asignar cantidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of currentItems"
-                    [ngClass]="{
-                      'table-success': getCantidadDisponible(item) > 0 && !itemCompletoTeorico(item),
-                      'table-secondary': getCantidadDisponible(item) === 0 && !itemCompletoTeorico(item),
-                      'table-warning': itemCompletoTeorico(item)
-                    }"
-                    [style.--bs-table-bg]="itemCompletoTeorico(item) ? 'rgba(255, 192, 203, 0.8)' : ''">
-                  <td>{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}</td>
-                  <td>{{ item.descripcion_corta }}</td>
-                  <td>{{ item.descripcion }}</td>
-                  <td>{{ item.cliente }}</td>
-                  <td>{{ item.unidad_medida }}</td>
-                  <td>{{ item.id_talla }}</td>
-                  <td>{{ item.id_color }}</td>
-                  <td>{{ item.cantidad | number:'1.2-2' }}</td>
-                  <td>
-                    <!-- Número grande → disponible para esta PV -->
-                    {{ (item.cantidad_asignada_total - item.cantidad_asignada_otros) | number:'1.2-2' }}
-                    <!-- Paréntesis → total recibido -->
-                    <div *ngIf="item.cantidad_recibida_total > 0"
-                        style="font-size: 0.70em; opacity: 0.55; line-height: 1;">
-                      ({{ item.cantidad_recibida | number:'1.2-2' }})
-                    </div>
-                  </td>
-                  <td>{{ item.cantidad_asignada || 0 | number:'1.2-2' }}</td>
-                  <td class="fw-bold" 
-                      [ngClass]="{
-                        'text-success': getCantidadDisponible(item) > 0,
-                        'text-secondary': getCantidadDisponible(item) === 0
-                      }">
-                    {{ getCantidadDisponible(item) | number:'1.2-2' }}
-                  </td>
-                  <td colspan="2"
-                  *ngIf="!tieneRolEmpacadores()">
-                    <!-- Input -->
-                    <div class="mb-1 position-relative d-flex align-items-center">
-                      <input 
-                        type="number" 
-                        class="form-control pe-5 w-100"
-                        [(ngModel)]="item.cantidad_a_asignar"
-                        min="0"
-                        [max]="getMaximoPermitido(item)"
-                        [disabled]="getCantidadDisponible(item) === 0"
-                        style="width: 105px !important;">
-
-                      <!-- Botón por fila para asignar máximo -->
-                      <button type="button"
-                              class="btn btn-outline-primary btn-sm ms-2"
-                              (click)="asignarMaximoItem(item)"
-                              [disabled]="getCantidadDisponible(item) === 0"
-                              title="Asignar máximo para esta fila">
-                        Max
-                      </button>
-
-                      <!-- iconos de validación (mantengo tu lógica visual) -->
-                      <i *ngIf="esCantidadValida(item)" 
-                        class="bi bi-check-circle-fill text-success position-absolute" 
-                        style="right: 10px; top: 50%; transform: translateY(-50%);"></i>
-
-                      <i *ngIf="!esCantidadValida(item) && (item.cantidad_a_asignar > 0)" 
-                        class="bi bi-x-circle-fill text-danger position-absolute" 
-                        style="right: 10px; top: 50%; transform: translateY(-50%);"></i>
-                    </div>
-
-                    <!-- Mensajes debajo -->
-                    <div *ngIf="item.cantidad_a_asignar > 0">
-                      <!-- <small *ngIf="excedeTeorica(item)" class="text-danger d-block">
-                        Excede la cantidad teórica (máx: {{ item.cantidad | number:'1.2-2' }})
-                      </small>
-                      <small *ngIf="excedeDisponible(item)" class="text-danger d-block">
-                        Excede la cantidad disponible (máx: {{ getCantidadDisponible(item) | number:'1.2-2' }})
-                      </small> -->
-                      <small *ngIf="item.cantidad_a_asignar > getMaximoPermitido(item)"
-                            class="text-danger d-block">
-                        Excede la cantidad permitida (máx: {{ getMaximoPermitido(item) | number:'1.2-2' }})
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Notas completas -->
-          <div class="mt-3">
-            <label class="form-label">Notas completas:</label>
-            <div class="p-2 border rounded bg-light" style="white-space: pre-wrap;">
-              {{ items[0].notas_completas }}
-            </div>
-          </div>
-
-          <!-- Paginación de items -->
-          <app-shared-paginator
-            *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
-            [instanceId]="itemsPaginatorId"
-            [showPageSizeSelector]="true"
-            [pageSizeOptions]="[5, 10, 20, 50]">
-          </app-shared-paginator>
-        </div>
-
-        <ng-template #sinItems>
-          <div class="alert alert-warning">
-            <span *ngIf="itemFilters.busqueda || itemFilters.soloDisponibles; else noItemsAtAll">
-              No hay ítems que coincidan con los filtros aplicados.
-            </span>
-            <ng-template #noItemsAtAll>
-              No hay ítems disponibles en esta PV.
-            </ng-template>
-          </div>
-        </ng-template>
-
-      </div>
-      <div class="modal-footer d-flex justify-content-between">
-        <div
-        *ngIf="!tieneRolEmpacadores()">
-          <small class="text-muted">
-            Total ítems con cantidad para asignar: 
-            <strong>{{ getItemsConCantidadParaAsignar() }}</strong>
-          </small>
-        </div>
-        <div>
-          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cerrar</button>
-
-          <!-- Botón global: asignar máximos -->
-          <button type="button" 
-                  class="btn btn-outline-primary me-2"
-                  (click)="asignarMaximos()"
-                  [disabled]="!(items?.length > 0)"
-                  *ngIf="!tieneRolEmpacadores()">
-            Asignar máximos
-          </button>
-
-          <!-- Botón "Asignar" (prepara/valida en el servicio) -->
-          <button type="button" 
-                  class="btn btn-success"
-                  [disabled]="!tieneItemsValidosParaGuardar() || guardandoAsignacion"
-                  (click)="prepararYValidarAsignaciones()"
-                  *ngIf="!tieneRolEmpacadores()">
-            <span *ngIf="!guardandoAsignacion">Asignar</span>
-            <span *ngIf="guardandoAsignacion">
-              <span class="spinner-border spinner-border-sm me-2"></span>
-              Guardando...
-            </span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Verificación de Asignaciones -->
-<div class="modal fade" id="verificacionModal" tabindex="-1" aria-labelledby="verificacionModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="verificacionModalLabel">
-          Verificación de Asignaciones - PV {{ pvVerificacion }}
-        </h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-
-        <!-- Filtros -->
-        <div class="row mb-3" *ngIf="itemsVerificacion?.length > 0">
-          <div class="col-md-8">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Buscar por descripción, item, color, talla..."
-                   [(ngModel)]="verFilters.busqueda"
-                   (input)="applyVerFilters()">
-          </div>
-          <div class="col-md-4">
-            <div class="form-check">
-              <input class="form-check-input" 
-                     type="checkbox" 
-                     id="soloPendientes"
-                     [(ngModel)]="verFilters.soloPendientes"
-                     (change)="applyVerFilters()">
-              <label class="form-check-label" for="soloPendientes">
-                Solo pendientes de verificar
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="currentVerItems?.length > 0; else sinItemsVer">
-          <div class="mb-3">
-            <small class="text-muted">
-              Mostrando {{ currentVerItems.length }} de {{ itemsVerificacion.length }} ítems
-              <span *ngIf="verFilters.busqueda || verFilters.soloPendientes"> (filtrados)</span>
-            </small>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm">
-              <thead class="table-light">
-                <tr>
-                  <th>Item</th>
-                  <th>Descripción</th>
-                  <th>Talla</th>
-                  <th>Color</th>
-                  <th>Cant. Solicitada</th>
-                  <th>Cant. Asignada</th>
-                  <th>Cant. Física</th>
-                  <th>Diferencia</th>
-                  <th>Notas</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of currentVerItems"
-                    [ngClass]="{
-                      'table-success': item.verificado && item.cantidad_fisica === item.cantidad_asignada,
-                      'table-warning': item.verificado && item.cantidad_fisica !== item.cantidad_asignada,
-                      'table-light': !item.verificado
-                    }">
-                  <td>{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}</td>
-                  <td>{{ item.descripcion_corta }}</td>
-                  <td>{{ item.id_talla }}</td>
-                  <td>{{ item.id_color }}</td>
-                  <td>{{ item.cantidad_teorica }}</td>
-                  <td class="fw-bold">{{ item.cantidad_asignada | number:'1.2-2' }}</td>
-                  <td>
-                    <input 
-                      type="number" 
-                      class="form-control form-control-sm"
-                      [(ngModel)]="item.cantidad_fisica"
-                      min="0"
-                      [max]="item.cantidad_asignada"
-                      style="width: 100px;">
-                  </td>
-                  <td [ngClass]="{
-                        'text-danger fw-bold': getDiferencia(item) < 0,
-                        'text-success': getDiferencia(item) === 0
-                      }">
-                    {{ getDiferencia(item) | number:'1.2-2' }}
-                  </td>
-                  <td>
-                    <textarea 
-                      class="form-control form-control-sm" 
-                      rows="2"
-                      [(ngModel)]="item.nota_inconsistencia"
-                      placeholder="Nota de inconsistencia..."
-                      style="min-width: 200px;"></textarea>
-                  </td>
-                  <td class="text-center">
-                    <span *ngIf="item.verificado" class="badge bg-success">
-                      <i class="bi bi-check-circle"></i> Verificado
-                    </span>
-                    <span *ngIf="!item.verificado" class="badge bg-secondary">
-                      Pendiente
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      *ngIf="!item.verificado"
-                      type="button"
-                      class="btn btn-sm btn-success w-100"
-                      [disabled]="!esVerificacionValida(item)"
-                      (click)="verificarItem(item)">
-                      <i class="bi bi-check-lg"></i> Verificar
-                    </button>
-                    <button 
-                      *ngIf="item.verificado"
-                      type="button"
-                      class="btn btn-sm btn-outline-secondary w-100"
-                      (click)="desverificarItem(item)">
-                      <i class="bi bi-x-lg"></i> Revertir
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Paginación -->
-          <app-shared-paginator
-            *ngIf="paginationService.getPaginatorState(verPaginatorId)"
-            [instanceId]="verPaginatorId"
-            [showPageSizeSelector]="true"
-            [pageSizeOptions]="[5, 10, 20, 50]">
-          </app-shared-paginator>
-        </div>
-
-        <ng-template #sinItemsVer>
-          <div class="alert alert-warning">
-            <span *ngIf="verFilters.busqueda || verFilters.soloPendientes; else noItemsVerAll">
-              No hay ítems que coincidan con los filtros aplicados.
-            </span>
-            <ng-template #noItemsVerAll>
-              No hay ítems con asignaciones para verificar.
-            </ng-template>
-          </div>
-        </ng-template>
-
-      </div>
-      <div class="modal-footer d-flex justify-content-between">
-        <div>
-          <small class="text-muted">
-            Verificados: <strong>{{ getItemsVerificados() }}</strong> / {{ itemsVerificacion?.length || 0 }}
-          </small>
-        </div>
-        <div>
-          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" 
-                  class="btn btn-primary"
-                  [disabled]="getItemsVerificados() === 0 || guardandoVerificacion"
-                  (click)="confirmarVerificacion()">
-            <span *ngIf="!guardandoVerificacion">
-              <i class="bi bi-save"></i> Confirmar Verificación
-            </span>
-            <span *ngIf="guardandoVerificacion">
-              <span class="spinner-border spinner-border-sm me-2"></span>
-              Guardando...
-            </span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Ubicaciones Distintas -->
-<div class="modal fade" id="ubicacionesDistintasModal" tabindex="-1" aria-labelledby="ubicacionesDistintasModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="ubicacionesDistintasModalLabel">
-          Ubicaciones Distintas
-        </h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-
-        <!-- Input para buscar OP -->
-        <div class="row mb-3">
-          <div class="col-md-8">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Ingrese número de OP..."
-                   [(ngModel)]="opBuscadaUbicaciones"
-                   (keyup.enter)="buscarUbicacionesPorOP()">
-          </div>
-          <div class="col-md-4">
-            <button 
-              type="button" 
-              class="btn btn-primary w-100"
-              (click)="buscarUbicacionesPorOP()"
-              [disabled]="cargandoUbicaciones">
-              <span *ngIf="!cargandoUbicaciones">
-                <i class="bi bi-search"></i> Buscar
-              </span>
-              <span *ngIf="cargandoUbicaciones">
-                <span class="spinner-border spinner-border-sm me-2"></span>
-                Buscando...
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Filtros (solo visible si hay resultados) -->
-        <div class="row mb-3" *ngIf="itemsUbicacionesDistintas?.length > 0">
-          <div class="col-md-8">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Buscar por descripción, item, color, talla, ubicación..."
-                   [(ngModel)]="ubicDistFilters.busqueda"
-                   (input)="applyUbicDistFilters()">
-          </div>
-          <div class="col-md-4">
-            <select class="form-select" [(ngModel)]="ubicDistFilters.ubicacion" (change)="applyUbicDistFilters()">
-              <option value="">Todas las ubicaciones</option>
-              <option value="Bordado">Bordado</option>
-              <option value="Estampado">Estampado</option>
-              <option value="Terminacion">Terminación</option>
-            </select>
-          </div>
-        </div>
-
-        <div *ngIf="cargandoUbicaciones" class="text-center my-4">
-          <div class="spinner-border text-primary"></div>
-          <p class="mt-2">Cargando ubicaciones...</p>
-        </div>
-
-        <div *ngIf="!cargandoUbicaciones && currentUbicDistItems?.length > 0; else sinUbicaciones">
-          <div class="mb-3">
-            <small class="text-muted">
-              Mostrando {{ currentUbicDistItems.length }} de {{ itemsUbicacionesDistintas.length }} registros
-              <span *ngIf="opBuscadaUbicaciones"> - OP: <strong>{{ opBuscadaUbicaciones }}</strong></span>
-            </small>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm">
-              <thead class="table-light">
-                <tr>
-                  <th>Item</th>
-                  <th>Descripción</th>
-                  <th>Talla</th>
-                  <th>Color</th>
-                  <th>Ubicación Actual</th>
-                  <th>Cantidad</th>
-                  <th>Comentario</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of currentUbicDistItems">
-                  <td>{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}</td>
-                  <td>{{ item.descripcion_corta }}</td>
-                  <td>{{ item.id_talla }}</td>
-                  <td>{{ item.id_color }}</td>
-                  <td>
-                    <span class="badge" 
-                          [class.bg-warning]="item.ubicacion === 'Bordado'"
-                          [class.bg-info]="item.ubicacion === 'Estampado'"
-                          [class.bg-success]="item.ubicacion === 'Terminacion'"
-                          [class.bg-secondary]="item.ubicacion === 'Empaque'">
-                      {{ item.ubicacion }}
-                    </span>
-                  </td>
-                  <td>{{ item.cantidad | number:'1.2-2' }}</td>
-                  <td>{{ item.comentario || 'Sin comentario' }}</td>
-                  <td>
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                              type="button" 
-                              data-bs-toggle="dropdown"
-                              [disabled]="guardandoCambioUbicacion">
-                        Cambiar a
-                      </button>
-                      <ul class="dropdown-menu">
-                        <li>
-                          <button 
-                            class="dropdown-item"
-                            [class.disabled]="item.ubicacion === 'Empaque'"
-                            (click)="cambiarUbicacionItem(item, 'Empaque')">
-                            Empaque
-                          </button>
-                        </li>
-                        <li>
-                          <button 
-                            class="dropdown-item"
-                            [class.disabled]="item.ubicacion === 'Terminacion'"
-                            (click)="cambiarUbicacionItem(item, 'Terminacion')">
-                            Terminación
-                          </button>
-                        </li>
-                        <li>
-                          <button 
-                            class="dropdown-item"
-                            [class.disabled]="item.ubicacion === 'Bordado'"
-                            (click)="cambiarUbicacionItem(item, 'Bordado')">
-                            Bordado
-                          </button>
-                        </li>
-                        <li>
-                          <button 
-                            class="dropdown-item"
-                            [class.disabled]="item.ubicacion === 'Estampado'"
-                            (click)="cambiarUbicacionItem(item, 'Estampado')">
-                            Estampado
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Paginación -->
-          <app-shared-paginator
-            *ngIf="paginationService.getPaginatorState(ubicDistPaginatorId)"
-            [instanceId]="ubicDistPaginatorId"
-            [showPageSizeSelector]="true"
-            [pageSizeOptions]="[10, 25, 50]">
-          </app-shared-paginator>
-        </div>
-
-        <ng-template #sinUbicaciones>
-          <div class="alert alert-info" *ngIf="!cargandoUbicaciones && opBuscadaUbicaciones">
-            <span *ngIf="ubicDistFilters.busqueda || ubicDistFilters.ubicacion; else noUbicAll">
-              No se encontraron registros con los filtros aplicados.
-            </span>
-            <ng-template #noUbicAll>
-              No hay items con ubicaciones distintas a Empaque para la OP {{ opBuscadaUbicaciones }}.
-            </ng-template>
-          </div>
-          <div class="alert alert-secondary" *ngIf="!cargandoUbicaciones && !opBuscadaUbicaciones">
-            <i class="bi bi-info-circle"></i> Ingrese un número de OP y presione "Buscar" para ver las ubicaciones distintas.
-          </div>
-        </ng-template>
-
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
 </div>

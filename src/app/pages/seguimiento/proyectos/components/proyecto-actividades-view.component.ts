@@ -76,7 +76,7 @@ export class ProyectoActividadesViewComponent {
         <div class="text-left mb-4">
           <p class="text-sm text-slate-500 mb-4">Selecciona a quién asignar esta actividad. Todas las tareas de la actividad se asignarán automáticamente a esta persona.</p>
           <div class="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
-            ${this.state.usuariosAdministradores.map(u => `
+            ${this.state.usuariosResponsables.map(u => `
               <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
                 <input type="radio" name="swal-user" value="${u.id}" class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-black ${this.state.getColorPorId(u.id)}">

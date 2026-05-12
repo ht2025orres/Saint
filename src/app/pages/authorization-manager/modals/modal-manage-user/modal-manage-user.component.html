@@ -1,0 +1,176 @@
+<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+  <div (click)="$event.stopPropagation()" class="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+    
+    <!-- HEADER -->
+    <div class="px-4 py-3 border-b border-slate-100 bg-blue-600 flex justify-between items-center shrink-0">
+      <div class="flex items-center">
+        <i class="bi bi-person-gear mr-2 text-lg text-white"></i>
+        <h2 class="text-base font-black uppercase tracking-widest text-white">
+          {{ editingUser?.id ? 'Gestión de Usuario: ' + (editingUser?.firstName || editingUser?.name) : 'Crear Nuevo Usuario' }}
+        </h2>
+        <span *ngIf="editingUser?.id" class="ml-3 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-full"
+              [ngClass]="editingUser?.enabled ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'">
+          {{ editingUser?.enabled ? 'Activo' : 'Inactivo' }}
+        </span>
+      </div>
+      <button (click)="cerrar()" class="text-white/70 hover:text-white transition-colors">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- BODY -->
+    <div class="p-4 overflow-y-auto bg-slate-50 flex-1 custom-scrollbar">
+      
+      <!-- INFO PERSONAL -->
+      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-3">
+        <h6 class="text-[13px] font-black text-slate-900 mb-3 uppercase tracking-wide">Información Personal</h6>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="md:col-span-5 relative">
+            <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" [(ngModel)]="editingUser.firstName" placeholder="Nombre *"
+              class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-slate-700 outline-none focus:border-blue-400 transition-all">
+          </div>
+          <div class="md:col-span-4 relative">
+            <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" [(ngModel)]="editingUser.lastName" placeholder="Apellido *"
+              class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-slate-700 outline-none focus:border-blue-400 transition-all">
+          </div>
+          <div class="md:col-span-3 relative">
+            <i class="bi bi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="email" [(ngModel)]="editingUser.email" placeholder="Correo *"
+              class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-slate-700 outline-none focus:border-blue-400 transition-all">
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTRASEÑA -->
+      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-3">
+        <h6 class="text-[13px] font-black text-slate-900 mb-3 uppercase tracking-wide">Contraseña y Seguridad</h6>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="relative">
+            <i class="bi bi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="password" [(ngModel)]="userPassword" placeholder="Nueva Contraseña" autocomplete="new-password"
+              class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-slate-700 outline-none focus:border-blue-400 transition-all">
+          </div>
+          <div class="relative">
+            <i class="bi bi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="password" [(ngModel)]="userPasswordConfirm" placeholder="Repetir nueva contraseña" autocomplete="new-password"
+              class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-slate-700 outline-none focus:border-blue-400 transition-all">
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFILES -->
+      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-3 flex items-center flex-wrap">
+        <h6 class="text-[13px] font-black text-slate-900 uppercase tracking-wide mr-4">Perfiles:</h6>
+        <div class="flex flex-wrap gap-3">
+          <label *ngFor="let prof of getSortedProfiles()" class="flex items-center cursor-pointer group">
+            <input type="checkbox" [checked]="hasProfile(prof.id)" (change)="toggleProfile(prof, $event)" [disabled]="isEditingSelf"
+              class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50">
+            <span class="ml-1.5 text-[11px] font-medium transition-colors"
+              [ngClass]="hasProfile(prof.id) ? 'text-slate-800 font-bold' : 'text-slate-500 group-hover:text-slate-700'">
+              {{ prof.name }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- PERMISOS -->
+      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+        <div class="flex justify-between items-center mb-3">
+          <h6 class="text-[13px] font-black text-slate-900 uppercase tracking-wide">Módulos y Permisos</h6>
+          <button (click)="askDuplicateTarget()" [disabled]="isEditingSelf"
+            class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[10px] font-bold uppercase tracking-wider hover:bg-blue-50 transition-colors disabled:opacity-50">
+            <i class="bi bi-files mr-1"></i> Duplicar permisos
+          </button>
+        </div>
+
+        <div class="relative mb-3">
+          <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" [(ngModel)]="permSearchTerm" placeholder="Buscar permiso por nombre..."
+            class="w-full pl-8 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-slate-700 outline-none focus:border-blue-400 transition-all">
+          <button *ngIf="permSearchTerm" (click)="permSearchTerm = ''" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+
+        <div *ngIf="!permSearchTerm" class="flex flex-wrap border border-slate-200 rounded-md overflow-hidden mb-3">
+          <button (click)="selectedModuleFilter = 'all'"
+            class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border-r border-slate-200 transition-colors"
+            [ngClass]="selectedModuleFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'">
+            Todos ({{ permissions.length }})
+          </button>
+          <button *ngFor="let mod of modules" (click)="selectedModuleFilter = mod.id"
+            class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border-r border-slate-200 transition-colors"
+            [ngClass]="selectedModuleFilter === mod.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'">
+            {{ mod.name }} ({{ getPermissionsCountByModule(mod.id) }})
+          </button>
+        </div>
+        <div *ngIf="permSearchTerm" class="text-xs text-slate-500 mb-2">
+          <i class="bi bi-filter"></i> {{ getFilteredPermissions().length }} resultado(s) para "{{ permSearchTerm }}"
+        </div>
+
+        <!-- Grid de Permisos -->
+        <div class="border border-slate-200 rounded-md overflow-hidden bg-white">
+          <div class="grid grid-cols-1 md:grid-cols-2">
+            <ng-container *ngFor="let p of getFilteredPermissions(); let i = index; let last = last">
+              <div class="flex items-center justify-between p-1.5 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                   [class.md:border-r]="i % 2 === 0" [class.border-b-0]="last || (i === getFilteredPermissions().length - 2 && i % 2 === 0)">
+                <div class="flex items-center overflow-hidden mr-2">
+                  <span *ngIf="isInherited(p.id)" class="w-1.5 h-1.5 rounded-full bg-blue-300 shrink-0 mr-1.5" title="Heredado de perfil"></span>
+                  <span *ngIf="!isInherited(p.id)" class="w-1.5 shrink-0 mr-1.5"></span>
+                  <span class="text-[11px] text-slate-700 truncate" [title]="p.name">{{ p.name }}</span>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                  <button (click)="assignPermission(p, 'ALLOW')" [disabled]="isEditingSelf"
+                    class="w-6 h-6 rounded flex items-center justify-center transition-colors disabled:opacity-50"
+                    [ngClass]="getPermissionStatus(p.id) === 'ALLOW' ? 'bg-emerald-500 text-white' : 'border border-slate-200 text-slate-400 hover:bg-slate-100'"
+                    title="Permitir">
+                    <i class="bi bi-check-lg text-[10px]"></i>
+                  </button>
+                  <button (click)="assignPermission(p, 'DENY')" [disabled]="isEditingSelf"
+                    class="w-6 h-6 rounded flex items-center justify-center transition-colors disabled:opacity-50"
+                    [ngClass]="getPermissionStatus(p.id) === 'DENY' ? 'bg-red-500 text-white' : 'border border-slate-200 text-slate-400 hover:bg-slate-100'"
+                    title="Denegar">
+                    <i class="bi bi-x-lg text-[10px]"></i>
+                  </button>
+                  <button (click)="removePermission(p)" [disabled]="isEditingSelf"
+                    class="w-6 h-6 rounded border border-red-200 text-red-500 flex items-center justify-center hover:bg-red-50 transition-colors disabled:opacity-50"
+                    [class.invisible]="!getPermissionStatus(p.id)"
+                    title="Quitar asignación">
+                    <i class="bi bi-trash text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+            <div *ngIf="getFilteredPermissions().length === 0" class="col-span-1 md:col-span-2 text-center text-slate-400 py-6 text-xs">
+              No hay permisos en esta sección.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center shrink-0">
+      <button (click)="toggleUserStatus()"
+        class="px-3 py-1.5 border rounded text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center"
+        [ngClass]="editingUser?.enabled ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'">
+        <i class="bi mr-1.5" [ngClass]="editingUser?.enabled ? 'bi-person-x-fill' : 'bi-person-check-fill'"></i>
+        {{ editingUser?.enabled ? 'Desactivar' : 'Activar' }}
+      </button>
+
+      <div class="flex gap-2">
+        <button (click)="cerrar()" class="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:text-slate-700 transition-colors">
+          Cancelar
+        </button>
+        <button (click)="saveMegaUser()" [disabled]="loading"
+          class="px-5 py-1.5 bg-blue-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center">
+          <i class="bi bi-save mr-1.5"></i> {{ loading ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,225 @@
+<div class="p-6 bg-slate-50 min-h-screen">
+
+    <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-3rem)]">
+
+        <!-- Nueva barra superior para Bodega y Excel -->
+        <div class="p-4 bg-slate-50/50">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <!-- Aquí se moverá el selector de bodega -->
+                <div class="relative w-full sm:w-auto">
+                    <select [(ngModel)]="bodega" (change)="onBodegaChange()"
+                        class="w-full pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black text-slate-600 uppercase tracking-tighter outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all appearance-none shadow-sm cursor-pointer sm:min-w-[140px]">
+                        <option *ngFor="let b of bodegas" [value]="b.codigo">
+                            {{b.codigo}} - {{b.nombre_bodega}}
+                        </option>
+                    </select>
+                    <i class="bi bi-building absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[8px] pointer-events-none"></i>
+                </div>
+                <!-- Aquí se moverá el botón de Excel -->
+                <button (click)="downloadExcel()"
+                    class="w-full sm:w-auto px-5 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-sm">
+                    <i class="bi bi-file-earmark-excel-fill"></i> Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <button (click)="volverAGestionBodegas()"
+                        class="w-12 h-12 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-800 transition-all shadow-sm flex-shrink-0">
+                        <i class="bi bi-chevron-left text-lg"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Registros de Conteo Cíclico</h2>
+                        <div class="flex gap-3 mt-1">
+                            <span class="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1">
+                                <i class="bi bi-clipboard-check-fill"></i> {{conteos.length}} Conteos registrados
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Filtro Tipo de Ítem (Telas / Insumos) - Solo para MP001 -->
+                    <div *ngIf="bodega === 'MP001'" class="relative flex-grow sm:flex-grow-0">
+                        <select [(ngModel)]="filtroTipoItem" (change)="aplicarFiltros()"
+                            class="w-full pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black text-slate-600 uppercase tracking-tighter outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all appearance-none shadow-sm cursor-pointer lg:min-w-[140px]">
+                            <option value="">Todos los Tipos</option>
+                            <option value="telas">Solo Telas</option>
+                            <option value="insumos">Solo Insumos</option>
+                        </select>
+                        <i class="bi bi-tags absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[8px] pointer-events-none"></i>
+                    </div>
+
+                    <!-- Calendario Dropdown -->
+                    <div class="relative calendar-dropdown-container flex-grow sm:flex-grow-0">
+                        <button (click)="toggleCalendar()"
+                            class="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black text-slate-600 uppercase tracking-tighter flex items-center justify-between gap-2 hover:border-indigo-300 transition-all shadow-sm"
+                            [ngClass]="{'border-indigo-400 ring-4 ring-indigo-50 bg-indigo-50': showCalendar}">
+                            <div class="flex items-center gap-2">
+                                <i class="bi bi-calendar3 text-indigo-500"></i>
+                                {{ rangoTexto }}
+                            </div>
+                            <i class="bi bi-chevron-down text-slate-400 text-[8px] ml-1"></i>
+                        </button>
+
+                        <div *ngIf="showCalendar"
+                            class="absolute right-0 mt-3 z-30 bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden w-full sm:w-fit">
+                            <app-ciclico-calendario
+                                [viewDate]="calendarViewDate"
+                                [eventos]="calendarEvents"
+                                [bodegaOrigen]="bodega"
+                                [loadingItems]="loading"
+                                [startDate]="calendarStartDate"
+                                [endDate]="calendarEndDate"
+                                [years]="calendarYears"
+                                (monthChange)="handleMonthChange($event)"
+                                (yearChange)="handleYearChange($event)"
+                                (prevMonth)="handlePrevMonth()"
+                                (nextMonth)="handleNextMonth()"
+                                (daySelected)="handleDaySelected($event)"
+                                (consultarSeleccion)="aplicarSeleccionCalendario()"
+                                (resetSelection)="handleResetSelection()">
+                            </app-ciclico-calendario>
+                        </div>
+                    </div>
+
+                    <!-- Búsqueda -->
+                    <div class="flex items-center gap-2 flex-grow">
+                        <!-- Búsqueda Exacta (Toggle Icono) -->
+                        <button (click)="busquedaExacta = !busquedaExacta; aplicarFiltros()"
+                            [class]="busquedaExacta ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border-slate-200'"
+                            class="w-12 h-12 rounded-2xl border flex items-center justify-center transition-all shadow-sm group flex-shrink-0"
+                            title="Búsqueda Exacta">
+                            <i class="bi bi-bullseye text-xl transition-transform group-active:scale-90"></i>
+                        </button>
+                        <div class="relative flex-grow">
+                            <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" [(ngModel)]="busqueda" (ngModelChange)="aplicarFiltros()" placeholder="Buscar por REF, DESC o ID..."
+                                class="w-full pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen rápido -->
+        <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-6 bg-white">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Coinciden: {{diferencias.iguales}}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sobrante: {{diferencias.positivas}}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Faltante: {{diferencias.negativas}}</span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="flex-1 overflow-auto p-0">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-white shadow-sm z-10">
+                    <tr class="border-b border-slate-100 bg-slate-50/30">
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ítem / Referencia</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Color / Talla</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Cant. Física</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Cant. SIESA</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Diferencia</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Zona(s)</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Conteo</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    <tr *ngIf="loading">
+                        <td colspan="8" class="px-6 py-20 text-center">
+                            <div class="inline-block animate-spin w-12 h-12 border-[6px] border-indigo-500 border-t-transparent rounded-full mb-6"></div>
+                            <p class="text-lg font-black text-slate-400 uppercase tracking-widest">Cargando registros...</p>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!loading && conteosPaginados.length === 0">
+                        <td colspan="8" class="px-6 py-20 text-center">
+                            <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="bi bi-clipboard-x text-slate-300 text-4xl"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-800 mb-2">Sin conteos en este rango</h3>
+                            <p class="text-slate-400">Selecciona otro rango de fechas con el calendario.</p>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let c of conteosPaginados" class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-3 py-2">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-sm font-black text-slate-800">{{c.id_item_siesa}}</span>
+                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-md border border-slate-200">{{c.referencia}}</span>
+                                </div>
+                                <span class="text-xs text-slate-500 font-medium line-clamp-1 italic">{{c.descripcion}}</span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-slate-600">{{c.id_color}}</span>
+                                <span class="text-slate-300">|</span>
+                                <span class="text-xs font-black text-slate-700">{{c.id_talla}}</span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="px-3 py-1 bg-white border border-slate-200 rounded-xl text-sm font-black text-slate-700 shadow-sm">
+                                {{c.cantidad_fisica | number}}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="text-sm font-bold text-slate-500">
+                                {{c.cantidad_siesa | number}}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="px-3 py-1 rounded-xl text-xs font-black"
+                                [ngClass]="{
+                                    'bg-emerald-50 text-emerald-600 border border-emerald-200': (c.cantidad_fisica - c.cantidad_siesa) === 0,
+                                    'bg-amber-50 text-amber-600 border border-amber-200': (c.cantidad_fisica - c.cantidad_siesa) > 0,
+                                    'bg-rose-50 text-rose-600 border border-rose-200': (c.cantidad_fisica - c.cantidad_siesa) < 0
+                                }">
+                                {{ (c.cantidad_fisica - c.cantidad_siesa) > 0 ? '+' : '' }}{{c.cantidad_fisica - c.cantidad_siesa | number}}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2">
+                            <div class="flex flex-wrap gap-1.5">
+                                <span *ngFor="let zona of getZonasConteo(c)"
+                                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-700 text-[9px] font-black border border-blue-100">
+                                    <i class="bi bi-geo-alt-fill text-[7px]"></i> {{ zona }}
+                                </span>
+                                <span *ngIf="!c.zonas || c.zonas.length === 0"
+                                    class="px-2.5 py-0.5 bg-slate-50 text-slate-400 text-[9px] font-black rounded-lg border border-slate-200">
+                                    —
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2">
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+                                {{getNombreUsuario(c.id_usuario)}}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                {{formatFechaConteo(c.fecha_conteo)}}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="p-4 border-t border-slate-100 bg-slate-50/30">
+            <app-shared-paginator [instanceId]="instanceId" [loading]="loading"></app-shared-paginator>
+        </div>
+    </div>
+</div>

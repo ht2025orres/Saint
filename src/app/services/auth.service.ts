@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { User } from '../models/User';
 import { environment } from '../../environments/environment';
 import { InconsistenciaService } from './inconsistencia.service';
+import { UserService } from './user.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,31 +15,28 @@ export class AuthService {
 
   private apiLaravelUrl = environment.URL_API_LARAVEL;
   private urlEndPoint = `${environment.URL_LOGIN}/oauth/token`;
-  // tslint:disable-next-line:variable-name
-  private _user: User;
-  // tslint:disable-next-line:variable-name
   private _token: string;
-  // tslint:disable-next-line:variable-name
   private _refreshToken: string;
+  // tslint:disable-next-line:variable-name
+  private _userSubject: BehaviorSubject<User | null>;
 
   constructor(
     private http: HttpClient,
     private inconsistenciasService: InconsistenciaService,
+    private userService: UserService,
     private router: Router
-  ) {}
+  ) {
+    const storedUser = sessionStorage.getItem('user');
+    this._userSubject = new BehaviorSubject<User | null>(storedUser ? JSON.parse(storedUser) : null);
+  }
 
 
-  public get user(): User {
-    if (this._user != null) {
-      return this._user;
-    } else if (this._user == null) {
-      const stored = sessionStorage.getItem('user');
-      if (stored != null) {
-        this._user = JSON.parse(stored) as User;
-        return this._user;
-      }
-    }
-    return new User();
+  public get user(): User | null {
+    return this._userSubject.value;
+  }
+
+  public get user$(): Observable<User | null> {
+    return this._userSubject.asObservable();
   }
 
   public get token(): string {
@@ -91,23 +89,27 @@ export class AuthService {
 
   saveUser(accessToken: string): void {
     const payload = this.getTokenData(accessToken);
-    this._user = new User();
-    this._user.firstName = this.getNormalizePayload(payload.first_name);
-    this._user.lastName = this.getNormalizePayload(payload.last_name);
-    this._user.email = payload.email;
-    this._user.roles = payload.authorities;  /* Nombre athoriries que genera sprint security oauth2*/
-    this._user.permissions = payload.permissions || [];
-    this._user.modules = payload.modules || [];
-    this._user.id = payload.id;
-    sessionStorage.setItem('user', JSON.stringify(this._user));
+    const newUser = new User();
+    newUser.firstName = this.getNormalizePayload(payload.first_name);
+    newUser.lastName = this.getNormalizePayload(payload.last_name);
+    newUser.email = payload.email;
+    newUser.roles = payload.authorities;
+    newUser.permissions = payload.permissions || [];
+    newUser.modules = payload.modules || [];
+    newUser.id = payload.id;
+
+    sessionStorage.setItem('user', JSON.stringify(newUser));
+    this._userSubject.next(newUser);
+
     this.inconsistenciasService.info(payload.email).subscribe({
       next: (res) => {
-        this._user.nombre_departamento_Sdp = res.info['nombre_departamento'];
-        this._user.id_departamento_Sdp = res.info['id_departamento'];
-        this._user.id_Sdp = res.info['id_usuario'];
-        this._user.id_lider = res.info['lider_id'];
-        this._user.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
-        sessionStorage.setItem('user', JSON.stringify(this._user));
+        newUser.nombre_departamento_Sdp = res.info['nombre_departamento'];
+        newUser.id_departamento_Sdp = res.info['id_departamento'];
+        newUser.id_Sdp = res.info['id_usuario'];
+        newUser.id_lider = res.info['lider_id'];
+        newUser.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
+        sessionStorage.setItem('user', JSON.stringify(newUser));
+        this._userSubject.next(newUser);
       },
       error: (_) => { }
     });
@@ -216,13 +218,17 @@ export class AuthService {
   }
 
   hasPermission(permissionId: number): boolean {
-    if (!this.user || !this.user.permissions) return false;
-    return this.user.permissions.includes(Number(permissionId));
+    if (!this.user || !this.user.permissions) {
+      return false;
+    }
+    return this.user.permissions.includes(permissionId);
   }
 
   hasAnyPermission(permissionIds: number[]): boolean {
-    if (!this.user || !this.user.permissions || !Array.isArray(permissionIds)) return false;
-    return permissionIds.some(id => this.user.permissions.includes(Number(id)));
+    if (!this.user || !this.user.permissions) {
+      return false;
+    }
+    return permissionIds.some(id => this.user.permissions.includes(id));
   }
 
   hasModule(moduleId: number): boolean {
@@ -244,7 +250,7 @@ export class AuthService {
   logout(): void {
     this._token = null;
     this._refreshToken = null;
-    this._user = null;
+    this._userSubject.next(null);
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('refresh_token');
     sessionStorage.removeItem('user');
@@ -288,7 +294,8 @@ export class AuthService {
 
     if (adminToken && adminUser) {
       this.saveToken(adminToken, adminRefreshToken);
-      this._user = JSON.parse(adminUser);
+      const originalUser = JSON.parse(adminUser) as User;
+      this._userSubject.next(originalUser);
       sessionStorage.setItem('user', adminUser);
 
       sessionStorage.removeItem('admin_token');
@@ -302,6 +309,31 @@ export class AuthService {
 
   getNormalizePayload(payload: string): string {
     return payload.replace("Ã±", "ñ")
+  }
+
+  refreshUser(updatedUser?: User): void {
+    if (updatedUser) {
+      const currentUser = this.user;
+      if (currentUser) {
+        // Merge provided data with current user session data
+        const mergedUser = { ...currentUser, ...updatedUser };
+        sessionStorage.setItem('user', JSON.stringify(mergedUser));
+        this._userSubject.next(mergedUser);
+      }
+    } else if (this.user && this.user.id) {
+      // If no data provided, fetch from backend
+      this.userService.getById(this.user.id).subscribe({
+        next: (res: User) => {
+          sessionStorage.setItem('user', JSON.stringify(res));
+          this._userSubject.next(res);
+        },
+        error: (err) => {
+          console.error('Error refreshing user data:', err);
+        }
+      });
+    } else {
+      console.warn('Cannot refresh user: no data provided and no user ID available.');
+    }
   }
 
 }

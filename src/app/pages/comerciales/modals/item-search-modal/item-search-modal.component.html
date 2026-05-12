@@ -1,0 +1,61 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="bi bi-search"></i> Buscar Ítem en Siesa</h2>
+      <button class="btn-close-modal" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div class="modal-search">
+      <div class="search-input-group">
+        <i class="bi bi-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar por referencia o descripción..."
+          [(ngModel)]="searchTerm"
+          (input)="search()"
+          autofocus
+        />
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="isLoading" class="loading-items">
+        <div class="loader-spinner"></div>
+        <p>Cargando ítems...</p>
+      </div>
+
+      <div *ngIf="!isLoading && filteredItems.length > 0" class="items-list">
+        <div *ngFor="let item of filteredItems" class="item-row" (click)="select(item)">
+          <div class="item-main">
+            <span class="item-ref">{{ getRef(item) }}</span>
+            <span class="item-desc">{{ getDesc(item) }}</span>
+          </div>
+          <div class="item-tags">
+            <span *ngIf="item.color" class="tag">{{ item.color }}</span>
+            <span *ngIf="item.talla" class="tag tag-talla">{{ item.talla }}</span>
+          </div>
+          <i class="bi bi-plus-circle item-add"></i>
+        </div>
+      </div>
+
+      <div *ngIf="!isLoading && filteredItems.length === 0" class="empty-search">
+        <i class="bi bi-inbox"></i>
+        <p>No se encontraron ítems en las últimas PVs</p>
+        
+        <div *ngIf="!isDeepSearch" class="deep-search-suggestion">
+          <p class="suggestion-text">¿Deseas realizar una búsqueda más profunda en el historial?</p>
+          <button class="btn-deep-search" (click)="deepSearch()" [disabled]="isLoading">
+            <i class="bi bi-search"></i> Búsqueda Profunda (Hasta 10,000 PVs)
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer" *ngIf="isDeepSearch">
+      <span class="deep-search-indicator">
+        <i class="bi bi-info-circle"></i> Mostrando resultados de búsqueda profunda
+      </span>
+    </div>
+  </div>
+</div>

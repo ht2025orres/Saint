@@ -4,6 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
+import { User } from '../../models/User';
 
 interface MenuItem {
   label: string;
@@ -38,6 +39,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   userName = '';
   userPerfil = '';
   userInitials = '';
+  currentUser: User | null = null;
 
   menuItems: MenuItem[] = [];
 
@@ -47,6 +49,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private resizeListener?: () => void;
   private sidebarToggleSubscription?: Subscription;
+  private userSubscription?: Subscription;
 
   constructor(
     public authService: AuthService,
@@ -74,7 +77,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.buildUserSummary();
+    this.userSubscription = this.authService.user$.subscribe(user => {
+      this.currentUser = user;
+      this.updateUserSummary(user);
+      this.initMenuStructure();
+      this.cdr.detectChanges(); // Trigger change detection
+    });
     this.setupResizeListener();
     this.initMenuStructure();
 
@@ -91,6 +99,21 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
+  private updateUserSummary(user: User | null): void {
+    if (user) {
+      this.userName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      this.userPerfil = user.roles && user.roles.length > 0 ? user.roles[0].name : '';
+      this.userInitials = (
+        (user.firstName ? user.firstName.charAt(0) : '') +
+        (user.lastName ? user.lastName.charAt(0) : '')
+      ).toUpperCase();
+    } else {
+      this.userName = '';
+      this.userPerfil = '';
+      this.userInitials = '';
+    }
+  }
+
   private initMenuStructure(): void {
     this.menuItems = [
       {
@@ -99,8 +122,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         link: '/dashboard'
       },
       {
-        label: 'Security',
-        icon: 'bi bi-speedometer2',
+        label: 'Administración de Seguridad',
+        icon: 'bi bi-shield-lock',
         link: '/security',
         permissions: [1]
       },
@@ -150,12 +173,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         ]
       },
-      {
-        label: 'Admin Usuarios',
-        icon: 'bi bi-people',
-        link: '/users/page/0',
-        permissions: [1]
-      },
+
       {
         label: 'Fichas tecnicas',
         icon: 'bi bi-file-earmark-text',
@@ -299,60 +317,21 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         submenu: [
           { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas' },
           { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas' },
+          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver' },
           { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios' },
-          { label: 'Conteo de Inventario', link: '/inventario/conteo' },
+          { label: 'Realizar Conteo', link: '/inventario/conteo' },
           { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
         ]
       },
       {
-        label: 'Inventario (Anterior)',
-        icon: 'bi bi-archive',
-        modules: [5],
+        label: 'Comerciales',
+        icon: 'bi bi-briefcase',
+        modules: [7],
         permissions: [1],
         submenu: [
-          {
-            label: 'Bodegas',
-            link: '/inventario-old/bodegas',
-            permissions: [1, 27, 24, 25, 26]
-          },
-          {
-            label: 'Zonas',
-            link: '/inventario-old/zonas',
-            permissions: [1, 27, 24, 25, 26]
-          },
-          {
-            label: 'Contadores',
-            link: '/inventario-old/contadores',
-            permissions: [1, 27]
-          },
-          {
-            label: 'Inventarios',
-            link: '/inventario-old/inventarios',
-            permissions: [1, 27]
-          },
-          {
-            label: 'Generar hoja de conteo',
-            link: '/inventario-old/generar-hoja-conteo',
-            permissions: [1, 27]
-          },
-          {
-            label: 'Listado de hojas de conteo',
-            link: '/inventario-old/hojas-conteo-list',
-            permissions: [1, 27]
-          },
-          {
-            label: 'Hojas de Conteo',
-            link: '/inventario-old/contador-items',
-            permissions: [1, 27, 34]
-          }
+          { label: 'Clientes & Ítems', link: '/comerciales' },
+          { label: 'Mis Costeos', link: '/comerciales/costeos' },
         ]
-      },
-      {
-        label: 'Órdenes',
-        icon: 'bi bi-file-earmark-text',
-        link: '/orden-compra',
-        modules: [7],
-        permissions: [1]
       },
       {
         label: 'Tiempos Ítems',
@@ -371,6 +350,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         icon: 'bi bi-building',
         link: '/centros-costos',
         permissions: [1]
+      },
+      {
+        label: 'Moldes y OPM',
+        icon: 'bi bi-grid-3x3-gap',
+        link: '/moldes',
+        permissions: [1, 2]
       }
     ];
   }
@@ -492,6 +477,9 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.sidebarToggleSubscription) {
       this.sidebarToggleSubscription.unsubscribe();
     }
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
     clearTimeout(this.floatCloseTimeout);
   }
 
@@ -562,21 +550,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private buildUserSummary(): void {
-    const user = this.authService.user;
-    const firstName = user?.firstName ?? '';
-    const lastName = user?.lastName ?? '';
-    const displayName = `${firstName} ${lastName}`.replace(/\s+/g, ' ').trim();
-    this.userName = displayName || 'Usuario';
 
-    const primaryPerfilRaw = Array.isArray(user?.roles) && user.roles.length > 0 ? user.roles[0] : '';
-    const primaryPerfil = this.getPerfilAsString(primaryPerfilRaw);
-    const formattedPerfil = this.formatPerfil(primaryPerfil);
-    this.userPerfil = formattedPerfil || 'Sin perfil asignado';
-
-    const initialsSource = displayName || formattedPerfil || 'Usuario';
-    this.userInitials = this.getInitials(initialsSource);
-  }
 
   private getPerfilAsString(perfil: any): string {
     if (!perfil) return '';

@@ -150,7 +150,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   }
 
   get usuariosDisponibles(): UsuarioCache[] {
-    return this.state.usuariosAdministradores;
+    return this.state.usuariosResponsables;
   }
 
   actualizarTareasPlanas(proyecto: Proyecto | null = this.detalle): void {

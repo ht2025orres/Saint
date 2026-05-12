@@ -242,6 +242,7 @@ export interface FlujoDiario {
   snapshot_cierre?:    SnapshotFlujo | null;
   snapshot_apertura?:  SnapshotFlujo | null;
   compromisos?:        Compromiso[];
+  compromisos_pasados?: Compromiso[];
   created_at:          string;
   updated_at:          string;
 }

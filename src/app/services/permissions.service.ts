@@ -50,4 +50,8 @@ export class PermissionsService {
   getEffectivePermissions(userId: number) {
     return this.http.get<any>(`${environment.URL_API_LARAVEL}/user/${userId}/effective-permissions`, { headers: { 'X-Requires-User-Email': 'true' } });
   }
+
+  getPermissionsByIds(ids: number[]): Observable<any[]> {
+    return this.http.post<any[]>(`${this.base}/permissions/by-ids`, { ids }, { headers: { 'X-Requires-User-Email': 'true' } });
+  }
 }

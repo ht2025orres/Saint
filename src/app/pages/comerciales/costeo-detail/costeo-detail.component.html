@@ -1,0 +1,218 @@
+<div class="detail-container" *ngIf="!isLoading && costeo">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-row">
+      <button class="btn-back" (click)="goBack()"><i class="bi bi-arrow-left"></i></button>
+      <div class="header-info">
+        <div class="code-row">
+          <h1 class="costeo-code">{{ costeo.codigo }}</h1>
+          <span class="estado-badge" [ngClass]="getEstadoBadge(costeo.estado || '')">
+            {{ getEstadoLabel(costeo.estado || '') }}
+          </span>
+        </div>
+        <p class="client-link" (click)="goToClient()">
+          <i class="bi bi-building"></i> {{ costeo.cliente_nombre }}
+          <span *ngIf="costeo.cliente_nit"> · {{ costeo.cliente_nit }}</span>
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-action btn-edit" (click)="editCosteo()" title="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn-action btn-delete" (click)="eliminarCosteo()" title="Eliminar">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon"><i class="bi bi-box-seam"></i></div>
+      <div class="summary-data">
+        <span class="summary-value">{{ costeo.items?.length || 0 }}</span>
+        <span class="summary-label">Ítems</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon icon-accent"><i class="bi bi-stack"></i></div>
+      <div class="summary-data">
+        <span class="summary-value">{{ getTotalUnidades() }}</span>
+        <span class="summary-label">Unidades</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon" [class.icon-success]="costeo.requiere_costeo">
+        <i class="bi" [ngClass]="costeo.requiere_costeo ? 'bi-calculator' : 'bi-x-circle'"></i>
+      </div>
+      <div class="summary-data">
+        <span class="summary-value">{{ costeo.requiere_costeo ? 'Sí' : 'No' }}</span>
+        <span class="summary-label">Costeo</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon" [class.icon-warning]="costeo.requiere_muestra">
+        <i class="bi" [ngClass]="costeo.requiere_muestra ? 'bi-scissors' : 'bi-x-circle'"></i>
+      </div>
+      <div class="summary-data">
+        <span class="summary-value">{{ costeo.requiere_muestra ? 'Sí' : 'No' }}</span>
+        <span class="summary-label">Muestra</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Grid -->
+  <div class="info-card">
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Despacho</span>
+        <span class="info-value">{{ costeo.tipo_despacho }}</span>
+      </div>
+      <div class="info-item" *ngIf="costeo.requiere_costeo && costeo.fecha_entrega_cotizacion">
+        <span class="info-label">Entrega Cotización</span>
+        <span class="info-value">{{ costeo.fecha_entrega_cotizacion | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="info-item" *ngIf="costeo.requiere_muestra && costeo.fecha_entrega_muestra">
+        <span class="info-label">Entrega Muestra</span>
+        <span class="info-value">{{ costeo.fecha_entrega_muestra | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Empaque</span>
+        <span class="info-value">{{ costeo.material_empaque || '—' }} / {{ costeo.tipo_empaque || '—' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Cantidad por Entrega</span>
+        <span class="info-value">{{ costeo.cantidad_por_entrega | number }} uds</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Proyección Anual</span>
+        <span class="info-value">{{ costeo.cantidad_anual | number }} uds · {{ costeo.entregas_anual }} entregas</span>
+      </div>
+      <div class="info-item" *ngIf="costeo.observaciones">
+        <span class="info-label">Observaciones</span>
+        <span class="info-value obs-value">{{ costeo.observaciones }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado Actions -->
+  <div class="estado-actions" *ngIf="costeo.estado === 'BORRADOR'">
+    <span class="estado-hint">Acciones de estado:</span>
+    <button class="btn-estado btn-enviado" (click)="cambiarEstado('ENVIADO')">
+      <i class="bi bi-send"></i> Enviar
+    </button>
+  </div>
+  <div class="estado-actions" *ngIf="costeo.estado === 'EN_COSTEO'">
+    <button class="btn-estado btn-costeado" (click)="cambiarEstado('COSTEADO')">
+      <i class="bi bi-check-circle"></i> Marcar Costeado
+    </button>
+  </div>
+  <div class="estado-actions" *ngIf="costeo.estado === 'COSTEADO'">
+    <button class="btn-estado btn-aprobado" (click)="cambiarEstado('APROBADO')">
+      <i class="bi bi-check-all"></i> Aprobar
+    </button>
+    <button class="btn-estado btn-rechazado" (click)="cambiarEstado('RECHAZADO')">
+      <i class="bi bi-x-circle"></i> Rechazar
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="activeTab = 'items'">
+      <i class="bi bi-box-seam"></i> Ítems
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'versiones'" (click)="activeTab = 'versiones'">
+      <i class="bi bi-layers"></i> Versiones
+    </button>
+  </div>
+
+  <!-- Items Tab -->
+  <div *ngIf="activeTab === 'items'" class="tab-content">
+    <div *ngFor="let item of costeo.items; let i = index" class="item-detail-card">
+      <div class="item-detail-header">
+        <span class="item-num">{{ i + 1 }}</span>
+        <div class="item-detail-info">
+          <span class="item-detail-desc">{{ item.descripcion }}</span>
+          <div class="item-detail-meta">
+            <span *ngIf="item.siesa_referencia" class="siesa-tag">
+              <i class="bi bi-link-45deg"></i> {{ item.siesa_referencia }}
+            </span>
+            <span *ngIf="!item.siesa_referencia" class="local-tag">
+              <i class="bi bi-star"></i> Ítem local
+            </span>
+            <span *ngIf="item.ref_siesa_referencia" class="ref-tag">
+              <i class="bi bi-arrow-return-right"></i> Ref: {{ item.ref_siesa_referencia }}
+              <span *ngIf="item.ref_siesa_descripcion"> — {{ item.ref_siesa_descripcion }}</span>
+            </span>
+            <span *ngIf="item.item_cliente">Ref: {{ item.item_cliente }}</span>
+            <span *ngIf="item.cantidad_muestra">Muestra: {{ item.cantidad_muestra }}</span>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="item.tallas && item.tallas.length > 0" class="tallas-detail">
+        <div *ngFor="let t of item.tallas" class="talla-chip">
+          <span class="talla-name">{{ t.talla }}</span>
+          <span class="talla-qty">{{ t.cantidad }}</span>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="!costeo.items || costeo.items.length === 0" class="empty-tab">
+      <p>No hay ítems en este costeo</p>
+    </div>
+  </div>
+
+  <!-- Versions Tab -->
+  <div *ngIf="activeTab === 'versiones'" class="tab-content">
+    <div class="version-actions">
+      <button class="btn-new-version" (click)="crearVersion()">
+        <i class="bi bi-plus-lg"></i> Nueva Versión
+      </button>
+    </div>
+    <div *ngFor="let v of costeo.versiones" class="version-card">
+      <div class="version-header">
+        <span class="version-num">V{{ v.version }}</span>
+        <span class="version-estado" [ngClass]="'v-' + v.estado?.toLowerCase()">{{ v.estado }}</span>
+        <span class="version-date">{{ v.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="version-body">
+        <div class="version-grid">
+          <div class="version-field">
+            <span class="vf-label">Precio Tela</span>
+            <span class="vf-value">{{ v.precio_tela ? ('$' + v.precio_tela) : 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Ancho Útil</span>
+            <span class="vf-value">{{ v.ancho_util_tela || 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Promedio Trazo</span>
+            <span class="vf-value">{{ v.promedio_trazo || 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Tiempo Prod.</span>
+            <span class="vf-value">{{ v.tiempo_produccion || 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Costo Unit.</span>
+            <span class="vf-value">{{ v.costo_total_unitario ? ('$' + v.costo_total_unitario) : 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Precio Venta</span>
+            <span class="vf-value">{{ v.precio_venta_unitario ? ('$' + v.precio_venta_unitario) : 'Pendiente' }}</span>
+          </div>
+        </div>
+        <p *ngIf="v.notas" class="version-notes"><i class="bi bi-chat-left-text"></i> {{ v.notas }}</p>
+      </div>
+    </div>
+    <div *ngIf="!costeo.versiones || costeo.versiones.length === 0" class="empty-tab">
+      <p>No hay versiones. Crea la primera versión del costeo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div *ngIf="isLoading" class="loading-full">
+  <div class="loader-spinner"></div>
+  <p>Cargando costeo...</p>
+</div>

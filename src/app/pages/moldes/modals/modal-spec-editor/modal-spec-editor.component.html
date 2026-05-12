@@ -1,0 +1,107 @@
+<div class="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in" (click)="onCancel()">
+  <div class="w-full max-w-[900px] max-h-[95vh] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95" (click)="$event.stopPropagation()">
+    <!-- Header del Modal -->
+    <div class="p-6 md:p-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
+          <i class="bi bi-pencil-square text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-slate-900 leading-tight" *ngIf="component">
+            {{ component.name }}
+          </h3>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Editor de Especificaciones</p>
+        </div>
+      </div>
+      <button class="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-400 hover:text-rose-500 hover:rotate-90 transition-all shadow-sm" (click)="onCancel()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div class="p-6 md:p-10 overflow-y-auto flex-1 space-y-8 custom-scrollbar">
+      <!-- Áreas de Texto Principales -->
+      <div [ngClass]="mode === 'ficha' ? 'grid grid-cols-1 md:grid-cols-2 gap-8' : 'flex flex-col gap-8'">
+        <div class="flex flex-col gap-3">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <i class="bi bi-person-badge text-indigo-500"></i> Especificación Cliente
+          </label>
+          <textarea [(ngModel)]="clientSpec" [disabled]="mode === 'ficha'" 
+                    placeholder="Instrucciones del cliente..." 
+                    class="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[24px] text-sm font-medium focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none shadow-inner" 
+                    rows="10"></textarea>
+        </div>
+        <div class="flex flex-col gap-3" *ngIf="mode === 'ficha'">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <i class="bi bi-gear-wide-connected text-indigo-500"></i> Especificación Técnica
+          </label>
+          <textarea [(ngModel)]="technicalSpec" 
+                    placeholder="Detalles de construcción, medidas..." 
+                    class="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[24px] text-sm font-medium focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none shadow-inner" 
+                    rows="10"></textarea>
+        </div>
+      </div>
+
+      <!-- Sección de Excepción (Colapsable/Más discreta) -->
+      <div class="pt-8 border-t border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-amber-500"></i>
+            <span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Excepción de Material (Opcional)</span>
+          </div>
+          <button *ngIf="component?.material_exception" 
+                  class="px-3 py-1 bg-rose-50 text-rose-500 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all" 
+                  (click)="onRemoveException()">Quitar Excepción</button>
+        </div>
+        
+        <!-- Estado de la Excepción -->
+        <div *ngIf="component?.material_exception" 
+             class="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-5 flex items-center justify-between animate-in fade-in">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-emerald-500 shadow-sm">
+              <i class="bi" [ngClass]="component?.material_exception?.assignment_source === 'siesa' ? 'bi-database' : 'bi-pencil-fill'"></i>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">Asignación {{ component?.material_exception?.assignment_source }}</span>
+              <span class="text-sm font-bold text-slate-700">{{ component?.material_exception?.descripcion }}</span>
+            </div>
+          </div>
+          <i class="bi bi-check-circle-fill text-emerald-500 text-2xl"></i>
+        </div>
+
+        <!-- Opciones para Añadir Excepción -->
+        <div class="grid grid-cols-2 gap-4" *ngIf="!component?.material_exception">
+          <button class="flex items-center gap-4 p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/30 transition-all text-left group" (click)="onAddExceptionSiesa()">
+            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+              <i class="bi bi-search text-xl"></i>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-black text-slate-700 uppercase">Catálogo Siesa</span>
+              <p class="text-[10px] text-slate-400 font-medium">Buscar en bodega</p>
+            </div>
+          </button>
+          <button class="flex items-center gap-4 p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl hover:border-amber-400 hover:bg-amber-50/30 transition-all text-left group" (click)="onAddExceptionManual()">
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
+              <i class="bi bi-keyboard text-xl"></i>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-black text-slate-700 uppercase">Texto Libre</span>
+              <p class="text-[10px] text-slate-400 font-medium">Entrada manual</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer del Modal -->
+    <div class="p-6 md:p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+      <button class="px-8 py-3 rounded-2xl bg-white border border-slate-200 text-slate-500 font-bold hover:bg-slate-100 transition-all" (click)="onCancel()">
+        Descartar
+      </button>
+      <button class="px-10 py-3 rounded-2xl bg-indigo-600 text-white font-bold shadow-xl shadow-indigo-100 hover:shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2" 
+              (click)="onSave()">
+        <i class="bi bi-check-lg"></i> Guardar Cambios
+      </button>
+    </div>
+  </div>
+</div>

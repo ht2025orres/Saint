@@ -82,6 +82,36 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
     return this.puedeGestionarModulo || (this.seguimientoActual?.es_gestor ?? false);
   }
 
+  /**
+   * Solo el gestor específico del seguimiento debe ver la saturación.
+   * Excluimos incluso a los administradores de esta vista si no son el gestor directo.
+   */
+  get esGestorAsignado(): boolean {
+    if (!this.seguimientoActual) return false;
+    return this.seguimientoActual.usuario_gestor_id === this.usuarioId;
+  }
+
+  get esResponsableDeFlujo(): boolean {
+    if (!this.flujoActivo || !this.flujoActivo.compromisos) return false;
+    // Un usuario es responsable si tiene al menos un compromiso asignado en el día o en los pasados
+    const enDia = this.flujoActivo.compromisos.some(c => c.responsables?.includes(this.usuarioId));
+    const enPasados = (this.flujoActivo as any).compromisos_pasados?.some((c: any) => c.responsables?.includes(this.usuarioId));
+    return enDia || enPasados;
+  }
+
+  get compromisosUnificados(): any[] {
+    if (!this.flujoActivo) return [];
+    
+    const pasados = (this.flujoActivo as any).compromisos_pasados || [];
+    const actuales = this.flujoActivo.compromisos || [];
+    
+    // Marcamos cuáles son pasados para la interfaz
+    const pasadosMarcados = pasados.map((c: any) => ({ ...c, esPasado: true }));
+    const actualesMarcados = actuales.map((c: any) => ({ ...c, esPasado: false }));
+    
+    return [...pasadosMarcados, ...actualesMarcados];
+  }
+
   saturacionPct(total: number): number {
     return Math.min(Math.round((total / 15) * 100), 100);
   }
@@ -107,14 +137,33 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
           this.seguimientoActual = seg;
           if (!seg) { this.loading = false; this._cdr.markForCheck(); return; }
           this._cargarFlujoYHistorial(seg.id);
-          if (this.esGestor) this._cargarSaturacion(seg.id);
+          if (this.esGestorAsignado) this._cargarSaturacion(seg.id);
         },
         error: () => { this.loading = false; this._cdr.markForCheck(); },
       });
     } else {
       // Ya tenemos seguimiento, solo cargamos los datos del día
       this._cargarFlujoYHistorial(this.seguimientoActual.id);
-      if (this.esGestor) this._cargarSaturacion(this.seguimientoActual.id);
+      if (this.esGestorAsignado) this._cargarSaturacion(this.seguimientoActual.id);
+    }
+  }
+
+  onCambiarEstadoCompromiso(c: any): void {
+    if (c.estado === 'pendiente') {
+      this._proy.iniciarCompromiso(c.id, this.usuarioId).subscribe(() => this.cargarDatosDelDia());
+    } else if (c.estado === 'en_ejecucion' || c.estado === 'en_proceso') {
+      this._proy.completarCompromiso(c.id, this.usuarioId).subscribe(() => this.cargarDatosDelDia());
+    }
+  }
+
+  onEditarCompromiso(c: any): void {
+    this.compromisoParaEditar = { ...c };
+    this.showModalCompromiso = true;
+  }
+
+  cargarDatosDelDia(): void {
+    if (this.seguimientoActual) {
+      this._cargarFlujoYHistorial(this.seguimientoActual.id);
     }
   }
 
@@ -217,6 +266,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
   }
 
   get esHoy(): boolean {
+    if (!this.fechaSeleccionada) return true;
     return this.fechaSeleccionada === this.formatLocal(new Date());
   }
 

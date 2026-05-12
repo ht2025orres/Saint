@@ -19,6 +19,9 @@ export class ModalGestionZonasMasivaComponent implements OnChanges {
   busquedaZona: string = '';
 
   ngOnChanges(changes: SimpleChanges) {
+    if (changes['show']) {
+      console.log('ModalGestionZonasMasivaComponent show input changed:', changes['show'].currentValue);
+    }
     if (changes['show']?.currentValue || changes['mode']?.currentValue || changes['selectedItems']?.currentValue) {
       this.busquedaZona = '';
       this.actualizarZonasDisponibles();

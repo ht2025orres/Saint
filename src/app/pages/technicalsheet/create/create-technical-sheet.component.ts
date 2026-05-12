@@ -67,7 +67,19 @@ export class CreateTechnicalSheetComponent implements OnInit {
     get descripcionCompaniaNoValid() {
         return this.formGr.get('company_name').invalid && this.formGr.get('company_name').touched;
     }
+
+
     technicalDataSheetCurrent: TechnicalDataSheet;
+
+    getCharCount(controlName: string, maxLength: number = 1000): string {
+        const control = this.formGr.get(controlName);
+        if (control && control.value) {
+            const currentLength = control.value.length;
+            return `${currentLength} / ${maxLength}`;
+        }
+        return `0 / ${maxLength}`;
+    }
+
     isEdition: boolean = false;
     title = 'Guardar ficha técnica';
     file: File = null; // Variable to store file
@@ -827,7 +839,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
             shirt_collar: this.technicalDataSheetCurrent.shirt_collar || '',
             cuffs: this.technicalDataSheetCurrent.cuffs || '',
             pockets: this.technicalDataSheetCurrent.pockets || '',
-            busybody: this.technicalDataSheetCurrent.busybody || '',
+            busybody: this.technicalDataSheetCurrent.busybody || this.technicalDataSheetCurrent.rib || '',
             sleeves: this.technicalDataSheetCurrent.sleeves || '',
             back: this.technicalDataSheetCurrent.back || '',
             shoulders: this.technicalDataSheetCurrent.shoulders || '',

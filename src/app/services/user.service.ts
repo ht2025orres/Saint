@@ -19,6 +19,10 @@ export class UserService {
     });
   }
 
+  getUsersByPermission(permissionId: number): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiLaravelUrl}/users/permission/${permissionId}`);
+  }
+
   getAll(): Observable<User[]> {
     return this.http.get<User[]>(`${this.apiLaravelUrl}/users`);
   }
@@ -48,5 +52,9 @@ export class UserService {
 
   duplicatePermissions(sourceId: number, targetId: number): Observable<any> {
     return this.http.post(`${this.apiLaravelUrl}/users/duplicate-permissions`, { source_id: sourceId, target_id: targetId });
+  }
+
+  getAuditLogs(params: any): Observable<any> {
+    return this.http.get(`${this.apiLaravelUrl}/audit/permissions`, { params });
   }
 }

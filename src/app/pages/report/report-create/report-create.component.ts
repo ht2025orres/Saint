@@ -19,7 +19,7 @@ export class ReportCreateComponent {
   report: Report = {
     id: 0,
     origen: 'calidad',
-    tipo_reporte: 'ficha tecnica',
+    tipo_reporte: 'FT DESCRIPCION',
     op_reporte: '',
     item: '',
     prenda: '',
@@ -268,7 +268,7 @@ export class ReportCreateComponent {
     this.report = {
       id: 0,
       origen: 'calidad',
-      tipo_reporte: 'ficha tecnica',
+      tipo_reporte: 'FT DESCRIPCION',
       op_reporte: '',
       cliente: '',
       item: '',

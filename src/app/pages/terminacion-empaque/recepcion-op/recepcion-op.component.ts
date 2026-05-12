@@ -3,6 +3,7 @@ import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pag
 import { AuthService } from './../../../services/auth.service';
 import { Component, OnInit } from '@angular/core';
 import { forkJoin } from 'rxjs';
+import { Modal } from 'bootstrap';
 import Swal from 'sweetalert2';
 
 interface OP {
@@ -165,8 +166,7 @@ export class RecepcionOpComponent implements OnInit {
     .listarPVsPorOPDesdeApiLaravel(opEncontrada.id)
     .subscribe({
       next: (respuesta) => {
-        const cadenaPVs: string = respuesta['pvs'] || '';
-        const numerosPV = cadenaPVs.match(/\d+/g) || [];
+        const numerosPV: number[] = respuesta.pvs.map((pv: any) => pv.numero_pv);
 
         if (numerosPV.length === 0) {
           this.loadingBuscarItems = false; // ← Desactivar loading
@@ -319,15 +319,26 @@ export class RecepcionOpComponent implements OnInit {
     };
     this.busquedaIniciada = false;
     this.loadingBuscarModal = false; // ← Reset loading
+
+    const modalEl = document.getElementById('recepcionPTsModal');
+    if (modalEl) {
+      const modal = new Modal(modalEl);
+      modal.show();
+    }
   }
 
   cerrarModalRecepcionPTs() {
+    const modalEl = document.getElementById('recepcionPTsModal');
+    if (modalEl) {
+      const modal = Modal.getInstance(modalEl);
+      modal?.hide();
+    }
     this.modalRecepcionPTs.mostrar = false;
     this.busquedaIniciada = false;
     this.loadingBuscarModal = false; // ← Reset loading
   }
 
-  buscarItemsEnModal() {
+  buscarItemsPorPTModal() {
     // Evitar múltiples clics
     if (this.loadingBuscarModal) {
       return;
@@ -672,9 +683,20 @@ export class RecepcionOpComponent implements OnInit {
       ubicacionSeleccionada: 'Terminacion',
       comentario: ''
     };
+
+    const modalEl = document.getElementById('ubicacionModal');
+    if (modalEl) {
+      const modal = new Modal(modalEl);
+      modal.show();
+    }
   }
 
   cerrarModalUbicacion(): void {
+    const modalEl = document.getElementById('ubicacionModal');
+    if (modalEl) {
+      const modal = Modal.getInstance(modalEl);
+      modal?.hide();
+    }
     this.modalUbicacion.mostrar = false;
     this.modalUbicacion.comentario = '';
     this.modalUbicacion.ubicacionSeleccionada = 'Terminacion';
@@ -742,9 +764,20 @@ export class RecepcionOpComponent implements OnInit {
       item: item,
       mostrar: true
     };
+
+    const modalEl = document.getElementById('verUbicacionesModal');
+    if (modalEl) {
+      const modal = new Modal(modalEl);
+      modal.show();
+    }
   }
 
   cerrarModalVerUbicaciones(): void {
+    const modalEl = document.getElementById('verUbicacionesModal');
+    if (modalEl) {
+      const modal = Modal.getInstance(modalEl);
+      modal?.hide();
+    }
     this.modalVerUbicaciones.mostrar = false;
   }
 

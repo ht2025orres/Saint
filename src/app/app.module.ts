@@ -36,7 +36,8 @@ import { AngularEditorModule } from '@kolkov/angular-editor';
 // Users
 import { ListUserComponent } from './pages/user/list-user/list-user.component';
 import { CreateUserComponent } from './pages/user/create-user/create-user.component';
-import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
+import { AuthorizationManagerModule } from './pages/authorization-manager/authorization-manager.module';
+import { UserProfileComponent } from './pages/user-profile/user-profile.component';
 
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthModule } from './auth/auth.module';
@@ -63,7 +64,7 @@ import { TechnicalReportBigbagComponent } from './pages/technical-report-bigbag/
 import { ViewReportBigbagComponent } from './pages/technical-report-bigbag/view-report-bigbag/view-report-bigbag.component';
 import { DashboardBigbagComponent } from './pages/technical-report-bigbag/dashboard-bigbag/dashboard-bigbag.component';
 
-import { OrdenCompraModule } from './pages/comerciales/orden-compra/orden-compra.module';
+
 import { TiemposItemsModule } from './pages/tiempos/tiempos-items/tiempos-items.module';
 import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.module';
 
@@ -72,8 +73,7 @@ import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
 
 // import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
-// Modulo comerciales
-import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
+
 
 registerLocaleData(localeEs, 'es-CO');
 
@@ -100,7 +100,7 @@ registerLocaleData(localeEs, 'es-CO');
         ReportListComponent,
         MiReportListComponent,
         ReportDashboardComponent,
-        AuthorizationManagerComponent,
+        UserProfileComponent
 
     ],
     bootstrap: [AppComponent],
@@ -113,6 +113,7 @@ registerLocaleData(localeEs, 'es-CO');
         NgChartsModule,
         AuthModule,
         SharedModule,
+        AuthorizationManagerModule,
         /*Editor*/
         AngularEditorModule,
         /* Zoom */
@@ -138,8 +139,7 @@ registerLocaleData(localeEs, 'es-CO');
         HojasConteoDetalleModule,
         ContadorItemsModule,
         InventariosModule,
-        /* Comerciales */
-        OrdenCompraModule,
+
         TiemposItemsModule,
         /* Planeacion */
         PlaneacionModule,

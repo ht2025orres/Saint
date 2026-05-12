@@ -40,14 +40,15 @@ import { ReportCreateComponent } from './pages/report/report-create/report-creat
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
 import { ReportDashboardComponent } from './pages/report/report-dashboard/report-dashboard.component';
-import { OrdenCompraComponent } from './pages/comerciales/orden-compra/orden-compra.component';
+
 import { TiemposItemsComponent } from './pages/tiempos/tiempos-items/tiempos-items.component';
 import { PlaneacionComponent } from './pages/planeacion/planeacion/planeacion.component';
 import { CentrosCostosComponent } from './pages/financiero/centros-costos/centros-costos.component';
 import { InventariosComponent } from './pages/old-inventario/inventarios/inventarios.component';
 // import { ProyectosComponent } from './pages/proyectos/proyectos.component';
-import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
+
 import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
+import { UserProfileComponent } from './pages/user-profile/user-profile.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -88,7 +89,7 @@ const routes: Routes = [
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes' },
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes' },
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
-      { path: 'orden-compra', component: OrdenCompraComponent, title: 'Órdenes de compra' },
+      { path: 'comerciales', loadChildren: () => import('./pages/comerciales/comerciales.module').then(m => m.ComercialesModule), title: 'Comerciales' },
       { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
       { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
       { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' },
@@ -96,9 +97,11 @@ const routes: Routes = [
       { path: 'inventario', loadChildren: () => import('./pages/inventario/inventario.module').then(m => m.InventarioModule), title: 'Inventario' },
       { path: 'seguimiento', loadChildren: () => import('./pages/seguimiento/seguimiento.module').then(m => m.SeguimientoModule), title: 'Seguimiento' },
       { path: 'firmas', loadChildren: () => import('./pages/firmas/firmas.module').then(m => m.FirmasModule), title: 'Firmas Digitales' },
+      { path: 'moldes', loadChildren: () => import('./pages/moldes/moldes.module').then(m => m.MoldesModule), title: 'Moldes y OPM' },
       // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
-      { path: 'solicitud', component: SolicitudComponent, title: 'Solicitud comercial' },
-      { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' }
+
+      { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' },
+      { path: 'my-profile', component: UserProfileComponent, title: 'Mi Perfil' }
     ]
   },
 

@@ -1,6 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { TerminacionEmpaqueService } from '../../../services/terminacion-empaque.service';
-import { UserService } from '../../../services/user.service';
+import { UserService } from 'src/app/services/user.service';
 import { AuthService } from '../../../services/auth.service';
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
@@ -65,7 +65,8 @@ export class DashboardEmpaqueComponent implements OnInit {
   registros: any[] = [];
   currentRegistros: any[] = [];
   empacadoresData: any[] = [];
-  empacadoresList: User[] = [];
+  empacadoresList: any[] = [];
+  usuariosMap: Map<number, any> = new Map();
   kpisOP: any = {};
   opsData: OP[] = [];
   selectedOP: OP | null = null;
@@ -118,12 +119,23 @@ export class DashboardEmpaqueComponent implements OnInit {
   barChartData: ChartData<'bar'> = { labels: [], datasets: [] };
   barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
-    scales: { y: { beginAtZero: true } }
+    maintainAspectRatio: false,
+    scales: { 
+      x: {
+        ticks: {
+          autoSkip: false,
+          maxRotation: 45,
+          minRotation: 45
+        }
+      },
+      y: { beginAtZero: true } 
+    }
   };
   barChartType: ChartType = 'bar';
   pieChartData: ChartData<'pie'> = { labels: [], datasets: [] };
   pieChartOptions: ChartConfiguration['options'] = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: { legend: { position: 'right' } }
   };
   pieChartType: ChartType = 'pie';
@@ -141,8 +153,21 @@ export class DashboardEmpaqueComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.cargarUsuarios();
     this.cargarDashboard();
     this.cargarDashboardOPs();
+  }
+
+  cargarUsuarios(): void {
+    this.userService.getAll().subscribe({
+      next: (usuarios) => {
+        usuarios.forEach(u => this.usuariosMap.set(u.id!, u));
+        // Si ya hay datos en la gráfica, forzar actualización visual
+        if (this.pieChartData.labels?.length) {
+          this.pieChartData.labels = this.empacadoresData.map(e => this.getNombreEmpacador(e.empacador_id));
+        }
+      }
+    });
   }
 
   normalizeText(value: any): string {
@@ -273,7 +298,7 @@ export class DashboardEmpaqueComponent implements OnInit {
 
   cargarDashboard() {
     forkJoin({
-      empacadores: this.userService.getUserByRoles([16]),
+      empacadores: this.userService.getUsersByPermission(16),
       dashboard: this.empaqueService.getDashboardData({
         fechaInicio: this.fechaInicio,
         fechaFin: this.fechaFin,
@@ -342,24 +367,31 @@ export class DashboardEmpaqueComponent implements OnInit {
               {
                   label: 'Ítems empacados',
                   data: empacadoData,
-                  backgroundColor: '#007bff'
+                  backgroundColor: '#007bff',
+                  barPercentage: 0.8,
+                  categoryPercentage: 0.9
               },
               {
                   label: 'Ítems recepcionados',
                   data: recepcionData,
-                  backgroundColor: '#28a745'
+                  backgroundColor: '#28a745',
+                  barPercentage: 0.8,
+                  categoryPercentage: 0.9
               }
           ]
       };
 
-      // Ancho dinámico para scroll (40px por barra, mínimo 600px)
-      this.barChartWidth = Math.max(600, todasLasFechas.length * 40);
+      // Ancho dinámico para scroll (80px por día, mínimo 1000px)
+      this.barChartWidth = Math.max(1000, todasLasFechas.length * 80);
 
       // Configuración del gráfico con tooltip mejorado
       this.barChartOptions = {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+              legend: {
+                  position: 'top',
+              },
               tooltip: {
                   callbacks: {
                       label: (context: any) => {
@@ -375,6 +407,13 @@ export class DashboardEmpaqueComponent implements OnInit {
               }
           },
           scales: {
+              x: {
+                  ticks: {
+                      autoSkip: false,
+                      maxRotation: 45,
+                      minRotation: 45
+                  }
+              },
               y: {
                   beginAtZero: true
               }
@@ -404,7 +443,11 @@ export class DashboardEmpaqueComponent implements OnInit {
     });
     this.barChartOptions = {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
+        legend: {
+          position: 'top',
+        },
         tooltip: {
           callbacks: {
             label: (context: any) => {
@@ -414,6 +457,18 @@ export class DashboardEmpaqueComponent implements OnInit {
               return `Ítems: ${items} | Costo: $${costo.toLocaleString()}`;
             }
           }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            autoSkip: false,
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
+        y: {
+          beginAtZero: true
         }
       }
     };
@@ -442,8 +497,16 @@ export class DashboardEmpaqueComponent implements OnInit {
   }
 
   getNombreEmpacador(id: number): string {
-    const empacador = this.empacadoresList.find(e => e.id === id);
-    return empacador ? empacador.nombre_completo : `Empacador ${id}`;
+    const usuario = this.usuariosMap.get(id);
+    if (!usuario) return `Empacador ${id}`;
+    
+    if (usuario.nombre_completo) return usuario.nombre_completo;
+    
+    if (usuario.firstName && usuario.lastName) {
+      return `${usuario.firstName} ${usuario.lastName}`;
+    }
+    
+    return usuario.email || `Empacador ${id}`;
   }
 
   verDetalle(item: any, type: 'OP' | 'PV'): void {

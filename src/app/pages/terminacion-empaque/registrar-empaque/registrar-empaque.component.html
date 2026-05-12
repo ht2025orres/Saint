@@ -201,9 +201,17 @@
           </td>
           <td>
             <input type="text" class="form-control"
+              [ngClass]="{
+                'is-invalid': !validarNumeroEmpaque(item) && item.cantidad_a_registrar > 0,
+                'is-valid': validarNumeroEmpaque(item) && item.cantidad_a_registrar > 0
+              }"
               [(ngModel)]="item.numero_empaque"
-              placeholder="Número de empaque">
-          <!-- <td>
+              (input)="validarNumeroEmpaque(item)"
+              required>
+            <div class="invalid-feedback" *ngIf="!validarNumeroEmpaque(item) && item.cantidad_a_registrar > 0">
+              El número de empaque es obligatorio.
+            </div>
+          </td><!-- <td>
             <i *ngIf="item.cantidad_empacada + item.cantidad_a_registrar > item.cantidad_asignada || item.cantidad_empacada + item.cantidad_a_registrar > item.cantidad_teorica"
                class="fa fa-exclamation-triangle text-danger"
                title="Se pasa del cantidad_asignada o del teórico"></i>
@@ -225,7 +233,7 @@
     <div class="text-end mt-3">
       <button class="btn btn-success" 
               (click)="registrarEmpaque()"
-              [disabled]="guardandoEmpaque">
+              [disabled]="guardandoEmpaque || !formularioEsValido()">
         <span *ngIf="!guardandoEmpaque">Registrar</span>
         <span *ngIf="guardandoEmpaque">
           <span class="spinner-border spinner-border-sm me-2"></span>
@@ -416,7 +424,7 @@
           </div>
           <div class="text-end">
             <h4 class="mb-0 text-primary">Numero empaque: {{ etiquetaData.numero_empaque }}</h4>
-            <span class="badge bg-primary">Tipo empaque: {{ etiquetaData.tipo_empaque }}</span>
+            <span class="fw-bold">Tipo empaque: {{ etiquetaData.tipo_empaque }}</span>
           </div>
         </div>
         
@@ -453,7 +461,7 @@
               <td class="fw-bold">{{ item.item_id }}</td>
               <td>{{ item.descripcion }}</td>
               <td>{{ item.talla }}</td>
-              <td class="text-center"><span class="badge bg-success">{{ item.cantidad }}</span></td>
+              <td class="text-center fw-bold">{{ item.cantidad }}</td>
             </tr>
           </tbody>
           <tfoot>

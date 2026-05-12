@@ -1,0 +1,47 @@
+<div *ngIf="isModalOpen" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50" (click)="cerrar()">
+  <div class="relative p-6 border shadow-xl rounded-lg bg-white transform transition-all w-full max-w-lg mx-auto" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center border-b pb-4 mb-4">
+      <h3 class="text-2xl font-extrabold text-gray-900">Asignar PV a {{ empacador?.firstName }} {{ empacador?.lastName }}</h3>
+      <button (click)="cerrar()" class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 rounded-md p-1 transition-colors">
+        <i class="bi bi-x-lg text-xl"></i>
+      </button>
+    </div>
+
+    <div class="mt-2 relative">
+      <label for="pv-input" class="block text-base font-semibold text-gray-800">Buscar y Seleccionar PV</label>
+      <input
+        id="pv-input"
+        type="text"
+        class="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-base rounded-md"
+        placeholder="Escribe el código de la PV"
+        [(ngModel)]="pvSearchTerm"
+        (input)="filterPvs()"
+        (blur)="hideSuggestions()"
+        (focus)="showSuggestions = true"
+      >
+      <div *ngIf="showSuggestions && filteredPvs.length > 0"
+           class="absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <ul class="py-1">
+          <li *ngFor="let pv of filteredPvs"
+              class="px-4 py-2 cursor-pointer hover:bg-blue-100"
+              (mousedown)="selectPv(pv)">
+            {{ pv.codigo }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-3">
+      <button type="button"
+              class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75"
+              (click)="cerrar()">
+        Cancelar
+      </button>
+      <button type="button"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+              (click)="asignarPvConfirm()">
+        Asignar PV
+      </button>
+    </div>
+  </div>
+</div>

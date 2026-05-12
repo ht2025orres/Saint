@@ -160,131 +160,89 @@
   </div>
 </div>
 
-<!-- Modal de Recepción de PTs -->
-<div class="modal fade show d-block" tabindex="-1" *ngIf="modalRecepcionPTs.mostrar">
+<!-- Modal para la recepción de PTs -->
+<div class="modal fade" id="recepcionPTsModal" tabindex="-1" aria-labelledby="recepcionPTsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-
+    <div class="modal-content shadow-lg">
       <div class="modal-header">
-        <h5 class="modal-title">Recepción de PT</h5>
+        <h5 class="modal-title" id="recepcionPTsModalLabel">Recepción por PT</h5>
         <button type="button" class="btn-close" (click)="cerrarModalRecepcionPTs()"></button>
       </div>
-
       <div class="modal-body">
-        <!-- Input PT + Buscar -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <input
-              class="form-control"
-              placeholder="Ingresa número de PT (ej: 47488)"
-              [(ngModel)]="modalRecepcionPTs.ptIngresado"
-              (keyup.enter)="buscarItemsEnModal()"
-              [disabled]="loadingBuscarModal"
-            />
-          </div>
-          <div class="col-md-2">
-            <!-- Botón Buscar del modal con estado de carga -->
-            <button 
-              class="btn btn-primary" 
-              (click)="buscarItemsEnModal()" 
-              [disabled]="loadingBuscarModal">
-              <span *ngIf="!loadingBuscarModal">Buscar</span>
-              <span *ngIf="loadingBuscarModal">
-                <span class="spinner-border spinner-border-sm me-2"></span>
-                Buscando...
-              </span>
-            </button>
-          </div>
+        <!-- Input para ingresar el PT -->
+        <div class="input-group mb-3">
+          <input type="text" class="form-control" placeholder="Ingrese el código del PT..."
+            [(ngModel)]="modalRecepcionPTs.ptIngresado" (keyup.enter)="buscarItemsPorPTModal()">
+          <button class="btn btn-primary" type="button" (click)="buscarItemsPorPTModal()"
+            [disabled]="loadingBuscarModal">
+            <span *ngIf="!loadingBuscarModal">Buscar</span>
+            <span *ngIf="loadingBuscarModal">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Buscando...
+            </span>
+          </button>
         </div>
 
-        <!-- Filtros y lista -->
         <div *ngIf="busquedaIniciada">
           <div *ngIf="modalRecepcionPTs.items?.length > 0; else sinItemsModal">
-
-            <!-- Filtro de búsqueda -->
-            <input type="text"
-              class="form-control mb-3"
-              placeholder="Buscar ítems..."
-              [(ngModel)]="itemFiltersModal.busqueda"
-              (input)="applyItemFiltersModal()">
-
-            <!-- Spinner de carga -->
-            <div *ngIf="modalRecepcionPTs.cargando" class="text-center my-3">
-              <div class="spinner-border text-primary"></div>
-              <p class="mt-2">Cargando ítems...</p>
+            <div class="alert alert-info py-2" *ngIf="modalRecepcionPTs.pv">
+              <strong>PV asociada:</strong> {{ modalRecepcionPTs.pv }}
             </div>
 
-            <!-- Tabla de ítems -->
-            <table class="table table-sm" *ngIf="!modalRecepcionPTs.cargando">
-              <thead class="table-light">
-                <tr>
-                  <th>Ítem</th>
-                  <th>Descripción</th>
-                  <th>Cliente</th>
-                  <th>U.M.</th>
-                  <th>Cant. Teórica Total</th>
-                  <th>Cant. Recibida Acumulada</th>
-                  <th style="width:160px">Cant. Recibida</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of currentItemsModal">
-                  <td>{{ item.f120_id }} - {{ item.id_color }} - {{ item.id_talla }}</td>
-                  <td>{{ item.descripcion_corta }}</td>
-                  <td>{{ item.cliente }}</td>
-                  <td>{{ item.unidad_medida }}</td>
-                  <td>{{ item.cantidad_teorica_total }}</td>
-                  <td>{{ item.cantidad_recibida_total || 0 }}</td>
-                  <td>
-                    <input
-                      type="number"
-                      class="form-control"
-                      [ngClass]="{
-                        'is-invalid': excedeTeoricaModal(item),
-                        'is-valid': esCantidadValidaModal(item)
-                      }"
-                      [(ngModel)]="item.cantidad_recibida"
-                      [min]="0"
-                      [max]="getMaximoPermitidoModal(item)"
-                      [disabled]="loadingGuardarModal"
-                    />
-                    <small *ngIf="excedeTeoricaModal(item)" class="text-danger">Excede teórica</small>
-                  </td>
-                  <td>
-                    <button 
-                      class="btn btn-sm btn-outline-primary" 
-                      (click)="asignarMaximoItemModal(item)"
-                      [disabled]="loadingGuardarModal">Max</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <!-- Filtro de búsqueda dentro del modal -->
+            <div class="mb-3">
+              <input type="text" class="form-control form-control-sm" placeholder="Filtrar ítems en este PT..."
+                [(ngModel)]="itemFiltersModal.busqueda" (input)="applyItemFiltersModal()">
+            </div>
 
-            <!-- Paginador de items dentro del modal -->
-            <app-shared-paginator
-              *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
-              [instanceId]="itemsPaginatorId"
-              [showPageSizeSelector]="true"
-              [pageSizeOptions]="[10, 25, 50]">
-            </app-shared-paginator>
+            <div class="table-responsive" style="max-height: 400px;">
+              <table class="table table-sm table-hover border">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>Referencia</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Talla</th>
+                    <th class="text-center">Color</th>
+                    <th class="text-end">Teórico</th>
+                    <th class="text-end">Recibido (Total)</th>
+                    <th class="text-end" style="width: 120px;">Cantidad a Recibir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of currentItemsModal">
+                    <td>{{ item.codigo || (item.f120_id + ' - ' + item.id_color + ' - ' + item.id_talla) }}</td>
+                    <td class="text-truncate" style="max-width: 200px;" [title]="item.descripcion">{{ item.descripcion_corta || item.descripcion }}
+                    </td>
+                    <td class="text-center">{{ item.id_talla }}</td>
+                    <td class="text-center">{{ item.id_color }}</td>
+                    <td class="text-end">{{ item.cantidad_teorica_total }}</td>
+                    <td class="text-end">{{ item.cantidad_recibida_total || 0 }}</td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm text-end"
+                        [(ngModel)]="item.cantidad_recibida" min="0" [max]="item.cantidad_teorica_total - (item.cantidad_recibida_total || 0)"
+                        [ngClass]="{'is-invalid': item.cantidad_recibida > (item.cantidad_teorica_total - (item.cantidad_recibida_total || 0))}">
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-            <!-- Acciones generales -->
-            <div class="mt-3 d-flex justify-content-between align-items-center">
+            <!-- Paginador del modal -->
+            <div class="mt-3 d-flex justify-content-center" *ngIf="paginationService.getPaginatorState(itemsPaginatorId)">
+              <app-shared-paginator [instanceId]="itemsPaginatorId" [showPageSizeSelector]="false">
+              </app-shared-paginator>
+            </div>
+
+            <div class="modal-footer px-0 pb-0 pt-3 justify-content-between">
               <div>
                 <strong>Total recibido: {{ totalRecibidoModal }}</strong>
               </div>
               <div>
-                <button 
-                  class="btn btn-outline-success me-2" 
-                  (click)="asignarMaximosGeneralesModal()"
+                <button class="btn btn-outline-success me-2" (click)="asignarMaximosGeneralesModal()"
                   [disabled]="loadingGuardarModal">Asignar máximos (General)</button>
-                
+
                 <!-- Botón Guardar Recepción del modal con estado de carga -->
-                <button 
-                  class="btn btn-success" 
-                  (click)="guardarRecepcionModal()"
-                  [disabled]="loadingGuardarModal">
+                <button class="btn btn-success" (click)="guardarRecepcionModal()" [disabled]="loadingGuardarModal">
                   <span *ngIf="!loadingGuardarModal">Guardar Recepción</span>
                   <span *ngIf="loadingGuardarModal">
                     <span class="spinner-border spinner-border-sm me-2"></span>
@@ -306,52 +264,50 @@
 </div>
 
 <!-- Modal para asignar ubicación distinta -->
-<div class="modal" tabindex="-1" [style.display]="modalUbicacion.mostrar ? 'block' : 'none'">
-  <div class="modal-dialog">
-    <div class="modal-content">
+<div class="modal fade" id="ubicacionModal" tabindex="-1" aria-labelledby="ubicacionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg">
       <div class="modal-header">
-        <h5 class="modal-title">Asignar Ubicación Distinta</h5>
+        <h5 class="modal-title" id="ubicacionModalLabel">Asignar Ubicación Distinta</h5>
         <button type="button" class="btn-close" (click)="cerrarModalUbicacion()"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3" *ngIf="modalUbicacion.item">
-          <strong>Ítem:</strong> {{ modalUbicacion.item.f120_id }} - {{ modalUbicacion.item.descripcion_corta }} - Talla {{ modalUbicacion.item.id_talla }}
+          <strong>Ítem:</strong> {{ modalUbicacion.item.f120_id }} - {{ modalUbicacion.item.descripcion_corta }} - Talla
+          {{ modalUbicacion.item.id_talla }}
         </div>
-        
+
         <div class="mb-3">
           <label for="cantidadUbicacion" class="form-label">Cantidad a ubicar:</label>
-          <input
-            type="number"
-            class="form-control"
-            id="cantidadUbicacion"
-            [(ngModel)]="modalUbicacion.cantidad"
-            min="1"
+          <input type="number" class="form-control" id="cantidadUbicacion" [(ngModel)]="modalUbicacion.cantidad" min="1"
             [max]="modalUbicacion.item?.cantidad_teorica_total">
         </div>
-        
+
         <div class="mb-3">
-          <label for="ubicacionSelect" class="form-label">Seleccionar ubicación:</label>
-          <select
-            class="form-select"
-            id="ubicacionSelect"
-            [(ngModel)]="modalUbicacion.ubicacionSeleccionada">
-            <option value="" hidden selected>-- Seleccione una ubicación --</option>
-            <option *ngFor="let ubicacion of ubicacionesDisponibles" [value]="ubicacion.value">
+          <label class="form-label d-block">Seleccionar ubicación:</label>
+          <div class="d-flex flex-wrap gap-2">
+            <button 
+              type="button" 
+              *ngFor="let ubicacion of ubicacionesDisponibles"
+              class="btn btn-sm"
+              [class.btn-primary]="modalUbicacion.ubicacionSeleccionada === ubicacion.value"
+              [class.btn-outline-secondary]="modalUbicacion.ubicacionSeleccionada !== ubicacion.value"
+              (click)="modalUbicacion.ubicacionSeleccionada = ubicacion.value">
+              <i class="bi" 
+                 [class.bi-check-circle-fill]="modalUbicacion.ubicacionSeleccionada === ubicacion.value"
+                 [class.bi-circle]="modalUbicacion.ubicacionSeleccionada !== ubicacion.value"></i>
               {{ ubicacion.label }}
-            </option>
-          </select>
+            </button>
+          </div>
         </div>
-        
+
         <!-- Campo de comentario (requerido para Bordado y Estampado) -->
-        <div class="mb-3" *ngIf="modalUbicacion.ubicacionSeleccionada === 'Bordado' || modalUbicacion.ubicacionSeleccionada === 'Estampado'">
+        <div class="mb-3"
+          *ngIf="modalUbicacion.ubicacionSeleccionada === 'Bordado' || modalUbicacion.ubicacionSeleccionada === 'Estampado'">
           <label for="comentarioUbicacion" class="form-label">
             Comentario <span class="text-danger">*</span>
           </label>
-          <textarea
-            class="form-control"
-            id="comentarioUbicacion"
-            rows="3"
-            [(ngModel)]="modalUbicacion.comentario"
+          <textarea class="form-control" id="comentarioUbicacion" rows="3" [(ngModel)]="modalUbicacion.comentario"
             placeholder="Ingrese el motivo por el cual se ubica en {{ modalUbicacion.ubicacionSeleccionada }}..."></textarea>
         </div>
       </div>
@@ -364,65 +320,64 @@
 </div>
 
 <!-- Modal para ver ubicaciones distintas -->
-<div class="modal" tabindex="-1" [style.display]="modalVerUbicaciones.mostrar ? 'block' : 'none'">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
+<div class="modal fade" id="verUbicacionesModal" aria-labelledby="verUbicacionesModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg">
       <div class="modal-header">
-        <h5 class="modal-title">Ubicaciones Distintas</h5>
+        <h5 class="modal-title" id="verUbicacionesModalLabel">Ubicaciones Distintas</h5>
         <button type="button" class="btn-close" (click)="cerrarModalVerUbicaciones()"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3" *ngIf="modalVerUbicaciones.item">
-          <strong>Ítem:</strong> {{ modalVerUbicaciones.item.f120_id }} - {{ modalVerUbicaciones.item.descripcion_corta }} - Talla {{ modalVerUbicaciones.item.id_talla }}
+          <strong>Ítem:</strong> {{ modalVerUbicaciones.item.f120_id }} - {{ modalVerUbicaciones.item.descripcion_corta }}
+          - Talla {{ modalVerUbicaciones.item.id_talla }}
         </div>
-        
+
         <div *ngIf="modalVerUbicaciones.item?.ubicaciones_distintas?.length; else sinUbicaciones">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>Ubicación</th>
-                <th>Cantidad</th>
-                <th>Comentario</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let ubicacion of modalVerUbicaciones.item.ubicaciones_distintas">
-                <td>
-                  <span class="badge" 
-                        [class.bg-success]="ubicacion.ubicacion === 'Terminacion'"
-                        [class.bg-warning]="ubicacion.ubicacion === 'Bordado'"
-                        [class.bg-info]="ubicacion.ubicacion === 'Estampado'"
-                        [class.bg-secondary]="ubicacion.ubicacion !== 'Terminacion' && ubicacion.ubicacion !== 'Bordado' && ubicacion.ubicacion !== 'Estampado'">
-                    {{ ubicacion.ubicacion }}
-                  </span>
-                </td>
-                <td>{{ ubicacion.cantidad }}</td>
-                <td>{{ ubicacion.comentario || 'Sin comentario' }}</td>
-                <td>
-                  <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                            type="button" 
-                            data-bs-toggle="dropdown">
-                      Cambiar a
-                    </button>
-                    <ul class="dropdown-menu">
-                      <li *ngFor="let ub of ubicacionesDisponibles">
-                        <button 
-                          class="dropdown-item"
-                          [class.disabled]="ub.value === ubicacion.ubicacion"
-                          (click)="cambiarUbicacion(modalVerUbicaciones.item, ubicacion, ub.value)">
-                          {{ ub.label }}
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Ubicación</th>
+                  <th>Cantidad</th>
+                  <th>Comentario</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ubicacion of modalVerUbicaciones.item.ubicaciones_distintas">
+                  <td>
+                    <span class="badge" [class.bg-success]="ubicacion.ubicacion === 'Terminacion'"
+                      [class.bg-warning]="ubicacion.ubicacion === 'Bordado'"
+                      [class.bg-info]="ubicacion.ubicacion === 'Estampado'"
+                      [class.bg-secondary]="ubicacion.ubicacion !== 'Terminacion' && ubicacion.ubicacion !== 'Bordado' && ubicacion.ubicacion !== 'Estampado'">
+                      {{ ubicacion.ubicacion }}
+                    </span>
+                  </td>
+                  <td>{{ ubicacion.cantidad }}</td>
+                  <td>{{ ubicacion.comentario || 'Sin comentario' }}</td>
+                  <td>
+                    <div class="d-flex flex-wrap gap-1">
+                      <button 
+                        *ngFor="let ub of ubicacionesDisponibles"
+                        type="button"
+                        class="btn btn-xs py-0 px-2"
+                        [class.btn-success]="ub.value === ubicacion.ubicacion"
+                        [class.btn-outline-secondary]="ub.value !== ubicacion.ubicacion"
+                        [disabled]="ub.value === ubicacion.ubicacion"
+                        (click)="cambiarUbicacion(modalVerUbicaciones.item, ubicacion, ub.value)"
+                        style="font-size: 0.7rem;">
+                        {{ ub.label }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        
+
         <ng-template #sinUbicaciones>
           <div class="text-center text-muted">
             <p>No hay ubicaciones distintas registradas para este ítem.</p>
@@ -436,8 +391,4 @@
   </div>
 </div>
 
-<!-- Backdrop para modales -->
-<div class="modal-backdrop fade show" 
-     *ngIf="modalRecepcionPTs.mostrar || modalUbicacion.mostrar || modalVerUbicaciones.mostrar"
-     (click)="modalRecepcionPTs.mostrar ? cerrarModalRecepcionPTs() : (modalUbicacion.mostrar ? cerrarModalUbicacion() : cerrarModalVerUbicaciones())">
-</div>
+<!-- Backdrop para modales (Eliminado ya que Bootstrap lo maneja automáticamente) -->

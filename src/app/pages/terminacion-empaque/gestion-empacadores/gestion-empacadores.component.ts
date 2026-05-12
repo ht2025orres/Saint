@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { UserService } from 'src/app/services/user.service';
 import { TerminacionEmpaqueService } from 'src/app/services/terminacion-empaque.service';
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/services/auth.service';
+import { AsignarPvModalComponent } from './modals/asignar-pv-modal/asignar-pv-modal.component';
+import { DesasignarPvModalComponent } from './modals/desasignar-pv-modal/desasignar-pv-modal.component';
 
 @Component({
   selector: 'app-gestion-empacadores',
@@ -11,6 +13,9 @@ import { AuthService } from 'src/app/services/auth.service';
   styleUrls: ['./gestion-empacadores.component.css']
 })
 export class GestionEmpacadoresComponent implements OnInit {
+
+  @ViewChild('asignarPvModal') asignarPvModal!: AsignarPvModalComponent;
+  @ViewChild('desasignarPvModal') desasignarPvModal!: DesasignarPvModalComponent;
 
   /* ----------  Paginadores independientes  ---------- */
   paginadorDisponibles = 'emp-disponibles-paginator';
@@ -49,16 +54,10 @@ export class GestionEmpacadoresComponent implements OnInit {
      1.  Cargar todos los empacadores y sus asignaciones
   ========================================================= */
   private cargarEmpacadores(): void {
-    this.userService.getAll().subscribe({
-      next: (usuarios: any[]) => {
-        /* 1‑A. Filtra solo usuarios con el rol correcto */
-        const empacadores = usuarios.filter(u =>
-          Array.isArray(u.roles) &&
-          u.roles.some((r: any) => r.name === 'Empacador (Terminación y Empaque)')
-        );
-
+    this.userService.getUsersByPermission(16).subscribe({
+      next: (empacadores: any[]) => {
         if (empacadores.length === 0) {
-          Swal.fire('Info', 'No hay empacadores registrados.', 'info');
+          Swal.fire('Info', 'No hay empacadores registrados o con el permiso asignado.', 'info');
           this.empacadoresDisponibles = [];
           this.empacadoresAsignados  = [];
           return;
@@ -78,11 +77,14 @@ export class GestionEmpacadoresComponent implements OnInit {
                 ...emp,
                 pvs: asign.pvs.map((pv: any) => ({
                   ...pv,
+                  asignado: Number(pv.asignado || 0),
+                  teorico: Number(pv.teorico || 0),
                   total_asignado_pv: pv.items?.reduce((sum: number, item: any) => sum + (item.cantidad_asignada || 0), 0)
                 })),
-                total_empacado: asign.total_empacado,
-                total_teorico:  asign.total_teorico,
-                total_asignado: asign.total_asignado || 0
+                total_empacado: Number(asign.total_empacado || 0),
+                total_teorico:  Number(asign.total_teorico || 0),
+                total_asignado: Number(asign.total_asignado || 0),
+                isExpanded: false
               };
 
               if (objetoFinal.pvs.length === 0) {
@@ -116,139 +118,38 @@ export class GestionEmpacadoresComponent implements OnInit {
      2.  Asignar una PV a un empacador
   ========================================================= */
   asignarPV(emp: any): void {
-    const opciones: string[] = this.pvsPendientes
-      .map(pv => pv.codigo)
-      .filter(codigo => !!codigo && codigo.trim() !== '');
-
-    if (opciones.length === 0) {
+    if (this.pvsPendientes.length === 0) {
       Swal.fire('Atención', 'Sin PVs pendientes para asignar.', 'info');
       return;
     }
-
-    const optionsHTML = opciones
-      .map(pv => `<option value="${pv}"></option>`)
-      .join('');
-
-    const html = `
-      <label for="swal-input" style="display:block;margin-bottom:6px;">
-        Escribe o selecciona una PV
-      </label>
-
-      <input
-        id="swal-input"
-        class="swal2-input"
-        list="pvs-datalist"
-        placeholder="Ej: PV-00048358"
-        autocomplete="off"
-      />
-
-      <datalist id="pvs-datalist">
-        ${optionsHTML}
-      </datalist>
-    `;
-
-    Swal.fire({
-      title: `Asignar PV a ${emp.firstName} ${emp.lastName}`,
-      html,
-      focusConfirm: false,
-      showCancelButton: true,
-      preConfirm: () => {
-        const input = (document.getElementById('swal-input') as HTMLInputElement)
-          ?.value
-          ?.trim();
-
-        if (!input) {
-          Swal.showValidationMessage('Debes ingresar una PV.');
-          return;
-        }
-
-        return input;
-      }
-    }).then(result => {
-      if (!result.isConfirmed) return;
-
-      const pvCodigo = result.value;
-
-      this.terminacionEmpaqueService
-        .asignarPVAEmpacador(emp.id, pvCodigo, this.authService.user.id)
-        .subscribe({
-          next: (r) => {
-            if (r?.success) {
-              Swal.fire('Éxito', 'PV asignada correctamente.', 'success');
-              this.cargarEmpacadores();
-            } else {
-              Swal.fire('Error', r?.error || 'No se pudo asignar.', 'error');
-            }
-          },
-          error: () =>
-            Swal.fire('Error', 'No se pudo asignar la PV.', 'error')
-        });
-    });
+    this.asignarPvModal.abrir(emp);
   }
 
-  desasignarPV(empacadorId: number, pvCodigo: string): void {
-    Swal.fire({
-      title: `¿Desasignar la PV ${pvCodigo}?`,
-      text: 'Esta acción eliminará la asignación del empacador.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, desasignar',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.terminacionEmpaqueService.desasignarPV(empacadorId, pvCodigo).subscribe({
-          next: (res) => {
-            if (res?.success) {
-              Swal.fire('Listo', 'La PV ha sido desasignada.', 'success');
-              this.cargarEmpacadores();  // Refrescar las listas
-            } else {
-              Swal.fire('Error', res?.error || 'No se pudo desasignar.', 'error');
-            }
-          },
-          error: () => {
-            Swal.fire('Error', 'No se pudo desasignar la PV.', 'error');
-          }
-        });
+  desasignarPVDesdeLista(emp: any, pv?: any): void {
+    if (pv) {
+      // Si se pasa una PV específica, abrir el modal con esa PV pre-seleccionada
+      this.desasignarPvModal.abrir(emp, pv);
+    } else {
+      // Si no se pasa una PV específica, abrir el modal para que el usuario seleccione
+      const opciones = (emp.pvs || []).map((pvItem: any) => pvItem.codigo).filter(Boolean);
+      if (opciones.length === 0) {
+        Swal.fire('Atención', 'Este empacador no tiene PVs asignadas para desasignar.', 'info');
+        return;
       }
-    });
-  }
-
-  desasignarPVDesdeLista(emp: any): void {
-    const opciones = (emp.pvs || []).map((pv: any) => pv.codigo).filter(Boolean);
-
-    if (opciones.length === 0) {
-      Swal.fire('Atención', 'Este empacador no tiene PVs asignadas.', 'info');
-      return;
+      this.desasignarPvModal.abrir(emp);
     }
+  }
 
-    const optionsHTML = opciones.map((pv: string) => `<option value="${pv}">${pv}</option>`).join('');
+  onPvAsignada(): void {
+    this.cargarEmpacadores();
+  }
 
-    const html = `
-      <label for="swal-input">Selecciona una PV</label>
-      <select id="swal-input" class="swal2-select">
-        <option value="" selected disabled>-- Selecciona --</option>
-        ${optionsHTML}
-      </select>
-    `;
+  onPvDesasignada(): void {
+    this.cargarEmpacadores();
+  }
 
-    Swal.fire({
-      title: `Desasignar PV de ${emp.firstName} ${emp.lastName}`,
-      html,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Desasignar',
-      preConfirm: () => {
-        const input = (document.getElementById('swal-input') as HTMLSelectElement)?.value?.trim();
-        if (!input) {
-          Swal.showValidationMessage('Debes seleccionar una PV.');
-          return;
-        }
-        return input;
-      }
-    }).then(result => {
-      if (!result.isConfirmed) return;
-      this.desasignarPV(emp.id, result.value);
-    });
+  toggleExpand(emp: any): void {
+    emp.isExpanded = !emp.isExpanded;
   }
 
   /* =========================================================

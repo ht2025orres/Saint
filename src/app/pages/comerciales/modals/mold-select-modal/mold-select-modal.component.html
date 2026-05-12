@@ -1,0 +1,40 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="bi bi-grid-3x3"></i> Seleccionar Molde</h2>
+      <button class="btn-close-modal" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div class="modal-search">
+      <div class="search-input-group">
+        <i class="bi bi-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar molde..."
+          [(ngModel)]="searchTerm"
+          autofocus
+        />
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="filteredMolds.length > 0" class="molds-list">
+        <div *ngFor="let mold of filteredMolds" class="mold-row" (click)="select(mold)">
+          <div class="mold-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+          <div class="mold-info">
+            <span class="mold-name">{{ mold.name }}</span>
+            <span class="mold-desc" *ngIf="mold.description">{{ mold.description }}</span>
+            <span class="mold-parts" *ngIf="mold.parts_count">{{ mold.parts_count }} partes</span>
+          </div>
+          <i class="bi bi-check-circle mold-select-icon"></i>
+        </div>
+      </div>
+
+      <div *ngIf="filteredMolds.length === 0" class="empty-molds">
+        <i class="bi bi-grid-3x3"></i>
+        <p>No se encontraron moldes</p>
+      </div>
+    </div>
+  </div>
+</div>

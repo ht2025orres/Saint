@@ -1,0 +1,64 @@
+:host {
+  --primary: #2563EB; --primary-light: #3B82F6; --primary-bg: #EFF6FF;
+  --bg: #F4F6F9; --surface: #ffffff; --surface-hover: #F9FAFB;
+  --text: #111827; --text-secondary: #4B5563; --text-muted: #6B7280; --text-light: #9CA3AF;
+  --border: #E5E7EB; --radius: 12px;
+  --shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+  --transition: all 0.2s ease;
+}
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(2px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.modal-panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  width: 92%; max-width: 540px; max-height: 72vh; display: flex; flex-direction: column;
+  animation: slideUp 0.25s ease; box-shadow: var(--shadow);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+}
+.modal-header h2 { font-size: 1rem; font-weight: 700; margin: 0; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.btn-close-modal { background: transparent; border: none; color: var(--text-light); font-size: 1rem; cursor: pointer; }
+.btn-close-modal:hover { color: var(--text); }
+
+.modal-search { padding: 14px 22px; border-bottom: 1px solid var(--border); }
+.search-input-group { position: relative; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-light); }
+.search-input {
+  width: 100%; padding: 9px 12px 9px 38px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px; color: var(--text);
+  font-size: 0.85rem; outline: none; box-sizing: border-box;
+}
+.search-input:focus { border-color: var(--primary); }
+.search-input::placeholder { color: var(--text-light); }
+
+.modal-body { flex: 1; overflow-y: auto; padding: 6px 0; }
+
+.molds-list { display: flex; flex-direction: column; }
+.mold-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 22px; cursor: pointer; transition: var(--transition);
+}
+.mold-row:hover { background: var(--surface-hover); }
+.mold-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: var(--primary-bg); color: var(--primary);
+  display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+.mold-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mold-name { font-weight: 600; font-size: 0.88rem; color: var(--text); }
+.mold-desc { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mold-parts { font-size: 0.7rem; color: var(--text-muted); }
+.mold-select-icon { color: var(--text-light); font-size: 0.95rem; transition: var(--transition); }
+.mold-row:hover .mold-select-icon { color: var(--primary); }
+
+.empty-molds { text-align: center; padding: 36px; color: var(--text-muted); }
+.empty-molds i { font-size: 1.8rem; display: block; margin-bottom: 8px; color: var(--text-light); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }

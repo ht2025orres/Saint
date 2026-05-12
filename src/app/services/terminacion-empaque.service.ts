@@ -28,7 +28,7 @@ export class TerminacionEmpaqueService {
   }
 
   listarPVsPorOPDesdeApiLaravel(id: number) {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/op/${id}/pvs`);
+    return this.http.get<{ pvs: any[], clientes: any[] }>(`${this.apiLaravelUrl}/op/${id}/pvs`);
   }
 
   listarItemsDePVDesdeApiLaravel(id: number, op: number = 0) {
@@ -117,6 +117,17 @@ export class TerminacionEmpaqueService {
     );
   }
 
+  /**
+   * Obtiene indicadores bulk (progreso, asignaciones) para todas las PVs de una OP.
+   * Reemplaza múltiples llamadas individuales con una sola petición.
+   */
+  obtenerIndicadoresPVs(opCodigo: number, pvCodigos: string[]): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiLaravelUrl}/op/indicadores-pvs`,
+      { op_codigo: opCodigo, pv_codigos: pvCodigos }
+    );
+  }
+
   registrarAsignaciones(items: any[], pvId: string, opCodigo: number, usuario: number) {
     return this.http.post(`${this.apiLaravelUrl}/registrar-asignaciones`, {
       pv_id: pvId,
@@ -136,6 +147,10 @@ export class TerminacionEmpaqueService {
   }
 
   // En terminacion-empaque.service.ts
+  obtenerResumenUbicacionesRecientes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/op/ubicaciones-distintas-recientes`);
+  }
+
   obtenerItemsConUbicacionesDistintas(opCodigo: number): Observable<any> {
     return this.http.get(`${this.apiLaravelUrl}/op/${opCodigo}/ubicaciones-distintas`);
   }

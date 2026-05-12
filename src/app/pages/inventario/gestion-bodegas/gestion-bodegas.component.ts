@@ -33,9 +33,9 @@ export class GestionBodegasComponent implements OnInit, OnDestroy {
     busquedaBodega: '',
     busquedaItem: '',
     busquedaExacta: false,
-    zonasSeleccionadas: [] as number[],
-    filtroTipoItem: '' // Nuevo filtro: 'insumos' | 'telas'
-  };
+      zonasSeleccionadas: [] as number[],
+      filtroTipoItem: '' // Nuevo filtro: 'insumos' | 'telas'
+    };
 
   busquedaZonaFiltro = '';
   mostrarFiltroZonas = false;
@@ -160,7 +160,7 @@ export class GestionBodegasComponent implements OnInit, OnDestroy {
     const paginaActual = mantenerEstado ? this.paginationService.getCurrentPage(this.instanceId) : 1;
 
     this.subscription.add(
-      this.inventarioService.getItemsPorBodega(this.bodegaSeleccionada.codigo).subscribe(resp => {
+        this.inventarioService.getItemsPorBodega(this.bodegaSeleccionada.codigo).subscribe(resp => {
         if (resp.success) {
           this.itemsRaw = resp.data.map((i: any) => ({ 
             ...i, 
@@ -200,17 +200,23 @@ export class GestionBodegasComponent implements OnInit, OnDestroy {
     // 1. Filtro por Búsqueda de Texto
     let matchBusqueda = true;
     if (filters.busquedaItem) {
-      const search = filters.busquedaItem.toLowerCase();
-      const idStr = item.id_item?.toString().toLowerCase() || '';
-      const refStr = item.referencia?.toLowerCase() || '';
-      const descStr = item.descripcion?.toLowerCase() || '';
+      const search = (filters.busquedaItem || '').toString().toLowerCase().trim();
+      const idStr = (item.id_item || '').toString().toLowerCase().trim();
+      const refStr = (item.referencia || '').toString().toLowerCase().trim();
+      const descStr = (item.descripcion || '').toString().toLowerCase().trim();
+      const idF400Str = (item.id_f400 || '').toString().toLowerCase().trim();
 
       if (filters.busquedaExacta) {
-        matchBusqueda = idStr === search || refStr === search;
+        // En modo exacto, debe coincidir exactamente con ID, Referencia o ID interno (f400)
+        matchBusqueda = idStr === search || 
+                        refStr === search || 
+                        idF400Str === search;
       } else {
+        // En modo normal, busca coincidencias parciales
         matchBusqueda = idStr.includes(search) ||
                         refStr.includes(search) ||
-                        descStr.includes(search);
+                        descStr.includes(search) ||
+                        idF400Str.includes(search);
       }
     }
 

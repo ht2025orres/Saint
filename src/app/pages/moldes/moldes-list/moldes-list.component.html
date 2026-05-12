@@ -1,0 +1,84 @@
+<div class="moldes-container">
+  <!-- Header -->
+  <div class="moldes-header">
+    <div class="header-left">
+      <h1><i class="bi bi-grid-3x3-gap"></i> Gestión de Moldes</h1>
+      <p class="subtitle">Administra los moldes base y genera OPMs o Fichas Técnicas</p>
+    </div>
+    <button class="btn-primary-custom" (click)="goToCreate()">
+      <i class="bi bi-plus-lg"></i> Nuevo Molde
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Cargando moldes...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="errorMessage && !loading">
+    <i class="bi bi-exclamation-triangle"></i>
+    <p>{{ errorMessage }}</p>
+    <button class="btn-outline-custom" (click)="loadMolds()">Reintentar</button>
+  </div>
+
+  <!-- Empty -->
+  <div class="empty-state" *ngIf="!loading && !errorMessage && molds.length === 0">
+    <div class="empty-icon"><i class="bi bi-grid-3x3-gap"></i></div>
+    <h3>No hay moldes creados</h3>
+    <p>Crea tu primer molde para comenzar</p>
+    <button class="btn-primary-custom" (click)="goToCreate()">
+      <i class="bi bi-plus-lg"></i> Crear Primer Molde
+    </button>
+  </div>
+
+  <!-- Grid de Moldes -->
+  <div class="moldes-grid" *ngIf="!loading && molds.length > 0">
+    <div class="mold-card" *ngFor="let mold of molds">
+      <!-- Card Image -->
+      <div class="card-image-wrapper">
+        <img
+          *ngIf="getCategoryImage(mold)"
+          [src]="getCategoryImage(mold)"
+          [alt]="mold.name"
+          class="card-image"
+        />
+        <div *ngIf="!getCategoryImage(mold) && mold.image_url" class="card-image-wrapper">
+          <img [src]="mold.image_url" [alt]="mold.name" class="card-image" />
+        </div>
+        <div *ngIf="!getCategoryImage(mold) && !mold.image_url" class="card-image-placeholder">
+          <i class="bi bi-image"></i>
+        </div>
+        <span class="parts-badge">
+          <i class="bi bi-pin-map"></i> {{ getPartCount(mold) }} partes
+        </span>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card-body">
+        <h3 class="card-title">{{ mold.name }}</h3>
+        <p class="card-desc" *ngIf="mold.description">{{ mold.description }}</p>
+        <p class="card-desc text-muted" *ngIf="!mold.description">Sin descripción</p>
+
+        <!-- Actions -->
+        <div class="card-actions">
+          <button class="btn-action btn-view" (click)="goToView(mold.id)" title="Visualizar molde">
+            <i class="bi bi-eye"></i> Ver
+          </button>
+          <button class="btn-action btn-edit" (click)="goToEdit(mold.id)" title="Editar molde">
+            <i class="bi bi-pencil"></i> Editar
+          </button>
+        </div>
+        <div class="card-actions-secondary">
+          <button class="btn-action-sm btn-opm" (click)="goToGenerateOpm(mold.id)" title="Generar OPM desde este molde">
+            <i class="bi bi-lightning-charge"></i> Generar OPM
+          </button>
+          <button class="btn-action-sm btn-ficha" (click)="goToGenerateFicha(mold.id)" title="Generar Ficha Técnica directamente">
+            <i class="bi bi-file-earmark-text"></i> Ficha Técnica
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

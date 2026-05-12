@@ -1,0 +1,279 @@
+<!-- Modal Ubicaciones Distintas -->
+<div class="modal fade" id="ubicacionesDistintasModal" tabindex="-1" aria-labelledby="ubicacionesDistintasModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-white rounded-xl shadow-2xl border-0 overflow-hidden">
+      <div class="bg-gray-50 border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <h4 class="text-xl font-bold text-gray-800" id="ubicacionesDistintasModalLabel">
+          Ubicaciones Distintas
+        </h4>
+        <button type="button" class="text-gray-400 hover:text-gray-700 transition" data-bs-dismiss="modal"
+          aria-label="Cerrar">
+          <i class="bi bi-x-lg text-xl"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto max-h-[70vh]">
+
+        <!-- Input para buscar OP -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6 relative">
+          <div class="flex-grow">
+            <input type="text"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+              placeholder="Ingrese número de OP..." [(ngModel)]="opBuscadaUbicaciones"
+              (keyup.enter)="buscarUbicacionesPorOP()">
+          </div>
+          <div>
+            <button type="button"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg transition disabled:bg-blue-400 flex items-center justify-center w-full md:w-auto min-w-[120px]"
+              (click)="buscarUbicacionesPorOP()" [disabled]="cargandoUbicaciones">
+              <span *ngIf="!cargandoUbicaciones" class="flex items-center gap-2">
+                <i class="bi bi-search"></i> Buscar
+              </span>
+              <span *ngIf="cargandoUbicaciones" class="flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Buscando...
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- VISTA: RESUMEN (OPs RECIENTES) -->
+        <div *ngIf="vistaActual === 'resumen'" class="animate-fadeIn">
+          <div class="mb-4">
+            <h5 class="text-lg font-bold text-gray-700 flex items-center gap-2">
+              <i class="bi bi-clock-history text-blue-600"></i> OPs Activas (Últimos 15 días)
+            </h5>
+            <p class="text-sm text-gray-500">Muestra las Órdenes de Producción que tienen ítems designados a ubicaciones distintas (Bordado, Estampado, etc.) recientemente.</p>
+          </div>
+
+          <div *ngIf="cargandoResumen" class="flex flex-col justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-500 font-medium">Cargando resumen de operaciones...</p>
+          </div>
+
+          <div *ngIf="!cargandoResumen && resumenOPs.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div *ngFor="let op of resumenOPs"
+              class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col justify-between group">
+              <div>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
+                  <h6 class="font-bold text-gray-800 text-xl m-0 flex items-center gap-2">
+                    <span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded tracking-wider">OP</span>
+                    {{ op.op_codigo }}
+                  </h6>
+                  <span class="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold border border-blue-100" title="Total unidades">
+                    {{ op.total_general | number:'1.0-2' }} unds
+                  </span>
+                </div>
+                
+                <div class="flex flex-col gap-2 mb-5">
+                  <div *ngFor="let ubic of op.ubicaciones" class="flex justify-between items-center text-sm bg-gray-50 rounded px-3 py-1.5 border border-gray-100">
+                    <span class="text-gray-600 font-medium">
+                      {{ ubic.ubicacion }}
+                    </span>
+                    <span class="font-bold text-gray-800">{{ ubic.cantidad | number:'1.0-2' }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <button type="button"
+                class="w-full border border-blue-200 bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-800 font-semibold py-2 rounded-lg transition"
+                (click)="verDetalleOP(op.op_codigo)">
+                <i class="bi bi-eye mr-1"></i> Ver Detalles
+              </button>
+            </div>
+          </div>
+          
+          <div *ngIf="!cargandoResumen && resumenOPs.length === 0" class="bg-blue-50 border border-blue-200 p-6 rounded-xl flex items-start gap-4">
+            <i class="bi bi-info-circle-fill text-2xl text-blue-500"></i>
+            <div>
+              <h5 class="text-blue-800 font-bold mb-1">Sin movimientos recientes</h5>
+              <p class="text-blue-700 text-sm m-0">No se encontraron ítems en ubicaciones distintas (como Bordado o Estampado) durante los últimos 15 días.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISTA: DETALLE DE OP ESPÉCIFICA -->
+        <div *ngIf="vistaActual === 'detalle'" class="animate-fadeIn">
+          
+          <div class="mb-5 border-b border-gray-200 pb-4 flex items-center justify-between">
+            <button type="button" class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition"
+              (click)="volverAlResumen()">
+              <i class="bi bi-arrow-left"></i> Volver al resumen
+            </button>
+            <h5 class="text-lg font-bold text-gray-700 m-0" *ngIf="opBuscadaUbicaciones">
+              Detalle OP {{ opBuscadaUbicaciones }}
+            </h5>
+          </div>
+
+          <!-- Filtros (solo visible si hay resultados) -->
+          <div class="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200"
+            *ngIf="itemsUbicacionesDistintas?.length > 0">
+            <div class="flex-grow">
+              <input type="text"
+                class="w-full border border-gray-300 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+                placeholder="Buscar por descripción, item, color, talla, ubicación..."
+                [(ngModel)]="ubicDistFilters.busqueda" (input)="applyUbicDistFilters()">
+            </div>
+            <div class="w-full md:w-64">
+              <select
+                class="w-full border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 text-gray-700"
+                [(ngModel)]="ubicDistFilters.ubicacion" (change)="applyUbicDistFilters()">
+                <option value="">Todas las ubicaciones</option>
+                <option value="Bordado">Bordado</option>
+                <option value="Estampado">Estampado</option>
+                <option value="Terminacion">Terminación</option>
+              </select>
+            </div>
+          </div>
+
+          <div *ngIf="cargandoUbicaciones" class="flex flex-col justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-500 font-medium">Buscando ubicaciones de la OP...</p>
+          </div>
+
+          <div *ngIf="!cargandoUbicaciones && currentUbicDistItems?.length > 0; else sinUbicaciones">
+            <div class="mb-3 text-sm text-gray-500">
+              Mostrando {{ currentUbicDistItems.length }} de {{ itemsUbicacionesDistintas.length }} registros
+            </div>
+
+            <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
+              <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-100 text-gray-600 font-semibold border-b border-gray-200">
+                  <tr>
+                    <th class="px-4 py-3">Item</th>
+                    <th class="px-4 py-3">Descripción</th>
+                    <th class="px-4 py-3 text-center">Talla</th>
+                    <th class="px-4 py-3 text-center">Color</th>
+                    <th class="px-4 py-3 text-center">Ubicación Actual</th>
+                    <th class="px-4 py-3 text-right">Cantidad</th>
+                    <th class="px-4 py-3">Comentario</th>
+                    <th class="px-4 py-3 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <tr *ngFor="let item of currentUbicDistItems" class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3 font-medium text-nowrap">{{ item.f120_id }} - {{ item.id_color }} - {{
+                      item.id_talla }}</td>
+                    <td class="px-4 py-3 max-w-[200px] truncate" [title]="item.descripcion">{{ item.descripcion_corta }}
+                    </td>
+                    <td class="px-4 py-3 text-center">{{ item.id_talla }}</td>
+                    <td class="px-4 py-3 text-center">{{ item.id_color }}</td>
+                    <td class="px-4 py-3 text-center">
+                      <span class="px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wide" [ngClass]="{
+                              'bg-yellow-100 text-yellow-800': item.ubicacion === 'Bordado',
+                              'bg-blue-100 text-blue-800': item.ubicacion === 'Estampado',
+                              'bg-green-100 text-green-800': item.ubicacion === 'Terminacion',
+                              'bg-gray-100 text-gray-800': item.ubicacion === 'Empaque'
+                            }">
+                        {{ item.ubicacion }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-medium">{{ item.cantidad | number:'1.2-2' }}</td>
+                    <td class="px-4 py-3 text-gray-500 italic text-xs max-w-[150px] truncate" [title]="item.comentario">
+                      {{ item.comentario || 'Sin comentario' }}</td>
+                    <td class="px-4 py-3 text-center border-0 p-0">
+                      <div class="flex flex-wrap gap-1 justify-center py-2">
+                        <button 
+                          type="button"
+                          class="px-2 py-1 text-[10px] font-bold rounded border transition-colors flex items-center gap-1"
+                          [class.bg-gray-800]="item.ubicacion === 'Empaque'"
+                          [class.text-white]="item.ubicacion === 'Empaque'"
+                          [class.bg-white]="item.ubicacion !== 'Empaque'"
+                          [class.text-gray-600]="item.ubicacion !== 'Empaque'"
+                          [class.border-gray-800]="item.ubicacion === 'Empaque'"
+                          [class.border-gray-300]="item.ubicacion !== 'Empaque'"
+                          [class.hover:bg-gray-50]="item.ubicacion !== 'Empaque'"
+                          [disabled]="item.ubicacion === 'Empaque' || guardandoCambioUbicacion"
+                          (click)="cambiarUbicacionItem(item, 'Empaque')">
+                          <i class="bi bi-box-seam"></i> Empaque
+                        </button>
+                        <button 
+                          type="button"
+                          class="px-2 py-1 text-[10px] font-bold rounded border transition-colors flex items-center gap-1"
+                          [class.bg-green-600]="item.ubicacion === 'Terminacion'"
+                          [class.text-white]="item.ubicacion === 'Terminacion'"
+                          [class.bg-white]="item.ubicacion !== 'Terminacion'"
+                          [class.text-green-600]="item.ubicacion !== 'Terminacion'"
+                          [class.border-green-600]="item.ubicacion === 'Terminacion'"
+                          [class.border-gray-300]="item.ubicacion !== 'Terminacion'"
+                          [class.hover:bg-green-50]="item.ubicacion !== 'Terminacion'"
+                          [disabled]="item.ubicacion === 'Terminacion' || guardandoCambioUbicacion"
+                          (click)="cambiarUbicacionItem(item, 'Terminacion')">
+                          <i class="bi bi-check-all"></i> Terminación
+                        </button>
+                        <button 
+                          type="button"
+                          class="px-2 py-1 text-[10px] font-bold rounded border transition-colors flex items-center gap-1"
+                          [class.bg-yellow-500]="item.ubicacion === 'Bordado'"
+                          [class.text-white]="item.ubicacion === 'Bordado'"
+                          [class.bg-white]="item.ubicacion !== 'Bordado'"
+                          [class.text-yellow-600]="item.ubicacion !== 'Bordado'"
+                          [class.border-yellow-500]="item.ubicacion === 'Bordado'"
+                          [class.border-gray-300]="item.ubicacion !== 'Bordado'"
+                          [class.hover:bg-yellow-50]="item.ubicacion !== 'Bordado'"
+                          [disabled]="item.ubicacion === 'Bordado' || guardandoCambioUbicacion"
+                          (click)="cambiarUbicacionItem(item, 'Bordado')">
+                          <i class="bi bi-threads"></i> Bordado
+                        </button>
+                        <button 
+                          type="button"
+                          class="px-2 py-1 text-[10px] font-bold rounded border transition-colors flex items-center gap-1"
+                          [class.bg-blue-600]="item.ubicacion === 'Estampado'"
+                          [class.text-white]="item.ubicacion === 'Estampado'"
+                          [class.bg-white]="item.ubicacion !== 'Estampado'"
+                          [class.text-blue-600]="item.ubicacion !== 'Estampado'"
+                          [class.border-blue-600]="item.ubicacion === 'Estampado'"
+                          [class.border-gray-300]="item.ubicacion !== 'Estampado'"
+                          [class.hover:bg-blue-50]="item.ubicacion !== 'Estampado'"
+                          [disabled]="item.ubicacion === 'Estampado' || guardandoCambioUbicacion"
+                          (click)="cambiarUbicacionItem(item, 'Estampado')">
+                          <i class="bi bi-palette"></i> Estampado
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="mt-4 flex justify-center bg-white p-2 rounded shadow-sm border border-gray-200">
+              <app-shared-paginator *ngIf="paginationService.getPaginatorState(ubicDistPaginatorId)"
+                [instanceId]="ubicDistPaginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[10, 25, 50]">
+              </app-shared-paginator>
+            </div>
+          </div>
+
+          <ng-template #sinUbicaciones>
+            <div class="bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-xl flex flex-col items-center justify-center text-center gap-3"
+              *ngIf="!cargandoUbicaciones && opBuscadaUbicaciones">
+              <i class="bi bi-search text-3xl text-blue-400"></i>
+              <div>
+                <span *ngIf="ubicDistFilters.busqueda || ubicDistFilters.ubicacion; else noUbicAll">
+                  No se encontraron registros con los filtros aplicados en esta OP.
+                </span>
+                <ng-template #noUbicAll>
+                  <span class="font-medium">No hay items con ubicaciones distintas a Empaque para la OP <strong class="text-blue-900">{{ opBuscadaUbicaciones }}</strong>.</span>
+                </ng-template>
+              </div>
+            </div>
+            <div class="bg-gray-50 text-gray-600 p-8 rounded-xl text-center border border-gray-200 flex flex-col items-center"
+              *ngIf="!cargandoUbicaciones && !opBuscadaUbicaciones">
+              <i class="bi bi-search text-4xl mb-3 text-gray-300"></i>
+              <p class="m-0 max-w-md">Ingrese un número de OP en la barra superior y presione <strong class="text-gray-800">Buscar</strong> para consultar los ítems en otras ubicaciones.</p>
+            </div>
+          </ng-template>
+
+        </div> <!-- VISTA: DETALLE -->
+
+      </div>
+      <div class="bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end items-center rounded-b-xl">
+        <button type="button"
+          class="px-5 py-2 border border-gray-300 text-gray-700 bg-white font-medium rounded-lg hover:bg-gray-50 hover:text-gray-900 transition shadow-sm"
+          data-bs-dismiss="modal">
+          Cerrar Ventana
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
