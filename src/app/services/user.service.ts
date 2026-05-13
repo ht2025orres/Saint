@@ -27,6 +27,11 @@ export class UserService {
     return this.http.get<User[]>(`${this.apiLaravelUrl}/users`);
   }
 
+  /** Lista básica de usuarios (id + nombre). Sin restricción de admin. */
+  getAllBasic(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/users/basic`);
+  }
+
   getById(id: any): Observable<User> {
     return this.http.get<User>(`${this.apiLaravelUrl}/users/${id}`);
   }

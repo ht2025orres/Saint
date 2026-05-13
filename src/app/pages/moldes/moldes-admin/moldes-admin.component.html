@@ -40,20 +40,28 @@
           <!-- LEFT: Config Panel -->
           <div class="space-y-4">
             <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Categoría del Molde</label>
-              <select [(ngModel)]="id_product_category" (change)="onCategoryChange()" [disabled]="isReadOnly"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
-                <option [ngValue]="null">Seleccionar categoría...</option>
-                <option *ngFor="let cat of productCategories" [value]="cat.id_product_category">{{ cat.description }}</option>
-              </select>
+              <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest block mb-2">
+                <i class="bi bi-folder2"></i> Categoría Padre
+              </label>
+              <div class="flex gap-2">
+                <select [(ngModel)]="mold_category_id" [disabled]="isReadOnly"
+                        class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
+                  <option [ngValue]="null">Seleccionar categoría...</option>
+                  <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>
+                </select>
+                <button class="w-9 h-9 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all"
+                        (click)="showCategoryManager = true" title="Gestionar categorías">
+                  <i class="bi bi-gear text-sm"></i>
+                </button>
+              </div>
 
-              <div class="mt-4 flex p-1 bg-slate-100 rounded-xl" *ngIf="currentTemplate">
+              <div class="mt-4 flex p-1 bg-slate-100 rounded-xl">
                 <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
                         [ngClass]="activeView === 'front' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
                         (click)="activeView !== 'front' && toggleView()">FRENTE</button>
                 <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
                         [ngClass]="activeView === 'back' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
-                        [disabled]="!hasBackView" (click)="activeView !== 'back' && toggleView()">ESPALDA</button>
+                        (click)="activeView !== 'back' && toggleView()">ESPALDA</button>
               </div>
             </div>
 
@@ -106,24 +114,23 @@
 
           <!-- RIGHT: Canvas (Main Design Area) -->
           <div class="bg-white rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden flex flex-col">
-            <!-- Custom Image Upload (Overlay) -->
-            <div class="absolute inset-0 z-20 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm" *ngIf="currentTemplate && !currentTemplate.image && !customImageUrl">
-              <label class="flex flex-col items-center gap-3 cursor-pointer p-8 border-2 border-dashed border-slate-300 rounded-[40px] hover:border-indigo-400 transition-all bg-white shadow-xl" for="garmentUpload">
-                <i class="bi bi-cloud-arrow-up text-4xl text-indigo-500"></i>
-                <div class="text-center">
-                  <span class="block text-sm font-bold text-slate-700">Subir imagen base</span>
-                  <p class="text-[10px] text-slate-400 mt-1">PNG o JPG — Máx 5MB</p>
-                </div>
-                <input type="file" id="garmentUpload" accept="image/*" (change)="onCustomImageUpload($event)" hidden />
-              </label>
-            </div>
 
             <div class="flex-1 relative flex items-center justify-center p-8 bg-[#fcfcfd]">
+              <!-- Canvas with image -->
               <div class="relative w-full max-w-[800px] h-full flex items-center justify-center" 
-                   *ngIf="currentTemplate && (currentTemplate.image || customImageUrl)"
+                   *ngIf="(activeView === 'front' && customImageUrl) || (activeView === 'back' && backImageUrl)"
                    #svgContainer (click)="onCanvasClick($event)" [class.awaiting]="awaitingPosition">
-                <img [src]="customImageUrl || activeImage" class="max-w-full max-h-[600px] object-contain pointer-events-none drop-shadow-2xl" />
+                <img [src]="activeView === 'back' ? backImageUrl : customImageUrl" [alt]="moldName + ' - ' + activeView" 
+                     class="max-w-full max-h-[600px] object-contain pointer-events-none drop-shadow-2xl" />
                 
+                <!-- Re-upload button overlay -->
+                <label class="absolute top-3 right-3 z-30 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm" 
+                       for="garmentUpload" *ngIf="!isReadOnly && canUploadImage">
+                  <i class="bi bi-camera text-indigo-600 text-sm"></i>
+                  <span class="text-[10px] font-bold text-slate-600 uppercase">Cambiar {{ activeView === 'back' ? 'espalda' : 'frente' }}</span>
+                  <input type="file" id="garmentUpload" accept="image/*" (change)="onCustomImageUpload($event)" hidden />
+                </label>
+
                 <svg class="absolute inset-0 pointer-events-none z-10 w-full h-full overflow-visible">
                   <ng-container *ngFor="let part of positionedParts; let i = index">
                     <line [attr.x1]="part.position_x + '%'" [attr.y1]="part.position_y + '%'"
@@ -221,10 +228,19 @@
                 </div>
               </div>
 
-              <!-- Empty State -->
-              <div class="flex flex-col items-center justify-center text-slate-300" *ngIf="!currentTemplate">
-                <i class="bi bi-brush text-6xl mb-4"></i>
-                <p class="font-bold text-lg">Selecciona una categoría para empezar el diseño</p>
+              <!-- Empty State: Upload prompt -->
+              <div class="flex flex-col items-center justify-center py-16" 
+                   *ngIf="(activeView === 'front' && !customImageUrl) || (activeView === 'back' && !backImageUrl)">
+                <label class="flex flex-col items-center gap-4 cursor-pointer p-10 border-2 border-dashed border-slate-300 rounded-[40px] hover:border-indigo-400 transition-all bg-white shadow-xl" for="garmentUploadEmpty">
+                  <i class="bi bi-cloud-arrow-up text-5xl text-indigo-500"></i>
+                  <div class="text-center">
+                    <span class="block text-sm font-bold text-slate-700">
+                      Subir imagen {{ activeView === 'back' ? 'de espalda' : 'del frente' }}
+                    </span>
+                    <p class="text-[10px] text-slate-400 mt-1">PNG o JPG — Máx 5MB</p>
+                  </div>
+                  <input type="file" id="garmentUploadEmpty" accept="image/*" (change)="onCustomImageUpload($event)" hidden />
+                </label>
               </div>
             </div>
 
@@ -247,6 +263,16 @@
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción General</label>
                 <textarea [(ngModel)]="moldDescription" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                  <i class="bi bi-folder2"></i> Categoría Padre (Agrupación)
+                </label>
+                <select [(ngModel)]="mold_category_id" [disabled]="isReadOnly"
+                        class="w-full px-4 py-2.5 bg-indigo-50/50 border border-indigo-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
+                  <option [ngValue]="null">Sin categoría padre</option>
+                  <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>
+                </select>
               </div>
             </div>
             <div class="space-y-4">
@@ -575,3 +601,10 @@
   (onClose)="showInventorySearch = false"
   (onSelect)="handleInventorySelect($event)">
 </app-inventory-search-modal>
+
+<!-- Modal de gestión de categorías -->
+<app-modal-category-manager
+  *ngIf="showCategoryManager"
+  (onClose)="showCategoryManager = false; loadMoldCategories()"
+  (onCategoriesChanged)="loadMoldCategories()">
+</app-modal-category-manager>

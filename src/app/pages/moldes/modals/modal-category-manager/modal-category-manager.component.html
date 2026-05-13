@@ -1,0 +1,118 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="bi bi-folder2-open"></i>
+        <span>Gestión de Categorías</span>
+      </div>
+      <button class="modal-close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Form: Create/Edit -->
+      <div class="cat-form-section">
+        <h4 class="form-section-title">
+          {{ editingCategory ? 'Editar Categoría' : 'Nueva Categoría' }}
+        </h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" [(ngModel)]="catName" placeholder="Ej: Camisas" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label>Descripción</label>
+            <input type="text" [(ngModel)]="catDescription" placeholder="Descripción opcional" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Keywords Tags -->
+        <div class="form-group">
+          <label>Palabras Clave</label>
+          <div class="tags-container">
+            <span *ngFor="let kw of catKeywords; let i = index" class="tag-chip">
+              {{ kw }}
+              <button class="tag-remove" (click)="removeKeyword(i)"><i class="bi bi-x"></i></button>
+            </span>
+            <input type="text" [(ngModel)]="newKeyword"
+                   placeholder="Agregar palabra clave..."
+                   class="tag-input"
+                   (keydown)="onKeywordKeydown($event)"
+                   (blur)="addKeyword()" />
+          </div>
+          <p class="form-hint">Presiona Enter o coma para agregar</p>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-save" (click)="saveCategory()" [disabled]="!catName.trim()">
+            <i class="bi" [ngClass]="editingCategory ? 'bi-check-lg' : 'bi-plus-lg'"></i>
+            {{ editingCategory ? 'Guardar Cambios' : 'Crear Categoría' }}
+          </button>
+          <button *ngIf="editingCategory" class="btn-cancel" (click)="resetForm()">
+            <i class="bi bi-x-lg"></i> Cancelar
+          </button>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <hr class="section-divider" />
+
+      <!-- Categories List -->
+      <div class="cat-list-section">
+        <h4 class="form-section-title">Categorías Existentes ({{ categories.length }})</h4>
+
+        <div *ngIf="loading" class="cat-loading">
+          <div class="spinner-sm"></div> Cargando...
+        </div>
+
+        <div *ngIf="!loading && categories.length === 0" class="cat-empty">
+          <i class="bi bi-folder-x"></i>
+          <p>No hay categorías. Crea la primera arriba.</p>
+        </div>
+
+        <div class="cat-list" *ngIf="!loading && categories.length > 0">
+          <div *ngFor="let cat of categories" class="cat-row" [class.cat-row-active]="editingCategory?.id === cat.id">
+            <!-- Image -->
+            <div class="cat-image-wrapper">
+              <img *ngIf="cat.image_signed_url" [src]="cat.image_signed_url" class="cat-image" />
+              <div *ngIf="!cat.image_signed_url" class="cat-image-placeholder">
+                <i class="bi bi-image"></i>
+              </div>
+              <label class="cat-image-upload" [for]="'catImg' + cat.id" [class.uploading]="uploadingImage">
+                <i class="bi bi-camera"></i>
+                <input type="file" [id]="'catImg' + cat.id" accept="image/*" (change)="onImageUpload($event, cat)" hidden />
+              </label>
+            </div>
+
+            <!-- Info -->
+            <div class="cat-info">
+              <span class="cat-name">{{ cat.name }}</span>
+              <span class="cat-desc" *ngIf="cat.description">{{ cat.description }}</span>
+              <div class="cat-keywords" *ngIf="cat.keywords && cat.keywords.length > 0">
+                <span *ngFor="let kw of cat.keywords" class="kw-mini">{{ kw }}</span>
+              </div>
+            </div>
+
+            <!-- Count -->
+            <div class="cat-count">
+              <span class="count-num">{{ cat.molds_count || 0 }}</span>
+              <span class="count-label">moldes</span>
+            </div>
+
+            <!-- Actions -->
+            <div class="cat-actions">
+              <button class="btn-icon btn-icon-edit" (click)="editCategory(cat)" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn-icon btn-icon-delete" (click)="deleteCategory(cat)" title="Eliminar"
+                      [disabled]="(cat.molds_count || 0) > 0">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

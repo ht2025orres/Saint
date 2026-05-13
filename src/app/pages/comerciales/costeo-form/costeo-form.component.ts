@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ComercialService, Solicitud, SolicitudItem, SolicitudItemTalla } from '../../../services/comercial.service';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
-import { SpecGeneratorComponent } from '../../moldes/spec-generator/spec-generator.component';
+
 import Swal from 'sweetalert2';
 
 interface LocalItem {
@@ -20,6 +20,14 @@ interface LocalItem {
   ref_siesa_item_rowid: number | null;
   ref_siesa_referencia: string;
   ref_siesa_descripcion: string;
+  // Per-item mold config
+  categoryId: number | null;
+  categoryName: string;
+  moldId: number | null;
+  moldName: string;
+  technicalSpecId: number | null;
+  specExpanded: boolean;
+  availableMolds: any[];
 }
 
 @Component({
@@ -28,7 +36,6 @@ interface LocalItem {
   styleUrls: ['./costeo-form.component.css']
 })
 export class CosteoFormComponent implements OnInit, OnDestroy {
-  @ViewChild('specGenerator') specGenerator?: SpecGeneratorComponent;
 
   private autoSaveInterval: any;
   private readonly STORAGE_KEY = 'saint_solicitud_draft';
@@ -54,20 +61,16 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
   observaciones = '';
   cantidadPorEntrega = 0;
   entregasAnual = 1;
-  moldId: number | null = null;
-  technicalSpecId: number | null = null;
   imagenReferenciaUrl = '';
 
   // Items
   items: LocalItem[] = [];
 
-  // Molds
-  molds: any[] = [];
-  selectedMoldName = '';
+  // Mold Categories
+  categories: any[] = [];
 
   // Modals
   showItemSearch = false;
-  showMoldSelect = false;
 
   // New item inline
   showNewItemForm = false;
@@ -91,7 +94,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     { label: 'Datos Generales', icon: 'bi-info-circle' },
     { label: 'Ítems', icon: 'bi-box-seam' },
     { label: 'Empaque & Proyección', icon: 'bi-truck' },
-    { label: 'Molde', icon: 'bi-grid-3x3' },
+    { label: 'Moldes por Ítem', icon: 'bi-grid-3x3' },
   ];
 
   constructor(
@@ -128,7 +131,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.loadMolds();
+    this.loadCategories();
     this.restoreFromLocalStorage();
     this.startAutoSave();
   }
@@ -188,7 +191,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         this.observaciones = s.observaciones || '';
         this.cantidadPorEntrega = s.cantidad_por_entrega || 0;
         this.entregasAnual = s.entregas_anual || 1;
-        this.moldId = s.mold_id || null;
         this.imagenReferenciaUrl = s.imagen_referencia_url || '';
 
         this.items = (s.items || []).map((it: any) => ({
@@ -204,6 +206,13 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
           ref_siesa_item_rowid: it.ref_siesa_item_rowid || null,
           ref_siesa_referencia: it.ref_siesa_referencia || '',
           ref_siesa_descripcion: it.ref_siesa_descripcion || '',
+          categoryId: null,
+          categoryName: '',
+          moldId: it.mold_id || null,
+          moldName: '',
+          technicalSpecId: it.technical_spec_id || null,
+          specExpanded: false,
+          availableMolds: [],
         }));
 
         this.isLoading = false;
@@ -215,14 +224,10 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadMolds(): void {
-    this.moldService.getMolds().subscribe({
+  loadCategories(): void {
+    this.moldService.getCategories().subscribe({
       next: (res: any) => {
-        this.molds = res.data || [];
-        if (this.moldId) {
-          const m = this.molds.find((x: any) => x.id === this.moldId);
-          this.selectedMoldName = m?.name || '';
-        }
+        this.categories = res.data || [];
       },
       error: () => {}
     });
@@ -248,8 +253,17 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       ref_siesa_item_rowid: null,
       ref_siesa_referencia: '',
       ref_siesa_descripcion: '',
+      categoryId: null,
+      categoryName: '',
+      moldId: null,
+      moldName: '',
+      technicalSpecId: null,
+      specExpanded: false,
+      availableMolds: [],
     });
     this.showItemSearch = false;
+    // Auto-suggest category for new item
+    this.suggestCategoryForItem(this.items.length - 1);
   }
 
   addNewItem(): void {
@@ -267,10 +281,18 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       ref_siesa_item_rowid: null,
       ref_siesa_referencia: '',
       ref_siesa_descripcion: '',
+      categoryId: null,
+      categoryName: '',
+      moldId: null,
+      moldName: '',
+      technicalSpecId: null,
+      specExpanded: false,
+      availableMolds: [],
     });
     this.newItemDesc = '';
     this.newItemRef = '';
     this.showNewItemForm = false;
+    this.suggestCategoryForItem(this.items.length - 1);
   }
 
   // ==================== REFERENCE ITEM ====================
@@ -386,30 +408,104 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     item.isExpanded = !item.isExpanded;
   }
 
-  // ==================== MOLD ====================
+  // ==================== PER-ITEM MOLD ====================
 
-  selectMold(mold: any): void {
-    this.moldId = mold.id;
-    this.selectedMoldName = mold.name;
-    this.showMoldSelect = false;
-    this.technicalSpecId = null; // Reset spec when changing mold
+  suggestCategoryForItem(index: number): void {
+    const item = this.items[index];
+    if (!item || !item.descripcion) return;
+    this.moldService.suggestCategory(item.descripcion).subscribe({
+      next: (res: any) => {
+        if (res.data) {
+          item.categoryId = res.data.id;
+          item.categoryName = res.data.name;
+          this.loadMoldsForItem(index);
+        }
+      },
+      error: () => {}
+    });
   }
 
-  clearMold(): void {
-    this.moldId = null;
-    this.selectedMoldName = '';
-    this.technicalSpecId = null;
+  onCategoryChange(index: number, categoryId: number): void {
+    const item = this.items[index];
+    item.categoryId = categoryId;
+    const cat = this.categories.find(c => c.id === categoryId);
+    item.categoryName = cat?.name || '';
+    item.moldId = null;
+    item.moldName = '';
+    item.technicalSpecId = null;
+    item.availableMolds = [];
+    this.loadMoldsForItem(index);
   }
 
-  onSpecSaved(specId: number): void {
-    this.technicalSpecId = specId;
+  loadMoldsForItem(index: number): void {
+    const item = this.items[index];
+    if (!item.categoryId) return;
+    this.moldService.getMoldsByCategory(item.categoryId).subscribe({
+      next: (res: any) => {
+        item.availableMolds = res.data || [];
+      },
+      error: () => { item.availableMolds = []; }
+    });
+  }
+
+  selectMoldForItem(index: number, moldId: number): void {
+    const item = this.items[index];
+    item.moldId = moldId;
+    const m = item.availableMolds.find((x: any) => x.id === moldId);
+    item.moldName = m?.name || '';
+    item.technicalSpecId = null; // Reset spec when changing mold
+  }
+
+  clearMoldForItem(index: number): void {
+    const item = this.items[index];
+    item.moldId = null;
+    item.moldName = '';
+    item.technicalSpecId = null;
+    item.specExpanded = false;
+  }
+
+  toggleSpecForItem(index: number): void {
+    // Close all other spec generators, open this one
+    this.items.forEach((it, i) => {
+      if (i !== index) it.specExpanded = false;
+    });
+    this.items[index].specExpanded = !this.items[index].specExpanded;
+  }
+
+  onItemSpecSaved(index: number, specId: number): void {
+    this.items[index].technicalSpecId = specId;
     Swal.fire({
       title: 'OPM Guardada',
-      text: 'La especificación se vinculó a esta solicitud',
+      text: `Especificación del ítem "${this.items[index].descripcion}" vinculada`,
       icon: 'success',
       timer: 2000,
       showConfirmButton: false,
     });
+  }
+
+  copySpecFromItem(sourceIndex: number, targetIndex: number): void {
+    const source = this.items[sourceIndex];
+    const target = this.items[targetIndex];
+    target.categoryId = source.categoryId;
+    target.categoryName = source.categoryName;
+    target.moldId = source.moldId;
+    target.moldName = source.moldName;
+    target.availableMolds = [...source.availableMolds];
+    // Note: technicalSpecId is NOT copied — each item needs its own spec save
+    target.technicalSpecId = null;
+    Swal.fire({
+      title: 'Configuración copiada',
+      text: `Se copió la configuración de molde de "${source.descripcion}"`,
+      icon: 'success',
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  }
+
+  getItemsWithMold(): { index: number; item: LocalItem }[] {
+    return this.items
+      .map((item, index) => ({ index, item }))
+      .filter(x => x.item.moldId !== null);
   }
 
   // ==================== AUTO-CALC ====================
@@ -418,7 +514,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     return this.cantidadPorEntrega * this.entregasAnual;
   }
 
-  // ==================== SAVE (unified: OPM + Solicitud) ====================
+  // ==================== SAVE ====================
 
   save(): void {
     if (!this.clienteId || !this.clienteNombre) {
@@ -432,23 +528,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     }
 
     this.isSaving = true;
-
-    // Step 1: If there's a spec generator with components, save OPM first
-    if (this.specGenerator && this.specGenerator.hasComponents && !this.technicalSpecId) {
-      this.specGenerator.saveSpec().subscribe({
-        next: (specId) => {
-          this.technicalSpecId = specId;
-          this.saveSolicitud(); // Step 2: Then save solicitud
-        },
-        error: (err: any) => {
-          this.isSaving = false;
-          Swal.fire('Error', 'Error al guardar la OPM: ' + (err.error?.error || 'Error desconocido'), 'error');
-        }
-      });
-    } else {
-      // No OPM to save, go directly to solicitud
-      this.saveSolicitud();
-    }
+    this.saveSolicitud();
   }
 
   private saveSolicitud(): void {
@@ -466,8 +546,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       observaciones: this.observaciones || null,
       cantidad_por_entrega: this.cantidadPorEntrega,
       entregas_anual: this.entregasAnual,
-      mold_id: this.moldId,
-      technical_spec_id: this.technicalSpecId,
       imagen_referencia_url: this.imagenReferenciaUrl || null,
       items: this.items.map((it, idx) => ({
         descripcion: it.descripcion,
@@ -479,6 +557,8 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         ref_siesa_item_rowid: it.ref_siesa_item_rowid || null,
         ref_siesa_referencia: it.ref_siesa_referencia || null,
         ref_siesa_descripcion: it.ref_siesa_descripcion || null,
+        mold_id: it.moldId || null,
+        technical_spec_id: it.technicalSpecId || null,
         tallas: it.tallas.filter(t => t.talla.trim()),
       })),
       usuario_id: this.authService.user?.id || 0,
@@ -520,7 +600,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     return !!(
       this.items.length > 0
       || this.requiereCosteo || this.requiereMuestra
-      || this.moldId
       || (this.observaciones && this.observaciones.trim())
       || (this.materialEmpaque && this.materialEmpaque.trim())
     );
@@ -554,9 +633,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       observaciones: this.observaciones,
       cantidadPorEntrega: this.cantidadPorEntrega,
       entregasAnual: this.entregasAnual,
-      moldId: this.moldId,
-      selectedMoldName: this.selectedMoldName,
-      technicalSpecId: this.technicalSpecId,
       imagenReferenciaUrl: this.imagenReferenciaUrl,
       items: this.items,
       activeSection: this.activeSection,
@@ -588,7 +664,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       // Only offer to restore if there's meaningful data
       const hasData = (draft.items && draft.items.length > 0)
         || draft.requiereCosteo || draft.requiereMuestra
-        || draft.moldId
         || (draft.observaciones && draft.observaciones.trim())
         || (draft.materialEmpaque && draft.materialEmpaque.trim());
       if (!hasData) {
@@ -636,9 +711,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.observaciones = draft.observaciones || '';
     this.cantidadPorEntrega = draft.cantidadPorEntrega || 0;
     this.entregasAnual = draft.entregasAnual || 1;
-    this.moldId = draft.moldId || null;
-    this.selectedMoldName = draft.selectedMoldName || '';
-    this.technicalSpecId = draft.technicalSpecId || null;
     this.imagenReferenciaUrl = draft.imagenReferenciaUrl || '';
     this.items = draft.items || [];
     this.activeSection = draft.activeSection || 0;

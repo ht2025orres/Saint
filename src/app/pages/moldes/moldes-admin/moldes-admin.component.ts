@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MoldService } from '../../../services/mold.service';
-import { ProductCategoryService } from '../../../services/product-category.service';
+import { AuthService } from '../../../services/auth.service';
 import { CdkDragEnd } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 import { getGarmentTemplate } from '../garment-templates';
@@ -35,13 +35,17 @@ export class MoldesAdminComponent implements OnInit {
   // Form fields
   moldName = '';
   moldDescription = '';
-  id_product_category: number | null = null;
-  productCategories: any[] = [];
+  mold_category_id: number | null = null;
+  moldCategories: any[] = [];
+  showCategoryManager = false;
 
   // SVG Logic
   viewBox: string = '0 0 200 200';
   currentTemplate: any = null;
-  customImageUrl: string = ''; // Imagen subida por el usuario (para "Otros")
+  customImageUrl: string = '';
+  backImageUrl: string = '';
+  pendingImageFile: File | null = null;
+  pendingBackImageFile: File | null = null;
   activeView: 'front' | 'back' = 'front';
   activeTab: 'molde' | 'formulario' | 'texto' = 'molde';
 
@@ -183,17 +187,30 @@ export class MoldesAdminComponent implements OnInit {
 
   constructor(
     private moldService: MoldService,
-    private productCategoryService: ProductCategoryService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    public authService: AuthService
   ) {}
+
+  // ==================== PERMISSIONS ====================
+  // 1 = Admin del sistema (ve todo)
+  // 41 = Crear, 42 = Editar, 43 = Eliminar, 44 = Subir imagen, 45 = Categorías
+
+  get canCreate(): boolean { return this.authService.hasAnyPermission([1, 41]); }
+  get canEdit(): boolean { return this.authService.hasAnyPermission([1, 42]); }
+  get canDelete(): boolean { return this.authService.hasAnyPermission([1, 43]); }
+  get canUploadImage(): boolean { return this.authService.hasAnyPermission([1, 44]); }
+  get canManageCategories(): boolean { return this.authService.hasAnyPermission([1, 45]); }
 
   ngOnInit(): void {
     this.moldId = this.route.snapshot.params['id'] ? Number(this.route.snapshot.params['id']) : null;
     this.isEditMode = !!this.moldId;
-    this.isReadOnly = this.route.snapshot.url.some(s => s.path === 'view');
     
-    this.loadCategories();
+    // Read-only si el query param es 'view' O si no tiene permiso de edición
+    const isViewMode = this.route.snapshot.queryParams['mode'] === 'view';
+    this.isReadOnly = isViewMode || (this.isEditMode && !this.canEdit) || (!this.isEditMode && !this.canCreate);
+    
+    this.loadMoldCategories();
 
     if (this.isEditMode && this.moldId) {
       this.loadMold();
@@ -206,14 +223,17 @@ export class MoldesAdminComponent implements OnInit {
         const mold = res.data;
         this.moldName = mold.name;
         this.moldDescription = mold.description || '';
-        this.id_product_category = mold.id_product_category;
+        this.mold_category_id = mold.mold_category_id || null;
+        this.customImageUrl = mold.image_signed_url || '';
+        this.backImageUrl = mold.back_image_signed_url || '';
         
         const allParts = mold.parts || [];
         this.parts = allParts.filter((p: any) => p.view !== 'back');
         this.backParts = allParts.filter((p: any) => p.view === 'back');
 
-        if (this.id_product_category) {
-          this.onCategoryChange();
+        // Load garment template from the mold image if available
+        if (this.customImageUrl) {
+          this.currentTemplate = { image: this.customImageUrl };
         }
       },
       error: (err) => {
@@ -223,28 +243,18 @@ export class MoldesAdminComponent implements OnInit {
     });
   }
 
-  loadCategories(): void {
-    this.productCategoryService.getAll().subscribe(cats => {
-      this.productCategories = cats;
+  loadMoldCategories(): void {
+    this.moldService.getCategories().subscribe({
+      next: (res: any) => {
+        this.moldCategories = res.data || [];
+      },
+      error: () => {}
     });
   }
 
   onCategoryChange(): void {
-    if (!this.id_product_category) {
-      this.availableComponents = [];
-      return;
-    }
-
-    const category = this.productCategories.find(c => c.id_product_category == this.id_product_category);
-    const description = (category?.description || '').toLowerCase();
-    
-    this.customImageUrl = '';
-    this.viewBox = '0 0 200 200';
-    this.activeView = 'front';
-    this.currentTemplate = this.generateAssembledGarment(description, this.id_product_category);
-    
-    this.loadAvailableComponents(this.id_product_category);
-    this.applyInitialParts();
+    // Categories no longer control template — template comes from uploaded image
+    this.availableComponents = [];
   }
 
   generateAssembledGarment(description: string, categoryId: number): any {
@@ -267,14 +277,38 @@ export class MoldesAdminComponent implements OnInit {
     if (input.files && input.files[0]) {
       const file = input.files[0];
       if (file.size > 5 * 1024 * 1024) {
-        this.errorMessage = 'La imagen no puede superar los 5MB';
+        Swal.fire('Error', 'La imagen no puede superar los 5MB', 'error');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.customImageUrl = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+
+      // If mold already exists, upload directly to S3
+      if (this.moldId) {
+        this.moldService.uploadMoldImage(this.moldId, file, this.activeView).subscribe({
+          next: (res: any) => {
+            if (this.activeView === 'back') {
+              this.backImageUrl = res.data?.back_image_signed_url || '';
+            } else {
+              this.customImageUrl = res.data?.image_signed_url || '';
+            }
+            Swal.fire({ title: 'Imagen subida', icon: 'success', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+          },
+          error: () => Swal.fire('Error', 'No se pudo subir la imagen', 'error')
+        });
+      } else {
+        // For new molds, show preview and store file for upload after save
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          if (this.activeView === 'back') {
+            this.backImageUrl = dataUrl;
+            this.pendingBackImageFile = file;
+          } else {
+            this.customImageUrl = dataUrl;
+            this.pendingImageFile = file;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   }
 
@@ -286,14 +320,13 @@ export class MoldesAdminComponent implements OnInit {
   }
 
   toggleView(): void {
-    if (!this.currentTemplate?.backImage) return;
     this.activeView = this.activeView === 'front' ? 'back' : 'front';
     this.pendingPin = null;
     this.selectedComponentId = null;
   }
 
   get hasBackView(): boolean {
-    return !!this.currentTemplate?.backImage;
+    return !!this.backImageUrl;
   }
 
   get activeImage(): string {
@@ -424,7 +457,6 @@ export class MoldesAdminComponent implements OnInit {
   }
 
   addGeneralComponent(type: string = 'parte'): void {
-    if (!this.id_product_category) return;
     this.addItemType = type;
     this.addSearchQuery = '';
     this.showAddSuggestions = false;
@@ -766,7 +798,7 @@ export class MoldesAdminComponent implements OnInit {
     const payload = {
       name: this.moldName.trim(),
       description: this.moldDescription.trim() || undefined,
-      id_product_category: this.id_product_category,
+      mold_category_id: this.mold_category_id,
       parts: allParts.map(p => ({
         id: p.id,
         name: p.name,
@@ -785,10 +817,45 @@ export class MoldesAdminComponent implements OnInit {
       : this.moldService.createMold(payload);
 
     action.subscribe({
-      next: () => {
-        this.saving = false;
-        this.successMessage = 'Molde guardado exitosamente';
-        setTimeout(() => this.router.navigate(['/moldes']), 1500);
+      next: (res: any) => {
+        const savedMoldId = res.data?.id || this.moldId;
+
+        // Upload pending images for NEW molds
+        const uploads: any[] = [];
+        if (this.pendingImageFile && savedMoldId && !this.isEditMode) {
+          uploads.push(this.moldService.uploadMoldImage(savedMoldId, this.pendingImageFile, 'front'));
+        }
+        if (this.pendingBackImageFile && savedMoldId && !this.isEditMode) {
+          uploads.push(this.moldService.uploadMoldImage(savedMoldId, this.pendingBackImageFile, 'back'));
+        }
+
+        if (uploads.length > 0) {
+          let completed = 0;
+          uploads.forEach(upload$ => {
+            upload$.subscribe({
+              next: () => {
+                completed++;
+                if (completed === uploads.length) {
+                  this.saving = false;
+                  this.successMessage = 'Molde guardado exitosamente';
+                  setTimeout(() => this.router.navigate(['/moldes']), 1500);
+                }
+              },
+              error: () => {
+                completed++;
+                if (completed === uploads.length) {
+                  this.saving = false;
+                  this.successMessage = 'Molde guardado (alguna imagen pendiente)';
+                  setTimeout(() => this.router.navigate(['/moldes']), 1500);
+                }
+              }
+            });
+          });
+        } else {
+          this.saving = false;
+          this.successMessage = 'Molde guardado exitosamente';
+          setTimeout(() => this.router.navigate(['/moldes']), 1500);
+        }
       },
       error: (err: any) => {
         this.saving = false;

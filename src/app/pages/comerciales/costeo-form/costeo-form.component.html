@@ -372,46 +372,98 @@
     </div>
   </div>
 
-  <!-- ==================== SECTION 3: MOLDE & OPM ==================== -->
+  <!-- ==================== SECTION 3: MOLDES POR ÍTEM ==================== -->
   <div *ngIf="activeSection === 3" class="form-section">
     <div class="section-card">
-      <h2 class="section-title"><i class="bi bi-grid-3x3"></i> Especificación de Molde (OPM)</h2>
-      <p class="section-desc">Selecciona un molde y configura los componentes, materiales y especificaciones de la prenda.</p>
+      <h2 class="section-title"><i class="bi bi-grid-3x3"></i> Moldes por Ítem</h2>
+      <p class="section-desc">Asigna un molde a cada ítem y configura las especificaciones OPM individuales.</p>
 
-      <!-- Mold selector (when no mold selected) -->
-      <div *ngIf="!moldId" class="mold-empty">
-        <i class="bi bi-grid-3x3 mold-empty-icon"></i>
-        <p>Sin molde vinculado</p>
-        <button class="btn-select-mold" (click)="showMoldSelect = true">
-          <i class="bi bi-link-45deg"></i> Seleccionar Molde
+      <!-- No items warning -->
+      <div *ngIf="items.length === 0" class="mold-empty">
+        <i class="bi bi-exclamation-triangle mold-empty-icon"></i>
+        <p>No hay ítems agregados. Vuelve a la sección de Ítems para agregar al menos uno.</p>
+        <button class="btn-select-mold" (click)="activeSection = 1">
+          <i class="bi bi-arrow-left"></i> Ir a Ítems
         </button>
       </div>
 
-      <!-- Mold selected header + change button -->
-      <div *ngIf="moldId" class="mold-selected">
-        <div class="mold-info">
-          <i class="bi bi-check-circle-fill mold-check"></i>
-          <span>{{ selectedMoldName }}</span>
+      <!-- Per-item mold accordion -->
+      <div *ngFor="let item of items; let i = index" class="item-mold-card" [class.item-mold-active]="item.specExpanded">
+        <!-- Item header -->
+        <div class="item-mold-header" (click)="toggleSpecForItem(i)">
+          <div class="item-mold-info">
+            <span class="item-mold-index">{{ i + 1 }}</span>
+            <div class="item-mold-text">
+              <span class="item-mold-name">{{ item.descripcion }}</span>
+              <span class="item-mold-ref" *ngIf="item.siesa_referencia">{{ item.siesa_referencia }}</span>
+            </div>
+          </div>
+          <div class="item-mold-badges">
+            <span *ngIf="item.categoryName" class="badge-cat">{{ item.categoryName }}</span>
+            <span *ngIf="item.moldName" class="badge-mold">{{ item.moldName }}</span>
+            <span *ngIf="item.technicalSpecId" class="badge-spec"><i class="bi bi-check-circle-fill"></i> OPM</span>
+            <i class="bi" [ngClass]="item.specExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </div>
         </div>
-        <button class="btn-clear-mold" (click)="clearMold()" title="Cambiar molde">
-          <i class="bi bi-arrow-repeat"></i>
-        </button>
-      </div>
 
-      <!-- Spec saved confirmation -->
-      <div *ngIf="technicalSpecId" class="spec-saved-badge">
-        <i class="bi bi-check-circle-fill"></i>
-        <span>OPM guardada (ID: {{ technicalSpecId }})</span>
-      </div>
-    </div>
+        <!-- Item mold config (expanded) -->
+        <div *ngIf="item.specExpanded" class="item-mold-body">
+          <!-- Row 1: Category + Mold selectors -->
+          <div class="mold-selectors-row">
+            <div class="mold-selector-group">
+              <label class="form-label">Categoría</label>
+              <select class="form-control"
+                      [ngModel]="item.categoryId"
+                      (ngModelChange)="onCategoryChange(i, $event)">
+                <option [ngValue]="null" disabled>Seleccione categoría...</option>
+                <option *ngFor="let cat of categories" [ngValue]="cat.id">
+                  {{ cat.name }} ({{ cat.molds_count || 0 }} moldes)
+                </option>
+              </select>
+            </div>
+            <div class="mold-selector-group">
+              <label class="form-label">Molde</label>
+              <select class="form-control"
+                      [ngModel]="item.moldId"
+                      (ngModelChange)="selectMoldForItem(i, $event)"
+                      [disabled]="!item.categoryId || item.availableMolds.length === 0">
+                <option [ngValue]="null" disabled>
+                  {{ !item.categoryId ? 'Primero seleccione categoría' : (item.availableMolds.length === 0 ? 'Sin moldes disponibles' : 'Seleccione molde...') }}
+                </option>
+                <option *ngFor="let m of item.availableMolds" [ngValue]="m.id">
+                  {{ m.name }}
+                </option>
+              </select>
+            </div>
+          </div>
 
-    <!-- Embedded Spec Generator (full OPM experience) -->
-    <div *ngIf="moldId" class="spec-generator-wrapper">
-      <app-spec-generator #specGenerator
-        [embedded]="true"
-        [externalMoldId]="moldId"
-        (onSpecSaved)="onSpecSaved($event)">
-      </app-spec-generator>
+          <!-- Copy from another item -->
+          <div *ngIf="getItemsWithMold().length > 0" class="copy-spec-row">
+            <span class="copy-label"><i class="bi bi-clipboard"></i> Copiar configuración de:</span>
+            <button *ngFor="let src of getItemsWithMold()"
+                    class="btn-copy-spec"
+                    [disabled]="src.index === i"
+                    (click)="copySpecFromItem(src.index, i)">
+              {{ src.item.descripcion | slice:0:25 }}{{ src.item.descripcion.length > 25 ? '...' : '' }}
+            </button>
+          </div>
+
+          <!-- Spec saved confirmation -->
+          <div *ngIf="item.technicalSpecId" class="spec-saved-badge">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>OPM guardada (ID: {{ item.technicalSpecId }})</span>
+          </div>
+
+          <!-- Embedded Spec Generator -->
+          <div *ngIf="item.moldId" class="spec-generator-wrapper">
+            <app-spec-generator
+              [embedded]="true"
+              [externalMoldId]="item.moldId"
+              (onSpecSaved)="onItemSpecSaved(i, $event)">
+            </app-spec-generator>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Final Save -->
@@ -431,11 +483,4 @@
     (onSelect)="addItemFromSiesa($event)"
     (onClose)="showItemSearch = false">
   </app-item-search-modal>
-
-  <app-mold-select-modal
-    *ngIf="showMoldSelect"
-    [molds]="molds"
-    (onSelect)="selectMold($event)"
-    (onClose)="showMoldSelect = false">
-  </app-mold-select-modal>
 </div>

@@ -11,6 +11,7 @@ import { ModalMoldPartComponent } from './modals/modal-mold-part/modal-mold-part
 import { ModalSpecEditorComponent } from './modals/modal-spec-editor/modal-spec-editor.component';
 import { ModalManualAssignmentComponent } from './modals/modal-manual-assignment/modal-manual-assignment.component';
 import { ModalAddPartComponent } from './modals/modal-add-part/modal-add-part.component';
+import { ModalCategoryManagerComponent } from './modals/modal-category-manager/modal-category-manager.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
@@ -22,7 +23,8 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     ModalMoldPartComponent,
     ModalSpecEditorComponent,
     ModalManualAssignmentComponent,
-    ModalAddPartComponent
+    ModalAddPartComponent,
+    ModalCategoryManagerComponent
   ],
   imports: [
     CommonModule,
@@ -36,7 +38,8 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     InventorySearchModalComponent,
     ModalSpecEditorComponent,
     ModalManualAssignmentComponent,
-    ModalAddPartComponent
+    ModalAddPartComponent,
+    ModalCategoryManagerComponent
   ]
 })
 export class MoldesModule { }

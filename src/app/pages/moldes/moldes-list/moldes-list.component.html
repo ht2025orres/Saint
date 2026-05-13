@@ -3,10 +3,30 @@
   <div class="moldes-header">
     <div class="header-left">
       <h1><i class="bi bi-grid-3x3-gap"></i> Gestión de Moldes</h1>
-      <p class="subtitle">Administra los moldes base y genera OPMs o Fichas Técnicas</p>
+      <p class="subtitle">Administra categorías, moldes base, y genera OPMs o Fichas Técnicas</p>
     </div>
-    <button class="btn-primary-custom" (click)="goToCreate()">
-      <i class="bi bi-plus-lg"></i> Nuevo Molde
+    <div class="header-actions">
+      <button class="btn-outline-custom" (click)="showCategoryManager = true" *ngIf="canManageCategories">
+        <i class="bi bi-folder-plus"></i> Categorías
+      </button>
+      <button class="btn-primary-custom" (click)="goToCreate()" *ngIf="canCreate">
+        <i class="bi bi-plus-lg"></i> Nuevo Molde
+      </button>
+    </div>
+  </div>
+
+  <!-- Category Filter Tabs -->
+  <div class="category-tabs" *ngIf="categories.length > 0">
+    <button class="cat-tab" [class.cat-tab-active]="selectedCategoryId === null"
+            (click)="selectCategory(null)">
+      <i class="bi bi-grid-3x3-gap"></i> Todos
+      <span class="cat-tab-count">{{ molds.length }}</span>
+    </button>
+    <button *ngFor="let cat of categories" class="cat-tab"
+            [class.cat-tab-active]="selectedCategoryId === cat.id"
+            (click)="selectCategory(cat.id)">
+      {{ cat.name }}
+      <span class="cat-tab-count">{{ cat.molds_count || 0 }}</span>
     </button>
   </div>
 
@@ -24,34 +44,30 @@
   </div>
 
   <!-- Empty -->
-  <div class="empty-state" *ngIf="!loading && !errorMessage && molds.length === 0">
+  <div class="empty-state" *ngIf="!loading && !errorMessage && filteredMolds.length === 0">
     <div class="empty-icon"><i class="bi bi-grid-3x3-gap"></i></div>
-    <h3>No hay moldes creados</h3>
+    <h3 *ngIf="selectedCategoryId">No hay moldes en esta categoría</h3>
+    <h3 *ngIf="!selectedCategoryId">No hay moldes creados</h3>
     <p>Crea tu primer molde para comenzar</p>
-    <button class="btn-primary-custom" (click)="goToCreate()">
+    <button class="btn-primary-custom" (click)="goToCreate()" *ngIf="canCreate">
       <i class="bi bi-plus-lg"></i> Crear Primer Molde
     </button>
   </div>
 
   <!-- Grid de Moldes -->
-  <div class="moldes-grid" *ngIf="!loading && molds.length > 0">
-    <div class="mold-card" *ngFor="let mold of molds">
+  <div class="moldes-grid" *ngIf="!loading && filteredMolds.length > 0">
+    <div class="mold-card" *ngFor="let mold of filteredMolds">
       <!-- Card Image -->
       <div class="card-image-wrapper">
-        <img
-          *ngIf="getCategoryImage(mold)"
-          [src]="getCategoryImage(mold)"
-          [alt]="mold.name"
-          class="card-image"
-        />
-        <div *ngIf="!getCategoryImage(mold) && mold.image_url" class="card-image-wrapper">
-          <img [src]="mold.image_url" [alt]="mold.name" class="card-image" />
-        </div>
-        <div *ngIf="!getCategoryImage(mold) && !mold.image_url" class="card-image-placeholder">
+        <img *ngIf="getMoldImage(mold)" [src]="getMoldImage(mold)" [alt]="mold.name" class="card-image" />
+        <div *ngIf="!getMoldImage(mold)" class="card-image-placeholder">
           <i class="bi bi-image"></i>
         </div>
         <span class="parts-badge">
           <i class="bi bi-pin-map"></i> {{ getPartCount(mold) }} partes
+        </span>
+        <span *ngIf="getCategoryName(mold)" class="category-badge">
+          {{ getCategoryName(mold) }}
         </span>
       </div>
 
@@ -66,15 +82,15 @@
           <button class="btn-action btn-view" (click)="goToView(mold.id)" title="Visualizar molde">
             <i class="bi bi-eye"></i> Ver
           </button>
-          <button class="btn-action btn-edit" (click)="goToEdit(mold.id)" title="Editar molde">
+          <button class="btn-action btn-edit" (click)="goToEdit(mold.id)" title="Editar molde" *ngIf="canEdit">
             <i class="bi bi-pencil"></i> Editar
           </button>
         </div>
         <div class="card-actions-secondary">
-          <button class="btn-action-sm btn-opm" (click)="goToGenerateOpm(mold.id)" title="Generar OPM desde este molde">
+          <button class="btn-action-sm btn-opm" (click)="goToGenerateOpm(mold.id)" title="Generar OPM desde este molde" *ngIf="canCreateOpm">
             <i class="bi bi-lightning-charge"></i> Generar OPM
           </button>
-          <button class="btn-action-sm btn-ficha" (click)="goToGenerateFicha(mold.id)" title="Generar Ficha Técnica directamente">
+          <button class="btn-action-sm btn-ficha" (click)="goToGenerateFicha(mold.id)" title="Generar Ficha Técnica directamente" *ngIf="canCreateFicha">
             <i class="bi bi-file-earmark-text"></i> Ficha Técnica
           </button>
         </div>
@@ -82,3 +98,10 @@
     </div>
   </div>
 </div>
+
+<!-- Category Manager Modal -->
+<app-modal-category-manager
+  *ngIf="showCategoryManager"
+  (onClose)="showCategoryManager = false"
+  (onCategoriesChanged)="onCategoriesChanged()">
+</app-modal-category-manager>

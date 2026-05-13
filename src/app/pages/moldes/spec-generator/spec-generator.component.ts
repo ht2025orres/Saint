@@ -5,29 +5,6 @@ import { map, tap } from 'rxjs/operators';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
 
-const CATEGORY_IMAGES: { [id: number]: { front: string; back?: string } } = {
-  1:  { front: 'assets/garments/camisa.png',   back: 'assets/garments/camisa_back.png' },
-  2:  { front: 'assets/garments/buzo.png',     back: 'assets/garments/buzo_back.png' },
-  3:  { front: 'assets/garments/polo.png',     back: 'assets/garments/polo_back.png' },
-  4:  { front: 'assets/garments/delantal.png', back: 'assets/garments/delantal_back.png' },
-  5:  { front: 'assets/garments/chaqueta.png', back: 'assets/garments/chaqueta_back.png' },
-  6:  { front: 'assets/garments/pantalon.png', back: 'assets/garments/pantalon_back.png' },
-  7:  { front: 'assets/garments/pantalon.png', back: 'assets/garments/pantalon_back.png' },
-  8:  { front: 'assets/garments/pantalon.png', back: 'assets/garments/pantalon_back.png' },
-  9:  { front: 'assets/garments/chaleco.png',  back: 'assets/garments/chaleco_back.png' },
-  10: { front: 'assets/garments/cofia.png' },
-  11: { front: 'assets/garments/tapaboca.png' },
-  12: { front: 'assets/garments/camisa.png',   back: 'assets/garments/camisa_back.png' },
-  13: { front: 'assets/garments/camisa.png',   back: 'assets/garments/camisa_back.png' },
-  14: { front: 'assets/garments/pantalon.png', back: 'assets/garments/pantalon_back.png' },
-  15: { front: 'assets/garments/pantalon.png', back: 'assets/garments/pantalon_back.png' },
-  16: { front: 'assets/garments/overol.png',   back: 'assets/garments/overol_back.png' },
-  17: { front: 'assets/garments/camisa.png',   back: 'assets/garments/camisa_back.png' },
-  18: { front: 'assets/garments/camisa.png',   back: 'assets/garments/camisa_back.png' },
-  19: { front: 'assets/garments/gorra.png',    back: 'assets/garments/gorra_back.png' },
-  20: { front: 'assets/garments/delantal.png', back: 'assets/garments/delantal_back.png' },
-  21: { front: 'assets/garments/camiseta.png', back: 'assets/garments/camiseta_back.png' },
-};
 
 export interface OpmMaterial {
   id_item: string;
@@ -262,6 +239,14 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     private router: Router
   ) {}
 
+  // ==================== PERMISSIONS ====================
+  // 1 = Admin, 46 = Crear OPM, 47 = Editar OPM, 48 = Crear ficha, 49 = Editar ficha
+
+  get canCreateOpm(): boolean { return this.authService.hasAnyPermission([1, 46]); }
+  get canEditOpm(): boolean { return this.authService.hasAnyPermission([1, 47]); }
+  get canCreateFicha(): boolean { return this.authService.hasAnyPermission([1, 48]); }
+  get canEditFicha(): boolean { return this.authService.hasAnyPermission([1, 49]); }
+
   ngOnInit(): void {
     if (this.embedded) {
       // In embedded mode, moldId comes from @Input
@@ -300,15 +285,15 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   get hasBackView(): boolean {
-    const cat = this.mold?.id_product_category;
-    return !!(cat && CATEGORY_IMAGES[cat]?.back);
+    return !!this.mold?.back_image_signed_url;
   }
 
   get activeImage(): string {
-    const cat = this.mold?.id_product_category;
-    const m = cat ? CATEGORY_IMAGES[cat] : null;
-    if (!m) return '';
-    return this.activeView === 'back' && m.back ? m.back : m.front;
+    if (!this.mold) return '';
+    if (this.activeView === 'back' && this.mold.back_image_signed_url) {
+      return this.mold.back_image_signed_url;
+    }
+    return this.mold.image_signed_url || '';
   }
 
   get activeComponents(): ComponentItem[] {

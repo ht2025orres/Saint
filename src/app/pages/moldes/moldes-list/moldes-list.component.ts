@@ -1,31 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MoldService } from '../../../services/mold.service';
-
-/** Mapeo categoría → imagen de prenda */
-const CATEGORY_IMAGES: { [id: number]: string } = {
-  1:  'assets/garments/camisa.png',
-  2:  'assets/garments/buzo.png',
-  3:  'assets/garments/polo.png',
-  4:  'assets/garments/delantal.png',
-  5:  'assets/garments/chaqueta.png',
-  6:  'assets/garments/pantalon.png',
-  7:  'assets/garments/pantalon.png',
-  8:  'assets/garments/pantalon.png',
-  9:  'assets/garments/chaleco.png',
-  10: 'assets/garments/cofia.png',
-  11: 'assets/garments/tapaboca.png',
-  12: 'assets/garments/camisa.png',
-  13: 'assets/garments/camisa.png',
-  14: 'assets/garments/pantalon.png',
-  15: 'assets/garments/pantalon.png',
-  16: 'assets/garments/overol.png',
-  17: 'assets/garments/camisa.png',
-  18: 'assets/garments/camisa.png',
-  19: 'assets/garments/gorra.png',
-  20: 'assets/garments/delantal.png',
-  21: 'assets/garments/camiseta.png',
-};
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-moldes-list',
@@ -37,14 +13,61 @@ export class MoldesListComponent implements OnInit {
   loading = false;
   errorMessage = '';
 
+  // Categories
+  categories: any[] = [];
+  selectedCategoryId: number | null = null;
+  showCategoryManager = false;
+
   constructor(
     private moldService: MoldService,
-    private router: Router
+    private router: Router,
+    public authService: AuthService
   ) {}
 
+  // ==================== PERMISSIONS ====================
+  // 1 = Admin del sistema (ve todo)
+  // 40 = Ver moldes, 41 = Crear, 42 = Editar, 43 = Eliminar
+  // 44 = Subir imagen, 45 = Categorías, 46 = Crear OPM
+  // 47 = Editar OPM, 48 = Crear ficha técnica, 49 = Editar ficha técnica
+
+  get esAdmin(): boolean { return this.authService.hasPermission(1); }
+  get canCreate(): boolean { return this.authService.hasAnyPermission([1, 41]); }
+  get canEdit(): boolean { return this.authService.hasAnyPermission([1, 42]); }
+  get canDelete(): boolean { return this.authService.hasAnyPermission([1, 43]); }
+  get canManageCategories(): boolean { return this.authService.hasAnyPermission([1, 45]); }
+  get canCreateOpm(): boolean { return this.authService.hasAnyPermission([1, 46]); }
+  get canCreateFicha(): boolean { return this.authService.hasAnyPermission([1, 48]); }
+
   ngOnInit(): void {
+    this.loadCategories();
     this.loadMolds();
   }
+
+  // ==================== CATEGORIES ====================
+
+  loadCategories(): void {
+    this.moldService.getCategories().subscribe({
+      next: (res: any) => {
+        this.categories = res.data || [];
+      },
+      error: () => {}
+    });
+  }
+
+  selectCategory(catId: number | null): void {
+    this.selectedCategoryId = catId;
+  }
+
+  get filteredMolds(): any[] {
+    if (!this.selectedCategoryId) return this.molds;
+    return this.molds.filter(m => m.mold_category_id === this.selectedCategoryId);
+  }
+
+  onCategoriesChanged(): void {
+    this.loadCategories();
+  }
+
+  // ==================== MOLDS ====================
 
   loadMolds(): void {
     this.loading = true;
@@ -62,8 +85,17 @@ export class MoldesListComponent implements OnInit {
     });
   }
 
-  getCategoryImage(mold: any): string {
-    return CATEGORY_IMAGES[mold.id_product_category] || '';
+  getMoldImage(mold: any): string {
+    // Priority: mold's signed URL → category signed URL → empty
+    if (mold.image_signed_url) return mold.image_signed_url;
+    const cat = this.categories.find(c => c.id === mold.mold_category_id);
+    return cat?.image_signed_url || '';
+  }
+
+  getCategoryName(mold: any): string {
+    if (mold.category?.name) return mold.category.name;
+    const cat = this.categories.find(c => c.id === mold.mold_category_id);
+    return cat?.name || '';
   }
 
   getPartCount(mold: any): number {

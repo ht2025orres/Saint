@@ -21,11 +21,11 @@ export class MoldService {
     return this.http.get(`${this.apiUrl}/molds/${id}`);
   }
 
-  createMold(data: { name: string; description?: string; id_product_category?: number; parts?: any[] }): Observable<any> {
+  createMold(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/molds`, data);
   }
 
-  updateMold(id: number, data: { name: string; description?: string; id_product_category?: number; parts?: any[] }): Observable<any> {
+  updateMold(id: number, data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/molds/${id}`, data);
   }
 
@@ -33,9 +33,10 @@ export class MoldService {
     return this.http.get(`${this.apiUrl}/molds/components/category/${categoryId}`);
   }
 
-  uploadMoldImage(moldId: number, file: File): Observable<any> {
+  uploadMoldImage(moldId: number, file: File, view: 'front' | 'back' = 'front'): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('view', view);
     return this.http.post(`${this.apiUrl}/molds/${moldId}/image`, formData);
   }
 
@@ -60,5 +61,39 @@ export class MoldService {
       .set('q', query)
       .set('bodega', bodega);
     return this.http.get(`${this.apiUrl}/inventory/search`, { params });
+  }
+
+  // ==================== MOLD CATEGORIES ====================
+
+  getCategories(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/mold-categories`);
+  }
+
+  createCategory(data: { name: string; description?: string; keywords?: string[] }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/mold-categories`, data);
+  }
+
+  updateCategory(id: number, data: { name: string; description?: string; keywords?: string[] }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/mold-categories/${id}`, data);
+  }
+
+  deleteCategory(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/mold-categories/${id}`);
+  }
+
+  uploadCategoryImage(categoryId: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/mold-categories/${categoryId}/image`, formData);
+  }
+
+  suggestCategory(text: string): Observable<any> {
+    const params = new HttpParams().set('q', text);
+    return this.http.get(`${this.apiUrl}/mold-categories/suggest`, { params });
+  }
+
+  getMoldsByCategory(categoryId: number): Observable<any> {
+    const params = new HttpParams().set('category_id', categoryId.toString());
+    return this.http.get(`${this.apiUrl}/molds`, { params });
   }
 }

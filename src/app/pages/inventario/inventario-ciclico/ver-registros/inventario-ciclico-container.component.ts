@@ -86,9 +86,12 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
   }
 
   cargarUsuarios(): void {
-    this.userService.getAll().subscribe({
+    this.userService.getAllBasic().subscribe({
       next: (usuarios) => {
-        usuarios.forEach(u => this.usuariosMap.set(u.id!, u));
+        usuarios.forEach(u => this.usuariosMap.set(u.id, u));
+      },
+      error: () => {
+        console.warn('No se pudieron cargar los usuarios');
       }
     });
   }
@@ -99,7 +102,7 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
     const usuario = this.usuariosMap.get(userId);
     if (!usuario) return `ID: ${id}`;
     
-    return usuario.nombre_completo || `${usuario.firstName || ''} ${usuario.lastName || ''}`.trim() || usuario.email || `ID: ${id}`;
+    return usuario.nombre_completo || `ID: ${id}`;
   }
 
   onBodegaChange(): void {

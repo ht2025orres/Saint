@@ -313,13 +313,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         label: 'Inventario',
         icon: 'bi bi-boxes',
         modules: [5],
-        permissions: [1],
+        permissions: [1, 25, 26, 27, 34],
         submenu: [
-          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas' },
-          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas' },
-          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver' },
-          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios' },
-          { label: 'Realizar Conteo', link: '/inventario/conteo' },
+          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas', permissions: [1, 27] },
+          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27] },
+          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27] },
+          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27] },
+          { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26] },
           { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
         ]
       },
@@ -354,8 +354,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       {
         label: 'Moldes y OPM',
         icon: 'bi bi-grid-3x3-gap',
-        link: '/moldes',
-        permissions: [1, 2]
+        modules: [9],
+        permissions: [1, 40],
+        submenu: [
+          { label: 'Ver Moldes', link: '/moldes', permissions: [1, 40] },
+          { label: 'Crear Molde', link: '/moldes/admin', permissions: [1, 41] },
+          { label: 'Generar OPM', link: '/moldes/opm-generator', permissions: [1, 46] },
+        ]
       }
     ];
   }
