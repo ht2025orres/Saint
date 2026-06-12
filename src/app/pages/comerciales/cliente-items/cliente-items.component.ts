@@ -1,6 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ComercialService, ItemSiesa, Solicitud } from '../../../services/comercial.service';
+import { OrdenCompraService } from '../../../services/orden-compra.service';
 import { PaginationService, PaginationState } from '../../../shared/pagination/pagination.service';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -15,6 +17,7 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   clienteNombre = '';
   clienteNit = '';
 
+  // Items
   items: ItemSiesa[] = [];
   filteredItems: ItemSiesa[] = [];
   pagedItems: ItemSiesa[] = [];
@@ -27,35 +30,64 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   pagedSolicitudes: Solicitud[] = [];
   isLoadingSolicitudes = false;
 
-  activeTab: 'items' | 'solicitudes' = 'items';
+  // Órdenes del cliente
+  ordenes: any[] = [];
+  pagedOrdenes: any[] = [];
+  isLoadingOrdenes = false;
+
+  activeTab: 'items' | 'solicitudes' | 'ordenes' = 'items';
 
   // Pagination
   readonly itemsPaginatorId = 'comerciales-items';
   readonly solicitudesPaginatorId = 'comerciales-cliente-solicitudes';
+  readonly ordenesPaginatorId = 'comerciales-cliente-ordenes';
   private paginationSubs: Subscription[] = [];
 
   constructor(
     private comercialService: ComercialService,
+    private ordenCompraService: OrdenCompraService,
     private route: ActivatedRoute,
     private router: Router,
-    public paginationService: PaginationService
+    public paginationService: PaginationService,
+    @Inject(DOCUMENT) private document: Document
   ) {}
 
   ngOnInit(): void {
+    this.loadTailwind();
     this.clienteId = Number(this.route.snapshot.paramMap.get('id'));
     this.clienteNombre = this.route.snapshot.queryParamMap.get('nombre') || '';
     this.clienteNit = this.route.snapshot.queryParamMap.get('nit') || '';
 
     this.loadItems();
     this.loadSolicitudes();
+    this.loadOrdenes();
+  }
+
+  private loadTailwind(): void {
+    if (!this.document.getElementById('tw-cdn-comerciales')) {
+      const link = this.document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+      link.id = 'tw-cdn-comerciales';
+      this.document.head.appendChild(link);
+    }
+    if (!this.document.getElementById('bi-cdn-comerciales')) {
+      const icons = this.document.createElement('link');
+      icons.rel = 'stylesheet';
+      icons.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css';
+      icons.id = 'bi-cdn-comerciales';
+      this.document.head.appendChild(icons);
+    }
   }
 
   ngOnDestroy(): void {
     this.paginationSubs.forEach(s => s.unsubscribe());
     this.paginationService.destroyPaginator(this.itemsPaginatorId);
     this.paginationService.destroyPaginator(this.solicitudesPaginatorId);
+    this.paginationService.destroyPaginator(this.ordenesPaginatorId);
   }
 
+  // ==================== ITEMS ====================
   loadItems(): void {
     this.isLoading = true;
     this.comercialService.itemsCliente(this.clienteId).subscribe({
@@ -67,20 +99,6 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
       error: () => {
         Swal.fire('Error', 'No se pudieron cargar los ítems del cliente', 'error');
         this.isLoading = false;
-      }
-    });
-  }
-
-  loadSolicitudes(): void {
-    this.isLoadingSolicitudes = true;
-    this.comercialService.listarSolicitudes({ cliente_id: this.clienteId }).subscribe({
-      next: (res) => {
-        this.solicitudes = res.data || [];
-        this.initSolicitudesPaginator();
-        this.isLoadingSolicitudes = false;
-      },
-      error: () => {
-        this.isLoadingSolicitudes = false;
       }
     });
   }
@@ -109,15 +127,6 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     this.paginationSubs.push(sub);
   }
 
-  private initSolicitudesPaginator(): void {
-    const sub = this.paginationService
-      .initializePaginator(this.solicitudesPaginatorId, this.solicitudes, 10)
-      .subscribe((state: PaginationState) => {
-        this.pagedSolicitudes = state.currentData;
-      });
-    this.paginationSubs.push(sub);
-  }
-
   searchItems(deep: boolean = false): void {
     if (this.searchTerm.length >= 2) {
       this.isLoading = true;
@@ -128,9 +137,7 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
           this.initItemsPaginator();
           this.isLoading = false;
         },
-        error: () => {
-          this.isLoading = false;
-        }
+        error: () => { this.isLoading = false; }
       });
     } else if (this.searchTerm.length === 0) {
       this.isDeepSearch = false;
@@ -138,16 +145,57 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     }
   }
 
-  deepSearch(): void {
-    this.searchItems(true);
+  deepSearch(): void { this.searchItems(true); }
+
+  // ==================== SOLICITUDES ====================
+  loadSolicitudes(): void {
+    this.isLoadingSolicitudes = true;
+    this.comercialService.listarSolicitudes({ cliente_id: this.clienteId }).subscribe({
+      next: (res) => {
+        this.solicitudes = res.data || [];
+        this.initSolicitudesPaginator();
+        this.isLoadingSolicitudes = false;
+      },
+      error: () => { this.isLoadingSolicitudes = false; }
+    });
   }
 
-  nuevaSolicitud(item?: ItemSiesa): void {
-    const queryParams: any = {
-      nombre: this.clienteNombre,
-      nit: this.clienteNit
-    };
+  private initSolicitudesPaginator(): void {
+    const sub = this.paginationService
+      .initializePaginator(this.solicitudesPaginatorId, this.solicitudes, 10)
+      .subscribe((state: PaginationState) => {
+        this.pagedSolicitudes = state.currentData;
+      });
+    this.paginationSubs.push(sub);
+  }
 
+  // ==================== ORDENES ====================
+  loadOrdenes(): void {
+    this.isLoadingOrdenes = true;
+    this.ordenCompraService.obtenerOrdenes({ cliente: this.clienteNombre }).subscribe({
+      next: (res) => {
+        this.ordenes = (res.data || []).filter((o: any) =>
+          o.cliente?.toLowerCase().includes(this.clienteNombre.toLowerCase())
+        );
+        this.initOrdenesPaginator();
+        this.isLoadingOrdenes = false;
+      },
+      error: () => { this.isLoadingOrdenes = false; }
+    });
+  }
+
+  private initOrdenesPaginator(): void {
+    const sub = this.paginationService
+      .initializePaginator(this.ordenesPaginatorId, this.ordenes, 10)
+      .subscribe((state: PaginationState) => {
+        this.pagedOrdenes = state.currentData;
+      });
+    this.paginationSubs.push(sub);
+  }
+
+  // ==================== NAVIGATION ====================
+  nuevaSolicitud(item?: ItemSiesa): void {
+    const queryParams: any = { nombre: this.clienteNombre, nit: this.clienteNit };
     if (item) {
       queryParams.pre_item = JSON.stringify({
         descripcion: this.getItemDesc(item),
@@ -158,10 +206,7 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
         color: item.color
       });
     }
-
-    this.router.navigate(['/comerciales/solicitud/nuevo', this.clienteId], {
-      queryParams
-    });
+    this.router.navigate(['/comerciales/solicitud/nuevo', this.clienteId], { queryParams });
   }
 
   goToSolicitud(solicitud: Solicitud): void {
@@ -172,6 +217,17 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     this.router.navigate(['/comerciales']);
   }
 
+  irACaptura(): void {
+    this.router.navigate(['/comerciales/captura'], { 
+      queryParams: { 
+        cliente: this.clienteNombre, 
+        nit: this.clienteNit,
+        clienteId: this.clienteId
+      } 
+    });
+  }
+
+  // ==================== HELPERS ====================
   getItemDesc(item: ItemSiesa): string {
     return item.f120_descripcion || item.descripcion || item.f120_descripcion_corta || '';
   }
@@ -180,22 +236,26 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     return item.f120_referencia || item.referencia || item.f120_id || '';
   }
 
-  getEstadoBadge(estado: string): string {
+  getEstadoBadgeClass(estado: string): string {
     const map: Record<string, string> = {
-      'BORRADOR': 'badge-borrador',
-      'ENVIADO': 'badge-enviado',
-      'EN_COSTEO': 'badge-en-costeo',
-      'COSTEADO': 'badge-costeado',
-      'APROBADO': 'badge-aprobado',
-      'RECHAZADO': 'badge-rechazado',
+      'BORRADOR': 'bg-gray-100 text-gray-700',
+      'ENVIADO': 'bg-blue-100 text-blue-700',
+      'EN_COSTEO': 'bg-yellow-100 text-yellow-800',
+      'COSTEADO': 'bg-purple-100 text-purple-700',
+      'APROBADO': 'bg-green-100 text-green-700',
+      'RECHAZADO': 'bg-red-100 text-red-700',
+      'PENDIENTE': 'bg-yellow-100 text-yellow-800',
+      'PROCESADA': 'bg-green-100 text-green-700',
+      'RECHAZADA': 'bg-red-100 text-red-700',
     };
-    return map[estado] || 'badge-default';
+    return map[estado] || 'bg-gray-100 text-gray-700';
   }
 
   getEstadoLabel(estado: string): string {
     const map: Record<string, string> = {
       'BORRADOR': 'Borrador', 'ENVIADO': 'Enviado', 'EN_COSTEO': 'En Costeo',
       'COSTEADO': 'Costeado', 'APROBADO': 'Aprobado', 'RECHAZADO': 'Rechazado',
+      'PENDIENTE': 'Pendiente', 'PROCESADA': 'Procesada', 'RECHAZADA': 'Rechazada',
     };
     return map[estado] || estado;
   }

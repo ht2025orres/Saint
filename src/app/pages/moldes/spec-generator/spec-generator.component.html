@@ -259,7 +259,7 @@
           <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center">
             <div class="flex-1 w-full">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Descripción General de la {{ modeLabel }}</label>
-              <textarea [(ngModel)]="generalDescription" rows="2" placeholder="Observaciones generales para producción..." 
+              <textarea [(ngModel)]="generalDescription" (ngModelChange)="notifyChanges()" rows="2" placeholder="Observaciones generales para producción..." 
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
             </div>
             <div class="flex gap-4">
@@ -533,7 +533,7 @@
               <span class="text-[10px] font-medium text-slate-400 italic">Doble Enter para sugerir componente</span>
             </div>
             <div class="relative">
-              <textarea #textEditor [(ngModel)]="textContent" (input)="onTextInput()" (focus)="onTextInput()" (keydown)="onTextKeydown($event)" rows="15" 
+              <textarea #textEditor [(ngModel)]="textContent" (ngModelChange)="notifyChanges()" (input)="onTextInput()" (focus)="onTextInput()" (keydown)="onTextKeydown($event)" rows="15" 
                         class="w-full p-6 bg-slate-900 text-indigo-100 font-mono text-sm leading-relaxed rounded-2xl outline-none border-2 border-slate-800 focus:border-indigo-500/30 transition-all custom-scrollbar"
                         placeholder="Escribe aquí..."></textarea>
               

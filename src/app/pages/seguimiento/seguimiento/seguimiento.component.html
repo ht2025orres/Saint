@@ -41,6 +41,29 @@
           </button>
         </nav>
 
+        <!-- Toggle Vista Admin/Miembro (solo para admins) -->
+        <div *ngIf="esAdminSistema"
+             class="flex items-center gap-2 flex-shrink-0">
+          <button
+            (click)="toggleVistaAdmin()"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold
+                   transition-all duration-200 border"
+            [ngClass]="vistaAdminActiva
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'"
+          >
+            <i class="bi text-sm"
+               [ngClass]="vistaAdminActiva ? 'bi-shield-fill' : 'bi-person-fill'"></i>
+            <span class="hidden md:inline">
+              {{ vistaAdminActiva ? 'Vista Admin' : 'Vista Miembro' }}
+            </span>
+            <span class="relative flex h-5 w-9 rounded-full transition-colors duration-200"
+                  [ngClass]="vistaAdminActiva ? 'bg-indigo-500' : 'bg-emerald-500'">
+              <span class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+                    [ngClass]="vistaAdminActiva ? 'translate-x-4' : 'translate-x-0.5'"></span>
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -52,7 +75,8 @@
     <ng-container *ngIf="vista === 'proyectos'">
       <app-proyectos
         [usuarioId]="usuarioId"
-        [puedeGestionarModulo]="puedeGestionarModulo">
+        [puedeGestionarModulo]="puedeGestionarModulo"
+        [vistaMode]="vistaMode">
       </app-proyectos>
     </ng-container>
 
@@ -60,7 +84,8 @@
     <ng-container *ngIf="vista === 'seguimientos'">
       <app-seguimientos
         [usuarioId]="usuarioId"
-        [puedeGestionarModulo]="puedeGestionarModulo">
+        [puedeGestionarModulo]="puedeGestionarModulo"
+        [vistaMode]="vistaMode">
       </app-seguimientos>
     </ng-container>
 
@@ -68,7 +93,8 @@
     <ng-container *ngIf="vista === 'tareas'">
       <app-tareas
         [usuarioId]="usuarioId"
-        [puedeGestionarModulo]="puedeGestionarModulo">
+        [puedeGestionarModulo]="puedeGestionarModulo"
+        [vistaMode]="vistaMode">
       </app-tareas>
     </ng-container>
 
@@ -76,7 +102,8 @@
     <ng-container *ngIf="vista === 'informes'">
       <app-informes
         [usuarioId]="usuarioId"
-        [puedeGestionarModulo]="puedeGestionarModulo">
+        [puedeGestionarModulo]="puedeGestionarModulo"
+        [vistaMode]="vistaMode">
       </app-informes>
     </ng-container>
 

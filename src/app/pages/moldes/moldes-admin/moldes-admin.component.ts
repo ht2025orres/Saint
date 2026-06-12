@@ -102,6 +102,7 @@ export class MoldesAdminComponent implements OnInit {
       this.inlineEditingPart.item_type = this.inlineEditType as any;
       this.inlineEditingPart = null;
       if (this.activeTab === 'texto') this.buildTextContent();
+      this.saveDraft();
     }
   }
 
@@ -144,6 +145,7 @@ export class MoldesAdminComponent implements OnInit {
     
     this.inlineAdding = false;
     if (this.activeTab === 'texto') this.buildTextContent();
+    this.saveDraft();
   }
 
   // Text validation
@@ -214,7 +216,75 @@ export class MoldesAdminComponent implements OnInit {
 
     if (this.isEditMode && this.moldId) {
       this.loadMold();
+    } else {
+      this.checkDraft();
     }
+  }
+
+  // ==================== DRAFT LOGIC ====================
+  private readonly DRAFT_KEY = 'draft_mold_admin';
+
+  saveDraft(): void {
+    if (this.isReadOnly) return;
+    
+    const draft = {
+      moldName: this.moldName,
+      moldDescription: this.moldDescription,
+      mold_category_id: this.mold_category_id,
+      parts: this.parts,
+      backParts: this.backParts,
+      customImageUrl: this.customImageUrl,
+      backImageUrl: this.backImageUrl,
+      timestamp: new Date().getTime()
+    };
+    localStorage.setItem(this.DRAFT_KEY, JSON.stringify(draft));
+  }
+
+  checkDraft(): void {
+    const saved = localStorage.getItem(this.DRAFT_KEY);
+    if (saved) {
+      const draft = JSON.parse(saved);
+      if (draft.moldName || draft.parts.length > 0 || draft.backParts.length > 0) {
+        Swal.fire({
+          title: '¿Restaurar borrador?',
+          text: `Tienes un trabajo pendiente del ${new Date(draft.timestamp).toLocaleString()}. ¿Deseas recuperarlo?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, restaurar',
+          cancelButtonText: 'No, descartar',
+          confirmButtonColor: '#4f46e5'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.restoreDraft(draft);
+          } else {
+            this.clearDraft();
+          }
+        });
+      }
+    }
+  }
+
+  restoreDraft(draft: any): void {
+    this.moldName = draft.moldName || '';
+    this.moldDescription = draft.moldDescription || '';
+    this.mold_category_id = draft.mold_category_id || null;
+    this.parts = draft.parts || [];
+    this.backParts = draft.backParts || [];
+    this.customImageUrl = draft.customImageUrl || '';
+    this.backImageUrl = draft.backImageUrl || '';
+    
+    // Sincronizar la imagen actual del diseño
+    if (this.activeView === 'back' && this.backImageUrl) {
+      this.currentTemplate = { image: this.backImageUrl };
+    } else if (this.customImageUrl) {
+      this.currentTemplate = { image: this.customImageUrl };
+    }
+    
+    Swal.fire({ title: 'Borrador restaurado', icon: 'success', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+  }
+
+  clearDraft(): void {
+    localStorage.removeItem(this.DRAFT_KEY);
   }
 
   loadMold(): void {
@@ -290,6 +360,7 @@ export class MoldesAdminComponent implements OnInit {
             } else {
               this.customImageUrl = res.data?.image_signed_url || '';
             }
+            this.saveDraft();
             Swal.fire({ title: 'Imagen subida', icon: 'success', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
           },
           error: () => Swal.fire('Error', 'No se pudo subir la imagen', 'error')
@@ -306,6 +377,7 @@ export class MoldesAdminComponent implements OnInit {
             this.customImageUrl = dataUrl;
             this.pendingImageFile = file;
           }
+          this.saveDraft();
         };
         reader.readAsDataURL(file);
       }
@@ -400,6 +472,7 @@ export class MoldesAdminComponent implements OnInit {
     
     this.cancelEdit();
     if (this.activeTab === 'texto') this.buildTextContent();
+    this.saveDraft();
   }
 
   cancelEdit(): void {
@@ -486,6 +559,7 @@ export class MoldesAdminComponent implements OnInit {
     this.pendingPin = null;
     this.showAddModal = false;
     if (this.activeTab === 'texto') this.buildTextContent();
+    this.saveDraft();
   }
 
   onDragEnd(event: CdkDragEnd, index: number, part: MoldPart): void {
@@ -529,6 +603,7 @@ export class MoldesAdminComponent implements OnInit {
       part.position_y = Math.max(0, Math.min(100, newY));
     }
     
+    this.saveDraft();
     event.source.reset();
   }
 
@@ -572,6 +647,7 @@ export class MoldesAdminComponent implements OnInit {
       });
     }
     
+    this.saveDraft();
     event.source.reset();
   }
 
@@ -592,6 +668,7 @@ export class MoldesAdminComponent implements OnInit {
     if (index >= 0) {
       list.splice(index, 1);
       if (this.activeTab === 'texto') this.buildTextContent();
+      this.saveDraft();
     }
   }
 
@@ -747,6 +824,7 @@ export class MoldesAdminComponent implements OnInit {
     if (newParts.length > 0) {
       this.parts = newParts.filter(p => p.view !== 'back');
       this.backParts = newParts.filter(p => p.view === 'back');
+      this.saveDraft();
     }
   }
 
@@ -838,6 +916,7 @@ export class MoldesAdminComponent implements OnInit {
                 if (completed === uploads.length) {
                   this.saving = false;
                   this.successMessage = 'Molde guardado exitosamente';
+                  this.clearDraft();
                   setTimeout(() => this.router.navigate(['/moldes']), 1500);
                 }
               },
@@ -846,6 +925,7 @@ export class MoldesAdminComponent implements OnInit {
                 if (completed === uploads.length) {
                   this.saving = false;
                   this.successMessage = 'Molde guardado (alguna imagen pendiente)';
+                  this.clearDraft();
                   setTimeout(() => this.router.navigate(['/moldes']), 1500);
                 }
               }
@@ -854,6 +934,7 @@ export class MoldesAdminComponent implements OnInit {
         } else {
           this.saving = false;
           this.successMessage = 'Molde guardado exitosamente';
+          this.clearDraft();
           setTimeout(() => this.router.navigate(['/moldes']), 1500);
         }
       },
@@ -869,7 +950,15 @@ export class MoldesAdminComponent implements OnInit {
     if (this.editingPart) {
       this.editingPart.name = item.descripcion;
       this.editingPart.description = `${item.referencia} - ${item.color}`;
+      
+      // Si estamos en modo edición, actualizar el componente original y guardar borrador
+      const index = this.activeParts.findIndex(p => p === this.editingPart || (p.id && p.id === this.editingPart?.id));
+      if (index !== -1) {
+        this.activeParts[index] = { ...this.editingPart };
+      }
+
       this.showInventorySearch = false;
+      this.saveDraft();
     }
   }
 

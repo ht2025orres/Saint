@@ -13,6 +13,7 @@ import { ProductCategory } from '../../../models/ProductCategory';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { PanZoomComponent } from 'ngx-panzoom';
 import { forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
     selector: 'app-technical-sheet',
@@ -35,7 +36,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
         private technicalSheetService: TechnicalSheetService,
         private productCategoryService: ProductCategoryService,
         private erpIntegrationService: ErpIntegrationService,
-        private authService: AuthService,
+        public authService: AuthService,
         private router: Router,
         private fb: FormBuilder,
         private activatedRoute: ActivatedRoute,
@@ -50,26 +51,30 @@ export class CreateTechnicalSheetComponent implements OnInit {
     }
 
     get codigoItemNoValid() {
-        return this.formGr.get('id_item').invalid && this.formGr.get('id_item').touched;
+        const control = this.formGr?.get('id_item');
+        return !!control && control.invalid && control.touched;
     }
 
 
     get descripcionItemNoValid() {
-        return this.formGr.get('item_description').invalid && this.formGr.get('item_description').touched;
+        const control = this.formGr?.get('item_description');
+        return !!control && control.invalid && control.touched;
     }
 
 
     get codigoCompaniaNoValid() {
-        return this.formGr.get('id_company').invalid && this.formGr.get('id_company').touched;
+        const control = this.formGr?.get('id_company');
+        return !!control && control.invalid && control.touched;
     }
 
 
     get descripcionCompaniaNoValid() {
-        return this.formGr.get('company_name').invalid && this.formGr.get('company_name').touched;
+        const control = this.formGr?.get('company_name');
+        return !!control && control.invalid && control.touched;
     }
 
 
-    technicalDataSheetCurrent: TechnicalDataSheet;
+    technicalDataSheetCurrent!: TechnicalDataSheet;
 
     getCharCount(controlName: string, maxLength: number = 1000): string {
         const control = this.formGr.get(controlName);
@@ -80,39 +85,93 @@ export class CreateTechnicalSheetComponent implements OnInit {
         return `0 / ${maxLength}`;
     }
 
+    isCharLimitExceeded(controlName: string, maxLength: number = 1000): boolean {
+        const control = this.formGr.get(controlName);
+        return control && control.value && control.value.length > maxLength;
+    }
+
+    private handleError(error: any, defaultMessage: string): void {
+        this.loading = false;
+        let errorMessage = defaultMessage;
+
+        if (error.error) {
+            if (error.error.error) {
+                errorMessage = error.error.error;
+            } else if (error.error.message) {
+                errorMessage = error.error.message;
+            } else if (error.error.errors) {
+                const errors = error.error.errors;
+                errorMessage = Object.keys(errors)
+                    .map(key => `${key}: ${errors[key].join(', ')}`)
+                    .join('<br>');
+            } else if (typeof error.error === 'string') {
+                errorMessage = error.error;
+            }
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        Swal.fire({
+            title: 'Error',
+            html: errorMessage,
+            icon: 'error'
+        });
+    }
+
+    duplicateItemWarning: string | null = null;
+
+    verificarItemDuplicado(idItem: string) {
+        this.technicalSheetService.validateExistsTechnicalSheetByIdItem(idItem).subscribe({
+            next: (res: any) => {
+                if (res && res.exists && res.id !== this.technicalDataSheetCurrent?.id) {
+                    const typeStr = res.technical_data_sheet_type === 'OPM' ? 'una OPM/OPME' : 'una Ficha Técnica';
+                    this.duplicateItemWarning = `¡Atención! Ya existe ${typeStr} para el ítem "${idItem}" con ID #${res.id} en estado "${res.status}".`;
+                    this.cdr.detectChanges();
+                } else {
+                    this.duplicateItemWarning = null;
+                    this.cdr.detectChanges();
+                }
+            },
+            error: () => {
+                this.duplicateItemWarning = null;
+                this.cdr.detectChanges();
+            }
+        });
+    }
+
     isEdition: boolean = false;
     title = 'Guardar ficha técnica';
-    file: File = null; // Variable to store file
+    file: File | null = null; // Variable to store file
     loading = false; // Flag variable
-    selectedFiles: FileList;
-    progressInfos = [];
-    formData: FormData;
-    formGr: FormGroup;
+    selectedFiles!: FileList;
+    progressInfos: any[] = [];
+    formData!: FormData;
+    formGr!: FormGroup;
     urlChange = false;
-    customers: Customer[];
+    customers!: Customer[];
     filteredCustomers: Customer[] = [];
-    showCustomerDropdown: boolean = false;
-    productCategories: ProductCategory[];
+    showCustomerDropdown = false;
+    productCategories!: ProductCategory[];
     filteredCategories: ProductCategory[] = [];
-    showCategoryDropdown: boolean = false;
-    technicalDataSheetTypes: string[];
-    genderTypes: string[];
+    showCategoryDropdown = false;
+    technicalDataSheetTypes!: string[];
+    genderTypes!: string[];
 
-    stateOne: string;
-    stateTwo: string;
-    stateThree: string;
-    stateFour: string;
-    stateFive: string;
+    stateOne!: string;
+    stateTwo!: string;
+    stateThree!: string;
+    stateFour!: string;
+    stateFive!: string;
 
-    visibilityOne: string;
-    visibilityTwo: string;
-    visibilityThree: string;
-    visibilityFour: string;
-    visibilityFive: string;
+    visibilityOne!: string;
+    visibilityTwo!: string;
+    visibilityThree!: string;
+    visibilityFour!: string;
+    visibilityFive!: string;
 
 
     @ViewChild('loadImage')
-    inputLoadImages: ElementRef;
+    inputLoadImages!: ElementRef;
 
     formEditorConfig: AngularEditorConfig = {
         editable: true,
@@ -197,7 +256,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
                 this.productCategories = resp;
                 this.filteredCategories = resp;
                 this.technicalDataSheetCurrent = new TechnicalDataSheet();
-                this.technicalDataSheetCurrent.id_product_category = null;
+                this.technicalDataSheetCurrent.id_product_category = '';
                 // ✅ FIX 2: Inicializar el tipo en el modelo para que setFormValues() no escriba vacío
                 this.technicalDataSheetCurrent.technical_data_sheet_type = 'FICHA TECNICA';
                 this.createForm(); // createForm ya inicializa el tipo con el valor por defecto
@@ -219,9 +278,9 @@ export class CreateTechnicalSheetComponent implements OnInit {
                     this.technicalDataSheetCurrent.id_product_category = Number(this.technicalDataSheetCurrent.id_product_category);
                 }
                 if (operation === 'duplicate') {
-                    this.technicalDataSheetCurrent.id = null;
-                    this.technicalDataSheetCurrent.id_item = null;
-                    this.technicalDataSheetCurrent.item_description = null;
+                    this.technicalDataSheetCurrent.id = 0;
+                    this.technicalDataSheetCurrent.id_item = '';
+                    this.technicalDataSheetCurrent.item_description = '';
                 }
                 // ✅ FIX 2b: Garantizar que el tipo siempre tenga un valor antes de setFormValues()
                 if (!this.technicalDataSheetCurrent.technical_data_sheet_type) {
@@ -295,6 +354,20 @@ export class CreateTechnicalSheetComponent implements OnInit {
             customer_description: '',
             measurement_table: ''
         });
+
+        // Escuchar cambios en id_item para validación asíncrona
+        this.formGr.get('id_item')?.valueChanges.pipe(
+            debounceTime(500),
+            distinctUntilChanged()
+        ).subscribe(val => {
+            const cleanVal = (val || '').trim();
+            if (cleanVal.length > 0) {
+                this.verificarItemDuplicado(cleanVal);
+            } else {
+                this.duplicateItemWarning = null;
+                this.cdr.detectChanges();
+            }
+        });
     }
 
     cursorValidationItem() {
@@ -339,19 +412,19 @@ export class CreateTechnicalSheetComponent implements OnInit {
         console.log(this.formGr);
         console.log("formulario enviado")
         if (this.formGr.valid) {
-            this.technicalDataSheetCurrent.id_item = this.formGr.get('id_item').value;
-            this.technicalDataSheetCurrent.item_description = this.formGr.get('item_description').value;
-            this.technicalDataSheetCurrent.id_company = this.formGr.get('id_company').value;
-            this.technicalDataSheetCurrent.company_name = this.formGr.get('company_name').value;
-            this.technicalDataSheetCurrent.technical_data_sheet_type = this.formGr.get('technical_data_sheet_types_select').value;
+            this.technicalDataSheetCurrent.id_item = this.formGr.get('id_item')?.value;
+            this.technicalDataSheetCurrent.item_description = this.formGr.get('item_description')?.value;
+            this.technicalDataSheetCurrent.id_company = this.formGr.get('id_company')?.value;
+            this.technicalDataSheetCurrent.company_name = this.formGr.get('company_name')?.value;
+            this.technicalDataSheetCurrent.technical_data_sheet_type = this.formGr.get('technical_data_sheet_types_select')?.value;
 
             // Aseguramos que el id_product_category se tome del formulario si el modelo no lo tiene actualizado
-            const formCategoryId = this.formGr.get('id_product_category').value;
+            const formCategoryId = this.formGr.get('id_product_category')?.value;
             if (formCategoryId) {
                 this.technicalDataSheetCurrent.id_product_category = String(formCategoryId);
             } else {
                 // Si no hay ID en el campo oculto, intentamos recuperarlo por la descripción seleccionada
-                const categoryDesc = this.formGr.get('product_category_select').value;
+                const categoryDesc = this.formGr.get('product_category_select')?.value;
                 if (categoryDesc) {
                     const category = this.productCategories.find(c => c.description === categoryDesc);
                     if (category) {
@@ -360,62 +433,62 @@ export class CreateTechnicalSheetComponent implements OnInit {
                 }
             }
 
-            this.technicalDataSheetCurrent.id_item_customer = this.formGr.get('id_item_customer').value || '';
-            this.technicalDataSheetCurrent.gender = this.formGr.get('gender').value;
-            this.technicalDataSheetCurrent.main_fabric = this.formGr.get('main_fabric').value;
-            this.technicalDataSheetCurrent.contrast_fabric = this.formGr.get('contrast_fabric').value;
-            this.technicalDataSheetCurrent.waistband = this.formGr.get('waistband').value;
-            this.technicalDataSheetCurrent.button = this.formGr.get('button').value;
-            this.technicalDataSheetCurrent.zipper = this.formGr.get('zipper').value;
-            this.technicalDataSheetCurrent.figured = this.formGr.get('figured').value;
-            this.technicalDataSheetCurrent.pins = this.formGr.get('pins').value;
-            this.technicalDataSheetCurrent.side_pulls = this.formGr.get('side_pulls').value;
-            this.technicalDataSheetCurrent.purses = this.formGr.get('purses').value;
-            this.technicalDataSheetCurrent.shoulder_union = this.formGr.get('shoulder_union').value;
-            this.technicalDataSheetCurrent.lining = this.formGr.get('lining').value;
-            this.technicalDataSheetCurrent.shirt_collar = this.formGr.get('shirt_collar').value;
-            this.technicalDataSheetCurrent.cuffs = this.formGr.get('cuffs').value;
-            this.technicalDataSheetCurrent.pockets = this.formGr.get('pockets').value;
-            this.technicalDataSheetCurrent.busybody = this.formGr.get('busybody').value;
-            this.technicalDataSheetCurrent.sleeves = this.formGr.get('sleeves').value;
-            this.technicalDataSheetCurrent.back = this.formGr.get('back').value;
-            this.technicalDataSheetCurrent.shoulders = this.formGr.get('shoulders').value;
-            this.technicalDataSheetCurrent.sleeve_connection = this.formGr.get('sleeve_connection').value;
-            this.technicalDataSheetCurrent.front_adjustment = this.formGr.get('front_adjustment').value;
-            this.technicalDataSheetCurrent.neckline = this.formGr.get('neckline').value;
-            this.technicalDataSheetCurrent.finished = this.formGr.get('finished').value;
-            this.technicalDataSheetCurrent.darts = this.formGr.get('darts').value;
-            this.technicalDataSheetCurrent.opening = this.formGr.get('opening').value;
-            this.technicalDataSheetCurrent.straps = this.formGr.get('straps').value;
-            this.technicalDataSheetCurrent.cuts = this.formGr.get('cuts').value;
-            this.technicalDataSheetCurrent.closed_sides = this.formGr.get('closed_sides').value;
-            this.technicalDataSheetCurrent.hem = this.formGr.get('hem').value;
-            this.technicalDataSheetCurrent.hood = this.formGr.get('hood').value;
-            this.technicalDataSheetCurrent.crotch = this.formGr.get('crotch').value;
-            this.technicalDataSheetCurrent.reflective = this.formGr.get('reflective').value;
-            this.technicalDataSheetCurrent.boot = this.formGr.get('boot').value;
-            this.technicalDataSheetCurrent.additional = this.formGr.get('additional').value;
-            this.technicalDataSheetCurrent.composition = this.formGr.get('composition').value;
-            this.technicalDataSheetCurrent.buttonhole = this.formGr.get('buttonhole').value;
-            this.technicalDataSheetCurrent.loops = this.formGr.get('loops').value;
-            this.technicalDataSheetCurrent.stitches = this.formGr.get('stitches').value;
-            this.technicalDataSheetCurrent.prewash = this.formGr.get('prewash').value;
-            this.technicalDataSheetCurrent.embroidery = this.formGr.get('embroidery').value;
-            this.technicalDataSheetCurrent.stamped = this.formGr.get('stamped').value;
-            this.technicalDataSheetCurrent.ironing = this.formGr.get('ironing').value;
-            this.technicalDataSheetCurrent.packaging = this.formGr.get('packaging').value;
-            this.technicalDataSheetCurrent.stitching = this.formGr.get('stitching').value;
-            this.technicalDataSheetCurrent.critical_points = this.formGr.get('critical_points').value;
-            this.technicalDataSheetCurrent.customer_description = this.formGr.get('customer_description').value;
-            this.technicalDataSheetCurrent.measurement_table = this.formGr.get('measurement_table').value;
-            this.technicalDataSheetCurrent.user_created = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+            this.technicalDataSheetCurrent.id_item_customer = this.formGr.get('id_item_customer')?.value || '';
+            this.technicalDataSheetCurrent.gender = this.formGr.get('gender')?.value;
+            this.technicalDataSheetCurrent.main_fabric = this.formGr.get('main_fabric')?.value;
+            this.technicalDataSheetCurrent.contrast_fabric = this.formGr.get('contrast_fabric')?.value;
+            this.technicalDataSheetCurrent.waistband = this.formGr.get('waistband')?.value;
+            this.technicalDataSheetCurrent.button = this.formGr.get('button')?.value;
+            this.technicalDataSheetCurrent.zipper = this.formGr.get('zipper')?.value;
+            this.technicalDataSheetCurrent.figured = this.formGr.get('figured')?.value;
+            this.technicalDataSheetCurrent.pins = this.formGr.get('pins')?.value;
+            this.technicalDataSheetCurrent.side_pulls = this.formGr.get('side_pulls')?.value;
+            this.technicalDataSheetCurrent.purses = this.formGr.get('purses')?.value;
+            this.technicalDataSheetCurrent.shoulder_union = this.formGr.get('shoulder_union')?.value;
+            this.technicalDataSheetCurrent.lining = this.formGr.get('lining')?.value;
+            this.technicalDataSheetCurrent.shirt_collar = this.formGr.get('shirt_collar')?.value;
+            this.technicalDataSheetCurrent.cuffs = this.formGr.get('cuffs')?.value;
+            this.technicalDataSheetCurrent.pockets = this.formGr.get('pockets')?.value;
+            this.technicalDataSheetCurrent.busybody = this.formGr.get('busybody')?.value;
+            this.technicalDataSheetCurrent.sleeves = this.formGr.get('sleeves')?.value;
+            this.technicalDataSheetCurrent.back = this.formGr.get('back')?.value;
+            this.technicalDataSheetCurrent.shoulders = this.formGr.get('shoulders')?.value;
+            this.technicalDataSheetCurrent.sleeve_connection = this.formGr.get('sleeve_connection')?.value;
+            this.technicalDataSheetCurrent.front_adjustment = this.formGr.get('front_adjustment')?.value;
+            this.technicalDataSheetCurrent.neckline = this.formGr.get('neckline')?.value;
+            this.technicalDataSheetCurrent.finished = this.formGr.get('finished')?.value;
+            this.technicalDataSheetCurrent.darts = this.formGr.get('darts')?.value;
+            this.technicalDataSheetCurrent.opening = this.formGr.get('opening')?.value;
+            this.technicalDataSheetCurrent.straps = this.formGr.get('straps')?.value;
+            this.technicalDataSheetCurrent.cuts = this.formGr.get('cuts')?.value;
+            this.technicalDataSheetCurrent.closed_sides = this.formGr.get('closed_sides')?.value;
+            this.technicalDataSheetCurrent.hem = this.formGr.get('hem')?.value;
+            this.technicalDataSheetCurrent.hood = this.formGr.get('hood')?.value;
+            this.technicalDataSheetCurrent.crotch = this.formGr.get('crotch')?.value;
+            this.technicalDataSheetCurrent.reflective = this.formGr.get('reflective')?.value;
+            this.technicalDataSheetCurrent.boot = this.formGr.get('boot')?.value;
+            this.technicalDataSheetCurrent.additional = this.formGr.get('additional')?.value;
+            this.technicalDataSheetCurrent.composition = this.formGr.get('composition')?.value;
+            this.technicalDataSheetCurrent.buttonhole = this.formGr.get('buttonhole')?.value;
+            this.technicalDataSheetCurrent.loops = this.formGr.get('loops')?.value;
+            this.technicalDataSheetCurrent.stitches = this.formGr.get('stitches')?.value;
+            this.technicalDataSheetCurrent.prewash = this.formGr.get('prewash')?.value;
+            this.technicalDataSheetCurrent.embroidery = this.formGr.get('embroidery')?.value;
+            this.technicalDataSheetCurrent.stamped = this.formGr.get('stamped')?.value;
+            this.technicalDataSheetCurrent.ironing = this.formGr.get('ironing')?.value;
+            this.technicalDataSheetCurrent.packaging = this.formGr.get('packaging')?.value;
+            this.technicalDataSheetCurrent.stitching = this.formGr.get('stitching')?.value;
+            this.technicalDataSheetCurrent.critical_points = this.formGr.get('critical_points')?.value;
+            this.technicalDataSheetCurrent.customer_description = this.formGr.get('customer_description')?.value;
+            this.technicalDataSheetCurrent.measurement_table = this.formGr.get('measurement_table')?.value;
+            this.technicalDataSheetCurrent.user_created = `${this.authService.user?.firstName ?? ''}  ${this.authService.user?.lastName ?? ''}`.toUpperCase();
             this.technicalDataSheetCurrent.user_validation = '';
             this.technicalDataSheetCurrent.user_approved = '';
 
             this.loading = true;
             this.technicalSheetService.saveFicha(this.technicalDataSheetCurrent)
-                .subscribe(
-                    (result: any) => {
+                .subscribe({
+                    next: (result: any) => {
                         this.loading = false;
                         Swal.fire({
                             title: 'Correcto',
@@ -432,24 +505,23 @@ export class CreateTechnicalSheetComponent implements OnInit {
                         // Save the id in the current sheet
                         this.technicalDataSheetCurrent.id = result.id;
                     },
-                    error => {
-                        this.loading = false;
-                        let errorMessage = 'La ficha técnica no se ha podido guardar';
-                        if (error.error && error.error.errors && error.error.errors.id_item) {
-                            errorMessage = error.error.errors.id_item[0];
-                        }
-                        Swal.fire('Error al guardar ficha', errorMessage, 'error');
-                    }
-                );
+                    error: (error) => this.handleError(error, 'La ficha técnica no se ha podido guardar')
+                });
         }
     }
 
 
     // Images manager
-    selectFiles(event, imagesLimit: number, fileType: string) {
+    selectFiles(event: Event, imagesLimit: number, fileType: string): void {
         this.progressInfos = [];
 
-        const files = event.target.files;
+        const input = event.target as HTMLInputElement;
+        const files = input.files;
+        if (!files || files.length === 0) {
+            this.selectedFiles = undefined as unknown as FileList;
+            return;
+        }
+
         let isImage = true;
         let imageSize = 0;
         const imageSizeAllowed = 25165824;
@@ -457,8 +529,12 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
         if (files.length > 0 && files.length <= imagesLimit) {
             for (let i = 0; i < files.length; i++) {
-                imageSize += files.item(i).size;
-                if (files.item(i).size > imageSizeAllowed) {
+                const file = files.item(i);
+                if (!file) {
+                    continue;
+                }
+                imageSize += file.size;
+                if (file.size > imageSizeAllowed) {
                     exceedLimit = true;
                 }
             }
@@ -466,7 +542,11 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
         if (files.length <= imagesLimit && imageSize <= imageSizeAllowed && !exceedLimit) {
             for (let i = 0; i < files.length; i++) {
-                if (files.item(i).type.match(fileType)) {
+                const file = files.item(i);
+                if (!file) {
+                    continue;
+                }
+                if (file.type.match(fileType)) {
                     continue;
                 } else {
                     isImage = false;
@@ -477,31 +557,36 @@ export class CreateTechnicalSheetComponent implements OnInit {
             }
 
             if (isImage) {
-                this.selectedFiles = event.target.files;
+                this.selectedFiles = files;
                 this.uploadFiles();
             } else {
-                this.selectedFiles = undefined;
-                event.srcElement.percentage = null;
+                this.selectedFiles = undefined as unknown as FileList;
             }
         } else {
-            this.selectedFiles = undefined;
-            event.srcElement.percentage = null;
+            this.selectedFiles = undefined as unknown as FileList;
             this.inputLoadImages.nativeElement.value = '';
             Swal.fire('Error de carga', `Solo puedes cargar hasta ${imagesLimit} imagenes que no excedan 6MB cada una`, 'warning');
         }
     }
 
 
-    uploadFiles() {
+    uploadFiles(): void {
+        if (!this.selectedFiles) {
+            return;
+        }
         this.formData = new FormData();
         for (let i = 0; i < this.selectedFiles.length; i++) {
-            this.formData.append(`file${i}`, this.selectedFiles.item(i));
-            this.visualUpload(i, this.selectedFiles[i]);
+            const file = this.selectedFiles.item(i);
+            if (!file) {
+                continue;
+            }
+            this.formData.append(`file${i}`, file);
+            this.visualUpload(i, file);
         }
     }
 
 
-    visualUpload(idx, file) {
+    visualUpload(idx: number, file: File): void {
         // this.uploadImages(file);
         this.progressInfos[idx] = { value: 0, fileName: file.name, completed: false, isLocal: true, processed: false };
         setTimeout(() => {
@@ -511,14 +596,14 @@ export class CreateTechnicalSheetComponent implements OnInit {
     }
 
 
-    cleanFields() {
+    cleanFields(): void {
         this.formGr.reset();
         this.progressInfos = [];
         this.inputLoadImages.nativeElement.value = '';
         this.technicalDataSheetCurrent = new TechnicalDataSheet();
     }
 
-    searchCustomer(content) {
+    searchCustomer(content: { value: string }): void {
         const term = content.value.trim();
         if (term.length > 2) {
             this.erpIntegrationService.searchCustomer(term).subscribe(resp => {
@@ -550,7 +635,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
         }, 200);
     }
 
-    assingCustomerValues(content) {
+    assingCustomerValues(content: { value: string }) {
         if (content.value.trim() !== '') {
             const companieSelected = this.customers ? this.customers.find(obj => obj.customerName === content.value) : null;
 
@@ -579,7 +664,8 @@ export class CreateTechnicalSheetComponent implements OnInit {
         }
 
         if (!value) {
-            this.technicalDataSheetCurrent = { ...this.technicalDataSheetCurrent, id_product_category: null };
+            // id_product_category expects string | number — use null to clear value
+            this.technicalDataSheetCurrent = { ...this.technicalDataSheetCurrent, id_product_category: null } as any;
             this.formGr.patchValue({ id_product_category: null });
             this.cdr.detectChanges();
             return;
@@ -595,18 +681,19 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
         if (category) {
             const id = this.getCategoryId(category);
-            const currentType = this.formGr.get('technical_data_sheet_types_select').value;
+            const currentTypeControl = this.formGr.get('technical_data_sheet_types_select');
+            const currentType = currentTypeControl?.value;
 
             // New object reference so Angular *ngIf re-evaluates
             this.technicalDataSheetCurrent = {
                 ...this.technicalDataSheetCurrent,
-                id_product_category: id,
+                id_product_category: id !== null ? id : '',
                 technical_data_sheet_type: currentType || this.technicalDataSheetCurrent.technical_data_sheet_type
             };
 
             this.formGr.patchValue({
                 product_category_select: category.description,
-                id_product_category: id
+                id_product_category: id !== null ? id : ''
             });
             this.cdr.detectChanges();
             this.customers = [];
@@ -615,7 +702,8 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
         } else {
             // Texto que no coincide con ninguna categoría → limpiar id
-            this.technicalDataSheetCurrent = { ...this.technicalDataSheetCurrent, id_product_category: null };
+            // Use empty string to satisfy type string | number
+            this.technicalDataSheetCurrent = { ...this.technicalDataSheetCurrent, id_product_category: '' };
             this.cdr.detectChanges();
         }
     }
@@ -633,18 +721,19 @@ export class CreateTechnicalSheetComponent implements OnInit {
 
     selectCategory(category: ProductCategory) {
         const id = this.getCategoryId(category);
-        const currentType = this.formGr.get('technical_data_sheet_types_select').value;
+        const currentTypeControl = this.formGr.get('technical_data_sheet_types_select');
+        const currentType = currentTypeControl?.value;
 
         // Create a new object reference so Angular *ngIf re-evaluates
         this.technicalDataSheetCurrent = {
             ...this.technicalDataSheetCurrent,
-            id_product_category: id,
+            id_product_category: id ?? '',
             technical_data_sheet_type: currentType || this.technicalDataSheetCurrent.technical_data_sheet_type
         };
 
         this.formGr.patchValue({
             product_category_select: category.description,
-            id_product_category: id
+            id_product_category: id ?? ''
         });
         this.filteredCategories = this.productCategories;
         this.showCategoryDropdown = false;
@@ -658,13 +747,13 @@ export class CreateTechnicalSheetComponent implements OnInit {
         }, 200);
     }
 
-    assingTechnicalDataSheetType(content) {
+    assingTechnicalDataSheetType(content: any) {
         if (content.value.trim() !== '') {
             this.technicalDataSheetCurrent.technical_data_sheet_type = content.value;
         }
     }
 
-    assingGenderType(content) {
+    assingGenderType(content: any) {
         if (content.value.trim() !== '') {
             this.technicalDataSheetCurrent.gender = content.value;
         }
@@ -697,10 +786,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
                     this.formData = new FormData();
                     this.progressInfos = [];
                 });
-            }, error => {
-                this.loading = false;
-                Swal.fire('Error', 'No se pudieron cargar las imágenes', 'error');
-            });
+            }, error => this.handleError(error, 'No se pudieron cargar las imágenes'));
     }
 
 
@@ -732,10 +818,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
                     this.formData = new FormData();
                     this.progressInfos = [];
                 });
-            }, error => {
-                this.loading = false;
-                Swal.fire('Error', 'No se pudieron cargar las imágenes', 'error');
-            });
+            }, error => this.handleError(error, 'No se pudieron cargar las imágenes'));
     }
 
 
@@ -769,10 +852,7 @@ export class CreateTechnicalSheetComponent implements OnInit {
                     this.formData = new FormData();
                     this.progressInfos = [];
                 });
-            }, error => {
-                this.loading = false;
-                Swal.fire('Error', 'No se pudo cargar el archivo', 'error');
-            });
+            }, error => this.handleError(error, 'No se pudo cargar el archivo'));
     }
 
     updateStatus(status: string) {
@@ -791,13 +871,49 @@ export class CreateTechnicalSheetComponent implements OnInit {
                     timerProgressBar: true
                 });
                 this.router.navigate(['/listTechnicalDataSheet/page/0/DESARROLLO']);
-            }, error => Swal.fire({
-                title: 'Error',
-                html: `Ha ocurrido un error al actualizar la ficha`,
-                icon: 'error',
-                timer: 3000,
-                timerProgressBar: true
-            }));
+            }, error => this.handleError(error, 'Ha ocurrido un error al actualizar la ficha'));
+    }
+
+    anularFicha(): void {
+        if (!this.technicalDataSheetCurrent.id) return;
+        
+        Swal.fire({
+            title: '¿Está seguro de anular la ficha técnica?',
+            text: 'La ficha será marcada como ANULADA y excluida de los listados y reportes activos.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, anular',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.value) {
+                this.loading = true;
+                this.technicalSheetService.annulFichas([this.technicalDataSheetCurrent.id]).subscribe({
+                    next: () => {
+                        this.loading = false;
+                        Swal.fire({
+                            title: 'Anulada',
+                            text: 'La ficha técnica ha sido anulada correctamente.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            this.router.navigate(['/listTechnicalDataSheet/page/0/DESARROLLO']);
+                        });
+                    },
+                    error: (err) => {
+                        this.loading = false;
+                        console.error(err);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Ha ocurrido un error al anular la ficha técnica.',
+                            icon: 'error'
+                        });
+                    }
+                });
+            }
+        });
     }
 
 

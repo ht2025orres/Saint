@@ -1,5 +1,5 @@
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -7,9 +7,16 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class MoldService {
-  private apiUrl = environment.URL_API_LARAVEL;
+  private apiUrl = environment.URL_TECHNICAL_DATA_SHEET;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
+
+  // --- Helpers ---
+  private getUploadHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'X-S3-Folder': environment.S3_FOLDER || 'produccion'
+    });
+  }
 
   // ==================== MOLDS ====================
 
@@ -37,7 +44,9 @@ export class MoldService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('view', view);
-    return this.http.post(`${this.apiUrl}/molds/${moldId}/image`, formData);
+    return this.http.post(`${this.apiUrl}/molds/${moldId}/image`, formData, {
+      headers: this.getUploadHeaders()
+    });
   }
 
   // ==================== TECHNICAL SPECS (OPM / FT) ====================
@@ -84,7 +93,9 @@ export class MoldService {
   uploadCategoryImage(categoryId: number, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/mold-categories/${categoryId}/image`, formData);
+    return this.http.post(`${this.apiUrl}/mold-categories/${categoryId}/image`, formData, {
+      headers: this.getUploadHeaders()
+    });
   }
 
   suggestCategory(text: string): Observable<any> {

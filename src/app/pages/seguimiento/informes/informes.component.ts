@@ -14,6 +14,7 @@ import Swal from 'sweetalert2';
 export class InformesComponent implements OnInit, OnDestroy {
   @Input() usuarioId = 0;
   @Input() puedeGestionarModulo = false;
+  @Input() vistaMode: 'member' | undefined;
 
   informes: Informe[] = [];
   loading = false;
@@ -237,5 +238,13 @@ export class InformesComponent implements OnInit, OnDestroy {
         this.verDetalle(this.detalle!);
       }
     });
+  }
+
+  // ── DESCARGA PDF ──────────────────────────────────────────────────
+
+  descargarPdf(): void {
+    if (!this.detalle) return;
+    const url = this._proyectoService.descargarPdfInformeUrl(this.detalle.id, this.usuarioId);
+    window.open(url, '_blank');
   }
 }

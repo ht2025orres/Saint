@@ -4,6 +4,8 @@ import { InformeTarea, EstadoInformeTarea, ProyectoService } from 'src/app/servi
 import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.service';
 import Swal from 'sweetalert2';
 
+import { AuthService } from 'src/app/services/auth.service';
+
 export interface InformeTareaForm {
   titulo:               string;
   descripcion:          string;
@@ -37,7 +39,8 @@ export class ModalInformeTareaComponent implements OnChanges {
     private fb: FormBuilder,
     private _proyectoService: ProyectoService,
     private _cdr: ChangeDetectorRef,
-    public state: SeguimientoStateService
+    public state: SeguimientoStateService,
+    private _auth: AuthService
   ) {
     this.form = this.fb.group({
       titulo:               ['', [Validators.required, Validators.minLength(3)]],
@@ -94,6 +97,8 @@ export class ModalInformeTareaComponent implements OnChanges {
 
     const miId = this._getMiId();
     this.loadingEvidencias = true;
+    this._cdr.markForCheck();
+
     this._proyectoService.subirEvidencia('informe_tarea', this.tarea.id, file, miId).subscribe({
       next: () => {
         this.state.showToast('Evidencia subida');
@@ -148,13 +153,11 @@ export class ModalInformeTareaComponent implements OnChanges {
   }
 
   private _getMiId(): number {
-    return Number(localStorage.getItem('userId') || 0);
+    return this._auth.user?.id || 0;
   }
 
   get usuariosFiltrados(): UsuarioCache[] {
-    return this.usuarios.filter(u => 
-      u.roles?.some((r: any) => r.nombre.toLowerCase().includes('administrador del sistema'))
-    );
+    return this.usuarios;
   }
 
   submit(): void {

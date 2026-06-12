@@ -1,4 +1,4 @@
-<div class="p-6 bg-slate-50 min-h-screen">
+<div class="p-3 lg:p-6 bg-slate-50 min-h-screen">
     <!-- BARRA DE ACCIONES + FILTROS -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
@@ -158,13 +158,13 @@
     <!-- VISTA 3: INTERFAZ DE CONTEO -->
     <div *ngIf="asignacionSeleccionada" class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
         <!-- Header Zona -->
-        <div class="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-sm flex flex-wrap items-center justify-between gap-6">
-            <div class="flex items-center gap-6">
-                <div class="w-16 h-16 rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
-                    <i class="bi bi-geo-fill text-3xl"></i>
+        <div class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 p-4 lg:p-8 shadow-sm flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-3 lg:gap-6">
+            <div class="flex items-center gap-4 lg:gap-6">
+                <div class="w-12 h-12 lg:w-16 lg:h-16 rounded-xl lg:rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
+                    <i class="bi bi-geo-fill text-2xl lg:text-3xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">{{asignacionSeleccionada.zona?.nombre}}</h2>
+                    <h2 class="text-lg lg:text-2xl font-black text-slate-800 uppercase tracking-tight">{{asignacionSeleccionada.zona?.nombre}}</h2>
                     <div class="flex items-center gap-3">
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bodega: {{asignacionSeleccionada.zona?.codigo_bodega}}</p>
                         <span *ngIf="asignacionSeleccionada.tipo_items !== 'todos'" 
@@ -174,7 +174,7 @@
                     </div>
                 </div>
             </div>
-            <div class="flex-1 max-w-md mx-10">
+            <div class="flex-1 max-w-md mx-0 lg:mx-10 w-full lg:w-auto">
                 <div class="flex justify-between items-end mb-2">
                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Avance del Conteo</span>
                     <span class="text-sm font-black text-emerald-600">{{porcentajeProgreso}}%</span>
@@ -183,7 +183,7 @@
                     <div class="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]" [style.width.%]="porcentajeProgreso"></div>
                 </div>
             </div>
-            <div class="flex items-center gap-10">
+            <div class="flex items-center gap-4 lg:gap-10">
                 <div class="text-right">
                     <span class="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Items Contados</span>
                     <span class="text-3xl font-black text-slate-800">{{conteos.length}}</span>
@@ -191,15 +191,39 @@
             </div>
         </div>
 
+        <!-- Mobile Tab Navigation -->
+        <div class="flex lg:hidden bg-white rounded-2xl border border-slate-200 p-1.5 shadow-sm">
+            <button (click)="activeMobileTab = 'registrar'" 
+                [ngClass]="activeMobileTab === 'registrar' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500'"
+                class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5">
+                <i class="bi bi-plus-circle"></i>
+                Registrar
+            </button>
+            <button (click)="activeMobileTab = 'items'" 
+                [ngClass]="activeMobileTab === 'items' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500'"
+                class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5">
+                <i class="bi bi-list-ul"></i>
+                Items
+                <span class="px-1.5 py-0.5 rounded-full text-[8px]" [ngClass]="activeMobileTab === 'items' ? 'bg-white/20' : 'bg-slate-100'">{{itemsDeZona.length}}</span>
+            </button>
+            <button (click)="activeMobileTab = 'historial'" 
+                [ngClass]="activeMobileTab === 'historial' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'"
+                class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5">
+                <i class="bi bi-clock-history"></i>
+                Historial
+                <span class="px-1.5 py-0.5 rounded-full text-[8px]" [ngClass]="activeMobileTab === 'historial' ? 'bg-white/20' : 'bg-slate-100'">{{conteos.length}}</span>
+            </button>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Formulario y Historial (Izquierda) -->
-            <div class="lg:col-span-8 space-y-6">
+            <div [ngClass]="(activeMobileTab === 'registrar' || activeMobileTab === 'historial') ? '' : 'hidden lg:block'" class="lg:col-span-8 space-y-6">
                 <!-- Formulario Conteo -->
-                <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div [ngClass]="activeMobileTab === 'registrar' ? '' : 'hidden lg:block'" class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
                         <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Registrar Nuevo Ítem</h3>
                     </div>
-                    <div class="p-8">
+                    <div class="p-4 lg:p-8">
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                             <!-- ID Siesa / QR -->
                             <div class="md:col-span-4 space-y-2 relative">
@@ -304,9 +328,9 @@
                                     placeholder="Ejem: Empaque dañado, sin etiqueta..."></textarea>
                             </div>
                             
-                            <div class="md:col-span-12 flex justify-end pt-4">
+                            <div class="md:col-span-12 flex justify-center lg:justify-end pt-4">
                                 <button (click)="registrarConteo()" 
-                                    class="px-12 py-5 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-95 flex items-center gap-3 uppercase tracking-widest text-xs">
+                                    class="w-full lg:w-auto px-8 lg:px-12 py-4 lg:py-5 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
                                     <i class="bi bi-check2-circle text-xl"></i>
                                     Guardar Registro
                                 </button>
@@ -316,11 +340,11 @@
                 </div>
 
                 <!-- Tabla de Historial -->
-                <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div [ngClass]="activeMobileTab === 'historial' ? '' : 'hidden lg:block'" class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
                         <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Últimos Conteos en esta Zona</h3>
                     </div>
-                    <div class="overflow-x-auto custom-scrollbar">
+                    <div class="overflow-x-auto custom-scrollbar hidden lg:block">
                         <table class="w-full text-left">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-100">
@@ -387,12 +411,41 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Mobile History Cards -->
+                    <div class="lg:hidden p-3 space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                        <div *ngFor="let c of conteos" class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div class="min-w-0 flex-1 mr-3">
+                                    <span class="text-sm font-black text-slate-800 block truncate">{{c.id_item_siesa}}</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase block truncate">{{c.referencia}}</span>
+                                </div>
+                                <span class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl font-black text-sm border border-blue-100 whitespace-nowrap shrink-0">
+                                    {{formatCantidad(c.cantidad)}}
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 italic line-clamp-1">{{c.descripcion}}</p>
+                            <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100">
+                                <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase border border-blue-100">T: {{c.id_talla}}</span>
+                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[9px] font-black uppercase border border-amber-100">C: {{c.id_color}}</span>
+                                <span class="ml-auto text-[10px] text-slate-400 font-bold">{{c.fecha_conteo | date:'shortTime'}}</span>
+                                <button *ngIf="c.observaciones" (click)="verNotaDirecto(c)" 
+                                    class="w-7 h-7 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-100">
+                                    <i class="bi bi-chat-left-text text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div *ngIf="conteos.length === 0" class="py-12 text-center">
+                            <i class="bi bi-inbox text-slate-200 text-3xl mb-3 block"></i>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No hay registros aún</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Listado de Items que deben estar en la zona (Derecha) -->
-            <div class="lg:col-span-4 space-y-6">
-                <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[800px]">
+            <div [ngClass]="activeMobileTab === 'items' ? '' : 'hidden lg:block'" class="lg:col-span-4 space-y-6">
+                <div class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[70vh] lg:h-[800px]">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-4">
                         <div class="flex justify-between items-center">
                             <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ítems de esta Zona</h3>

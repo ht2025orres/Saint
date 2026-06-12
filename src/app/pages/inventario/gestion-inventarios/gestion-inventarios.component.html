@@ -61,7 +61,7 @@
 
         <div class="flex items-center gap-3">
             <!-- Selector de Modo (Conteo / Reconteo 1 / Reconteo 2) -->
-            <div class="flex bg-slate-100 p-1 rounded-xl mr-4 shadow-inner" *ngIf="inventarioSeleccionado">
+            <div class="flex bg-slate-100 p-1 rounded-xl mr-4 shadow-inner" *ngIf="inventarioSeleccionado && subInterfazActiva !== 'justificacion'">
                 <button (click)="modoActual = 'conteo'" 
                     [class]="modoActual === 'conteo' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
                     class="px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 group"
@@ -88,7 +88,7 @@
 
             <!-- Botones de Navegación de Sub-interfaz -->
             <div class="flex bg-slate-100 p-1 rounded-xl mr-4 shadow-inner">
-                <button (click)="subInterfazActiva = 'asignacion'" 
+                <button (click)="seleccionarSubInterfaz('asignacion')" 
                     [class]="subInterfazActiva === 'asignacion' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
                     class="px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 group"
                     title="Asignación de Zonas">
@@ -96,12 +96,20 @@
                     <span class="text-[10px] font-black uppercase tracking-widest" *ngIf="subInterfazActiva === 'asignacion'">Asignación</span>
                 </button>
 
-                <button (click)="subInterfazActiva = 'reconteo'" 
+                <button (click)="seleccionarSubInterfaz('reconteo')" 
                     [class]="subInterfazActiva === 'reconteo' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
                     class="px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 group"
                     title="Validación de Reconteo">
                     <i class="bi bi-shield-check text-lg"></i>
                     <span class="text-[10px] font-black uppercase tracking-widest" *ngIf="subInterfazActiva === 'reconteo'">Reconteo</span>
+                </button>
+
+                <button (click)="seleccionarSubInterfaz('justificacion')" 
+                    [class]="subInterfazActiva === 'justificacion' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                    class="px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 group"
+                    title="Justificación de Diferencias">
+                    <i class="bi bi-journal-text text-lg"></i>
+                    <span class="text-[10px] font-black uppercase tracking-widest" *ngIf="subInterfazActiva === 'justificacion'">Justificar</span>
                 </button>
             </div>
 
@@ -237,8 +245,19 @@
                         (onAsignacionCambiada)="cargarAsignaciones(); cargarInventarios(); cargarValidaciones()">
                     </app-asignacion-inventario>
 
-                    <!-- Sub-interfaz de Reconteo (Vacía por ahora) -->
+                    <!-- Sub-interfaz de Reconteo -->
                     <app-reconteo-inventario *ngSwitchCase="'reconteo'"
+                        class="flex-1 flex flex-col min-h-0"
+                        [inventarioSeleccionado]="inventarioSeleccionado"
+                        [asignaciones]="asignaciones"
+                        [modoActual]="modoActual"
+                        [validaciones]="validaciones"
+                        [sincronizandoSiesa]="sincronizandoSiesa"
+                        (onValidacionCambiada)="cargarValidaciones()">
+                    </app-reconteo-inventario>
+
+                    <!-- Sub-interfaz de Justificación -->
+                    <app-reconteo-inventario *ngSwitchCase="'justificacion'"
                         class="flex-1 flex flex-col min-h-0"
                         [inventarioSeleccionado]="inventarioSeleccionado"
                         [asignaciones]="asignaciones"

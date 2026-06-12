@@ -209,6 +209,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
             label: 'Fichas técnicas en desarrollo',
             link: '/listTechnicalDataSheet/page/0/DESARROLLO',
             permissions: [1, 2]
+          },
+          {
+            label: 'Gestión de Anulaciones',
+            link: '/gestion-anulaciones-fichas',
+            permissions: [1, 52]
           }
         ]
       },
@@ -319,7 +324,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27] },
           { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27] },
           { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27] },
-          { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26] },
+          { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26, 34] },
           { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
         ]
       },
@@ -329,7 +334,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         modules: [7],
         permissions: [1],
         submenu: [
-          { label: 'Clientes & Ítems', link: '/comerciales' },
+          { label: 'Hub Comercial', link: '/comerciales' },
           { label: 'Mis Costeos', link: '/comerciales/costeos' },
         ]
       },
@@ -361,6 +366,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           { label: 'Crear Molde', link: '/moldes/admin', permissions: [1, 41] },
           { label: 'Generar OPM', link: '/moldes/opm-generator', permissions: [1, 46] },
         ]
+      },
+      {
+        label: 'Seguimiento Documentos',
+        icon: 'bi bi-clipboard2-data',
+        link: '/seguimiento-documentos',
+        modules: [10],
+        permissions: [1, 50, 51]
       }
     ];
   }

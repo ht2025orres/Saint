@@ -34,8 +34,7 @@ export class ModalDiaDetalleComponent {
     // Procesar tareas de seguimiento
     (this.dia.tareas || []).forEach((t: any) => {
       const uid = t.tarea.usuario_id;
-      // FILTRO: Solo administradores del sistema
-      if (!this._esAdminSist(uid)) return;
+      if (!uid) return;
 
       if (!grupos[uid]) {
         grupos[uid] = this._crearGrupo(uid, t.nombreUsuario, t.iniciales, t.color);
@@ -51,8 +50,7 @@ export class ModalDiaDetalleComponent {
     // Procesar tareas externas (Proyectos/GLPI)
     (this.dia.tareasExternas || []).forEach((t: any) => {
       const uid = t.usuario_id;
-      // FILTRO: Solo administradores del sistema
-      if (!this._esAdminSist(uid)) return;
+      if (!uid) return;
 
       if (!grupos[uid]) {
         grupos[uid] = this._crearGrupo(uid, t.nombre_completo || 'Usuario', t.iniciales, t.color);
@@ -68,8 +66,7 @@ export class ModalDiaDetalleComponent {
     // Procesar tareas de informes
     (this.dia.tareasInforme || []).forEach((t: any) => {
       const uid = t.responsable_id;
-      // FILTRO: Solo administradores del sistema
-      if (!this._esAdminSist(uid)) return;
+      if (!uid) return;
 
       if (!grupos[uid]) {
         grupos[uid] = this._crearGrupo(uid, t.nombreUsuario, t.iniciales, t.color);
@@ -90,7 +87,7 @@ export class ModalDiaDetalleComponent {
         : [c.usuario_id || c.responsable_id];
 
       responsables.forEach((uid: number) => {
-        if (!uid || !this._esAdminSist(uid)) return;
+        if (!uid) return;
 
         if (!grupos[uid]) {
           grupos[uid] = this._crearGrupo(
@@ -110,12 +107,6 @@ export class ModalDiaDetalleComponent {
     });
 
     return Object.values(grupos);
-  }
-
-  private _esAdminSist(uid: number): boolean {
-    const u = this.state.usuariosCache.find(user => user.id === uid);
-    if (!u) return false;
-    return u.roles?.some(r => (r.nombre || '').toLowerCase().includes('administrador del sistema')) ?? false;
   }
 
   private _crearGrupo(id: number, nombre: string, iniciales: string, color: string): TareaAgrupada {

@@ -20,11 +20,21 @@ export class InventorySearchModalComponent {
   loading = false;
   isLoaded = false;
 
+  bodegas = [
+    { id: 'MP001', name: 'Materia Prima' },
+    { id: 'PT001', name: 'Producto Terminado' }
+  ];
+
   constructor(private moldService: MoldService) {}
+
+  ngOnInit(): void {
+    // Cargar automáticamente al abrir el modal
+    this.search();
+  }
 
   search(): void {
     this.loading = true;
-    this.moldService.searchInventory(this.searchQuery.trim(), this.selectedBodega).subscribe({
+    this.moldService.searchInventory('', this.selectedBodega).subscribe({
       next: (res: any) => {
         this.allResults = (res.data || []).map((item: any) => ({
           ...item,
@@ -41,16 +51,24 @@ export class InventorySearchModalComponent {
   }
 
   filterResults(): void {
-    const q = (this.searchQuery || '').toLowerCase().trim();
+    const query = (this.searchQuery || '').toLowerCase().trim();
+    
     this.results = this.allResults.filter(item => {
-      if (this.filterType === 'tela' && !item.is_fabric) return false;
-      if (this.filterType === 'insumo' && item.is_fabric) return false;
-      if (!q) return true;
-      return (item.referencia || '').toLowerCase().includes(q)
-          || (item.descripcion || '').toLowerCase().includes(q)
-          || (item.id_item || '').toLowerCase().includes(q)
-          || (item.id_color || '').toLowerCase().includes(q)
-          || (item.color || '').toLowerCase().includes(q);
+      // 1. Filtro por Tipo (Tela/Insumo)
+      let matchType = true;
+      if (this.filterType === 'tela') matchType = item.is_fabric;
+      if (this.filterType === 'insumo') matchType = !item.is_fabric;
+
+      // 2. Filtro por Búsqueda de Texto (Ref, ID o Desc)
+      let matchQuery = true;
+      if (query) {
+        matchQuery = 
+          (item.referencia || '').toLowerCase().includes(query) ||
+          (item.id_item || '').toLowerCase().includes(query) ||
+          (item.descripcion || '').toLowerCase().includes(query);
+      }
+
+      return matchType && matchQuery;
     });
   }
 

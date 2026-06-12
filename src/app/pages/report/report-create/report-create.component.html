@@ -31,7 +31,11 @@
       <div class="col-md-6">
         <label>OP</label>
         <input type="text" [(ngModel)]="report.op_reporte" name="op_reporte" class="form-control"
-          placeholder="Ingrese la OP" required (blur)="buscarOP()" />
+          placeholder="Ingrese la OP" required (blur)="buscarOP()" 
+          [class.input-limit-exceeded]="isCharLimitExceeded(report.op_reporte, 20)" />
+        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.op_reporte, 20)">
+          {{ getCharCount(report.op_reporte, 20) }}
+        </span>
       </div>
 
       <!-- CLIENTE (desde la búsqueda manual o desde la OP) -->
@@ -40,7 +44,11 @@
 
         <input type="text" list="clientesOP" class="form-control" id="cliente" name="cliente"
           [(ngModel)]="report.cliente" autocomplete="off" placeholder="Buscar cliente..."
-          (keyup)="searchCustomer($event)" (change)="assingCustomerValues($event)" required />
+          (keyup)="searchCustomer($event)" (change)="assingCustomerValues($event)" required 
+          [class.input-limit-exceeded]="isCharLimitExceeded(report.cliente, 150)" />
+        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.cliente, 150)">
+          {{ getCharCount(report.cliente, 150) }}
+        </span>
 
         <datalist id="clientesOP">
           <!-- CLIENTES DE LA OP -->
@@ -57,7 +65,11 @@
         <label>Item</label>
 
         <input list="itemsList" type="text" [(ngModel)]="report.item" name="item" class="form-control"
-          placeholder="Seleccione o escriba un item" required (change)="asignarItemDesdeLista($event)" />
+          placeholder="Seleccione o escriba un item" required (change)="asignarItemDesdeLista($event)" 
+          [class.input-limit-exceeded]="isCharLimitExceeded(report.item, 100)" />
+        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.item, 100)">
+          {{ getCharCount(report.item, 100) }}
+        </span>
 
         <datalist id="itemsList">
           <option *ngFor="let it of itemsOP" [value]="it.codigo_item">
@@ -71,7 +83,11 @@
         <label>Prenda</label>
 
         <input list="prendasList" type="text" [(ngModel)]="report.prenda" name="prenda" class="form-control"
-          placeholder="Seleccione o escriba una prenda" required />
+          placeholder="Seleccione o escriba una prenda" required 
+          [class.input-limit-exceeded]="isCharLimitExceeded(report.prenda, 100)" />
+        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.prenda, 100)">
+          {{ getCharCount(report.prenda, 100) }}
+        </span>
 
         <datalist id="prendasList">
           <option *ngFor="let it of itemsOP" [value]="it.descripcion">
@@ -83,7 +99,11 @@
     <!-- OBSERVACIÓN -->
     <div class="mt-3">
       <label>Observación</label>
-      <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control" required></textarea>
+      <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control" required
+        [class.input-limit-exceeded]="isCharLimitExceeded(report.observacion, 500)"></textarea>
+      <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.observacion, 500)">
+        {{ getCharCount(report.observacion, 500) }}
+      </span>
     </div>
 
     <!-- ARCHIVOS -->

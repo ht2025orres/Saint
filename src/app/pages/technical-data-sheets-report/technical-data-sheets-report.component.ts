@@ -67,7 +67,7 @@ export class TechnicalDataSheetsReportComponent {
     this.technicalreportservices.getAlldb()
       .pipe(
         tap((response: TechnicalDataSheet[]) => {
-          this.datos_table = response;
+          this.datos_table = response ? response.filter(item => item.status !== 'ANULADO' && item.status !== 'ELIMINADO') : [];
           this.datosFiltro = this.datos_table;
           this.filteredTable = this.datos_table.slice(0, 15);
           this.configurePaginator(this.datos_table);

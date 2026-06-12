@@ -1,0 +1,423 @@
+<div class="container mx-auto p-6 space-y-6">
+  <!-- Encabezado de Página -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+    <div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-indigo-900">
+        Seguimiento de Documentos
+      </h1>
+      <p class="text-sm text-gray-500 mt-1">
+        Consulta y monitoreo de documentos SS (Servicios) y SC (Compras) procesados en Siesa.
+      </p>
+    </div>
+  </div>
+
+  <!-- KPI Cards (Solo Logística / Admin) -->
+  <div *ngIf="isLogistica && documentos.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+    <!-- Tarjeta Pendientes -->
+    <div class="bg-white border-l-4 border-yellow-400 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-6 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pendientes de Procesar</p>
+        <h3 class="text-3xl font-bold text-gray-700 mt-1">{{ kpis.pendientes }}</h3>
+      </div>
+      <div class="bg-yellow-50 text-yellow-600 rounded-full p-3">
+        <i class="bi bi-clock-history text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Tarjeta En Proceso -->
+    <div class="bg-white border-l-4 border-blue-500 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-6 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">En Proceso (Con Orden)</p>
+        <h3 class="text-3xl font-bold text-gray-700 mt-1">{{ kpis.enProceso }}</h3>
+      </div>
+      <div class="bg-blue-50 text-blue-600 rounded-full p-3">
+        <i class="bi bi-gear-wide-connected text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Tarjeta Procesados -->
+    <div class="bg-white border-l-4 border-green-500 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-6 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Procesados / Cumplidos</p>
+        <h3 class="text-3xl font-bold text-gray-700 mt-1">{{ kpis.procesados }}</h3>
+      </div>
+      <div class="bg-green-50 text-green-600 rounded-full p-3">
+        <i class="bi bi-check-circle-fill text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Tarjeta Anulados -->
+    <div class="bg-white border-l-4 border-red-400 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-6 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Anulados</p>
+        <h3 class="text-3xl font-bold text-gray-700 mt-1">{{ kpis.anulados }}</h3>
+      </div>
+      <div class="bg-red-50 text-red-600 rounded-full p-3">
+        <i class="bi bi-x-octagon-fill text-2xl"></i>
+      </div>
+    </div>
+
+    <!-- Tarjeta Cerrados en Siesa -->
+    <div class="bg-white border-l-4 border-slate-500 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-6 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cerrados en Siesa</p>
+        <h3 class="text-3xl font-bold text-gray-700 mt-1">{{ kpis.cerrados }}</h3>
+        <p class="text-[11px] text-amber-600 font-semibold mt-1 flex items-center gap-1" *ngIf="kpis.cerradosIncompletos > 0">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span>{{ kpis.cerradosIncompletos }} Incompletos</span>
+        </p>
+        <p class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1" *ngIf="kpis.cerrados > 0 && kpis.cerradosIncompletos === 0">
+          <i class="bi bi-check-circle-fill"></i>
+          <span>Todos completos</span>
+        </p>
+      </div>
+      <div class="bg-slate-50 text-slate-600 rounded-full p-3">
+        <i class="bi bi-archive-fill text-2xl"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de Búsqueda y Filtros -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 transition-all duration-200 hover:shadow-md">
+    <div class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-slate-100 gap-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="bg-indigo-50 text-indigo-600 rounded-lg p-2 flex items-center justify-center">
+            <i class="bi bi-funnel-fill text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-800">Filtros de Búsqueda</h2>
+            <p class="text-xs text-slate-400">Refine el listado de documentos por consecutivo, tipo, estado y fechas</p>
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div *ngIf="isLogistica || (isConsultante && hasSearched)" class="flex items-center space-x-2.5 w-full sm:w-auto">
+          <button
+            (click)="limpiarFiltros()"
+            class="flex-1 sm:flex-initial bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-semibold px-4 py-2 rounded-xl text-xs transition-all duration-150 active:scale-95 flex items-center justify-center space-x-1.5"
+          >
+            <i class="bi bi-trash3 text-xs"></i>
+            <span>Limpiar</span>
+          </button>
+          <button
+            (click)="cargarSeguimientos()"
+            class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-xl text-xs transition-all duration-150 active:scale-95 shadow-sm shadow-indigo-600/10 hover:shadow-lg flex items-center justify-center space-x-1.5"
+          >
+            <i class="bi bi-funnel-fill text-xs"></i>
+            <span>Filtrar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtro Obligatorio para Consultantes -->
+      <div *ngIf="isConsultante && !isLogistica" class="max-w-xl bg-indigo-50/40 rounded-xl p-5 border border-indigo-100/50 mb-4 transition-all duration-200">
+        <label for="creadorConsultante" class="block text-sm font-semibold text-indigo-950 mb-2">
+          Ingrese su Usuario de Siesa (Creador)
+        </label>
+        <div class="flex space-x-3">
+          <div class="relative flex-grow">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-person-fill text-base"></i>
+            </span>
+            <input
+              type="text"
+              id="creadorConsultante"
+              [(ngModel)]="creadorSearch"
+              placeholder="Ej: AMARTINEZ"
+              class="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 placeholder-slate-400 text-slate-700 text-sm font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+              (keyup.enter)="cargarSeguimientos()"
+            />
+          </div>
+          <button
+            (click)="cargarSeguimientos()"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-all duration-150 active:scale-95 shadow-sm shadow-indigo-600/10 hover:shadow-lg flex items-center space-x-2"
+          >
+            <i class="bi bi-search"></i>
+            <span>Consultar</span>
+          </button>
+        </div>
+        <p class="text-xs text-indigo-500 mt-2 font-medium">
+          * Para visualizar sus solicitudes debe ingresar exactamente su código de usuario creador en Siesa.
+        </p>
+      </div>
+
+      <!-- Filtros Avanzados (Logística o tras búsqueda en Consultante) -->
+      <div *ngIf="isLogistica || (isConsultante && hasSearched)" 
+           [class]="isLogistica ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4'">
+        <!-- Búsqueda Consecutivo -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Consecutivo</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-hash text-base"></i>
+            </span>
+            <input
+              type="text"
+              [(ngModel)]="filters.busqueda"
+              placeholder="Nro Solicitud / Orden"
+              class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/30 text-slate-700 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+              (keyup.enter)="applyFilters()"
+            />
+          </div>
+        </div>
+
+        <!-- Tipo Documento -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Tipo de Solicitud</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-file-earmark-text text-base"></i>
+            </span>
+            <select
+              [(ngModel)]="filters.tipo"
+              class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/30 text-slate-700 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+            >
+              <option value="">Todos</option>
+              <option value="SS">SS (Servicios)</option>
+              <option value="SC">SC (Compras)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Estado Visual -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Estado de Seguimiento</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-activity text-base"></i>
+            </span>
+            <select
+              [(ngModel)]="filters.estado_visual"
+              class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/30 text-slate-700 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+            >
+              <option value="">Todos</option>
+              <option value="PENDIENTE">Pendiente (Sin Orden)</option>
+              <option value="EN_PROCESO">En Proceso (Orden Activa)</option>
+              <option value="PROCESADO">Procesado (Orden Cumplida)</option>
+              <option value="ANULADO">Anulado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Creador (Solo Logística) -->
+        <div *ngIf="isLogistica">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Creador (Siesa)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-person text-base"></i>
+            </span>
+            <input
+              type="text"
+              [(ngModel)]="creadorSearch"
+              placeholder="Usuario Siesa"
+              class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/30 text-slate-700 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+              (keyup.enter)="applyFilters()"
+            />
+          </div>
+        </div>
+
+        <!-- Rango de Fechas (Desde) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Desde Fecha</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-calendar-event text-base"></i>
+            </span>
+            <input
+              type="date"
+              [(ngModel)]="filters.fecha_desde"
+              class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/30 text-slate-700 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        <!-- Rango de Fechas (Hasta) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Hasta Fecha</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+              <i class="bi bi-calendar-check text-base"></i>
+            </span>
+            <input
+              type="date"
+              [(ngModel)]="filters.fecha_hasta"
+              class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl bg-slate-50/30 text-slate-700 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-200"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 space-y-4">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    <span class="text-sm font-semibold text-gray-500">Consultando datos en Siesa...</span>
+  </div>
+
+  <!-- Empty State (No ha buscado) -->
+  <div *ngIf="!isLogistica && !hasSearched && !isLoading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+    <div class="max-w-md mx-auto space-y-4">
+      <div class="bg-indigo-50 text-indigo-600 rounded-full p-4 inline-block">
+        <i class="bi bi-person-workspace text-4xl"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800">Consulte sus Solicitudes</h3>
+      <p class="text-sm text-gray-500">
+        Ingrese su identificador de usuario creador de Siesa en el cuadro superior para visualizar el estado y seguimiento de sus solicitudes SS y SC.
+      </p>
+    </div>
+  </div>
+
+  <!-- Empty State (Sin Resultados) -->
+  <div *ngIf="hasSearched && documentos.length === 0 && !isLoading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+    <div class="max-w-md mx-auto space-y-4">
+      <div class="bg-gray-100 text-gray-400 rounded-full p-4 inline-block">
+        <i class="bi bi-folder-x text-4xl"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800">No se encontraron documentos</h3>
+      <p class="text-sm text-gray-500">
+        No pudimos encontrar solicitudes SS o SC en Siesa que coincidan con los criterios de búsqueda y filtros ingresados.
+      </p>
+    </div>
+  </div>
+
+  <!-- Tabla de Resultados -->
+  <div *ngIf="documentos.length > 0 && !isLoading" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Consecutivo</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha Creación</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Creador</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado Solicitud</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Doc. Respuesta</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Seguimiento</th>
+            <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <tr *ngFor="let doc of currentDocumentos" class="hover:bg-slate-50/50 transition-colors duration-150">
+            <!-- Tipo Documento -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span [class]="doc.tipo_ss === 'SS' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-purple-50 text-purple-700 border-purple-200'"
+                    class="px-2.5 py-1 text-xs font-semibold rounded-md border">
+                {{ doc.tipo_ss }}
+              </span>
+            </td>
+
+            <!-- Consecutivo + Notas Preview -->
+            <td class="px-6 py-4">
+              <div class="text-sm font-bold text-gray-900">{{ doc.nro_ss }}</div>
+              <div *ngIf="doc.notas_ss" class="text-[11px] text-gray-400 mt-0.5 max-w-[220px] truncate" [title]="doc.notas_ss">
+                <i class="bi bi-chat-left-text mr-1"></i>{{ doc.notas_ss }}
+              </div>
+            </td>
+
+            <!-- Fecha -->
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+              {{ doc.fecha_ss | date:'dd/MM/yyyy' }}
+            </td>
+
+            <!-- Creador -->
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+              {{ doc.creador_ss }}
+            </td>
+
+            <!-- Estado Solicitud Siesa -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center space-x-1.5">
+                <span [class]="
+                  doc.estado_ss === 'Cumplido' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  doc.estado_ss === 'Cerrado' ? 'bg-slate-100 text-slate-700 border-slate-300' :
+                  doc.estado_ss === 'Anulado' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                  doc.estado_ss === 'Aprobado' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                  'bg-amber-50 text-amber-700 border-amber-200'
+                " class="px-2.5 py-1 text-xs font-semibold rounded-full border">
+                  {{ doc.estado_ss }}
+                </span>
+                <span *ngIf="doc.cerrada_incompleta" 
+                      class="text-amber-500 cursor-help flex items-center" 
+                      title="Esta solicitud está cerrada en Siesa pero tiene items/órdenes pendientes o parciales">
+                  <i class="bi bi-exclamation-triangle-fill text-sm"></i>
+                </span>
+              </div>
+            </td>
+
+            <!-- Documento Respuesta Generado -->
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <div *ngIf="doc.ordenes.length === 0" class="text-gray-400 flex items-center space-x-1.5">
+                <i class="bi bi-dash-circle"></i>
+                <span class="text-xs">Sin orden generada</span>
+              </div>
+              <div *ngIf="doc.ordenes.length > 0" class="flex flex-col space-y-1">
+                <div *ngFor="let ord of doc.ordenes | slice:0:2" class="flex items-center space-x-1">
+                  <span class="font-bold text-slate-800 text-xs">{{ ord.tipo_orden }}-{{ ord.nro_orden }}</span>
+                  <span class="text-[10px] text-gray-400">({{ ord.estado_orden }})</span>
+                </div>
+                <span *ngIf="doc.ordenes.length > 2" class="text-[10px] text-indigo-600 font-medium">
+                  +{{ doc.ordenes.length - 2 }} más
+                </span>
+              </div>
+            </td>
+
+            <!-- Estado Visual de Seguimiento -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span *ngIf="doc.estado_visual === 'PENDIENTE'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
+                Pendiente
+              </span>
+              <span *ngIf="doc.estado_visual === 'EN_PROCESO'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-blue-500"></span>
+                En Proceso
+              </span>
+              <span *ngIf="doc.estado_visual === 'PROCESADO'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-500"></span>
+                Procesado
+              </span>
+              <span *ngIf="doc.estado_visual === 'ANULADO'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-red-500"></span>
+                Anulado
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+              <button
+                (click)="abrirDetalle(doc)"
+                class="inline-flex items-center justify-center p-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors duration-150"
+                title="Ver detalles del documento"
+              >
+                <i class="bi bi-eye-fill"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+      <div class="text-sm text-gray-500">
+        Mostrando <span class="font-semibold text-gray-700">{{ getStartIndex() }}</span> a 
+        <span class="font-semibold text-gray-700">{{ getEndIndex() }}</span> de 
+        <span class="font-semibold text-gray-700">{{ totalDocumentos }}</span> solicitudes
+      </div>
+      <div class="flex space-x-1">
+        <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)"
+          [instanceId]="paginatorId"
+          [showPageSizeSelector]="true">
+        </app-shared-paginator>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalles -->
+<app-modal-detalle
+  *ngIf="mostrarDetalleModal"
+  [documento]="documentoSeleccionado"
+  (close)="cerrarDetalle()"
+></app-modal-detalle>

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Tarea, Actividad, ProyectoService } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.service';
 import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/services/auth.service';
 
 export interface TareaForm {
   actividad_id?:        number | null;
@@ -69,7 +70,8 @@ export class ModalTareaComponent implements OnChanges {
     private fb: FormBuilder,
     private _proyectoService: ProyectoService,
     private _cdr: ChangeDetectorRef,
-    public state: SeguimientoStateService
+    public state: SeguimientoStateService,
+    private _auth: AuthService
   ) {
     this.form = this.fb.group({
       proyecto_id:          [null],
@@ -223,7 +225,7 @@ export class ModalTareaComponent implements OnChanges {
   }
 
   private _getMiId(): number {
-    return Number(localStorage.getItem('userId') || 0);
+    return this._auth.user?.id || 0;
   }
 
   private _toLocal(v?: string | null): string {

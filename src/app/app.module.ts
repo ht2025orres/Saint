@@ -27,6 +27,7 @@ import { TechnicalDataSheetsReportComponent } from './pages/technical-data-sheet
 import { CreateTechnicalSheetComponent } from './pages/technicalsheet/create/create-technical-sheet.component';
 import { ListTechnicalSheetComponent } from './pages/technicalsheet/list/list-technical-sheet.component';
 import { ViewTechnicalSheetComponent } from './pages/technicalsheet/view/view-technical-sheet.component';
+import { AnnulmentManagementComponent } from './pages/technicalsheet/annulment/annulment-management.component';
 import { ReportCreateComponent } from './pages/report/report-create/report-create.component';
 import { ReportListComponent } from './pages/report/report-list/report-list.component';
 import { MiReportListComponent } from './pages/report/mi-report-list/mi-report-list.component';
@@ -89,6 +90,7 @@ registerLocaleData(localeEs, 'es-CO');
         TechnicalDataSheetsReportComponent,
         GenerarComponent,
         ViewTechnicalSheetComponent,
+        AnnulmentManagementComponent,
         NopagefoundComponent,
         ListUserComponent,
         CreateUserComponent,

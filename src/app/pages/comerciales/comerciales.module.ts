@@ -9,6 +9,7 @@ import { CosteoFormComponent } from './costeo-form/costeo-form.component';
 import { CosteoDetailComponent } from './costeo-detail/costeo-detail.component';
 import { ItemSearchModalComponent } from './modals/item-search-modal/item-search-modal.component';
 import { MoldSelectModalComponent } from './modals/mold-select-modal/mold-select-modal.component';
+import { SolicitudCapturaComponent } from './solicitud-captura/solicitud-captura.component';
 import { SharedModule } from '../../shared/shared.module';
 import { MoldesModule } from '../moldes/moldes.module';
 
@@ -20,6 +21,7 @@ import { MoldesModule } from '../moldes/moldes.module';
     CosteoDetailComponent,
     ItemSearchModalComponent,
     MoldSelectModalComponent,
+    SolicitudCapturaComponent,
   ],
   imports: [
     CommonModule,

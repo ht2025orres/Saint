@@ -45,7 +45,9 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   // Embedded mode (for use inside Solicitud form)
   @Input() embedded = false;
   @Input() externalMoldId: number | null = null;
+  @Input() initialComponents: ComponentItem[] | null = null;
   @Output() onSpecSaved = new EventEmitter<number>();
+  @Output() onComponentsChange = new EventEmitter<ComponentItem[]>();
 
   moldId!: number;
   mold: any = null;
@@ -112,6 +114,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       this.components[this.inlineEditingIndex].item_type = this.inlineEditType;
       this.inlineEditingIndex = null;
       this.buildTextContent();
+      this.notifyChanges();
     }
   }
 
@@ -149,6 +152,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
     this.inlineAdding = false;
     this.buildTextContent();
+    this.notifyChanges();
   }
 
   get filteredAddSuggestions(): any[] {
@@ -253,7 +257,14 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       this.mode = 'opm';
       if (this.externalMoldId) {
         this.moldId = this.externalMoldId;
-        this.loadMold();
+        
+        // Si hay componentes iniciales (del borrador), usarlos. Si no, cargar del molde.
+        if (this.initialComponents && this.initialComponents.length > 0) {
+          this.components = JSON.parse(JSON.stringify(this.initialComponents));
+          this.loadMoldMinimal(); // Solo cargar info del molde, no los componentes
+        } else {
+          this.loadMold();
+        }
       }
     } else {
       this.mode = this.route.snapshot.data['mode'] || 'opm';
@@ -263,6 +274,24 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
         this.loadMold();
       }
     }
+  }
+
+  public notifyChanges(): void {
+    if (this.embedded) {
+      this.onComponentsChange.emit(this.components);
+    }
+  }
+
+  loadMoldMinimal(): void {
+    this.loading = true;
+    this.moldService.getMold(this.moldId).subscribe({
+      next: (res: any) => {
+        this.mold = res.data;
+        this.loading = false;
+        this.buildTextContent();
+      },
+      error: () => this.loading = false
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -428,6 +457,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     this.addSearchQuery = '';
     this.addItemType = 'parte';
     this.buildTextContent();
+    this.notifyChanges();
   }
 
   cancelAdd(): void {
@@ -443,6 +473,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     if (index >= 0) {
       this.components.splice(index, 1);
       this.buildTextContent();
+      this.notifyChanges();
     }
   }
 
@@ -461,10 +492,9 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     const c = this.components[this.specEditorIndex];
     c.client_spec = data.clientSpec;
     c.technical_spec = data.technicalSpec;
-    this.showSpecEditor = false;
-    this.specEditorIndex = null;
-    this.specEditorComponent = null;
+    this.closeSpecEditor();
     this.buildTextContent();
+    this.notifyChanges();
   }
 
   closeSpecEditor(): void {
@@ -542,6 +572,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
       this.components[this.draggedComponentIndex].position_x = Math.round(x * 100) / 100;
       this.components[this.draggedComponentIndex].position_y = Math.round(y * 100) / 100;
+      this.notifyChanges();
     };
 
     const onMouseUp = () => {
@@ -587,6 +618,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       this.showSpecEditor = true;
     }
     this.buildTextContent();
+    this.notifyChanges();
   }
 
   closeModal(): void {
@@ -615,6 +647,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     this.components[this.manualModalIndex].material_exception = mat;
     this.closeManualModal();
     this.buildTextContent();
+    this.notifyChanges();
   }
 
   closeManualModal(): void {
@@ -626,6 +659,8 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   onClearMaterialException(i: number): void {
     this.components[i].material_exception = null;
+    this.buildTextContent();
+    this.notifyChanges();
   }
 
   onOpenSiesaForItem(i: number): void {

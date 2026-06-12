@@ -1,0 +1,254 @@
+<div class="p-6 bg-slate-50 min-h-screen">
+  
+  <!-- Header Title -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="p-3 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 text-white">
+        <i class="fa fa-ban text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">Gestión de Anulaciones</h1>
+        <p class="text-sm text-slate-505">Administre ítems duplicados y fichas técnicas anuladas</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <a routerLink="/dashboard" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-slate-800 transition-all shadow-sm">
+        Volver a Inicio
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col p-6">
+    
+    <!-- Tabs Navigation -->
+    <div class="flex gap-6 border-b border-slate-100 mb-6">
+      <button class="pb-3 text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2"
+              [class.border-indigo-600]="activeTab === 'duplicates'"
+              [class.text-indigo-600]="activeTab === 'duplicates'"
+              [class.border-transparent]="activeTab !== 'duplicates'"
+              [class.text-slate-400]="activeTab !== 'duplicates'"
+              (click)="switchTab('duplicates')">
+        <i class="fa fa-clone"></i> Ítems con Múltiples Fichas
+      </button>
+      <button class="pb-3 text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2"
+              [class.border-indigo-600]="activeTab === 'annulled'"
+              [class.text-indigo-600]="activeTab === 'annulled'"
+              [class.border-transparent]="activeTab !== 'annulled'"
+              [class.text-slate-400]="activeTab !== 'annulled'"
+              (click)="switchTab('annulled')">
+        <i class="fa fa-ban"></i> Fichas Anuladas / Deshabilitadas
+      </button>
+    </div>
+
+    <!-- Loading indicator -->
+    <div class="flex flex-col items-center justify-center py-20" *ngIf="loading">
+      <div class="animate-spin w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full mb-4"></div>
+      <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Cargando información...</p>
+    </div>
+
+    <!-- Main Content (when not loading) -->
+    <div *ngIf="!loading" class="space-y-6">
+      
+      <!-- TAB 1: ÍTEMS DUPLICADOS -->
+      <div *ngIf="activeTab === 'duplicates'" class="space-y-6">
+        
+        <!-- Search and Actions Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="relative w-80">
+            <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" 
+                   [(ngModel)]="filters.searchDuplicates"
+                   (keyup)="filterDuplicates()"
+                   placeholder="Buscar código, descripción, cliente..." 
+                   class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 outline-none focus:border-indigo-500 transition-all w-full shadow-sm">
+          </div>
+          
+          <div>
+            <button class="px-4 py-2.5 text-xs font-bold text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-all shadow-md shadow-rose-100 disabled:opacity-50 disabled:shadow-none cursor-pointer flex items-center gap-2" 
+                    [disabled]="getSelectedDuplicateIds().length === 0"
+                    (click)="annulSelected()">
+              <i class="fa fa-ban"></i> Anular Seleccionados ({{ getSelectedDuplicateIds().length }})
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Alert Banner -->
+        <div class="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-800 text-xs flex items-start gap-3 shadow-sm shadow-amber-50/20">
+          <i class="fa fa-exclamation-triangle text-amber-600 text-sm mt-0.5"></i>
+          <div>
+            Se listan todos los ítems que tienen <strong>2 o más fichas técnicas activas</strong> en el sistema. Seleccione y anula las que no correspondan para evitar inconsistencias de producción.
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-sm">
+          <table class="w-full text-left border-collapse bg-white">
+            <thead>
+              <tr class="bg-slate-50/50 border-b border-slate-100">
+                <th class="px-6 py-4 w-12 text-center">
+                  <input type="checkbox" 
+                         [checked]="areAllDuplicatesSelected()" 
+                         (change)="toggleSelectAllDuplicates($event)">
+                </th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Ficha</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Código Ítem</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              <tr *ngFor="let item of displayedDuplicates" class="hover:bg-slate-50/50 transition-colors" [ngClass]="{'bg-indigo-50/10': item.selected}">
+                <td class="px-6 py-4 text-center">
+                  <input type="checkbox" 
+                         [(ngModel)]="item.selected">
+                </td>
+                <td class="px-6 py-4 text-xs font-medium text-slate-500">{{ item.id }}</td>
+                <td class="px-6 py-4 text-xs font-black text-slate-800">{{ item.id_item }}</td>
+                <td class="px-6 py-4 text-xs font-semibold text-slate-600">{{ item.technical_data_sheet_type }}</td>
+                <td class="px-6 py-4 text-xs text-slate-600 italic line-clamp-1 py-4.5">{{ item.item_description }}</td>
+                <td class="px-6 py-4 text-xs font-medium text-slate-500">{{ item.company_name }}</td>
+                <td class="px-6 py-4 text-center">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 uppercase" *ngIf="item.status === 'DESARROLLO'">DESARROLLO</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-red-50 text-red-700 uppercase" *ngIf="item.status === 'PRIMERA REVISION'">1RA REVISIÓN</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 uppercase" *ngIf="item.status === 'SEGUNDA REVISION'">2DA REVISIÓN</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-purple-50 text-purple-700 uppercase" *ngIf="item.status === 'CALIDAD'">CALIDAD</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 uppercase" *ngIf="item.status === 'TERMINADO'">TERMINADO</span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <div class="flex items-center gap-2 justify-center">
+                    <a class="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm" 
+                       [routerLink]="['/viewTechnicalDataSheet', item.id]" 
+                       title="Ver Ficha">
+                      <i class="fa fa-search text-xs"></i>
+                    </a>
+                    <a class="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors shadow-sm" 
+                       [routerLink]="['/createTechnicalDataSheet', item.id, 'edit']" 
+                       title="Editar Ficha">
+                      <i class="fa fa-pencil text-xs"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="displayedDuplicates.length === 0">
+                <td colspan="8" class="text-center py-10">
+                  <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                    <i class="fa fa-info-circle text-slate-300 text-2xl"></i>
+                  </div>
+                  <p class="text-sm font-semibold text-slate-400">No se encontraron ítems duplicados activos.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pt-4 border-t border-slate-100">
+          <app-shared-paginator [instanceId]="duplicatesInstanceId" [loading]="loading"></app-shared-paginator>
+        </div>
+      </div>
+
+      <!-- TAB 2: FICHAS ANULADAS -->
+      <div *ngIf="activeTab === 'annulled'" class="space-y-6">
+        
+        <!-- Search and Actions Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="relative w-80">
+            <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" 
+                   [(ngModel)]="filters.searchAnnulled"
+                   (keyup)="filterAnnulled()"
+                   placeholder="Buscar código, descripción, cliente..." 
+                   class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 outline-none focus:border-indigo-500 transition-all w-full shadow-sm">
+          </div>
+          
+          <div>
+            <button class="px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 disabled:opacity-50 disabled:shadow-none cursor-pointer flex items-center gap-2" 
+                    [disabled]="getSelectedAnnulledIds().length === 0"
+                    (click)="reactivateSelected()">
+              <i class="fa fa-recycle"></i> Reactivar Seleccionados ({{ getSelectedAnnulledIds().length }})
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Alert Banner -->
+        <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-800 text-xs flex items-start gap-3 shadow-sm shadow-indigo-50/20">
+          <i class="fa fa-info-circle text-indigo-600 text-sm mt-0.5"></i>
+          <div>
+            Fichas técnicas que han sido anuladas. Al reactivarlas, volverán automáticamente al estado en que se encontraban antes de la anulación (guardado en la columna Estado Original).
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto rounded-3xl border border-slate-100 shadow-sm">
+          <table class="w-full text-left border-collapse bg-white">
+            <thead>
+              <tr class="bg-slate-50/50 border-b border-slate-100">
+                <th class="px-6 py-4 w-12 text-center">
+                  <input type="checkbox" 
+                         [checked]="areAllAnnulledSelected()" 
+                         (change)="toggleSelectAllAnnulled($event)">
+                </th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Ficha</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Código Ítem</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado Original</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              <tr *ngFor="let ficha of displayedAnnulled" class="hover:bg-slate-50/50 transition-colors" [ngClass]="{'bg-indigo-50/10': ficha.selected}">
+                <td class="px-6 py-4 text-center">
+                  <input type="checkbox" 
+                         [(ngModel)]="ficha.selected">
+                </td>
+                <td class="px-6 py-4 text-xs font-medium text-slate-500">{{ ficha.id }}</td>
+                <td class="px-6 py-4 text-xs font-black text-slate-800">{{ ficha.id_item }}</td>
+                <td class="px-6 py-4 text-xs font-semibold text-slate-600">{{ ficha.technical_data_sheet_type }}</td>
+                <td class="px-6 py-4 text-xs text-slate-600 italic line-clamp-1 py-4.5">{{ ficha.item_description }}</td>
+                <td class="px-6 py-4 text-xs font-medium text-slate-500">{{ ficha.company_name }}</td>
+                <td class="px-6 py-4 text-center">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 uppercase" *ngIf="ficha.previous_status === 'DESARROLLO'">DESARROLLO</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-red-50 text-red-700 uppercase" *ngIf="ficha.previous_status === 'PRIMERA REVISION'">1RA REVISIÓN</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 uppercase" *ngIf="ficha.previous_status === 'SEGUNDA REVISION'">2DA REVISIÓN</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-purple-50 text-purple-700 uppercase" *ngIf="ficha.previous_status === 'CALIDAD'">CALIDAD</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 uppercase" *ngIf="ficha.previous_status === 'TERMINADO'">TERMINADO</span>
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-50 text-slate-500" *ngIf="!ficha.previous_status">-</span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <div class="flex items-center gap-2 justify-center">
+                    <a class="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors shadow-sm" 
+                       [routerLink]="['/viewTechnicalDataSheet', ficha.id]" 
+                       title="Ver Ficha">
+                      <i class="fa fa-search text-xs"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="displayedAnnulled.length === 0">
+                <td colspan="8" class="text-center py-10">
+                  <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                    <i class="fa fa-info-circle text-slate-300 text-2xl"></i>
+                  </div>
+                  <p class="text-sm font-semibold text-slate-400">No se encontraron fichas técnicas anuladas.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pt-4 border-t border-slate-100">
+          <app-shared-paginator [instanceId]="annulledInstanceId" [loading]="loading"></app-shared-paginator>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>

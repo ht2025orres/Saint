@@ -7,6 +7,7 @@ import { TechnicalDataSheetsReportComponent } from './pages/technical-data-sheet
 import { CreateTechnicalSheetComponent } from './pages/technicalsheet/create/create-technical-sheet.component';
 import { ListTechnicalSheetComponent } from './pages/technicalsheet/list/list-technical-sheet.component';
 import { ViewTechnicalSheetComponent } from './pages/technicalsheet/view/view-technical-sheet.component';
+import { AnnulmentManagementComponent } from './pages/technicalsheet/annulment/annulment-management.component';
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
@@ -59,6 +60,7 @@ const routes: Routes = [
       { path: 'createTechnicalDataSheet/:id/:operation', component: CreateTechnicalSheetComponent, title: 'Crear ficha técnica' },
       { path: 'viewTechnicalDataSheet/:id', component: ViewTechnicalSheetComponent, title: 'Ver ficha técnica' },
       { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas' },
+      { path: 'gestion-anulaciones-fichas', component: AnnulmentManagementComponent, title: 'Gestión de Anulaciones' },
       { path: 'listTechnicalDataSheet/page/:page/:status', component: ListTechnicalSheetComponent, title: 'Listar fichas técnicas' },
       { path: 'users/page/:page', component: ListUserComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Listar usuarios' },
       { path: 'createUser/:id', component: CreateUserComponent, title: 'Crear usuario' },
@@ -98,6 +100,7 @@ const routes: Routes = [
       { path: 'seguimiento', loadChildren: () => import('./pages/seguimiento/seguimiento.module').then(m => m.SeguimientoModule), title: 'Seguimiento' },
       { path: 'firmas', loadChildren: () => import('./pages/firmas/firmas.module').then(m => m.FirmasModule), title: 'Firmas Digitales' },
       { path: 'moldes', loadChildren: () => import('./pages/moldes/moldes.module').then(m => m.MoldesModule), title: 'Moldes y OPM' },
+      { path: 'seguimiento-documentos', loadChildren: () => import('./pages/seguimiento-documentos/seguimiento-documentos.module').then(m => m.SeguimientoDocumentosModule), title: 'Seguimiento Documentos' },
       // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
 
       { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' },

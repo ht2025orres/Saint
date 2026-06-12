@@ -40,9 +40,9 @@ export class GestionInventariosComponent implements OnInit {
   sincronizandoSiesa = false;
 
   // Sub-interfaz activa
-  subInterfazActiva: 'asignacion' | 'reconteo' = 'asignacion';
-  private _modoActual: 'conteo' | 'reconteo1' | 'reconteo2' = 'conteo';
-  set modoActual(val: 'conteo' | 'reconteo1' | 'reconteo2') {
+  subInterfazActiva: 'asignacion' | 'reconteo' | 'justificacion' = 'asignacion';
+  private _modoActual: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar' = 'conteo';
+  set modoActual(val: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar') {
     this._modoActual = val;
     
     // Sincronizar la vista de las tarjetas del sidebar con el modo seleccionado
@@ -59,6 +59,15 @@ export class GestionInventariosComponent implements OnInit {
   }
   get modoActual() {
     return this._modoActual;
+  }
+
+  seleccionarSubInterfaz(tab: 'asignacion' | 'reconteo' | 'justificacion') {
+    this.subInterfazActiva = tab;
+    if (tab === 'justificacion') {
+      this.modoActual = 'justificar';
+    } else if (this.modoActual === 'justificar') {
+      this.modoActual = 'conteo';
+    }
   }
 
   private normalizeModo(modo: string): string {
@@ -96,20 +105,28 @@ export class GestionInventariosComponent implements OnInit {
     }
 
     if (this.modoActual === 'conteo') {
-      // El modo conteo muestra el progreso global del primer conteo
-      total = this.inventarioSeleccionado.total_items || 0;
-      contados = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'conteo').length;
+      // Total = todos los registros de validaciones con tipo_conteo 'conteo'
+      // (incluye sin_conteo + pendiente + validado + reconteo)
+      // Esto es coherente con lo que muestra el modal de ítems
+      const validacionesConteo = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'conteo');
+      total = validacionesConteo.length;
+      contados = validacionesConteo.filter(v => v.estado_validacion !== 'sin_conteo').length;
       zonasCubiertas = new Set(this.asignaciones.filter(a => this.normalizeModo(a.tipo_conteo) === 'conteo').map(a => a.id_zona)).size;
     } else if (this.modoActual === 'reconteo1') {
       // Universo de reconteo 1: lo que se marcó en conteo
       total = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'conteo' && v.estado_validacion === 'reconteo').length;
-      contados = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'reconteo1').length;
+      contados = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'reconteo1' && v.estado_validacion !== 'sin_conteo').length;
       zonasCubiertas = new Set(this.asignaciones.filter(a => this.normalizeModo(a.tipo_conteo) === 'reconteo1').map(a => a.id_zona)).size;
     } else if (this.modoActual === 'reconteo2') {
       // Universo de reconteo 2: lo que se marcó en reconteo 1
       total = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'reconteo1' && v.estado_validacion === 'reconteo').length;
-      contados = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'reconteo2').length;
+      contados = this.validaciones.filter(v => this.normalizeModo(v.tipo_conteo) === 'reconteo2' && v.estado_validacion !== 'sin_conteo').length;
       zonasCubiertas = new Set(this.asignaciones.filter(a => this.normalizeModo(a.tipo_conteo) === 'reconteo2').map(a => a.id_zona)).size;
+    } else if (this.modoActual === 'justificar') {
+      // Para justificar, mostramos el total de ítems únicos contados vs total del inventario
+      total = this.inventarioSeleccionado.total_items || 0;
+      contados = new Set(this.validaciones.filter(v => v.estado_validacion !== 'sin_conteo').map(v => `${v.id_item}|${v.referencia}|${v.id_talla}|${v.id_color}|${v.zona}`)).size;
+      zonasCubiertas = new Set(this.asignaciones.map(a => a.id_zona)).size;
     }
 
     // Usar toFixed(2) para mantener la precisión que el usuario espera (ej: 0.92%)
@@ -285,7 +302,7 @@ export class GestionInventariosComponent implements OnInit {
 
   cargarAsignaciones() {
     if (!this.inventarioSeleccionado) return;
-    this.inventarioService.getAsignaciones(this.inventarioSeleccionado.id, undefined, this.modoActual).subscribe(resp => {
+    this.inventarioService.getAsignaciones(this.inventarioSeleccionado.id).subscribe(resp => {
       if (resp.success) this.asignaciones = resp.data;
     });
   }

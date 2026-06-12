@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { InventarioService } from 'src/app/services/inventario.service';
 import { PaginationService } from 'src/app/shared/pagination/pagination.service';
 import { Subscription } from 'rxjs';
+import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user.service';
+import { SeguimientoStateService } from 'src/app/pages/seguimiento/seguimiento-state.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -17,12 +19,12 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
   fechaFin: string = '';
   conteos: any[] = [];
   conteosPaginados: any[] = [];
-  usuariosMap: Map<number, any> = new Map();
   loading = false;
   error = false;
   busqueda = '';
   busquedaExacta = false;
   filtroTipoItem = '';
+  filtroDiferencia: 'positivas' | 'negativas' | 'iguales' | '' = '';
 
   // Bodegas
   bodegas: any[] = [];
@@ -44,11 +46,13 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
     private router: Router,
     private inventarioService: InventarioService,
     private userService: UserService,
-    private paginationService: PaginationService
+    private paginationService: PaginationService,
+    public state: SeguimientoStateService,
+    private auth: AuthService
   ) {}
 
   ngOnInit(): void {
-    this.cargarUsuarios();
+    this._cargarUsuarios();
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     this.fechaInicio = firstDay.toISOString().split('T')[0];
@@ -85,30 +89,28 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  cargarUsuarios(): void {
+  // ── Usuarios (carga única, compartida con sub-componentes) ──────
+  private _cargarUsuarios(): void {
+    if (this.state.usuariosCache.length) return;
     this.userService.getAllBasic().subscribe({
-      next: (usuarios) => {
-        usuarios.forEach(u => this.usuariosMap.set(u.id, u));
+      next: (us: any[]) => {
+        this.state.setUsuariosCache(
+          us.map(u => ({
+            id: u.id,
+            nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+            roles: u.roles?.map((r: any) => ({ id: r.id, nombre: r.name || r.nombre }))
+          })),
+        );
       },
-      error: () => {
-        console.warn('No se pudieron cargar los usuarios');
-      }
+      error: () => this.state.showToast('No se pudo cargar la lista de usuarios', 'error'),
     });
-  }
-
-  getNombreUsuario(id: any): string {
-    if (!id) return 'N/A';
-    const userId = Number(id);
-    const usuario = this.usuariosMap.get(userId);
-    if (!usuario) return `ID: ${id}`;
-    
-    return usuario.nombre_completo || `ID: ${id}`;
   }
 
   onBodegaChange(): void {
     if (this.bodega !== 'MP001') {
       this.filtroTipoItem = '';
     }
+    this.filtroDiferencia = ''; // Reset difference filter when bodega changes
     // Update URL to reflect selected bodega
     this.router.navigate([], {
       relativeTo: this.route,
@@ -151,6 +153,15 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleFiltroDiferencia(tipo: 'positivas' | 'negativas' | 'iguales'): void {
+    if (this.filtroDiferencia === tipo) {
+      this.filtroDiferencia = '';
+    } else {
+      this.filtroDiferencia = tipo;
+    }
+    this.aplicarFiltros();
+  }
+
   aplicarFiltros(): void {
     const filterFn = (item: any): boolean => {
       let matchBusqueda = true;
@@ -178,7 +189,15 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
         }
       }
 
-      return matchBusqueda && matchTipo;
+      let matchDiferencia = true;
+      if (this.filtroDiferencia) {
+        const diff = Number(item.cantidad_fisica) - Number(item.cantidad_siesa);
+        if (this.filtroDiferencia === 'positivas') matchDiferencia = diff > 0;
+        else if (this.filtroDiferencia === 'negativas') matchDiferencia = diff < 0;
+        else if (this.filtroDiferencia === 'iguales') matchDiferencia = diff === 0;
+      }
+
+      return matchBusqueda && matchTipo && matchDiferencia;
     };
 
     if (!this.paginatorSub) {
@@ -186,7 +205,12 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
         this.instanceId,
         this.conteos,
         25,
-        { busqueda: this.busqueda, busquedaExacta: this.busquedaExacta, tipo: this.filtroTipoItem },
+        { 
+          busqueda: this.busqueda, 
+          busquedaExacta: this.busquedaExacta, 
+          tipo: this.filtroTipoItem,
+          diferencia: this.filtroDiferencia 
+        },
         filterFn
       ).subscribe(state => {
         this.conteosPaginados = state.currentData;
@@ -196,7 +220,12 @@ export class InventarioCiclicoContainerComponent implements OnInit, OnDestroy {
         this.instanceId,
         this.conteos,
         25,
-        { busqueda: this.busqueda, busquedaExacta: this.busquedaExacta, tipo: this.filtroTipoItem },
+        { 
+          busqueda: this.busqueda, 
+          busquedaExacta: this.busquedaExacta, 
+          tipo: this.filtroTipoItem,
+          diferencia: this.filtroDiferencia 
+        },
         filterFn
       );
     }

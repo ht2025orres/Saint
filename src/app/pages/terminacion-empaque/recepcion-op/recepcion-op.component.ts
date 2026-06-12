@@ -180,7 +180,7 @@ export class RecepcionOpComponent implements OnInit {
 
         forkJoin(peticiones).subscribe({
           next: (respuestas: any[][]) => {
-            const items: any[] = [].concat(...respuestas);
+            const items: any[] = ([] as any).concat(...respuestas);
 
             this.terminacionEmpaqueService
               .generarHashes(items)
@@ -613,7 +613,7 @@ export class RecepcionOpComponent implements OnInit {
       if (result.isConfirmed) {
         this.loadingGuardarModal = true; // ← Activar loading
 
-        const usuario = this.authService.user.id || 0;
+        const usuario = this.authService.user?.id || 0;
         
         // Generar hashes para los items del modal
         this.terminacionEmpaqueService.generarHashes(itemsParaGuardar)
@@ -828,7 +828,7 @@ export class RecepcionOpComponent implements OnInit {
       id_talla: item.id_talla,
       cantidad_recibida: ubicacionDistinta.cantidad, // la cantidad que se mueve
       precio_unitario: item.precio_unitario,
-      usuario: this.authService.user.id, // <- asegúrate de tener este valor en tu componente
+      usuario: this.authService.user?.id ?? '', // <- asegúrate de tener este valor en tu componente
       ubicacion_actual: ubicacionDistinta.ubicacion,
       ubicacion: nuevaUbicacion,
       comentario: comentario ?? ''
@@ -889,7 +889,7 @@ export class RecepcionOpComponent implements OnInit {
       return;
     }
 
-    const usuario = this.authService.user.id || 0;
+    const usuario = this.authService.user?.id ?? 0;
 
     const itemsNormales = this.items
       .filter(i => i.cantidad_recibida > 0)

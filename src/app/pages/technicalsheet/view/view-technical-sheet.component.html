@@ -341,6 +341,11 @@
                     *ngIf="this.technicalDataSheetCurrent.status != 'TERMINADO'">
                     Aprobar
                 </button>
+                <button class="btn btn-dark btn-rounded float-right mx-2" role="button"
+                    *ngIf="(authService.hasPermission(52) || authService.hasPermission(1)) && this.technicalDataSheetCurrent.status != 'ANULADO'"
+                    (click)="anularFicha()">
+                    Anular Ficha
+                </button>
                 <button class="btn btn-success btn-rounded float-right " role="button"
                     (click)="approveTechnicalSheet()"
                     *ngIf="this.technicalDataSheetCurrent.status == 'TERMINADO' && 

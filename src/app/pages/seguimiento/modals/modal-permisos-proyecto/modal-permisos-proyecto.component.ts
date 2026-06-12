@@ -59,13 +59,13 @@ export class ModalPermisosProyectoComponent implements OnChanges {
     this.asignaciones.push({
       usuario_id: Number(this.usuarioSeleccionadoId),
       nombre: user?.nombre || 'Usuario',
-      puede_ver: true, // Por defecto al añadirlo puede ver
-      puede_crear: false,
-      puede_editar: false,
-      puede_eliminar: false,
-      puede_asignar: false,
-      puede_cambiar_fechas: false,
-      puede_gestionar_permisos: false
+      puede_ver: true,
+      puede_crear: true,
+      puede_editar: true,
+      puede_eliminar: true,
+      puede_asignar: true,
+      puede_cambiar_fechas: true,
+      puede_gestionar_permisos: true
     });
     this.usuarioSeleccionadoId = null;
   }

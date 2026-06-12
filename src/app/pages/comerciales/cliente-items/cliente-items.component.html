@@ -1,180 +1,284 @@
-<div class="items-container">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-row">
-      <button class="btn-back" (click)="goBack()">
-        <i class="bi bi-arrow-left"></i>
-      </button>
-      <div class="header-info">
-        <h1 class="page-title">{{ clienteNombre }}</h1>
-        <div class="client-meta">
-          <span class="meta-tag"><i class="bi bi-hash"></i> NIT: {{ clienteNit }}</span>
-          <span class="meta-tag"><i class="bi bi-box-seam"></i> {{ items.length }} ítems</span>
-          <span class="meta-tag"><i class="bi bi-receipt"></i> {{ solicitudes.length }} solicitudes</span>
+<div class="max-w-screen-xl mx-auto px-4 py-6 font-sans">
+
+  <!-- ========== HEADER ========== -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <button class="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+                (click)="goBack()">
+          <i class="bi bi-arrow-left text-lg"></i>
+        </button>
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20">
+          {{ clienteNombre?.charAt(0)?.toUpperCase() }}
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900 tracking-tight">{{ clienteNombre }}</h1>
+          <div class="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500">
+            <span><i class="bi bi-hash"></i> NIT: {{ clienteNit }}</span>
+            <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full"><i class="bi bi-box-seam"></i> {{ items.length }} ítems</span>
+            <span class="inline-flex items-center gap-1 bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full"><i class="bi bi-receipt"></i> {{ solicitudes.length }} solicitudes</span>
+            <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full"><i class="bi bi-file-earmark-text"></i> {{ ordenes.length }} OCs</span>
+          </div>
         </div>
       </div>
-      <button class="btn-new-costeo" (click)="nuevaSolicitud()">
-        <i class="bi bi-plus-lg"></i>
-        Nueva Solicitud
-      </button>
+      <div class="flex items-center gap-2">
+        <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all"
+                (click)="nuevaSolicitud()">
+          <i class="bi bi-plus-lg"></i> Nueva Solicitud
+        </button>
+        <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 shadow-sm transition-all"
+                (click)="irACaptura()">
+          <i class="bi bi-file-earmark-arrow-up"></i> Capturar OC
+        </button>
+      </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs-bar">
-      <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="activeTab = 'items'">
-        <i class="bi bi-box-seam"></i> Ítems (vía PVs)
-        <span *ngIf="items.length" class="tab-badge">{{ items.length }}</span>
+    <!-- Sub-Tabs -->
+    <div class="flex items-center gap-1 mt-5 border-b border-gray-200">
+      <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200"
+              [class]="activeTab === 'items' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+              (click)="activeTab = 'items'">
+        <i class="bi bi-box-seam mr-1.5"></i> Ítems (vía PVs)
+        <span *ngIf="items.length" class="ml-1.5 text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">{{ items.length }}</span>
       </button>
-      <button class="tab-btn" [class.active]="activeTab === 'solicitudes'" (click)="activeTab = 'solicitudes'">
-        <i class="bi bi-file-earmark-text"></i> Solicitudes
-        <span *ngIf="solicitudes.length" class="tab-badge">{{ solicitudes.length }}</span>
+      <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200"
+              [class]="activeTab === 'solicitudes' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+              (click)="activeTab = 'solicitudes'">
+        <i class="bi bi-file-earmark-text mr-1.5"></i> Solicitudes
+        <span *ngIf="solicitudes.length" class="ml-1.5 text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">{{ solicitudes.length }}</span>
+      </button>
+      <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200"
+              [class]="activeTab === 'ordenes' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+              (click)="activeTab = 'ordenes'">
+        <i class="bi bi-receipt mr-1.5"></i> Órdenes de Compra
+        <span *ngIf="ordenes.length" class="ml-1.5 text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">{{ ordenes.length }}</span>
       </button>
     </div>
   </div>
 
-  <!-- ==================== ITEMS TAB ==================== -->
-  <div *ngIf="activeTab === 'items'" class="content-section">
-    <div class="search-wrapper">
-      <div class="search-input-group">
-        <i class="bi bi-search search-icon"></i>
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Buscar ítem por referencia, descripción, color o talla..."
-          [(ngModel)]="searchTerm"
-          (input)="applyFilters()"
-          (keyup.enter)="searchItems()"
-        />
-        <button *ngIf="searchTerm && !isDeepSearch" class="btn-deep-link" (click)="deepSearch()" title="Buscar en historial profundo">
-          ¿No lo encuentras? Búsqueda profunda
-        </button>
-        <span *ngIf="isDeepSearch" class="deep-badge">
-          <i class="bi bi-info-circle"></i> Historial Profundo
-        </span>
+  <!-- ==================== TAB: ÍTEMS ==================== -->
+  <div *ngIf="activeTab === 'items'">
+    <!-- Search -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="relative flex-1">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text"
+               class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
+               placeholder="Buscar por referencia, descripción, color o talla..."
+               [(ngModel)]="searchTerm"
+               (input)="applyFilters()"
+               (keyup.enter)="searchItems()" />
       </div>
+      <button *ngIf="searchTerm && !isDeepSearch"
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+              (click)="deepSearch()">
+        <i class="bi bi-search"></i> Búsqueda profunda
+      </button>
+      <span *ngIf="isDeepSearch" class="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
+        <i class="bi bi-info-circle"></i> Historial Profundo
+      </span>
     </div>
 
     <!-- Loading -->
-    <div *ngIf="isLoading" class="loading-container">
-      <div class="skeleton-list">
-        <div *ngFor="let i of [1,2,3,4,5]" class="skeleton-row"></div>
+    <div *ngIf="isLoading" class="space-y-2">
+      <div *ngFor="let i of [1,2,3,4,5]" class="bg-white rounded-lg border border-gray-100 p-4 animate-pulse">
+        <div class="flex gap-4">
+          <div class="h-4 bg-gray-200 rounded w-20"></div>
+          <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+          <div class="h-4 bg-gray-100 rounded w-16"></div>
+        </div>
       </div>
     </div>
 
-    <!-- Items Table (PAGINATED) -->
-    <div *ngIf="!isLoading && filteredItems.length > 0" class="table-wrapper">
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th>Referencia</th>
-            <th>Descripción</th>
-            <th>Color</th>
-            <th>Talla</th>
-            <th>Pedidos</th>
-            <th>Cant. Total</th>
-            <th>Última PV</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of pagedItems; let i = index"
-              class="item-row"
-              [style.animation-delay]="(i * 20) + 'ms'">
-            <td>
-              <span class="ref-badge">{{ getItemRef(item) }}</span>
-            </td>
-            <td class="desc-cell">{{ getItemDesc(item) }}</td>
-            <td>
-              <span *ngIf="item.color" class="color-tag">
-                <span class="color-dot" [style.background]="item.id_color === 'BLA' ? '#fff' : item.id_color === 'NGR' ? '#333' : '#2563EB'"></span>
-                {{ item.color }}
-              </span>
-              <span *ngIf="!item.color" class="text-muted">—</span>
-            </td>
-            <td>
-              <span *ngIf="item.talla" class="talla-tag">{{ item.talla }}</span>
-              <span *ngIf="!item.talla" class="text-muted">—</span>
-            </td>
-            <td>
-              <span class="pedido-count">{{ item.veces_pedido || '—' }}</span>
-            </td>
-            <td>
-              <span class="total-qty">{{ item.total_pedido ? (item.total_pedido | number) : '—' }}</span>
-            </td>
-            <td>
-              <span *ngIf="item.ultima_pv" class="pv-tag">PV {{ item.ultima_pv }}</span>
-              <span *ngIf="!item.ultima_pv" class="text-muted">—</span>
-            </td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn action-costeo" title="Crear solicitud con este ítem"
+    <!-- Items Table -->
+    <div *ngIf="!isLoading && filteredItems.length > 0" class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50/80 border-b border-gray-100">
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Referencia</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Descripción</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Color</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Talla</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Pedidos</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Cant.</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Última PV</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider w-16"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of pagedItems; let i = index"
+                class="border-b border-gray-50 last:border-0 hover:bg-blue-50/30 transition-colors"
+                [style.animation-delay]="(i * 15) + 'ms'"
+                style="animation: fadeInUp 0.25s ease forwards; opacity: 0;">
+              <td class="px-4 py-3">
+                <span class="text-xs font-mono font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{{ getItemRef(item) }}</span>
+              </td>
+              <td class="px-4 py-3 text-gray-700 max-w-xs truncate">{{ getItemDesc(item) }}</td>
+              <td class="px-4 py-3">
+                <span *ngIf="item.color" class="text-xs text-gray-600">{{ item.color }}</span>
+                <span *ngIf="!item.color" class="text-gray-300">—</span>
+              </td>
+              <td class="px-4 py-3">
+                <span *ngIf="item.talla" class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ item.talla }}</span>
+                <span *ngIf="!item.talla" class="text-gray-300">—</span>
+              </td>
+              <td class="px-4 py-3 text-center text-gray-600">{{ item.veces_pedido || '—' }}</td>
+              <td class="px-4 py-3 text-center font-medium text-gray-900">{{ item.total_pedido ? (item.total_pedido | number) : '—' }}</td>
+              <td class="px-4 py-3">
+                <span *ngIf="item.ultima_pv" class="text-xs text-emerald-600 font-medium">PV {{ item.ultima_pv }}</span>
+                <span *ngIf="!item.ultima_pv" class="text-gray-300">—</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <button class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors inline-flex items-center justify-center"
+                        title="Crear solicitud con este ítem"
                         (click)="nuevaSolicitud(item)">
-                  <i class="bi bi-calculator"></i>
+                  <i class="bi bi-plus-lg text-xs"></i>
                 </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- Items Paginator -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
-      [instanceId]="itemsPaginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[10, 25, 50, 100]"
-      [loading]="isLoading"
-      [noDataMessage]="'No hay PVs registradas para este cliente'">
-    </app-shared-paginator>
+    <!-- Empty -->
+    <div *ngIf="!isLoading && filteredItems.length === 0" class="bg-white rounded-lg border border-gray-100 p-12 text-center">
+      <div class="text-gray-300 mb-3"><i class="bi bi-inbox text-4xl"></i></div>
+      <h3 class="text-gray-600 font-semibold mb-1">Sin ítems registrados</h3>
+      <p class="text-sm text-gray-400">No hay PVs con ítems para este cliente</p>
+    </div>
+
+    <div class="mt-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(itemsPaginatorId)"
+        [instanceId]="itemsPaginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [loading]="isLoading"
+        [noDataMessage]="'No hay PVs registradas para este cliente'">
+      </app-shared-paginator>
+    </div>
   </div>
 
-  <!-- ==================== SOLICITUDES TAB ==================== -->
-  <div *ngIf="activeTab === 'solicitudes'" class="content-section">
-    <div *ngIf="isLoadingSolicitudes" class="loading-container">
-      <div class="skeleton-list">
-        <div *ngFor="let i of [1,2,3]" class="skeleton-row"></div>
+  <!-- ==================== TAB: SOLICITUDES ==================== -->
+  <div *ngIf="activeTab === 'solicitudes'">
+    <div *ngIf="isLoadingSolicitudes" class="space-y-3">
+      <div *ngFor="let i of [1,2,3]" class="bg-white rounded-lg border border-gray-100 p-5 animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
+        <div class="h-3 bg-gray-100 rounded w-2/5"></div>
       </div>
     </div>
 
-    <div *ngIf="!isLoadingSolicitudes && solicitudes.length > 0" class="costeos-list">
-      <div *ngFor="let sol of pagedSolicitudes" class="costeo-card" (click)="goToSolicitud(sol)">
-        <div class="costeo-header">
-          <span class="costeo-code"><i class="bi bi-receipt"></i> {{ sol.codigo }}</span>
-          <span class="estado-badge" [ngClass]="getEstadoBadge(sol.estado || '')">
+    <div *ngIf="!isLoadingSolicitudes && solicitudes.length > 0" class="space-y-2">
+      <div *ngFor="let sol of pagedSolicitudes; let i = index"
+           class="bg-white rounded-lg border border-gray-100 p-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200"
+           (click)="goToSolicitud(sol)"
+           [style.animation-delay]="(i * 35) + 'ms'"
+           style="animation: fadeInUp 0.3s ease forwards; opacity: 0;">
+        <div class="flex items-start justify-between mb-2">
+          <span class="text-sm font-bold text-blue-600"><i class="bi bi-receipt mr-1"></i>{{ sol.codigo }}</span>
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full" [ngClass]="getEstadoBadgeClass(sol.estado || '')">
             {{ getEstadoLabel(sol.estado || '') }}
           </span>
         </div>
-        <div class="costeo-meta">
-          <span><i class="bi bi-box"></i> {{ sol.items_count || 0 }} ítems</span>
-          <span><i class="bi bi-calendar3"></i> {{ sol.created_at | date:'dd/MM/yyyy' }}</span>
-          <span *ngIf="sol.requiere_costeo" class="costeo-badge-mini">
-            <i class="bi bi-calculator"></i> Costeo
-          </span>
-          <span *ngIf="sol.requiere_muestra" class="muestra-tag">
-            <i class="bi bi-scissors"></i> Muestra
-          </span>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+          <span *ngIf="sol.items_count"><i class="bi bi-box mr-1"></i>{{ sol.items_count }} ítem{{ sol.items_count !== 1 ? 's' : '' }}</span>
+          <span *ngIf="sol.requiere_costeo" class="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full"><i class="bi bi-calculator mr-1"></i>Costeo</span>
+          <span *ngIf="sol.requiere_muestra" class="text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full"><i class="bi bi-scissors mr-1"></i>Muestra</span>
+          <span class="ml-auto"><i class="bi bi-calendar3 mr-1"></i>{{ sol.created_at | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Solicitudes Paginator -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(solicitudesPaginatorId)"
-      [instanceId]="solicitudesPaginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25]"
-      [loading]="isLoadingSolicitudes"
-      [noDataMessage]="'Este cliente no tiene solicitudes registradas aún'">
-    </app-shared-paginator>
-
-    <div *ngIf="!isLoadingSolicitudes && solicitudes.length === 0" class="empty-state">
-      <i class="bi bi-file-earmark-text empty-icon"></i>
-      <h3>Sin solicitudes</h3>
-      <p>Este cliente no tiene solicitudes registradas aún</p>
-      <button class="btn-new-costeo-inline" (click)="nuevaSolicitud()">
+    <div *ngIf="!isLoadingSolicitudes && solicitudes.length === 0" class="bg-white rounded-lg border border-gray-100 p-12 text-center">
+      <div class="text-gray-300 mb-3"><i class="bi bi-file-earmark-text text-4xl"></i></div>
+      <h3 class="text-gray-600 font-semibold mb-1">Sin solicitudes</h3>
+      <p class="text-sm text-gray-400 mb-4">Este cliente no tiene solicitudes registradas aún</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              (click)="nuevaSolicitud()">
         <i class="bi bi-plus-lg"></i> Crear primera solicitud
       </button>
     </div>
+
+    <div class="mt-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(solicitudesPaginatorId)"
+        [instanceId]="solicitudesPaginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25]"
+        [loading]="isLoadingSolicitudes"
+        [noDataMessage]="'Sin solicitudes'">
+      </app-shared-paginator>
+    </div>
   </div>
+
+  <!-- ==================== TAB: ÓRDENES DE COMPRA ==================== -->
+  <div *ngIf="activeTab === 'ordenes'">
+    <div *ngIf="isLoadingOrdenes" class="space-y-3">
+      <div *ngFor="let i of [1,2,3]" class="bg-white rounded-lg border border-gray-100 p-5 animate-pulse">
+        <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
+        <div class="h-3 bg-gray-100 rounded w-2/5"></div>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingOrdenes && ordenes.length > 0" class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50/80 border-b border-gray-100">
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">N° Orden</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">PV Asociado</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Ítems</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Estado</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let orden of pagedOrdenes; let i = index"
+                class="border-b border-gray-50 last:border-0 hover:bg-blue-50/30 transition-colors"
+                [style.animation-delay]="(i * 25) + 'ms'"
+                style="animation: fadeInUp 0.25s ease forwards; opacity: 0;">
+              <td class="px-4 py-3 font-semibold text-gray-900">{{ orden.numero_orden }}</td>
+              <td class="px-4 py-3">
+                <span *ngIf="orden.pv_asociado" class="text-emerald-600 font-medium">{{ orden.pv_asociado }}</span>
+                <span *ngIf="!orden.pv_asociado" class="text-gray-300">—</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{ orden.items_count || 0 }}</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full" [ngClass]="getEstadoBadgeClass(orden.estado)">
+                  {{ getEstadoLabel(orden.estado) }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{{ orden.fecha_registro }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingOrdenes && ordenes.length === 0" class="bg-white rounded-lg border border-gray-100 p-12 text-center">
+      <div class="text-gray-300 mb-3"><i class="bi bi-inbox text-4xl"></i></div>
+      <h3 class="text-gray-600 font-semibold mb-1">Sin órdenes de compra</h3>
+      <p class="text-sm text-gray-400 mb-4">No hay OCs registradas para este cliente</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              (click)="irACaptura()">
+        <i class="bi bi-file-earmark-arrow-up"></i> Capturar OC
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(ordenesPaginatorId)"
+        [instanceId]="ordenesPaginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25]"
+        [loading]="isLoadingOrdenes"
+        [noDataMessage]="'Sin órdenes'">
+      </app-shared-paginator>
+    </div>
+  </div>
+
 </div>

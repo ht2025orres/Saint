@@ -109,17 +109,31 @@
 
         <!-- Resumen rápido -->
         <div class="px-4 py-2 border-b border-slate-100 flex items-center gap-6 bg-white">
-            <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Coinciden: {{diferencias.iguales}}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sobrante: {{diferencias.positivas}}</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-rose-400"></span>
-                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Faltante: {{diferencias.negativas}}</span>
+            <button (click)="toggleFiltroDiferencia('iguales')" 
+                class="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all border"
+                [ngClass]="filtroDiferencia === 'iguales' ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-500 border-transparent hover:bg-slate-50'">
+                <span class="w-3 h-3 rounded-full" [ngClass]="filtroDiferencia === 'iguales' ? 'bg-white' : 'bg-emerald-400'"></span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Coinciden: {{diferencias.iguales}}</span>
+            </button>
+
+            <button (click)="toggleFiltroDiferencia('positivas')" 
+                class="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all border"
+                [ngClass]="filtroDiferencia === 'positivas' ? 'bg-amber-500 text-white border-amber-600 shadow-md' : 'bg-white text-slate-500 border-transparent hover:bg-slate-50'">
+                <span class="w-3 h-3 rounded-full" [ngClass]="filtroDiferencia === 'positivas' ? 'bg-white' : 'bg-amber-400'"></span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Sobrante: {{diferencias.positivas}}</span>
+            </button>
+
+            <button (click)="toggleFiltroDiferencia('negativas')" 
+                class="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all border"
+                [ngClass]="filtroDiferencia === 'negativas' ? 'bg-rose-500 text-white border-rose-600 shadow-md' : 'bg-white text-slate-500 border-transparent hover:bg-slate-50'">
+                <span class="w-3 h-3 rounded-full" [ngClass]="filtroDiferencia === 'negativas' ? 'bg-white' : 'bg-rose-400'"></span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Faltante: {{diferencias.negativas}}</span>
+            </button>
+
+            <div *ngIf="filtroDiferencia" class="ml-auto">
+                <button (click)="filtroDiferencia = ''; aplicarFiltros()" class="text-[9px] font-black text-slate-400 hover:text-rose-500 uppercase tracking-widest flex items-center gap-1 transition-colors">
+                    <i class="bi bi-x-circle-fill"></i> Limpiar Filtro
+                </button>
             </div>
         </div>
 
@@ -133,6 +147,8 @@
                         <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Cant. Física</th>
                         <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Cant. SIESA</th>
                         <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Diferencia</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Precio Unit.</th>
+                        <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Dif. Total ($)</th>
                         <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Zona(s)</th>
                         <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</th>
                         <th class="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Conteo</th>
@@ -191,6 +207,21 @@
                                 {{ (c.cantidad_fisica - c.cantidad_siesa) > 0 ? '+' : '' }}{{c.cantidad_fisica - c.cantidad_siesa | number}}
                             </span>
                         </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="text-xs font-bold text-slate-500">
+                                {{ (c.valor_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="text-xs font-black"
+                                [ngClass]="{
+                                    'text-emerald-600': (c.cantidad_fisica - c.cantidad_siesa) === 0,
+                                    'text-amber-600': (c.cantidad_fisica - c.cantidad_siesa) > 0,
+                                    'text-rose-600': (c.cantidad_fisica - c.cantidad_siesa) < 0
+                                }">
+                                {{ ((c.cantidad_fisica - c.cantidad_siesa) * (c.valor_unitario || 0)) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                            </span>
+                        </td>
                         <td class="px-3 py-2">
                             <div class="flex flex-wrap gap-1.5">
                                 <span *ngFor="let zona of getZonasConteo(c)"
@@ -205,7 +236,7 @@
                         </td>
                         <td class="px-3 py-2">
                             <span class="text-[10px] font-black text-slate-500 uppercase tracking-tighter">
-                                {{getNombreUsuario(c.id_usuario)}}
+                                {{state.nombreUsuario(c.id_usuario)}}
                             </span>
                         </td>
                         <td class="px-3 py-2">

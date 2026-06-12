@@ -14,8 +14,8 @@ export class HistoricoMovimientosComponent implements OnInit {
   totalItems = 0;
 
   filtros = {
-    id_inventario: null,
-    id_usuario: null,
+    id_inventario: null as number | null,
+    id_usuario: null as number | null,
     tipo_movimiento: ''
   };
 
@@ -45,11 +45,11 @@ export class HistoricoMovimientosComponent implements OnInit {
   cargarHistorico(page: number = 1): void {
     this.loading = true;
     this.currentPage = page;
-    
-    const params = {
-      ...this.filtros,
-      page: this.currentPage
-    };
+    // Build params avoiding null values for optional numeric fields
+    const params: { id_inventario?: number; id_usuario?: number; tipo_movimiento?: string; page?: number } = { page: this.currentPage };
+    if (this.filtros.id_inventario != null) params.id_inventario = this.filtros.id_inventario;
+    if (this.filtros.id_usuario != null) params.id_usuario = this.filtros.id_usuario;
+    if (this.filtros.tipo_movimiento) params.tipo_movimiento = this.filtros.tipo_movimiento;
 
     this.inventarioService.getHistoricoMovimientos(params).subscribe({
       next: (resp) => {

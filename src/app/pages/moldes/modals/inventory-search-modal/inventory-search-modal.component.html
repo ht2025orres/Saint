@@ -1,16 +1,31 @@
 <div class="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in" (click)="close()">
   <div class="w-[95%] max-w-[1000px] h-[80vh] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95" (click)="$event.stopPropagation()">
-    <div class="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
-      <h2 class="text-lg font-black text-slate-900 min-w-max uppercase tracking-tight">
-        <i class="bi bi-search text-indigo-600"></i> Bodega {{ selectedBodega }}
-      </h2>
-      <div class="flex-1 relative">
+    <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-wrap items-center gap-4">
+      <div class="flex items-center gap-2">
+        <i class="bi bi-search text-indigo-600 text-lg"></i>
+        <select [(ngModel)]="selectedBodega" (change)="search()" 
+                class="bg-transparent font-black text-slate-900 uppercase tracking-tight outline-none border-none cursor-pointer">
+          <option *ngFor="let b of bodegas" [value]="b.id">{{ b.id }} - {{ b.name }}</option>
+        </select>
+      </div>
+
+      <div class="flex-1 relative min-w-[200px]">
         <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input type="text" [(ngModel)]="searchQuery" placeholder="Buscar material..." 
-               class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:border-indigo-500 outline-none transition-all" 
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Buscar material (Ref, ID o Desc)..." 
+               class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:border-indigo-500 outline-none transition-all shadow-sm" 
                (input)="filterResults()" (keyup.enter)="search()" />
       </div>
-      <button class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-white" (click)="close()">
+
+      <div class="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+        <button *ngFor="let type of ['todos', 'tela', 'insumo']"
+                (click)="filterType = $any(type); filterResults()"
+                class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all"
+                [ngClass]="filterType === type ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'">
+          {{ type }}
+        </button>
+      </div>
+
+      <button class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 transition-colors" (click)="close()">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>

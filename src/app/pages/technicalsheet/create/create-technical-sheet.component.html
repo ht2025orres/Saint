@@ -227,9 +227,15 @@
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
                                                     formControlName="id_item"
-                                                    [class.form-control-danger]="codigoItemNoValid">
+                                                    [class.form-control-danger]="codigoItemNoValid"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('id_item', 50)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('id_item', 50)">{{ getCharCount('id_item', 50) }}</span>
                                                 <div class="form-control-feedback" *ngIf="codigoItemNoValid">Código de
                                                     Código del ítem es requerido
+                                                </div>
+                                                <div class="alert alert-warning mt-2 py-1 px-2 text-xs" style="font-size: 11px; margin-top: 5px; border-radius: 4px; display: flex; align-items: center; gap: 5px;" *ngIf="duplicateItemWarning">
+                                                    <i class="fa fa-exclamation-triangle"></i>
+                                                    <span>{{ duplicateItemWarning }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -252,8 +258,9 @@
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
                                                     formControlName="item_description"
-                                                    [class.form-control-danger]="descripcionItemNoValid">
-                                                <span class="char-count">{{ getCharCount('item_description') }}</span>
+                                                    [class.form-control-danger]="descripcionItemNoValid"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('item_description', 1000)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('item_description', 1000)">{{ getCharCount('item_description', 1000) }}</span>
                                                 <div class="form-control-feedback" *ngIf="descripcionItemNoValid">
                                                     Descripción del ítem es requerido
                                                 </div>
@@ -293,7 +300,9 @@
                                             <label class="control-label text-right col-md-3">Tela principal:</label>
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
-                                                    formControlName="main_fabric">
+                                                    formControlName="main_fabric"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('main_fabric', 1000)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('main_fabric', 1000)">{{ getCharCount('main_fabric', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -303,7 +312,9 @@
                                             <label class="control-label text-right col-md-3">Tela contraste:</label>
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
-                                                    formControlName="contrast_fabric">
+                                                    formControlName="contrast_fabric"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('contrast_fabric', 1000)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('contrast_fabric', 1000)">{{ getCharCount('contrast_fabric', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -997,7 +1008,9 @@
                                             <label class="control-label text-right col-md-3">Prelavado:</label>
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
-                                                    formControlName="prewash">
+                                                    formControlName="prewash"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('prewash', 1000)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('prewash', 1000)">{{ getCharCount('prewash', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1011,7 +1024,9 @@
                                             <label class="control-label text-right col-md-3">Pespuntes:</label>
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
-                                                    formControlName="stitching">
+                                                    formControlName="stitching"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('stitching', 1000)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('stitching', 1000)">{{ getCharCount('stitching', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1024,8 +1039,9 @@
                                                 estampado:</label>
                                             <div class="col-md-8">
                                                 <textarea type="text" rows="5" class="form-control" placeholder=""
-                                                    formControlName="stamped"></textarea>
-                                                    <span class="char-count">{{ getCharCount('stamped') }}</span>
+                                                    formControlName="stamped"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('stamped', 1000)"></textarea>
+                                                    <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('stamped', 1000)">{{ getCharCount('stamped', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1035,7 +1051,9 @@
                                             <label class="control-label text-right col-md-3">Planchado:</label>
                                             <div class="col-md-8">
                                                 <input type="text" class="form-control" placeholder=""
-                                                    formControlName="ironing">
+                                                    formControlName="ironing"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('ironing', 1000)">
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('ironing', 1000)">{{ getCharCount('ironing', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1046,8 +1064,9 @@
                                                 empaque:</label>
                                             <div class="col-md-8">
                                                 <textarea type="text" rows="5" class="form-control" placeholder=""
-                                                    formControlName="packaging"></textarea>
-                                                    <span class="char-count">{{ getCharCount('packaging') }}</span>
+                                                    formControlName="packaging"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('packaging', 1000)"></textarea>
+                                                    <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('packaging', 1000)">{{ getCharCount('packaging', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1057,8 +1076,9 @@
                                             <label class="control-label text-right col-md-3">Puntos Criticos:</label>
                                             <div class="col-md-8">
                                                 <textarea type="text" rows="5" class="form-control" placeholder=""
-                                                    formControlName="critical_points"></textarea>
-                                                    <span class="char-count">{{ getCharCount('critical_points') }}</span>
+                                                    formControlName="critical_points"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('critical_points', 1000)"></textarea>
+                                                    <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('critical_points', 1000)">{{ getCharCount('critical_points', 1000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1069,8 +1089,9 @@
                                                 bordado:</label>
                                             <div class="col-md-8">
                                                 <textarea type="text" rows="5" class="form-control" placeholder=""
-                                                    formControlName="embroidery"></textarea>
-                                                    <span class="char-count">{{ getCharCount('embroidery') }}</span>
+                                                    formControlName="embroidery"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('embroidery', 1000)"></textarea>
+                                                    <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('embroidery', 1000)">{{ getCharCount('embroidery', 1000) }}</span>
                                             </div>
 
                                         </div>
@@ -1082,8 +1103,9 @@
                                                 cliente:</label>
                                             <div class="col-md-8">
                                                 <textarea type="text" rows="5" class="form-control" placeholder=""
-                                                    formControlName="customer_description"></textarea>
-                                                <span class="char-count">{{ getCharCount('customer_description', 3000) }}</span>
+                                                    formControlName="customer_description"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('customer_description', 3000)"></textarea>
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('customer_description', 3000)">{{ getCharCount('customer_description', 3000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1093,8 +1115,9 @@
                                             <label class="control-label text-right col-md-1">Tabla de medidas:</label>
                                             <div class="col-md-11">
                                                 <angular-editor formControlName="measurement_table"
-                                                    [config]="formEditorConfig"></angular-editor>
-                                                <span class="char-count">{{ getCharCount('measurement_table', 40000) }}</span>
+                                                    [config]="formEditorConfig"
+                                                    [class.input-limit-exceeded]="isCharLimitExceeded('measurement_table', 40000)"></angular-editor>
+                                                <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded('measurement_table', 40000)">{{ getCharCount('measurement_table', 40000) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1668,6 +1691,13 @@
                                 <button class="btn btn-themecolor btn-rounded" role="button"
                                     [style.cursor]="cursorValidationImage()" (click)="updateStatus('DESARROLLO')">
                                     Guardar
+                                </button>
+                            </li>
+
+                            <li aria-hidden="false" aria-disabled="false" class=""
+                                *ngIf="(authService.hasPermission(52) || authService.hasPermission(1)) && technicalDataSheetCurrent.id && technicalDataSheetCurrent.status !== 'ANULADO'">
+                                <button type="button" class="btn btn-danger btn-rounded ms-2" (click)="anularFicha()">
+                                    Anular Ficha
                                 </button>
                             </li>
                         </ul>

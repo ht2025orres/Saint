@@ -52,10 +52,36 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   get usuarioId():            number  { return this.authService.user?.id ?? 0; }
   get esAdminSistema():       boolean { return this.authService.hasPermission(1); }
   get esGestor():             boolean { return this.authService.hasPermission(39); }
-  get puedeGestionarModulo(): boolean { return this.esAdminSistema || this.esGestor; }
+
+  // ── Toggle Admin/Miembro ────────────────────────────────────────
+  vistaAdminActiva = false;
+
+  get puedeGestionarModulo(): boolean {
+    // Si es gestor (permiso 39), siempre puede gestionar
+    if (this.esGestor) return true;
+    // Si es admin (permiso 1), depende del toggle
+    if (this.esAdminSistema) return this.vistaAdminActiva;
+    return false;
+  }
+
+  /** Modo de vista para pasar a las APIs de seguimiento */
+  get vistaMode(): 'member' | undefined {
+    if (this.esAdminSistema && !this.vistaAdminActiva) return 'member';
+    return undefined;
+  }
+
+  toggleVistaAdmin(): void {
+    this.vistaAdminActiva = !this.vistaAdminActiva;
+    localStorage.setItem('seg-vista-admin', JSON.stringify(this.vistaAdminActiva));
+    this.cdr.markForCheck();
+  }
 
   // ── Lifecycle ────────────────────────────────────────────────────
   ngOnInit(): void {
+    // Cargar preferencia de vista persistida
+    const saved = localStorage.getItem('seg-vista-admin');
+    this.vistaAdminActiva = saved ? JSON.parse(saved) === true : false;
+
     this._cargarUsuarios();
     this._subs.add(
       this.state.toasts$.subscribe(ts => {
@@ -93,13 +119,13 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   // ── Usuarios (carga única, compartida con sub-componentes) ──────
   private _cargarUsuarios(): void {
     if (this.state.usuariosCache.length) return;
-    this.userService.getUsersByPermission(1).subscribe({
+    this.userService.getAllBasic().subscribe({
       next: (us: any[]) => {
         this.state.setUsuariosCache(
           us.map(u => ({
             id: u.id,
             nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
-            roles: u.roles?.map((r: any) => ({ id: r.id, nombre: r.name || r.nombre }))
+            roles: []
           })),
         );
         this.cdr.markForCheck();

@@ -27,6 +27,25 @@
     </button>
   </div>
 
+  <!-- Filtros de tipo de proyecto -->
+  <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+    <button
+      *ngFor="let t of [
+        {v:'todos',    l:'Todos',       i:'mdi mdi-folder-multiple'},
+        {v:'normales',  l:'Estándar',    i:'mdi mdi-folder'},
+        {v:'informes',  l:'De Informes', i:'mdi mdi-file-document-outline'}
+      ]"
+      (click)="cambiarFiltroTipo(t.v)"
+      class="flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all"
+      [ngClass]="filtroTipoProyecto === t.v
+        ? 'bg-amber-500 text-white shadow-sm'
+        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'"
+    >
+      <i [class]="t.i"></i>
+      <span class="hidden md:inline">{{ t.l }}</span>
+    </button>
+  </div>
+
   <!-- Búsqueda -->
   <div class="relative flex-1 max-w-[200px]">
     <i class="mdi mdi-magnify absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -135,6 +154,11 @@
                 <span *ngIf="p.nivel_usuario && p.nivel_usuario !== 'lector'"
                   class="text-[10px] px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100 font-black uppercase tracking-widest">
                   {{ p.nivel_usuario }}
+                </span>
+                <span *ngIf="p.es_proyecto_informe"
+                  class="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 font-black uppercase tracking-widest shadow-sm">
+                  <i class="mdi mdi-file-document-outline text-xs"></i>
+                  Informe Vinculado
                 </span>
               </div>
             </div>
@@ -280,6 +304,10 @@
                     <span class="text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest"
                       [ngClass]="state.getEstadoBadgeClass(p.estado)">
                       {{ p.estado }}
+                    </span>
+                    <span *ngIf="p.es_proyecto_informe"
+                      class="text-[8px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-black uppercase tracking-widest">
+                      Informe Vinculado
                     </span>
                   </div>
                   <!-- Avatares compactos en lista -->

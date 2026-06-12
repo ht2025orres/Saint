@@ -1,0 +1,432 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto modal-overlay" (click)="onClose()">
+  <div class="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all duration-300 flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
+    
+    <!-- Encabezado Modal -->
+    <div class="px-6 py-4 bg-gradient-to-r from-indigo-850 to-indigo-900 text-white flex items-center justify-between border-b border-gray-150">
+      <div class="flex items-center space-x-2">
+        <span class="bg-white/10 text-white px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">
+          {{ documento?.tipo_ss }}
+        </span>
+        <h3 class="text-lg font-extrabold tracking-tight">
+          Solicitud Nro. {{ documento?.nro_ss }}
+        </h3>
+      </div>
+      <button (click)="onClose()" class="text-white/70 hover:text-white transition-colors duration-150 p-1.5 hover:bg-white/10 rounded-full">
+        <i class="bi bi-x-lg text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Tabs de navegacion -->
+    <div class="flex border-b border-gray-200 bg-gray-50/50">
+      <button
+        (click)="switchTab('info')"
+        [class]="activeTab === 'info'
+          ? 'border-b-2 border-indigo-600 text-indigo-700 bg-white'
+          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'"
+        class="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all duration-150"
+      >
+        <i class="bi bi-file-earmark-text"></i>
+        Informacion General
+      </button>
+      <button
+        (click)="switchTab('items')"
+        [class]="activeTab === 'items'
+          ? 'border-b-2 border-indigo-600 text-indigo-700 bg-white'
+          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'"
+        class="flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all duration-150"
+      >
+        <i class="bi bi-box-seam"></i>
+        Items del Documento
+        <span *ngIf="itemsResumen.total > 0" class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+          {{ itemsResumen.total }}
+        </span>
+        <span *ngIf="itemsResumen.faltantes > 0" class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+          {{ itemsResumen.faltantes }} faltante{{ itemsResumen.faltantes > 1 ? 's' : '' }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Cuerpo Modal (Scrollable) -->
+    <div class="p-6 overflow-y-auto space-y-6 flex-grow">
+
+      <!-- ============================================================ -->
+      <!-- TAB: INFORMACION GENERAL -->
+      <!-- ============================================================ -->
+      <ng-container *ngIf="activeTab === 'info'">
+
+        <!-- Bloque 1: Datos de la Solicitud (Siesa) -->
+        <div class="space-y-3">
+          <div class="flex items-center space-x-2 text-indigo-900 border-b border-gray-100 pb-2">
+            <i class="bi bi-file-earmark-text font-bold"></i>
+            <h4 class="font-bold text-sm uppercase tracking-wider">Informacion de la Solicitud (Siesa)</h4>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Columna Izquierda -->
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-medium">Tipo:</span>
+                <span class="font-semibold text-gray-800">{{ documento?.tipo_ss }} ({{ documento?.tipo_ss === 'SS' ? 'Servicios' : 'Compras' }})</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-medium">Fecha Emision:</span>
+                <span class="font-semibold text-gray-800">{{ documento?.fecha_ss | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-medium">Fecha Creacion:</span>
+                <span class="font-semibold text-gray-800">{{ documento?.fecha_creacion_ss | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </div>
+            <!-- Columna Derecha -->
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-medium">Creado Por:</span>
+                <span class="font-semibold text-indigo-750">{{ documento?.creador_ss }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500 font-medium">Aprobador Por:</span>
+                <span class="font-semibold text-gray-800">{{ documento?.aprobador_ss || 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500 font-medium">Estado Siesa:</span>
+                <div class="flex items-center space-x-1.5">
+                  <span [class]="
+                    documento?.estado_ss === 'Cumplido' ? 'text-emerald-700 bg-emerald-50 border-emerald-100' :
+                    documento?.estado_ss === 'Cerrado' ? 'text-slate-700 bg-slate-100 border-slate-300' :
+                    documento?.estado_ss === 'Anulado' ? 'text-rose-700 bg-rose-50 border-rose-100' :
+                    documento?.estado_ss === 'Aprobado' ? 'text-blue-700 bg-blue-50 border-blue-100' :
+                    'text-yellow-700 bg-yellow-50 border-yellow-100'
+                  " class="px-2 py-0.5 rounded text-xs font-bold border">
+                    {{ documento?.estado_ss }}
+                  </span>
+                  <span *ngIf="documento?.cerrada_incompleta" 
+                        class="text-amber-750 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1"
+                        title="La solicitud se cerró en Siesa pero no se completaron todos los ítems">
+                    <i class="bi bi-exclamation-triangle-fill text-xs"></i>
+                    <span>Incompleta</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Referencia -->
+          <div *ngIf="documento?.referencia_ss" class="flex items-center gap-2 text-sm mt-2">
+            <span class="text-gray-500 font-medium">Referencia:</span>
+            <span class="font-semibold text-gray-700 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">{{ documento?.referencia_ss }}</span>
+          </div>
+        </div>
+
+        <!-- Bloque 2: Notas / Observaciones de la Solicitud -->
+        <div *ngIf="documento?.notas_ss" class="space-y-2">
+          <div class="flex items-center space-x-2 text-amber-700 border-b border-amber-100 pb-2">
+            <i class="bi bi-journal-text font-bold"></i>
+            <h4 class="font-bold text-sm uppercase tracking-wider">Notas / Observaciones de la Solicitud</h4>
+          </div>
+          <div class="bg-amber-50/60 border border-amber-200/60 rounded-xl p-4">
+            <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ documento?.notas_ss }}</p>
+          </div>
+        </div>
+
+        <!-- Bloque 3: Documentos Respuesta Generados (Siesa) -->
+        <div class="space-y-3">
+          <div class="flex items-center space-x-2 text-indigo-900 border-b border-gray-100 pb-2">
+            <i class="bi bi-arrow-right-circle-fill font-bold"></i>
+            <h4 class="font-bold text-sm uppercase tracking-wider">Documentos Respuesta (Siesa)</h4>
+          </div>
+
+          <!-- Si no existen ordenes vinculadas -->
+          <div *ngIf="!documento?.ordenes || documento?.ordenes?.length === 0" class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-dashed border-gray-200">
+            <i class="bi bi-info-circle text-gray-400 text-3xl mb-2"></i>
+            <p class="text-sm font-semibold text-gray-600">Pendiente de Procesamiento</p>
+            <p class="text-xs text-gray-400 mt-1 text-center">
+              Aun no se ha generado una Orden de Compra o documento de respuesta para esta solicitud en Siesa.
+            </p>
+          </div>
+
+          <!-- Si existen ordenes vinculadas -->
+          <div *ngIf="documento?.ordenes && documento?.ordenes!.length > 0" class="space-y-4">
+            <div *ngFor="let ord of documento?.ordenes" class="bg-slate-50/50 border border-slate-100 rounded-xl p-4 space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold text-slate-800">
+                    Orden: {{ ord.tipo_orden }} - {{ ord.nro_orden }}
+                  </span>
+                  <button (click)="verItemsDeOrden(ord.tipo_orden, ord.nro_orden)" 
+                          class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200 transition-colors duration-150 flex items-center gap-1">
+                    <i class="bi bi-eye-fill"></i> Ver items filtrados
+                  </button>
+                </div>
+                <span [class]="
+                  ord.estado_orden === 'Cumplido' ? 'text-green-700 bg-green-50 border-green-200' :
+                  ord.estado_orden === 'Anulado/Cerrado' ? 'text-red-700 bg-red-50 border-red-200' :
+                  'text-blue-700 bg-blue-50 border-blue-200'
+                " class="px-2 py-0.5 rounded-full text-[11px] font-bold border">
+                  {{ ord.estado_orden }}
+                </span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-400 font-medium">Fecha Emision Orden:</span>
+                  <span class="font-semibold text-gray-700">{{ ord.fecha_orden | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400 font-medium">Creador Orden:</span>
+                  <span class="font-semibold text-gray-700">{{ ord.creador_orden }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400 font-medium">Fecha Creacion Orden:</span>
+                  <span class="font-semibold text-gray-700">{{ ord.fecha_creacion_orden | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400 font-medium">Aprobador Orden:</span>
+                  <span class="font-semibold text-gray-700">{{ ord.aprobador_orden || 'N/A' }}</span>
+                </div>
+              </div>
+
+              <!-- Referencia de la Orden -->
+              <div *ngIf="ord.referencia_orden" class="flex items-center gap-2 text-xs mt-1">
+                <span class="text-gray-400 font-medium">Referencia:</span>
+                <span class="font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-150">{{ ord.referencia_orden }}</span>
+              </div>
+
+              <!-- Notas de la Orden -->
+              <div *ngIf="ord.notas_orden" class="mt-2 bg-blue-50/50 border border-blue-100/60 rounded-lg p-3">
+                <div class="flex items-center gap-1.5 text-blue-700 mb-1.5">
+                  <i class="bi bi-chat-left-text text-[11px]"></i>
+                  <span class="text-[11px] font-bold uppercase tracking-wider">Notas de la Orden</span>
+                </div>
+                <p class="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{{ ord.notas_orden }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ============================================================ -->
+      <!-- TAB: ITEMS DEL DOCUMENTO -->
+      <!-- ============================================================ -->
+      <ng-container *ngIf="activeTab === 'items'">
+
+        <!-- Loading -->
+        <div *ngIf="itemsLoading" class="flex flex-col items-center justify-center p-10">
+          <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-600 mb-3"></div>
+          <p class="text-sm text-gray-500 font-medium">Cargando items del documento...</p>
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="itemsError && !itemsLoading" class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <i class="bi bi-exclamation-triangle-fill text-red-500 text-xl"></i>
+          <div>
+            <p class="text-sm font-bold text-red-700">Error al cargar items</p>
+            <p class="text-xs text-red-600 mt-0.5">{{ itemsError }}</p>
+          </div>
+        </div>
+
+        <!-- Sin items -->
+        <div *ngIf="!itemsLoading && !itemsError && items.length === 0" class="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-xl border border-dashed border-gray-200">
+          <i class="bi bi-inbox text-gray-400 text-3xl mb-2"></i>
+          <p class="text-sm font-semibold text-gray-600">Sin items registrados</p>
+          <p class="text-xs text-gray-400 mt-1">Este documento no tiene lineas de movimiento en Siesa.</p>
+        </div>
+
+        <!-- Items cargados -->
+        <ng-container *ngIf="!itemsLoading && !itemsError && items.length > 0">
+
+          <!-- KPIs de Items (Filtrables por click) -->
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div (click)="filtrarPorEstado('COMPLETO')" 
+                 [class]="filtroEstado === 'COMPLETO' 
+                   ? 'bg-emerald-600 border-emerald-700 text-white scale-[1.02]' 
+                   : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100/70 hover:scale-[1.01]'"
+                 class="cursor-pointer border rounded-xl p-3 text-center transition-all duration-200 shadow-sm">
+              <div [class]="filtroEstado === 'COMPLETO' ? 'text-white' : 'text-emerald-700'" class="text-2xl font-black">{{ itemsResumen.completos }}</div>
+              <div [class]="filtroEstado === 'COMPLETO' ? 'text-emerald-100' : 'text-emerald-600'" class="text-[10px] font-bold uppercase tracking-wider mt-0.5">Completos</div>
+            </div>
+            
+            <div (click)="filtrarPorEstado('PARCIAL')" 
+                 [class]="filtroEstado === 'PARCIAL' 
+                   ? 'bg-amber-500 border-amber-600 text-white scale-[1.02]' 
+                   : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/70 hover:scale-[1.01]'"
+                 class="cursor-pointer border rounded-xl p-3 text-center transition-all duration-200 shadow-sm">
+              <div [class]="filtroEstado === 'PARCIAL' ? 'text-white' : 'text-amber-700'" class="text-2xl font-black">{{ itemsResumen.parciales }}</div>
+              <div [class]="filtroEstado === 'PARCIAL' ? 'text-amber-100' : 'text-amber-600'" class="text-[10px] font-bold uppercase tracking-wider mt-0.5">Parciales</div>
+            </div>
+            
+            <div (click)="filtrarPorEstado('PENDIENTE')" 
+                 [class]="filtroEstado === 'PENDIENTE' 
+                   ? 'bg-red-600 border-red-700 text-white scale-[1.02]' 
+                   : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100/70 hover:scale-[1.01]'"
+                 class="cursor-pointer border rounded-xl p-3 text-center transition-all duration-200 shadow-sm">
+              <div [class]="filtroEstado === 'PENDIENTE' ? 'text-white' : 'text-red-700'" class="text-2xl font-black">{{ itemsResumen.pendientes }}</div>
+              <div [class]="filtroEstado === 'PENDIENTE' ? 'text-red-100' : 'text-red-600'" class="text-[10px] font-bold uppercase tracking-wider mt-0.5">Pendientes</div>
+            </div>
+          </div>
+
+          <!-- Barra de Filtros -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 bg-gray-50 border border-gray-150 rounded-xl p-3">
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Filtrar por OC/OS:</label>
+              <select (change)="onOcFilterChange($event)" class="text-xs bg-white border border-gray-250 rounded-lg px-2.5 py-1.5 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                <option value="">Todas las OCs (General)</option>
+                <option *ngFor="let oc of ocsDisponibles" [value]="oc" [selected]="filtroOc === oc">
+                  {{ oc }}
+                </option>
+                <option value="SIN_OC" [selected]="filtroOc === 'SIN_OC'">Sin OC asignada</option>
+              </select>
+            </div>
+            
+            <!-- Indicador de filtros activos y boton de limpiar -->
+            <div *ngIf="filtroEstado || filtroOc" class="flex items-center gap-2">
+              <span class="text-xs font-medium text-indigo-750">
+                Filtros activos: 
+                <span *ngIf="filtroEstado" class="bg-indigo-100 text-indigo-850 px-2 py-0.5 rounded-full font-bold text-[10px] uppercase">
+                  {{ filtroEstado }}
+                </span>
+                <span *ngIf="filtroEstado && filtroOc" class="text-gray-300 mx-1">|</span>
+                <span *ngIf="filtroOc" class="bg-indigo-100 text-indigo-850 px-2 py-0.5 rounded-full font-bold text-[10px] uppercase">
+                  {{ filtroOc === 'SIN_OC' ? 'Sin OC' : filtroOc }}
+                </span>
+              </span>
+              <button (click)="limpiarFiltros()" class="text-xs font-bold text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 rounded-lg px-2.5 py-1 transition-colors duration-150 flex items-center gap-1">
+                <i class="bi bi-x-circle-fill"></i> Limpiar
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabla de Items -->
+          <div class="overflow-x-auto rounded-xl border border-gray-200">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="bg-gray-50 text-gray-600 uppercase tracking-wider">
+                  <th class="px-3 py-2.5 text-left font-bold">Estado</th>
+                  <th class="px-3 py-2.5 text-left font-bold">Referencia</th>
+                  <th class="px-3 py-2.5 text-left font-bold">Descripcion</th>
+                  <th class="px-3 py-2.5 text-left font-bold">Bodega</th>
+                  <th class="px-3 py-2.5 text-center font-bold">UM</th>
+                  <th class="px-3 py-2.5 text-right font-bold">Pedida</th>
+                  <th class="px-3 py-2.5 text-right font-bold">Entrada</th>
+                  <th class="px-3 py-2.5 text-right font-bold">Faltante</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of filteredItems; let i = index"
+                    [class]="i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'"
+                    class="border-t border-gray-100 hover:bg-indigo-50/40 transition-colors duration-100"
+                >
+                  <!-- Estado Visual -->
+                  <td class="px-3 py-2.5">
+                    <span [class]="
+                      item.estado_visual === 'COMPLETO' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                      item.estado_visual === 'PARCIAL' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                      'bg-red-100 text-red-800 border-red-200'
+                    " class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap">
+                      <i [class]="
+                        item.estado_visual === 'COMPLETO' ? 'bi bi-check-circle-fill' :
+                        item.estado_visual === 'PARCIAL' ? 'bi bi-exclamation-circle-fill' :
+                        'bi bi-x-circle-fill'
+                      "></i>
+                      {{ item.estado_visual === 'COMPLETO' ? 'Completo' : item.estado_visual === 'PARCIAL' ? 'Parcial' : 'Pendiente' }}
+                    </span>
+                  </td>
+                  <!-- Referencia -->
+                  <td class="px-3 py-2.5 font-mono font-semibold text-gray-700 whitespace-nowrap">
+                    {{ item.referencia }}
+                  </td>
+                  <!-- Descripcion -->
+                  <td class="px-3 py-2.5 text-gray-800 font-medium max-w-xs">
+                    <div class="truncate" [title]="item.descripcion">{{ item.descripcion }}</div>
+                    
+                    <!-- Mostrar OC de la linea si está en la vista general -->
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                      <span *ngIf="item.oc_tipo && item.oc_consecutivo" class="text-[9px] font-bold uppercase bg-slate-100 text-slate-600 px-1 py-0.2 rounded border border-slate-150">
+                        {{ item.oc_tipo }}-{{ item.oc_consecutivo }}
+                      </span>
+                      <span *ngIf="!item.oc_tipo" class="text-[9px] font-bold uppercase bg-red-50 text-red-500 px-1 py-0.2 rounded border border-red-100">
+                        Sin OC
+                      </span>
+                      <div *ngIf="item.notes || item.notas" class="text-[10px] text-gray-450 truncate" [title]="item.notas">
+                        <i class="bi bi-chat-left-text"></i> {{ item.notas }}
+                      </div>
+                    </div>
+                  </td>
+                  <!-- Bodega -->
+                  <td class="px-3 py-2.5 text-gray-600 whitespace-nowrap">
+                    <span class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] font-semibold">{{ item.id_bodega }}</span>
+                    <span class="ml-1 text-[10px]">{{ item.bodega }}</span>
+                  </td>
+                  <!-- Unidad Medida -->
+                  <td class="px-3 py-2.5 text-center text-gray-500 font-medium">
+                    {{ item.unidad_medida }}
+                  </td>
+                  <!-- Cantidad Pedida -->
+                  <td class="px-3 py-2.5 text-right font-semibold text-gray-800">
+                    {{ item.cant_pedida | number:'1.0-2' }}
+                  </td>
+                  <!-- Cantidad Entrada -->
+                  <td class="px-3 py-2.5 text-right font-semibold"
+                      [class.text-emerald-700]="item.cant_entrada >= item.cant_pedida && item.cant_pedida > 0"
+                      [class.text-amber-700]="item.cant_entrada > 0 && item.cant_entrada < item.cant_pedida"
+                      [class.text-red-700]="item.cant_entrada === 0 && item.cant_pedida > 0"
+                  >
+                    {{ item.cant_entrada | number:'1.0-2' }}
+                  </td>
+                  <!-- Faltante -->
+                  <td class="px-3 py-2.5 text-right font-bold"
+                      [class.text-red-700]="item.faltante > 0"
+                      [class.text-gray-300]="item.faltante === 0"
+                  >
+                    {{ item.faltante > 0 ? (item.faltante | number:'1.0-2') : '-' }}
+                  </td>
+                </tr>
+                
+                <!-- Caso sin resultados por filtro -->
+                <tr *ngIf="filteredItems.length === 0">
+                  <td colspan="8" class="text-center py-10 text-gray-500">
+                    <i class="bi bi-funnel text-3xl mb-2 block text-gray-400"></i>
+                    <p class="font-semibold text-sm">Sin coincidencias</p>
+                    <p class="text-xs text-gray-400 mt-1">No se encontraron items que coincidan con los filtros aplicados.</p>
+                    <button (click)="limpiarFiltros()" class="mt-3 mx-auto bg-indigo-650 hover:bg-indigo-750 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors duration-150">
+                      Mostrar todos los items
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Resumen inferior -->
+          <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mt-3 text-xs">
+            <span class="text-gray-500 font-medium">
+              <i class="bi bi-box-seam mr-1"></i>
+              Mostrando {{ filteredItems.length }} de {{ items.length }} item{{ items.length > 1 ? 's' : '' }}
+            </span>
+            <div class="flex items-center gap-4">
+              <span *ngIf="itemsResumen.faltantes > 0" class="text-red-600 font-bold">
+                <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                {{ itemsResumen.faltantes }} item{{ itemsResumen.faltantes > 1 ? 's' : '' }} con faltante en el documento
+              </span>
+              <span *ngIf="itemsResumen.faltantes === 0" class="text-emerald-600 font-bold">
+                <i class="bi bi-check-circle-fill mr-1"></i>
+                Todos los items completos
+              </span>
+            </div>
+          </div>
+
+        </ng-container>
+      </ng-container>
+
+    </div>
+
+    <!-- Pie de Modal -->
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-150 flex justify-end">
+      <button
+        (click)="onClose()"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors duration-150 shadow-sm"
+      >
+        Cerrar Detalle
+      </button>
+    </div>
+
+  </div>
+</div>

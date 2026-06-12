@@ -14,7 +14,7 @@ import { ErpIntegrationService } from '../../../services/erp-integration.service
 })
 export class ReportCreateComponent {
 
-  @ViewChild('reportForm') reportForm: NgForm; // Referencia al formulario
+  @ViewChild('reportForm') reportForm!: NgForm; // Referencia al formulario
 
   report: Report = {
     id: 0,
@@ -216,7 +216,7 @@ export class ReportCreateComponent {
       return;
     }
 
-    this.report.creado_por = this.authService.user.id;
+    this.report.creado_por = this.authService.user?.id ?? 0;
 
     if (this.selectedFile) {
       this.reportService.uploadEvidence(this.selectedFile).subscribe({
@@ -224,7 +224,7 @@ export class ReportCreateComponent {
           this.report.evidencia = res.url;
           this.guardarReporte();
         },
-        error: () => Swal.fire('Error', 'No se pudo subir la evidencia', 'error')
+        error: (err) => this.handleError(err, 'No se pudo subir la evidencia')
       });
     } else {
       this.guardarReporte();
@@ -252,9 +252,7 @@ export class ReportCreateComponent {
         Swal.fire('Éxito', 'Reporte creado correctamente', 'success');
         this.resetForm();
       },
-      error: (err) => {
-        Swal.fire('Error', err.error.message || 'No se pudo crear el reporte', 'error');
-      }
+      error: (err) => this.handleError(err, 'No se pudo crear el reporte')
     });
   }
 
@@ -276,7 +274,7 @@ export class ReportCreateComponent {
       observacion: '',
       evidencia: '',
       estado: '',
-      creado_por: this.authService.user.id
+      creado_por: this.authService.user?.id ?? 0
     };
 
     this.itemsOP = [];
@@ -303,5 +301,40 @@ export class ReportCreateComponent {
     const name = (event.target as HTMLInputElement).value.trim();
     const cliente = this.customers.find(c => c.customerName === name);
     if (cliente) this.report.cliente = cliente.customerName;
+  }
+
+  getCharCount(value: string | undefined, maxLength: number = 1000): string {
+    const currentLength = value ? value.length : 0;
+    return `${currentLength} / ${maxLength}`;
+  }
+
+  isCharLimitExceeded(value: string | undefined, maxLength: number = 1000): boolean {
+    return value ? value.length > maxLength : false;
+  }
+
+  private handleError(error: any, defaultMessage: string): void {
+    this.ocultarLoader();
+    let errorMessage = defaultMessage;
+
+    if (error.error) {
+      if (error.error.message) {
+        errorMessage = error.error.message;
+      } else if (error.error.errors) {
+        const errors = error.error.errors;
+        errorMessage = Object.keys(errors)
+          .map(key => `${key}: ${errors[key].join(', ')}`)
+          .join('<br>');
+      } else if (typeof error.error === 'string') {
+        errorMessage = error.error;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    Swal.fire({
+      title: 'Error',
+      html: errorMessage,
+      icon: 'error'
+    });
   }
 }

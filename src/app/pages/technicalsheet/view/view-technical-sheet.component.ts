@@ -23,15 +23,15 @@ interface PanZoomModelExtended extends PanZoomModel {
   styleUrls: ['./view-technical-sheet.component.css']
 })
 export class ViewTechnicalSheetComponent implements OnInit {
-  technicalDataSheetCurrent: TechnicalDataSheet;
+  technicalDataSheetCurrent!: TechnicalDataSheet;
   productCategories: ProductCategory[] = [];
   title = 'Vista previa de ficha técnica';
   loading = false;
   
-  @Input() technicalDataSheet: TechnicalDataSheet;
-  @ViewChild('mainImage') mainImageEl: ElementRef;
-  @ViewChild('zoomWindow') zoomWindowEl: ElementRef;
-  @ViewChild('thumbnailsContainer') thumbnailsContainerEl: ElementRef;
+  @Input() technicalDataSheet!: TechnicalDataSheet;
+  @ViewChild('mainImage') mainImageEl!: ElementRef;
+  @ViewChild('zoomWindow') zoomWindowEl!: ElementRef;
+  @ViewChild('thumbnailsContainer') thumbnailsContainerEl!: ElementRef;
 
   productImages: {src: string, alt: string}[] = [];
   selectedImageIndex = 0;
@@ -204,12 +204,12 @@ export class ViewTechnicalSheetComponent implements OnInit {
         return 'PRIMERA REVISION';
       }
       case 'PRIMERA REVISION': {
-        this.technicalDataSheetCurrent.user_validation = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+        this.technicalDataSheetCurrent.user_validation = this.getUserFullName();
         this.technicalDataSheetCurrent.status = 'SEGUNDA REVISION';
         return 'SEGUNDA REVISION';
       }
       case 'SEGUNDA REVISION': {
-        this.technicalDataSheetCurrent.user_approved = `${this.authService.user.firstName}  ${this.authService.user.lastName}`.toUpperCase();
+        this.technicalDataSheetCurrent.user_approved = this.getUserFullName();
         this.technicalDataSheetCurrent.status = 'TERMINADO';
         return 'TERMINADO';
       }
@@ -229,19 +229,13 @@ export class ViewTechnicalSheetComponent implements OnInit {
 
   calculateDisapproveNewStatus(status: string): string {
     switch (status) {
-      case 'DESARROLLO': {
-        this.technicalDataSheetCurrent.status = 'ELIMINADO';
-        this.technicalDataSheetCurrent.qa_comments = '';
-        this.technicalDataSheetCurrent.edit_comments = '';
-        return 'DESARROLLO';
-      }
       case 'PRIMERA REVISION': {
-        this.technicalDataSheetCurrent.user_validation = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
+        this.technicalDataSheetCurrent.user_validation = this.getUserFullName();
         this.technicalDataSheetCurrent.status = 'DESARROLLO';
         return 'PRIMERA REVISION';
       }
       case 'SEGUNDA REVISION': {
-        this.technicalDataSheetCurrent.user_approved = `${this.authService.user.firstName.toUpperCase()} ${this.authService.user.lastName.toUpperCase()}`;
+        this.technicalDataSheetCurrent.user_approved = this.getUserFullName();
         this.technicalDataSheetCurrent.status = 'DESARROLLO';
         return 'SEGUNDA REVISION';
       }
@@ -282,11 +276,53 @@ export class ViewTechnicalSheetComponent implements OnInit {
         timerProgressBar: true
       }));
   }
+
+  anularFicha(): void {
+    if (!this.technicalDataSheetCurrent.id) return;
+    
+    Swal.fire({
+      title: '¿Está seguro de anular la ficha técnica?',
+      text: 'La ficha será marcada como ANULADA y excluida de los listados y reportes activos.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, anular',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.value) {
+        this.loading = true;
+        this.technicalSheetService.annulFichas([this.technicalDataSheetCurrent.id]).subscribe({
+          next: () => {
+            this.loading = false;
+            Swal.fire({
+              title: 'Anulada',
+              text: 'La ficha técnica ha sido anulada correctamente.',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            }).then(() => {
+              this.router.navigate(['/listTechnicalDataSheet/page/0/DESARROLLO']);
+            });
+          },
+          error: (err) => {
+            this.loading = false;
+            console.error(err);
+            Swal.fire({
+              title: 'Error',
+              text: 'Ha ocurrido un error al anular la ficha técnica.',
+              icon: 'error'
+            });
+          }
+        });
+      }
+    });
+  }
   loadProductImages(): void {
     this.productImages = [];
     
     // Mapeamos todas las propiedades de imagen del technicalDataSheet
-    const imageFields = [
+    const imageFields: Array<{ field: keyof TechnicalDataSheet; alt: string }> = [
       { field: 'product_image_1', alt: 'Imagen principal del producto 1' },
       { field: 'product_image_2', alt: 'Imagen principal del producto 2' },
       { field: 'characteristic_image_1', alt: 'Imagen caracteristica del producto 1' },
@@ -298,11 +334,14 @@ export class ViewTechnicalSheetComponent implements OnInit {
     
     // Solo agregar imágenes que existan
     imageFields.forEach(item => {
-      if (this.technicalDataSheetCurrent && this.technicalDataSheetCurrent[item.field]) {
-        this.productImages.push({
-          src: this.technicalDataSheetCurrent[item.field],
-          alt: item.alt
-        });
+      if (this.technicalDataSheetCurrent) {
+        const src = this.technicalDataSheetCurrent[item.field] as unknown as string;
+        if (src) {
+          this.productImages.push({
+            src,
+            alt: item.alt
+          });
+        }
       }
     });
     // console.log("a");
@@ -409,5 +448,27 @@ export class ViewTechnicalSheetComponent implements OnInit {
     } else {
       container.scrollLeft += scrollStep;
     }
+  }
+
+  // Helper to obtain current user's full name safely from AuthService
+  private getUserFullName(): string {
+    try {
+      // Prefer common method names if available
+      if (typeof (this.authService as any).getUserFullName === 'function') {
+        return (this.authService as any).getUserFullName();
+      }
+      if (typeof (this.authService as any).getFullName === 'function') {
+        return (this.authService as any).getFullName();
+      }
+
+      // Fallback to user object fields
+      const user = (this.authService as any).user || (this.authService as any).currentUser;
+      if (user) {
+        return (user.fullName || `${user.firstName || ''} ${user.lastName || ''}`).trim();
+      }
+    } catch (e) {
+      // ignore and return empty
+    }
+    return '';
   }
 }

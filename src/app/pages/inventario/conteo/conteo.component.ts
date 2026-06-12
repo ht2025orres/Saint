@@ -17,13 +17,14 @@ export class ConteoComponent implements OnInit {
   conteos: any[] = [];
   todasAsignaciones: any[] = []; // Nueva: para guardar todo sin filtrar por modo
   
-  modoActual: 'conteo' | 'reconteo1' | 'reconteo2' = 'conteo';
+  modoActual: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar' = 'conteo';
   validaciones: any[] = []; 
   validacionesGlobales: any[] = []; // Para canEnterReconteo y progreso global
   
   // Para la lista de items que DEBERÍAN estar en la zona
   itemsDeZona: any[] = [];
   cargandoItems = false;
+  activeMobileTab: 'registrar' | 'items' | 'historial' = 'items';
 
   nuevoConteo = {
     id_item_siesa: '',
@@ -267,7 +268,7 @@ export class ConteoComponent implements OnInit {
     }
   }
 
-  cambiarModo(modo: 'conteo' | 'reconteo1' | 'reconteo2') {
+  cambiarModo(modo: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar') {
     this.modoActual = modo;
     // Si cambiamos de modo, reiniciamos la selección de zona para evitar errores de contexto
     this.asignacionSeleccionada = null;
@@ -310,7 +311,7 @@ export class ConteoComponent implements OnInit {
     // Cargar validaciones globales primero para tener el universo de ítems
     this.inventarioService.getValidacionesReconteo(inv.id, false).subscribe(resp => {
       if (resp.success) {
-        this.validacionesGlobales = resp.data;
+        this.validacionesGlobales = (resp.data || []).filter((v: any) => v.estado_validacion !== 'sin_conteo');
         // Después de tener las validaciones, filtramos las asignaciones del modo actual
         this.asignacionesFiltradas = this.todasAsignaciones.filter(asig => 
           asig.id_inventario === inv.id && 
@@ -325,7 +326,7 @@ export class ConteoComponent implements OnInit {
     if (!this.inventarioSeleccionado) return;
     this.inventarioService.getValidacionesReconteo(this.inventarioSeleccionado.id, false).subscribe(resp => {
       if (resp.success) {
-        this.validacionesGlobales = resp.data;
+        this.validacionesGlobales = (resp.data || []).filter((v: any) => v.estado_validacion !== 'sin_conteo');
         this.calcularAvanceAsignaciones();
       }
     });
@@ -462,6 +463,7 @@ export class ConteoComponent implements OnInit {
       observaciones: ''
     };
     this.campoActivo = null;
+    this.activeMobileTab = 'registrar';
     // Hacer scroll al formulario
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -494,6 +496,7 @@ export class ConteoComponent implements OnInit {
           });
           this.nuevoConteo = { id_item_siesa: '', referencia: '', descripcion: '', id_talla: '', id_color: '', cantidad: 0, observaciones: '' };
           this.cargarConteos(this.asignacionSeleccionada.id);
+          this.activeMobileTab = 'items';
         }
         this.cargando = false;
       },

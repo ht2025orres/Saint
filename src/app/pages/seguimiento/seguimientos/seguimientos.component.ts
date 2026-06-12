@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
 import { Subscription, Observable } from 'rxjs';
 import { ProyectoService, FlujoDiario, Compromiso, SeguimientoAnual } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService } from '../seguimiento-state.service';
@@ -10,9 +10,10 @@ import Swal from 'sweetalert2';
   templateUrl: './seguimientos.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SeguimientosComponent implements OnInit, OnDestroy {
+export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
   @Input() usuarioId = 0;
   @Input() puedeGestionarModulo = false;
+  @Input() vistaMode: 'member' | undefined;
 
   loading            = false;
   loadingFlujo       = false;
@@ -79,6 +80,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
   }
 
   get esGestor(): boolean {
+    if (this.vistaMode === 'member') return false;
     return this.puedeGestionarModulo || (this.seguimientoActual?.es_gestor ?? false);
   }
 
@@ -87,6 +89,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
    * Excluimos incluso a los administradores de esta vista si no son el gestor directo.
    */
   get esGestorAsignado(): boolean {
+    if (this.vistaMode === 'member') return false;
     if (!this.seguimientoActual) return false;
     return this.seguimientoActual.usuario_gestor_id === this.usuarioId;
   }
@@ -127,11 +130,18 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
   ngOnInit(): void { this.cargarDatos(); }
   ngOnDestroy(): void { this._subs.unsubscribe(); }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['vistaMode'] || changes['puedeGestionarModulo'] || changes['usuarioId']) {
+      this.seguimientoActual = null;
+      this.cargarDatos();
+    }
+  }
+
   cargarDatos(): void {
     if (!this.seguimientoActual) {
       this.loading = true;
       this._cdr.markForCheck();
-      this._proy.getSeguimientosAnuales(this.usuarioId).subscribe({
+      this._proy.getSeguimientosAnuales(this.usuarioId, this.vistaMode).subscribe({
         next: (res) => {
           const seg = res.data?.find(s => s.estado === 'activo') ?? null;
           this.seguimientoActual = seg;
@@ -179,7 +189,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
     this._cdr.markForCheck();
 
     // 1. Cargar historial (para indicadores en calendario y carrusel)
-    this._proy.getFlujos(segId, this.usuarioId).subscribe(h => {
+    this._proy.getFlujos(segId, this.usuarioId, this.vistaMode).subscribe(h => {
       const seen = new Set();
       this.historialFlujos = (h.data || []).filter((f: any) => {
         const date = f.fecha.includes('T') ? f.fecha.split('T')[0] : f.fecha.split(' ')[0];
@@ -191,7 +201,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy {
     });
 
     // 2. Cargar flujo específico del día
-    this._proy.getFlujoActivo(segId, this.usuarioId, this.fechaSeleccionada).subscribe({
+    this._proy.getFlujoActivo(segId, this.usuarioId, this.fechaSeleccionada, this.vistaMode).subscribe({
       next: (res) => {
         this.flujoActivo = res.data || null;
         this.loadingFlujo = false;

@@ -40,7 +40,7 @@ export class ModalInformeComponent implements OnChanges {
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
-      titulo:               ['', [Validators.required, Validators.minLength(5)]],
+      titulo:               ['', [Validators.required]],
       descripcion_hallazgo: ['', [Validators.required]],
       tipo:                 ['Incidente', [Validators.required]],
       nivel_impacto:        ['Medio', [Validators.required]],

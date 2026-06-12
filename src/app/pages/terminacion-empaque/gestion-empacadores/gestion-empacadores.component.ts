@@ -73,17 +73,33 @@ export class GestionEmpacadoresComponent implements OnInit {
             empacadores.forEach(emp => {
               const asign = mapa[emp.id] || { pvs: [], total_empacado: 0, total_teorico: 0, total_asignado: 0 };
 
+              const totalAsignado = Number(asign.total_asignado || 0);
+              const totalEmpacado = Number(asign.total_empacado || 0);
+              const progresoTotalVal = totalAsignado > 0 ? (totalEmpacado / totalAsignado * 100) : 0;
+              const progresoTotal = Math.min(100, Math.max(0, progresoTotalVal));
+
               const objetoFinal = {
                 ...emp,
-                pvs: asign.pvs.map((pv: any) => ({
-                  ...pv,
-                  asignado: Number(pv.asignado || 0),
-                  teorico: Number(pv.teorico || 0),
-                  total_asignado_pv: pv.items?.reduce((sum: number, item: any) => sum + (item.cantidad_asignada || 0), 0)
-                })),
-                total_empacado: Number(asign.total_empacado || 0),
+                pvs: asign.pvs.map((pv: any) => {
+                  const empacado = Number(pv.empacado || 0);
+                  const asignado = Number(pv.asignado || 0);
+                  const teorico = Number(pv.teorico || 0);
+                  const progresoVal = asignado > 0 ? (empacado / asignado * 100) : 0;
+                  const progreso = Math.min(100, Math.max(0, progresoVal));
+
+                  return {
+                    ...pv,
+                    asignado,
+                    teorico,
+                    empacado,
+                    progreso,
+                    total_asignado_pv: pv.items?.reduce((sum: number, item: any) => sum + (item.cantidad_asignada || 0), 0)
+                  };
+                }),
+                total_empacado: totalEmpacado,
                 total_teorico:  Number(asign.total_teorico || 0),
-                total_asignado: Number(asign.total_asignado || 0),
+                total_asignado: totalAsignado,
+                progresoTotal: progresoTotal,
                 isExpanded: false
               };
 

@@ -78,7 +78,7 @@ export class TechnicalSheetService {
 
         console.log('Sending technicalDataSheet to backend:', technicalDataSheetToSend);
 
-        if (technicalDataSheetToSend.id != null){
+        if (technicalDataSheetToSend.id != null && technicalDataSheetToSend.id !== 0){
             return this.http.put(`${this.urlEndPoint}`, technicalDataSheetToSend);
         }
         return this.http.post(`${this.urlEndPoint}`, technicalDataSheetToSend);
@@ -136,5 +136,21 @@ export class TechnicalSheetService {
 
     validateExistsTechnicalSheetByIdItem(idItem: string): Observable<any> {
         return this.http.get(`${this.urlEndPoint}/exists/${idItem}`);
+    }
+
+    annulFichas(ids: number[]): Observable<any> {
+        return this.http.post(`${this.urlEndPoint}/annul`, { ids });
+    }
+
+    reactivateFichas(ids: number[]): Observable<any> {
+        return this.http.post(`${this.urlEndPoint}/reactivate`, { ids });
+    }
+
+    getAnnulledFichas(): Observable<any> {
+        return this.http.get(`${this.urlEndPoint}/annulled`);
+    }
+
+    getDuplicateItems(): Observable<any> {
+        return this.http.get(`${this.urlEndPoint}/duplicate-items`);
     }
 }

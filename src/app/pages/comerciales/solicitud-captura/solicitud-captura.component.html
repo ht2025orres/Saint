@@ -1,0 +1,620 @@
+<div class="costeo-container py-4">
+    <!-- Header Profesional (Similar a Solicitudes) -->
+    <div class="page-header mb-4">
+        <div class="header-row">
+            <button class="btn-back" (click)="goBack()" title="Volver al Hub">
+                <i class="bi bi-arrow-left"></i>
+            </button>
+            <div class="header-info">
+                <h1 class="page-title">Captura Inteligente de OC</h1>
+                <p class="page-subtitle">
+                    <i class="bi bi-magic"></i> Extracción automática de información mediante documentos
+                </p>
+            </div>
+            <div class="header-stats" *ngIf="itemsProcesados.length > 0">
+                <div class="stat-pill">
+                    <i class="bi bi-box"></i> {{ itemsProcesados.length }} ítems
+                </div>
+                <div class="stat-pill">
+                    <i class="bi bi-currency-dollar"></i> ${{ totalOrden * 1.19 | number:'1.2-2' }} Total
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista: Orden de Compra -->
+    <div class="fade-in">
+
+        <!-- Controles Superiores: Upload & View Options -->
+        <div class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
+            <div class="card-body p-0">
+                <div class="row g-0">
+                    <div class="col-lg-4 bg-light p-4 d-flex flex-column justify-content-center border-end">
+                        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-cloud-arrow-up me-2"></i>1. Cargar Documento</h6>
+                        <div class="upload-area p-3 border-2 border-dashed rounded-3 text-center bg-white">
+                            <input type="file" id="fileInput" class="d-none" (change)="onFileSelected($event)"
+                                accept=".xlsx,.xls,.pdf,.doc,.docx,.png,.jpg,.jpeg" multiple>
+                            <label for="fileInput" class="mb-0 cursor-pointer w-100">
+                                <i class="bi bi-file-earmark-plus text-primary fs-2 mb-2"></i>
+                                <p class="small text-muted mb-0">Haz clic para buscar o arrastra aquí</p>
+                                <span class="badge bg-light text-primary border mt-2">PDF, Excel, Word, Imagen</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-lg-8 p-4 d-flex align-items-center justify-content-between">
+                        <div class="flex-grow-1">
+                            <div *ngIf="!loading && !error && !mensaje" class="text-center w-100 py-3">
+                                <p class="text-muted mb-0" *ngIf="!nombreArchivo">
+                                    <i class="bi bi-info-circle me-2"></i>Sube una orden de compra para comenzar el proceso de extracción automática.
+                                </p>
+                                <div *ngIf="nombreArchivo" class="d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                                    <div>
+                                        <p class="mb-0 fw-bold text-dark">{{ nombreArchivo }}</p>
+                                        <small class="text-muted">Documento cargado correctamente</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div *ngIf="loading" class="w-100 text-center py-3">
+                                <div class="spinner-border text-primary mb-2" role="status"></div>
+                                <p class="text-primary fw-medium mb-0">Analizando documento con IA...</p>
+                                <small class="text-muted">Estamos extrayendo cabeceras e ítems automáticamente.</small>
+                            </div>
+                            <div *ngIf="error" class="alert alert-danger w-100 border-0 shadow-sm mb-0">
+                                <div class="d-flex">
+                                    <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading fw-bold mb-1">Error de procesamiento</h6>
+                                        <p class="small mb-0">{{ error }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div *ngIf="mensaje" class="alert alert-success w-100 border-0 shadow-sm mb-0">
+                                <div class="d-flex">
+                                    <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading fw-bold mb-1">¡Éxito!</h6>
+                                        <p class="small mb-0">{{ mensaje }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opción de ver documento (Solo si hay contenido) -->
+                        <div class="ms-4 border-start ps-4" *ngIf="datosDocumentoExcel.length > 0 || textoDocumentoPlano || htmlDocumentoPlano">
+                            <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" (click)="toggleViewer()">
+                                <i class="bi" [ngClass]="showViewer ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                {{ showViewer ? 'Ocultar Visor' : 'Ver Documento' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout de Extracción: Izquierda Vista Doc / Derecha Formulario -->
+        <div class="row g-4" *ngIf="(datosDocumentoExcel.length > 0 || textoDocumentoPlano || htmlDocumentoPlano)">
+
+            <!-- Columna Izquierda: Vista del Documento -->
+            <div [class]="showViewer ? 'col-lg-7' : 'd-none'">
+                <div class="card shadow-sm border-0 rounded-3 h-100 overflow-hidden">
+                    <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <h6 class="card-title fw-bold mb-0 text-dark">
+                                <i class="bi bi-eye me-2 text-primary"></i>2. Visor de Documento
+                            </h6>
+                            <!-- Selector de Modo de Vista -->
+                            <div class="btn-group btn-group-sm rounded-pill border overflow-hidden p-0.5 bg-light">
+                                <button class="btn btn-sm px-3 border-0 transition-all"
+                                        [ngClass]="viewMode === 'EXTRACTO' ? 'btn-primary shadow-sm' : 'btn-light'"
+                                        (click)="setViewMode('EXTRACTO')">
+                                    <i class="bi bi-magic me-1"></i> Extracto
+                                </button>
+                                <button class="btn btn-sm px-3 border-0 transition-all"
+                                        [ngClass]="viewMode === 'ORIGINAL' ? 'btn-primary shadow-sm' : 'btn-light'"
+                                        (click)="setViewMode('ORIGINAL')">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i> Original
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2" *ngIf="viewMode === 'EXTRACTO' || (viewMode === 'ORIGINAL' && originalFile?.type === 'application/pdf')">
+                            <div class="selection-indicator px-2 py-1 bg-warning-subtle text-warning-emphasis border border-warning rounded-pill small me-2" 
+                                 *ngIf="textoSeleccionado" style="font-size: 0.65rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <i class="bi bi-cursor-fill me-1"></i> "{{ textoSeleccionado }}"
+                            </div>
+                            <div class="btn-group btn-group-sm border rounded-pill overflow-hidden bg-light">
+                                <button class="btn btn-light border-0 px-3" (click)="zoomOut()" title="Reducir">
+                                    <i class="bi bi-dash-lg"></i>
+                                </button>
+                                <span class="d-flex align-items-center bg-white px-3 fw-bold small" style="min-width: 60px; justify-content: center;">
+                                    {{ zoomLevel }}%
+                                </span>
+                                <button class="btn btn-light border-0 px-3" (click)="zoomIn()" title="Ampliar">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary rounded-circle" (click)="resetZoom()" title="Restablecer">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" 
+                                    (mousedown)="$event.preventDefault()"
+                                    (click)="deteccionInteligente()" title="Analizar texto seleccionado">
+                                <i class="bi bi-stars"></i> Detectar Campo
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0 bg-light" style="min-height: 500px;">
+                        <!-- MODO EXTRACTO (MAOPEO) -->
+                        <div *ngIf="viewMode === 'EXTRACTO'" class="fade-in h-100" (mouseup)="capturarSeleccion()">
+                            <div class="p-3 text-center bg-white border-bottom" *ngIf="!htmlDocumentoPlano && !textoDocumentoPlano && datosDocumentoExcel.length === 0">
+                                <p class="text-muted small mb-0"><i class="bi bi-hand-index-thumb me-2"></i>Selecciona texto en el documento para mapearlo a los campos.</p>
+                            </div>
+
+                            <!-- Vista Texto Plano (PDF o Imágenes OCR) -->
+                            <div class="document-viewer p-4 bg-white m-3 rounded shadow-sm"
+                                *ngIf="textoDocumentoPlano" style="max-height: 70vh; overflow: auto; cursor: crosshair;">
+                                <pre class="mb-0 text-dark"
+                                    [style.transform]="'scale(' + zoomLevel/100 + ')'"
+                                    [style.transform-origin]="'top left'"
+                                    style="white-space: pre; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; line-height: 1.4;">{{ textoDocumentoPlano }}</pre>
+                            </div>
+
+                            <!-- Vista HTML (Documentos de Word y PDF reconstruidos) -->
+                            <div class="document-viewer p-4 bg-white m-3 rounded shadow-sm word-doc-container"
+                                *ngIf="htmlDocumentoPlano" style="max-height: 70vh; overflow: auto;">
+
+                                <!-- Botón de Captura de Tabla Manual -->
+                                <div class="sticky-top bg-light p-2 mb-3 border rounded shadow-sm d-flex align-items-center justify-content-between"
+                                    style="z-index: 10;">
+                                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Resalta las filas de la tabla de productos</div>
+                                    <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm"
+                                        (click)="capturarTablaDesdeSeleccion()">
+                                        <i class="bi bi-table me-1"></i> Auto-Capturar Ítems
+                                    </button>
+                                </div>
+
+                                <div [innerHTML]="safeHtmlDocumento"
+                                    [style.transform]="'scale(' + zoomLevel/100 + ')'"
+                                    [style.transform-origin]="'top left'"
+                                    [style.width]="(10000/zoomLevel) + '%'"
+                                    style="font-family: 'Inter', sans-serif; font-size: 0.9rem;"></div>
+                            </div>
+
+                            <!-- Vista Excel (Tabla) -->
+                            <div class="table-responsive p-3" *ngIf="datosDocumentoExcel.length > 0"
+                                style="max-height: 70vh;">
+                                <table class="table table-sm table-bordered table-hover mb-0 bg-white rounded shadow-sm overflow-hidden"
+                                    [style.font-size]="(zoomLevel * 0.008) + 'rem'">
+                                    <thead class="table-dark sticky-top">
+                                        <tr>
+                                            <th *ngFor="let key of getKeys(datosDocumentoExcel[0])"
+                                                class="text-nowrap px-3 py-2">{{ key }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="cursor: text;">
+                                        <tr *ngFor="let row of datosDocumentoExcel | slice:0:150">
+                                            <td *ngFor="let key of getKeys(row)" class="px-3 py-2">{{ row[key] }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- MODO ORIGINAL (VISOR ESTÁNDAR) -->
+                        <div *ngIf="viewMode === 'ORIGINAL'" class="fade-in h-100 p-3 bg-white" (mouseup)="capturarSeleccion()">
+                            <div class="alert alert-info border-0 small py-2 mb-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <i class="bi bi-stars me-2"></i><strong>Modo Original Selectable:</strong> Ahora puedes seleccionar texto directamente sobre la imagen original para detectarlo.
+                                </div>
+                                <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm ms-2"
+                                    *ngIf="originalFile?.type === 'application/pdf'"
+                                    (click)="capturarTablaDesdeSeleccion()">
+                                    <i class="bi bi-table me-1"></i> Auto-Capturar Ítems
+                                </button>
+                            </div>
+                            
+                            <!-- Visor para PDF (Custom Seleccionable) -->
+                            <div id="pdf-original-container" class="pdf-viewer-scroll bg-light p-3 border rounded shadow-sm" 
+                                 *ngIf="originalFile?.type === 'application/pdf'"
+                                 style="max-height: 75vh; overflow-y: auto;">
+                                <!-- Las páginas se renderizan aquí mediante TS -->
+                            </div>
+
+                            <!-- Visor para Otros (Iframe fallback) -->
+                            <div class="original-viewer-container rounded border overflow-hidden shadow-sm" 
+                                 *ngIf="originalFile?.type !== 'application/pdf'"
+                                 style="height: 70vh;">
+                                <iframe *ngIf="originalFileUrl" 
+                                        [src]="originalFileUrl" 
+                                        class="w-100 h-100 border-0">
+                                </iframe>
+                                <div *ngIf="!originalFileUrl" class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                                    <i class="bi bi-file-earmark-excel fs-1 mb-3"></i>
+                                    <p>No se pudo cargar la vista original del archivo.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Asistente de Extracción de 2 Pasos -->
+            <div [class]="showViewer ? 'col-lg-5' : 'col-12'">
+                <div class="card shadow-sm border-0 rounded-3 h-100 border-top border-primary border-4">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h2 class="section-title mb-0">
+                                <i class="bi bi-magic text-primary"></i> 3. Mapeo de Datos
+                            </h2>
+                            <div class="stepper-pills d-flex gap-1">
+                                <span class="badge rounded-pill cursor-pointer transition-all" 
+                                      [ngClass]="pasoActual === 1 ? 'bg-primary shadow-sm' : 'bg-light text-muted border'"
+                                      (click)="irAPaso(1)">
+                                    Cabecera
+                                </span>
+                                <span class="badge rounded-pill cursor-pointer transition-all" 
+                                      [ngClass]="pasoActual === 2 ? 'bg-primary shadow-sm' : 'bg-light text-muted border'"
+                                      (click)="irAPaso(2)">
+                                    Detalle Ítems
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form (submit)="$event.preventDefault()">
+
+                            <!-- ============================= -->
+                            <!-- PASO 1: CABECERA              -->
+                            <!-- ============================= -->
+                            <div *ngIf="pasoActual === 1" class="fade-in">
+                                <div class="alert alert-primary bg-primary-subtle border-0 small mb-4">
+                                    <i class="bi bi-info-circle-fill me-2"></i>Resalta texto en el visor y presiona <strong>Asignar</strong> en el campo correspondiente.
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-secondary">Número de Orden (OC) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-hash"></i></span>
+                                        <input type="text" class="form-control border-start-0 fw-bold"
+                                            name="numero_oc" [(ngModel)]="cabeceraOrden.numero_oc"
+                                            placeholder="Ej. OC-2024-001">
+                                        <button class="btn btn-primary px-3" type="button"
+                                            (click)="asignarSeleccion('numero_oc')" title="Asignar seleccion">
+                                            Asignar</button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label fw-bold small text-secondary">Nombre del Cliente <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-building"></i></span>
+                                        <input type="text" class="form-control border-start-0" name="cliente_nombre"
+                                            [(ngModel)]="cabeceraOrden.cliente_nombre"
+                                            placeholder="Busca o asigna un cliente..."
+                                            (input)="buscarClienteManual($any($event.target).value, 'NOMBRE')">
+                                        <button class="btn btn-primary px-3" type="button"
+                                            (click)="asignarSeleccion('cliente_nombre')" title="Asignar seleccion">
+                                            Asignar</button>
+                                    </div>
+
+                                    <!-- Lista de Autocompletado Manual (Nombre) -->
+                                    <div class="autocomplete-dropdown dropdown-width-wide"
+                                        *ngIf="clientesEncontrados.length > 0 && buscandoPor === 'NOMBRE'">
+                                        <div class="autocomplete-item"
+                                            *ngFor="let cli of clientesEncontrados"
+                                            (click)="seleccionarClienteOption(cli)">
+                                            <span class="item-title">{{ cli.customerName }}</span>
+                                            <span class="item-subtitle">
+                                                <i class="bi bi-card-text"></i> NIT: {{ cli.customerId }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 position-relative">
+                                    <label class="form-label fw-bold small text-secondary">NIT / Identificación</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-card-text"></i></span>
+                                        <input type="text" class="form-control border-start-0" name="nit"
+                                            [(ngModel)]="cabeceraOrden.nit" placeholder="Identificación del cliente"
+                                            (input)="buscarClienteManual($any($event.target).value, 'NIT')">
+                                        <button class="btn btn-outline-primary px-3" type="button"
+                                            (click)="asignarSeleccion('nit')">
+                                            <i class="bi bi-cursor"></i></button>
+                                    </div>
+
+                                    <!-- Lista de Autocompletado Manual (NIT) -->
+                                    <div class="autocomplete-dropdown dropdown-width-standard"
+                                        *ngIf="clientesEncontrados.length > 0 && buscandoPor === 'NIT'">
+                                        <div class="autocomplete-item"
+                                            *ngFor="let cli of clientesEncontrados"
+                                            (click)="seleccionarClienteOption(cli)">
+                                            <span class="item-title">{{ cli.customerName }}</span>
+                                            <span class="item-subtitle">
+                                                <i class="bi bi-card-text"></i> NIT: {{ cli.customerId }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-secondary">Fecha Solicitud</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="fecha_solicitud"
+                                                [(ngModel)]="cabeceraOrden.fecha_solicitud">
+                                            <button class="btn btn-outline-primary" type="button"
+                                                (click)="asignarSeleccion('fecha_solicitud')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-secondary">Fecha Entrega</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="fecha_entrega"
+                                                [(ngModel)]="cabeceraOrden.fecha_entrega">
+                                            <button class="btn btn-outline-primary" type="button"
+                                                (click)="asignarSeleccion('fecha_entrega')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="button"
+                                        class="btn btn-primary py-2 fw-bold d-flex justify-content-center align-items-center rounded-3 shadow-sm"
+                                        (click)="siguientePaso()">
+                                        Siguiente: Detalle de Ítems <i class="bi bi-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- ============================= -->
+                            <!-- PASO 2: CUERPO (ÍTEMS)        -->
+                            <!-- ============================= -->
+                            <div *ngIf="pasoActual === 2" class="fade-in">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bold mb-0" [ngClass]="editIndex !== null ? 'text-warning' : 'text-dark'">
+                                        <i class="bi me-2" [ngClass]="editIndex !== null ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
+                                        {{ editIndex !== null ? 'Editando Ítem #' + (editIndex + 1) : 'Agregar Nuevo Ítem' }}
+                                    </h6>
+                                    <button class="btn btn-sm btn-link text-decoration-none text-muted" (click)="pasoAnterior()">
+                                        <i class="bi bi-arrow-left"></i> Volver a Cabecera
+                                    </button>
+                                </div>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6 position-relative">
+                                        <label class="form-label fw-bold small text-secondary">Cód. CFIP (Opcional)</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" name="item_cfip"
+                                                [(ngModel)]="itemTemporal.item_cfip" placeholder="DB-XXXX"
+                                                (input)="buscarItemsCFIP($any($event.target).value)"
+                                                (focus)="buscarItemsCFIP(itemTemporal.item_cfip)">
+                                            <button class="btn btn-outline-primary" type="button"
+                                                (click)="asignarSeleccion('item_cfip')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+
+                                            <!-- Lista de Autocompletado Ítems Siesa -->
+                                            <div class="autocomplete-dropdown dropdown-width-wide"
+                                                *ngIf="buscandoPor === 'ITEM_CFIP' && (itemsSiesaEncontrados.length > 0 || !busquedaProfundaItem)">
+                                                
+                                                <!-- Botón de Búsqueda Profunda -->
+                                                <button type="button" class="deep-search-btn"
+                                                    *ngIf="!busquedaProfundaItem"
+                                                    (click)="buscarItemsCFIP(itemTemporal.item_cfip, true)">
+                                                    <i class="bi bi-search me-2"></i> 
+                                                    <span>No está en los últimos 200. <strong>Búsqueda profunda</strong></span>
+                                                </button>
+
+                                                <!-- Resultados -->
+                                                <div class="autocomplete-item"
+                                                    *ngFor="let item of itemsSiesaEncontrados"
+                                                    (click)="seleccionarItemSiesa(item)">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <span class="item-title text-primary">{{ item.f120_id || item.referencia }}</span>
+                                                        <span class="meta-badge">{{ item.talla || item.id_talla }}</span>
+                                                    </div>
+                                                    <span class="item-subtitle text-truncate" style="max-width: 400px;">
+                                                        {{ item.f120_descripcion || item.descripcion }}
+                                                    </span>
+                                                    <div class="item-meta">
+                                                        <span class="meta-badge bg-primary-subtle text-primary">Pedidos: {{ item.veces_pedido || 0 }}</span>
+                                                        <span class="meta-badge bg-success-subtle text-success">Ult. PV: {{ item.ultima_pv || 'N/A' }}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="p-3 text-center text-muted small" *ngIf="itemsSiesaEncontrados.length === 0 && busquedaProfundaItem">
+                                                    <i class="bi bi-exclamation-circle me-1"></i> No se encontraron resultados incluso en búsqueda profunda.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-bold small text-secondary">Cód. Cliente</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" name="item_cliente"
+                                                [(ngModel)]="itemTemporal.item_cliente" placeholder="Referencia OC">
+                                            <button class="btn btn-outline-primary" type="button"
+                                                (click)="asignarSeleccion('item_cliente')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small text-secondary">Descripción de Prenda <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control" name="descripcion"
+                                            [(ngModel)]="itemTemporal.descripcion" placeholder="Ej. Camiseta Polo Azul">
+                                        <button class="btn btn-outline-primary" type="button"
+                                            (click)="asignarSeleccion('descripcion')">Asignar</button>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-4">
+                                        <label class="form-label fw-bold small text-secondary">Talla</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" name="talla"
+                                                [(ngModel)]="itemTemporal.talla" placeholder="S, M, L...">
+                                            <button class="btn btn-outline-primary px-1" type="button"
+                                                (click)="asignarSeleccion('talla')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label fw-bold small text-secondary">Cantidad <span class="text-danger">*</span></label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" step="0.01" class="form-control"
+                                                name="cantidad" [(ngModel)]="itemTemporal.cantidad">
+                                            <button class="btn btn-outline-primary" type="button"
+                                                (click)="asignarSeleccion('cantidad')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-4 align-items-end">
+                                    <div class="col-7">
+                                        <label class="form-label fw-bold small text-secondary">Precio Unitario ($)</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light">$</span>
+                                            <input type="number" step="0.01" class="form-control fw-bold text-primary"
+                                                name="precio_unitario" [(ngModel)]="itemTemporal.precio_unitario">
+                                            <button class="btn btn-outline-primary" type="button"
+                                                (click)="asignarSeleccion('precio_unitario')"><i class="bi bi-cursor"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="p-2 bg-dark rounded-3 text-end">
+                                            <small class="text-secondary d-block" style="font-size: 0.6rem; text-transform: uppercase;">Total Línea</small>
+                                            <span class="text-white fw-bold" style="font-size: 0.9rem;">
+                                                ${{ precioTotalCalculado | number:'1.2-2' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="button"
+                                        [ngClass]="editIndex !== null ? 'btn btn-warning' : 'btn btn-success'"
+                                        class="py-2 fw-bold rounded-3 shadow-sm"
+                                        (click)="agregarItem()">
+                                        <i class="bi me-2" [ngClass]="editIndex !== null ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                                        {{ editIndex !== null ? 'Guardar Cambios' : 'Añadir ítem a la Lista' }}
+                                    </button>
+                                    <button *ngIf="editIndex !== null" type="button"
+                                        class="btn btn-outline-secondary border-0 btn-sm"
+                                        (click)="cancelarEdicion()">
+                                        Cancelar Edición
+                                    </button>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Items de la Orden Procesados -->
+        <div class="card shadow-sm border-0 rounded-3 mt-4 overflow-hidden" *ngIf="itemsProcesados.length > 0">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="section-title mb-1">
+                        <i class="bi bi-list-check text-primary"></i> 4. Resumen de la Orden
+                    </h2>
+                    <p class="text-muted mb-0 small">
+                        OC: <span class="fw-bold text-primary">#{{cabeceraOrden.numero_oc}}</span> | 
+                        Cliente: <span class="fw-bold">{{cabeceraOrden.cliente_nombre || 'N/A'}}</span>
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
+                        {{ itemsProcesados.length }} ítems detectados
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="small text-uppercase text-muted fw-bold">
+                                <th class="ps-4 py-3">#</th>
+                                <th>Cód. CFIP</th>
+                                <th>Cód. Cliente</th>
+                                <th>Descripción</th>
+                                <th>Talla</th>
+                                <th class="text-end">Cant.</th>
+                                <th class="text-end">Prc. Unit.</th>
+                                <th class="text-end fw-bold text-dark pe-4">Total</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            <tr *ngFor="let item of itemsProcesados; let i = index" class="border-bottom">
+                                <td class="ps-4 py-3 text-muted small fw-bold">{{ i + 1 }}</td>
+                                <td><span class="badge bg-primary-subtle text-primary border-primary-subtle px-2">{{ item.item_cfip || '--' }}</span></td>
+                                <td class="text-secondary small font-monospace">{{ item.item_cliente || '--' }}</td>
+                                <td class="fw-medium text-dark">{{ item.descripcion }}</td>
+                                <td><span class="badge bg-light text-dark border px-2">{{ item.talla || '--' }}</span></td>
+                                <td class="text-end fw-bold">{{ item.cantidad | number:'1.0-2' }}</td>
+                                <td class="text-end text-muted">${{ item.precio_unitario | number:'1.2-2' }}</td>
+                                <td class="text-end fw-bold text-success pe-4">${{ item.precio_total | number:'1.2-2' }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-warning border-0" (click)="editarItem(i)" title="Editar">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger border-0" (click)="eliminarItem(i)" title="Eliminar">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <!-- FOOTER DE TOTALES -->
+                        <tfoot class="bg-light">
+                            <tr>
+                                <td colspan="6" class="ps-4 py-4">
+                                    <div class="alert alert-warning border-0 small mb-0 d-inline-block py-2">
+                                        <i class="bi bi-info-circle me-2"></i>Revisa que los totales coincidan con el documento original.
+                                    </div>
+                                </td>
+                                <td colspan="2" class="text-end pe-4 py-4">
+                                    <div class="d-flex flex-column gap-1">
+                                        <div class="d-flex justify-content-between gap-5">
+                                            <span class="text-muted small">Subtotal:</span>
+                                            <span class="fw-bold text-dark">${{ totalOrden | number:'1.2-2' }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between gap-5">
+                                            <span class="text-muted small">IVA (19%):</span>
+                                            <span class="fw-bold text-dark">${{ totalOrden * 0.19 | number:'1.2-2' }}</span>
+                                        </div>
+                                        <hr class="my-1">
+                                        <div class="d-flex justify-content-between gap-5 align-items-center">
+                                            <span class="text-dark fw-bold">TOTAL:</span>
+                                            <span class="fs-4 fw-bold text-success">${{ totalOrden * 1.19 | number:'1.2-2' }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white py-4 px-4 border-top-0 d-flex justify-content-between align-items-center">
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>Al guardar, se creará una nueva Orden de Compra en el sistema.
+                </div>
+                <button class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold" (click)="guardarOrden()" [disabled]="savingOrder">
+                    <span *ngIf="!savingOrder">
+                        <i class="bi bi-cloud-check me-2"></i>Guardar y Finalizar
+                    </span>
+                    <span *ngIf="savingOrder">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Procesando...
+                    </span>
+                </button>
+            </div>
+        </div>
+
+    </div> <!-- Cierre de fade-in principal -->
+</div> <!-- Cierre de container-fluid -->

@@ -37,26 +37,32 @@
                 <span class="uppercase tracking-tighter">{{ sincronizandoSiesa ? 'Sincronizando...' : 'Sincronizar SIESA' }}</span>
             </button>
 
+            <button (click)="exportarExcelFlat()"
+                class="px-4 py-3 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-2xl text-[10px] font-black hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 group shadow-sm">
+                <i class="bi bi-file-earmark-excel-fill text-lg"></i>
+                <span class="uppercase tracking-tighter">Exportar Excel</span>
+            </button>
+
             <div class="w-px h-10 bg-slate-100 mx-2"></div>
 
-            <div class="relative w-64 group" *ngIf="vistaActual === 'lista'">
+            <div class="relative w-64 group" *ngIf="vistaActual === 'lista' || modoActual === 'justificar'">
                 <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"></i>
                 <input type="text" [(ngModel)]="busquedaItems" 
                     placeholder="Buscar ítem o referencia..."
                     class="w-full pl-11 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 outline-none focus:border-emerald-400 focus:bg-white transition-all shadow-inner">
             </div>
-            <select *ngIf="vistaActual === 'lista'" [(ngModel)]="filtroEstado" 
+            <select *ngIf="vistaActual === 'lista' || modoActual === 'justificar'" [(ngModel)]="filtroEstado" 
                 class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black text-slate-600 outline-none focus:border-emerald-400 transition-all uppercase tracking-tighter">
                 <option value="todos">Todos los estados</option>
                 <option value="pendiente">Pendientes</option>
                 <option value="validado">Validados</option>
-                <option value="reconteo">Para Reconteo</option>
+                <option value="reconteo">Con Diferencia</option>
             </select>
         </div>
     </div>
 
     <!-- VISTA: MENÚ PRINCIPAL -->
-    <div *ngIf="vistaActual === 'menu'" class="flex-1 overflow-y-auto p-8 custom-scrollbar animate-in fade-in duration-500">
+    <div *ngIf="vistaActual === 'menu' && modoActual !== 'justificar'" class="flex-1 overflow-y-auto p-8 custom-scrollbar animate-in fade-in duration-500">
         <!-- Resumen de Estado de la Bodega Seleccionada -->
         <div class="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
@@ -159,7 +165,7 @@
     </div>
 
     <!-- VISTA: LISTADO DE ITEMS -->
-    <div *ngIf="vistaActual === 'lista'" class="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-500">
+    <div *ngIf="vistaActual === 'lista' && modoActual !== 'justificar'" class="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-500">
         <!-- Barra de Acciones Masivas y Umbrales -->
         <div class="px-8 py-4 bg-white border-b border-slate-100 flex items-center justify-between">
             <div class="flex items-center gap-6">
@@ -222,13 +228,14 @@
                         <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center" *ngIf="modoActual !== 'conteo'">Historial</th>
                         <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Conteo ({{modoActual}})</th>
                         <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Siesa</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Unitario</th>
                         <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Diferencia</th>
                         <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Dif. Valor ($)</th>
                         <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
-                    <tr *ngFor="let item of validacionesFiltradas" (click)="toggleSeleccion(item.id)"
+                    <tr *ngFor="let item of validacionesFiltradasPaginadas" (click)="toggleSeleccion(item.id)"
                         class="hover:bg-slate-50/50 transition-colors group cursor-pointer"
                         [ngClass]="{'bg-emerald-50/30': itemsSeleccionados.has(item.id)}">
                         <td class="px-6 py-4">
@@ -250,19 +257,29 @@
                                     <span class="text-[8px] font-black text-blue-500 uppercase bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{{item.codigo_bodega}}</span>
                                     <span class="text-[8px] font-black text-emerald-500 uppercase bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{{item.zona}}</span>
                                 </div>
-                                <!-- Justificación si existe -->
-                                <div *ngIf="item.justificacion" class="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg">
-                                    <p class="text-[8px] font-black text-blue-400 uppercase mb-1">Justificación:</p>
-                                    <p class="text-[9px] text-blue-700 italic">"{{item.justificacion}}"</p>
+                                <!-- Botón de Comentarios y Justificación -->
+                                <div class="flex items-center gap-2 mt-2" *ngIf="tieneComentariosOJustificacion(item)">
+                                    <button (click)="abrirModalComentarios(item); $event.stopPropagation()"
+                                        class="px-2.5 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg border border-amber-200 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all">
+                                        <i class="bi bi-chat-left-text-fill"></i>
+                                        <span>Comentarios / Justificación</span>
+                                        <span class="px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded-md text-[8px] font-bold" *ngIf="obtenerNumeroComentarios(item) > 0">
+                                            {{ obtenerNumeroComentarios(item) }}
+                                        </span>
+                                    </button>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 text-center" *ngIf="modoActual !== 'conteo'">
                             <div class="flex flex-col gap-1 items-center">
                                 <div *ngFor="let h of item.historial" 
-                                    class="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 flex flex-col items-center">
+                                    class="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 flex flex-col items-center"
+                                    [title]="h.observaciones ? 'Comentario: ' + h.observaciones : ''">
                                     <span class="text-[7px] font-black text-slate-400 uppercase">{{h.tipo_conteo}}</span>
-                                    <span class="text-[10px] font-black text-slate-600">{{h.cantidad | number}}</span>
+                                    <span class="text-[10px] font-black text-slate-600 flex items-center gap-1 justify-center">
+                                        {{h.cantidad | number}}
+                                        <i *ngIf="h.observaciones" class="bi bi-chat-left-text-fill text-amber-500 text-[8px]"></i>
+                                    </span>
                                 </div>
                             </div>
                         </td>
@@ -271,6 +288,9 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             <span class="text-xs font-black text-slate-400">{{item.cantidad_siesa | number}}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-black text-slate-500">${{item.costo_unitario | number}}</span>
                         </td>
                         <td class="px-6 py-4 text-center">
                             <span [class]="item.diferencia === 0 ? 'text-slate-400' : (item.diferencia > 0 ? 'text-emerald-600' : 'text-rose-600')"
@@ -301,6 +321,119 @@
                 <p class="text-[11px] font-black text-slate-400 uppercase">No se encontraron conteos para validar</p>
             </div>
         </div>
+
+        <!-- Paginador del Aplicativo para Validación -->
+        <app-shared-paginator *ngIf="paginationService.getPaginatorState(valPaginatorId)"
+            [instanceId]="valPaginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[10, 25, 50, 100]"
+            [noDataMessage]="'No se encontraron conteos para validar'">
+        </app-shared-paginator>
+    </div>
+
+    <!-- VISTA: TAB DE JUSTIFICACIONES -->
+    <div *ngIf="modoActual === 'justificar'" class="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-500 bg-white">
+        <!-- Tabla de Justificaciones -->
+        <div class="flex-1 overflow-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-white shadow-sm z-10">
+                    <tr class="border-b border-slate-100 bg-slate-50/30">
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Información del Ítem</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Stock Siesa</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">1° Conteo</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">1° Reconteo</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">2° Reconteo</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Val. Unitario</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Diferencia</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Dif. Valor ($)</th>
+                        <th class="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Justificación y Comentarios</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    <tr *ngFor="let item of itemsAgrupadosJustificacionPaginados" class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-black text-slate-800">{{item.id_item}}</span>
+                                    <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[8px] font-bold rounded-md border border-slate-200 uppercase">{{item.referencia}}</span>
+                                </div>
+                                <span class="text-[10px] text-slate-500 font-medium truncate max-w-[250px] uppercase">{{item.descripcion}}</span>
+                                <div class="flex items-center gap-3 mt-1.5">
+                                    <span class="text-[8px] font-black text-slate-400 uppercase bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">T: {{item.id_talla || 'N/A'}}</span>
+                                    <span class="text-[8px] font-black text-slate-400 uppercase bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">C: {{item.id_color || 'N/A'}}</span>
+                                    <span class="text-[8px] font-black text-blue-500 uppercase bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{{item.codigo_bodega}}</span>
+                                    <span class="text-[8px] font-black text-emerald-500 uppercase bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{{item.zona}}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-black text-slate-400">{{item.cantidad_siesa | number}}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-bold text-slate-600">{{item.conteo !== null ? (item.conteo | number) : '-'}}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-bold text-slate-600">{{item.reconteo1 !== null ? (item.reconteo1 | number) : '-'}}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-bold text-slate-600">{{item.reconteo2 !== null ? (item.reconteo2 | number) : '-'}}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="text-xs font-black text-slate-500">${{item.costo_unitario | number}}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span [class]="item.diferencia === 0 ? 'text-slate-400' : (item.diferencia > 0 ? 'text-emerald-600' : 'text-rose-600')"
+                                class="text-xs font-black">
+                                {{item.diferencia > 0 ? '+' : ''}}{{item.diferencia | number}}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span [class]="item.diferencia_valor === 0 ? 'text-slate-400' : (item.diferencia_valor > 50000 ? 'text-rose-700' : 'text-slate-700')"
+                                class="text-xs font-black">
+                                ${{item.diferencia_valor | number}}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 w-[350px]">
+                            <!-- Botón de Comentarios -->
+                            <div class="mb-2" *ngIf="tieneComentariosOJustificacion(item)">
+                                <button (click)="abrirModalComentarios(item); $event.stopPropagation()"
+                                    class="px-2.5 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg border border-amber-200 text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all">
+                                    <i class="bi bi-chat-left-text-fill"></i>
+                                    <span>Comentarios / Justificación</span>
+                                    <span class="px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded-md text-[8px] font-bold" *ngIf="obtenerNumeroComentarios(item) > 0">
+                                        {{ obtenerNumeroComentarios(item) }}
+                                    </span>
+                                </button>
+                            </div>
+                            
+                            <!-- Input para Justificación -->
+                            <div class="flex gap-2 items-center" *ngIf="item.diferencia !== 0">
+                                <input type="text" [(ngModel)]="item.justificacion" 
+                                    placeholder="Justificación..."
+                                    class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all">
+                                <button (click)="guardarJustificacionItem(item)" [disabled]="guardandoJustificacion[item.id_item + '|' + item.referencia + '|' + (item.id_talla ?? '') + '|' + (item.id_color ?? '') + '|' + item.zona]"
+                                    class="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shrink-0 flex items-center justify-center">
+                                    <i class="bi" [class.bi-floppy-fill]="!guardandoJustificacion[item.id_item + '|' + item.referencia + '|' + (item.id_talla ?? '') + '|' + (item.id_color ?? '') + '|' + item.zona]"
+                                                 [class.bi-arrow-repeat]="guardandoJustificacion[item.id_item + '|' + item.referencia + '|' + (item.id_talla ?? '') + '|' + (item.id_color ?? '') + '|' + item.zona]"
+                                                 [class.animate-spin]="guardandoJustificacion[item.id_item + '|' + item.referencia + '|' + (item.id_talla ?? '') + '|' + (item.id_color ?? '') + '|' + item.zona]"></i>
+                                </button>
+                            </div>
+                            <span *ngIf="item.diferencia === 0" class="text-[10px] text-slate-400 italic">Sin diferencia (no requiere justificación)</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Empty State -->
+            <div *ngIf="itemsAgrupadosJustificacion.length === 0" class="py-24 text-center">
+                <i class="bi bi-search text-slate-200 text-5xl mb-4 block"></i>
+                <p class="text-[11px] font-black text-slate-400 uppercase">No se encontraron ítems contados para justificar</p>
+            </div>
+        </div>
+
+        <!-- Paginador del Aplicativo para Justificación -->
+        <app-shared-paginator *ngIf="paginationService.getPaginatorState(justPaginatorId)"
+            [instanceId]="justPaginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[10, 25, 50, 100]"
+            [noDataMessage]="'No se encontraron ítems contados para justificar'">
+        </app-shared-paginator>
     </div>
 
     <!-- Overlay de Carga Inicial (Rápido) -->
@@ -314,4 +447,105 @@
         <div class="spinner-border spinner-border-sm text-emerald-400"></div>
         <span class="text-[10px] font-black uppercase tracking-widest">Sincronizando con SIESA...</span>
     </div>
+
+    <!-- MODAL DE COMENTARIOS Y JUSTIFICACIÓN -->
+    <div *ngIf="mostrarModalComentarios && comentariosModalItem" 
+         class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-lg font-black text-slate-800 uppercase tracking-tight">Comentarios e Historial</h2>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        Item: {{ comentariosModalItem.id_item }} | Ref: {{ comentariosModalItem.referencia }}
+                    </p>
+                </div>
+                <button (click)="cerrarModalComentarios()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="bi bi-x-lg text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                <!-- Item Detail Banner -->
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col gap-2">
+                    <span class="text-xs font-black text-slate-700 uppercase tracking-wide">{{ comentariosModalItem.descripcion }}</span>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="text-[8px] font-black text-slate-400 uppercase bg-white px-2 py-1 rounded border border-slate-200">Talla: {{ comentariosModalItem.id_talla || 'N/A' }}</span>
+                        <span class="text-[8px] font-black text-slate-400 uppercase bg-white px-2 py-1 rounded border border-slate-200">Color: {{ comentariosModalItem.id_color || 'N/A' }}</span>
+                        <span class="text-[8px] font-black text-blue-500 uppercase bg-blue-50 px-2 py-1 rounded border border-blue-100">Bodega: {{ comentariosModalItem.codigo_bodega }}</span>
+                        <span class="text-[8px] font-black text-emerald-500 uppercase bg-emerald-50 px-2 py-1 rounded border border-emerald-100">Zona: {{ comentariosModalItem.zona }}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mt-2 pt-2 border-t border-slate-200/60">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Stock Siesa</span>
+                            <span class="text-sm font-black text-slate-600">{{ comentariosModalItem.cantidad_siesa | number }}</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Conteo Final</span>
+                            <span class="text-sm font-black text-emerald-600">{{ (comentariosModalItem.valor_final !== undefined ? comentariosModalItem.valor_final : comentariosModalItem.cantidad_conteo) | number }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline of Comments -->
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observaciones de Conteo</h3>
+                    
+                    <div class="space-y-3" *ngIf="comentariosModalItem.listaComentarios && comentariosModalItem.listaComentarios.length > 0">
+                        <div *ngFor="let com of comentariosModalItem.listaComentarios" 
+                             class="p-4 bg-amber-50/50 border border-amber-100/60 rounded-2xl flex flex-col gap-1.5 animate-in slide-in-from-bottom-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-black text-amber-600 uppercase bg-amber-100/80 px-2 py-0.5 rounded-md">
+                                    {{ com.etapa }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-700 font-medium italic leading-relaxed">
+                                "{{ com.texto }}"
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div *ngIf="!comentariosModalItem.listaComentarios || comentariosModalItem.listaComentarios.length === 0" 
+                         class="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
+                        <i class="bi bi-chat-left text-slate-300 text-2xl mb-2 block"></i>
+                        <span class="text-[10px] font-black text-slate-400 uppercase">Sin observaciones en los conteos</span>
+                    </div>
+                </div>
+
+                <!-- Justification Form (only if difference exists) -->
+                <div class="space-y-3 pt-4 border-t border-slate-100" 
+                     *ngIf="(comentariosModalItem.diferencia !== undefined ? comentariosModalItem.diferencia : (comentariosModalItem.cantidad_conteo - comentariosModalItem.cantidad_siesa)) !== 0">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Justificación de la Diferencia</label>
+                        <span class="text-[9px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                            Diferencia: {{ (comentariosModalItem.diferencia !== undefined ? comentariosModalItem.diferencia : (comentariosModalItem.cantidad_conteo - comentariosModalItem.cantidad_siesa)) | number }}
+                        </span>
+                    </div>
+                    <textarea [(ngModel)]="comentariosModalItem.justificacion" 
+                              placeholder="Escriba la justificación para validar este ítem con diferencia..."
+                              rows="3"
+                              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 focus:bg-white transition-all shadow-inner resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-4 shrink-0">
+                <button (click)="cerrarModalComentarios()" 
+                        class="px-6 py-3 text-xs font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">
+                    Cancelar
+                </button>
+                <button *ngIf="(comentariosModalItem.diferencia !== undefined ? comentariosModalItem.diferencia : (comentariosModalItem.cantidad_conteo - comentariosModalItem.cantidad_siesa)) !== 0" 
+                        (click)="guardarJustificacionDesdeModal(comentariosModalItem)" 
+                        [disabled]="guardandoJustificacion[comentariosModalItem.conteoIds ? (comentariosModalItem.id_item + '|' + comentariosModalItem.referencia + '|' + (comentariosModalItem.id_talla ?? '') + '|' + (comentariosModalItem.id_color ?? '') + '|' + comentariosModalItem.zona) : ('val_' + comentariosModalItem.id)]"
+                        class="px-8 py-4 bg-blue-600 text-white text-xs font-black rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 uppercase tracking-widest disabled:opacity-50 flex items-center gap-2">
+                    <i class="bi" [class.bi-floppy-fill]="!guardandoJustificacion[comentariosModalItem.conteoIds ? (comentariosModalItem.id_item + '|' + comentariosModalItem.referencia + '|' + (comentariosModalItem.id_talla ?? '') + '|' + (comentariosModalItem.id_color ?? '') + '|' + comentariosModalItem.zona) : ('val_' + comentariosModalItem.id)]"
+                                 [class.bi-arrow-repeat]="guardandoJustificacion[comentariosModalItem.conteoIds ? (comentariosModalItem.id_item + '|' + comentariosModalItem.referencia + '|' + (comentariosModalItem.id_talla ?? '') + '|' + (comentariosModalItem.id_color ?? '') + '|' + comentariosModalItem.zona) : ('val_' + comentariosModalItem.id)]"
+                                 [class.animate-spin]="guardandoJustificacion[comentariosModalItem.conteoIds ? (comentariosModalItem.id_item + '|' + comentariosModalItem.referencia + '|' + (comentariosModalItem.id_talla ?? '') + '|' + (comentariosModalItem.id_color ?? '') + '|' + comentariosModalItem.zona) : ('val_' + comentariosModalItem.id)]"></i>
+                    <span>{{ guardandoJustificacion[comentariosModalItem.conteoIds ? (comentariosModalItem.id_item + '|' + comentariosModalItem.referencia + '|' + (comentariosModalItem.id_talla ?? '') + '|' + (comentariosModalItem.id_color ?? '') + '|' + comentariosModalItem.zona) : ('val_' + comentariosModalItem.id)] ? 'Guardando...' : 'Guardar Justificación' }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+

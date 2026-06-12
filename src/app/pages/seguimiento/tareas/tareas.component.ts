@@ -52,6 +52,7 @@ interface ResumenUsuarioDia {
 export class TareasComponent implements OnInit, OnDestroy {
   @Input() usuarioId = 0;
   @Input() puedeGestionarModulo = false;
+  @Input() vistaMode: 'member' | undefined;
 
   // ── ESTADO ──────────────────────────────────────────────────────
   loading = false;
@@ -114,6 +115,7 @@ export class TareasComponent implements OnInit, OnDestroy {
   diaSeleccionado: CalendarioDia | null = null;
 
   showModalTarea = false;
+  esAdminParaModal = false;
   tareaParaEditar: Tarea | null = null;
   proyectoSeleccionado: Proyecto | null = null;
   savingTarea = false;
@@ -183,12 +185,6 @@ export class TareasComponent implements OnInit, OnDestroy {
   get usuariosFiltrados(): any[] {
     const search = this.filtroPersonasBusqueda.toLowerCase().trim();
     return this.state.usuariosCache.filter(u => {
-      // Filtrar por rol "Administrador del sistema"
-      const esAdminSist = u.roles?.some((r: any) => 
-        r.nombre.toLowerCase().includes('administrador del sistema')
-      );
-      if (!esAdminSist) return false;
-
       // Filtrar por búsqueda de nombre
       if (!search) return true;
       return u.nombre.toLowerCase().includes(search);
@@ -256,7 +252,7 @@ export class TareasComponent implements OnInit, OnDestroy {
     this.loading = true;
     this._cdr.markForCheck();
 
-    this._proyectoService.getSeguimientosAnuales(this.usuarioId).subscribe({
+    this._proyectoService.getSeguimientosAnuales(this.usuarioId, this.vistaMode).subscribe({
       next: (res) => {
         const seg = res.data?.find(s => s.estado === 'activo');
         if (seg) {
@@ -295,8 +291,8 @@ export class TareasComponent implements OnInit, OnDestroy {
     
     // Cargar vista mes y tareas consolidadas en paralelo
     forkJoin({
-      vistaMes: this._proyectoService.getVistaMes(seguimientoId, mes, anio, this.usuarioId),
-      consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['proyecto', 'glpi', 'compromiso']),
+      vistaMes: this._proyectoService.getVistaMes(seguimientoId, mes, anio, this.usuarioId, this.vistaMode),
+      consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['proyecto', 'glpi', 'compromiso'], this.vistaMode),
       informes: this._proyectoService.getMisInformeTareas(this.usuarioId),
       proyectos: this._proyectoService.getProyectos(this.usuarioId)
     }).subscribe({
@@ -364,6 +360,17 @@ export class TareasComponent implements OnInit, OnDestroy {
       
       const cumpleEstado = this.filtroGlobalEstados.length === 0 || this.filtroGlobalEstados.includes(estadoTareaNormalizado);
       
+      // Si el usuario es miembro, solo mostramos sus tareas
+      if (!this.puedeGestionarModulo) {
+        let esMia = false;
+        if (Array.isArray(t.responsables) && t.responsables.length > 0) {
+          esMia = t.responsables.some((rId: any) => Number(rId) === this.usuarioId);
+        } else {
+          esMia = Number(t[uidKey]) === this.usuarioId;
+        }
+        if (!esMia) return false;
+      }
+
       let cumpleUsuario = this.filtroUsuariosSelec.length === 0;
       if (!cumpleUsuario) {
         // Si tiene un array de responsables, verificamos si alguno coincide
@@ -655,6 +662,7 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   abrirTareaEspecifica(t: any, origen: string): void {
     this.proyectoSeleccionado = null; // Reset
+    this.esAdminParaModal = false;
 
     if (origen === 'proyecto') {
       // 1. Intentar obtener el proyecto_id desde el objeto consolidado, o buscarlo por nombre
@@ -672,6 +680,7 @@ export class TareasComponent implements OnInit, OnDestroy {
         console.warn('No se pudo encontrar el proyecto para la tarea:', t);
         // Al menos abrimos el modal con lo básico que tenemos
         this.tareaParaEditar = { ...t, origen: 'proyecto' };
+        this.esAdminParaModal = this.puedeGestionarModulo;
         this.showModalTarea = true;
         this._cdr.markForCheck();
         return;
@@ -681,6 +690,8 @@ export class TareasComponent implements OnInit, OnDestroy {
       this._proyectoService.getDetalleCompleto(pId, this.usuarioId).subscribe({
         next: (det: any) => {
           this.actividadesProyecto = det.data?.actividades || [];
+          this.proyectoSeleccionado = det.data || null;
+          this.esAdminParaModal = this.puedeGestionarModulo || (this.proyectoSeleccionado?.mis_permisos?.puede_editar ?? false);
           
           // 3. Buscar la tarea REAL en el árbol del proyecto para tener sus responsables
           let tareaReal: any = null;
@@ -705,6 +716,7 @@ export class TareasComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.tareaParaEditar = { ...t, proyecto_id: pId, origen: 'proyecto' };
+          this.esAdminParaModal = this.puedeGestionarModulo;
           this.showModalTarea = true;
           this._cdr.markForCheck();
         }
@@ -712,10 +724,12 @@ export class TareasComponent implements OnInit, OnDestroy {
 
     } else if (origen === 'informe') {
       this.informeTareaParaEditar = t;
+      this.esAdminParaModal = this.puedeGestionarModulo;
       this.showModalInformeTarea = true;
     } else if (origen === 'seguimiento') {
       // Intentar encontrar la tarea real en la lista de seguimiento (que tiene los responsables reales)
       const tareaSegReal = this.tareasSegRaw.find(ts => ts.id === t.id);
+      this.esAdminParaModal = this.puedeGestionarModulo || (this.vistaMes?.es_gestor ?? false);
       
       this.tareaParaEditar = {
         ...(tareaSegReal || t),

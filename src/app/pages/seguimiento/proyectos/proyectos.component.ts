@@ -40,12 +40,14 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   @Input() usuarioId            = 0;
   @Input() puedeGestionarModulo = false;
+  @Input() vistaMode: 'member' | undefined;
 
   // ── Estado del listado ───────────────────────────────────────────
   proyectos:          Proyecto[]  = [];
   proyectosPaginados: Proyecto[]  = [];
   loading             = false;
   filtroEstado: FiltroEstado = 'todos';
+  filtroTipoProyecto: 'todos' | 'normales' | 'informes' = 'todos';
   mostrarPlantillas: boolean = false;
   busqueda            = '';
   vista: VistaProyectos = 'tarjetas';
@@ -121,10 +123,16 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
   get proyectosFiltrados(): Proyecto[] {
     const q = this.busqueda.toLowerCase().trim();
-    const filtrados = this.proyectos.filter(p =>
+    let filtrados = this.proyectos.filter(p =>
       (!q || p.titulo.toLowerCase().includes(q) ||
        (p.descripcion ?? '').toLowerCase().includes(q)),
     );
+
+    if (this.filtroTipoProyecto === 'normales') {
+      filtrados = filtrados.filter(p => !p.es_proyecto_informe);
+    } else if (this.filtroTipoProyecto === 'informes') {
+      filtrados = filtrados.filter(p => p.es_proyecto_informe);
+    }
 
     // Si el filtro es "todos", aplicamos el orden solicitado:
     // 1. en_ejecucion (más importantes primero)
@@ -251,6 +259,12 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   cambiarFiltro(f: FiltroEstado): void {
     this.filtroEstado = f;
     this.cargarProyectos();
+  }
+
+  cambiarFiltroTipo(tipo: 'todos' | 'normales' | 'informes'): void {
+    this.filtroTipoProyecto = tipo;
+    this._initPaginadores();
+    this.cdr.markForCheck();
   }
 
   toggleMostrarPlantillas(): void {

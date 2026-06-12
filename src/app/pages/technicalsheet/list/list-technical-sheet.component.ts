@@ -1,9 +1,9 @@
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { TechnicalSheetService } from '../../../services/technical-sheet.service';
-import { Component, OnInit } from '@angular/core';
 import { TechnicalDataSheet } from '../../../models/TechnicalDataSheet';
-import { tap,finalize } from 'rxjs/operators';
+import { tap, finalize } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { HTML_HEAD, HTML_FOOTER } from './print-technical-sheet-template';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -53,19 +53,20 @@ export class ListTechnicalSheetComponent implements OnInit {
 
 
     technicalDataSheetCurrent: TechnicalDataSheet = new TechnicalDataSheet();
-    downloadCompleteFile: boolean
-    statusSearch: string;
+    downloadCompleteFile: boolean = false;
+    statusSearch: string = '';
     currentSearchTerm: string = '';
     currentPageSize: number = 10;
     selectedFile: File | null = null;
-    id: number;
+    id: number = 0;
     pdfUrl: SafeResourceUrl | null = null;
     versiones: any[] = [];
 
     constructor(private technicalSheetService: TechnicalSheetService,
         public authService: AuthService,
         private activatedRoute: ActivatedRoute,
-      private sanitizer: DomSanitizer) {
+        private sanitizer: DomSanitizer,
+        private cdr: ChangeDetectorRef) {
     }
 
     listaTechnicalDataSheet: TechnicalDataSheet[] = [];
@@ -77,8 +78,8 @@ export class ListTechnicalSheetComponent implements OnInit {
           const newStatus = params.get('status');
           
           // Si el estado cambia (ej: de Desarrollo a Calidad), reseteamos filtros
-          if (this.statusSearch !== newStatus) {
-              this.statusSearch = newStatus;
+            if (this.statusSearch !== newStatus) {
+              this.statusSearch = newStatus ?? '';
               this.currentSearchTerm = '';
               this.paginator.number = 0;
           }
@@ -308,11 +309,22 @@ cerrarPdf(): void {
                 })
             )
             .subscribe({
-                next: (response: TechnicalDataSheet[]) => {
-                    console.log('Datos cargados:', response);
-                    this.allTechnicalDataSheet = Array.isArray(response['data']) ? response['data'] : [];
+                next: (response: any) => {
+                    console.log('Respuesta cruda del servidor:', response);
                     
-                    // Si ya tenemos un estado cargado (ej: restaurando), lo mantenemos
+                    // El backend de Laravel devuelve un objeto con { success, message, data }
+                    // Extraemos el array de la propiedad 'data'
+                    if (response && response.data && Array.isArray(response.data)) {
+                        this.allTechnicalDataSheet = response.data;
+                    } else if (Array.isArray(response)) {
+                        // Por si acaso el backend devuelve el array directamente (comportamiento anterior)
+                        this.allTechnicalDataSheet = response;
+                    } else {
+                        console.warn('La respuesta del servidor no tiene el formato esperado:', response);
+                        this.allTechnicalDataSheet = [];
+                    }
+                    
+                    // Actualizamos la visualización local
                     this.updateLocalPagination();
                 },
                 error: (error) => {
@@ -350,7 +362,6 @@ cerrarPdf(): void {
                 ficha.technical_data_sheet_type?.toLowerCase().includes(searchTerm) ||
                 ficha.last_update?.toLowerCase().includes(searchTerm)
             );
-            console.log(this.allTechnicalDataSheet)
         } else {
             this.filteredTechnicalDataSheet = [...this.allTechnicalDataSheet];
         }
@@ -385,8 +396,11 @@ cerrarPdf(): void {
         // Guardar estado actual en sessionStorage
         this.saveStateToStorage();
 
-        console.log(`Página ${currentPage + 1} de ${totalPages} - Mostrando ${this.listaTechnicalDataSheet.length} de ${totalElements} elementos`);
-        console.log(this.listaTechnicalDataSheet);
+        // Forzar detección de cambios ya que estamos en una operación asíncrona
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+
+        console.log(`Paginación actualizada: Página ${currentPage + 1} de ${totalPages} - Mostrando ${this.listaTechnicalDataSheet.length} de ${totalElements} elementos`);
     }
 
     /**
@@ -454,12 +468,24 @@ cerrarPdf(): void {
             let printContents;
             let popupWin;
 
-            printContents = document.getElementById('print').innerHTML.toString();
+            const printElement = document.getElementById('print');
+            if (!printElement) {
+                Swal.fire('Error', 'No se encontró el elemento de impresión', 'error');
+                this.loading = false;
+                return;
+            }
+
+            printContents = printElement.innerHTML.toString();
             printContents = ((printContents as string) + '');
 
             popupWin = window.open('', '_blank', 'top=0,left=0,height=100%,width=auto');
-            popupWin.document.open();
-            popupWin.document.write(`
+            if (!popupWin) {
+                Swal.fire('Error', 'No se pudo abrir la ventana de impresión', 'error');
+                this.loading = false;
+                return;
+            }
+
+            const htmlContent = `
             <html>
                 <!doctype html>
                 <html lang="en">
@@ -472,8 +498,10 @@ cerrarPdf(): void {
                 </body>
                 ${HTML_FOOTER}
             </html>
-            `);
+            `;
 
+            popupWin.document.open();
+            popupWin.document.write(htmlContent);
             popupWin.document.close();
             this.loading = false;
         }, 1000);
@@ -523,6 +551,48 @@ cerrarPdf(): void {
                     }
                 );
             }
-        });
-    }
+        });
+    }
+
+    anularFicha(ficha: any): void {
+        Swal.fire({
+            title: '¿Está seguro de anular la ficha técnica?',
+            text: 'La ficha será marcada como ANULADA y excluida de los listados y reportes activos.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, anular',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.value) {
+                this.loading = true;
+                this.technicalSheetService.annulFichas([ficha.id]).subscribe({
+                    next: () => {
+                        this.loading = false;
+                        // Remover de los datos locales
+                        this.allTechnicalDataSheet = this.allTechnicalDataSheet.filter(obj => obj.id !== ficha.id);
+                        this.updateLocalPagination();
+                        
+                        Swal.fire({
+                            title: 'Anulada',
+                            text: 'La ficha técnica ha sido anulada correctamente.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    },
+                    error: (err) => {
+                        this.loading = false;
+                        console.error(err);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Ha ocurrido un error al anular la ficha técnica.',
+                            icon: 'error'
+                        });
+                    }
+                });
+            }
+        });
+    }
 }

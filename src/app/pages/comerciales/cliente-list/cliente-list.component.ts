@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ComercialService, ClienteSiesa, Solicitud } from '../../../services/comercial.service';
+import { OrdenCompraService } from '../../../services/orden-compra.service';
 import { PaginationService, PaginationState } from '../../../shared/pagination/pagination.service';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -12,8 +13,9 @@ import Swal from 'sweetalert2';
   styleUrls: ['./cliente-list.component.css']
 })
 export class ClienteListComponent implements OnInit, OnDestroy {
-  // Modo: 'clientes' o 'solicitudes'
-  viewMode: 'clientes' | 'solicitudes' = 'clientes';
+  // Tabs: clientes | solicitudes | ordenes
+  viewMode: 'clientes' | 'solicitudes' | 'ordenes' = 'clientes';
+  displayMode: 'cards' | 'list' = 'cards';
 
   // Clientes
   clientes: ClienteSiesa[] = [];
@@ -31,13 +33,24 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   solicitudEstadoFilter = '';
   isLoadingSolicitudes = false;
 
+  // Órdenes de Compra
+  ordenes: any[] = [];
+  filteredOrdenes: any[] = [];
+  pagedOrdenes: any[] = [];
+  ordenSearch = '';
+  ordenEstadoFilter = '';
+  isLoadingOrdenes = false;
+  estadisticasOC: any = null;
+
   // Pagination
   readonly clientesPaginatorId = 'comerciales-clientes';
   readonly solicitudesPaginatorId = 'comerciales-solicitudes-list';
+  readonly ordenesPaginatorId = 'comerciales-ordenes-list';
   private paginationSubs: Subscription[] = [];
 
   constructor(
     private comercialService: ComercialService,
+    private ordenCompraService: OrdenCompraService,
     private router: Router,
     private route: ActivatedRoute,
     public paginationService: PaginationService,
@@ -45,7 +58,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadStyles();
+    this.loadTailwind();
     const mode = this.route.snapshot.data['mode'];
     if (mode === 'solicitudes') {
       this.viewMode = 'solicitudes';
@@ -55,24 +68,40 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadStyles(): void {
-    const link = this.document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css';
-    link.id = 'comerciales-icons';
-    this.document.head.appendChild(link);
+  private loadTailwind(): void {
+    if (!this.document.getElementById('tw-cdn-comerciales')) {
+      const link = this.document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+      link.id = 'tw-cdn-comerciales';
+      this.document.head.appendChild(link);
+    }
+    if (!this.document.getElementById('bi-cdn-comerciales')) {
+      const icons = this.document.createElement('link');
+      icons.rel = 'stylesheet';
+      icons.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css';
+      icons.id = 'bi-cdn-comerciales';
+      this.document.head.appendChild(icons);
+    }
   }
 
   ngOnDestroy(): void {
-    const el = this.document.getElementById('comerciales-icons');
-    if (el) el.remove();
     this.paginationSubs.forEach(s => s.unsubscribe());
     this.paginationService.destroyPaginator(this.clientesPaginatorId);
     this.paginationService.destroyPaginator(this.solicitudesPaginatorId);
+    this.paginationService.destroyPaginator(this.ordenesPaginatorId);
+    // No removemos Tailwind ya que otros componentes lo usan
+  }
+
+  // ==================== TABS ====================
+  switchView(mode: 'clientes' | 'solicitudes' | 'ordenes'): void {
+    this.viewMode = mode;
+    if (mode === 'solicitudes' && this.solicitudes.length === 0) this.loadSolicitudes();
+    if (mode === 'ordenes' && this.ordenes.length === 0) this.loadOrdenes();
+    if (mode === 'clientes' && this.clientes.length === 0) this.loadClientes();
   }
 
   // ==================== CLIENTES ====================
-
   loadClientes(): void {
     this.isLoading = true;
     this.comercialService.listarClientes().subscribe({
@@ -97,9 +126,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
           this.applyClienteFilters();
           this.isLoading = false;
         },
-        error: () => {
-          this.isLoading = false;
-        }
+        error: () => { this.isLoading = false; }
       });
     } else if (this.searchTerm.length === 0) {
       this.loadClientes();
@@ -108,7 +135,6 @@ export class ClienteListComponent implements OnInit, OnDestroy {
 
   applyClienteFilters(): void {
     let result = [...this.clientes];
-
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       result = result.filter(c =>
@@ -116,20 +142,16 @@ export class ClienteListComponent implements OnInit, OnDestroy {
         c.nit?.toLowerCase().includes(term)
       );
     }
-
     if (this.letterFilter) {
-      result = result.filter(c =>
-        c.razon_social.toUpperCase().startsWith(this.letterFilter)
-      );
+      result = result.filter(c => c.razon_social.toUpperCase().startsWith(this.letterFilter));
     }
-
     this.filteredClientes = result;
     this.initClientesPaginator();
   }
 
   private initClientesPaginator(): void {
     const sub = this.paginationService
-      .initializePaginator(this.clientesPaginatorId, this.filteredClientes, 25)
+      .initializePaginator(this.clientesPaginatorId, this.filteredClientes, 24)
       .subscribe((state: PaginationState) => {
         this.pagedClientes = state.currentData;
       });
@@ -152,7 +174,6 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   }
 
   // ==================== SOLICITUDES ====================
-
   loadSolicitudes(): void {
     this.isLoadingSolicitudes = true;
     this.comercialService.listarSolicitudes().subscribe({
@@ -201,37 +222,77 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/comerciales/solicitud/nuevo']);
   }
 
-  // ==================== VIEW TOGGLE ====================
-
-  switchView(mode: 'clientes' | 'solicitudes'): void {
-    this.viewMode = mode;
-    if (mode === 'solicitudes' && this.solicitudes.length === 0) {
-      this.loadSolicitudes();
-    } else if (mode === 'clientes' && this.clientes.length === 0) {
-      this.loadClientes();
-    }
+  // ==================== ORDENES DE COMPRA ====================
+  loadOrdenes(): void {
+    this.isLoadingOrdenes = true;
+    this.ordenCompraService.obtenerOrdenes().subscribe({
+      next: (res) => {
+        this.ordenes = res.data || [];
+        this.applyOrdenFilters();
+        this.isLoadingOrdenes = false;
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudieron cargar las órdenes', 'error');
+        this.isLoadingOrdenes = false;
+      }
+    });
+    this.ordenCompraService.obtenerEstadisticas().subscribe({
+      next: (res) => { this.estadisticasOC = res.data; },
+      error: () => {}
+    });
   }
 
-  getEstadoBadge(estado: string): string {
+  applyOrdenFilters(): void {
+    let result = [...this.ordenes];
+    if (this.ordenSearch.trim()) {
+      const term = this.ordenSearch.toLowerCase();
+      result = result.filter((o: any) =>
+        o.numero_orden?.toLowerCase().includes(term) ||
+        o.cliente?.toLowerCase().includes(term) ||
+        (o.pv_asociado || '').toLowerCase().includes(term)
+      );
+    }
+    if (this.ordenEstadoFilter) {
+      result = result.filter((o: any) => o.estado === this.ordenEstadoFilter);
+    }
+    this.filteredOrdenes = result;
+    this.initOrdenesPaginator();
+  }
+
+  private initOrdenesPaginator(): void {
+    const sub = this.paginationService
+      .initializePaginator(this.ordenesPaginatorId, this.filteredOrdenes, 10)
+      .subscribe((state: PaginationState) => {
+        this.pagedOrdenes = state.currentData;
+      });
+    this.paginationSubs.push(sub);
+  }
+
+  irACaptura(): void {
+    this.router.navigate(['/comerciales/captura']);
+  }
+
+  // ==================== HELPERS ====================
+  getEstadoBadgeClass(estado: string): string {
     const map: Record<string, string> = {
-      'BORRADOR': 'badge-borrador',
-      'ENVIADO': 'badge-enviado',
-      'EN_COSTEO': 'badge-en-costeo',
-      'COSTEADO': 'badge-costeado',
-      'APROBADO': 'badge-aprobado',
-      'RECHAZADO': 'badge-rechazado',
+      'BORRADOR': 'bg-gray-100 text-gray-700',
+      'ENVIADO': 'bg-blue-100 text-blue-700',
+      'EN_COSTEO': 'bg-yellow-100 text-yellow-800',
+      'COSTEADO': 'bg-purple-100 text-purple-700',
+      'APROBADO': 'bg-green-100 text-green-700',
+      'RECHAZADO': 'bg-red-100 text-red-700',
+      'PENDIENTE': 'bg-yellow-100 text-yellow-800',
+      'PROCESADA': 'bg-green-100 text-green-700',
+      'RECHAZADA': 'bg-red-100 text-red-700',
     };
-    return map[estado] || 'badge-default';
+    return map[estado] || 'bg-gray-100 text-gray-700';
   }
 
   getEstadoLabel(estado: string): string {
     const map: Record<string, string> = {
-      'BORRADOR': 'Borrador',
-      'ENVIADO': 'Enviado',
-      'EN_COSTEO': 'En Costeo',
-      'COSTEADO': 'Costeado',
-      'APROBADO': 'Aprobado',
-      'RECHAZADO': 'Rechazado',
+      'BORRADOR': 'Borrador', 'ENVIADO': 'Enviado', 'EN_COSTEO': 'En Costeo',
+      'COSTEADO': 'Costeado', 'APROBADO': 'Aprobado', 'RECHAZADO': 'Rechazado',
+      'PENDIENTE': 'Pendiente', 'PROCESADA': 'Procesada', 'RECHAZADA': 'Rechazada',
     };
     return map[estado] || estado;
   }

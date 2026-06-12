@@ -35,16 +35,16 @@
       
       <!-- ═══ TAB: MOLDE (DISEÑO) ═══ -->
       <ng-container *ngIf="activeTab === 'molde'">
-        <div class="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 h-full">
+        <div class="flex flex-col lg:flex-row gap-4 h-full">
           
           <!-- LEFT: Config Panel -->
-          <div class="space-y-4">
+          <div class="w-full lg:w-[320px] space-y-4 flex-shrink-0">
             <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
               <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest block mb-2">
                 <i class="bi bi-folder2"></i> Categoría Padre
               </label>
               <div class="flex gap-2">
-                <select [(ngModel)]="mold_category_id" [disabled]="isReadOnly"
+                <select [(ngModel)]="mold_category_id" (ngModelChange)="saveDraft()" [disabled]="isReadOnly"
                         class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
                   <option [ngValue]="null">Seleccionar categoría...</option>
                   <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>
@@ -113,7 +113,7 @@
           </div>
 
           <!-- RIGHT: Canvas (Main Design Area) -->
-          <div class="bg-white rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden flex flex-col">
+          <div class="flex-1 bg-white rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden flex flex-col">
 
             <div class="flex-1 relative flex items-center justify-center p-8 bg-[#fcfcfd]">
               <!-- Canvas with image -->
@@ -258,17 +258,17 @@
               <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest"><i class="bi bi-info-circle text-indigo-600"></i> Datos Básicos</h3>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre del Molde *</label>
-                <input type="text" [(ngModel)]="moldName" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 transition-all" />
+                <input type="text" [(ngModel)]="moldName" (ngModelChange)="saveDraft()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 transition-all" />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción General</label>
-                <textarea [(ngModel)]="moldDescription" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
+                <textarea [(ngModel)]="moldDescription" (ngModelChange)="saveDraft()" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
                   <i class="bi bi-folder2"></i> Categoría Padre (Agrupación)
                 </label>
-                <select [(ngModel)]="mold_category_id" [disabled]="isReadOnly"
+                <select [(ngModel)]="mold_category_id" (ngModelChange)="saveDraft()" [disabled]="isReadOnly"
                         class="w-full px-4 py-2.5 bg-indigo-50/50 border border-indigo-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
                   <option [ngValue]="null">Sin categoría padre</option>
                   <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>

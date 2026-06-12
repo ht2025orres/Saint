@@ -28,6 +28,7 @@ interface LocalItem {
   technicalSpecId: number | null;
   specExpanded: boolean;
   availableMolds: any[];
+  draftComponents?: any[]; // Store in-progress OPM components
 }
 
 @Component({
@@ -472,8 +473,17 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.items[index].specExpanded = !this.items[index].specExpanded;
   }
 
+  onItemComponentsChange(index: number, components: any[]): void {
+    if (this.items[index]) {
+      this.items[index].draftComponents = components;
+      this.saveToLocalStorage();
+    }
+  }
+
   onItemSpecSaved(index: number, specId: number): void {
     this.items[index].technicalSpecId = specId;
+    this.items[index].draftComponents = undefined; // Limpiar borrador ya que se guardó
+    this.saveToLocalStorage();
     Swal.fire({
       title: 'OPM Guardada',
       text: `Especificación del ítem "${this.items[index].descripcion}" vinculada`,

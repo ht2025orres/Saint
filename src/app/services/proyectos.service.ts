@@ -89,6 +89,7 @@ export interface Proyecto {
   actividades?: Actividad[];
   mis_permisos?: MisPermisos;
   nivel_usuario?: string;
+  es_proyecto_informe?: boolean;
   created_at: string; updated_at: string;
 }
 
@@ -129,6 +130,7 @@ export interface Informe {
   fecha_implementacion?: string | null;
   estado: EstadoInforme;
   creado_por: number;
+  proyecto_id?: number | null;
   created_at: string;
   updated_at: string;
   total_tareas?: number;
@@ -272,12 +274,16 @@ export class ProyectoService {
     mes: number,
     anio: number,
     fuentes: FuenteTarea[] = ['seguimiento', 'proyecto'],
+    vistaMode?: 'member',
   ): Observable<TareasConsolidadasResponse> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('usuario_id', usuarioId)
       .set('mes', mes)
       .set('anio', anio)
       .set('fuentes', fuentes.join(','));
+    if (vistaMode) {
+      params = params.set('vista_mode', vistaMode);
+    }
     return this.http.get<TareasConsolidadasResponse>(`${this.api}/tareas-consolidadas`, { params });
   }
 
@@ -413,16 +419,22 @@ export class ProyectoService {
     return this.http.get<ApiResponse<any>>(`${this.api}/seguimiento/anio/${anio}`);
   }
 
-  getSeguimientosAnuales(usuarioId: number): Observable<ApiResponse<SeguimientoAnual[]>> {
-    return this.http.get<ApiResponse<SeguimientoAnual[]>>(`${this.api}/seguimientos`, { params: { usuario_id: usuarioId } });
+  getSeguimientosAnuales(usuarioId: number, vistaMode?: 'member' | 'admin'): Observable<ApiResponse<SeguimientoAnual[]>> {
+    let params = new HttpParams().set('usuario_id', usuarioId);
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
+    return this.http.get<ApiResponse<SeguimientoAnual[]>>(`${this.api}/seguimientos`, { params });
   }
 
-  getVistaMes(id: number, mes: number, anio: number, usuarioId: number): Observable<ApiResponse<VistaMes>> {
-    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, { params: { usuario_id: usuarioId, anio } });
+  getVistaMes(id: number, mes: number, anio: number, usuarioId: number, vistaMode?: 'member' | 'admin'): Observable<ApiResponse<VistaMes>> {
+    let params = new HttpParams().set('usuario_id', usuarioId).set('anio', anio);
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
+    return this.http.get<ApiResponse<VistaMes>>(`${this.api}/seguimientos/${id}/mes/${mes}`, { params });
   }
 
-  getDetalleSeguimiento(id: number, usuarioId: number): Observable<ApiResponse<SeguimientoMensual>> {
-    return this.http.get<ApiResponse<SeguimientoMensual>>(`${this.api}/seguimientos/${id}`, { params: { usuario_id: usuarioId } });
+  getDetalleSeguimiento(id: number, usuarioId: number, vistaMode?: 'member' | 'admin'): Observable<ApiResponse<SeguimientoMensual>> {
+    let params = new HttpParams().set('usuario_id', usuarioId);
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
+    return this.http.get<ApiResponse<SeguimientoMensual>>(`${this.api}/seguimientos/${id}`, { params });
   }
 
   crearSeguimiento(data: { anio: number; titulo?: string; usuario_id: number; participantes?: number[] }): Observable<ApiResponse<SeguimientoAnual> & ApiMessage> {
@@ -533,6 +545,11 @@ export class ProyectoService {
     return this.http.delete<ApiMessage>(`${this.api}/informes/${id}`, { params: { usuario_id: usuarioId } });
   }
 
+  descargarPdfInformeUrl(id: number, usuarioId: number): string {
+    const token = sessionStorage.getItem('token') || '';
+    return `${this.api}/informes/${id}/pdf?usuario_id=${usuarioId}&token=${token}`;
+  }
+
   // ── TAREAS DE INFORME ─────────────────────────────────────────────────────
 
   getInformeTareas(informeId: number, usuarioId: number): Observable<ApiResponse<InformeTarea[]>> {
@@ -561,14 +578,17 @@ export class ProyectoService {
 
   // ── FLUJOS DIARIOS ────────────────────────────────────────────────────────────
  
-  getFlujoActivo(seguimientoId: number, usuarioId: number, fecha?: string): Observable<ApiResponse<FlujoDiario | null>> {
+  getFlujoActivo(seguimientoId: number, usuarioId: number, fecha?: string, vistaMode?: 'member' | 'admin'): Observable<ApiResponse<FlujoDiario | null>> {
     let params = new HttpParams().set('usuario_id', usuarioId);
     if (fecha) params = params.set('fecha', fecha);
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
     return this.http.get<any>(`${this.api}/seguimientos/${seguimientoId}/flujo-activo`, { params });
   }
  
-  getFlujos(seguimientoId: number, usuarioId: number): Observable<ApiResponse<FlujoDiario[]>> {
-    return this.http.get<ApiResponse<FlujoDiario[]>>(`${this.api}/seguimientos/${seguimientoId}/flujos`, { params: { usuario_id: usuarioId } });
+  getFlujos(seguimientoId: number, usuarioId: number, vistaMode?: 'member' | 'admin'): Observable<ApiResponse<FlujoDiario[]>> {
+    let params = new HttpParams().set('usuario_id', usuarioId);
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
+    return this.http.get<ApiResponse<FlujoDiario[]>>(`${this.api}/seguimientos/${seguimientoId}/flujos`, { params });
   }
  
   crearFlujo(data: { seguimiento_id: number; titulo?: string; fecha: string; usuario_id: number }): Observable<ApiResponse<FlujoDiario> & ApiMessage> {

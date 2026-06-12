@@ -32,6 +32,12 @@
                     class="w-full pl-11 pr-5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 focus:bg-white transition-all shadow-inner">
             </div>
 
+            <button (click)="abrirModalItems()" 
+                class="px-4 xl:px-6 py-2.5 bg-slate-700 text-white shrink-0 text-[10px] font-black rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 flex items-center gap-2 uppercase tracking-widest"
+                title="Ver lista de ítems contados">
+                <i class="bi bi-list-columns-reverse"></i> <span class="hidden md:inline">Ítems</span>
+            </button>
+
             <button (click)="abrirNuevaAsignacion()" 
                 class="px-4 xl:px-6 py-2.5 bg-blue-600 text-white shrink-0 text-[10px] font-black rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-2 uppercase tracking-widest ml-auto xl:ml-0">
                 <i class="bi bi-plus-lg"></i> <span class="hidden md:inline">Nueva</span>
@@ -84,6 +90,41 @@
                     <span class="text-[7px] xl:text-[8px] font-black text-slate-400 uppercase tracking-widest">Progreso</span>
                     <span class="text-base xl:text-lg font-black text-emerald-600 leading-none">{{(statsModo ? statsModo.progreso : inventarioSeleccionado.progreso) || 0}}%</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bodega Stats Banner -->
+    <!-- Bodega Stats Banner -->
+    <div *ngIf="activeBodegaStats" class="px-4 xl:px-6 pt-3 w-full">
+        <div class="rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            [ngClass]="activeBodegaStats.sin_zona > 0 ? 'bg-amber-50 border border-amber-100 text-amber-800' : 'bg-slate-50 border border-slate-200 text-slate-700'">
+            <div class="flex items-center gap-3">
+                <div class="p-2 rounded-xl" [ngClass]="activeBodegaStats.sin_zona > 0 ? 'bg-amber-500/10 text-amber-600' : 'bg-slate-500/10 text-slate-600'">
+                    <i class="bi" [ngClass]="activeBodegaStats.sin_zona > 0 ? 'bi-exclamation-triangle-fill text-base' : 'bi-info-circle-fill text-base'"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        Datos de la Bodega {{ filtroBodega ? filtroBodega : 'Asociada' }}
+                    </span>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold">
+                        <span>Total Ítems: <strong class="font-black text-slate-700">{{activeBodegaStats.total_items}}</strong></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                        <span>Zonas Activas: <strong class="font-black text-slate-700">{{activeBodegaStats.zonas_activas}}</strong></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                        <span class="flex items-center gap-1.5">
+                            Sin Zona: 
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase"
+                                [ngClass]="activeBodegaStats.sin_zona > 0 ? 'bg-amber-100 text-amber-700 border border-amber-200 animate-pulse' : 'bg-slate-100 text-slate-600'">
+                                {{activeBodegaStats.sin_zona}}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div *ngIf="activeBodegaStats.sin_zona > 0" class="text-[10px] font-black uppercase tracking-widest text-amber-700/80 bg-amber-500/5 px-3 py-1.5 rounded-xl border border-amber-500/10 flex items-center gap-1 sm:self-center">
+                <span>{{activeBodegaStats.sin_zona}} ítems no se incluirán en el conteo</span>
             </div>
         </div>
     </div>
@@ -454,6 +495,199 @@
                     {{ guardandoAsignacion ? 'Procesando...' : (asignacion.id ? 'Actualizar' : 'Finalizar') }}
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: VISUALIZACIÓN DE ÍTEMS -->
+<div *ngIf="mostrarModalItems" class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl w-[98vw] xl:max-w-6xl h-[92vh] max-h-[900px] overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300 flex flex-col">
+        
+        <!-- Header -->
+        <div class="p-6 xl:p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-slate-700 text-white flex items-center justify-center shadow-lg shadow-slate-200">
+                    <i class="bi bi-list-columns-reverse text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">Ítems Contados</h2>
+                    <div class="flex items-center gap-3 mt-1">
+                        <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                            {{ validacionesFiltradas.length }} de {{ validaciones.length }} registros
+                        </p>
+                        <span class="px-2 py-0.5 bg-blue-600 text-white rounded text-[9px] font-black uppercase">
+                            {{ modoActual === 'justificar' ? 'Todos' : (modoActual === 'conteo' ? '1° Conteo' : modoActual === 'reconteo1' ? '1° Reconteo' : '2° Reconteo') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <button (click)="mostrarModalItems = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="bi bi-x-lg text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="px-6 xl:px-8 py-4 border-b border-slate-100 bg-white flex flex-wrap items-end gap-3 shrink-0">
+            <!-- Búsqueda -->
+            <div class="flex flex-col flex-1 min-w-[180px]">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Buscar</span>
+                <div class="relative">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" [(ngModel)]="filtroItemsBusqueda" placeholder="Ítem, referencia, descripción..."
+                        class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 outline-none focus:border-blue-400 transition-all">
+                </div>
+            </div>
+
+            <!-- Zona -->
+            <div class="flex flex-col min-w-[120px]">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Zona</span>
+                <select [(ngModel)]="filtroItemsZona" 
+                    class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 outline-none focus:border-blue-400 transition-all uppercase tracking-tighter">
+                    <option value="">Todas</option>
+                    <option *ngFor="let z of zonasUnicasValidaciones" [value]="z">{{z}}</option>
+                </select>
+            </div>
+
+            <!-- Responsable -->
+            <div class="flex flex-col min-w-[140px]">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Responsable</span>
+                <select [(ngModel)]="filtroItemsResponsable" 
+                    class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 outline-none focus:border-blue-400 transition-all">
+                    <option value="">Todos</option>
+                    <option *ngFor="let r of responsablesUnicosValidaciones" [value]="r">{{r}}</option>
+                </select>
+            </div>
+
+            <!-- Bodega -->
+            <div class="flex flex-col min-w-[100px]">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Bodega</span>
+                <select [(ngModel)]="filtroItemsBodega" 
+                    class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 outline-none focus:border-blue-400 transition-all uppercase tracking-tighter">
+                    <option value="">Todas</option>
+                    <option *ngFor="let b of bodegasUnicasValidaciones" [value]="b">{{b}}</option>
+                </select>
+            </div>
+
+            <!-- Estado -->
+            <div class="flex flex-col min-w-[110px]">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado</span>
+                <select [(ngModel)]="filtroItemsEstado" 
+                    class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 outline-none focus:border-blue-400 transition-all uppercase tracking-tighter">
+                    <option value="">Todos</option>
+                    <option value="sin_conteo">Sin Conteo</option>
+                    <option value="pendiente">Pendiente Val.</option>
+                    <option value="validado">Validado</option>
+                    <option value="reconteo">Reconteo</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Resumen rápido -->
+        <div class="px-6 xl:px-8 py-3 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center gap-4 xl:gap-6 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-rose-500"></div>
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sin Conteo (Pendientes)</span>
+                <span class="text-xs font-black text-rose-600">{{ contarPorEstado('sin_conteo') }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pendientes Val.</span>
+                <span class="text-xs font-black text-blue-600">{{ contarPorEstado('pendiente') }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Validados</span>
+                <span class="text-xs font-black text-emerald-600">{{ contarPorEstado('validado') }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Reconteo</span>
+                <span class="text-xs font-black text-amber-600">{{ contarPorEstado('reconteo') }}</span>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="flex-1 overflow-auto custom-scrollbar">
+            <table class="min-w-[900px] w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-white shadow-sm z-10">
+                    <tr class="border-b border-slate-100 bg-slate-50/30">
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest">Ítem</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest">Variantes</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest">Zona</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest">Responsable</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Conteo</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">SIESA</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Dif.</th>
+                        <th class="px-4 xl:px-6 py-3 text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    <tr *ngFor="let v of validacionesFiltradas" class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-4 xl:px-6 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-black text-slate-800">{{v.id_item}}</span>
+                                <span class="text-[8px] text-slate-400 font-bold uppercase">{{v.referencia}}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3">
+                            <span class="text-[10px] font-bold text-slate-600 truncate block max-w-[180px]" [title]="v.descripcion">{{v.descripcion}}</span>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-bold text-slate-600">{{v.id_color}}</span>
+                                <span class="text-[9px] font-black text-slate-700">{{v.id_talla}}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3">
+                            <span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[9px] font-black uppercase border border-blue-100">{{v.zona}}</span>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3">
+                            <span class="text-[10px] font-bold text-slate-600 truncate block max-w-[140px]" [title]="v.responsable">{{v.responsable}}</span>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3 text-center">
+                            <span class="text-[11px] font-black text-slate-800" [ngClass]="{'text-slate-300 font-bold': v.cantidad_conteo === null}">
+                                {{v.cantidad_conteo === null ? '-' : (v.cantidad_conteo | number)}}
+                            </span>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3 text-center">
+                            <span class="text-[11px] font-bold text-slate-500">{{v.cantidad_siesa | number}}</span>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3 text-center">
+                            <span class="text-[11px] font-black" 
+                                [ngClass]="v.diferencia === 0 ? 'text-emerald-600' : v.diferencia > 0 ? 'text-blue-600' : 'text-rose-600'">
+                                {{v.diferencia > 0 ? '+' : ''}}{{v.diferencia | number}}
+                            </span>
+                        </td>
+                        <td class="px-4 xl:px-6 py-3 text-center">
+                            <span class="px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border"
+                                [ngClass]="getEstadoClasses(v.estado_validacion)">
+                                {{getEstadoLabel(v.estado_validacion)}}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Empty state -->
+            <div *ngIf="validacionesFiltradas.length === 0" class="py-20 text-center">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                    <i class="bi bi-inbox text-slate-200 text-2xl"></i>
+                </div>
+                <h4 class="text-sm font-black text-slate-800 mb-1 uppercase tracking-tight">Sin resultados</h4>
+                <p class="text-slate-400 text-[10px] font-medium">No hay ítems que coincidan con los filtros aplicados.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 xl:px-8 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center shrink-0">
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                Mostrando {{validacionesFiltradas.length}} registros
+            </div>
+            <button (click)="mostrarModalItems = false" 
+                class="px-8 py-3 bg-slate-800 text-white text-xs font-black rounded-2xl hover:bg-slate-900 transition-all uppercase tracking-widest">
+                Cerrar
+            </button>
         </div>
     </div>
 </div>

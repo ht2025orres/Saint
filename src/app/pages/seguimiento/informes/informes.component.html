@@ -13,7 +13,7 @@
     </div>
 
     <div class="flex items-center gap-3">
-      <button (click)="abrirModalNuevoInforme()" 
+      <button *ngIf="puedeGestionarModulo" (click)="abrirModalNuevoInforme()" 
         class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
         <i class="bi bi-plus-lg"></i>
         Nuevo Informe
@@ -80,7 +80,7 @@
         </div>
         <h3 class="text-gray-800 font-extrabold text-2xl mb-2">No hay informes registrados</h3>
         <p class="text-gray-400 text-base mb-8 max-w-sm mx-auto">Comienza a documentar hallazgos, incidentes o riesgos para su seguimiento.</p>
-        <button (click)="abrirModalNuevoInforme()" 
+        <button *ngIf="puedeGestionarModulo" (click)="abrirModalNuevoInforme()" 
           class="inline-flex items-center gap-3 px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">
           <i class="bi bi-plus-lg text-lg"></i>
           Crear Primer Informe
@@ -103,11 +103,16 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button (click)="editarInforme(detalle!)" 
+        <button (click)="descargarPdf()" 
+          class="px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-all"
+          title="Descargar informe ejecutivo en PDF">
+          <i class="bi bi-file-earmark-pdf mr-1"></i> PDF
+        </button>
+        <button *ngIf="puedeGestionarModulo" (click)="editarInforme(detalle!)" 
           class="px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all">
           <i class="bi bi-pencil-square mr-1"></i> Editar
         </button>
-        <button (click)="eliminarInforme(detalle!)" 
+        <button *ngIf="puedeGestionarModulo" (click)="eliminarInforme(detalle!)" 
           class="px-4 py-2 text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all">
           <i class="bi bi-trash mr-1"></i> Eliminar
         </button>
@@ -148,7 +153,7 @@
         <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
           <div class="flex items-center justify-between mb-8">
             <h3 class="font-black text-gray-900 text-lg">Compromisos y Tareas</h3>
-            <button (click)="abrirModalNuevaTarea()" 
+            <button *ngIf="puedeGestionarModulo" (click)="abrirModalNuevaTarea()" 
               class="px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all">
               + Agregar Tarea
             </button>
@@ -158,20 +163,29 @@
             <div *ngFor="let t of detalle.tareas" 
               class="flex items-start gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100 group">
               
-              <button (click)="completarTarea(t)" 
+              <button *ngIf="puedeGestionarModulo" (click)="completarTarea(t)" 
                 class="mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                 [ngClass]="t.estado === 'completado' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 hover:border-blue-400'">
                 <i *ngIf="t.estado === 'completado'" class="bi bi-check text-xs"></i>
               </button>
+              <div *ngIf="!puedeGestionarModulo" 
+                class="mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                [ngClass]="t.estado === 'completado' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200'">
+                <i *ngIf="t.estado === 'completado'" class="bi bi-check text-xs"></i>
+              </div>
 
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-4">
                   <h4 class="font-bold text-gray-800 text-sm truncate" [ngClass]="{'line-through text-gray-400': t.estado === 'completado'}">
                     {{ t.titulo }}
                   </h4>
-                  <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button (click)="editarTarea(t)" class="p-1 text-gray-400 hover:text-blue-600"><i class="bi bi-pencil"></i></button>
-                    <button (click)="eliminarTarea(t)" class="p-1 text-gray-400 hover:text-red-600"><i class="bi bi-trash"></i></button>
+                  <div *ngIf="puedeGestionarModulo" class="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                    <button (click)="editarTarea(t)" class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Editar tarea">
+                      <i class="bi bi-pencil text-xs"></i>
+                    </button>
+                    <button (click)="eliminarTarea(t)" class="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Eliminar tarea">
+                      <i class="bi bi-trash text-xs"></i>
+                    </button>
                   </div>
                 </div>
                 <div class="flex items-center gap-3 mt-1">
@@ -260,6 +274,7 @@
   [tarea]="tareaParaEditar"
   [usuarios]="state.usuariosCache"
   [saving]="savingTarea"
+  [esAdmin]="puedeGestionarModulo"
   (onCerrar)="showModalTarea = false"
   (onGuardar)="onGuardarTarea($event)">
 </app-modal-informe-tarea>

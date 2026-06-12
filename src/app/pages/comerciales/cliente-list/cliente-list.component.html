@@ -1,127 +1,171 @@
-<div class="comerciales-container">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="header-left">
-        <div class="header-icon">
-          <i class="bi bi-briefcase-fill"></i>
+<div class="max-w-screen-xl mx-auto px-4 py-6 font-sans">
+
+  <!-- ========== HEADER ========== -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i class="bi bi-briefcase-fill text-white text-xl"></i>
         </div>
         <div>
-          <h1 class="page-title">Módulo Comercial</h1>
-          <p class="page-subtitle">Gestión de clientes, ítems y cotizaciones</p>
+          <h1 class="text-xl font-bold text-gray-900 tracking-tight">Módulo Comercial</h1>
+          <p class="text-sm text-gray-500">Clientes, solicitudes y órdenes de compra</p>
         </div>
       </div>
-      <button class="btn-new-costeo" (click)="nuevaSolicitud()">
-        <i class="bi bi-plus-lg"></i>
-        Nueva Solicitud
-      </button>
+      <div class="flex items-center gap-2">
+        <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all duration-200"
+                (click)="nuevaSolicitud()">
+          <i class="bi bi-plus-lg"></i> Nueva Solicitud
+        </button>
+        <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 shadow-sm transition-all duration-200"
+                (click)="irACaptura()">
+          <i class="bi bi-file-earmark-arrow-up"></i> Capturar OC
+        </button>
+      </div>
     </div>
 
-    <!-- View Toggle -->
-    <div class="view-toggle">
-      <button class="toggle-btn" [class.active]="viewMode === 'clientes'" (click)="switchView('clientes')">
-        <i class="bi bi-people"></i> Clientes
+    <!-- Tabs -->
+    <div class="flex items-center gap-1 mt-5 border-b border-gray-200">
+      <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200"
+              [class]="viewMode === 'clientes' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+              (click)="switchView('clientes')">
+        <i class="bi bi-people mr-1.5"></i> Clientes
+        <span *ngIf="clientes.length" class="ml-1.5 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{{ clientes.length }}</span>
       </button>
-      <button class="toggle-btn" [class.active]="viewMode === 'solicitudes'" (click)="switchView('solicitudes')">
-        <i class="bi bi-file-earmark-text"></i> Mis Solicitudes
+      <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200"
+              [class]="viewMode === 'solicitudes' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+              (click)="switchView('solicitudes')">
+        <i class="bi bi-file-earmark-text mr-1.5"></i> Solicitudes
+        <span *ngIf="solicitudes.length" class="ml-1.5 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{{ solicitudes.length }}</span>
+      </button>
+      <button class="px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200"
+              [class]="viewMode === 'ordenes' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+              (click)="switchView('ordenes')">
+        <i class="bi bi-receipt mr-1.5"></i> Órdenes de Compra
+        <span *ngIf="ordenes.length" class="ml-1.5 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{{ ordenes.length }}</span>
       </button>
     </div>
   </div>
 
-  <!-- ==================== VISTA CLIENTES ==================== -->
-  <div *ngIf="viewMode === 'clientes'" class="content-section">
-    <!-- Search Bar -->
-    <div class="search-wrapper">
-      <div class="search-input-group">
-        <i class="bi bi-search search-icon"></i>
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Buscar por nombre o NIT..."
-          [(ngModel)]="searchTerm"
-          (input)="applyClienteFilters()"
-          (keyup.enter)="searchClientes()"
-          id="search-clientes"
-        />
-        <button *ngIf="searchTerm" class="search-clear" (click)="searchTerm = ''; loadClientes()">
+  <!-- ==================== TAB: CLIENTES ==================== -->
+  <div *ngIf="viewMode === 'clientes'">
+    <!-- Search + View Toggle -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+      <div class="relative flex-1">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text"
+               class="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
+               placeholder="Buscar por nombre o NIT..."
+               [(ngModel)]="searchTerm"
+               (input)="applyClienteFilters()"
+               (keyup.enter)="searchClientes()" />
+        <button *ngIf="searchTerm" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                (click)="searchTerm = ''; loadClientes()">
           <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+      <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+        <button class="p-2 rounded-md text-sm transition-all"
+                [class]="displayMode === 'cards' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'"
+                (click)="displayMode = 'cards'" title="Vista tarjetas">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
+        </button>
+        <button class="p-2 rounded-md text-sm transition-all"
+                [class]="displayMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'"
+                (click)="displayMode = 'list'" title="Vista lista">
+          <i class="bi bi-list-ul"></i>
         </button>
       </div>
     </div>
 
     <!-- Alphabet Filter -->
-    <div class="alphabet-bar">
-      <button
-        *ngFor="let letter of alphabet"
-        class="letter-btn"
-        [class.active]="letterFilter === letter"
-        (click)="setLetterFilter(letter)"
-      >{{ letter }}</button>
-      <button class="letter-btn letter-clear" [class.active]="!letterFilter" (click)="setLetterFilter('')">
-        Todos
-      </button>
+    <div class="flex flex-wrap gap-0.5 mb-4">
+      <button *ngFor="let letter of alphabet"
+              class="w-8 h-8 text-xs font-medium rounded-md transition-all duration-150"
+              [class]="letterFilter === letter ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-500 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'"
+              (click)="setLetterFilter(letter)">{{ letter }}</button>
+      <button class="px-3 h-8 text-xs font-medium rounded-md transition-all duration-150"
+              [class]="!letterFilter ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-500 hover:bg-blue-50 border border-gray-200'"
+              (click)="setLetterFilter('')">Todos</button>
     </div>
 
-    <!-- Loading -->
-    <div *ngIf="isLoading" class="loading-container">
-      <div class="skeleton-grid">
-        <div *ngFor="let i of [1,2,3,4,5,6,7,8]" class="skeleton-card">
-          <div class="skeleton-line skeleton-title"></div>
-          <div class="skeleton-line skeleton-subtitle"></div>
+    <!-- Loading Skeleton -->
+    <div *ngIf="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div *ngFor="let i of [1,2,3,4,5,6,7,8]" class="bg-white rounded-lg border border-gray-100 p-4 animate-pulse">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-gray-200"></div>
+          <div class="flex-1">
+            <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Client Cards (PAGINATED) -->
-    <div *ngIf="!isLoading" class="clients-grid">
-      <div
-        *ngFor="let cliente of pagedClientes; let i = index"
-        class="client-card"
-        (click)="goToCliente(cliente)"
-        [style.animation-delay]="(i * 30) + 'ms'"
-      >
-        <div class="client-avatar">
+    <!-- Cards View -->
+    <div *ngIf="!isLoading && displayMode === 'cards'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div *ngFor="let cliente of pagedClientes; let i = index"
+           class="group bg-white rounded-lg border border-gray-100 p-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200"
+           (click)="goToCliente(cliente)"
+           [style.animation-delay]="(i * 25) + 'ms'"
+           style="animation: fadeInUp 0.3s ease forwards; opacity: 0;">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+            {{ cliente.razon_social?.charAt(0)?.toUpperCase() }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{{ cliente.razon_social }}</h3>
+            <p class="text-xs text-gray-400 mt-0.5"><i class="bi bi-hash"></i> {{ cliente.nit }}</p>
+          </div>
+          <i class="bi bi-chevron-right text-gray-300 group-hover:text-blue-400 transition-colors"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div *ngIf="!isLoading && displayMode === 'list'" class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+      <div *ngFor="let cliente of pagedClientes; let i = index"
+           class="flex items-center gap-4 px-5 py-3 cursor-pointer hover:bg-blue-50/50 border-b border-gray-50 last:border-0 transition-all duration-150"
+           (click)="goToCliente(cliente)">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
           {{ cliente.razon_social?.charAt(0)?.toUpperCase() }}
         </div>
-        <div class="client-info">
-          <h3 class="client-name">{{ cliente.razon_social }}</h3>
-          <span class="client-nit">
-            <i class="bi bi-hash"></i> {{ cliente.nit }}
-          </span>
+        <div class="flex-1 min-w-0">
+          <span class="text-sm font-medium text-gray-900">{{ cliente.razon_social }}</span>
         </div>
-        <div class="client-arrow">
-          <i class="bi bi-chevron-right"></i>
-        </div>
+        <span class="text-xs text-gray-400 hidden sm:inline"><i class="bi bi-hash"></i> {{ cliente.nit }}</span>
+        <i class="bi bi-chevron-right text-gray-300"></i>
       </div>
     </div>
 
     <!-- Paginator -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(clientesPaginatorId)"
-      [instanceId]="clientesPaginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[10, 25, 50, 100]"
-      [loading]="isLoading"
-      [noDataMessage]="'No se encontraron clientes'">
-    </app-shared-paginator>
+    <div class="mt-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(clientesPaginatorId)"
+        [instanceId]="clientesPaginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[12, 24, 50, 100]"
+        [loading]="isLoading"
+        [noDataMessage]="'No se encontraron clientes'">
+      </app-shared-paginator>
+    </div>
   </div>
 
-  <!-- ==================== VISTA SOLICITUDES ==================== -->
-  <div *ngIf="viewMode === 'solicitudes'" class="content-section">
-    <!-- Search & Filters -->
-    <div class="costeo-filters">
-      <div class="search-input-group">
-        <i class="bi bi-search search-icon"></i>
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Buscar por código o cliente..."
-          [(ngModel)]="solicitudSearch"
-          (input)="applySolicitudFilters()"
-          id="search-solicitudes"
-        />
+  <!-- ==================== TAB: SOLICITUDES ==================== -->
+  <div *ngIf="viewMode === 'solicitudes'">
+    <!-- Filters -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="relative flex-1">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text"
+               class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
+               placeholder="Buscar por código o cliente..."
+               [(ngModel)]="solicitudSearch"
+               (input)="applySolicitudFilters()" />
       </div>
-      <select class="filter-select" [(ngModel)]="solicitudEstadoFilter" (change)="applySolicitudFilters()">
+      <select class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+              [(ngModel)]="solicitudEstadoFilter"
+              (change)="applySolicitudFilters()">
         <option value="">Todos los estados</option>
         <option value="BORRADOR">Borrador</option>
         <option value="ENVIADO">Enviado</option>
@@ -133,71 +177,176 @@
     </div>
 
     <!-- Loading -->
-    <div *ngIf="isLoadingSolicitudes" class="loading-container">
-      <div class="skeleton-grid">
-        <div *ngFor="let i of [1,2,3,4]" class="skeleton-card skeleton-wide">
-          <div class="skeleton-line skeleton-title"></div>
-          <div class="skeleton-line skeleton-subtitle"></div>
-          <div class="skeleton-line skeleton-meta"></div>
+    <div *ngIf="isLoadingSolicitudes" class="space-y-3">
+      <div *ngFor="let i of [1,2,3,4]" class="bg-white rounded-lg border border-gray-100 p-5 animate-pulse">
+        <div class="flex justify-between mb-3">
+          <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div class="h-5 bg-gray-200 rounded w-16"></div>
         </div>
+        <div class="h-3 bg-gray-100 rounded w-1/3 mb-2"></div>
+        <div class="h-3 bg-gray-100 rounded w-1/2"></div>
       </div>
     </div>
 
-    <!-- Solicitud Cards (PAGINATED) -->
-    <div *ngIf="!isLoadingSolicitudes" class="costeos-list">
-      <div
-        *ngFor="let sol of pagedSolicitudes; let i = index"
-        class="costeo-card"
-        (click)="goToSolicitud(sol)"
-        [style.animation-delay]="(i * 40) + 'ms'"
-      >
-        <div class="costeo-header">
-          <div class="costeo-code">
-            <i class="bi bi-receipt"></i>
-            {{ sol.codigo }}
+    <!-- Solicitud Cards -->
+    <div *ngIf="!isLoadingSolicitudes" class="space-y-2">
+      <div *ngFor="let sol of pagedSolicitudes; let i = index"
+           class="bg-white rounded-lg border border-gray-100 p-4 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200"
+           (click)="goToSolicitud(sol)"
+           [style.animation-delay]="(i * 35) + 'ms'"
+           style="animation: fadeInUp 0.3s ease forwards; opacity: 0;">
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-blue-600"><i class="bi bi-receipt mr-1"></i>{{ sol.codigo }}</span>
           </div>
-          <span class="estado-badge" [ngClass]="getEstadoBadge(sol.estado || '')">
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full" [ngClass]="getEstadoBadgeClass(sol.estado || '')">
             {{ getEstadoLabel(sol.estado || '') }}
           </span>
         </div>
-        <div class="costeo-body">
-          <div class="costeo-client">
-            <i class="bi bi-building"></i>
-            {{ sol.cliente_nombre }}
-          </div>
-          <div class="costeo-meta">
-            <span *ngIf="sol.items_count">
-              <i class="bi bi-box"></i> {{ sol.items_count }} ítem{{ sol.items_count !== 1 ? 's' : '' }}
-            </span>
-            <span *ngIf="sol.requiere_costeo" class="costeo-badge-mini">
-              <i class="bi bi-calculator"></i> Costeo
-            </span>
-            <span *ngIf="sol.requiere_muestra" class="muestra-badge">
-              <i class="bi bi-scissors"></i> Muestra
-            </span>
-          </div>
+        <div class="text-sm text-gray-700 font-medium mb-2">
+          <i class="bi bi-building text-gray-400 mr-1"></i> {{ sol.cliente_nombre }}
         </div>
-        <div class="costeo-footer">
-          <span class="costeo-date">
-            <i class="bi bi-calendar3"></i>
-            {{ sol.created_at | date:'dd/MM/yyyy' }}
+        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+          <span *ngIf="sol.items_count"><i class="bi bi-box mr-1"></i>{{ sol.items_count }} ítem{{ sol.items_count !== 1 ? 's' : '' }}</span>
+          <span *ngIf="sol.requiere_costeo" class="inline-flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+            <i class="bi bi-calculator"></i> Costeo
           </span>
-          <span *ngIf="sol.fecha_entrega_cotizacion" class="costeo-delivery">
-            <i class="bi bi-clock"></i>
-            Entrega: {{ sol.fecha_entrega_cotizacion | date:'dd/MM/yyyy' }}
+          <span *ngIf="sol.requiere_muestra" class="inline-flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+            <i class="bi bi-scissors"></i> Muestra
           </span>
+          <span class="ml-auto"><i class="bi bi-calendar3 mr-1"></i>{{ sol.created_at | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Paginator -->
-    <app-shared-paginator
-      *ngIf="paginationService.getPaginatorState(solicitudesPaginatorId)"
-      [instanceId]="solicitudesPaginatorId"
-      [showPageSizeSelector]="true"
-      [pageSizeOptions]="[5, 10, 25, 50]"
-      [loading]="isLoadingSolicitudes"
-      [noDataMessage]="'No hay solicitudes registradas'">
-    </app-shared-paginator>
+    <div class="mt-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(solicitudesPaginatorId)"
+        [instanceId]="solicitudesPaginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        [loading]="isLoadingSolicitudes"
+        [noDataMessage]="'No hay solicitudes registradas'">
+      </app-shared-paginator>
+    </div>
   </div>
+
+  <!-- ==================== TAB: ÓRDENES DE COMPRA ==================== -->
+  <div *ngIf="viewMode === 'ordenes'">
+    <!-- Stats Cards -->
+    <div *ngIf="estadisticasOC" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div class="bg-white rounded-lg border border-gray-100 p-4 text-center">
+        <div class="text-2xl font-bold text-gray-900">{{ estadisticasOC.total_ordenes || 0 }}</div>
+        <div class="text-xs text-gray-500 mt-1">Total OCs</div>
+      </div>
+      <div class="bg-white rounded-lg border border-yellow-200 p-4 text-center bg-yellow-50/50">
+        <div class="text-2xl font-bold text-yellow-700">{{ estadisticasOC.pendientes || 0 }}</div>
+        <div class="text-xs text-yellow-600 mt-1">Pendientes</div>
+      </div>
+      <div class="bg-white rounded-lg border border-green-200 p-4 text-center bg-green-50/50">
+        <div class="text-2xl font-bold text-green-700">{{ estadisticasOC.procesadas || 0 }}</div>
+        <div class="text-xs text-green-600 mt-1">Procesadas</div>
+      </div>
+      <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+        <div class="text-2xl font-bold text-gray-600">{{ estadisticasOC.ordenes_mes_actual || 0 }}</div>
+        <div class="text-xs text-gray-500 mt-1">Este Mes</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="relative flex-1">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text"
+               class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
+               placeholder="Buscar por número, cliente o PV..."
+               [(ngModel)]="ordenSearch"
+               (input)="applyOrdenFilters()" />
+      </div>
+      <select class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none"
+              [(ngModel)]="ordenEstadoFilter"
+              (change)="applyOrdenFilters()">
+        <option value="">Todos los estados</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="PROCESADA">Procesada</option>
+        <option value="RECHAZADA">Rechazada</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoadingOrdenes" class="space-y-3">
+      <div *ngFor="let i of [1,2,3]" class="bg-white rounded-lg border border-gray-100 p-5 animate-pulse">
+        <div class="flex justify-between mb-3">
+          <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div class="h-5 bg-gray-200 rounded w-16"></div>
+        </div>
+        <div class="h-3 bg-gray-100 rounded w-2/5"></div>
+      </div>
+    </div>
+
+    <!-- Ordenes Table -->
+    <div *ngIf="!isLoadingOrdenes && filteredOrdenes.length > 0" class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50/80 border-b border-gray-100">
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">N° Orden</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Cliente</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">PV</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Ítems</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Estado</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let orden of pagedOrdenes; let i = index"
+                class="border-b border-gray-50 last:border-0 hover:bg-blue-50/30 transition-colors cursor-pointer"
+                [style.animation-delay]="(i * 25) + 'ms'"
+                style="animation: fadeInUp 0.25s ease forwards; opacity: 0;">
+              <td class="px-4 py-3">
+                <span class="font-semibold text-gray-900">{{ orden.numero_orden }}</span>
+              </td>
+              <td class="px-4 py-3 text-gray-700 max-w-xs truncate">{{ orden.cliente }}</td>
+              <td class="px-4 py-3">
+                <span *ngIf="orden.pv_asociado" class="text-emerald-600 font-medium">{{ orden.pv_asociado }}</span>
+                <span *ngIf="!orden.pv_asociado" class="text-gray-300">—</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{ orden.items_count || 0 }}</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full" [ngClass]="getEstadoBadgeClass(orden.estado)">
+                  {{ getEstadoLabel(orden.estado) }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{{ orden.fecha_registro }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoadingOrdenes && filteredOrdenes.length === 0" class="bg-white rounded-lg border border-gray-100 p-12 text-center">
+      <div class="text-gray-300 mb-3"><i class="bi bi-inbox text-4xl"></i></div>
+      <h3 class="text-gray-600 font-semibold mb-1">Sin órdenes de compra</h3>
+      <p class="text-sm text-gray-400 mb-4">Captura documentos de clientes para crear OCs</p>
+      <button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              (click)="irACaptura()">
+        <i class="bi bi-file-earmark-arrow-up"></i> Capturar OC
+      </button>
+    </div>
+
+    <div class="mt-4">
+      <app-shared-paginator
+        *ngIf="paginationService.getPaginatorState(ordenesPaginatorId)"
+        [instanceId]="ordenesPaginatorId"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25]"
+        [loading]="isLoadingOrdenes"
+        [noDataMessage]="'No hay órdenes registradas'">
+      </app-shared-paginator>
+    </div>
+  </div>
+
 </div>
