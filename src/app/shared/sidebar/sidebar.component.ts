@@ -222,18 +222,23 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
             permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
           },
           {
+            label: 'Inconsistencias Cartera',
+            link: '/cartera-inconsistencias',
+            permissions: [1, 28, 45]
+          },
+          {
             label: 'Histórico Inconsistencias',
             link: '/historico-inconsistencias',
-            permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
+            permissions: [1, 48]
           },
           {
             label: 'Revisión de Consumo',
             link: '/revision-consumo',
-            permissions: [1, 14]
+            permissions: [1, 49, 50]
           },
           {
-            label: 'Reporte de Inconsistencias',
-            link: '/reporte-inconsistencias',
+            label: 'Dashboard de Inconsistencias',
+            link: '/dashboard-financiero-inconsistencias',
             permissions: [1, 9, 35]
           }
         ]
@@ -353,7 +358,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         ]
       },
-       {
+      {
         label: 'Comercial',
         icon: 'bi bi-archive',
         modules: [1],
@@ -472,7 +477,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     const perfiles = item.perfiles || [];
     const permissions = item.permissions || [];
     const modules = item.modules || [];
-    
+
     // 1. Si NO hay ninguna restricción técnica definida, el item es público para logueados
     if (perfiles.length === 0 && permissions.length === 0 && modules.length === 0) return true;
 

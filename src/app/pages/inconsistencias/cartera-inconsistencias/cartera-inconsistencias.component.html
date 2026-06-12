@@ -1,0 +1,40 @@
+<div class="page-header">
+  <div class="title-section">
+    <h1 class="title">Inconsistencias - Cartera</h1>
+  </div>
+</div>
+
+<div class="table-container">
+  <div *ngIf="cargando" class="loading-state">
+    Cargando inconsistencias pendientes...
+  </div>
+  
+  <table class="table" *ngIf="!cargando && inconsistencias.length > 0">
+    <thead>
+      <tr>
+        <th>ID Inconsistencia</th>
+        <th>Cliente</th>
+        <th>Orden (OP/OPR/OPM)</th>
+        <th>Total</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let inc of inconsistencias" (click)="abrirModalDetalles(inc)" style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+        <td>{{ inc.id_inconsistencia }}</td>
+        <td>{{ inc.Cliente }}</td>
+        <td>{{ inc.tipo_de_orden }}</td>
+        <td>${{ inc.precio_total_inconsistencia | number:'1.2-2' }}</td>
+        <td style="text-align:center;">
+          <button class="btn btn-sm" style="background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px;" title="Revisar" (click)="abrirModalDetalles(inc); $event.stopPropagation()">
+            <svg style="width:16px; height:16px; color:#3b82f6;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!cargando && inconsistencias.length === 0" class="empty-state">
+    <p>No hay inconsistencias pendientes para el departamento de Cartera.</p>
+  </div>
+</div>

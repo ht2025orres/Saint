@@ -30,11 +30,15 @@ export class WorkflowManagerComponent implements OnInit {
   showTipoModal = false;
   showVersionModal = false;
 
+  // Caché para evitar re-consultas innecesarias
+  private cachePermisos = new Map<number, any[]>();
+  private cacheCampos = new Map<string, any[]>();
+
   get modulosFiltrados() {
     if (!this.searchTerm) return this.allData;
     const term = this.searchTerm.toLowerCase();
-    return this.allData.filter(m => 
-      m.nombre.toLowerCase().includes(term) || 
+    return this.allData.filter(m =>
+      m.nombre.toLowerCase().includes(term) ||
       m.codigo.toLowerCase().includes(term) ||
       m.tipos.some((t: any) => t.nombre.toLowerCase().includes(term) || t.codigo.toLowerCase().includes(term))
     );
@@ -44,7 +48,7 @@ export class WorkflowManagerComponent implements OnInit {
 
   newModulo = { codigo: '', nombre: '', descripcion: '', activo: true };
   newTipo = { workflow_modulo_id: 0, codigo: '', nombre: '', descripcion: '', activo: true };
-  newVersion = { workflow_tipo_id: 0, version: 1, descripcion: '' };
+  newVersion = { workflow_tipo_id: 0, version: '', descripcion: '' };
 
   constructor(private workflowService: WorkflowAdminService) { }
 
@@ -69,10 +73,31 @@ export class WorkflowManagerComponent implements OnInit {
   }
 
   selectModulo(modulo: any) {
+    if (this.selectedModulo?.id === modulo.id) return; // Evitar recarga si es el mismo
+    
     this.selectedModulo = modulo;
     this.selectedTipo = null;
     this.selectedVersion = null;
-    this.workflowService.listPermissions(modulo.id).subscribe(res => this.permisosModulo = res);
+    
+    // Carga con Caché de Permisos
+    if (this.cachePermisos.has(modulo.id)) {
+      this.permisosModulo = this.cachePermisos.get(modulo.id)!;
+    } else {
+      this.workflowService.listPermissions(modulo.id).subscribe(res => {
+        this.permisosModulo = res;
+        this.cachePermisos.set(modulo.id, res);
+      });
+    }
+    
+    // Carga con Caché de Campos Dinámicos
+    if (this.cacheCampos.has(modulo.codigo)) {
+      this.entidadesDisponibles = this.cacheCampos.get(modulo.codigo)!;
+    } else {
+      this.workflowService.getCamposModulo(modulo.codigo).subscribe(res => {
+        this.entidadesDisponibles = res;
+        this.cacheCampos.set(modulo.codigo, res);
+      });
+    }
   }
 
   selectTipo(tipo: any) {
@@ -82,7 +107,8 @@ export class WorkflowManagerComponent implements OnInit {
 
   selectVersion(version: any) {
     this.selectedVersion = version;
-    this.pasos = version.pasos || [];
+    this.pasos = JSON.parse(JSON.stringify(version.pasos || []));
+    this.updateGrupos();
   }
 
   // MÉTODOS DE CREACIÓN
@@ -96,38 +122,87 @@ export class WorkflowManagerComponent implements OnInit {
 
   guardarTipo() {
     this.newTipo.workflow_modulo_id = this.selectedModulo.id;
-    this.workflowService.storeTipo(this.newTipo).subscribe(() => {
-      this.selectModulo(this.selectedModulo);
+    this.workflowService.storeTipo(this.newTipo).subscribe((tipo) => {
+      // Inserción local instantánea para UX fluida
+      if (!this.selectedModulo.tipos) this.selectedModulo.tipos = [];
+      this.selectedModulo.tipos.push(tipo);
+      this.selectTipo(tipo);
+      
       this.showTipoModal = false;
       Swal.fire('Éxito', 'Tipo de flujo creado', 'success');
+      this.cargarTodo(); // Sincronización de fondo
     });
+  }
+
+  prepararNuevaVersion() {
+    if (!this.selectedTipo) return;
+    
+    // Calcular sugerencia de versión (máxima actual + 1)
+    const versionesExistentes = this.selectedTipo.versiones || [];
+    let sugerencia = 1;
+    if (versionesExistentes.length > 0) {
+      const maxVer = Math.max(...versionesExistentes.map((v: any) => parseFloat(v.version) || 0));
+      sugerencia = Math.floor(maxVer) + 1;
+    }
+    
+    this.newVersion = { 
+      workflow_tipo_id: this.selectedTipo.id, 
+      version: sugerencia.toString(), 
+      descripcion: '' 
+    };
+    this.showVersionModal = true;
   }
 
   guardarVersion() {
     this.newVersion.workflow_tipo_id = this.selectedTipo.id;
-    this.workflowService.storeVersion(this.newVersion).subscribe(() => {
-      this.selectTipo(this.selectedTipo);
-      this.showVersionModal = false;
-      Swal.fire('Éxito', 'Versión creada', 'success');
+    this.workflowService.storeVersion(this.newVersion).subscribe({
+      next: (version) => {
+        // Inserción local instantánea
+        if (!this.selectedTipo.versiones) this.selectedTipo.versiones = [];
+        this.selectedTipo.versiones.push(version);
+        this.selectVersion(version);
+
+        this.showVersionModal = false;
+        Swal.fire('Éxito', 'Versión creada', 'success');
+        this.cargarTodo(); // Sincronización de fondo
+      },
+      error: (err) => {
+        console.error(err);
+        const errorMsg = err.error?.errors?.version?.[0] || err.error?.message || 'No se pudo crear la versión';
+        Swal.fire('Error', errorMsg, 'error');
+      }
     });
   }
 
   publicarVersion(version: any) {
     this.workflowService.publicarVersion(version.id).subscribe(() => {
-      this.selectTipo(this.selectedTipo);
+      this.cargarTodo(); // Refrescar para ver el cambio de estado
       Swal.fire('Éxito', 'Versión publicada', 'success');
     });
   }
 
   // GESTIÓN DE PASOS
   agregarPaso() {
-    this.pasos.push({
-      nombre: '',
-      orden: this.pasos.length + 1,
-      permiso_requerido: '',
+    const nuevoPaso = {
+      nombre: 'NUEVA ETAPA',
+      codigo: '',
+      orden: this.pasos.length > 0 ? Math.max(...this.pasos.map(p => p.orden)) + 1 : 1,
+      permiso_requerido: null,
+      es_paralelo: false,
       es_final: false,
-      es_paralelo: false
-    });
+      permite_omitir: false,
+      regla: { 
+        entidad_origen: '', 
+        campo_origen: '', 
+        operador: '==', 
+        tipo_destino: 'valor', 
+        valor_destino: '',
+        entidad_destino: '',
+        campo_destino: ''
+      }
+    };
+    this.pasos.push(nuevoPaso);
+    this.updateGrupos();
   }
 
   eliminarPaso(index: number) {
@@ -140,21 +215,54 @@ export class WorkflowManagerComponent implements OnInit {
     let lastWasParallel = false;
 
     this.pasos.forEach((p, i) => {
-      if (i > 0 && p.es_paralelo && lastWasParallel) {
-        // Si este es paralelo y el anterior también, heredamos el orden (mismo grupo)
-        p.orden = this.pasos[i - 1].orden;
-      } else {
-        // Si no es paralelo, o es el primer paso paralelo del grupo, incrementamos
+      // Incrementamos el orden si:
+      // 1. Es el primer paso (i === 0)
+      // 2. El paso NO es paralelo
+      // 3. El paso anterior NO era paralelo
+      // 4. Se ha marcado explícitamente "romper enlace" para este paso
+      if (i === 0 || !p.es_paralelo || !lastWasParallel || p.romper_enlace) {
         currentOrden++;
-        p.orden = currentOrden;
       }
+
+      p.orden = currentOrden;
       lastWasParallel = p.es_paralelo;
     });
+
+    this.updateGrupos();
   }
 
-  getNombrePermiso(id: any) {
-    const p = this.permisosModulo.find(p => p.id == id);
-    return p ? p.name : 'Seleccionar Permiso';
+  toggleEnlace(index: number) {
+    if (index === 0) return;
+    this.pasos[index].romper_enlace = !this.pasos[index].romper_enlace;
+    this.reordenarPasos();
+  }
+
+  onEsFinalChange(index: number) {
+    if (this.pasos[index].es_final) {
+      // Desactivar otros pasos finales
+      this.pasos.forEach((p, i) => {
+        if (i !== index) {
+          p.es_final = false;
+        }
+      });
+
+      // Mover a la última posición
+      const finalStep = this.pasos.splice(index, 1)[0];
+      this.pasos.push(finalStep);
+
+      // Reordenar todos los pasos
+      this.reordenarPasos();
+    }
+  }
+
+  selectPermission(index: number, permission: any) {
+    this.pasos[index].permiso_requerido = permission.name;
+    this.activePermissionStepIndex = null;
+    this.permissionSearchTerm = '';
+  }
+
+  getNombrePermiso(name: string) {
+    return name ? name : 'Seleccionar Permiso';
   }
 
   get permisosFiltrados() {
@@ -164,8 +272,90 @@ export class WorkflowManagerComponent implements OnInit {
   }
 
   drop(event: CdkDragDrop<any[]>) {
-    moveItemInArray(this.pasos, event.previousIndex, event.currentIndex);
-    this.reordenarPasos();
+    if (event.previousIndex === event.currentIndex) return;
+
+    // Trabajamos sobre una copia de los grupos actuales
+    const gruposTmp = [...this.grupos];
+    moveItemInArray(gruposTmp, event.previousIndex, event.currentIndex);
+    
+    const nuevosPasos: any[] = [];
+    gruposTmp.forEach((grupo, index) => {
+      grupo.forEach((paso: any) => {
+        paso.orden = index + 1;
+        nuevosPasos.push(paso);
+      });
+    });
+
+    this.pasos = nuevosPasos;
+    this.updateGrupos();
+  }
+
+  grupos: any[][] = [];
+
+  /**
+   * Agrupa los pasos por su número de orden y actualiza la propiedad reactiva.
+   * Se llama solo cuando hay cambios estructurales para evitar bucles infinitos.
+   */
+  updateGrupos() {
+    const gruposMap = new Map();
+    this.pasos.forEach(p => {
+      if (!gruposMap.has(p.orden)) {
+        gruposMap.set(p.orden, []);
+      }
+      gruposMap.get(p.orden).push(p);
+    });
+    this.grupos = Array.from(gruposMap.values());
+  }
+
+  // GESTIÓN DE CONDICIONES (Safe Builder Dinámico)
+  selectedPasoParaCondicion: any = null;
+  showCondicionModal = false;
+  entidadesDisponibles: any[] = []; // Se llena dinámicamente al seleccionar módulo
+
+  operadores = [
+    { id: '==', nombre: 'Igual a' },
+    { id: '!=', nombre: 'Diferente de' },
+    { id: '>', nombre: 'Mayor que' },
+    { id: '<', nombre: 'Menor que' },
+    { id: 'contains', nombre: 'Contiene' },
+    { id: 'is_true', nombre: 'Es Verdadero' },
+    { id: 'is_false', nombre: 'Es Falso' },
+    { id: 'is_empty', nombre: 'Está Vacío' }
+  ];
+
+  abrirCondiciones(paso: any) {
+    this.selectedPasoParaCondicion = paso;
+    // Inicializar regla única si no existe
+    if (!this.selectedPasoParaCondicion.regla || !this.selectedPasoParaCondicion.regla.tipo_destino) {
+      this.selectedPasoParaCondicion.regla = { 
+        entidad_origen: '', 
+        campo_origen: '', 
+        operador: '==', 
+        tipo_destino: 'valor', 
+        valor_destino: '',
+        entidad_destino: '',
+        campo_destino: ''
+      };
+    }
+    this.showCondicionModal = true;
+  }
+
+  getCamposDeEntidad(codigoEntidad: string): any[] {
+    const entidad = this.entidadesDisponibles.find(e => e.entidad === codigoEntidad);
+    return entidad ? entidad.campos : [];
+  }
+
+  limpiarRegla() {
+    this.selectedPasoParaCondicion.regla = { 
+      entidad_origen: '', 
+      campo_origen: '', 
+      operador: '==', 
+      tipo_destino: 'valor', 
+      valor_destino: '',
+      entidad_destino: '',
+      campo_destino: ''
+    };
+    this.showCondicionModal = false;
   }
 
   guardarPasos() {

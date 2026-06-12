@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { InconsistenciaService } from '../../../services/inconsistencia.service';
 import { AuthService } from 'src/app/services/auth.service';
-import Swal from 'sweetalert2'; // AGREGAR ESTA LÍNEA
-
+import Swal from 'sweetalert2';
+import { getDetallesHtml, generarTiemposHtml, generarEvidenciasSwalHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
 interface Inconsistencia {
   id: number;
   id_inconsistencia: string;
@@ -49,7 +49,7 @@ export class MisInconsistenciasComponent implements OnInit {
   cargando: boolean = false;
   error: string = '';
   idUsuario: number = 1;
-  
+
   // Filtros
   filtroEstado: string = '';
   filtroEtapa: string = '';
@@ -68,15 +68,22 @@ export class MisInconsistenciasComponent implements OnInit {
 
   // ELIMINAR ESTA LÍNEA (ya no se necesita)
   // modalDetallesAbierto: boolean = false;
-  
+
   // Estados y etapas únicas
   estados: string[] = [];
   etapas: string[] = [];
   tiposInconsistencia: string[] = [];
 
-  constructor(private inconsistenciasService: InconsistenciaService, private authService: AuthService) {}
+  constructor(private inconsistenciasService: InconsistenciaService, private authService: AuthService) { }
 
   ngOnInit(): void {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    this.filtroFechaDesde = firstDay.toISOString().split('T')[0];
+    this.filtroFechaHasta = lastDay.toISOString().split('T')[0];
+
     this.cargarInconsistencias();
   }
 
@@ -102,18 +109,17 @@ export class MisInconsistenciasComponent implements OnInit {
   cargarInconsistencias(): void {
     this.cargando = true;
     this.error = '';
-    let idUsuario = this.authService.user.id_Sdp
-    this.inconsistenciasService.listarPorUsuario(idUsuario).subscribe({
+    let idUsuario = this.authService.user.id_Sdp;
+    this.inconsistenciasService.listarPorUsuario(idUsuario, this.filtroFechaDesde, this.filtroFechaHasta).subscribe({
       next: (data) => {
         this.inconsistencias = data;
-        this.inconsistenciasFiltradas = data;
         this.extraerOpcionesFiltros();
-        this.cargando = false;
+        // Aplicar filtros existentes a la nueva data cargada
+        this.aplicarFiltros();
       },
       error: (err) => {
         this.error = 'Error al cargar las inconsistencias. Por favor, intente nuevamente.';
         this.cargando = false;
-        console.error('Error:', err);
       }
     });
   }
@@ -124,26 +130,36 @@ export class MisInconsistenciasComponent implements OnInit {
     this.tiposInconsistencia = [...new Set(this.inconsistencias.map(i => i.tipo_inconsistencia).filter(t => t))];
   }
 
-  aplicarFiltros(): void {
-    this.inconsistenciasFiltradas = this.inconsistencias.filter(inc => {
-      const cumpleEstado = !this.filtroEstado || inc.estado_inconsistencia === this.filtroEstado;
-      const cumpleEtapa = !this.filtroEtapa || inc.etapa === this.filtroEtapa;
-      const cumpleTipo = !this.filtroTipo || inc.tipo_inconsistencia === this.filtroTipo;
-      const cumpleBusqueda = !this.busqueda || 
-        inc.id_inconsistencia.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-        inc.Cliente?.toLowerCase().includes(this.busqueda.toLowerCase()) ||
-        inc.item?.toLowerCase().includes(this.busqueda.toLowerCase());
-      
-      let cumpleFecha = true;
-      if (this.filtroFechaDesde && inc.fecha_inconsistencia) {
-        cumpleFecha = cumpleFecha && new Date(inc.fecha_inconsistencia) >= new Date(this.filtroFechaDesde);
-      }
-      if (this.filtroFechaHasta && inc.fecha_inconsistencia) {
-        cumpleFecha = cumpleFecha && new Date(inc.fecha_inconsistencia) <= new Date(this.filtroFechaHasta);
-      }
+  cambioFecha(): void {
+    // Al cambiar la fecha, volver a cargar desde el backend
+    this.cargarInconsistencias();
+  }
 
-      return cumpleEstado && cumpleEtapa && cumpleTipo && cumpleBusqueda && cumpleFecha;
-    });
+  aplicarFiltros(): void {
+    this.cargando = true;
+    setTimeout(() => {
+      this.inconsistenciasFiltradas = this.inconsistencias.filter(inc => {
+        const cumpleEstado = !this.filtroEstado || inc.estado_inconsistencia === this.filtroEstado;
+        const cumpleEtapa = !this.filtroEtapa || inc.etapa === this.filtroEtapa;
+        const cumpleTipo = !this.filtroTipo || inc.tipo_inconsistencia === this.filtroTipo;
+        const cumpleBusqueda = !this.busqueda ||
+          inc.id_inconsistencia.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+          inc.Cliente?.toLowerCase().includes(this.busqueda.toLowerCase()) ||
+          inc.item?.toLowerCase().includes(this.busqueda.toLowerCase());
+
+        let cumpleFecha = true;
+        // La fecha ya se filtra en el backend, pero mantenemos esta lógica de seguridad
+        if (this.filtroFechaDesde && inc.fecha_inconsistencia) {
+          cumpleFecha = cumpleFecha && new Date(inc.fecha_inconsistencia) >= new Date(this.filtroFechaDesde);
+        }
+        if (this.filtroFechaHasta && inc.fecha_inconsistencia) {
+          cumpleFecha = cumpleFecha && new Date(inc.fecha_inconsistencia) <= new Date(this.filtroFechaHasta);
+        }
+
+        return cumpleEstado && cumpleEtapa && cumpleTipo && cumpleBusqueda && cumpleFecha;
+      });
+      this.cargando = false;
+    }, 300); // 300ms de feedback visual para que el usuario note que se aplicaron
   }
 
   limpiarFiltros(): void {
@@ -174,405 +190,113 @@ export class MisInconsistenciasComponent implements OnInit {
     }
 
     this.procesandoAnulacion = true;
-    
-    console.log('Anulando inconsistencia:', this.inconsistenciaSeleccionada.id, this.razonAnulacion);
-    
-    setTimeout(() => {
-      this.procesandoAnulacion = false;
-      this.cerrarModalAnular();
-      this.cargarInconsistencias();
-    }, 1000);
+
+    this.inconsistenciasService.anularInconsistencia(
+      this.inconsistenciaSeleccionada.id_inconsistencia || this.inconsistenciaSeleccionada.id.toString(),
+      this.razonAnulacion,
+      (this.authService.user.id_Sdp || this.authService.user.id).toString()
+    ).subscribe({
+      next: (res) => {
+        this.procesandoAnulacion = false;
+        if (res.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Inconsistencia anulada',
+            text: 'La inconsistencia se ha anulado correctamente.'
+          });
+          this.cerrarModalAnular();
+          this.cargarInconsistencias();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo anular la inconsistencia.'
+          });
+        }
+      },
+      error: (err) => {
+        this.procesandoAnulacion = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Ocurrió un error al intentar anular la inconsistencia.'
+        });
+      }
+    });
   }
 
-  abrirModalDetalles(inconsistencia: Inconsistencia): void {
+  puedeSerAnulada(inco: any): boolean {
+    if (!inco) return false;
+    const estado = inco.estado_inconsistencia || '';
+    const inactiva = estado === 'Denegada' || estado === 'Aprobada' || inco.fecha_anulacion;
+    const terminada = inco.etapa === 'terminada';
+    return !inactiva && !terminada;
+  }
+
+  abrirModalDetalles(inconsistencia: any): void {
     this.inconsistenciaSeleccionada = inconsistencia;
-    
 
-    // Construir el HTML del contenido del modal con diseño Mobile First y accesibilidad WCAG 2.2
-    const htmlContent = `
-      <div 
-        role="document"
-        aria-label="Detalles de inconsistencia ${inconsistencia.id_inconsistencia}"
-        style="
-          text-align: left;
-          max-height: calc(100vh - 200px);
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 1rem;
-          font-size: clamp(0.875rem, 2.5vw, 1rem);
-          line-height: 1.6;
-          color: #0f172a;
-          scroll-behavior: smooth;
-          -webkit-overflow-scrolling: touch;
-        "
-      >
-        <!-- Información General -->
-        <section 
-          aria-labelledby="info-general-title" 
-          style="
-            margin-bottom: 2rem;
-            scroll-margin-top: 1rem;
-          "
-        >
-          <h2 
-            id="info-general-title"
-            style="
-              color: #1e3a8a;
-              font-size: clamp(1rem, 3vw, 1.25rem);
-              font-weight: 700;
-              margin: 0 0 1.25rem 0;
-              border-bottom: 3px solid #3b82f6;
-              padding-bottom: 0.75rem;
-              line-height: 1.3;
-            "
-          >
-            Información General
-          </h2>
+    // Obtener URLs de evidencias: prioridad a evidencias_urls, luego evidencias si ya es array de URLs
+    let archivos: string[] = [];
+    if (Array.isArray(inconsistencia.evidencias_urls) && inconsistencia.evidencias_urls.length > 0) {
+      archivos = inconsistencia.evidencias_urls;
+    } else if (Array.isArray(inconsistencia.evidencias) && inconsistencia.evidencias.length > 0) {
+      archivos = inconsistencia.evidencias;
+    }
 
-          <dl 
-            style="
-              display: grid; 
-              gap: 1.25rem;
-              margin: 0;
-            "
-          >
-            ${[
-              ['Cliente', inconsistencia.Cliente],
-              ['Departamento', inconsistencia.nombre_departamento],
-              ['Solicitante', inconsistencia.nombre_solicitante],
-              ['Jefe inmediato', inconsistencia.nombre_jefe_inmediato],
-              ['Descripción', inconsistencia.descripcion_inconsistencia],
-              ['Acción', inconsistencia.accion_inconsistencia],
-            ].map(([label, value], index) => value ? `
-              <div 
-                style="
-                  display: grid; 
-                  gap: 0.5rem;
-                  padding: 0.75rem;
-                  background: #f8fafc;
-                  border-radius: 0.5rem;
-                  border-left: 3px solid #3b82f6;
-                "
-              >
-                <dt 
-                  style="
-                    font-weight: 600; 
-                    color: #1e293b;
-                    font-size: clamp(0.8125rem, 2vw, 0.9375rem);
-                    margin: 0;
-                  "
-                >
-                  ${label}:
-                </dt>
-                <dd 
-                  style="
-                    color: #334155; 
-                    margin: 0;
-                    font-size: clamp(0.875rem, 2.5vw, 1rem);
-                    word-break: break-word;
-                    line-height: 1.5;
-                  "
-                >
-                  ${this.escapeHtml(value)}
-                </dd>
-              </div>
-            ` : '').join('')}
-          </dl>
-        </section>
+    const evidenciasHtml = archivos.length > 0 ? archivos.map((url: string, i: number) => {
+      const ext = url.split('.').pop()?.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+        return `<div style="text-align: center; margin-bottom: 10px;">
+                  <span style="display:block;font-size:12px;color:#888;">Evidencia ${i + 1}</span>
+                  <img src="${url}" style="max-width:100%; max-height: 400px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;" onclick="window.open('${url}', '_blank')">
+                </div>`;
+      }
+      return `<div style="margin-bottom: 10px;">
+                <a href="${url}" target="_blank" style="background:#72BE44; color:white; padding: 6px 12px; text-decoration:none; border-radius: 4px; font-size:12px; display:inline-block;">Abrir Archivo Adjunto ${i + 1}</a>
+              </div>`;
+    }).join('') : '<p style="color:#888; font-size:13px; font-style:italic;">No hay evidencias adjuntas.</p>';
 
-        <!-- Historial de Trazabilidad -->
-        ${inconsistencia.historial_aprobaciones?.length ? `
-          <section 
-            aria-labelledby="historial-title" 
-            style="
-              margin-bottom: 2rem;
-              scroll-margin-top: 1rem;
-            "
-          >
-            <h2 
-              id="historial-title"
-              style="
-                color: #1e3a8a;
-                font-size: clamp(1rem, 3vw, 1.25rem);
-                font-weight: 700;
-                margin: 0 0 1.25rem 0;
-                border-bottom: 3px solid #3b82f6;
-                padding-bottom: 0.75rem;
-                line-height: 1.3;
-              "
-            >
-              Jefes que aprobaron
-            </h2>
+    // Abrir ventana nativa (pop-up) de inmediato para evitar bloqueos del navegador
+    const win = window.open('', '_blank', 'width=900,height=750,scrollbars=yes,resizable=yes');
+    if (win) {
+      win.document.write('<p style="font-family:sans-serif;text-align:center;padding:20px;">Cargando detalles...</p>');
+    }
 
-            <div 
-              role="list"
-              aria-label="Historial de aprobaciones"
-              style="
-                position: relative; 
-                padding-left: 2rem;
-                margin: 0;
-              "
-            >
-              ${inconsistencia.historial_aprobaciones.map((historial, index, arr) => {
-                const isLast = index === arr.length - 1;
-                return `
-                  <div 
-                    role="listitem"
-                    style="
-                      position: relative; 
-                      padding-bottom: ${isLast ? '0' : '1.75rem'};
-                      margin-bottom: ${isLast ? '0' : '0'};
-                    "
-                  >
-                    <!-- Punto de la línea de tiempo -->
-                    <div 
-                      aria-hidden="true"
-                      style="
-                        position: absolute; 
-                        left: -1.5rem; 
-                        top: 0.375rem; 
-                        width: 0.875rem; 
-                        height: 0.875rem; 
-                        border-radius: 50%; 
-                        background: ${isLast ? '#10b981' : '#3b82f6'};
-                        border: 3px solid #ffffff;
-                        box-shadow: 0 0 0 2px ${isLast ? '#10b981' : '#3b82f6'};
-                        z-index: 2;
-                      "
-                    ></div>
+    // Obtener los tiempos del proceso
+    this.inconsistenciasService.obtenerTiemposProceso(inconsistencia.id_inconsistencia || inconsistencia.id).subscribe({
+      next: (res: any) => {
 
-                    <!-- Línea conectora -->
-                    ${!isLast ? `
-                      <div 
-                        aria-hidden="true"
-                        style="
-                          position: absolute;
-                          left: -1.125rem;
-                          top: 1.25rem;
-                          width: 2px;
-                          height: calc(100% - 0.5rem);
-                          background: #e2e8f0;
-                          z-index: 1;
-                        "
-                      ></div>
-                    ` : ''}
 
-                    <!-- Contenido del historial -->
-                    <div 
-                      style="
-                        background: #ffffff;
-                        padding: 1rem;
-                        border-radius: 0.5rem;
-                        border-left: 4px solid ${isLast ? '#10b981' : '#3b82f6'};
-                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                        transition: box-shadow 0.2s ease;
-                      "
-                      onmouseover="this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)';"
-                      onmouseout="this.style.boxShadow='0 1px 3px rgba(0, 0, 0, 0.1)';"
-                    >
-                      <div 
-                        style="
-                          display: flex;
-                          flex-direction: column;
-                          gap: 0.5rem;
-                          margin-bottom: 0.75rem;
-                        "
-                      >
-                        <div 
-                          style="
-                            display: flex;
-                            flex-direction: column;
-                            gap: 0.25rem;
-                          "
-                        >
-                          <strong 
-                            style="
-                              color: #1e40af; 
-                              font-size: clamp(0.9375rem, 2.5vw, 1.0625rem);
-                              font-weight: 600;
-                            "
-                          >
-                            ${this.escapeHtml(historial.etapa)}
-                          </strong>
-                          <time 
-                            dateTime="${historial.fecha}"
-                            style="
-                              color: #64748b; 
-                              font-size: clamp(0.75rem, 2vw, 0.875rem);
-                              font-weight: 400;
-                            "
-                          >
-                            ${this.formatearFecha(historial.fecha)}
-                          </time>
-                        </div>
-                      </div>
+        // Generar HTML de tiempos y evidencias usando las funciones compartidas
+        const tiemposHtml = generarTiemposHtml(res, this.traducirEtapa.bind(this));
+        const evidenciasHtml = generarEvidenciasHtml(archivos);
 
-                      <div 
-                        style="
-                          display: flex;
-                          align-items: center;
-                          gap: 0.5rem;
-                          margin-bottom: ${historial.observacion ? '0.75rem' : '0'};
-                        "
-                      >
-                        <span aria-hidden="true" style="font-size: 1rem;">👤</span>
-                        <p 
-                          style="
-                            color: #334155; 
-                            font-size: clamp(0.875rem, 2.5vw, 1rem); 
-                            margin: 0;
-                            font-weight: 500;
-                          "
-                        >
-                          ${this.escapeHtml(historial.usuario)}
-                        </p>
-                      </div>
+        // Construir HTML usando la plantilla completa
+        const htmlContent = getDetallesHtml(
+          inconsistencia,
+          tiemposHtml,
+          evidenciasHtml,
+          '', // Mis inconsistencias no tiene botones de acción aquí
+          this.tiposInconsistencia, // Asegurarse que se le pasen los tipos
+          this.traducirEtapa.bind(this),
+          {
+            mostrarSeccionAnulacion: true,
+            mostrarFooter: true,
+            mostrarInfoEconomica: true,
+            mostrarBotonesAccion: false
+          }
+        );
 
-                      ${historial.observacion ? `
-                        <div 
-                          style="
-                            margin-top: 0.75rem;
-                            padding: 0.75rem;
-                            background: #f8fafc;
-                            border-radius: 0.375rem;
-                            border-left: 3px solid #cbd5e1;
-                          "
-                        >
-                          <p 
-                            style="
-                              color: #475569;
-                              font-size: clamp(0.8125rem, 2vw, 0.9375rem);
-                              margin: 0;
-                              font-style: italic;
-                              line-height: 1.5;
-                            "
-                          >
-                            ${this.escapeHtml(historial.observacion)}
-                          </p>
-                        </div>
-                      ` : ''}
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </section>
-        ` : ''}
-
-        <!-- Información de Anulación -->
-        ${inconsistencia.estado_inconsistencia === 'Anulada' ? `
-          <section 
-            aria-labelledby="anulada-title"
-            role="alert"
-            style="
-              background: #fef2f2;
-              border: 2px solid #fecaca;
-              border-radius: 0.5rem;
-              padding: 1.25rem;
-              margin-top: 1rem;
-            "
-          >
-            <h2 
-              id="anulada-title"
-              style="
-                color: #991b1b;
-                font-size: clamp(1rem, 3vw, 1.25rem);
-                font-weight: 700;
-                margin: 0 0 1.25rem 0;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                line-height: 1.3;
-              "
-            >
-              <span aria-hidden="true">⚠️</span>
-              <span>Información de Anulación</span>
-            </h2>
-
-            <dl 
-              style="
-                display: grid; 
-                gap: 1.25rem;
-                margin: 0;
-              "
-            >
-              ${[
-                ['Anulada por', inconsistencia.nombre_persona_que_anulo],
-                ['Fecha anulación', this.formatearFecha(inconsistencia.fecha_anulacion)],
-                ['Razón', inconsistencia.razon_anulacion],
-              ].map(([label, value]) => `
-                <div 
-                  style="
-                    display: grid; 
-                    gap: 0.5rem;
-                    padding: 0.75rem;
-                    background: #ffffff;
-                    border-radius: 0.375rem;
-                    border-left: 3px solid #dc2626;
-                  "
-                >
-                  <dt 
-                    style="
-                      font-weight: 600; 
-                      color: #7f1d1d;
-                      font-size: clamp(0.8125rem, 2vw, 0.9375rem);
-                      margin: 0;
-                    "
-                  >
-                    ${label}:
-                  </dt>
-                  <dd 
-                    style="
-                      color: #991b1b; 
-                      margin: 0;
-                      font-size: clamp(0.875rem, 2.5vw, 1rem);
-                      word-break: break-word;
-                      line-height: 1.5;
-                    "
-                  >
-                    ${value || 'N/A'}
-                  </dd>
-                </div>
-              `).join('')}
-            </dl>
-          </section>
-        ` : ''}
-      </div>
-    `;
-
-    // Mostrar el modal con SweetAlert2 - Diseño Mobile First y Responsive
-    Swal.fire({
-      title: `<span style="font-size: clamp(1.125rem, 4vw, 1.5rem); font-weight: 700; color: #1e3a8a;">Detalles - ${inconsistencia.id_inconsistencia}</span>`,
-      html: htmlContent,
-      width: 'min(95vw, 900px)',
-      padding: '1.5rem',
-      showCloseButton: true,
-      closeButtonHtml: '<span aria-label="Cerrar modal" style="font-size: 1.5rem; color: #64748b;">&times;</span>',
-      showConfirmButton: true,
-      confirmButtonText: 'Cerrar',
-      confirmButtonColor: '#3b82f6',
-      confirmButtonAriaLabel: 'Cerrar modal de detalles',
-      allowOutsideClick: true,
-      allowEscapeKey: true,
-      customClass: {
-        popup: 'swal-modal-detalles',
-        title: 'swal-modal-titulo',
-        htmlContainer: 'swal-modal-contenido',
-        confirmButton: 'swal-boton-cerrar'
-      },
-      didOpen: () => {
-        // Mejorar accesibilidad del modal
-        const popup = document.querySelector('.swal2-popup') as HTMLElement;
-        if (popup) {
-          popup.setAttribute('role', 'dialog');
-          popup.setAttribute('aria-modal', 'true');
-          popup.setAttribute('aria-labelledby', 'swal2-title');
+        if (win) {
+          win.document.open();
+          win.document.write(htmlContent);
+          win.document.close();
         }
-        
-        // Asegurar que el primer elemento enfocable reciba el foco
-        const firstFocusable = popup?.querySelector('a, button, [tabindex]:not([tabindex="-1"])') as HTMLElement;
-        if (firstFocusable) {
-          setTimeout(() => firstFocusable.focus(), 100);
+      },
+      error: (err) => {
+        if (win) {
+          win.document.body.innerHTML = '<p style="color:red; text-align:center; padding:20px;">Error al cargar los tiempos de proceso.</p>';
         }
       }
     });
@@ -619,12 +343,10 @@ export class MisInconsistenciasComponent implements OnInit {
   formatearFecha(fecha: string | null): string {
     if (!fecha) return 'N/A';
     const date = new Date(fecha);
-    return date.toLocaleDateString('es-CO', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   }
 
@@ -695,16 +417,16 @@ export class MisInconsistenciasComponent implements OnInit {
     if (!archivos || archivos.length === 0) {
       try {
         let evidenciasParsed: string[] = [];
-        
+
         // Si evidencias es un array, usarlo directamente
         if (Array.isArray(inconsistencia.evidencias)) {
           evidenciasParsed = inconsistencia.evidencias;
-        } 
+        }
         // Si evidencias es un string, intentar parsearlo como JSON
         else if (typeof inconsistencia.evidencias === 'string') {
           evidenciasParsed = JSON.parse(inconsistencia.evidencias || '[]');
         }
-        
+
         // Convierte las rutas relativas a URLs completas
         archivos = evidenciasParsed.map((ruta: string) => {
           // Si ya es una URL completa, retornarla tal cual
@@ -716,7 +438,6 @@ export class MisInconsistenciasComponent implements OnInit {
           return `${baseUrl}/${ruta}`;
         });
       } catch (error) {
-        console.error('Error al parsear evidencias:', error);
         archivos = [];
       }
     }
@@ -731,139 +452,12 @@ export class MisInconsistenciasComponent implements OnInit {
       return;
     }
 
-    // Construye el HTML para mostrar imágenes o PDF con diseño mejorado
-    const evidenciasHtml = archivos.map((url: string, index: number) => {
-      const extension = url.split('.').pop()?.toLowerCase();
-
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
-        return `
-          <div style="
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-          " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.15)';" 
-             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.1)';">
-            <p style="
-              margin: 0 0 0.75rem 0;
-              font-size: 0.875rem;
-              font-weight: 600;
-              color: #64748b;
-              text-align: center;
-            ">Evidencia ${index + 1}</p>
-            <img src="${url}" 
-                 alt="Evidencia ${index + 1}" 
-                 style="
-                   max-width: 100%;
-                   max-height: 60vh;
-                   width: auto;
-                   height: auto;
-                   cursor: pointer;
-                   border-radius: 0.375rem;
-                   display: block;
-                   margin: 0 auto;
-                 "
-                 onclick="window.open('${url}', '_blank')"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <div style="display: none; text-align: center; padding: 1rem; color: #ef4444;">
-              <p style="margin: 0;">Error al cargar la imagen</p>
-              <a href="${url}" target="_blank" style="color: #3b82f6; text-decoration: underline; margin-top: 0.5rem; display: inline-block;">
-                Abrir en nueva pestaña
-              </a>
-            </div>
-          </div>
-        `;
-      } else if (extension === 'pdf') {
-        return `
-          <div style="
-            margin-bottom: 1rem;
-            padding: 1.25rem;
-            background: #fef2f2;
-            border-radius: 0.5rem;
-            text-align: center;
-            border: 1px solid #fecaca;
-          ">
-            <p style="
-              margin: 0 0 1rem 0;
-              font-size: 0.875rem;
-              font-weight: 600;
-              color: #991b1b;
-            ">Documento PDF</p>
-            <a href="${url}" 
-               target="_blank" 
-               style="
-                 display: inline-flex;
-                 align-items: center;
-                 gap: 0.5rem;
-                 padding: 0.75rem 1.5rem;
-                 background: #dc2626;
-                 color: white;
-                 text-decoration: none;
-                 border-radius: 0.375rem;
-                 font-weight: 600;
-                 transition: background 0.2s ease;
-               "
-               onmouseover="this.style.background='#b91c1c';"
-               onmouseout="this.style.background='#dc2626';">
-              <i class="fas fa-file-pdf" style="font-size: 1.125rem;"></i>
-              <span>Abrir PDF</span>
-            </a>
-          </div>
-        `;
-      } else {
-        return `
-          <div style="
-            margin-bottom: 1rem;
-            padding: 1.25rem;
-            background: #f8fafc;
-            border-radius: 0.5rem;
-            text-align: center;
-            border: 1px solid #e2e8f0;
-          ">
-            <p style="
-              margin: 0 0 1rem 0;
-              font-size: 0.875rem;
-              font-weight: 600;
-              color: #475569;
-            ">Archivo adjunto</p>
-            <a href="${url}" 
-               target="_blank" 
-               style="
-                 display: inline-flex;
-                 align-items: center;
-                 gap: 0.5rem;
-                 padding: 0.75rem 1.5rem;
-                 background: #64748b;
-                 color: white;
-                 text-decoration: none;
-                 border-radius: 0.375rem;
-                 font-weight: 600;
-                 transition: background 0.2s ease;
-               "
-               onmouseover="this.style.background='#475569';"
-               onmouseout="this.style.background='#64748b';">
-              <i class="fas fa-file" style="font-size: 1.125rem;"></i>
-              <span>Abrir archivo</span>
-            </a>
-          </div>
-        `;
-      }
-    }).join('');
+    // HTML del Swal generado desde el template compartido (sin duplicar lógica en el .ts)
+    const swalHtml = generarEvidenciasSwalHtml(archivos);
 
     Swal.fire({
       title: `<span style="font-size: 1.5rem; font-weight: 700; color: #1e293b;">Evidencias</span>`,
-      html: `
-        <div style="
-          max-height: 70vh;
-          overflow-y: auto;
-          padding: 0.5rem;
-          text-align: center;
-        ">
-          ${evidenciasHtml}
-        </div>
-      `,
+      html: swalHtml,
       width: 'min(90%, 800px)',
       showCloseButton: true,
       showConfirmButton: false,
@@ -873,7 +467,6 @@ export class MisInconsistenciasComponent implements OnInit {
         htmlContainer: 'swal-evidencias-container'
       },
       didOpen: () => {
-        // Mejorar accesibilidad
         const popup = document.querySelector('.swal-evidencias-popup') as HTMLElement;
         if (popup) {
           popup.setAttribute('role', 'dialog');

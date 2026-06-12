@@ -108,6 +108,6 @@ getDashboardData(year: number, month: number): Observable<any> {
 
 // Cargar op con sus items y la descripcion de la prenda
 Get_item_op(op:string): Observable<any>{
-  return this.http.get(`${this.apiUrl}/siesa/consulta?op=${op}`)
+  return this.http.get(`${environment.URL_API_LARAVEL}/siesa/consulta?op=${op}`)
 }
 }

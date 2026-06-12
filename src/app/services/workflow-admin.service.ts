@@ -60,4 +60,8 @@ export class WorkflowAdminService {
   storePasos(versionId: number, pasos: any[]): Observable<any> {
     return this.http.post(`${base_url}/admin/workflows/versiones/${versionId}/pasos`, { pasos });
   }
+
+  getCamposModulo(codigo: string): Observable<any> {
+    return this.http.get(`${base_url}/admin/workflows/modulos/${codigo}/campos`);
+  }
 }

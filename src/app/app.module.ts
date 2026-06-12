@@ -38,6 +38,8 @@ import { ListUserComponent } from './pages/user/list-user/list-user.component';
 import { CreateUserComponent } from './pages/user/create-user/create-user.component';
 import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 import { WorkflowManagerComponent } from './pages/authorization-manager/workflow-manager/workflow-manager.component';
+import { CarteraInconsistenciasComponent } from './pages/inconsistencias/cartera-inconsistencias/cartera-inconsistencias.component';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthModule } from './auth/auth.module';
@@ -46,6 +48,7 @@ import { AprobacionModule } from './pages/inconsistencias/aprobacion/aprobacion.
 import { HistoricoModule } from './pages/inconsistencias/historico/historico.module';
 import { RevisionConsumoModule } from './pages/inconsistencias/revision-consumo/revision-consumo.module';
 import { ReporteInconsistenciasModule } from './pages/inconsistencias/reporte-inconsistencias/reporte-inconsistencias.module';
+import { DashboardFinancieroModule } from './pages/inconsistencias/dashboard-financiero/dashboard-financiero.module';
 import { RecepcionOpModule } from './pages/terminacion-empaque/recepcion-op/recepcion-op.module';
 import { GestionEmpacadoresModule } from './pages/terminacion-empaque/gestion-empacadores/gestion-empacadores.module';
 import { RegistrarEmpaqueModule } from './pages/terminacion-empaque/registrar-empaque/registrar-empaque.module';
@@ -102,7 +105,6 @@ registerLocaleData(localeEs, 'es-CO');
         MiReportListComponent,
         ReportDashboardComponent,
         AuthorizationManagerComponent,
-
     ],
     bootstrap: [AppComponent],
     imports: [
@@ -114,6 +116,7 @@ registerLocaleData(localeEs, 'es-CO');
         NgChartsModule,
         AuthModule,
         SharedModule,
+        DragDropModule,
         /*Editor*/
         AngularEditorModule,
         /* Zoom */
@@ -124,6 +127,7 @@ registerLocaleData(localeEs, 'es-CO');
         HistoricoModule,
         RevisionConsumoModule,
         ReporteInconsistenciasModule,
+        DashboardFinancieroModule,
         /* Control de piso */
         RecepcionOpModule,
         GestionEmpacadoresModule,

@@ -99,18 +99,14 @@ export class AuthService {
     this._user.permissions = payload.permissions || [];
     this._user.modules = payload.modules || [];
     this._user.id = payload.id;
+    if (payload.sdp) {
+      this._user.nombre_departamento_Sdp = payload.sdp.nombre_departamento;
+      this._user.id_departamento_Sdp = payload.sdp.id_departamento;
+      this._user.id_Sdp = payload.sdp.id_conecta;
+      this._user.lider_nombre = payload.sdp.nombre_lider;
+      this._user.id_lider = payload.sdp.id_lider;
+    }
     sessionStorage.setItem('user', JSON.stringify(this._user));
-    this.inconsistenciasService.info(payload.email).subscribe({
-      next: (res) => {
-        this._user.nombre_departamento_Sdp = res.info['nombre_departamento'];
-        this._user.id_departamento_Sdp = res.info['id_departamento'];
-        this._user.id_Sdp = res.info['id_usuario'];
-        this._user.id_lider = res.info['lider_id'];
-        this._user.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
-        sessionStorage.setItem('user', JSON.stringify(this._user));
-      },
-      error: (_) => { }
-    });
   }
 
   saveToken(accessToken: string, refreshToken?: string): void {

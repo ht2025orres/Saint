@@ -49,6 +49,8 @@ import { InventariosComponent } from './pages/old-inventario/inventarios/inventa
 import { SolicitudComponent } from './pages/comerciales/solicitud/solicitud.component';
 import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 import { WorkflowManagerComponent } from './pages/authorization-manager/workflow-manager/workflow-manager.component';
+import { CarteraInconsistenciasComponent } from './pages/inconsistencias/cartera-inconsistencias/cartera-inconsistencias.component';
+import { DashboardFinancieroInconsistenciasComponent } from './pages/inconsistencias/dashboard-financiero/dashboard-financiero.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -100,7 +102,9 @@ const routes: Routes = [
       // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
       { path: 'recepcion-pedidos', component: SolicitudComponent, title: 'Solicitud comercial' },
       { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' },
-      { path: 'workflows', component: WorkflowManagerComponent, title: 'Gestor de Workflows' }
+      { path: 'workflows', component: WorkflowManagerComponent, title: 'Gestor de Workflows' },
+      { path: 'cartera-inconsistencias', component: CarteraInconsistenciasComponent, title: 'Cartera Inconsistencias' },
+      { path: 'dashboard-financiero-inconsistencias', component: DashboardFinancieroInconsistenciasComponent, title: 'Dashboard Financiero Inconsistencias' }
     ]
   },
 

@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BigbagService } from '../../../services/bigbag.service';
 import { User } from '../../../models/User';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../services/auth.service';
 import { ErpIntegrationService } from '../../../services/erp-integration.service';
 import { Customer } from '../../../models/Customer';
@@ -33,7 +35,8 @@ interface StepStates {
   templateUrl: './technical-report-bigbag.component.html',
   styleUrls: ['./technical-report-bigbag.component.css']
 })
-export class TechnicalReportBigbagComponent implements OnInit {
+export class TechnicalReportBigbagComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
 
   customers: Customer[] = [];
 
@@ -129,6 +132,11 @@ export class TechnicalReportBigbagComponent implements OnInit {
     this.initializeStepStates();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   ngOnInit(): void {
     this.updateStepDisplay();
     this.initializeForm();
@@ -198,7 +206,9 @@ export class TechnicalReportBigbagComponent implements OnInit {
     const cantidadFields = ['cantidadRelacionada', 'cantidadFisico'];
 
     cantidadFields.forEach(field => {
-      this.bigbagForm.get(field)?.valueChanges.subscribe(() => {
+      this.bigbagForm.get(field)?.valueChanges
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => {
         this.calcularDiferenciaReportada();
       });
     });
