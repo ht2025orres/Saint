@@ -1,0 +1,482 @@
+<div class="min-h-screen bg-slate-50 p-4 font-sans text-slate-800">
+    <div class="max-w-full mx-auto bg-white shadow-2xl rounded-xl border border-slate-200 overflow-hidden flex flex-col h-[calc(100vh-40px)]">
+        
+        <!-- Header Corporativo -->
+        <header class="bg-white border-b border-slate-200 px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-100">
+                    <i class="fas fa-microchip text-xs"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-black text-slate-800 m-0 leading-tight uppercase">Workflow Engine</h1>
+                    <p class="text-slate-400 text-[8px] font-bold tracking-widest uppercase">Admin Panel • v3.0</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <div class="relative w-64">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+                    <input type="text" [(ngModel)]="searchTerm" 
+                           class="w-full pl-8 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:bg-white focus:border-indigo-600 outline-none transition-all placeholder-slate-400 font-medium" 
+                           placeholder="Buscar...">
+                </div>
+                <button (click)="cargarTodo()" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all border border-transparent hover:border-indigo-100">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="flex-1 flex overflow-x-auto overflow-y-hidden lg:overflow-hidden bg-slate-100">
+            
+            <!-- COL 1: MÓDULOS -->
+            <div class="w-40 xl:w-48 flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
+                <div class="px-4 py-2 bg-white border-b border-slate-200 flex justify-between items-center">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Módulos</span>
+                    <button (click)="showModuloModal = true" class="text-indigo-600 hover:text-indigo-800 text-[10px] font-black tracking-tighter transition-all">+ NUEVO</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-1.5 space-y-1 scrollbar-thin scrollbar-thumb-slate-300">
+                    <div *ngFor="let modulo of modulosFiltrados" 
+                         (click)="selectModulo(modulo)"
+                         class="px-3 py-1.5 cursor-pointer rounded border transition-all text-[10px] flex flex-col relative overflow-hidden group"
+                         [ngClass]="selectedModulo?.id === modulo.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-indigo-50'">
+                        <span class="font-black truncate uppercase tracking-tighter">{{ modulo.nombre }}</span>
+                        <span class="text-[8px] opacity-70 font-mono tracking-tighter" [ngClass]="selectedModulo?.id === modulo.id ? 'text-indigo-100' : 'text-slate-400'">{{ modulo.codigo }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COL 2: FLUJOS -->
+            <div class="w-40 xl:w-48 flex flex-col bg-slate-50 border-r border-slate-200 shrink-0" [ngClass]="{'opacity-30 pointer-events-none grayscale': !selectedModulo}">
+                <div class="px-4 py-2 bg-white border-b border-slate-200 flex justify-between items-center">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flujos</span>
+                    <button (click)="showTipoModal = true" class="text-indigo-600 hover:text-indigo-800 text-[10px] font-black transition-all">+ NUEVO</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-1.5 space-y-1 scrollbar-thin scrollbar-thumb-slate-300">
+                    <div *ngFor="let tipo of selectedModulo?.tipos" 
+                         (click)="selectTipo(tipo)"
+                         class="px-3 py-1.5 cursor-pointer rounded border transition-all text-[10px]"
+                         [ngClass]="selectedTipo?.id === tipo.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-black shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-indigo-50/50'">
+                        <div class="truncate uppercase tracking-tighter">{{ tipo.nombre }}</div>
+                        <div class="text-[8px] text-slate-400 font-mono mt-0.5">{{ tipo.codigo }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COL 3: VERSIONES -->
+            <div class="w-36 xl:w-44 flex flex-col bg-slate-50 border-r border-slate-200 shrink-0" [ngClass]="{'opacity-30 pointer-events-none': !selectedTipo}">
+                <div class="px-4 py-2 bg-white border-b border-slate-200 flex justify-between items-center">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Versiones</span>
+                    <button (click)="prepararNuevaVersion()" class="text-indigo-600 hover:text-indigo-800 text-[10px] font-black transition-all">+ NUEVA</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-slate-300">
+                    <div *ngFor="let ver of selectedTipo?.versiones" 
+                         (click)="selectVersion(ver)"
+                         class="p-3 cursor-pointer rounded-lg border transition-all flex flex-col relative overflow-hidden group/v"
+                         [ngClass]="selectedVersion?.id === ver.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-indigo-50/50'">
+                        
+                        <div class="absolute left-0 top-0 bottom-0 w-1" [ngClass]="ver.estado === 'publicado' ? 'bg-emerald-500' : 'bg-slate-300'"></div>
+                        
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-black text-xs">v{{ ver.version }}.0</span>
+                            <span class="text-[8px] px-2 py-0.5 rounded-full font-black uppercase border"
+                                  [ngClass]="ver.estado === 'publicado' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'">
+                                {{ ver.estado === 'publicado' ? 'Publicada' : 'Draft' }}
+                            </span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 line-clamp-2 pl-1 leading-tight">{{ ver.descripcion || 'Sin notas de versión' }}</p>
+                        
+                        <!-- Status Indicator Only -->
+                        <div class="mt-2 flex items-center gap-1 text-[8px] font-bold text-slate-400">
+                            <i class="fas" [ngClass]="ver.estado === 'publicado' ? 'fa-check-circle text-emerald-500' : 'fa-clock'"></i>
+                            {{ ver.estado === 'publicado' ? 'En Producción' : 'Edición Pendiente' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COL 4: DESIGNER (ETAPAS UNIFICADAS) -->
+            <div class="flex-1 flex flex-col bg-white">
+                <div class="px-4 py-1.5 bg-white border-b border-slate-200 flex justify-between items-center sticky top-0 z-40">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Configurador</span>
+                        <div *ngIf="selectedVersion" class="flex items-center gap-2">
+                             <div class="h-3 w-[1px] bg-slate-200"></div>
+                             <span class="text-[9px] text-indigo-600 font-black bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-tighter">v{{ selectedVersion.version }}.0</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-1.5" *ngIf="selectedVersion">
+                        <!-- Botón de Publicación (Movido aquí) -->
+                        <button *ngIf="selectedVersion.estado !== 'publicado'" 
+                                (click)="publicarVersion(selectedVersion)"
+                                class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[9px] font-black rounded border border-emerald-200 transition-all flex items-center gap-1.5 shadow-sm">
+                            <i class="fas fa-check-circle"></i> ACTIVAR VERSIÓN
+                        </button>
+
+                        <div class="h-6 w-[1px] bg-slate-200 mx-0.5" *ngIf="selectedVersion.estado !== 'publicado'"></div>
+
+                        <button (click)="agregarPaso()" class="px-2 py-1 bg-white hover:bg-slate-50 text-indigo-600 text-[9px] font-black rounded border border-indigo-200 transition-all flex items-center gap-1.5">
+                            <i class="fas fa-plus"></i> ETAPA
+                        </button>
+                        <button (click)="guardarPasos()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black rounded shadow transition-all flex items-center gap-1.5">
+                            <i class="fas fa-save"></i> GUARDAR
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-2 md:p-4 scrollbar-thin scrollbar-thumb-slate-200 bg-slate-50/20">
+                    <div *ngIf="!selectedVersion" class="h-full flex flex-col items-center justify-center text-slate-300 opacity-50">
+                        <i class="fas fa-project-diagram text-6xl mb-4"></i>
+                        <p class="text-sm font-black tracking-[0.3em] uppercase">Engine Designer Inactive</p>
+                    </div>
+
+                    <!-- DESIGNER CANVAS (Agrupado por Orden) -->
+                    <div *ngIf="selectedVersion" cdkDropList (cdkDropListDropped)="drop($event)" class="space-y-1 relative">
+                        
+                        <!-- Bloque de Orden (Contenedor de Arrastre) -->
+                        <div *ngFor="let grupo of grupos; let gIndex = index" cdkDrag 
+                             class="bg-slate-50/50 rounded-lg border border-slate-200/50 shadow-sm hover:border-indigo-200 transition-all">
+                            
+                            <!-- Placeholder de Arrastre -->
+                            <div *cdkDragPlaceholder class="bg-indigo-50 border-2 border-dashed border-indigo-200 h-10 w-full"></div>
+
+                            <!-- Renderizado de Pasos dentro del Grupo -->
+                            <div *ngFor="let paso of grupo; let pIndex = index" 
+                                 class="flex items-stretch bg-white border-b border-slate-100 last:border-b-0 h-9 relative group">
+                                
+                                <!-- Grab Handle (Solo en el primer paso del grupo para arrastrar el bloque) -->
+                                <div *ngIf="pIndex === 0" cdkDragHandle 
+                                     class="w-6 flex items-center justify-center bg-slate-50/30 cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-600 transition-colors border-r border-slate-50">
+                                    <i class="fas fa-grip-vertical text-[7px]"></i>
+                                </div>
+                                <div *ngIf="pIndex > 0" class="w-6 border-r border-slate-50 bg-slate-50/10"></div>
+
+                                <!-- Indicator Step Number -->
+                                <div class="w-6 flex items-center justify-center text-[10px] font-black border-r border-slate-50 relative"
+                                     [ngClass]="paso.es_paralelo ? 'text-amber-500 bg-amber-50/5' : 'text-indigo-600 bg-white'">
+                                    {{ paso.orden }}
+                                    
+                                    <!-- Botón para dividir/unir grupos paralelos (Lógica simplificada) -->
+                                    <button *ngIf="pIndex > 0 || (gIndex > 0 && paso.es_paralelo)" 
+                                            (click)="toggleEnlace(pasos.indexOf(paso))"
+                                            class="absolute -top-3 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-md hover:scale-110 transition-all z-10">
+                                        <i class="fas" [ngClass]="paso.romper_enlace ? 'fa-unlink text-rose-500 text-[8px]' : 'fa-link text-amber-500 text-[8px]'"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Step Content -->
+                                <div class="flex-1 px-2 py-0 flex items-center gap-2">
+                                    <div class="flex-1 min-w-[150px]">
+                                        <input [(ngModel)]="paso.nombre" 
+                                               class="w-full bg-transparent border-none text-[11px] text-slate-800 px-0 py-0.5 font-bold outline-none placeholder-slate-300 focus:text-indigo-700 transition-colors uppercase tracking-tight" 
+                                               placeholder="Nombre de la etapa...">
+                                    </div>
+
+                                    <!-- PERMISSION SELECT (Fix: Con Dropdown de búsqueda funcional) -->
+                                    <div class="w-40 xl:w-56 relative">
+                                        <div (click)="activePermissionStepIndex = activePermissionStepIndex === pasos.indexOf(paso) ? null : pasos.indexOf(paso); permissionSearchTerm = ''" 
+                                             class="w-full bg-slate-50 border border-slate-200 hover:border-indigo-300 px-2 py-1 rounded flex items-center justify-between cursor-pointer transition-all group/p">
+                                            <div class="flex items-center gap-1.5 overflow-hidden">
+                                                <i class="fas fa-shield-alt text-[9px] text-slate-400 group-hover/p:text-indigo-500"></i>
+                                                <span class="text-[10px] font-medium text-slate-700 truncate">{{ getNombrePermiso(paso.permiso_requerido) }}</span>
+                                            </div>
+                                            <i class="fas fa-search text-[9px] text-slate-300"></i>
+                                        </div>
+
+                                        <!-- Listado de búsqueda -->
+                                        <div *ngIf="activePermissionStepIndex === pasos.indexOf(paso)" 
+                                             class="absolute top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl z-[100] p-1 animate-in slide-in-from-top-2 duration-150">
+                                            <input type="text" [(ngModel)]="permissionSearchTerm" 
+                                                   class="w-full bg-slate-50 border-none rounded px-2 py-1.5 text-[10px] outline-none mb-1"
+                                                   placeholder="Filtrar permisos..." (click)="$event.stopPropagation()">
+                                            <div class="max-h-32 overflow-y-auto custom-scrollbar">
+                                                <button *ngFor="let p of permisosFiltrados" 
+                                                        (click)="selectPermission(pasos.indexOf(paso), p)"
+                                                        class="w-full text-left px-2 py-1.5 rounded hover:bg-indigo-50 text-[10px] font-bold text-slate-600 hover:text-indigo-600 transition-all">
+                                                    {{ p.name }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- REGLAS / CONDICIONES BUTTON -->
+                                    <button (click)="abrirCondiciones(paso)" 
+                                            class="p-1.5 rounded hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-all"
+                                            title="Configurar Reglas de Flujo">
+                                        <i class="fas fa-cog text-[10px]"></i>
+                                    </button>
+
+                                    <!-- FLAGGING (TOGGLES) -->
+                                    <div class="flex items-center gap-2 ml-auto pr-1">
+                                        <!-- Paralelo -->
+                                        <label class="flex items-center gap-1 cursor-pointer group/t" title="Flujo Paralelo">
+                                            <div class="relative flex items-center">
+                                                <input type="checkbox" [(ngModel)]="paso.es_paralelo" (change)="reordenarPasos()" class="peer sr-only">
+                                                <div class="w-6 h-3 bg-slate-200 rounded-full peer peer-checked:bg-indigo-500 transition-all after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:after:translate-x-3 shadow-inner"></div>
+                                            </div>
+                                            <span class="text-[7px] font-black uppercase tracking-tighter" [ngClass]="paso.es_paralelo ? 'text-indigo-600' : 'text-slate-400'">PAR</span>
+                                        </label>
+
+                                        <!-- Omitible (NUEVO) -->
+                                        <label class="flex items-center gap-1 cursor-pointer group/t" title="Permitir Omitir">
+                                            <div class="relative flex items-center">
+                                                <input type="checkbox" [(ngModel)]="paso.permite_omitir" class="peer sr-only">
+                                                <div class="w-6 h-3 bg-slate-200 rounded-full peer peer-checked:bg-amber-500 transition-all after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:after:translate-x-3 shadow-inner"></div>
+                                            </div>
+                                            <span class="text-[7px] font-black uppercase tracking-tighter" [ngClass]="paso.permite_omitir ? 'text-amber-600' : 'text-slate-400'">SKIP</span>
+                                        </label>
+                                        
+                                        <!-- Final -->
+                                        <label class="flex items-center gap-1 cursor-pointer group/t" title="Paso Final del Flujo">
+                                            <div class="relative flex items-center">
+                                                <input type="checkbox" [(ngModel)]="paso.es_final" (change)="onEsFinalChange(pasos.indexOf(paso))" class="peer sr-only">
+                                                <div class="w-6 h-3 bg-slate-200 rounded-full peer peer-checked:bg-rose-500 transition-all after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:after:translate-x-3 shadow-inner"></div>
+                                            </div>
+                                            <span class="text-[7px] font-black uppercase tracking-tighter" [ngClass]="paso.es_final ? 'text-rose-600' : 'text-slate-400'">FIN</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- DELETE ACTION -->
+                                <button (click)="eliminarPaso(pasos.indexOf(paso))" class="px-2 border-l border-slate-50 text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all" title="Eliminar">
+                                    <i class="fas fa-trash-alt text-[8px]"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                          <!-- MODAL: DECLARACIÓN DE CONDICIONES (DISEÑO SOLICITADO) -->
+            <div *ngIf="showCondicionModal" class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300">
+                <div class="bg-white rounded-xl shadow-2xl w-[60vw] max-w-5xl overflow-hidden border border-slate-200 animate-in zoom-in duration-300">
+                    
+                    <!-- Header -->
+                    <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center">
+                                <i class="fas fa-project-diagram text-slate-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-medium text-slate-800 leading-tight">Declaracion de condiciones de pasos</h3>
+                                <p class="text-xs text-slate-400">Configurando: {{ selectedPasoParaCondicion.nombre }}</p>
+                            </div>
+                        </div>
+                        <button (click)="showCondicionModal = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-8 space-y-8">
+                        <!-- ZONA DE CONSTRUCCIÓN -->
+                        <div class="flex items-center gap-6">
+                            
+                            <!-- 1. ENTIDAD DE EVALUACIÓN -->
+                            <div class="flex-1 bg-slate-50/50 border border-slate-100 rounded-xl p-6 space-y-6">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-400">1</span>
+                                    <h4 class="text-sm font-medium text-slate-700">Entidad de evaluación</h4>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div class="space-y-1.5">
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tabla Maestra</label>
+                                        <select [(ngModel)]="selectedPasoParaCondicion.regla.entidad_origen" 
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 outline-none focus:border-indigo-500 transition-all">
+                                            <option value="">-- Seleccionar Tabla --</option>
+                                            <option *ngFor="let ent of entidadesDisponibles" [value]="ent.entidad">{{ ent.label }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-1.5">
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Atributo / Campo</label>
+                                        <select [(ngModel)]="selectedPasoParaCondicion.regla.campo_origen" 
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 outline-none focus:border-indigo-500 transition-all">
+                                            <option value="">-- Campo a Comparar --</option>
+                                            <option *ngFor="let c of getCamposDeEntidad(selectedPasoParaCondicion.regla.entidad_origen)" [value]="c.id">{{ c.nombre }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- OPERADOR -->
+                            <div class="flex-shrink-0">
+                                <select [(ngModel)]="selectedPasoParaCondicion.regla.operador" 
+                                        class="bg-white border border-slate-200 rounded-xl px-6 py-3 text-sm text-slate-700 outline-none shadow-sm hover:border-slate-300 transition-all text-center min-w-[120px] appearance-none cursor-pointer">
+                                    <option *ngFor="let o of operadores" [value]="o.id">{{ o.nombre }}</option>
+                                </select>
+                            </div>
+
+                            <!-- 2. REFERENCIA DE COMPARACIÓN -->
+                            <div class="flex-1 bg-slate-50/50 border border-slate-100 rounded-xl p-6 space-y-6">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-400">2</span>
+                                        <h4 class="text-sm font-medium text-slate-700">Referencia de comparacion</h4>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-4">
+                                        <button (click)="selectedPasoParaCondicion.regla.tipo_destino = 'valor'"
+                                                [class]="selectedPasoParaCondicion.regla.tipo_destino === 'valor' ? 'text-slate-800 font-bold border-b-2 border-indigo-500' : 'text-slate-400'"
+                                                class="text-[11px] uppercase pb-1 transition-all">Valor</button>
+                                        <button (click)="selectedPasoParaCondicion.regla.tipo_destino = 'campo'"
+                                                [class]="selectedPasoParaCondicion.regla.tipo_destino === 'campo' ? 'text-slate-800 font-bold border-b-2 border-indigo-500' : 'text-slate-400'"
+                                                class="text-[11px] uppercase pb-1 transition-all">Campo</button>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <!-- Input de Valor -->
+                                    <div *ngIf="selectedPasoParaCondicion.regla.tipo_destino === 'valor'" class="space-y-1.5">
+                                        <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Valor Manual</label>
+                                        <input type="text" [(ngModel)]="selectedPasoParaCondicion.regla.valor_destino" 
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 outline-none focus:border-indigo-500 transition-all"
+                                               placeholder="Escribe el valor a comparar...">
+                                    </div>
+
+                                    <!-- Selectores de Campo -->
+                                    <div *ngIf="selectedPasoParaCondicion.regla.tipo_destino === 'campo'" class="space-y-4">
+                                        <div class="space-y-1.5">
+                                            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Entidad de Referencia</label>
+                                            <select [(ngModel)]="selectedPasoParaCondicion.regla.entidad_destino" 
+                                                    class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 outline-none focus:border-indigo-500 transition-all">
+                                                <option value="">-- Seleccionar Tabla --</option>
+                                                <option *ngFor="let ent of entidadesDisponibles" [value]="ent.entidad">{{ ent.label }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Campo de Referencia</label>
+                                            <select [(ngModel)]="selectedPasoParaCondicion.regla.campo_destino" 
+                                                    class="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-600 outline-none focus:border-indigo-500 transition-all">
+                                                <option value="">-- Seleccionar Campo --</option>
+                                                <option *ngFor="let c of getCamposDeEntidad(selectedPasoParaCondicion.regla.entidad_destino)" [value]="c.id">{{ c.nombre }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INTERPRETADOR CONDICIONAL -->
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-6">
+                            <div class="flex items-center gap-2 mb-3">
+                                <i class="fas fa-code text-slate-400 text-xs"></i>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Interpretador Condicional</span>
+                            </div>
+                            <p class="font-mono text-sm text-slate-600">
+                                <span class="font-bold text-slate-800">IF</span> 
+                                {{ selectedPasoParaCondicion.regla.entidad_origen || 'entidad' }}.{{ selectedPasoParaCondicion.regla.campo_origen || 'campo' }} 
+                                <span class="text-indigo-600 font-bold mx-2">{{ selectedPasoParaCondicion.regla.operador }}</span>
+                                
+                                <ng-container *ngIf="!['is_true', 'is_false', 'is_empty'].includes(selectedPasoParaCondicion.regla.operador)">
+                                    <span *ngIf="selectedPasoParaCondicion.regla.tipo_destino === 'valor'" class="text-emerald-600">"{{ selectedPasoParaCondicion.regla.valor_destino || 'null' }}"</span>
+                                    <span *ngIf="selectedPasoParaCondicion.regla.tipo_destino === 'campo'" class="text-emerald-600">{{ selectedPasoParaCondicion.regla.entidad_destino || 'entidad' }}.{{ selectedPasoParaCondicion.regla.campo_destino || 'campo' }}</span>
+                                </ng-container>
+
+                                <span class="font-bold text-slate-800 ml-2">THEN</span> 
+                                <span class="text-slate-400 ml-2">// Ejecutar transición a siguiente etapa</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-8 py-6 border-t border-slate-100 flex justify-between items-center">
+                        <button (click)="limpiarRegla()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 transition-all text-xs font-medium">
+                            <i class="fas fa-trash-alt"></i>
+                            Eliminar configuración
+                        </button>
+                        <div class="flex gap-3">
+                            <button (click)="showCondicionModal = false" class="px-6 py-2.5 border border-slate-200 text-slate-600 text-sm rounded-lg hover:bg-slate-50 transition-all">
+                                Cancelar
+                            </button>
+                            <button (click)="showCondicionModal = false" class="px-8 py-2.5 bg-white border border-slate-200 text-slate-800 text-sm font-medium rounded-lg hover:border-slate-400 transition-all shadow-sm">
+                                Guardar regla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+    <!-- BACKGROUND DROPDOWN OVERLAY (Click outside to close) -->
+    <div *ngIf="activePermissionStepIndex !== null" (click)="activePermissionStepIndex = null" class="fixed inset-0 z-50"></div>
+</div>
+
+<style>
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 20px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+    .custom-scroll::-webkit-scrollbar { width: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .animate-in { animation: animateIn 0.15s ease-out; }
+    @keyframes animateIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+</style>
+
+<!-- MODALES (PREMIUM DESIGN) -->
+<div *ngIf="showModuloModal || showTipoModal || showVersionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] p-8 overflow-hidden relative">
+        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
+        
+        <ng-container *ngIf="showModuloModal">
+            <div class="flex items-center gap-3 mb-6">
+                <i class="fas fa-box-open text-indigo-600 text-xl"></i>
+                <h3 class="text-slate-800 font-black text-lg uppercase tracking-tight">Nuevo Módulo Maestro</h3>
+            </div>
+            <div class="space-y-4">
+                <div class="relative">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Código Identificador</label>
+                    <input [(ngModel)]="newModulo.codigo" placeholder="Ej: LOGISTICA_V2" class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 p-3 rounded-xl outline-none focus:border-indigo-500 focus:bg-white transition-all uppercase">
+                </div>
+                <div class="relative">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Nombre Descriptivo</label>
+                    <input [(ngModel)]="newModulo.nombre" placeholder="Nombre del módulo" class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 p-3 rounded-xl outline-none focus:border-indigo-500 focus:bg-white transition-all">
+                </div>
+                <div class="relative">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Descripción / Notas</label>
+                    <textarea [(ngModel)]="newModulo.descripcion" class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 p-3 rounded-xl outline-none focus:border-indigo-500 focus:bg-white h-24 transition-all"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button (click)="showModuloModal = false" class="flex-1 py-3 text-xs text-slate-400 font-black hover:bg-slate-50 rounded-xl transition-all uppercase">Cancelar</button>
+                <button (click)="guardarModulo()" class="flex-1 py-3 bg-indigo-600 text-white text-xs font-black rounded-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase">Guardar Módulo</button>
+            </div>
+        </ng-container>
+
+        <!-- (Secciones para Tipo y Versión similares...) -->
+        <ng-container *ngIf="showTipoModal">
+             <div class="flex items-center gap-3 mb-6">
+                <i class="fas fa-stream text-indigo-600 text-xl"></i>
+                <h3 class="text-slate-800 font-black text-lg uppercase tracking-tight">Definir Nuevo Flujo</h3>
+            </div>
+            <div class="space-y-4">
+                <input [(ngModel)]="newTipo.codigo" placeholder="CÓDIGO INTERNO" class="w-full bg-slate-50 border border-slate-200 text-xs font-bold p-3 rounded-xl outline-none">
+                <input [(ngModel)]="newTipo.nombre" placeholder="Nombre del proceso" class="w-full bg-slate-50 border border-slate-200 text-xs font-bold p-3 rounded-xl outline-none">
+                <textarea [(ngModel)]="newTipo.descripcion" placeholder="Descripción..." class="w-full bg-slate-50 border border-slate-200 text-xs font-bold p-3 rounded-xl outline-none h-24"></textarea>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button (click)="showTipoModal = false" class="flex-1 py-3 text-xs text-slate-400 font-black uppercase">Cerrar</button>
+                <button (click)="guardarTipo()" class="flex-1 py-3 bg-indigo-600 text-white text-xs font-black rounded-xl shadow-xl shadow-indigo-100 uppercase">Crear Flujo</button>
+            </div>
+        </ng-container>
+
+        <ng-container *ngIf="showVersionModal">
+             <div class="flex items-center gap-3 mb-6">
+                <i class="fas fa-history text-indigo-600 text-xl"></i>
+                <h3 class="text-slate-800 font-black text-lg uppercase tracking-tight">Nueva Versión de Flujo</h3>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <span class="text-slate-400 font-black text-sm">v</span>
+                    <input type="number" [(ngModel)]="newVersion.version" class="bg-transparent border-none text-slate-800 font-black outline-none w-full text-lg">
+                    <span class="text-slate-400 font-black text-sm">.0</span>
+                </div>
+                <textarea [(ngModel)]="newVersion.descripcion" placeholder="Notas de cambios..." class="w-full bg-slate-50 border border-slate-200 text-xs font-bold p-3 rounded-xl outline-none h-24"></textarea>
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button (click)="showVersionModal = false" class="flex-1 py-3 text-xs text-slate-400 font-black uppercase">Cancelar</button>
+                <button (click)="guardarVersion()" class="flex-1 py-3 bg-indigo-600 text-white text-xs font-black rounded-xl shadow-xl shadow-indigo-100 uppercase">Confirmar Versión</button>
+            </div>
+        </ng-container>
+
+    </div>
+</div>

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Informe, TipoInforme, NivelImpacto } from 'src/app/services/proyectos.service';
 
@@ -21,7 +21,7 @@ export interface InformeForm {
   selector: 'app-modal-informe',
   templateUrl: './modal-informe.component.html',
 })
-export class ModalInformeComponent implements OnChanges {
+export class ModalInformeComponent implements OnChanges, OnDestroy {
   @Input() show = false;
   @Input() informe: Informe | null = null;
   @Input() saving = false;
@@ -30,6 +30,8 @@ export class ModalInformeComponent implements OnChanges {
   @Output() onGuardar = new EventEmitter<InformeForm>();
 
   form: FormGroup;
+  activeTab: 'general' | 'analisis' = 'general';
+  private editorInstance: any = null;
 
   readonly tipos: TipoInforme[] = [
     'Incidente', 'Hallazgo de Auditoría', 'Riesgo Tecnológico', 
@@ -57,6 +59,7 @@ export class ModalInformeComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['show']?.currentValue) {
+      this.activeTab = 'general';
       if (this.informe) {
         this.form.patchValue({
           titulo:               this.informe.titulo,
@@ -72,6 +75,10 @@ export class ModalInformeComponent implements OnChanges {
           control_tecnologico:  this.informe.control_tecnologico || '',
           fecha_implementacion: this.informe.fecha_implementacion || '',
         });
+        
+        if (this.editorInstance) {
+          this.editorInstance.setContent(this.informe.descripcion_hallazgo || '');
+        }
       } else {
         this.form.reset({
           titulo: '', descripcion_hallazgo: '', tipo: 'Incidente', 
@@ -80,7 +87,70 @@ export class ModalInformeComponent implements OnChanges {
           accion_correctiva: '', accion_preventiva: '', control_tecnologico: '',
           fecha_implementacion: ''
         });
+        
+        if (this.editorInstance) {
+          this.editorInstance.setContent('');
+        }
       }
+
+      // Inicializa TinyMCE después de que el elemento textarea se dibuje en el DOM
+      setTimeout(() => {
+        this.initTinyMCE();
+      }, 100);
+
+    } else if (changes['show'] && !changes['show'].currentValue) {
+      this.destroyTinyMCE();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroyTinyMCE();
+  }
+
+  private initTinyMCE(): void {
+    if ((window as any).tinymce) {
+      this.setupTinyMCE();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/5.10.9/tinymce.min.js';
+      script.onload = () => {
+        this.setupTinyMCE();
+      };
+      document.head.appendChild(script);
+    }
+  }
+
+  private setupTinyMCE(): void {
+    this.destroyTinyMCE();
+
+    (window as any).tinymce.init({
+      selector: '#descripcion-hallazgo-editor',
+      plugins: 'table code lists link wordcount',
+      toolbar: 'undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tabledelete | tableprops tablerowprops tablecellprops | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol | code removeformat',
+      height: 400,
+      menubar: 'table edit insert view format tools',
+      branding: false,
+      setup: (editor: any) => {
+        this.editorInstance = editor;
+        
+        editor.on('init', () => {
+          editor.setContent(this.form.get('descripcion_hallazgo')?.value || '');
+        });
+
+        editor.on('change keyup undo redo', () => {
+          const content = editor.getContent();
+          this.form.get('descripcion_hallazgo')?.setValue(content);
+          this.form.get('descripcion_hallazgo')?.markAsDirty();
+          this.form.get('descripcion_hallazgo')?.markAsTouched();
+        });
+      }
+    });
+  }
+
+  private destroyTinyMCE(): void {
+    if (this.editorInstance) {
+      (window as any).tinymce?.remove(this.editorInstance);
+      this.editorInstance = null;
     }
   }
 

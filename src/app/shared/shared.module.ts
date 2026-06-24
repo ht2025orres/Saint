@@ -11,6 +11,7 @@ import { SharedPaginatorComponent } from '../shared/pagination/shared-paginator/
 import { LoadingComponent } from './loading/loading.component';
 import { PaginationService } from './pagination/pagination.service';
 import { LoadingButtonDirective } from './loading/loading-button.directive';
+import { SafePipe } from './pipes/safe.pipe';
 
 
 @NgModule({
@@ -23,6 +24,7 @@ import { LoadingButtonDirective } from './loading/loading-button.directive';
         AutoExpandDirective,
         SharedPaginatorComponent,
         LoadingButtonDirective,
+        SafePipe,
     ],
     exports: [
         FooterComponent,
@@ -33,6 +35,7 @@ import { LoadingButtonDirective } from './loading/loading-button.directive';
         AutoExpandDirective,
         SharedPaginatorComponent,
         LoadingButtonDirective,
+        SafePipe,
     ],
     imports: [
         CommonModule,

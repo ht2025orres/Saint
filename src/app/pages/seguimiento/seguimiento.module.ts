@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SeguimientoRoutingModule } from './seguimiento-routing.module';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { AngularEditorModule } from '@kolkov/angular-editor';
  
 // Componente principal
 import { SeguimientoComponent } from './seguimiento/seguimiento.component';
@@ -75,7 +76,8 @@ import { ModalPlantillaProyectoComponent } from './modals/modal-plantilla-proyec
     FormsModule,
     ReactiveFormsModule,
     SeguimientoRoutingModule,
-    SharedModule
+    SharedModule,
+    AngularEditorModule
     // SharedPaginatorModule,   // descomenta si tienes el módulo del paginador
   ],
   exports: [

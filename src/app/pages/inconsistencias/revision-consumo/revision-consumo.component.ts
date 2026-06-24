@@ -1,9 +1,9 @@
 import { PaginationService, FilterFunction } from '../../../shared/pagination/pagination.service';
 import { InconsistenciaService } from 'src/app/services/inconsistencia.service';
-import { Component, OnInit, TemplateRef, ViewChild, OnDestroy } from '@angular/core';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AuthService } from '../../../services/auth.service';
 import { Subscription, tap, switchMap, finalize } from 'rxjs';
+import { getDetallesHtml, generarTiemposHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -28,14 +28,9 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
   };
 
   private subscription = new Subscription();
-  modalRef?: BsModalRef;
-  detallesSeleccionados: any[] = [];
-
-  @ViewChild('modalDetalles') modalDetalles!: TemplateRef<any>;
 
   constructor(
     private inconsistenciasService: InconsistenciaService,
-    private modalService: BsModalService,
     public authService: AuthService,
     public paginationService: PaginationService
   ) { }
@@ -46,9 +41,6 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
-    if (this.modalRef) {
-      this.modalRef.hide();
-    }
   }
 
   private inicializarComponente(): void {
@@ -69,7 +61,6 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
         this.tipos = json || {};
       })
       .catch(error => {
-        console.error('Error cargando tipos:', error);
         this.tipos = {};
         Swal.fire('Error', 'No se pudo cargar la configuración de tipos', 'warning');
       })
@@ -115,7 +106,6 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
             }
           },
           error: (error) => {
-            console.error('Error cargando datos:', error);
             this.inconsistencias = [];
             this.currentData = [];
             Swal.fire('Error', 'No se pudieron cargar las inconsistencias', 'error');
@@ -216,37 +206,70 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.detallesSeleccionados = [
-      { label: 'Estado Consumo', value: item.estado_consumo || 'N/A' },
-      { label: 'Fecha de Registro', value: item.fecha_inconsistencia || 'N/A' },
-      { label: 'ID Inconsistencia', value: item.id_inconsistencia || 'N/A' },
-      { label: 'Cliente', value: item.Cliente || 'N/A' },
-      { label: 'Departamento', value: item.nombre_departamento || 'N/A' },
-      { label: 'Solicitante', value: `${item.nombre_solicitante ?? ''} ${item.apellido_solicitante ?? ''}`.trim() || 'N/A' },
-      { label: 'Jefe Inmediato', value: `${item.nombre_jefe ?? ''} ${item.apellido_jefe ?? ''}`.trim() || 'N/A' },
-      { label: 'Tipo de Inconsistencia', value: this.tipos[item.tipo_inconsistencia] || item.tipo_inconsistencia || 'N/A' },
-      { label: 'Cantidad Solicitada', value: item.cantidad_solicitada_op || 'N/A' },
-      { label: 'Cantidad Inconsistencia', value: item.cantidad_inconsistencia || 'N/A' },
-      { label: 'Item', value: item.item || 'N/A' },
-      { label: 'Tipo de Orden', value: item.tipo_de_orden || 'N/A' },
-      { label: 'Precio Unitario', value: item.precio_unitario || 'N/A' },
-      { label: 'Precio Total', value: item.precio_total_inconsistencia || 'N/A' },
-      { label: 'Descripción', value: item.descripcion_inconsistencia || 'N/A' },
-      { label: 'Etapa', value: item.etapa || 'N/A' },
-      { label: 'Acción Inconsistencia', value: item.accion_inconsistencia || 'N/A' },
-      { label: 'Estado', value: item.estado_inconsistencia || 'N/A' },
-      { label: 'Aprobó logística', value: item.nombre_aprovado_por_logistica || 'Sin aprobación' },
-    ];
-
-    try {
-      this.modalRef = this.modalService.show(this.modalDetalles, {
-        backdrop: 'static',
-        keyboard: false
-      });
-    } catch (error) {
-      console.error('Error abriendo modal:', error);
-      Swal.fire('Error', 'No se pudo abrir el modal de detalles', 'error');
+    // Obtener URLs de evidencias
+    let archivos: string[] = [];
+    if (Array.isArray(item.evidencias_urls) && item.evidencias_urls.length > 0) {
+      archivos = item.evidencias_urls;
+    } else if (Array.isArray(item.evidencias) && item.evidencias.length > 0) {
+      archivos = item.evidencias;
     }
+
+    // Abrir ventana nativa (pop-up) de inmediato para evitar bloqueos del navegador
+    const win = window.open('', '_blank', 'width=900,height=750,scrollbars=yes,resizable=yes');
+    if (win) {
+      win.document.write('<p style="font-family:sans-serif;text-align:center;padding:20px;">Cargando detalles...</p>');
+    }
+
+    // Obtener los tiempos del proceso
+    this.inconsistenciasService.obtenerTiemposProceso(item.id_inconsistencia || item.id).subscribe({
+      next: (res: any) => {
+        const traducirEtapa = (etapa: string) => {
+          if (!etapa) return 'Sin etapa';
+          const etapaStr = String(etapa).toLowerCase();
+          const etapas: { [key: string]: string } = {
+            'terminada': 'Terminada',
+            'espera': 'En Espera',
+            'lider': 'Líder',
+            'contabilidad': 'Contabilidad',
+            'calidad': 'Calidad',
+            'logistica': 'Logística',
+            'cartera': 'Cartera',
+            'patronaje': 'Patronaje',
+            'trazo': 'Trazo'
+          };
+          return etapas[etapaStr] || etapaStr.charAt(0).toUpperCase() + etapaStr.slice(1);
+        };
+
+        const tiemposHtml = generarTiemposHtml(res, traducirEtapa);
+        const evidenciasHtml = generarEvidenciasHtml(archivos);
+
+        const htmlContent = getDetallesHtml(
+          item,
+          tiemposHtml,
+          evidenciasHtml,
+          '', // Sin botones adicionales
+          this.tipos || {},
+          traducirEtapa,
+          {
+            mostrarSeccionAnulacion: false,
+            mostrarFooter: true,
+            mostrarInfoEconomica: true,
+            mostrarBotonesAccion: false
+          }
+        );
+
+        if (win) {
+          win.document.open();
+          win.document.write(htmlContent);
+          win.document.close();
+        }
+      },
+      error: (err) => {
+        if (win) {
+          win.document.body.innerHTML = '<p style="color:red; text-align:center; padding:20px;">Error al cargar los tiempos de proceso.</p>';
+        }
+      }
+    });
   }
 
   puedeConsumir(item: any): boolean {
@@ -462,7 +485,6 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
             this.cargarDatos();
           },
           error: (error) => {
-            console.error('Error procesando consumo:', error);
             const mensaje = error?.error?.message || 'No se pudo procesar el consumo';
             Swal.fire({
               title: 'Error',

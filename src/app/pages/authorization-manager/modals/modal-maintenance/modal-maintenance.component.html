@@ -1,43 +1,61 @@
-<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-  <div (click)="$event.stopPropagation()" class="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col border border-slate-100 overflow-hidden">
+<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
+  <div (click)="$event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
     
     <!-- HEADER -->
-    <div class="px-4 py-3 bg-amber-500 flex justify-between items-center shrink-0">
-      <div class="flex items-center">
-        <i class="bi bi-cone-striped mr-2 text-lg text-white"></i>
-        <h2 class="text-base font-black uppercase tracking-widest text-white">Modo Mantenimiento</h2>
+    <div class="px-6 py-4 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 flex justify-between items-center shrink-0 border-b border-orange-700/35">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-white/10 rounded-xl border border-white/20">
+          <i class="bi bi-cone-striped text-xl text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-sm font-black uppercase tracking-widest text-white">Modo Mantenimiento</h2>
+          <p class="text-[11px] text-orange-100 font-medium">Control de acceso general y despliegue del sistema</p>
+        </div>
       </div>
-      <button (click)="cerrar()" class="text-white/70 hover:text-white transition-colors">
-        <i class="bi bi-x-lg"></i>
+      <button (click)="cerrar()" class="text-orange-100 hover:text-white hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-all duration-200">
+        <i class="bi bi-x-lg text-sm"></i>
       </button>
     </div>
 
     <!-- BODY -->
-    <div class="p-5 bg-slate-50 flex-1 overflow-y-auto">
+    <div class="p-6 bg-slate-50 flex-1 overflow-y-auto custom-scrollbar">
       
       <!-- ALERTA ACTIVA -->
       <div *ngIf="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active" 
-           class="bg-amber-50 border border-amber-200 p-4 rounded-lg shadow-sm mb-5">
-        <h5 class="text-amber-600 font-bold text-sm uppercase tracking-wide flex items-center mb-1">
-          <i class="bi bi-exclamation-triangle-fill mr-2"></i> MANTENIMIENTO ACTUALMENTE ACTIVO
-        </h5>
-        <p class="text-amber-800 text-xs mb-1">El sistema no permite el ingreso a usuarios estándar. Sólo administradores tienen acceso.</p>
-        <p class="text-amber-800 text-[10px] font-bold">Iniciado: {{ maintenanceHistory[0]?.start_time | date:'medium' }}</p>
+           class="bg-rose-50 border border-rose-200 p-5 rounded-xl shadow-sm mb-5 flex gap-3.5 items-start">
+        <div class="p-2.5 bg-rose-500/10 rounded-xl border border-rose-500/20 text-rose-600 shrink-0">
+          <i class="bi bi-exclamation-triangle-fill text-lg"></i>
+        </div>
+        <div>
+          <h5 class="text-rose-700 font-bold text-xs uppercase tracking-wider flex items-center gap-2 mb-1">
+            Mantenimiento actualmente activo
+          </h5>
+          <p class="text-rose-800 text-[11px] font-medium mb-2 leading-relaxed">
+            El sistema se encuentra restringido. Los usuarios estándar no pueden iniciar sesión ni realizar operaciones. Únicamente los administradores tienen acceso permitido.
+          </p>
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-rose-900/80 font-bold">
+            <span><i class="bi bi-calendar-event mr-1 text-rose-500"></i> Iniciado: {{ maintenanceHistory[0]?.start_time | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span *ngIf="maintenanceHistory[0]?.estimated_duration_minutes"><i class="bi bi-hourglass-split mr-1 text-rose-500"></i> Estimado: {{ maintenanceHistory[0]?.estimated_duration_minutes }} minutos</span>
+          </div>
+        </div>
       </div>
 
       <!-- CONTROLES -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-        <div class="md:col-span-2">
-           <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo del mantenimiento</label>
-           <input type="text" [(ngModel)]="maintenanceReason" placeholder="Ej: Actualización de base de datos..." 
-                  [disabled]="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
-                  class="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs outline-none focus:border-amber-400 disabled:opacity-50">
-        </div>
-        <div>
-           <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Duración Est. (min)</label>
-           <input type="number" [(ngModel)]="maintenanceDuration" 
-                  [disabled]="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
-                  class="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs outline-none focus:border-amber-400 disabled:opacity-50">
+      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm mb-5">
+        <h6 class="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Programar mantenimiento</h6>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2">
+             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Motivo del mantenimiento</label>
+             <input type="text" [(ngModel)]="maintenanceReason" placeholder="Ej: Actualización de base de datos..." 
+                    [disabled]="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all duration-200 disabled:opacity-50">
+          </div>
+          <div>
+             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Duración Est. (min)</label>
+             <input type="number" [(ngModel)]="maintenanceDuration" 
+                    [disabled]="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all duration-200 disabled:opacity-50">
+          </div>
         </div>
       </div>
 
@@ -45,49 +63,48 @@
       <div class="flex gap-3 mb-6">
         <button *ngIf="!(maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active)"
                 (click)="startMaintenance()" 
-                class="flex-1 py-2.5 bg-red-500 text-white rounded-md text-xs font-bold uppercase tracking-widest hover:bg-red-600 transition-colors shadow-sm flex items-center justify-center">
-          <i class="bi bi-power mr-2"></i> Activar Mantenimiento
+                class="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-rose-600 hover:to-red-700 transition-all duration-200 shadow-sm shadow-red-500/10 flex items-center justify-center gap-2">
+          <i class="bi bi-power text-sm"></i> Activar Mantenimiento
         </button>
         <button *ngIf="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
                 (click)="stopMaintenance()" 
-                class="flex-1 py-2.5 bg-emerald-500 text-white rounded-md text-xs font-bold uppercase tracking-widest hover:bg-emerald-600 transition-colors shadow-sm flex items-center justify-center">
-          <i class="bi bi-play-fill mr-2"></i> Restablecer Sistema
+                class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-sm shadow-emerald-500/10 flex items-center justify-center gap-2">
+          <i class="bi bi-play-fill text-sm"></i> Restablecer Sistema (Online)
         </button>
       </div>
 
-      <hr class="border-slate-200 mb-5">
-
       <!-- HISTORIAL -->
-      <h6 class="text-[13px] font-black text-slate-900 uppercase tracking-wide flex items-center mb-3">
-        <i class="bi bi-clock-history mr-2"></i> Historial de Mantenimientos
-      </h6>
+      <div class="flex items-center gap-2 mb-3">
+        <i class="bi bi-clock-history text-indigo-600 text-sm"></i>
+        <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Historial de Mantenimientos</h6>
+      </div>
       
-      <div class="border border-slate-200 rounded-lg overflow-hidden bg-white max-h-60 overflow-y-auto custom-scrollbar">
+      <div class="border border-slate-200 rounded-xl overflow-hidden bg-white max-h-60 overflow-y-auto custom-scrollbar shadow-sm">
         <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-50 sticky top-0 z-10">
-            <tr class="border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              <th class="p-2.5">Estado</th>
-              <th class="p-2.5">Motivo</th>
-              <th class="p-2.5">Inició</th>
-              <th class="p-2.5">Identificador Admin</th>
-              <th class="p-2.5 text-right">Duración Est.</th>
+          <thead class="bg-slate-50 sticky top-0 z-10 border-b border-slate-200">
+            <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <th class="p-3">Estado</th>
+              <th class="p-3">Motivo</th>
+              <th class="p-3">Fecha Inicio</th>
+              <th class="p-3">Administrador</th>
+              <th class="p-3 text-right">Duración Est.</th>
             </tr>
           </thead>
-          <tbody class="text-xs text-slate-700">
-            <tr *ngFor="let m of maintenanceHistory" class="border-b border-slate-100 hover:bg-slate-50">
-              <td class="p-2.5">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                      [ngClass]="m.is_active ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'">
+          <tbody class="text-xs text-slate-700 divide-y divide-slate-100">
+            <tr *ngFor="let m of maintenanceHistory" class="hover:bg-slate-50/50 transition-colors">
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider inline-block"
+                      [ngClass]="m.is_active ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'">
                   {{ m.is_active ? 'Activo' : 'Finalizado' }}
                 </span>
               </td>
-              <td class="p-2.5">{{ m.reason || 'Sin especificar' }}</td>
-              <td class="p-2.5 text-[10px] font-medium text-slate-500">{{ m.start_time | date:'short' }}</td>
-              <td class="p-2.5 text-slate-500">ID: {{ m.admin_id }}</td>
-              <td class="p-2.5 text-right font-medium">{{ m.estimated_duration_minutes }} min</td>
+              <td class="p-3 font-semibold text-slate-700">{{ m.reason || 'Sin especificar' }}</td>
+              <td class="p-3 text-[10px] font-medium text-slate-500">{{ m.start_time | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="p-3 text-slate-500 font-medium">ID Admin: {{ m.admin_id }}</td>
+              <td class="p-3 text-right font-bold text-slate-600">{{ m.estimated_duration_minutes ? m.estimated_duration_minutes + ' min' : 'N/A' }}</td>
             </tr>
             <tr *ngIf="maintenanceHistory.length === 0">
-              <td colspan="5" class="text-center py-6 text-slate-400 text-xs">
+              <td colspan="5" class="text-center py-8 text-slate-400 text-xs font-semibold">
                 No existen registros en el historial.
               </td>
             </tr>
@@ -98,3 +115,4 @@
     </div>
   </div>
 </div>
+

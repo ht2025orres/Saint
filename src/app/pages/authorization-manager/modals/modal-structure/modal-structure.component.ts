@@ -19,7 +19,9 @@ export class ModalStructureComponent {
   visible = false;
   activeStructureTab: 'modules' | 'profiles' | 'permissions' = 'modules';
   structureSearch = '';
-  selectedModuleFilter: string | number = 'all';
+  isModuleDropdownOpen = false;
+  moduleSearchTerm = '';
+  selectedModuleIds: number[] = [];
 
   editingModule: any = null;
   editingPerfil: any = null;
@@ -34,7 +36,9 @@ export class ModalStructureComponent {
   abrir() {
     this.activeStructureTab = 'modules';
     this.structureSearch = '';
-    this.selectedModuleFilter = 'all';
+    this.selectedModuleIds = Array.isArray(this.modules) ? this.modules.map(m => m.id) : [];
+    this.isModuleDropdownOpen = false;
+    this.moduleSearchTerm = '';
     this.visible = true;
   }
 
@@ -66,11 +70,63 @@ export class ModalStructureComponent {
     );
   }
 
+  toggleModuleDropdown() {
+    this.isModuleDropdownOpen = !this.isModuleDropdownOpen;
+  }
+
+  isModuleSelected(moduleId: number): boolean {
+    return this.selectedModuleIds.includes(moduleId);
+  }
+
+  toggleModuleSelection(moduleId: number) {
+    const idx = this.selectedModuleIds.indexOf(moduleId);
+    if (idx > -1) {
+      this.selectedModuleIds.splice(idx, 1);
+    } else {
+      this.selectedModuleIds.push(moduleId);
+    }
+  }
+
+  isAllModulesSelected(): boolean {
+    return this.selectedModuleIds.length === this.modules.length;
+  }
+
+  toggleSelectAllModules() {
+    if (this.isAllModulesSelected()) {
+      this.selectedModuleIds = [];
+    } else {
+      this.selectedModuleIds = this.modules.map(m => m.id);
+    }
+  }
+
+  getFilteredModulesForDropdown(): any[] {
+    const term = this.moduleSearchTerm.trim().toLowerCase();
+    if (!term) return this.modules;
+    return this.modules.filter(m => m.name?.toLowerCase().includes(term));
+  }
+
+  getSelectedModulesText(): string {
+    if (!this.selectedModuleIds || this.selectedModuleIds.length === 0) {
+      return 'Ningún módulo';
+    }
+    if (this.selectedModuleIds.length === this.modules.length) {
+      return 'Todos los módulos';
+    }
+    if (this.selectedModuleIds.length === 1) {
+      const found = this.modules.find(m => m.id === this.selectedModuleIds[0]);
+      return found ? found.name : '1 módulo';
+    }
+    return `${this.selectedModuleIds.length} módulos`;
+  }
+
+  getPermissionsCountByModule(moduleId: number): number {
+    return this.permissions.filter(p => p.module_id === moduleId).length;
+  }
+
   getFilteredPermissions(): any[] {
     let list = this.permissions;
-    if (this.selectedModuleFilter !== 'all') {
-      list = list.filter(p => p.module_id === this.selectedModuleFilter);
-    }
+    const selectedIds = this.selectedModuleIds || [];
+    list = list.filter(p => selectedIds.includes(p.module_id));
     const term = this.structureSearch.trim().toLowerCase();
     if (term) {
       list = list.filter(p => p.name?.toLowerCase().includes(term));
@@ -102,12 +158,16 @@ export class ModalStructureComponent {
   // --- PROFILES ---
   openCreatePerfil() {
     this.editingPerfil = { name: '', description: '' };
-    this.selectedModuleFilter = 'all';
+    this.selectedModuleIds = Array.isArray(this.modules) ? this.modules.map(m => m.id) : [];
+    this.isModuleDropdownOpen = false;
+    this.moduleSearchTerm = '';
   }
   openEditPerfil(p: any) {
     const perfilPermissions = p.perfilPermissions || p.perfil_permissions || [];
     this.editingPerfil = { ...p, perfilPermissions };
-    this.selectedModuleFilter = 'all';
+    this.selectedModuleIds = Array.isArray(this.modules) ? this.modules.map(m => m.id) : [];
+    this.isModuleDropdownOpen = false;
+    this.moduleSearchTerm = '';
   }
   cancelEditPerfil() { this.editingPerfil = null; }
   savePerfil() {

@@ -28,7 +28,9 @@ export class ModalManageUserComponent {
   userPasswordConfirm = '';
   isEditingSelf: boolean = false;
   userProfiles: any[] = [];
-  selectedModuleFilter: string | number = 'all';
+  isModuleDropdownOpen = false;
+  moduleSearchTerm = '';
+  selectedModuleIds: number[] = [];
   permSearchTerm = '';
   pendingPermissions = new Map<number, 'ALLOW' | 'DENY' | 'REMOVE'>();
   effectivePermissions: { direct: any[]; inherited: any[] } | null = null;
@@ -58,7 +60,9 @@ export class ModalManageUserComponent {
     
     this.userPassword = '';
     this.userPasswordConfirm = '';
-    this.selectedModuleFilter = 'all';
+    this.selectedModuleIds = Array.isArray(this.modules) ? this.modules.map(m => m.id) : [];
+    this.isModuleDropdownOpen = false;
+    this.moduleSearchTerm = '';
     this.permSearchTerm = '';
     this.pendingPermissions = new Map();
     this.visible = true;
@@ -195,6 +199,55 @@ export class ModalManageUserComponent {
     }
   }
 
+  toggleModuleDropdown() {
+    this.isModuleDropdownOpen = !this.isModuleDropdownOpen;
+  }
+
+  isModuleSelected(moduleId: number): boolean {
+    return this.selectedModuleIds.includes(moduleId);
+  }
+
+  toggleModuleSelection(moduleId: number) {
+    const idx = this.selectedModuleIds.indexOf(moduleId);
+    if (idx > -1) {
+      this.selectedModuleIds.splice(idx, 1);
+    } else {
+      this.selectedModuleIds.push(moduleId);
+    }
+  }
+
+  isAllModulesSelected(): boolean {
+    return this.selectedModuleIds.length === this.modules.length;
+  }
+
+  toggleSelectAllModules() {
+    if (this.isAllModulesSelected()) {
+      this.selectedModuleIds = [];
+    } else {
+      this.selectedModuleIds = this.modules.map(m => m.id);
+    }
+  }
+
+  getFilteredModulesForDropdown(): any[] {
+    const term = this.moduleSearchTerm.trim().toLowerCase();
+    if (!term) return this.modules;
+    return this.modules.filter(m => m.name?.toLowerCase().includes(term));
+  }
+
+  getSelectedModulesText(): string {
+    if (!this.selectedModuleIds || this.selectedModuleIds.length === 0) {
+      return 'Ningún módulo';
+    }
+    if (this.selectedModuleIds.length === this.modules.length) {
+      return 'Todos los módulos';
+    }
+    if (this.selectedModuleIds.length === 1) {
+      const found = this.modules.find(m => m.id === this.selectedModuleIds[0]);
+      return found ? found.name : '1 módulo';
+    }
+    return `${this.selectedModuleIds.length} módulos`;
+  }
+
   getPermissionStatus(permissionId: number): string | null {
     if (this.pendingPermissions.has(permissionId)) {
       const pending = this.pendingPermissions.get(permissionId)!;
@@ -222,10 +275,8 @@ export class ModalManageUserComponent {
 
   getFilteredPermissions(): any[] {
     let list = this.permissions;
-
-    if (this.selectedModuleFilter !== 'all') {
-      list = list.filter(p => p.module_id === this.selectedModuleFilter);
-    }
+    const selectedIds = this.selectedModuleIds || [];
+    list = list.filter(p => selectedIds.includes(p.module_id));
 
     const term = this.permSearchTerm?.trim().toLowerCase();
 

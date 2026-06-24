@@ -1,0 +1,285 @@
+<div class="row page-titles">
+  <div class="col-md-5 align-self-center">
+    <h3 class="text-themecolor">Registro de Correos</h3>
+  </div>
+  <div class="col-md-7 align-self-center">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="javascript:void(0)">Inicio</a></li>
+      <li class="breadcrumb-item">Administración</li>
+      <li class="breadcrumb-item active">Registro de Correos</li>
+    </ol>
+  </div>
+</div>
+
+<div class="container-fluid">
+  
+  <!-- Cards de Estadísticas -->
+  <div class="row">
+    <!-- Card Total -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex flex-row">
+            <div class="round round-lg align-self-center round-info">
+              <i class="fa fa-envelope"></i>
+            </div>
+            <div class="m-l-10 align-self-center">
+              <h3 class="m-b-0 font-light">{{ stats.total }}</h3>
+              <h5 class="text-muted m-b-0">Total Generados</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Enviados -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex flex-row">
+            <div class="round round-lg align-self-center round-success" style="background-color: #28a745;">
+              <i class="fa fa-check"></i>
+            </div>
+            <div class="m-l-10 align-self-center">
+              <h3 class="m-b-0 font-light text-success">{{ stats.sent }}</h3>
+              <h5 class="text-muted m-b-0">Enviados</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Fallidos -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex flex-row">
+            <div class="round round-lg align-self-center round-danger" style="background-color: #dc3545;">
+              <i class="fa fa-times"></i>
+            </div>
+            <div class="m-l-10 align-self-center">
+              <h3 class="m-b-0 font-light text-danger">{{ stats.failed }}</h3>
+              <h5 class="text-muted m-b-0">Fallidos</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card En Cola -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex flex-row">
+            <div class="round round-lg align-self-center round-warning" style="background-color: #ffc107;">
+              <i class="fa fa-clock-o"></i>
+            </div>
+            <div class="m-l-10 align-self-center">
+              <h3 class="m-b-0 font-light text-warning">{{ stats.queued }}</h3>
+              <h5 class="text-muted m-b-0">En Cola</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros de Búsqueda -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h4 class="card-title font-weight-bold" style="color: #002A3F;">Filtros de Búsqueda</h4>
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Destinatario</label>
+                <input type="text" class="form-control" [(ngModel)]="filters.to_email" placeholder="ejemplo@correo.com" (keyup.enter)="applyFilters()">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Asunto</label>
+                <input type="text" class="form-control" [(ngModel)]="filters.subject" placeholder="Asunto del correo" (keyup.enter)="applyFilters()">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Estado</label>
+                <select class="form-control" [(ngModel)]="filters.status" (change)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option value="sent">Enviado</option>
+                  <option value="failed">Fallido</option>
+                  <option value="queued">En Cola</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Desde</label>
+                <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="applyFilters()">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Hasta</label>
+                <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="applyFilters()">
+              </div>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-12 text-right">
+              <button class="btn btn-secondary m-r-10" (click)="limpiarFiltros()">Limpiar</button>
+              <button class="btn btn-themecolor" (click)="applyFilters()">Buscar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Logs -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex no-block align-items-center">
+            <h4 class="card-title font-weight-bold" style="color: #002A3F;">Historial de Correos</h4>
+            <div class="ml-auto" *ngIf="isLoading">
+              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            </div>
+          </div>
+
+          <div class="table-responsive m-t-20">
+            <table class="table table-hover table-striped table-bordered text-center vertical-align-middle">
+              <thead style="background-color: #002A3F; color: white;">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Destinatario</th>
+                  <th>Asunto</th>
+                  <th>Estado</th>
+                  <th>Intentos</th>
+                  <th>F. Envío</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="currentLogs.length === 0">
+                  <td colspan="7" class="text-muted text-center py-4">No se encontraron registros de correos</td>
+                </tr>
+                <tr *ngFor="let log of currentLogs">
+                  <td>{{ log.created_at | date:'short' }}</td>
+                  <td class="text-left font-weight-medium">{{ log.to_email }}</td>
+                  <td class="text-left">{{ log.subject }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'badge-success': log.status === 'sent',
+                      'badge-danger': log.status === 'failed',
+                      'badge-warning': log.status === 'queued'
+                    }" style="font-size: 0.85rem; padding: 5px 10px;">
+                      {{ log.status === 'sent' ? 'Enviado' : log.status === 'failed' ? 'Fallido' : 'En Cola' }}
+                    </span>
+                  </td>
+                  <td>{{ log.attempts }}</td>
+                  <td>{{ log.sent_at ? (log.sent_at | date:'short') : '-' }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-info m-r-5" (click)="verDetalle(log)" title="Ver Detalle">
+                      <i class="fa fa-eye"></i> Detalle
+                    </button>
+                    <button *ngIf="log.status === 'failed' || log.status === 'queued'" 
+                            class="btn btn-sm btn-outline-warning" 
+                            (click)="reintentarEnvio(log)" 
+                            title="Reintentar Envío">
+                      <i class="fa fa-refresh"></i> Reintentar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginador -->
+          <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalLogs > 0">
+            <span class="text-muted" style="font-size: 0.9rem;">
+              Mostrando registros del <strong>{{ getStartIndex() }}</strong> al <strong>{{ getEndIndex() }}</strong> de un total de <strong>{{ totalLogs }}</strong>
+            </span>
+            <app-shared-paginator [instanceId]="paginatorId"></app-shared-paginator>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Detalle del Correo -->
+<div class="modal fade show" tabindex="-1" role="dialog" style="display: block; background: rgba(0,0,0,0.5);" *ngIf="showDetailModal">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header" style="background-color: #002A3F; color: white;">
+        <h5 class="modal-title font-weight-bold">Detalle del Registro de Correo</h5>
+        <button type="button" class="close text-white" (click)="cerrarModal()" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="selectedLog">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <strong>Destinatario:</strong>
+            <p class="text-muted">{{ selectedLog.to_email }}</p>
+          </div>
+          <div class="col-md-6">
+            <strong>Asunto:</strong>
+            <p class="text-muted">{{ selectedLog.subject }}</p>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <strong>Estado:</strong>
+            <p>
+              <span class="badge" [ngClass]="{
+                'badge-success': selectedLog.status === 'sent',
+                'badge-danger': selectedLog.status === 'failed',
+                'badge-warning': selectedLog.status === 'queued'
+              }">
+                {{ selectedLog.status === 'sent' ? 'Enviado' : selectedLog.status === 'failed' ? 'Fallido' : 'En Cola' }}
+              </span>
+            </p>
+          </div>
+          <div class="col-md-4">
+            <strong>Intentos Realizados:</strong>
+            <p class="text-muted">{{ selectedLog.attempts }}</p>
+          </div>
+          <div class="col-md-4">
+            <strong>Vista Blade Utilizada:</strong>
+            <p class="text-muted"><code>{{ selectedLog.template_view }}</code></p>
+          </div>
+        </div>
+        
+        <div class="row mb-3" *ngIf="selectedLog.error_message">
+          <div class="col-12">
+            <strong class="text-danger">Mensaje de Error:</strong>
+            <div class="alert alert-danger bg-light-danger border-danger text-danger mt-1 font-weight-medium">
+              {{ selectedLog.error_message }}
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12">
+            <strong>Contexto de Envío (Datos JSON):</strong>
+            <pre class="bg-light p-3 border rounded text-dark mt-1" style="max-height: 250px; overflow-y: auto; font-size: 0.85rem;"><code>{{ formatContext(selectedLog.context) }}</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cerrar</button>
+        <button type="button" *ngIf="selectedLog && (selectedLog.status === 'failed' || selectedLog.status === 'queued')" 
+                class="btn btn-warning" (click)="reintentarEnvio(selectedLog); cerrarModal()">
+          <i class="fa fa-refresh"></i> Reintentar Envío
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

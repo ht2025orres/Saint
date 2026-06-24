@@ -15,6 +15,7 @@ export class InconsistenciaService {
 
     private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
     private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
+    public sdpProxyUrl = `${environment.URL_API_LARAVEL}/sdp-files/stream?path=`;
 
     constructor(
         private http: HttpClient
@@ -23,29 +24,6 @@ export class InconsistenciaService {
 
 
 
-
-    info(correo: string): Observable<{ info: Array<string> }> {
-        const formData = new FormData();
-        formData.append('correo_usuario', correo);
-        formData.append('action', 'info');
-
-        return this.http.post<{ info: Array<string> }>(
-            `${this.baseUrl}/app/controller/InconsistenciasController.php`,
-            formData
-        );
-    }
-
-
-
-
-    listarInconsistenciasPorRol(roles: Role[], id_Sdp: string): Observable<any[]> {
-        const formData = new FormData();
-        formData.append('action', 'listar_por_estado');
-        formData.append('roles', JSON.stringify(roles));
-        formData.append('id_usuario', id_Sdp);
-        // formData.append('id_usuario', '');
-        return this.http.post<any[]>(`${this.baseUrl}/app/controller/InconsistenciasController.php`, formData);
-    }
 
 
 
@@ -95,8 +73,12 @@ export class InconsistenciaService {
     //rutas - ver mis inconsistencia//
 
 
-    listarPorUsuario(idUsuario: number): Observable<any[]> {
-        return this.http.get<{ success: boolean, data: any[] }>(`${this.baseUrlCpanel}/usuario/${idUsuario}`)
+    listarPorUsuario(idUsuario: number, desde?: string, hasta?: string): Observable<any[]> {
+        let params = new HttpParams();
+        if (desde) params = params.set('desde', desde);
+        if (hasta) params = params.set('hasta', hasta);
+
+        return this.http.get<{ success: boolean, data: any[] }>(`${this.baseUrlCpanel}/usuario/${idUsuario}`, { params })
             .pipe(
                 map(response => response.data || [])
             );
@@ -110,45 +92,44 @@ export class InconsistenciaService {
         });
     }
 
-    listarInconsistenciasPorDepartamento(rol: string) {
-        // ✅ Solo enviar el rol como query param
-        const params = new HttpParams().set('rol', rol);
-
+    listarInconsistenciasPorDepartamento(rol?: string) {
+        let params = new HttpParams();
+        if (rol) {
+            params = params.set('rol', rol);
+        }
         return this.http.get(`${this.baseUrlCpanel}/listar_inconsistencias_departamento`, { params });
     }
 
 
 
-    aprobarInconsistencia(id_inconsistencia: string, id_Sdp: number, tipo_inconsistencia: string, accionTomar?: string | null): Observable<any> {
-        const body = {
+    aprobarInconsistencia(id_inconsistencia: string, motivo: string = '', estado_orden: string | null = null): Observable<any> {
+        const body: any = {
             id_inconsistencia,
-            id_Sdp,
-            tipo_inconsistencia,
             accion: 'aprobar',
-            accion_tomar: accionTomar  // ✅ Cambiado a snake_case
+            motivo: motivo
         };
+        if (estado_orden) {
+            body.estado_orden = estado_orden;
+        }
         return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
     }
 
-    denegarInconsistencia(id_inconsistencia: number, id_Sdp: number, motivo: string): Observable<any> {
+    denegarInconsistencia(id_inconsistencia: number, motivo: string): Observable<any> {
         const body = {
             id_inconsistencia,
-            id_Sdp,
             accion: 'denegar',
             motivo
         };
         return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
     }
 
-  // En inconsistencia.service.ts
-ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Observable<any> {
-  return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, {
-    id_inconsistencia,
-    id_Sdp: id_usuario,
-    accion: 'en_espera',
-    motivo
-  });
-}
+    ponerEnEspera(id_inconsistencia: number, motivo: string): Observable<any> {
+        return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, {
+            id_inconsistencia,
+            accion: 'en_espera',
+            motivo
+        });
+    }
 
 
     //Historico inconsistencias //
@@ -166,6 +147,16 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
         return this.http.get(`${this.baseUrlCpanel}/historico`, { params });
     }
 
+    /**
+     * Historico del líder (inconsistencias ya aprobadas/rechazadas)
+     */
+    listarHistoricoLider(mes: number, year?: number): Observable<any> {
+        const params = new HttpParams()
+            .set('mes', mes.toString())
+            .set('year', (year || new Date().getFullYear()).toString());
+        return this.http.get(`${this.baseUrlCpanel}/historico-lider`, { params });
+    }
+
 
     /**
      * Obtiene los tiempos de proceso de una inconsistencia específica
@@ -179,7 +170,8 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
     //CONSUMIR INCONSISTENCIAS//
 
     obtenerInconsistenciasListasParaConsumir(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrlCpanel}/listas-consumo`);
+        return this.http.get<{ success: boolean, data: any[] }>(`${this.baseUrlCpanel}/listas-consumo`)
+            .pipe(map(response => response.data || []));
     }
 
     consumirInconsistencia(idInconsistencia: number, datos: any): Observable<any> {
@@ -205,25 +197,25 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.baseUrlCpanelDashboard }/dashboard`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard}/dashboard`, { params });
     }
 
     // ==================== DATOS PARA FILTROS ====================
 
     getDepartamentos(): Observable<any> {
-        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/departamentos`);
+        return this.http.get(`${this.baseUrlCpanelDashboard}/filtros/departamentos`);
     }
 
     getClientes(): Observable<any> {
-        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/clientes`);
+        return this.http.get(`${this.baseUrlCpanelDashboard}/filtros/clientes`);
     }
 
     getTiposInconsistencia(): Observable<any> {
-        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/tipos`);
+        return this.http.get(`${this.baseUrlCpanelDashboard}/filtros/tipos`);
     }
 
     getUsuarios(): Observable<any> {
-        return this.http.get(`${this.baseUrlCpanelDashboard }/filtros/usuarios`);
+        return this.http.get(`${this.baseUrlCpanelDashboard}/filtros/usuarios`);
     }
 
     // ==================== MÉTRICAS INDIVIDUALES (OPCIONAL) ====================
@@ -237,7 +229,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/productividad`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/productividad`, { params });
     }
 
     getCostos(filtros?: any): Observable<any> {
@@ -249,7 +241,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/costos`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/costos`, { params });
     }
 
     getConsumo(filtros?: any): Observable<any> {
@@ -261,7 +253,7 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/consumo`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/consumo`, { params });
     }
 
     getGestionHumana(filtros?: any): Observable<any> {
@@ -273,6 +265,61 @@ ponerEnEspera(id_inconsistencia: number, id_usuario: number, motivo: string): Ob
                 }
             });
         }
-        return this.http.get(`${this.baseUrlCpanelDashboard }/metricas/gestion-humana`, { params });
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/gestion-humana`, { params });
+    }
+
+    getDashboardFinanciero(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/financiero`, { params });
+    }
+
+    getTablasFinancieras(filtros?: any): Observable<any> {
+        let params = new HttpParams();
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/tablas`, { params });
+    }
+
+    getDrilldownItems(tipo: string, tablaOrigen: string, filtros?: any): Observable<any> {
+        let params = new HttpParams()
+            .set('tipo', tipo)
+            .set('tablaOrigen', tablaOrigen);
+
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/drilldown/items`, { params });
+    }
+
+    getDrilldownMotivos(tipo: string, item: string, tablaOrigen: string, filtros?: any): Observable<any> {
+        let params = new HttpParams()
+            .set('tipo', tipo)
+            .set('item', item)
+            .set('tablaOrigen', tablaOrigen);
+
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/drilldown/motivos`, { params });
     }
 }

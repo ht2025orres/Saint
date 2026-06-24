@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BigbagService } from '../../../services/bigbag.service';
 import { User } from '../../../models/User';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../services/auth.service';
 import { ErpIntegrationService } from '../../../services/erp-integration.service';
 import { Customer } from '../../../models/Customer';
@@ -33,7 +35,8 @@ interface StepStates {
   templateUrl: './technical-report-bigbag.component.html',
   styleUrls: ['./technical-report-bigbag.component.css']
 })
-export class TechnicalReportBigbagComponent implements OnInit {
+export class TechnicalReportBigbagComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
 
   customers: Customer[] = [];
 
@@ -125,8 +128,14 @@ export class TechnicalReportBigbagComponent implements OnInit {
     public authService: AuthService,
     private erpIntegrationService: ErpIntegrationService
   ) {
+    this.bigbagForm = this.fb.group({});
     this.initializeForm();
     this.initializeStepStates();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   ngOnInit(): void {
@@ -147,27 +156,31 @@ export class TechnicalReportBigbagComponent implements OnInit {
   }
 
   private loadCurrentUser(): void {
+    const user = this.authService.user ?? ({} as any);
+
+    const userFullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+
     this.currentUser = {
-      id: this.authService.user.id,
-      firstName: this.authService.user.firstName,
-      lastName: this.authService.user.lastName,
-      email: 'juan.perez@example.com',
+      id: user.id ?? null,
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      email: user.email ?? 'juan.perez@example.com',
       password: '',
-      enabled: true,
-      roles: [],
-      permissions: this.authService.user.permissions || [],
-      modules: this.authService.user.modules || [],
-      id_Sdp: this.authService.user.id_Sdp,
-      nombre_departamento_Sdp: this.authService.user.nombre_departamento_Sdp ?? '',
-      id_departamento_Sdp: this.authService.user.id_departamento_Sdp,
-      nombre_completo: `${this.authService.user.firstName} ${this.authService.user.lastName}`,
-      id_lider: this.authService.user.id_lider,
-      lider_nombre: this.authService.user.lider_nombre
-    };
+      enabled: user.enabled ?? true,
+      roles: user.roles ?? [],
+      permissions: user.permissions ?? [],
+      modules: user.modules ?? [],
+      id_Sdp: user.id_Sdp ?? null,
+      nombre_departamento_Sdp: user.nombre_departamento_Sdp ?? '',
+      id_departamento_Sdp: user.id_departamento_Sdp ?? null,
+      nombre_completo: userFullName,
+      id_lider: user.id_lider ?? null,
+      lider_nombre: user.lider_nombre ?? ''
+    } as any;
 
     // Establecer el nombre del operario
-    this.bigbagForm?.patchValue({
-      nomOperario: this.currentUser.firstName + ' ' + this.currentUser.lastName
+    this.bigbagForm.patchValue({
+      nomOperario: userFullName
     });
   }
 
@@ -198,7 +211,9 @@ export class TechnicalReportBigbagComponent implements OnInit {
     const cantidadFields = ['cantidadRelacionada', 'cantidadFisico'];
 
     cantidadFields.forEach(field => {
-      this.bigbagForm.get(field)?.valueChanges.subscribe(() => {
+      this.bigbagForm.get(field)?.valueChanges
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => {
         this.calcularDiferenciaReportada();
       });
     });

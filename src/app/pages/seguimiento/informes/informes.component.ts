@@ -90,6 +90,11 @@ export class InformesComponent implements OnInit, OnDestroy {
     this._cdr.markForCheck();
   }
 
+  stripHtml(html: string): string {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '');
+  }
+
   getImpactoClass(nivel: NivelImpacto): string {
     switch (nivel) {
       case 'Crítico': return 'bg-red-100 text-red-700 border-red-200';

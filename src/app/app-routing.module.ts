@@ -50,6 +50,10 @@ import { InventariosComponent } from './pages/old-inventario/inventarios/inventa
 
 import { AuthorizationManagerComponent } from './pages/authorization-manager/authorization-manager.component';
 import { UserProfileComponent } from './pages/user-profile/user-profile.component';
+import { WorkflowManagerComponent } from './pages/authorization-manager/workflow-manager/workflow-manager.component';
+import { CarteraInconsistenciasComponent } from './pages/inconsistencias/cartera-inconsistencias/cartera-inconsistencias.component';
+import { DashboardFinancieroInconsistenciasComponent } from './pages/inconsistencias/dashboard-financiero/dashboard-financiero.component';
+import { EmailLogsComponent } from './pages/email-logs/email-logs.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -63,6 +67,7 @@ const routes: Routes = [
       { path: 'gestion-anulaciones-fichas', component: AnnulmentManagementComponent, title: 'Gestión de Anulaciones' },
       { path: 'listTechnicalDataSheet/page/:page/:status', component: ListTechnicalSheetComponent, title: 'Listar fichas técnicas' },
       { path: 'users/page/:page', component: ListUserComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Listar usuarios' },
+      { path: 'email-logs', component: EmailLogsComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Registro de Correos' },
       { path: 'createUser/:id', component: CreateUserComponent, title: 'Crear usuario' },
       { path: 'generar-inconsistencias', component: GenerarComponent, title: 'Generar inconsistencias' },
       { path: 'mis-inconsistencias', component: MisInconsistenciasComponent, title: 'Mis inconsistencias' },
@@ -103,6 +108,9 @@ const routes: Routes = [
       { path: 'seguimiento-documentos', loadChildren: () => import('./pages/seguimiento-documentos/seguimiento-documentos.module').then(m => m.SeguimientoDocumentosModule), title: 'Seguimiento Documentos' },
       // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
 
+      { path: 'workflows', component: WorkflowManagerComponent, title: 'Gestor de Workflows' },
+      { path: 'cartera-inconsistencias', component: CarteraInconsistenciasComponent, title: 'Cartera Inconsistencias' },
+      { path: 'dashboard-financiero-inconsistencias', component: DashboardFinancieroInconsistenciasComponent, title: 'Dashboard Financiero Inconsistencias' },
       { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' },
       { path: 'my-profile', component: UserProfileComponent, title: 'Mi Perfil' }
     ]

@@ -31,10 +31,22 @@ export class RoleGuard  {
     }
 
     let role = next.data['role'];
+    console.log('--- ROLE GUARD DEBUG ---');
+    console.log('Backend URL:', (this.authService as any).apiLaravelUrl);
+    console.log('JWT Token:', this.authService.token);
+    console.log('Expected role:', role);
+    console.log('User model:', this.authService.user);
+    console.log('User roles (raw):', this.authService.user?.roles);
+    console.log('Normalized user roles:', Array.from((this.authService as any).getNormalizedUserRoles()));
+    console.log('Has role result:', this.authService.hasRole(role));
+    console.log('------------------------');
+
     if (this.authService.hasRole(role)) {
       return true;
     }
-    Swal.fire('Acceso denegado', `Hola ${this.authService.user.firstName} ${this.authService.user.lastName} no tienes permisos suficientes, para acceder al modulo requerido`, 'warning');
+    const firstName = this.authService.user?.firstName ?? '';
+    const lastName = this.authService.user?.lastName ?? '';
+    Swal.fire('Acceso denegado', `Hola ${firstName} ${lastName} no tienes permisos suficientes, para acceder al modulo requerido`, 'warning');
     this.router.navigate(['/dashboard']);
     return false;
   }

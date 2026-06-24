@@ -1,345 +1,157 @@
-<!-- Encabezado con breadcrumb -->
-<header class="page-header" role="banner">
-  <div class="row page-titles">
-    <div class="col-md-5 align-self-center">
-      <h1 class="page-title">{{ title }}</h1>
-    </div>
-    <div class="col-md-7 align-self-center">
-      <nav aria-label="Navegación de ruta">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item">
-            <a routerLink="/dashboard">Inicio</a>
-          </li>
-          <li class="breadcrumb-item">
-            <a href="#" aria-current="page">Inconsistencias</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
-        </ol>
-      </nav>
-    </div>
+<!-- Encabezado -->
+<header class="mb-4 flex flex-col md:flex-row md:items-center justify-between" role="banner">
+  <div>
+    <h1 class="text-xl font-bold text-gray-800">{{ title }}</h1>
+    <nav aria-label="Breadcrumb" class="text-xs text-gray-400 mt-0.5 flex gap-1">
+      <a routerLink="/dashboard" class="hover:text-blue-600 transition-colors">Inicio</a>
+      <span>/</span><span>Inconsistencias</span>
+      <span>/</span><span class="text-gray-600 font-medium">{{ title }}</span>
+    </nav>
   </div>
 </header>
 
 <!-- Contenedor principal -->
-<main class="content-container" role="main">
-  <div class="card table-card">
-    
-    <!-- Sección de filtros -->
-    <section class="filters-section" aria-label="Filtros de búsqueda">
-      <div class="row">
-        <div class="col-12 col-md-6 col-lg-4">
-          <div class="search-wrapper">
-            <label for="searchInput" class="visually-hidden">Buscar inconsistencias</label>
-            <input 
-              type="search"
-              id="searchInput"
-              class="form-control search-input"
-              placeholder="Buscar por cliente, solicitante o consecutivo..."
-              [(ngModel)]="filters.busqueda"
-              (input)="applyFilters()"
-              aria-describedby="searchHint">
-            <span id="searchHint" class="visually-hidden">
-              Ingrese texto para filtrar la tabla de inconsistencias
-            </span>
+<main class="w-full" role="main">
+
+  <!-- Filtros -->
+  <section class="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-3" aria-label="Filtros de búsqueda">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div>
+        <label for="searchInput" class="sr-only">Buscar inconsistencias</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fa-solid fa-search text-gray-400"></i>
           </div>
-        </div>
-        <div class="col-12 col-md-6 col-lg-3">
-          <label for="estadoFilter" class="visually-hidden">Filtrar por estado</label>
-          <select 
-            id="estadoFilter"
-            class="form-control search-input"
-            [(ngModel)]="filters.estado" 
-            (change)="applyFilters()">
-            <option value="">Todos los estados</option>
-            <option value="en_proceso">En proceso</option>
-            <option value="terminada">Terminado</option>
-            <option value="anulado">Anulado</option>
-          </select>
-        </div>
-        <div class="col-12 col-md-6 col-lg-3">
-          <label for="mesFilter" class="visually-hidden">Filtrar por mes</label>
           <input 
-            type="month" 
-            id="mesFilter"
-            class="form-control search-input" 
-            [(ngModel)]="filters.mes" 
-            (change)="applyFilters()" />
-        </div>
-        <div class="col-12 col-md-6 col-lg-2">
-          <button 
-            class="btn btn-outline-secondary w-100"
-            (click)="filters = {busqueda: '', estado: '', mes: ''}; applyFilters()"
-            aria-label="Limpiar filtros">
-            <i class="fa fa-times" aria-hidden="true"></i> Limpiar
-          </button>
+            type="search"
+            id="searchInput"
+            class="block w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            placeholder="Buscar (cliente, solicitante...)"
+            [(ngModel)]="filters.busqueda"
+            (input)="applyFilters()">
         </div>
       </div>
-    </section>
-
-    <!-- Contenedor de tabla con scroll -->
-    <div class="card-body table-responsive-wrapper">
-      
-      <!-- Tabla de inconsistencias -->
-      <div class="table-scroll-container" *ngIf="inconsistencias.length > 0; else sinDatos">
-        <table 
-          class="table table-inconsistencias" 
-          role="table"
-          aria-label="Tabla de histórico de inconsistencias"
-          aria-describedby="tableDescription">
-          
-          <caption id="tableDescription" class="visually-hidden">
-            Lista de inconsistencias históricas con información de fecha, cliente, cantidades y acciones disponibles
-          </caption>
-
-          <thead>
-            <tr role="row">
-              <th scope="col" class="th-fecha" role="columnheader">
-                <span class="th-content">Fecha</span>
-              </th>
-              <th scope="col" class="th-cliente" role="columnheader">
-                <span class="th-content">Cliente</span>
-              </th>
-              <th scope="col" class="th-consecutivo" role="columnheader">
-                <span class="th-content">Consecutivo</span>
-              </th>
-              <th scope="col" class="th-solicitante" role="columnheader">
-                <span class="th-content">Solicitante</span>
-              </th>
-              <th scope="col" class="th-departamento" role="columnheader" *ngIf="mostrarDepartamento">
-                <span class="th-content">Departamento</span>
-              </th>
-              <th scope="col" class="th-tipo" role="columnheader">
-                <span class="th-content">Tipo</span>
-              </th>
-              <th scope="col" class="th-cantidad" role="columnheader">
-                <span class="th-content">Cant. Solicitada</span>
-              </th>
-              <th scope="col" class="th-cantidad-inco" role="columnheader">
-                <span class="th-content">Cant. Inconsistencia</span>
-              </th>
-              <th scope="col" class="th-item" role="columnheader">
-                <span class="th-content">Descrip. Ítem</span>
-              </th>
-              <th scope="col" class="th-orden" role="columnheader">
-                <span class="th-content">OP/OPR/OPM</span>
-              </th>
-              <th scope="col" class="th-precio" role="columnheader">
-                <span class="th-content">Precio Unitario</span>
-              </th>
-              <th scope="col" class="th-precio-total" role="columnheader">
-                <span class="th-content">Precio Total</span>
-              </th>
-              <th scope="col" class="th-descripcion" role="columnheader">
-                <span class="th-content">Descrip. Situación</span>
-              </th>
-              <th scope="col" class="th-estado" role="columnheader">
-                <span class="th-content">Etapa</span>
-              </th>
-              <th scope="col" class="th-accion" role="columnheader">
-                <span class="th-content">Acción a tomar</span>
-              </th>
-              <th scope="col" class="th-evidencias" role="columnheader">
-                <span class="th-content">Evidencias</span>
-              </th>
-              <th scope="col" class="th-acciones" role="columnheader">
-                <span class="th-content">Tiempos</span>
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let inco of currentData" role="row">
-              <td role="cell" data-label="Fecha">
-                <time [attr.datetime]="inco.fecha_inconsistencia">
-                  {{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}
-                </time>
-              </td>
-              <td role="cell" data-label="Cliente">
-                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
-                  {{ inco.Cliente }}
-                </span>
-              </td>
-              <td role="cell" data-label="Consecutivo">
-                <span class="badge-consecutivo">{{ inco.id_inconsistencia }}</span>
-              </td>
-              <td role="cell" data-label="Solicitante">
-                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
-                  {{ inco.nombre_solicitante + ' ' + inco.apellido_solicitante }}
-                </span>
-              </td>
-              <td role="cell" data-label="Departamento" *ngIf="mostrarDepartamento">
-                {{ inco.nombre_departamento }}
-              </td>
-              <td role="cell" data-label="Tipo">
-                <span class="badge-tipo">{{ tipos_inco[inco.tipo_inconsistencia] }}</span>
-              </td>
-              <td role="cell" data-label="Cant. Solicitada" class="text-numeric">
-                {{ inco.cantidad_solicitada_op }}
-              </td>
-              <td role="cell" data-label="Cant. Inconsistencia" class="text-numeric">
-                <strong>{{ inco.cantidad_inconsistencia }}</strong>
-              </td>
-              <td role="cell" data-label="Descrip. Ítem">
-                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
-                  {{ inco.item || 'N/A' }}
-                </span>
-              </td>
-              <td role="cell" data-label="OP/OPR/OPM">
-                {{ inco.tipo_de_orden }} {{ inco.estado_orden }}
-              </td>
-              <td role="cell" data-label="Precio Unitario" class="text-numeric">
-                {{ inco.precio_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </td>
-              <td role="cell" data-label="Precio Total" class="text-numeric">
-                <strong>{{ inco.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
-              </td>
-              <td role="cell" data-label="Descrip. Situación">
-                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
-                  {{ inco.descripcion_inconsistencia || 'N/A' }}
-                </span>
-              </td>
-              <td role="cell" data-label="Etapa">
-                <span [ngClass]="getEstadoClass(inco.estado)" [attr.aria-label]="'Etapa: ' + getEstadoLabel(inco.estado)">
-                  {{ getEstadoLabel(inco.estado) }}
-                </span>
-              </td>
-              <td role="cell" data-label="Acción a tomar">
-                <span appAutoExpand [maxLength]="15" [maxWidth]="120">
-                  {{ inco.accion_inconsistencia || 'N/A' }}
-                </span>
-              </td>
-              <td role="cell" data-label="Evidencias" class="td-evidencias">
-                <button 
-                  type="button"
-                  class="btn btn-icon btn-evidencias" 
-                  (click)="verEvidencias(inco)"
-                  [attr.aria-label]="'Ver evidencias de inconsistencia ' + inco.id_inconsistencia"
-                  title="Ver evidencias">
-                  <i class="fa-regular fa-image" aria-hidden="true"></i>
-                  <span class="visually-hidden">Ver evidencias</span>
-                </button>
-              </td>
-              <td role="cell" data-label="Tiempos" class="td-acciones">
-                <button 
-                  type="button"
-                  class="btn btn-info btn-action" 
-                  (click)="verTiemposProceso(inco)"
-                  [attr.aria-label]="'Ver tiempos de proceso de inconsistencia ' + inco.id_inconsistencia"
-                  title="Ver tiempos de proceso">
-                  <i class="fa fa-clock" aria-hidden="true"></i>
-                  <span class="btn-text">Ver tiempos</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-
-        </table>
+      <div>
+        <label for="estadoFilter" class="sr-only">Filtrar por estado</label>
+        <select 
+          id="estadoFilter"
+          class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+          [(ngModel)]="filters.estado" 
+          (change)="applyFilters()">
+          <option value="">Todos los estados</option>
+          <option value="lider">Líder</option>
+          <option value="calidad">Calidad</option>
+          <option value="logistica">Logística</option>
+          <option value="contabilidad">Contabilidad</option>
+          <option value="cartera">Cartera</option>
+          <option value="patronaje">Patronaje</option>
+          <option value="trazo">Trazo</option>
+          <option value="finalizacion">Consumo</option>
+          <option value="terminada">Terminada</option>
+          <option value="anulado">Anulada</option>
+        </select>
       </div>
+      <div>
+        <label for="mesFilter" class="sr-only">Filtrar por mes</label>
+        <input 
+          type="month" 
+          id="mesFilter"
+          class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+          [(ngModel)]="filters.mes" 
+          (change)="applyFilters()">
+      </div>
+      <div>
+        <button 
+          class="w-full px-2 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors flex items-center justify-center gap-2"
+          (click)="filters = {busqueda: '', estado: '', mes: ''}; applyFilters()"
+          aria-label="Limpiar filtros">
+          <i class="fa fa-times" aria-hidden="true"></i> Limpiar
+        </button>
+      </div>
+    </div>
+  </section>
 
-      <!-- Mensaje cuando no hay datos -->
-      <ng-template #sinDatos>
-        <div class="empty-state" role="status" aria-live="polite">
-          <div class="empty-state-icon" aria-hidden="true">
-            <i class="fa-regular fa-folder-open"></i>
-          </div>
-          <p class="empty-state-message">No hay registros en el histórico.</p>
-          <p class="empty-state-hint">Las inconsistencias aparecerán aquí cuando sean procesadas.</p>
-        </div>
-      </ng-template>
-
+  <!-- Tabla -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+    <div *ngIf="inconsistencias.length > 0; else sinDatos">
+      <table class="w-full text-xs text-left" role="table" aria-label="Histórico de inconsistencias">
+        <thead class="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wide border-b border-gray-200">
+          <tr>
+            <th class="px-3 py-2 whitespace-nowrap">Fecha</th>
+            <th class="px-3 py-2 whitespace-nowrap">ID</th>
+            <th class="px-3 py-2 whitespace-nowrap">Cliente</th>
+            <th class="px-3 py-2 whitespace-nowrap">Solicitante</th>
+            <th *ngIf="mostrarDepartamento" class="px-3 py-2 whitespace-nowrap">Dpto.</th>
+            <th class="px-3 py-2 whitespace-nowrap">Tipo</th>
+            <th class="px-3 py-2 whitespace-nowrap text-right">Cant. Sol.</th>
+            <th class="px-3 py-2 whitespace-nowrap text-right">Cant. Inc.</th>
+            <th class="px-3 py-2 whitespace-nowrap max-w-[120px]">Ítem</th>
+            <th class="px-3 py-2 whitespace-nowrap">Orden</th>
+            <th class="px-3 py-2 whitespace-nowrap text-right">Total</th>
+            <th class="px-3 py-2 whitespace-nowrap">Estado</th>
+            <th class="px-3 py-2 whitespace-nowrap text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let inco of currentData" class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2 whitespace-nowrap text-gray-500">
+              <time [attr.datetime]="inco.fecha_inconsistencia">{{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}</time>
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap">
+              <span class="font-semibold text-blue-700">{{ inco.id_inconsistencia }}</span>
+            </td>
+            <td class="px-3 py-2 max-w-[110px] truncate" [title]="inco.Cliente">{{ inco.Cliente }}</td>
+            <td class="px-3 py-2 max-w-[110px] truncate" [title]="inco.solicitante">{{ inco.solicitante || 'N/A' }}</td>
+            <td *ngIf="mostrarDepartamento" class="px-3 py-2 whitespace-nowrap">{{ inco.departamento || 'N/A' }}</td>
+            <td class="px-3 py-2 whitespace-nowrap">
+              <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{{ tipos_inco[inco.tipo_inconsistencia] }}</span>
+            </td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">{{ inco.cantidad_solicitada_op }}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap font-bold text-red-600">{{ inco.cantidad_inconsistencia }}</td>
+            <td class="px-3 py-2 max-w-[120px] truncate text-gray-500" [title]="inco.item">{{ inco.item || 'N/A' }}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-gray-600">{{ inco.tipo_de_orden }} {{ inco.estado_orden }}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap font-semibold">{{ inco.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+            <td class="px-3 py-2 whitespace-nowrap">
+              <span [class]="getEstadoClass(inco.estado)" class="px-1.5 py-0.5 rounded text-xs font-medium">
+                {{ getEstadoLabel(inco.estado) }}
+              </span>
+              <span *ngIf="inco.anulado_por" class="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+                Anulada
+              </span>
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">
+              <div class="flex items-center justify-center gap-1">
+                <button type="button"
+                  class="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  title="Ver detalles" (click)="abrirModalDetalles(inco)">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- Paginador -->
-    <footer class="card-footer" role="contentinfo">
-      <app-shared-paginator
-        *ngIf="paginationService.getPaginatorState(paginatorId)"
-        [instanceId]="paginatorId"
-        [showPageSizeSelector]="true"
-        [pageSizeOptions]="[5, 10, 25, 50, 100]"
-        [noDataMessage]="'No se encontraron registros'"
-        aria-label="Paginación de tabla de histórico de inconsistencias">
-      </app-shared-paginator>
-    </footer>
-
+    <!-- Sin datos -->
+    <ng-template #sinDatos>
+      <div class="flex flex-col items-center justify-center py-12 text-center" role="status">
+        <i class="fa-regular fa-folder-open text-3xl text-gray-300 mb-3"></i>
+        <p class="text-sm font-medium text-gray-600">No hay histórico disponible</p>
+        <p class="text-xs text-gray-400 mt-1">Modifique los filtros para buscar inconsistencias pasadas.</p>
+      </div>
+    </ng-template>
   </div>
+
+  <!-- Paginador -->
+  <div class="mt-4">
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginatorId)"
+      [instanceId]="paginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25, 50, 100]"
+      [noDataMessage]="'No se encontraron registros'">
+    </app-shared-paginator>
+  </div>
+
 </main>
-
-<!-- Modal Tiempos de Proceso -->
-<ng-template #modalTiempos>
-  <div class="modal-header bg-info text-white">
-    <h5 class="modal-title">
-      <i class="fa fa-clock me-2"></i>
-      Tiempos de Proceso - Inconsistencia #{{ modalRef?.content?.inconsistencia?.id_inconsistencia }}
-    </h5>
-    <button type="button" class="btn-close btn-close-white" aria-label="Close" (click)="modalRef?.hide()"></button>
-  </div>
-  <div class="modal-body">
-    <div *ngIf="cargandoTiempos" class="text-center py-4">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Cargando...</span>
-      </div>
-      <p class="mt-2">Cargando tiempos de proceso...</p>
-    </div>
-
-    <div *ngIf="!cargandoTiempos && tiemposProceso.length === 0" class="alert alert-warning">
-      <i class="fa fa-exclamation-triangle me-2"></i>
-      No hay registros de tiempos de proceso para esta inconsistencia.
-    </div>
-
-    <div *ngIf="!cargandoTiempos && tiemposProceso.length > 0">
-      <!-- Resumen -->
-      <!-- <div class="alert alert-info mb-3">
-        <strong>Tiempo total del proceso:</strong> {{ calcularTiempoTotal() }}
-      </div> -->
-
-      <!-- Tabla de tiempos -->
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>Etapa</th>
-              <th>Responsable</th>
-              <th>Fecha Inicio</th>
-              <th>Fecha Fin</th>
-              <th class="text-end">Tiempo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let tiempo of tiemposProceso">
-              <td>
-                <strong>{{ tiempo.etapa }}</strong>
-              </td>
-              <td>{{ tiempo.responsable || 'N/A' }}</td>
-              <td>{{ tiempo.fecha_inicio | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td>
-                <span *ngIf="tiempo.fecha_fin">{{ tiempo.fecha_fin | date:'dd/MM/yyyy HH:mm' }}</span>
-                <span *ngIf="!tiempo.fecha_fin" class="badge bg-warning text-dark">En proceso</span>
-              </td>
-              <td class="text-end">
-                <span *ngIf="tiempo.tiempo_minutos" class="badge bg-secondary">
-                  {{ tiempo.tiempo_dias > 0 ? tiempo.tiempo_dias + 'd ' : '' }}
-                  {{ tiempo.tiempo_horas > 0 ? tiempo.tiempo_horas + 'h ' : '' }}
-                  {{ tiempo.tiempo_minutos_restantes }} minuto(s)
-                </span>
-                <span *ngIf="!tiempo.tiempo_minutos" class="text-muted">-</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Observaciones si existen -->
-      <!-- <div *ngIf="tiemposProceso.some(t => t.observaciones)" class="mt-3">
-        <h6>Observaciones:</h6>
-        <div *ngFor="let tiempo of tiemposProceso">
-          <div *ngIf="tiempo.observaciones" class="alert alert-light mb-2">
-            <strong>{{ tiempo.etapa }}:</strong> {{ tiempo.observaciones }}
-          </div>
-        </div>
-      </div> -->
-    </div>
-  </div>
-  <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" (click)="modalRef?.hide()">Cerrar</button>
-  </div>
-</ng-template>

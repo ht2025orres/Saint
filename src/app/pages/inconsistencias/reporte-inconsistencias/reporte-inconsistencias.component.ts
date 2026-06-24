@@ -91,7 +91,6 @@ formatearFecha(fecha: Date): string {
         }
       },
       error: (error) => {
-        console.error('Error al cargar departamentos:', error);
       }
     });
 
@@ -102,7 +101,6 @@ formatearFecha(fecha: Date): string {
         }
       },
       error: (error) => {
-        console.error('Error al cargar clientes:', error);
       }
     });
 
@@ -113,7 +111,6 @@ formatearFecha(fecha: Date): string {
         }
       },
       error: (error) => {
-        console.error('Error al cargar tipos:', error);
       }
     });
 
@@ -124,7 +121,6 @@ formatearFecha(fecha: Date): string {
         }
       },
       error: (error) => {
-        console.error('Error al cargar usuarios:', error);
       }
     });
   }
@@ -161,7 +157,6 @@ cargarDashboard(): void {
       },
       error: (error) => {
         this.errorMessage = 'Error al cargar los datos del dashboard. Por favor, intente nuevamente.';
-        console.error('Error al cargar dashboard:', error);
       }
     });
 }

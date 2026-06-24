@@ -5,6 +5,7 @@ import { Subscription, tap, switchMap } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2';
+import { getDetallesHtml } from '../../../shared/templates/detalles-popup.template';
 
 @Component({
   selector: 'app-aprobacion-inconsistencias',
@@ -29,6 +30,7 @@ export class AprobacionComponent implements OnInit {
 
   mostrarDepartamento = true;
   mostrarEstado = true;
+  esLider = false;
 
   loading: boolean = false;
 
@@ -38,10 +40,79 @@ export class AprobacionComponent implements OnInit {
     public paginationService: PaginationService
   ) { }
 
+
   ngOnInit(): void {
     this.cargarInconsistencias();
     this.obtenerTipos();
-     this.verificarRolLogistica(); // 👈 Agregar esta línea
+    this.verificarRolLogistica(); // 👈 Agregar esta línea
+    this.verificarMostrarDepartamento(); // 👈 Verificar si se debe mostrar el departamento
+
+    // Registrar callbacks globales llamados desde el popup.
+    // Reciben todos los valores ya recolectados en el popup, sin abrir Swal adicional.
+    (window as any).aprobarDesdePopup = (id: number, accion: string, estadoOrden: string) => {
+      const inco = this.inconsistencias.find(i => i.id === id);
+      if (!inco) return;
+      this.loading = true;
+      this.inconsistenciasService.aprobarInconsistencia(inco.id, accion || null, estadoOrden || null).subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          if (res.success) {
+            Swal.fire('Aprobada ✅', 'La inconsistencia ha sido aprobada correctamente.', 'success');
+            this.inconsistencias = this.inconsistencias.filter(i => i.id !== inco.id);
+            this.applyFilters();
+          } else {
+            Swal.fire('Error', res.message || 'No se pudo aprobar la inconsistencia.', 'error');
+          }
+        },
+        error: () => { this.loading = false; Swal.fire('Error', 'Ocurrió un error al aprobar.', 'error'); }
+      });
+    };
+    (window as any).denegarDesdePopup = (id: number, motivo: string) => {
+      const inco = this.inconsistencias.find(i => i.id === id);
+      if (!inco) return;
+      this.loading = true;
+      this.inconsistenciasService.denegarInconsistencia(inco.id, motivo).subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          if (res.success) {
+            Swal.fire('Rechazada ❌', 'La inconsistencia fue rechazada correctamente.', 'success');
+            this.inconsistencias = this.inconsistencias.filter(i => i.id !== inco.id);
+            this.applyFilters();
+          } else {
+            Swal.fire('Error', res.message || 'No se pudo rechazar la inconsistencia.', 'error');
+          }
+        },
+        error: () => { this.loading = false; Swal.fire('Error', 'Ocurrió un error al rechazar.', 'error'); }
+      });
+    };
+    (window as any).esperarDesdePopup = (id: number, motivo: string) => {
+      const inco = this.inconsistencias.find(i => i.id === id);
+      if (!inco) return;
+      this.loading = true;
+      this.inconsistenciasService.ponerEnEspera(inco.id, motivo).subscribe({
+        next: (res: any) => {
+          this.loading = false;
+          if (res.success) {
+            Swal.fire('En Espera ⏳', 'La inconsistencia ha sido puesta en espera.', 'success');
+            this.cargarInconsistencias();
+          } else {
+            Swal.fire('Error', res.message || 'No se pudo poner en espera.', 'error');
+          }
+        },
+        error: () => { this.loading = false; Swal.fire('Error', 'Ocurrió un error al poner en espera.', 'error'); }
+      });
+    };
+  }
+
+  verificarMostrarDepartamento(): void {
+    // IDs de permisos para Líder:
+    // 7 - Lider Aprobador (inconsistencias)
+    // 8 - Matriz de reemplazo (inconsistencias)
+    this.esLider = this.authService.hasAnyPermission([7, 8]);
+    
+    // Si el usuario es Líder, SIEMPRE mostrar la tabla operativa de líder (OP, Item, etc)
+    // aunque tenga otros roles como Contabilidad o Calidad.
+    this.mostrarDepartamento = !this.esLider;
   }
 
   obtenerTipos() {
@@ -54,31 +125,32 @@ cargarInconsistencias(): void {
   this.loading = true;
 
   // ✅ 1. Obtener y filtrar los roles del usuario relacionados con inconsistencias
-  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
-  const rolesInconsistencias = rolesUsuario.filter(rol =>
-    rol.toLowerCase().includes('(inconsistencias)')
-  );
+  // const permisosUsuario: string[] = (this.authService.user.permissions || []).map((permisos: any) => String(permisos));
+  // const rolesInconsistencias = permisosUsuario.filter(permisos => {
+  //   const lower = permisos.toLowerCase();
+  //   return lower.includes('(inconsistencias)') || lower.startsWith('aprobar inconsistencia');
+  // }); 
 
-  // Si no tiene ningún rol de inconsistencias, detener la carga
-  if (rolesInconsistencias.length === 0) {
-    console.warn('El usuario no tiene roles asociados a inconsistencias.');
-    this.loading = false;
-    this.inconsistencias = [];
-    this.currentData = [];
-    return;
-  }
+  // // Si no tiene ningún rol de inconsistencias, detener la carga
+  // if (rolesInconsistencias.length === 0) {
+  //   console.warn('El usuario no tiene roles asociados a inconsistencias.');
+  //   this.loading = false;
+  //   this.inconsistencias = [];
+  //   this.currentData = [];
+  //   return;
+  // }
 
-  // ✅ 2. Tomar el primer rol de inconsistencias
-  const rolInconsistencia = rolesInconsistencias[0];
+  // // ✅ 2. Tomar el primer rol de inconsistencias
+  // const rolInconsistencia = rolesInconsistencias[0];
 
   // ✅ 3. Llamar al servicio SIN id_departamento
   this.subscription.add(
     this.inconsistenciasService
-      .listarInconsistenciasPorDepartamento(rolInconsistencia) // 👈 Solo el rol
+      .listarInconsistenciasPorDepartamento() // 👈 Quitamos el envío explícito del departamento
       .subscribe({
         next: (res: any) => {
-          console.log(rolInconsistencia);
-          console.log('Respuesta del backend:', res); // 👈 DEBUG
+          // console.log(rolInconsistencia);
+          // console.log('Respuesta del backend:', res); // 👈 DEBUG
 
           if (res && res.success && Array.isArray(res.data)) {
             this.inconsistencias = res.data;
@@ -99,13 +171,11 @@ cargarInconsistencias(): void {
               this.currentData = state.currentData;
             },
             error: (err) => {
-              console.error('Error al inicializar paginador:', err);
               this.currentData = [];
             }
           });
         },
         error: (err) => {
-          console.error('Error al cargar inconsistencias:', err);
           this.loading = false;
           this.inconsistencias = [];
           this.currentData = [];
@@ -117,19 +187,9 @@ cargarInconsistencias(): void {
 
 
 verificarRolLogistica(): void {
-  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
-  
-  // DEBUG: Ver qué roles tiene el usuario
-  console.log(' Verificando rol  - Roles del usuario:', rolesUsuario);
-  
-  this.mostrarAccionTomar = rolesUsuario.some(rol => {
-    const rolLower = rol.toLowerCase();
-    const esLogistica = rolLower === 'logisitica (inconsistencias)'; 
-    console.log(` Comparando: "${rolLower}" === "logisitica (inconsistencias)"`, esLogistica);
-    return esLogistica;
-  });
-  
-  console.log(' ¿Mostrar columna Acción a tomar?:', this.mostrarAccionTomar);
+  // IDs de permisos para Logística (Aprobación):
+  // 11 - Logística (inconsistencias)
+  this.mostrarAccionTomar = this.authService.hasAnyPermission([11]);
 }
 
 estaEnEspera(inco: any): boolean {
@@ -145,90 +205,256 @@ estaEnEspera(inco: any): boolean {
 }
 
 
-verEvidencias(inco: any): void {
-  // Primero intenta obtener evidencias_urls (que vienen del backend ya parseadas)
-  let archivos = inco.evidencias_urls;
+traducirEtapa(etapa: string): string {
+  const etapas: { [key: string]: string } = {
+    'lider': 'Aprobación Líder',
+    'calidad': 'Aprobación Calidad',
+    'logistica': 'Aprobación Logística',
+    'trazo': 'Aprobación Trazo',
+    'patronaje': 'Aprobación Patronaje',
+    'contabilidad': 'Aprobación Contabilidad',
+    'cartera': 'Aprobación Cartera',
+    'finalizacion': 'Finalización'
+  };
+  return etapas[etapa] || etapa;
+}
 
-  // Si no existen evidencias_urls, intenta parsear evidencias (formato antiguo)
-  if (!archivos || archivos.length === 0) {
-    try {
-      const evidenciasParsed = JSON.parse(inco.evidencias || '[]');
-      // Convierte las rutas relativas a URLs completas
-      archivos = evidenciasParsed.map((ruta: string) => {
-        // Usa el dominio actual de la app (útil en desarrollo y producción)
-        const baseUrl = 'https://colegioprovidencia.edu.co/Saint-Backend/public';
-
-        return `${baseUrl}/${ruta}`;
-      });
-    } catch (error) {
-      archivos = [];
-    }
+abrirModalDetalles(inconsistencia: any): void {
+  // Obtener URLs de evidencias
+  let archivos: string[] = [];
+  if (Array.isArray(inconsistencia.evidencias_urls) && inconsistencia.evidencias_urls.length > 0) {
+    archivos = inconsistencia.evidencias_urls;
+  } else if (Array.isArray(inconsistencia.evidencias) && inconsistencia.evidencias.length > 0) {
+    archivos = inconsistencia.evidencias;
   }
 
-  if (!archivos || archivos.length === 0) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Sin evidencia',
-      text: 'Esta inconsistencia no tiene evidencias adjuntas.',
-      confirmButtonText: 'Entendido'
-    });
-    return;
+  const evidenciasHtml = archivos.length > 0 ? archivos.map((url: string, i: number) => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return `<div style="text-align: center; margin-bottom: 10px;">
+                <span style="display:block;font-size:12px;color:#888;">Evidencia ${i + 1}</span>
+                <img src="${url}" style="max-width:100%; max-height: 400px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;" onclick="window.open('${url}', '_blank')">
+              </div>`;
+    }
+    return `<div style="margin-bottom: 10px;">
+              <a href="${url}" target="_blank" style="background:#72BE44; color:white; padding: 6px 12px; text-decoration:none; border-radius: 4px; font-size:12px; display:inline-block;">Abrir Archivo Adjunto ${i + 1}</a>
+            </div>`;
+  }).join('') : '<p style="color:#888; font-size:13px; font-style:italic; text-align:center;">No hay evidencias adjuntas.</p>';
+
+  const win = window.open('', '_blank', 'width=900,height=750,scrollbars=yes,resizable=yes');
+  if (win) {
+    win.document.write('<p style="font-family:sans-serif;text-align:center;padding:20px;">Cargando detalles...</p>');
   }
 
-  // Construye el HTML para mostrar imágenes o PDF igual que en MisInconsistenciasComponent
-  const evidenciasHtml = archivos.map((url: string) => {
-    const extension = url.split('.').pop()?.toLowerCase();
+  this.inconsistenciasService.obtenerTiemposProceso(inconsistencia.id_inconsistencia || inconsistencia.id).subscribe({
+    next: (res: any) => {
+      let tiemposHtml = '<p style="color:#888; font-size:13px; font-style:italic;">No se registraron tiempos.</p>';
+      if (res.tiempos) {
+        const debugInco = res.debug_inco || {};
+        let rows = '';
+        let index = 1;
+        Object.entries(res.tiempos)
+          .filter(([key]) => key !== 'total' && key !== 'finalizacion')
+          .forEach(([etapa, tiempo]: [string, any]) => {
+            if (tiempo) {
+              const nombreCampo = etapa === 'finalizacion' ? 'nombre_consumo' : `nombre_${etapa}`;
+              const responsable = debugInco[nombreCampo] || 'Sin asignar';
+              const duracionStr = tiempo.dias ? `${Math.floor(tiempo.dias)}d ${tiempo.horas}h ${tiempo.minutos}m` : `${tiempo.horas || 0}h ${tiempo.minutos || 0}m`;
+              rows += `
+                <tr>
+                  <td style="padding:8px; border-bottom:1px solid #eee;">${index++}</td>
+                  <td style="padding:8px; border-bottom:1px solid #eee;">${this.traducirEtapa(etapa)}</td>
+                  <td style="padding:8px; border-bottom:1px solid #eee;">${responsable}</td>
+                  <td style="padding:8px; border-bottom:1px solid #eee; color:#000; font-weight:500;">${duracionStr}</td>
+                </tr>
+              `;
+            }
+          });
 
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
-      return `
-        <div class="mb-3">
-          <img src="${url}" 
-               alt="Evidencia" 
-               class="img-fluid rounded shadow-sm"
-               style="max-width: 100%; max-height: 70vh; width: auto; cursor: pointer;"
-               onclick="window.open('${url}', '_blank')">
-        </div>
-      `;
-    } else if (extension === 'pdf') {
-      return `
-        <div class="mb-3">
-          <a href="${url}" target="_blank" class="btn btn-danger btn-lg">
-            <i class="fas fa-file-pdf me-2"></i>Abrir PDF
-          </a>
-        </div>
-      `;
-    } else {
-      return `
-        <div class="mb-3">
-          <a href="${url}" target="_blank" class="btn btn-secondary btn-lg">
-            <i class="fas fa-file me-2"></i>Abrir archivo
-          </a>
-        </div>
-      `;
-    }
-  }).join('');
+        if (rows) {
+          tiemposHtml = `
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:12px; width:100%; text-align:center; border:1px solid #E2E8F0;">
+              <thead style="background:#F8FAFC;">
+                <tr>
+                  <th style="font-weight:600; padding:8px; width:50px; border-bottom:1px solid #E2E8F0;">#</th>
+                  <th style="font-weight:600; padding:8px; border-bottom:1px solid #E2E8F0;">Etapa</th>
+                  <th style="font-weight:600; padding:8px; border-bottom:1px solid #E2E8F0;">Responsable</th>
+                  <th style="font-weight:600; padding:8px; border-bottom:1px solid #E2E8F0;">Duración</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          `;
+        }
+      }
 
-  Swal.fire({
-    title: 'Evidencias',
-    html: `
-      <div class="text-center">
-        ${evidenciasHtml}
-      </div>
-    `,
-    width: '40%',
-    showCloseButton: true,
-    showConfirmButton: false,
-    customClass: {
-      popup: 'p-4'
+      // ── Generar panel de acciones con formularios inline dentro del popup ──
+      let botonesAccionHtml = '';
+      const estado = inconsistencia.estado_inconsistencia || '';
+      const terminada = inconsistencia.etapa === 'terminada';
+      const inactiva = estado === 'Denegada' || estado === 'Aprobada' || inconsistencia.fecha_anulacion;
+      const esEtapaCalidad = inconsistencia.etapa === 'calidad';
+      const tieneAccionPrevia = inconsistencia.accion_inconsistencia && inconsistencia.accion_inconsistencia.trim() !== '';
+      const estadoOrdenInvalido = !inconsistencia.estado_orden || inconsistencia.estado_orden.trim() === '' || inconsistencia.estado_orden.toLowerCase() === 'pendiente';
+      // Mostrar "En Espera" si: (a) el rol del usuario es logística, O (b) la inconsistencia está en etapa 'logistica'
+      const esEtapaLogistica = inconsistencia.etapa === 'logistica' || inconsistencia.etapa === 'logística';
+      const mostrarEspera = (this.mostrarAccionTomar || esEtapaLogistica) && !this.estaEnEspera(inconsistencia);
+      
+      // Validar si el usuario tiene algún permiso de aprobación de inconsistencias
+      const esAprobador = this.authService.hasAnyPermission([7, 8, 9, 10, 11, 12, 13, 28, 29, 30]);
+
+      if (!terminada && !inactiva && esAprobador) {
+        // ── Campos condicionales para Aprobar ──
+        const camposAprobar = (esEtapaCalidad && (!tieneAccionPrevia || estadoOrdenInvalido)) ? `
+          ${!tieneAccionPrevia ? `
+          <div style="margin-bottom:12px; text-align:left;">
+            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Acción a tomar <span style="color:red;">*</span></label>
+            <textarea id="pop-accion" rows="3"
+              style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
+              placeholder="Describe la acción correctiva o preventiva..."></textarea>
+          </div>` : ''}
+          ${estadoOrdenInvalido ? `
+          <div style="margin-bottom:12px; text-align:left;">
+            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Estado de la OP <span style="color:red;">*</span></label>
+            <select id="pop-estado-orden"
+              style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; background:white; box-sizing:border-box;">
+              <option value="">Seleccione el estado...</option>
+              <option value="Abierta">Abierta</option>
+              <option value="Cerrada">Cerrada</option>
+            </select>
+          </div>` : ''}
+        ` : '';
+
+        botonesAccionHtml = `
+          <div style="margin-top:30px; padding-top:20px; border-top:2px solid #E5E7EB;">
+            <div style="display:inline-block; border-left:3px solid #72BE44; padding:4px 10px; margin-bottom:16px;">
+              <span style="font-size:11px; font-weight:600; color:#002A3F; letter-spacing:0.07em; text-transform:uppercase;">Acciones de Aprobación</span>
+            </div>
+
+            <!-- Botones principales -->
+            <div id="pop-botones" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:16px;">
+              <button onclick="toggleSeccion('pop-form-aprobar')" style="background:#16a34a; color:white; border:none; padding:10px 22px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                ✅ Aprobar
+              </button>
+              <button onclick="toggleSeccion('pop-form-rechazar')" style="background:#dc2626; color:white; border:none; padding:10px 22px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                ❌ Rechazar
+              </button>
+              ${mostrarEspera ? `
+              <button onclick="toggleSeccion('pop-form-espera')" style="background:#d97706; color:white; border:none; padding:10px 22px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                ⏳ Poner en Espera
+              </button>` : ''}
+            </div>
+
+            <!-- Formulario: Aprobar -->
+            <div id="pop-form-aprobar" style="display:none; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:16px; margin-bottom:12px;">
+              <h4 style="margin:0 0 12px; font-size:13px; color:#15803D;">✅ Confirmar Aprobación</h4>
+              ${camposAprobar}
+              <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+                <button onclick="document.getElementById('pop-form-aprobar').style.display='none';"
+                  style="background:#E5E7EB; color:#374151; border:none; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Cancelar</button>
+                <button onclick="
+                  var accion = (document.getElementById('pop-accion') ? document.getElementById('pop-accion').value : '${tieneAccionPrevia ? inconsistencia.accion_inconsistencia : ''}').trim();
+                  var estadoOrden = (document.getElementById('pop-estado-orden') ? document.getElementById('pop-estado-orden').value : '${!estadoOrdenInvalido ? inconsistencia.estado_orden : ''}').trim();
+                  ${esEtapaCalidad && !tieneAccionPrevia ? `if (!accion) { alert('La acción a tomar es obligatoria.'); return; }` : ''}
+                  ${esEtapaCalidad && estadoOrdenInvalido ? `if (!estadoOrden) { alert('El estado de la OP es obligatorio.'); return; }` : ''}
+                  window.opener.aprobarDesdePopup(${inconsistencia.id}, accion, estadoOrden);
+                  window.close();
+                " style="background:#16a34a; color:white; border:none; padding:8px 20px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Confirmar Aprobación</button>
+              </div>
+            </div>
+
+            <!-- Formulario: Rechazar -->
+            <div id="pop-form-rechazar" style="display:none; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:16px; margin-bottom:12px;">
+              <h4 style="margin:0 0 12px; font-size:13px; color:#991B1B;">❌ Motivo de Rechazo</h4>
+              <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Motivo <span style="color:red;">*</span></label>
+                <textarea id="pop-motivo-rechazo" rows="3"
+                  style="width:100%; border:1px solid #FECACA; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
+                  placeholder="Describe el motivo del rechazo..."></textarea>
+              </div>
+              <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button onclick="document.getElementById('pop-form-rechazar').style.display='none';"
+                  style="background:#E5E7EB; color:#374151; border:none; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Cancelar</button>
+                <button onclick="
+                  var motivo = document.getElementById('pop-motivo-rechazo').value.trim();
+                  if (!motivo) { alert('El motivo de rechazo es obligatorio.'); return; }
+                  window.opener.denegarDesdePopup(${inconsistencia.id}, motivo);
+                  window.close();
+                " style="background:#dc2626; color:white; border:none; padding:8px 20px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Confirmar Rechazo</button>
+              </div>
+            </div>
+
+            ${mostrarEspera ? `
+            <!-- Formulario: En Espera -->
+            <div id="pop-form-espera" style="display:none; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:16px; margin-bottom:12px;">
+              <h4 style="margin:0 0 12px; font-size:13px; color:#92400E;">⏳ Motivo de Espera</h4>
+              <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Motivo <span style="color:red;">*</span></label>
+                <textarea id="pop-motivo-espera" rows="3"
+                  style="width:100%; border:1px solid #FDE68A; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
+                  placeholder="Describe el motivo por el cual se pone en espera..."></textarea>
+              </div>
+              <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button onclick="document.getElementById('pop-form-espera').style.display='none';"
+                  style="background:#E5E7EB; color:#374151; border:none; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Cancelar</button>
+                <button onclick="
+                  var motivo = document.getElementById('pop-motivo-espera').value.trim();
+                  if (!motivo) { alert('El motivo de espera es obligatorio.'); return; }
+                  window.opener.esperarDesdePopup(${inconsistencia.id}, motivo);
+                  window.close();
+                " style="background:#d97706; color:white; border:none; padding:8px 20px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Confirmar Espera</button>
+              </div>
+            </div>` : ''}
+
+          </div>
+          <script>
+            function toggleSeccion(id) {
+              var secciones = ['pop-form-aprobar','pop-form-rechazar','pop-form-espera'];
+              secciones.forEach(function(s) {
+                var el = document.getElementById(s);
+                if (el) el.style.display = (s === id && el.style.display === 'none') ? 'block' : 'none';
+              });
+            }
+          <\/script>`;
+      }
+
+      const htmlContent = getDetallesHtml(
+        inconsistencia,
+        tiemposHtml,
+        evidenciasHtml,
+        botonesAccionHtml,
+        this.tipos_inco,
+        this.traducirEtapa.bind(this)
+      );
+
+      if (win) {
+        win.document.open();
+        win.document.write(htmlContent);
+        win.document.close();
+      }
+    },
+    error: (err) => {
+      if (win) {
+        win.document.open();
+        win.document.write('<p style="color:red; text-align:center; padding:20px;">Error al cargar los detalles de la inconsistencia.</p>');
+        win.document.close();
+      }
     }
   });
 }
 
 aprobarInconsistencia(inco: any): void {
-  // Verificar si el usuario tiene el rol de Calidad
-  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
+  // Determinar si la inconsistencia está actualmente en la etapa de calidad
+  const esEtapaCalidad = inco.etapa === 'calidad';
 
-  const esRolCalidad = rolesUsuario.some(rol => rol.toLowerCase() === 'calidad (inconsistencias)');
+  // Verificar si la inconsistencia YA tiene una acción registrada (por ejemplo, porque la ingresaron al generar)
+  const tieneAccionPrevia = inco.accion_inconsistencia && inco.accion_inconsistencia.trim() !== '';
+  const estadoOrdenInvalido = !inco.estado_orden || inco.estado_orden.trim() === '' || inco.estado_orden.toLowerCase() === 'pendiente';
+
+  // Si está en etapa Calidad y la inconsistencia NO tiene acción o el estado de OP no es válido
+  const solicitarDatosCalidad = esEtapaCalidad && (!tieneAccionPrevia || estadoOrdenInvalido);
 
   // Configurar el modal según el rol
   const modalConfig: any = {
@@ -240,29 +466,63 @@ aprobarInconsistencia(inco: any): void {
     cancelButtonText: 'Cancelar'
   };
 
-  // Si es rol Calidad, agregar input de acción
-  if (esRolCalidad) {
-    modalConfig.html = `
-      <p>¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?</p>
-      <div class="mt-3">
-        <label for="accion-tomar" class="form-label fw-bold">Acción a tomar:</label>
-        <textarea 
-          id="accion-tomar" 
-          class="form-control" 
-          rows="4" 
-          placeholder="Describe la acción correctiva o preventiva a implementar..."
-        ></textarea>
-      </div>
-    `;
+  // Si requiere solicitar datos de calidad
+  if (solicitarDatosCalidad) {
+    let htmlForm = `<p>¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?</p>`;
+    
+    if (!tieneAccionPrevia) {
+        htmlForm += `
+          <div class="mt-3">
+            <label for="accion-tomar" class="form-label fw-bold">Acción a tomar:</label>
+            <textarea 
+              id="accion-tomar" 
+              class="form-control" 
+              rows="4" 
+              placeholder="Describe la acción correctiva o preventiva a implementar..."
+            ></textarea>
+          </div>
+        `;
+    }
+
+    if (estadoOrdenInvalido) {
+        htmlForm += `
+          <div class="mt-3">
+            <label for="estado-orden" class="form-label fw-bold">Estado de la OP:</label>
+            <select id="estado-orden" class="form-select">
+                <option value="">Seleccione el estado de la OP...</option>
+                <option value="Abierta">Abierta</option>
+                <option value="Cerrada">Cerrada</option>
+            </select>
+          </div>
+        `;
+    }
+
+    modalConfig.html = htmlForm;
     delete modalConfig.text;
 
     modalConfig.preConfirm = () => {
-      const accion = (document.getElementById('accion-tomar') as HTMLTextAreaElement)?.value;
-      if (!accion || accion.trim() === '') {
-        Swal.showValidationMessage('La acción a tomar es obligatoria');
-        return false;
+      let accionTomar = inco.accion_inconsistencia;
+      let estadoOrden = inco.estado_orden;
+
+      if (!tieneAccionPrevia) {
+          const accionInput = (document.getElementById('accion-tomar') as HTMLTextAreaElement)?.value;
+          if (!accionInput || accionInput.trim() === '') {
+            Swal.showValidationMessage('La acción a tomar es obligatoria');
+            return false;
+          }
+          accionTomar = accionInput;
       }
-      return accion;
+
+      if (estadoOrdenInvalido) {
+          const estadoInput = (document.getElementById('estado-orden') as HTMLSelectElement)?.value;
+          if (!estadoInput || estadoInput.trim() === '') {
+            Swal.showValidationMessage('El estado de la OP es obligatorio');
+            return false;
+          }
+          estadoOrden = estadoInput;
+      }
+
+      return { accionTomar, estadoOrden };
     };
   }
 
@@ -270,19 +530,19 @@ aprobarInconsistencia(inco: any): void {
     if (result.isConfirmed) {
       this.loading = true;
 
-      const accionTomar = esRolCalidad ? result.value : null;
+      const accionTomar = solicitarDatosCalidad && result.value ? result.value.accionTomar : null;
+      const estadoOrden = solicitarDatosCalidad && result.value ? result.value.estadoOrden : null;
 
       this.inconsistenciasService.aprobarInconsistencia(
-        inco.id_inconsistencia,
-        this.authService.user.id_Sdp,
-        inco.tipo_inconsistencia,
-        accionTomar
+        inco.id,
+        accionTomar,
+        estadoOrden
       ).subscribe({
         next: (res: any) => {
           this.loading = false;
           if (res.success) {
             Swal.fire('Aprobada', 'La inconsistencia ha sido aprobada correctamente.', 'success');
-            this.inconsistencias = this.inconsistencias.filter(i => i.id_inconsistencia !== inco.id_inconsistencia);
+            this.inconsistencias = this.inconsistencias.filter(i => i.id !== inco.id);
             this.applyFilters();
           } else {
             Swal.fire('Error', res.message || 'No se pudo aprobar la inconsistencia.', 'error');
@@ -290,7 +550,6 @@ aprobarInconsistencia(inco: any): void {
         },
         error: (err) => {
           this.loading = false;
-          console.error('Error al aprobar:', err);
           Swal.fire('Error', 'Ocurrió un error al aprobar.', 'error');
         }
       });
@@ -300,9 +559,8 @@ aprobarInconsistencia(inco: any): void {
 
 // Método para poner inconsistencia en espera
 ponerEnEspera(inco: any): void {
-  // 1. Verificar que el usuario tiene el rol de Logística
-  const rolesUsuario: string[] = (this.authService.user.roles || []).map((rol: any) => String(rol));
-  const esRolLogistica = rolesUsuario.some(rol => rol.toLowerCase() === 'logisitica (inconsistencias)');
+  // 1. Verificar que el usuario tiene el acceso de Logística (permiso ID 11)
+  const esRolLogistica = this.authService.hasAnyPermission([11]);
 
   if (!esRolLogistica) {
     Swal.fire({
@@ -348,8 +606,7 @@ ponerEnEspera(inco: any): void {
 
       // 3. Llamar al servicio ponerEnEspera
       this.inconsistenciasService.ponerEnEspera(
-        inco.id_inconsistencia,
-        this.authService.user.id_Sdp,
+        inco.id,
         motivo
       ).subscribe({
         next: (res: any) => {
@@ -364,7 +621,6 @@ ponerEnEspera(inco: any): void {
         },
         error: (err) => {
           this.loading = false;
-          console.error('Error al poner en espera:', err);
           Swal.fire('Error', 'Ocurrió un error al poner en espera.', 'error');
         }
       });
@@ -392,15 +648,14 @@ ponerEnEspera(inco: any): void {
         const motivo = result.value;
         this.loading = true;
         this.inconsistenciasService.denegarInconsistencia(
-          inco.id_inconsistencia,
-          this.authService.user.id_Sdp,
+          inco.id,
           motivo
         ).subscribe({
           next: (res: any) => {
             this.loading = false;
             if (res.success) {
               Swal.fire('Denegada', 'La inconsistencia fue denegada correctamente.', 'success');
-              this.inconsistencias = this.inconsistencias.filter(i => i.id_inconsistencia !== inco.id_inconsistencia);
+              this.inconsistencias = this.inconsistencias.filter(i => i.id !== inco.id);
               this.applyFilters();
             } else {
               Swal.fire('Error', res.message || 'No se pudo denegar la inconsistencia.', 'error');
@@ -408,7 +663,6 @@ ponerEnEspera(inco: any): void {
           },
           error: (err) => {
             this.loading = false;
-            console.error('Error al denegar:', err);
             Swal.fire('Error', 'Ocurrió un error al denegar.', 'error');
           }
         });

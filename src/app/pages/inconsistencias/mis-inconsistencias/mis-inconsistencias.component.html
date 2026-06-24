@@ -1,453 +1,264 @@
-<div class="contenedor-principal">
-  <!-- Header -->
-  <header class="header">
-    <h1 class="titulo-principal">Mis Inconsistencias</h1>
-    <p class="subtitulo">Seguimiento y trazabilidad completa</p>
-  </header>
+<!-- Encabezado -->
+<header class="mb-4" role="banner">
+  <h1 class="text-xl font-bold text-gray-800">Mis Inconsistencias</h1>
+  <p class="text-xs text-gray-500 mt-0.5">Seguimiento y trazabilidad completa</p>
+</header>
 
-  <!-- Filtros Colapsables (Mobile First) -->
-  <section class="seccion-filtros" aria-label="Filtros de búsqueda">
-    <!-- Toggle solo visible en móvil -->
-    <button 
-      type="button"
-      class="filtros-toggle"
-      [attr.aria-expanded]="filtrosExpandidos"
-      (click)="toggleFiltros()"
-      aria-controls="filtros-panel">
-      <span class="filtros-toggle-texto">
-        <svg class="icono-filtro-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-        </svg>
-        Filtros
-        <span *ngIf="contarFiltrosActivos() > 0" class="badge badge-estado">
-          {{ contarFiltrosActivos() }}
-        </span>
-      </span>
-      <svg class="icono-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-        <polyline points="6 9 12 15 18 9"></polyline>
+<!-- Filtros -->
+<section class="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-3" aria-label="Filtros de búsqueda">
+  <button type="button"
+    class="flex w-full items-center justify-between md:hidden mb-2 text-sm font-medium text-gray-700"
+    [attr.aria-expanded]="filtrosExpandidos" (click)="toggleFiltros()" aria-controls="filtros-panel">
+    <span class="flex items-center gap-2">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
       </svg>
-    </button>
-
-    <div 
-      id="filtros-panel"
-      class="filtros-contenedor" 
-      [class.expandido]="filtrosExpandidos"
-      role="region"
-      [attr.aria-hidden]="!filtrosExpandidos">
-      
-      <!-- Búsqueda general -->
-      <div class="campo-filtro campo-busqueda">
-        <label for="busqueda" class="etiqueta-filtro">
-          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-          Buscar
-        </label>
-        <input 
-          type="search" 
-          id="busqueda" 
-          class="input-filtro"
-          [(ngModel)]="busqueda"
-          (input)="aplicarFiltros()"
-          placeholder="ID, Cliente, Item..."
-          aria-label="Buscar por ID, cliente o item">
-      </div>
-
-      <!-- Estado -->
-      <div class="campo-filtro">
-        <label for="filtro-estado" class="etiqueta-filtro">
-          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 6v6l4 2"></path>
-          </svg>
-          Estado
-        </label>
-        <select 
-          id="filtro-estado" 
-          class="select-filtro"
-          [(ngModel)]="filtroEstado"
-          (change)="aplicarFiltros()"
-          aria-label="Filtrar por estado">
-          <option value="">Todos los estados</option>
-          <option *ngFor="let estado of estados" [value]="estado">{{ estado }}</option>
-        </select>
-      </div>
-
-      <!-- Etapa -->
-      <div class="campo-filtro">
-        <label for="filtro-etapa" class="etiqueta-filtro">
-          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-          Etapa
-        </label>
-        <select 
-          id="filtro-etapa" 
-          class="select-filtro"
-          [(ngModel)]="filtroEtapa"
-          (change)="aplicarFiltros()"
-          aria-label="Filtrar por etapa">
-          <option value="">Todas las etapas</option>
-          <option *ngFor="let etapa of etapas" [value]="etapa">{{ traducirEtapa(etapa) }}</option>
-        </select>
-      </div>
-
-      <!-- Tipo -->
-      <div class="campo-filtro">
-        <label for="filtro-tipo" class="etiqueta-filtro">
-          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-          Tipo
-        </label>
-        <select 
-          id="filtro-tipo" 
-          class="select-filtro"
-          [(ngModel)]="filtroTipo"
-          (change)="aplicarFiltros()"
-          aria-label="Filtrar por tipo de inconsistencia">
-          <option value="">Todos los tipos</option>
-          <option *ngFor="let tipo of tiposInconsistencia" [value]="tipo">{{ traducirTipoInconsistencia(tipo) }}</option>
-        </select>
-      </div>
-
-      <!-- Fecha desde -->
-      <div class="campo-filtro">
-        <label for="filtro-fecha-desde" class="etiqueta-filtro">
-          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          Fecha desde
-        </label>
-        <input 
-          type="date" 
-          id="filtro-fecha-desde" 
-          class="input-filtro"
-          [(ngModel)]="filtroFechaDesde"
-          (change)="aplicarFiltros()"
-          aria-label="Filtrar desde fecha">
-      </div>
-
-      <!-- Fecha hasta -->
-      <div class="campo-filtro">
-        <label for="filtro-fecha-hasta" class="etiqueta-filtro">
-          <svg class="icono-filtro" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          Fecha hasta
-        </label>
-        <input 
-          type="date" 
-          id="filtro-fecha-hasta" 
-          class="input-filtro"
-          [(ngModel)]="filtroFechaHasta"
-          (change)="aplicarFiltros()"
-          aria-label="Filtrar hasta fecha">
-      </div>
-
-      <!-- Botón limpiar -->
-      <button 
-        type="button"
-        class="boton-limpiar"
-        (click)="limpiarFiltros()"
-        [disabled]="contarFiltrosActivos() === 0"
-        aria-label="Limpiar todos los filtros">
-        <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-        Limpiar filtros
-      </button>
-    </div>
-  </section>
-
-  <!-- Loading -->
-  <div *ngIf="cargando" class="estado-carga" role="status" aria-live="polite">
-    <div class="spinner" aria-hidden="true"></div>
-    <p>Cargando inconsistencias...</p>
-  </div>
-
-  <!-- Error -->
-  <div *ngIf="error && !cargando" class="mensaje-error" role="alert" aria-live="assertive">
-    <svg class="icono-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="8" x2="12" y2="12"></line>
-      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      Filtros
+      <span *ngIf="contarFiltrosActivos() > 0"
+        class="px-1.5 py-0.5 text-xs font-bold bg-blue-600 text-white rounded-full">{{ contarFiltrosActivos() }}</span>
+    </span>
+    <svg class="w-4 h-4 transition-transform" [class.rotate-180]="filtrosExpandidos" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor">
+      <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
-    <p><strong>Error al cargar:</strong> {{ error }}</p>
-  </div>
+  </button>
 
-  <!-- Lista de inconsistencias -->
-  <section class="seccion-lista" *ngIf="!cargando && !error" aria-label="Lista de inconsistencias">
-    
-    <!-- Info de resultados y filtros activos -->
-    <div class="info-resultados">
-      <p class="contador-resultados" aria-live="polite" aria-atomic="true">
-        <strong>{{ inconsistenciasFiltradas.length }}</strong> 
-        {{ inconsistenciasFiltradas.length === 1 ? 'inconsistencia' : 'inconsistencias' }}
-      </p>
-      
-      <!-- Chips de filtros activos -->
-      <div class="filtros-activos" *ngIf="contarFiltrosActivos() > 0">
-        <span class="chip-filtro-activo" *ngIf="filtroEstado">
-          Estado: {{ filtroEstado }}
-        </span>
-        <span class="chip-filtro-activo" *ngIf="filtroEtapa">
-          Etapa: {{ traducirEtapa(filtroEtapa) }}
-        </span>
-        <span class="chip-filtro-activo" *ngIf="filtroTipo">
-          Tipo: {{ traducirTipoInconsistencia(filtroTipo) }}
-        </span>
-        <span class="chip-filtro-activo" *ngIf="filtroFechaDesde">
-          Desde: {{ filtroFechaDesde }}
-        </span>
-        <span class="chip-filtro-activo" *ngIf="filtroFechaHasta">
-          Hasta: {{ filtroFechaHasta }}
-        </span>
-      </div>
+  <div id="filtros-panel" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2"
+    [class.hidden]="!filtrosExpandidos" [class.md:grid]="true">
+    <div>
+      <label for="busqueda" class="block text-xs font-medium text-gray-500 mb-1">Buscar</label>
+      <input type="search" id="busqueda"
+        class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        [(ngModel)]="busqueda" (input)="aplicarFiltros()" placeholder="ID, Cliente, Item...">
     </div>
-
-    <!-- Sin resultados -->
-    <div *ngIf="inconsistenciasFiltradas.length === 0" class="sin-resultados">
-      <svg class="icono-sin-resultados" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="8" y1="15" x2="16" y2="15"></line>
-        <line x1="9" y1="9" x2="9.01" y2="9"></line>
-        <line x1="15" y1="9" x2="15.01" y2="9"></line>
-      </svg>
-      <p>No se encontraron inconsistencias con los filtros aplicados</p>
-      <button 
-        type="button"
-        class="boton-limpiar"
-        (click)="limpiarFiltros()"
-        style="max-width: 200px; margin-top: 1rem;">
-        Limpiar filtros
+    <div>
+      <label for="filtro-estado" class="block text-xs font-medium text-gray-500 mb-1">Estado</label>
+      <select id="filtro-estado"
+        class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+        [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option *ngFor="let estado of estados" [value]="estado">{{ estado }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtro-etapa" class="block text-xs font-medium text-gray-500 mb-1">Etapa</label>
+      <select id="filtro-etapa"
+        class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+        [(ngModel)]="filtroEtapa" (change)="aplicarFiltros()">
+        <option value="">Todas</option>
+        <option *ngFor="let etapa of etapas" [value]="etapa">{{ traducirEtapa(etapa) }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtro-tipo" class="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+      <select id="filtro-tipo"
+        class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+        [(ngModel)]="filtroTipo" (change)="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option *ngFor="let tipo of tiposInconsistencia" [value]="tipo">{{ traducirTipoInconsistencia(tipo) }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="filtro-fecha-desde" class="block text-xs font-medium text-gray-500 mb-1">Desde</label>
+      <input type="date" id="filtro-fecha-desde"
+        class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+        [(ngModel)]="filtroFechaDesde" (change)="cambioFecha()">
+    </div>
+    <div>
+      <label for="filtro-fecha-hasta" class="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
+      <input type="date" id="filtro-fecha-hasta"
+        class="block w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+        [(ngModel)]="filtroFechaHasta" (change)="cambioFecha()">
+    </div>
+    <div class="flex flex-col justify-end">
+      <button type="button"
+        class="w-full px-2 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 rounded transition-colors"
+        (click)="limpiarFiltros()" [disabled]="contarFiltrosActivos() === 0">
+        Limpiar
       </button>
     </div>
+  </div>
+</section>
 
-    <!-- Lista compacta tipo tabla (sin tarjetas) -->
-    <div 
-      class="grid-inconsistencias" 
-      role="list"
-      *ngIf="inconsistenciasFiltradas.length > 0">
-      
-      <article 
-        *ngFor="let inconsistencia of inconsistenciasFiltradas; trackBy: trackByInconsistencia" 
-        class="tarjeta-inconsistencia"
-        role="listitem"
-        tabindex="0"
-        (click)="abrirModalDetalles(inconsistencia)"
-        (keydown.enter)="abrirModalDetalles(inconsistencia)"
-        (keydown.space)="abrirModalDetalles(inconsistencia); $event.preventDefault()"
-        [attr.aria-label]="'Inconsistencia ' + inconsistencia.id_inconsistencia + ', estado ' + inconsistencia.estado_inconsistencia">
-        
-        <!-- Header: ID + Badges -->
-        <div class="tarjeta-header">
-          <div class="info-principal">
-            <a 
-              class="id-inconsistencia"
-              [href]="'#inconsistencia-' + inconsistencia.id_inconsistencia"
-              (click)="$event.preventDefault(); abrirModalDetalles(inconsistencia)"
-              [attr.aria-label]="'Ver detalles de inconsistencia ' + inconsistencia.id_inconsistencia">
-              {{ inconsistencia.id_inconsistencia }}
-            </a>
-            <time class="fecha-inconsistencia" [attr.datetime]="inconsistencia.fecha_inconsistencia">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="width: 0.75rem; height: 0.75rem; stroke-width: 2;">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              {{ formatearFecha(inconsistencia.fecha_inconsistencia) }}
-            </time>
-          </div>
-          
-          <div class="badges">
-            <span 
-              class="badge badge-estado"
-              [ngClass]="obtenerClaseEstado(inconsistencia.estado_inconsistencia)"
-              [attr.aria-label]="'Estado: ' + inconsistencia.estado_inconsistencia">
+<!-- Loading -->
+<div *ngIf="cargando" class="flex items-center justify-center py-12" role="status">
+  <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+  <span class="ml-3 text-sm text-gray-500">Cargando...</span>
+</div>
+
+<!-- Error -->
+<div *ngIf="error && !cargando"
+  class="flex items-center gap-2 bg-red-50 text-red-700 border border-red-200 rounded-lg p-3 mb-4 text-sm" role="alert">
+  <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="8" x2="12" y2="12"></line>
+    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+  </svg>
+  <span><strong>Error:</strong> {{ error }}</span>
+</div>
+
+<!-- Tabla -->
+<section *ngIf="!cargando && !error" aria-label="Lista de inconsistencias">
+  <div class="mb-2 flex items-center justify-between">
+    <span class="text-xs text-gray-500"><strong class="text-gray-700">{{ inconsistenciasFiltradas.length }}</strong> {{
+      inconsistenciasFiltradas.length === 1 ? 'inconsistencia' : 'inconsistencias' }}</span>
+  </div>
+
+  <!-- Sin resultados -->
+  <div *ngIf="inconsistenciasFiltradas.length === 0"
+    class="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+    <svg class="w-10 h-10 text-gray-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="8" y1="15" x2="16" y2="15"></line>
+    </svg>
+    <p class="text-sm text-gray-500 mb-2">No se encontraron inconsistencias</p>
+    <button type="button"
+      class="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded transition-colors"
+      (click)="limpiarFiltros()">Limpiar filtros</button>
+  </div>
+
+  <!-- Tabla responsiva -->
+  <div *ngIf="inconsistenciasFiltradas.length > 0"
+    class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+    <table class="w-full text-xs text-left" role="table" aria-label="Mis inconsistencias">
+      <thead class="bg-gray-50 text-gray-600 font-semibold uppercase tracking-wide">
+        <tr>
+
+          <th class="px-3 py-2 whitespace-nowrap">ID</th>
+          <th class="px-3 py-2 whitespace-nowrap">Cliente</th>
+          <th class="px-3 py-2 whitespace-nowrap">Tipo</th>
+          <th class="px-3 py-2 whitespace-nowrap">Cant. Sol.</th>
+          <th class="px-3 py-2 whitespace-nowrap">Cant. Inc.</th>
+          <th class="px-3 py-2 whitespace-nowrap max-w-[140px]">Ítem</th>
+          <th class="px-3 py-2 whitespace-nowrap">Total</th>
+          <th class="px-3 py-2 whitespace-nowrap">Estado</th>
+          <th class="px-3 py-2 whitespace-nowrap">Etapa</th>
+          <th class="px-3 py-2 whitespace-nowrap text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr *ngFor="let inconsistencia of currentData; trackBy: trackByInconsistencia"
+          class="transition-colors cursor-pointer"
+          [ngClass]="inconsistencia.fecha_anulacion ? 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500' : 'hover:bg-gray-50'"
+          (click)="abrirModalDetalles(inconsistencia)" tabindex="0"
+          (keydown.enter)="abrirModalDetalles(inconsistencia)">
+
+          <td class="px-3 py-2 whitespace-nowrap font-semibold text-blue-700">{{ inconsistencia.id_inconsistencia }}
+          </td>
+          <td class="px-3 py-2 max-w-[120px] truncate" [title]="inconsistencia.Cliente">{{ inconsistencia.Cliente }}
+          </td>
+          <td class="px-3 py-2 whitespace-nowrap">
+            <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{{
+              traducirTipoInconsistencia(inconsistencia.tipo_inconsistencia) }}</span>
+          </td>
+          <td class="px-3 py-2 text-right whitespace-nowrap">{{ inconsistencia.cantidad_solicitada_op || 'N/A' }}</td>
+          <td class="px-3 py-2 text-right whitespace-nowrap font-bold text-red-600">{{
+            inconsistencia.cantidad_inconsistencia || 'N/A' }}</td>
+          <td class="px-3 py-2 max-w-[140px] truncate text-gray-500" [title]="inconsistencia.item">{{
+            inconsistencia.item || 'N/A' }}</td>
+          <td class="px-3 py-2 text-right whitespace-nowrap font-medium">{{
+            formatearMoneda(inconsistencia.precio_total_inconsistencia) }}</td>
+          <td class="px-3 py-2 whitespace-nowrap">
+            <span *ngIf="!inconsistencia.fecha_anulacion" class="px-1.5 py-0.5 rounded text-xs font-medium"
+              [ngClass]="obtenerClaseEstado(inconsistencia.estado_inconsistencia)">
               {{ inconsistencia.estado_inconsistencia || 'Sin estado' }}
             </span>
-            <span 
-              class="badge badge-etapa"
-              [ngClass]="obtenerClaseEtapa(inconsistencia.etapa)"
-              [attr.aria-label]="'Etapa: ' + traducirEtapa(inconsistencia.etapa)">
+            <span *ngIf="inconsistencia.fecha_anulacion"
+              class="px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+              Anulada
+            </span>
+          </td>
+          <td class="px-3 py-2 whitespace-nowrap">
+            <span class="px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700"
+              [ngClass]="obtenerClaseEtapa(inconsistencia.etapa)">
               {{ traducirEtapa(inconsistencia.etapa) }}
             </span>
-            <span 
-              *ngIf="inconsistencia.estado_consumo"
-              class="badge"
-              [ngClass]="inconsistencia.estado_consumo === 'CONSUMIDO' ? 'badge-consumido' : 'badge-por-consumir'"
-              [attr.aria-label]="'Estado de consumo: ' + inconsistencia.estado_consumo">
-              {{ inconsistencia.estado_consumo }}
-            </span>
-          </div>
-        </div>
+          </td>
+          <td class="px-3 py-2 whitespace-nowrap text-center" (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-center gap-1">
+              <button type="button" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Ver detalles" (click)="abrirModalDetalles(inconsistencia)">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+              <button *ngIf="tieneEvidencias(inconsistencia)" type="button"
+                class="p-1 text-green-600 hover:bg-green-50 rounded transition-colors" title="Ver evidencias"
+                (click)="verEvidencias(inconsistencia)">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </button>
+              <button *ngIf="puedeSerAnulada(inconsistencia)" type="button"
+                class="p-1 text-red-500 hover:bg-red-50 rounded transition-colors" title="Anular"
+                (click)="abrirModalAnular(inconsistencia)">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
-        <!-- Contenido principal en líneas -->
-        <div class="tarjeta-contenido">
-          <div class="linea-info" *ngIf="inconsistencia.Cliente">
-            <span class="linea-info-label">Cliente:</span>
-            <span class="linea-info-valor">{{ inconsistencia.Cliente }}</span>
-          </div>
+<!-- Paginador -->
+<div class="mt-4" *ngIf="!cargando && !error && inconsistenciasFiltradas.length > 0">
+  <app-shared-paginator
+    *ngIf="paginationService.getPaginatorState(paginatorId)"
+    [instanceId]="paginatorId"
+    [showPageSizeSelector]="true"
+    [pageSizeOptions]="[5, 10, 25, 50, 100]"
+    [noDataMessage]="'No se encontraron inconsistencias'">
+  </app-shared-paginator>
+</div>
 
-          <div class="linea-info" *ngIf="inconsistencia.tipo_inconsistencia">
-            <span class="linea-info-label">Tipo:</span>
-            <span class="linea-info-valor">{{ traducirTipoInconsistencia(inconsistencia.tipo_inconsistencia) }}</span>
-          </div>
-
-          <div class="linea-info" *ngIf="inconsistencia.tipo_de_orden">
-            <span class="linea-info-label">Orden:</span>
-            <span class="linea-info-valor">{{ inconsistencia.tipo_de_orden }}</span>
-          </div>
-        </div>
-
-        <!-- Item (si existe) -->
-        <div class="tarjeta-item" *ngIf="inconsistencia.item">
-          {{ inconsistencia.item }}
-        </div>
-
-        <!-- Cantidades en línea horizontal -->
-        <div class="tarjeta-cantidades">
-          <div class="cantidad-inline">
-            <span class="cantidad-label">Solicitado:</span>
-            <span class="cantidad-valor">{{ inconsistencia.cantidad_solicitada_op || 'N/A' }}</span>
-          </div>
-          <div class="cantidad-inline">
-            <span class="cantidad-label">Inconsistencia:</span>
-            <span class="cantidad-valor destaque">{{ inconsistencia.cantidad_inconsistencia || 'N/A' }}</span>
-          </div>
-          <div class="cantidad-inline" *ngIf="inconsistencia.precio_total_inconsistencia">
-            <span class="cantidad-label">Total:</span>
-            <span class="cantidad-valor precio">{{ formatearMoneda(inconsistencia.precio_total_inconsistencia) }}</span>
-          </div>
-        </div>
-
-        <!-- Acciones -->
-        <div class="tarjeta-acciones" (click)="$event.stopPropagation()">
-          <button 
-            type="button"
-            class="boton-accion boton-detalles"
-            (click)="abrirModalDetalles(inconsistencia)"
-            aria-label="Ver detalles completos de la inconsistencia">
-            <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Ver detalles
-          </button>
-          <button 
-            type="button"
-            class="boton-accion boton-evidencias"
-            (click)="verEvidencias(inconsistencia)"
-            *ngIf="tieneEvidencias(inconsistencia)"
-            aria-label="Ver evidencias de la inconsistencia">
-            <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            Ver evidencias
-          </button>
-          <button 
-            type="button"
-            class="boton-accion boton-anular"
-            (click)="abrirModalAnular(inconsistencia)"
-            aria-label="Anular esta inconsistencia">
-            <svg class="icono-boton" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="15" y1="9" x2="9" y2="15"></line>
-                <line x1="9" y1="9" x2="15" y2="15"></line>
-            </svg>
-            Anular
-            </button>
-
-        </div>
-      </article>
+<!-- Modal Anular -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" *ngIf="modalAnularAbierto"
+  (click)="cerrarModalAnular()" role="dialog" aria-modal="true" aria-labelledby="modal-anular-titulo">
+  <div class="w-full max-w-md bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+    (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+      <h2 id="modal-anular-titulo" class="text-base font-bold text-gray-800">Anular Inconsistencia</h2>
+      <button type="button" class="p-1 text-gray-400 hover:text-gray-600 rounded" (click)="cerrarModalAnular()">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
-  </section>
-
-  <!-- Modal Anular -->
-  <div 
-    class="modal-overlay" 
-    *ngIf="modalAnularAbierto"
-    (click)="cerrarModalAnular()"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="modal-anular-titulo"
-    aria-describedby="modal-anular-descripcion">
-    <div class="modal-contenido" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2 id="modal-anular-titulo" class="modal-titulo">Anular Inconsistencia</h2>
-        <button 
-          type="button"
-          class="boton-cerrar"
-          (click)="cerrarModalAnular()"
-          aria-label="Cerrar modal de anulación">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <p id="modal-anular-descripcion" class="modal-descripcion">
-          ¿Está seguro de que desea anular la inconsistencia 
-          <strong>{{ inconsistenciaSeleccionada?.id_inconsistencia }}</strong>?
-          Esta acción no se puede deshacer.
-        </p>
-        
-        <div class="campo-formulario">
-          <label for="razon-anulacion" class="etiqueta-filtro etiqueta-requerida">
-            Razón de anulación
-          </label>
-          <textarea 
-            id="razon-anulacion"
-            class="textarea-modal"
-            [(ngModel)]="razonAnulacion"
-            placeholder="Describa el motivo de la anulación de forma clara y detallada..."
-            rows="4"
-            required
-            aria-required="true"
-            [disabled]="procesandoAnulacion"
-            aria-describedby="razon-help"></textarea>
-          <small id="razon-help" class="linea-info-label">
-            Mínimo 10 caracteres para confirmar la anulación
-          </small>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button 
-          type="button"
-          class="boton-secundario"
-          (click)="cerrarModalAnular()"
-          [disabled]="procesandoAnulacion">
-          Cancelar
-        </button>
-        <button 
-          type="button"
-          class="boton-primario boton-peligro"
-          (click)="confirmarAnulacion()"
-          [disabled]="!razonAnulacion.trim() || razonAnulacion.trim().length < 10 || procesandoAnulacion"
-          [attr.aria-busy]="procesandoAnulacion">
-          <span *ngIf="!procesandoAnulacion">Confirmar anulación</span>
-          <span *ngIf="procesandoAnulacion">Procesando...</span>
-        </button>
-      </div>
+    <div class="px-5 py-4">
+      <p class="text-sm text-gray-600 mb-3">¿Desea anular la inconsistencia <strong>{{
+          inconsistenciaSeleccionada?.id_inconsistencia }}</strong>? Esta acción no se puede deshacer.</p>
+      <label for="razon-anulacion" class="block text-xs font-medium text-gray-700 mb-1">Razón de anulación <span
+          class="text-red-500">*</span></label>
+      <textarea id="razon-anulacion"
+        class="block w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-red-400 outline-none resize-none"
+        [(ngModel)]="razonAnulacion" placeholder="Describa el motivo..." rows="3" required
+        [disabled]="procesandoAnulacion"></textarea>
+      <small class="text-xs text-gray-400">Mínimo 10 caracteres</small>
+    </div>
+    <div class="flex justify-end gap-2 px-5 py-3 bg-gray-50 border-t border-gray-100">
+      <button type="button"
+        class="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded transition-colors disabled:opacity-40"
+        (click)="cerrarModalAnular()" [disabled]="procesandoAnulacion">Cancelar</button>
+      <button type="button"
+        class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+        (click)="confirmarAnulacion()"
+        [disabled]="!razonAnulacion.trim() || razonAnulacion.trim().length < 10 || procesandoAnulacion">
+        <svg *ngIf="procesandoAnulacion" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span>{{ procesandoAnulacion ? 'Procesando...' : 'Confirmar' }}</span>
+      </button>
     </div>
   </div>
-
-  <!-- Modal Detalles -->
- 
 </div>

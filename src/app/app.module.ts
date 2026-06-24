@@ -39,6 +39,10 @@ import { ListUserComponent } from './pages/user/list-user/list-user.component';
 import { CreateUserComponent } from './pages/user/create-user/create-user.component';
 import { AuthorizationManagerModule } from './pages/authorization-manager/authorization-manager.module';
 import { UserProfileComponent } from './pages/user-profile/user-profile.component';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { DashboardFinancieroModule } from './pages/inconsistencias/dashboard-financiero/dashboard-financiero.module';
+import { WorkflowManagerComponent } from './pages/authorization-manager/workflow-manager/workflow-manager.component';
+import { CarteraInconsistenciasComponent } from './pages/inconsistencias/cartera-inconsistencias/cartera-inconsistencias.component';
 
 import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthModule } from './auth/auth.module';
@@ -71,6 +75,7 @@ import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.modul
 
 import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
 import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
+import { EmailLogsComponent } from './pages/email-logs/email-logs.component';
 
 // import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
@@ -102,7 +107,8 @@ registerLocaleData(localeEs, 'es-CO');
         ReportListComponent,
         MiReportListComponent,
         ReportDashboardComponent,
-        UserProfileComponent
+        UserProfileComponent,
+        EmailLogsComponent
 
     ],
     bootstrap: [AppComponent],
@@ -116,6 +122,10 @@ registerLocaleData(localeEs, 'es-CO');
         AuthModule,
         SharedModule,
         AuthorizationManagerModule,
+        DragDropModule,
+        DashboardFinancieroModule,
+        WorkflowManagerComponent,
+        CarteraInconsistenciasComponent,
         /*Editor*/
         AngularEditorModule,
         /* Zoom */

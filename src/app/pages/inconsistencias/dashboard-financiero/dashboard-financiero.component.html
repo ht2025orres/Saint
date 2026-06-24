@@ -1,0 +1,464 @@
+<section class="df-dashboard">
+
+  <!-- ══════════════════════════════════════════════════════ HEADER ══ -->
+  <div class="df-header">
+    <div class="df-header__left">
+      <div class="df-header__title-row">
+        <h1 class="df-header__title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Dashboard Financiero — Inconsistencias
+        </h1>
+        <span class="df-badge" *ngIf="loading">Cargando datos...</span>
+      </div>
+      <p class="df-header__subtitle">Análisis de costos, tiempo y consumo en valores monetarios</p>
+    </div>
+    <div class="df-header__right">
+      <div class="df-filter-group">
+        <label class="df-filter-label">Período</label>
+        <select class="df-select" [(ngModel)]="selectedPeriodo" (ngModelChange)="onFiltroChange()" id="filtro-periodo">
+          <option *ngFor="let p of periodos" [value]="p.value">{{ p.label }}</option>
+        </select>
+      </div>
+      <div class="df-filter-group">
+        <label class="df-filter-label">Tipo</label>
+        <select class="df-select" [(ngModel)]="selectedTipo" (ngModelChange)="onFiltroChange()" id="filtro-tipo">
+          <option *ngFor="let t of tipos" [value]="t.value">{{ t.label }}</option>
+        </select>
+      </div>
+      <div class="df-filter-group">
+        <label class="df-filter-label">Grupo</label>
+        <select class="df-select" [(ngModel)]="selectedGrupo" (ngModelChange)="onFiltroChange()" id="filtro-grupo">
+          <option *ngFor="let g of grupos" [value]="g.value">{{ g.label }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ FILA 1: KPIs ══ -->
+  <div class="df-kpi-grid">
+
+    <!-- Valor Total Reportado -->
+    <div class="df-kpi-card df-kpi-card--rojo">
+      <div class="df-kpi-icon df-kpi-icon--rojo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      </div>
+      <div class="df-kpi-content">
+        <span class="df-kpi-label">VALOR TOTAL REPORTADO
+          <span class="df-info-icon" title="Es la suma de dinero de absolutamente TODAS las inconsistencias reportadas en el sistema, sin importar si fueron errores reales, devoluciones de material sobrante o aprovechamiento de retazos.">ⓘ</span>
+        </span>
+        <span class="df-kpi-value">{{ formatCurrency(costoBrutoTotal) }}</span>
+        <span class="df-kpi-trend df-kpi-trend--up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          Monto total bruto
+        </span>
+      </div>
+    </div>
+
+    <!-- Pérdida Real por Errores -->
+    <div class="df-kpi-card df-kpi-card--naranja">
+      <div class="df-kpi-icon df-kpi-icon--naranja">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+      </div>
+      <div class="df-kpi-content">
+        <span class="df-kpi-label">PÉRDIDA REAL POR ERRORES
+          <span class="df-info-icon" title="Es el dinero que la empresa realmente 'perdió' por errores. Se calcula tomando el Valor Total Reportado y restándole los reportes que NO son errores (es decir, excluyendo las 'devoluciones a la orden' y el 'aprovechamiento de insumos').">ⓘ</span>
+        </span>
+        <span class="df-kpi-value">{{ formatCurrency(costoNetoPerdidas) }}</span>
+        <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+          <span class="df-kpi-sublabel">↳ Sobrecosto (Al Gasto): {{ formatCurrency(costoNetoGasto) }}</span>
+          <span class="df-kpi-sublabel">↳ Asumido por OP: {{ formatCurrency(costoNetoOP) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Material Recuperado -->
+    <div class="df-kpi-card df-kpi-card--verde">
+      <div class="df-kpi-icon df-kpi-icon--verde">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+      </div>
+      <div class="df-kpi-content">
+        <span class="df-kpi-label">DINERO EN DEVOLUCIONES
+          <span class="df-info-icon" title="Dinero que NO se perdió porque corresponde a sobrantes de producción que se devolvieron limpios al inventario (exclusivo para el tipo 'devolucion_materiales').">ⓘ</span>
+        </span>
+        <span class="df-kpi-value">{{ formatCurrency(materialRecuperado) }}</span>
+        <span class="df-kpi-trend df-kpi-trend--up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          Retorno a inventario
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 4: Ahorro Aprovechamiento -->
+    <div class="df-kpi-card df-kpi-card--verde-oscuro">
+      <div class="df-kpi-icon df-kpi-icon--verde-oscuro">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      </div>
+      <div class="df-kpi-content">
+        <span class="df-kpi-label">DINERO EN APROVECHAMIENTO
+          <span class="df-info-icon" title="Dinero que NO se perdió porque corresponde a retazos o insumos que se pudieron usar para otro propósito útil (exclusivo para el tipo 'aprovechamiento_insumos').">ⓘ</span>
+        </span>
+        <span class="df-kpi-value">{{ formatCurrency(ahorroAprovechamiento) }}</span>
+        <span class="df-kpi-trend df-kpi-trend--up">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          Material reaprovechado
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 5: Pérdida Neta Final -->
+    <div class="df-kpi-card df-kpi-card--indigo df-kpi-card--featured">
+      <div class="df-kpi-icon df-kpi-icon--indigo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="df-kpi-content">
+        <span class="df-kpi-label">PÉRDIDA NETA FINAL
+          <span class="df-info-icon" title="Es la pérdida real de la empresa después de descontar el dinero que sí se pudo recuperar. Fórmula: Pérdida Real por Errores − Dinero en Devoluciones − Dinero en Aprovechamiento.">ⓘ</span>
+        </span>
+        <span class="df-kpi-value df-kpi-value--lg">{{ formatCurrency(costoNetoAjustado) }}</span>
+        <span class="df-kpi-sublabel">Recuperado: {{ formatCurrency(materialRecuperado + ahorroAprovechamiento) }}</span>
+        <span class="df-kpi-trend df-kpi-trend--down">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 9 12 15 6 9"/></svg>
+          Impacto neto en la empresa
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 6: Costo de Tiempo Total -->
+    <div class="df-kpi-card df-kpi-card--gris">
+      <div class="df-kpi-icon df-kpi-icon--gris">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="df-kpi-content">
+        <span class="df-kpi-label">COSTO DE TIEMPO OPERATIVO
+          <span class="df-info-icon" title="Dinero que la empresa gastó pagando el sueldo del personal mientras resolvían los problemas. Solo cuenta las horas laborales (L-V 6am a 4pm, Sáb 6am a 12pm) multiplicadas por la tarifa por hora.">ⓘ</span>
+        </span>
+        <span class="df-kpi-value">{{ formatCurrency(costoTiempoTotal) }}</span>
+        <span class="df-kpi-sublabel">Tarifa: ${{ formatNumber(tarifaHora) }}/hora</span>
+        <span class="df-kpi-trend df-kpi-trend--neutral">
+          Promedio {{ tiempoPromedioResolucion }} días/inconsistencia
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════ FILA 2: Línea mensual full-width ══ -->
+  <div class="df-chart-card df-chart-card--full" title="Muestra la evolución del costo bruto frente a las pérdidas reales y lo que se logró recuperar cada mes.">
+    <div class="df-chart-header">
+      <div>
+        <h2 class="df-chart-title">Evolución Mensual de Costos — 2025
+          <span class="df-info-icon" title="Compara el Costo Bruto (sin descuentos) vs. el Costo Neto (impacto real) vs. el Material Recuperado. Útil para ver picos de pérdida a lo largo del año.">ⓘ</span>
+        </h2>
+        <p class="df-chart-subtitle">Costo bruto, neto y material recuperado mes a mes</p>
+      </div>
+      <div class="df-chart-legend-hint">
+        <span class="df-dot df-dot--rojo"></span> Costo Bruto
+        <span class="df-dot df-dot--naranja"></span> Costo Neto
+        <span class="df-dot df-dot--verde"></span> Material Recuperado
+      </div>
+    </div>
+    <div class="df-chart-container df-chart-container--lg">
+      <canvas baseChart
+        id="chart-linea-mensual"
+        [data]="costoMensualChartData"
+        [options]="costoMensualChartOptions"
+        [type]="lineChartType">
+      </canvas>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ FILA 3: Barras + Donut ══ -->
+  <div class="df-row df-row--60-40">
+
+    <!-- Barras horizontales -->
+    <div class="df-chart-card">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Top 8 Tipos — Costo Total
+            <span class="df-info-icon" title="Clasifica de mayor a menor las inconsistencias que más dinero le cuestan a la empresa (Costo Bruto acumulado por tipo).">ⓘ</span>
+          </h2>
+          <p class="df-chart-subtitle">Ranking de tipos de inconsistencia por impacto económico</p>
+        </div>
+      </div>
+      <div class="df-chart-container df-chart-container--md">
+        <canvas baseChart
+          id="chart-barras-horizontales"
+          [data]="costoPorTipoChartData"
+          [options]="costoPorTipoChartOptions"
+          [type]="barChartType">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Clasificacion de Impacto -->
+    <div class="df-chart-card">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">¿A dónde va el dinero reportado?
+            <span class="df-info-icon" title="Muestra cómo se clasifica el dinero total reportado: qué parte es una pérdida real, qué parte se recuperó como devolución y qué parte se aprovechó. Ideal para entender si la empresa está recuperando bien sus recursos.">ⓘ</span>
+          </h2>
+          <p class="df-chart-subtitle">Clasificación del valor total: pérdida / devolución / aprovechamiento</p>
+        </div>
+      </div>
+      <div class="df-chart-container df-chart-container--md">
+        <canvas baseChart
+          id="chart-clasificacion-impacto"
+          [data]="clasificacionImpactoChartData"
+          [options]="clasificacionImpactoChartOptions"
+          [type]="doughnutChartType">
+        </canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════ VISTA 5: TABLAS ANALÍTICAS ══ -->
+  <ng-template #tablaAnalitica let-datos="datos" let-origen="origen">
+    <div class="df-table-container">
+      <div *ngIf="tablasLoading" class="df-loading-tablas">Cargando análisis detallado...</div>
+      <table class="df-table" *ngIf="!tablasLoading">
+        <thead>
+          <tr>
+            <th>Tipo Inconsistencia</th>
+            <th class="df-text-center">Cant.</th>
+            <th class="df-text-right">Costo Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let row of datos">
+            <!-- Fila principal -->
+            <tr (click)="toggleDrilldownNivel1(row.tipo_inconsistencia, origen)" class="df-table-row df-clickable">
+              <td>{{ getNombreInconsistencia(row.tipo_inconsistencia) }}</td>
+              <td class="df-text-center">{{ row.cantidad }}</td>
+              <td class="df-text-right df-font-bold">{{ formatCurrency(row.valor_total) }}</td>
+            </tr>
+            <!-- Nivel 1: Ítems -->
+            <tr *ngIf="expandedRowId === (origen + '_' + row.tipo_inconsistencia)" class="df-drilldown-row">
+              <td colspan="3" class="df-drilldown-td">
+                <div class="df-drilldown-card">
+                  <h4 class="df-drilldown-title">Top 10 Ítems más críticos (Costo y Frecuencia)</h4>
+                  <div *ngIf="drilldownLoading" class="df-loading-sm">Cargando ítems...</div>
+                  
+                  <table class="df-inner-table" *ngIf="!drilldownLoading">
+                    <thead>
+                      <tr>
+                        <th>Código Ítem</th>
+                        <th>N° Reportes</th>
+                        <th class="df-text-right">Costo Total</th>
+                        <th class="df-text-center">Detalles</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <ng-container *ngFor="let item of drilldownItems">
+                        <tr class="df-inner-row" 
+                            [class.active]="expandedItemId === (origen + '_' + row.tipo_inconsistencia + '_' + item.item)"
+                            (click)="toggleDrilldownNivel2(row.tipo_inconsistencia, item.item, origen)">
+                          <td><span class="df-item-code">{{ item.item }}</span> <span class="df-item-desc">{{ item.nombre_item || 'Sin descripción' }}</span></td>
+                          <td><span class="df-item-badge">{{ item.cantidad_reportes }}</span></td>
+                          <td class="df-text-right df-font-bold df-cost-highlight">{{ formatCurrency(item.total_costo) }}</td>
+                          <td class="df-text-center">
+                            <button class="df-btn-icon" title="Ver justificaciones">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                            </button>
+                          </td>
+                        </tr>
+
+                        <!-- Nivel 2: Globo de diálogo (Bubble) -->
+                        <tr *ngIf="expandedItemId === (origen + '_' + row.tipo_inconsistencia + '_' + item.item)" class="df-bubble-row">
+                          <td colspan="4" class="df-bubble-td">
+                            <div class="df-bubble-dialog">
+                              <div class="df-bubble-arrow"></div>
+                              <div class="df-motivos-header">
+                                <h5><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Historial de Reportes</h5>
+                                <button class="df-btn-close" (click)="expandedItemId = null; $event.stopPropagation()">×</button>
+                              </div>
+                              <div *ngIf="drilldownMotivosLoading" class="df-loading-sm">Consultando registros...</div>
+                              <div class="df-motivos-list" *ngIf="!drilldownMotivosLoading">
+                                <div class="df-motivo-card" *ngFor="let m of drilldownMotivos">
+                                  <div class="df-motivo-meta">
+                                    <span class="df-tag df-tag--fecha">#{{ m.id_inconsistencia }}</span>
+                                    <span class="df-tag df-tag--op">Proceso: {{ m.departamento || 'No especificado' }}</span>
+                                    <span class="df-tag df-tag--op" *ngIf="m.codigo">OP: {{ m.codigo }}</span>
+                                    <span class="df-tag df-tag--fecha">{{ m.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+                                  </div>
+                                  <p class="df-motivo-text"><strong>Motivo:</strong> {{ m.descripcion || 'Sin justificación registrada.' }}</p>
+                                  <p class="df-motivo-text"><strong>Acción:</strong> {{ m.accion || 'Sin acción a tomar.' }}</p>
+                                </div>
+                                <div *ngIf="drilldownMotivos.length === 0" class="df-empty-state">No hay justificaciones para este ítem.</div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </ng-container>
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+          <tr *ngIf="datos.length === 0">
+            <td colspan="3" class="df-text-center df-empty">No se encontraron registros para este filtro.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-template>
+
+  <!-- Sección 1: Panorama General -->
+  <div class="df-row df-row--full" style="margin-top: 24px;">
+    <div class="df-chart-card">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Tabla 1: Panorama General de Pérdidas Reales</h2>
+          <p class="df-chart-subtitle">Monto global sin devoluciones ni aprovechamientos. Haz clic en una fila para investigar.</p>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="tablaAnalitica; context: { datos: tablaGeneral, origen: 'general' }"></ng-container>
+    </div>
+  </div>
+
+  <!-- Sección 2: OP vs Gasto -->
+  <div class="df-row df-row--50-50">
+    <!-- Tabla 3: OP -->
+    <div class="df-chart-card df-chart-card--orange-border">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Cargados a la OP (En Proceso)</h2>
+          <p class="df-chart-subtitle">Sobrecostos que se están asumiendo en OPs Abiertas.</p>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="tablaAnalitica; context: { datos: tablaOP, origen: 'op' }"></ng-container>
+    </div>
+    
+    <!-- Tabla 4: Gasto -->
+    <div class="df-chart-card df-chart-card--red-border">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Cargados al Gasto (Pérdida Pura)</h2>
+          <p class="df-chart-subtitle">Sobrecostos de OPs ya cerradas o cumplidas que se fueron al gasto.</p>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="tablaAnalitica; context: { datos: tablaGasto, origen: 'gasto' }"></ng-container>
+    </div>
+  </div>
+
+  <!-- Sección 3: Ahorros -->
+  <div class="df-row df-row--full">
+    <div class="df-chart-card df-chart-card--green-border">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Gestión Positiva y Ahorros</h2>
+          <p class="df-chart-subtitle">Dinero recuperado por devoluciones a la OP, aprovechamientos y cancelaciones.</p>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="tablaAnalitica; context: { datos: tablaAhorros, origen: 'ahorros' }"></ng-container>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ FILA 4: Tiempo + Consumo ══ -->
+  <div class="df-row df-row--50-50">
+
+    <!-- Costo tiempo por etapa -->
+    <div class="df-chart-card">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Costo de Tiempo por Etapa
+            <span class="df-info-icon" title="Suma del tiempo total (en horas) que las inconsistencias pasan en cada etapa, multiplicado por la tarifa hora operativa base ($8,000/hr).">ⓘ</span>
+          </h2>
+          <p class="df-chart-subtitle">Horas promedio × ${{ formatNumber(tarifaHora) }}/hora — COP</p>
+        </div>
+      </div>
+      <div class="df-chart-container df-chart-container--sm">
+        <canvas baseChart
+          id="chart-costo-tiempo"
+          [data]="costoTiempoChartData"
+          [options]="costoTiempoChartOptions"
+          [type]="barChartType">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Consumo por mes -->
+    <div class="df-chart-card">
+      <div class="df-chart-header">
+        <div>
+          <h2 class="df-chart-title">Estado de Consumo por Mes
+            <span class="df-info-icon" title="Compara la cantidad de inconsistencias que ya fueron descargadas del inventario (Consumidas) frente a las que aún están pendientes de descargo, agrupadas por mes.">ⓘ</span>
+          </h2>
+          <p class="df-chart-subtitle">Inconsistencias consumidas vs pendientes (últimos 6 meses)</p>
+        </div>
+      </div>
+      <div class="df-chart-container df-chart-container--sm">
+        <canvas baseChart
+          id="chart-consumo-mensual"
+          [data]="consumoChartData"
+          [options]="consumoChartOptions"
+          [type]="barChartType">
+        </canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════ FILA 5: Resumen consumo ══ -->
+  <div class="df-summary-grid">
+
+    <!-- Tasa de consumo con círculo -->
+    <div class="df-summary-card">
+      <h3 class="df-summary-title">Tasa de Consumo</h3>
+      <div class="df-progress-ring-wrap">
+        <div class="df-progress-ring" [style.background]="getProgressCircleStyle(tasaConsumo)">
+          <div class="df-progress-ring__inner">
+            <span class="df-progress-ring__value">{{ tasaConsumo }}%</span>
+            <span class="df-progress-ring__sub">consumidas</span>
+          </div>
+        </div>
+      </div>
+      <p class="df-summary-desc">Del total generado en el período, el <strong>{{ tasaConsumo }}%</strong> ya fue consumido.</p>
+    </div>
+
+    <!-- Valor pendiente de consumo -->
+    <div class="df-summary-card df-summary-card--alert">
+      <div class="df-summary-icon df-summary-icon--naranja">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <h3 class="df-summary-title">Valor Pendiente de Consumo</h3>
+      <span class="df-summary-value df-summary-value--naranja">{{ formatCurrency(valorPendienteConsumo) }}</span>
+      <p class="df-summary-desc">{{ inconsistenciasPendientes }} inconsistencias sin consumir en el sistema.</p>
+      <div class="df-summary-bar">
+        <div class="df-summary-bar__fill df-summary-bar__fill--naranja" [style.width.%]="100 - tasaConsumo"></div>
+      </div>
+    </div>
+
+    <!-- Tiempo promedio de resolución -->
+    <div class="df-summary-card">
+      <div class="df-summary-icon df-summary-icon--indigo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <h3 class="df-summary-title">Tiempo Promedio de Resolución</h3>
+      <span class="df-summary-value df-summary-value--indigo">{{ tiempoPromedioResolucion }} días</span>
+      <p class="df-summary-desc">Promedio desde generación hasta consumo por inconsistencia.</p>
+      <div class="df-summary-stats">
+        <div class="df-summary-stat">
+          <span class="df-summary-stat__label">Mín. estimado</span>
+          <span class="df-summary-stat__value">2 días</span>
+        </div>
+        <div class="df-summary-stat">
+          <span class="df-summary-stat__label">Máx. estimado</span>
+          <span class="df-summary-stat__value">21 días</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ FOOTER ══ -->
+  <div class="df-footer">
+    <span class="df-footer__text">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Datos en tiempo real obtenidos del sistema Saint.
+    </span>
+    <span class="df-footer__version">Dashboard Financiero v1.0 · Módulo Inconsistencias</span>
+  </div>
+
+</section>

@@ -98,21 +98,16 @@ export class AuthService {
     newUser.modules = payload.modules || [];
     newUser.id = payload.id;
 
+    if (payload.sdp) {
+      newUser.nombre_departamento_Sdp = payload.sdp.nombre_departamento;
+      newUser.id_departamento_Sdp = payload.sdp.id_departamento;
+      newUser.id_Sdp = payload.sdp.id_conecta;
+      newUser.lider_nombre = payload.sdp.nombre_lider;
+      newUser.id_lider = payload.sdp.id_lider;
+    }
+
     sessionStorage.setItem('user', JSON.stringify(newUser));
     this._userSubject.next(newUser);
-
-    this.inconsistenciasService.info(payload.email).subscribe({
-      next: (res) => {
-        newUser.nombre_departamento_Sdp = res.info['nombre_departamento'];
-        newUser.id_departamento_Sdp = res.info['id_departamento'];
-        newUser.id_Sdp = res.info['id_usuario'];
-        newUser.id_lider = res.info['lider_id'];
-        newUser.lider_nombre = res.info['lider_nombres'] + ' ' + res.info['lider_apellidos'];
-        sessionStorage.setItem('user', JSON.stringify(newUser));
-        this._userSubject.next(newUser);
-      },
-      error: (_) => { }
-    });
   }
 
   saveToken(accessToken: string, refreshToken?: string): void {
@@ -221,14 +216,14 @@ export class AuthService {
     if (!this.user || !this.user.permissions) {
       return false;
     }
-    return this.user.permissions.includes(permissionId);
+    return this.user.permissions.includes(Number(permissionId));
   }
 
   hasAnyPermission(permissionIds: number[]): boolean {
     if (!this.user || !this.user.permissions) {
       return false;
     }
-    return permissionIds.some(id => this.user.permissions.includes(id));
+    return permissionIds.some(id => this.user.permissions.includes(Number(id)));
   }
 
   hasModule(moduleId: number): boolean {
@@ -336,4 +331,11 @@ export class AuthService {
     }
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(data: any): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/auth/reset-password`, data);
+  }
 }

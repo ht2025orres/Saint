@@ -159,7 +159,7 @@ export class DashboardEmpaqueComponent implements OnInit {
   }
 
   cargarUsuarios(): void {
-    this.userService.getAll().subscribe({
+    this.userService.getAllBasic().subscribe({
       next: (usuarios) => {
         usuarios.forEach(u => this.usuariosMap.set(u.id!, u));
         // Si ya hay datos en la gráfica, forzar actualización visual

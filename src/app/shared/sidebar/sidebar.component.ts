@@ -128,6 +128,24 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         permissions: [1]
       },
       {
+        label: 'Workflows',
+        icon: 'bi bi-diagram-3',
+        link: '/workflows',
+        permissions: [1]
+      },
+      {
+        label: 'Admin Usuarios',
+        icon: 'bi bi-people',
+        link: '/users/page/0',
+        permissions: [1]
+      },
+      {
+        label: 'Registro de Correos',
+        icon: 'bi bi-envelope-paper',
+        link: '/email-logs',
+        permissions: [1]
+      },
+      {
         label: 'Seguimiento',
         icon: 'bi bi-kanban',
         link: '/seguimiento',
@@ -239,18 +257,23 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
             permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
           },
           {
+            label: 'Inconsistencias Cartera',
+            link: '/cartera-inconsistencias',
+            permissions: [1, 28]
+          },
+          {
             label: 'Histórico Inconsistencias',
             link: '/historico-inconsistencias',
-            permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
+            permissions: [1, 48]
           },
           {
             label: 'Revisión de Consumo',
             link: '/revision-consumo',
-            permissions: [1, 14]
+            permissions: [1, 49, 50]
           },
           {
-            label: 'Reporte de Inconsistencias',
-            link: '/reporte-inconsistencias',
+            label: 'Dashboard de Inconsistencias',
+            link: '/dashboard-financiero-inconsistencias',
             permissions: [1, 9, 35]
           }
         ]

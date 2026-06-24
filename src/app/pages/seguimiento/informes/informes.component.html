@@ -55,7 +55,7 @@
         </h3>
         
         <p class="text-sm text-gray-500 line-clamp-2 mb-6 flex-1">
-          {{ inf.descripcion_hallazgo }}
+          {{ stripHtml(inf.descripcion_hallazgo) }}
         </p>
 
         <div class="flex items-center justify-between mt-auto pt-6 border-t border-gray-50">
@@ -135,16 +135,16 @@
           </div>
 
           <h1 class="text-3xl font-black text-gray-900 mb-4">{{ detalle.titulo }}</h1>
-          <p class="text-gray-600 leading-relaxed mb-8">{{ detalle.descripcion_hallazgo }}</p>
+          <div class="rich-text-content mb-8" [innerHTML]="detalle.descripcion_hallazgo | safe: 'html'"></div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 border-t border-gray-50">
             <div *ngIf="detalle.causa_raiz">
               <h4 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Causa Raíz</h4>
-              <p class="text-sm text-gray-700 font-medium">{{ detalle.causa_raiz }}</p>
+              <p class="text-sm text-gray-700 font-medium whitespace-pre-line">{{ detalle.causa_raiz }}</p>
             </div>
             <div *ngIf="detalle.sistemas_afectados">
               <h4 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Sistemas Afectados</h4>
-              <p class="text-sm text-gray-700 font-medium">{{ detalle.sistemas_afectados }}</p>
+              <p class="text-sm text-gray-700 font-medium whitespace-pre-line">{{ detalle.sistemas_afectados }}</p>
             </div>
           </div>
         </div>
