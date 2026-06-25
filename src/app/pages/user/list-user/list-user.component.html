@@ -1,152 +1,116 @@
-<!-- ============================================================== -->
-<!-- Bread crumb and right sidebar toggle -->
-<!-- ============================================================== -->
-<div class="row page-titles mt-3">
-    <div class="col-md-5 align-self-center">
-        <h3 class="text-themecolor">{{title}}</h3>
+<!-- Page Header -->
+<header class="saint-page-header">
+  <div class="saint-page-header__left">
+    <h1 class="saint-page-title">{{title}}</h1>
+    <nav aria-label="Navegación de ruta">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/dashboard">Inicio</a></li>
+        <li class="breadcrumb-item"><span>Administración</span></li>
+        <li class="breadcrumb-item active" aria-current="page">{{title}}</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="saint-page-header__actions">
+    <button class="btn saint-btn-primary" [routerLink]="['/createUser', 'nuevo']">
+      <i class="bi bi-plus-lg"></i>
+      Crear Usuario
+    </button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<section class="saint-card">
+
+  <!-- Toolbar -->
+  <div class="saint-toolbar">
+    <div class="saint-toolbar__search">
+      <i class="bi bi-search"></i>
+      <input type="search" placeholder="Buscar usuarios..." aria-label="Buscar usuarios"
+             (keyup)="searchUser(txtWord.value)" #txtWord>
     </div>
-    <div class="col-md-7 align-self-center">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a routerLink="/dashboard">Inicio</a>
-            </li>
-            <li class="breadcrumb-item">paginas</li>
-            <li class="breadcrumb-item active">{{title}}</li>
-        </ol>
+    <div class="saint-toolbar__options">
+      <label class="saint-select-label">
+        Mostrar
+        <select (change)="listBySize(+$event.target.value)">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="30">30</option>
+          <option value="50">50</option>
+        </select>
+      </label>
     </div>
-</div>
-<!-- ============================================================== -->
-<!-- End Bread crumb and right sidebar toggle -->
-<!-- ============================================================== -->
+  </div>
 
-
-<div class="card">
-    <div class="card-body">
-
-        <div class="pt-3">
-            <button class="btn btn-themecolor btn-rounded" [routerLink]="['/createUser', 'nuevo']">
-                Crear Usuario
-            </button>
-        </div>
-
-        <div class="table-responsive mt-2">
-            <div id="example23_wrapper" class="dataTables_wrapper" style="color: #67757c;">
-
-                <!-- OPCIÓN 1: Mantener tu selector actual -->
-                <div class="dataTables_length responsive-text" id="myTable_length">
-                    <label>Mostrar
-                        <select name="myTable_length" aria-controls="myTable" class=""
-                            (change)="listBySize(+$event.target.value)">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="30">30</option>
-                            <option value="50">50</option>
-                        </select> entradas
-                    </label>
-                </div>
-
-                <!-- OPCIÓN 2: Usar solo el selector del paginador (eliminar el de arriba) -->
-                <!-- El paginador ya tiene [showPageSizeSelector]="true" -->
-                <div id="example23_filter" class="dataTables_filter mb-3">
-                    <label class="fw-bold responsive-text">Buscar:
-                        <input type="search" class="" placeholder="" aria-controls="example23"
-                            (keyup)="searchUser(txtWord.value)" #txtWord>
-                    </label>
-                </div>
-
-
-                <table id="example23" class="table table-hover table-striped align-middle sombra-buttoms" role="grid"
-                    aria-describedby="example23_info">
-                    <thead>
-                        <tr role="row">
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
-                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
-                                Nombre
-                            </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
-                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
-                                Apellido
-                            </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
-                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
-                                Email
-                            </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
-                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
-                                Roles
-                            </th>
-                            <th tabindex="0" aria-controls="example23" rowspan="1" colspan="1"
-                                style="background: rgba(75, 197, 232, 0.07); color: #67757c;">
-                                Acciones
-                            </th>
-                        </tr>
-                    </thead>
-                    <tfoot>
-                        <tr style="background: rgba(75,197,232,0.07)">
-                            <th rowspan="1" colspan="1" class="text-center">Nombre</th>
-                            <th rowspan="1" colspan="1" class="text-center">Apellido</th>
-                            <th rowspan="1" colspan="1" class="text-center">Email</th>
-                            <th rowspan="1" colspan="1" class="text-center">Roles</th>
-                            <th rowspan="1" colspan="1" class="text-center">Acciones</th>
-                        </tr>
-                    </tfoot>
-                    <tbody>
-                        <tr role="row" class="odd" *ngFor="let user of listUser">
-                            <td class="small responsive-text vertical-center">{{user.firstName}}</td>
-                            <td class="small responsive-text vertical-center">{{user.lastName}}</td>
-                            <td class="small responsive-text vertical-center">{{user.email}}</td>
-                            <td class="small vertical-center" [width]="300">
-                                <span *ngFor="let role of user.roles">
-                                    <span
-                                        [ngClass]="role.id==1? 'badge badge-success mx-1 text-dark' : 'badge badge-warning mx-1 text-dark'">
-                                        {{role.name}}
-                                    </span>
-                                </span>
-                            </td>
-                            <td class="d-flex align-items-center justify-content-center">
-                                <div class="d-flex" style="padding-right: 0!important;">
-
-                                    <!-- Personificar (Solo Admin) -->
-                                    <button *ngIf="authService.hasPermission(1) && user.id !== authService.user.id"
-                                        class="nav-link mx-1 btn btn-cicle-sheet btn-warning sombra-buttoms"
-                                        (click)="impersonate(user)" title="Personificar usuario">
-                                        <i class="fa fa-user-secret fa-3x text-white"></i>
-                                    </button>
-
-                                    <!-- Editar -->
-                                    <a class="nav-link mx-1 btn btn-cicle-sheet btn-themecolor sombra-buttoms"
-                                        [routerLink]="['/createUser', user.id]">
-                                        <i class="fa fa-pencil fa-3x text-white"></i>
-                                    </a>
-
-                                    <!-- Si usuario está habilitado → mostrar botón deshabilitar -->
-                                    <button *ngIf="user.enabled"
-                                        class="nav-link mx-1 btn btn-cicle-sheet btn-danger sombra-buttoms"
-                                        (click)="disableUser(user)">
-                                        <i class="fa fa-ban fa-3x text-white"></i>
-                                    </button>
-
-                                    <!-- Si usuario está deshabilitado → mostrar botón activar -->
-                                    <button *ngIf="!user.enabled"
-                                        class="nav-link mx-1 btn btn-cicle-sheet btn-success sombra-buttoms"
-                                        (click)="enableUser(user)">
-                                        <i class="fa fa-check fa-3x text-white"></i>
-                                    </button>
-
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-
-                <!--                PAGINADOR--> <!-- Paginador -->
-                <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)"
-                    [instanceId]="paginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50, 100]"
-                    [noDataMessage]="'No se encontraron registros'">
-                </app-shared-paginator>
-
+  <!-- Table -->
+  <div class="saint-table-wrapper">
+    <table class="saint-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Email</th>
+          <th>Roles</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of listUser">
+          <td class="saint-cell-name">{{user.firstName}}</td>
+          <td>{{user.lastName}}</td>
+          <td class="saint-cell-email">{{user.email}}</td>
+          <td>
+            <div class="saint-roles-list">
+              <span *ngFor="let role of user.roles" class="saint-role-badge"
+                    [class.saint-role-badge--admin]="role.id==1">
+                {{role.name}}
+              </span>
             </div>
-        </div>
-    </div>
-</div>
+          </td>
+          <td class="text-center">
+            <span class="saint-status-dot" [class.saint-status-dot--active]="user.enabled"
+                  [class.saint-status-dot--inactive]="!user.enabled">
+              {{user.enabled ? 'Activo' : 'Inactivo'}}
+            </span>
+          </td>
+          <td>
+            <div class="saint-actions">
+              <!-- Personificar -->
+              <button *ngIf="authService.hasPermission(1) && user.id !== authService.user.id"
+                      class="saint-action-btn saint-action-btn--impersonate"
+                      (click)="impersonate(user)" title="Personificar usuario">
+                <i class="bi bi-incognito"></i>
+              </button>
+              <!-- Editar -->
+              <a class="saint-action-btn saint-action-btn--edit"
+                 [routerLink]="['/createUser', user.id]" title="Editar usuario">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <!-- Deshabilitar -->
+              <button *ngIf="user.enabled"
+                      class="saint-action-btn saint-action-btn--disable"
+                      (click)="disableUser(user)" title="Deshabilitar usuario">
+                <i class="bi bi-person-slash"></i>
+              </button>
+              <!-- Habilitar -->
+              <button *ngIf="!user.enabled"
+                      class="saint-action-btn saint-action-btn--enable"
+                      (click)="enableUser(user)" title="Habilitar usuario">
+                <i class="bi bi-person-check"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginator -->
+  <div class="saint-paginator-wrapper">
+    <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)"
+      [instanceId]="paginatorId" [showPageSizeSelector]="true" [pageSizeOptions]="[5, 10, 25, 50, 100]"
+      [noDataMessage]="'No se encontraron registros'">
+    </app-shared-paginator>
+  </div>
+
+</section>

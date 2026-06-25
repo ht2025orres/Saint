@@ -1,204 +1,176 @@
-<div class="container ">
-  <h3 class="text-center mb-4">Dashboard de Reportes</h3>
+<!-- Page Header -->
+<header class="saint-page-header">
+  <div class="saint-page-header__left">
+    <h1 class="saint-page-title">Dashboard de Reportes</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/dashboard">Inicio</a></li>
+        <li class="breadcrumb-item"><span>Reportes</span></li>
+        <li class="breadcrumb-item active">Dashboard</li>
+      </ol>
+    </nav>
+  </div>
+</header>
 
-  <!-- Filtros -->
-  <div class="row mb-4 g-3 align-items-end">
-    <div class="col-md-2">
-      <label class="form-label fw-bold">Mes</label>
+<!-- Filtros -->
+<section class="saint-filters-bar">
+  <div class="saint-filters-bar__fields">
+    <div class="saint-filter-field">
+      <label>Mes</label>
       <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadDashboard()">
         <option *ngFor="let m of months" [value]="m.value">{{ m.name }}</option>
       </select>
     </div>
-
-    <div class="col-md-2">
-      <label class="form-label fw-bold">Año</label>
+    <div class="saint-filter-field">
+      <label>Año</label>
       <select class="form-select" [(ngModel)]="selectedYear" (change)="loadDashboard()">
         <option *ngFor="let y of years" [value]="y">{{ y }}</option>
       </select>
     </div>
-
-    <div class="col-md-4">
-      <label class="form-label fw-bold">Buscar</label>
-      <input 
-        type="text" 
-        class="form-control" 
-        [(ngModel)]="searchTerm" 
-        (keyup.enter)="applyFilter()"
-        placeholder="Buscar por cualquier campo..." 
-      />
-    </div>
-
-    <div class="col-md-4">
-      <button class="btn btn-primary me-2" (click)="applyFilter()">
-        <i class="bi bi-search"></i> Buscar
-      </button>
-      <button class="btn btn-secondary" (click)="resetFilter()">
-        <i class="bi bi-arrow-clockwise"></i> Limpiar
-      </button>
-      <button class="btn btn-success" (click)="exportarExcel()">
-        <i class="bi bi-file-earmark-excel"></i> Descargar Excel
-      </button>
+    <div class="saint-filter-field saint-filter-field--search">
+      <label>Buscar</label>
+      <input type="text" class="form-control" [(ngModel)]="searchTerm" 
+             (keyup.enter)="applyFilter()" placeholder="Buscar por cualquier campo..."/>
     </div>
   </div>
-
-  <!-- Mensaje de error -->
-  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
-    <strong>Error:</strong> {{ errorMessage }}
-    <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  <div class="saint-filters-bar__actions">
+    <button class="btn btn-primary" (click)="applyFilter()">
+      <i class="bi bi-search"></i> Buscar
+    </button>
+    <button class="btn btn-outline-secondary" (click)="resetFilter()">
+      <i class="bi bi-arrow-clockwise"></i> Limpiar
+    </button>
+    <button class="btn btn-outline-success" (click)="exportarExcel()">
+      <i class="bi bi-file-earmark-excel"></i> Excel
+    </button>
   </div>
+</section>
 
-  <!-- Loading -->
-  <div *ngIf="loading" class="text-center my-5">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-      <span class="visually-hidden">Cargando...</span>
-    </div>
-    <p class="mt-3 text-muted">Cargando datos del dashboard...</p>
-  </div>
-
-  <!-- Contenido principal -->
-  <div *ngIf="!loading && !errorMessage">
-    
-    <!-- Cards de resumen -->
-    <div class="row text-center mb-4">
-      <div class="col-md-2 mb-3">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body">
-            <h6 class="card-subtitle mb-2 text-muted">Reportes Generados</h6>
-            <h2 class="card-title text-primary mb-0">{{ resumen.total }}</h2>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-2 mb-3">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body">
-            <h6 class="card-subtitle mb-2 text-muted">Promedio Atención</h6>
-            <h2 class="card-title text-info mb-0">{{ resumen.promedio_horas }} h</h2>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-2 mb-3">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body">
-            <h6 class="card-subtitle mb-2 text-muted">Pendientes</h6>
-            <h2 class="card-title text-warning mb-0">{{ resumen.pendientes }}</h2>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-2 mb-3">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body">
-            <h6 class="card-subtitle mb-2 text-muted">En proceso</h6>
-            <h2 class="card-title text-info mb-0">{{ resumen.en_proceso }}</h2>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-2 mb-3">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body">
-            <h6 class="card-subtitle mb-2 text-muted">Liberados</h6>
-            <h2 class="card-title text-success mb-0">{{ resumen.liberados }}</h2>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-around my-3">
-  <div class="card shadow-sm p-3 text-center">
-    <h6>Total Reportes</h6>
-    <h4>{{ resumen.total }}</h4>
-  </div>
-  <div class="card shadow-sm p-3 text-center">
-    <h6>Cumplen</h6>
-    <h4>{{ resumen.cumplen }}</h4>
-  </div>
-  <div class="card shadow-sm p-3 text-center">
-    <h6>Porcentaje Cumplimiento</h6>
-    <h4>{{ resumen.porcentaje_cumplimiento }}%</h4>
-  </div>
+<!-- Error -->
+<div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center gap-2">
+  <i class="bi bi-exclamation-triangle"></i>
+  <span>{{ errorMessage }}</span>
+  <button type="button" class="btn-close ms-auto" (click)="errorMessage = ''"></button>
 </div>
 
-
-    <!-- Tabla de reportes -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0 text-white text-center "><strong>Listado de Reportes ({{ filteredReports().length }})</strong> </h5>
-      </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-striped table-hover align-middle text-center">
-  <thead class="table-primary">
-    <tr>
-      <th>ID</th>
-      <th>OP</th>
-      <th>Cliente</th>
-      <th>Usuario</th>
-      <th>Estado</th>
-      <th>Fecha Creación</th>
-      <th>Fecha Respuesta</th>
-      <th>Tiempo Atención</th>
-      <th>prioridad</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let reporte of reports">
-      <td>{{ reporte.id }}</td>
-      <td>{{ reporte.op_reporte }}</td>
-      <td>{{ reporte.cliente }}</td>
-      <td>{{ reporte.usuario }}</td>
-     <td>
-      <span class="badge rounded-pill" [ngClass]="{
-        'bg-warning text-dark': reporte.estado === 'pendiente',
-        'bg-info': reporte.estado === 'en proceso',
-        'bg-success': reporte.estado === 'liberado'
-      }">{{ reporte.estado }}</span>
-    </td>
-      <td>{{ reporte.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
-      <td>{{ reporte.fecha_respuesta ? (reporte.fecha_respuesta | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
-      <td>
- {{ (reporte.minutos_laborales / 60) | number: '1.0-0' | number: '2.0-0' }}h 
-{{ (reporte.minutos_laborales % 60) | number: '2.0-0' }}m
-
-</td>
-      <th><span class="badge rounded-pill" [ngClass]="{
-          'bg-warning': reporte.prioridad === 'media',
-          'bg-danger': reporte.prioridad === 'alta'
-        }">{{ reporte.prioridad }}</span></th>
-    </tr>
-  </tbody>
-</table>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Gráficas -->
-    <div class="row mt-5">
-      <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="mb-0 text-center">Top 5 Usuarios con Más Reportes</h5>
-          </div>
-          <div class="card-body">
-            <canvas id="chartUsuarios" height="250"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-          <div class="card-header bg-light">
-            <h5 class="mb-0 text-center">Distribución por Estado</h5>
-          </div>
-          <div class="card-body">
-            <canvas id="chartEstados" height="250"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
+<!-- Loading -->
+<div *ngIf="loading" class="saint-loading">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Cargando...</span>
   </div>
+  <p>Cargando datos del dashboard...</p>
+</div>
+
+<!-- Contenido principal -->
+<div *ngIf="!loading && !errorMessage">
+
+  <!-- KPIs -->
+  <section class="saint-kpi-grid">
+    <div class="saint-kpi-card saint-kpi-card--blue">
+      <span class="saint-kpi-card__label">Reportes Generados</span>
+      <span class="saint-kpi-card__value">{{ resumen.total }}</span>
+    </div>
+    <div class="saint-kpi-card saint-kpi-card--cyan">
+      <span class="saint-kpi-card__label">Promedio Atención</span>
+      <span class="saint-kpi-card__value">{{ resumen.promedio_horas }} h</span>
+    </div>
+    <div class="saint-kpi-card saint-kpi-card--amber">
+      <span class="saint-kpi-card__label">Pendientes</span>
+      <span class="saint-kpi-card__value">{{ resumen.pendientes }}</span>
+    </div>
+    <div class="saint-kpi-card saint-kpi-card--teal">
+      <span class="saint-kpi-card__label">En proceso</span>
+      <span class="saint-kpi-card__value">{{ resumen.en_proceso }}</span>
+    </div>
+    <div class="saint-kpi-card saint-kpi-card--green">
+      <span class="saint-kpi-card__label">Liberados</span>
+      <span class="saint-kpi-card__value">{{ resumen.liberados }}</span>
+    </div>
+  </section>
+
+  <!-- Cumplimiento -->
+  <section class="saint-compliance-bar">
+    <div class="saint-compliance-item">
+      <span class="saint-compliance-item__label">Total Reportes</span>
+      <span class="saint-compliance-item__value">{{ resumen.total }}</span>
+    </div>
+    <div class="saint-compliance-item">
+      <span class="saint-compliance-item__label">Cumplen</span>
+      <span class="saint-compliance-item__value">{{ resumen.cumplen }}</span>
+    </div>
+    <div class="saint-compliance-item">
+      <span class="saint-compliance-item__label">% Cumplimiento</span>
+      <span class="saint-compliance-item__value saint-compliance-item__value--highlight">{{ resumen.porcentaje_cumplimiento }}%</span>
+    </div>
+  </section>
+
+  <!-- Tabla de reportes -->
+  <section class="saint-card">
+    <div class="saint-card__header">
+      <h2><i class="bi bi-file-earmark-text"></i> Listado de Reportes</h2>
+      <span class="saint-count-badge">{{ filteredReports().length }}</span>
+    </div>
+    <div class="saint-table-wrapper">
+      <table class="saint-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>OP</th>
+            <th>Cliente</th>
+            <th>Usuario</th>
+            <th>Estado</th>
+            <th>Fecha Creación</th>
+            <th>Fecha Respuesta</th>
+            <th>Tiempo Atención</th>
+            <th>Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let reporte of reports">
+            <td class="font-semibold">{{ reporte.id }}</td>
+            <td>{{ reporte.op_reporte }}</td>
+            <td>{{ reporte.cliente }}</td>
+            <td>{{ reporte.usuario }}</td>
+            <td>
+              <span class="saint-status-badge" [ngClass]="{
+                'saint-status-badge--pending': reporte.estado === 'pendiente',
+                'saint-status-badge--progress': reporte.estado === 'en proceso',
+                'saint-status-badge--done': reporte.estado === 'liberado'
+              }">{{ reporte.estado }}</span>
+            </td>
+            <td>{{ reporte.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ reporte.fecha_respuesta ? (reporte.fecha_respuesta | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+            <td>{{ (reporte.minutos_laborales / 60) | number:'1.0-0' }}h {{ (reporte.minutos_laborales % 60) | number:'2.0-0' }}m</td>
+            <td>
+              <span class="saint-priority-badge" [ngClass]="{
+                'saint-priority-badge--medium': reporte.prioridad === 'media',
+                'saint-priority-badge--high': reporte.prioridad === 'alta'
+              }">{{ reporte.prioridad }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Gráficas -->
+  <section class="saint-charts-grid">
+    <div class="saint-card">
+      <div class="saint-card__header">
+        <h2><i class="bi bi-bar-chart"></i> Top 5 Usuarios con Más Reportes</h2>
+      </div>
+      <div class="saint-card__body">
+        <canvas id="chartUsuarios" height="250"></canvas>
+      </div>
+    </div>
+    <div class="saint-card">
+      <div class="saint-card__header">
+        <h2><i class="bi bi-pie-chart"></i> Distribución por Estado</h2>
+      </div>
+      <div class="saint-card__body">
+        <canvas id="chartEstados" height="250"></canvas>
+      </div>
+    </div>
+  </section>
+
 </div>

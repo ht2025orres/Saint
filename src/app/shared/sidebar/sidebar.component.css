@@ -2,40 +2,33 @@
   display: block;
 }
 
-body {
-  background-color: #F4F6F9 !important;
-}
-
 /* ==============================================================
-   MOBILE FIRST - Estilos base para móvil (< 768px)
+   SIDEBAR - Fondo claro, bordes de color, corporativo futurista
    ============================================================== */
 
-/* Overlay para móvil - solo visible en móvil */
+/* Overlay para móvil */
 .sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(41, 54, 129, 0.15);
   z-index: 998;
   animation: fadeIn 0.3s ease;
   display: block;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Sidebar base - móvil: oculto por defecto, se desliza desde la izquierda */
+/* Sidebar base */
 :host .left-sidebar.saint-sidebar {
-  background: #F4F6F9;
+  background: #ffffff;
   width: 280px;
   max-width: 85vw;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -44,21 +37,15 @@ body {
   top: 0;
   height: 100vh;
   height: 100dvh;
-  /* Soporte para viewport dinámico en móviles */
   z-index: 1000;
-  /* Por encima del header (z-index: 10) */
-  -webkit-box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
-  box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.1);
   padding-top: 0;
   transform: translateX(-100%);
   overflow: hidden;
-  /* Evitar scroll doble en el aside */
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  /* Mejorar scroll táctil */
+  border-right: 1px solid rgba(149, 204, 221, 0.3);
 }
 
-/* Sidebar abierto en móvil */
 :host .left-sidebar.saint-sidebar.mobile-open {
   transform: translateX(0);
 }
@@ -68,44 +55,26 @@ body {
   height: 100dvh;
   background: #ffffff;
   padding: 0;
-  /* Cambiar a 0 para que los elementos hijos controlen sus márgenes internos */
   display: flex;
   flex-direction: column;
   gap: 0;
   overflow: hidden;
 }
 
-/* Ocultar overlay en desktop - solo móvil */
 @media (min-width: 768px) {
   .sidebar-overlay {
     display: none !important;
   }
 }
 
-:host .saint-sidebar.collapsed .sidebar-link i,
-:host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link i {
-  margin: 0 !important;
-  min-width: 20px !important;
-  width: 20px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* Ocultar flechas de submenú cuando está colapsado */
-:host .saint-sidebar.collapsed .sidebar-link.has-arrow .arrow-icon,
-:host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.has-arrow .arrow-icon {
-  display: none !important;
-}
-
+/* ─── Brand ────────────────────────────────────────────────── */
 :host .sidebar-brand {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 20px 16px;
-  /* Mover padding de .sidebar-surface aquí */
-  border-bottom: none;
+  padding: 20px 18px;
+  border-bottom: 1px solid rgba(149, 204, 221, 0.25);
   margin-bottom: 0;
   flex-shrink: 0;
 }
@@ -120,43 +89,44 @@ body {
 :host .brand-logo {
   max-width: 100%;
   height: auto;
-  max-height: 50px;
+  max-height: 42px;
 }
 
 :host .sidebar-toggle {
   border: none;
-  background: transparent;
-  width: 36px;
-  height: 36px;
+  background: rgba(149, 204, 221, 0.12);
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #6B7280;
-  transition: color 0.2s ease;
+  color: rgb(66, 116, 217);
+  transition: all 0.2s ease;
   padding: 0;
   margin-left: auto;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 :host .sidebar-toggle i {
-  font-size: 20px;
+  font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 :host .sidebar-toggle:hover {
-  background: #F9FAFB;
-  color: #2563EB;
+  background: rgba(66, 116, 217, 0.1);
+  color: rgb(41, 54, 129);
 }
 
-/* Botón toggle: oculto en móvil (usamos el del header) */
+/* Oculto en móvil */
 :host .sidebar-toggle {
   display: none;
 }
 
+/* ─── Content ──────────────────────────────────────────────── */
 :host .sidebar-content {
   flex: 1;
   display: flex;
@@ -164,8 +134,7 @@ body {
   gap: 0;
   overflow: hidden;
   min-height: 0;
-  padding: 0 16px;
-  /* Mover padding lateral aquí */
+  padding: 0 12px;
 }
 
 :host .scroll-sidebar.saint-scroll-sidebar,
@@ -173,11 +142,9 @@ body {
   flex: 1;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  padding-right: 6px;
+  padding-right: 4px;
   max-height: 72vh;
   min-height: 0;
-
-  /* Mejorar fluidez del scroll */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -185,118 +152,121 @@ body {
 
 :host .scroll-sidebar.saint-scroll-sidebar::-webkit-scrollbar,
 :host .saint-scroll-sidebar::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 :host .scroll-sidebar.saint-scroll-sidebar::-webkit-scrollbar-thumb,
 :host .saint-scroll-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
+  background: rgba(149, 204, 221, 0.35);
   border-radius: 8px;
 }
 
 :host .scroll-sidebar.saint-scroll-sidebar::-webkit-scrollbar-thumb:hover,
 :host .saint-scroll-sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(66, 116, 217, 0.3);
 }
 
+/* ─── Menu List ────────────────────────────────────────────── */
 :host .sidebar-list.saint-sidebar-list,
 :host .saint-sidebar-list {
   list-style: none;
   margin: 0;
-  padding: 0 0 40px 0;
-  /* Padding inferior para que el último item no quede oculto tras el footer */
+  padding: 12px 0 40px 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
+/* ─── Menu Links ───────────────────────────────────────────── */
 :host .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 10px 14px;
   border-radius: 8px;
-  color: #1F2937;
+  color: #374151;
   font-weight: 400;
   text-decoration: none;
   transition: all 0.2s ease;
-  font-size: 15px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.84rem;
+  font-family: 'Inter', system-ui, sans-serif;
   margin: 0;
   position: relative;
   line-height: 1.5;
+  border: 1px solid transparent;
 }
 
 :host .sidebar-link i {
-  min-width: 22px;
-  width: 22px;
-  font-size: 20px;
+  min-width: 20px;
+  width: 20px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6B7280;
+  color: rgb(66, 116, 217);
   transition: color 0.2s ease;
   line-height: 1;
   flex-shrink: 0;
 }
 
 :host .sidebar-link:hover {
-  background: #F9FAFB;
-  color: #111827;
+  background: rgba(208, 231, 230, 0.3);
+  color: rgb(41, 54, 129);
+  border-color: rgba(149, 204, 221, 0.3);
 }
 
 :host .sidebar-link:hover i {
-  color: #4B5563;
+  color: rgb(41, 54, 129);
 }
 
 :host .sidebar-link.active {
-  background: #EFF6FF;
-  color: #2563EB;
-  font-weight: 500;
+  background: rgb(66, 116, 217);
+  color: #ffffff;
+  font-weight: 600;
+  border-color: transparent;
+  border-left: none;
+  border-radius: 10px;
 }
 
 :host .sidebar-link.active i {
-  color: #2563EB;
+  color: #ffffff;
 }
 
-/* Estilo para elementos con submenú cuando tienen un hijo activo */
-/* Usar selector :has() para detectar cuando un submenú tiene un elemento activo */
-:host li:has(.sidebar-sublink.active)>.sidebar-link.has-arrow {
-
-  color: #2563EB !important;
+/* Parent with active child */
+:host li:has(.sidebar-sublink.active) > .sidebar-link.has-arrow {
+  background: rgba(66, 116, 217, 0.08) !important;
+  color: rgb(41, 54, 129) !important;
   font-weight: 500 !important;
+  border-left: none !important;
+  border-color: rgba(66, 116, 217, 0.15) !important;
 }
 
-:host li:has(.sidebar-sublink.active)>.sidebar-link.has-arrow i {
-  color: #2563EB !important;
+:host li:has(.sidebar-sublink.active) > .sidebar-link.has-arrow i {
+  color: rgb(66, 116, 217) !important;
 }
 
-:host li:has(.sidebar-sublink.active)>.sidebar-link.has-arrow .arrow-icon {
-  color: #2563EB !important;
+:host li:has(.sidebar-sublink.active) > .sidebar-link.has-arrow .arrow-icon {
+  color: rgb(66, 116, 217) !important;
 }
 
-/* El estado activo del padre se mantiene incluso si el submenú está cerrado */
-/* El submenú puede cerrarse normalmente, pero el padre mantiene el estilo activo */
-
-/* Fallback para navegadores que no soportan :has() - usar clase activa en el li */
-:host li.active-parent>.sidebar-link.has-arrow {
-  background: #EFF6FF !important;
-  color: #2563EB !important;
+/* Fallback */
+:host li.active-parent > .sidebar-link.has-arrow {
+  background: rgba(66, 116, 217, 0.08) !important;
+  color: rgb(41, 54, 129) !important;
   font-weight: 500 !important;
+  border-left: none !important;
+  border-color: rgba(66, 116, 217, 0.15) !important;
 }
 
-:host li.active-parent>.sidebar-link.has-arrow i {
-  color: #2563EB !important;
+:host li.active-parent > .sidebar-link.has-arrow i {
+  color: rgb(66, 116, 217) !important;
 }
 
-:host li.active-parent>.sidebar-link.has-arrow .arrow-icon {
-  color: #2563EB !important;
+:host li.active-parent > .sidebar-link.has-arrow .arrow-icon {
+  color: rgb(66, 116, 217) !important;
 }
 
-/* NO forzar que el submenú esté visible - permitir que se cierre normalmente */
-/* Solo mantener el estilo activo del padre */
-
-/* Estilo para links con submenú */
+/* ─── Arrow Icon ───────────────────────────────────────────── */
 :host .sidebar-link.has-arrow {
   position: relative;
 }
@@ -314,65 +284,37 @@ body {
 
 :host .sidebar-link.has-arrow .arrow-icon {
   margin-left: auto;
-  font-size: 16px;
-  color: #6B7280;
+  font-size: 14px;
+  color: rgba(66, 116, 217, 0.5);
   transition: transform 0.3s ease, color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  min-width: 18px;
-  width: 18px;
-}
-
-:host .sidebar-link.has-arrow:hover {
-  background: #F9FAFB;
-  color: #111827;
-}
-
-:host .sidebar-link.has-arrow:hover i:not(.arrow-icon) {
-  color: #4B5563;
+  min-width: 16px;
+  width: 16px;
 }
 
 :host .sidebar-link.has-arrow:hover .arrow-icon {
-  color: #4B5563;
+  color: rgb(66, 116, 217);
 }
 
-/* Cuando el submenú está expandido, rotar el icono */
 :host .sidebar-link.has-arrow[aria-expanded="true"] .arrow-icon {
-  transform: rotate(180deg);
-  color: #2563EB;
+  transform: rotate(90deg);
+  color: rgb(41, 54, 129);
 }
 
-:host .sidebar-link.has-arrow[aria-expanded="true"] {
-  color: #1F2937;
-}
-
-:host .sidebar-link.has-arrow[aria-expanded="true"] i {
-  color: #4B5563;
-}
-
-:host .sidebar-link.has-arrow[aria-expanded="true"]:hover {
-  background: #F9FAFB;
-  color: #111827;
-}
-
-:host .sidebar-link.has-arrow[aria-expanded="true"]:hover i {
-  color: #4B5563;
-}
-
+/* ─── Submenu ──────────────────────────────────────────────── */
 :host .sidebar-submenu {
   list-style: none;
-  margin: 8px 0 12px 0;
-  padding-left: 40px;
+  margin: 4px 0 8px 0;
+  padding-left: 34px;
   border-left: none;
 }
 
-/* Estilos normales de Bootstrap collapse para submenús */
 :host .sidebar-submenu.collapse {
   display: none;
   visibility: visible !important;
-  /* Forzar visibilidad para evitar conflictos con otros frameworks */
 }
 
 :host .sidebar-submenu.collapse.show,
@@ -387,36 +329,40 @@ body {
 
 :host .sidebar-sublink {
   display: block;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: 6px;
-  font-size: 14px;
-  color: #6B7280;
+  font-size: 0.8rem;
+  color: #4a5568;
   text-decoration: none;
   transition: all 0.2s ease;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  margin: 4px 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 2px 0;
   font-weight: 400;
   line-height: 1.5;
+  border-left: 2px solid transparent;
 }
 
 :host .sidebar-sublink:hover {
-  color: #2563EB;
-  background: #F9FAFB;
+  color: rgb(41, 54, 129);
+  background: rgba(208, 231, 230, 0.25);
+  border-left-color: rgb(149, 204, 221);
 }
 
 :host .sidebar-sublink.active {
-  color: #2563EB;
+  color: rgb(66, 116, 217);
   font-weight: 500;
+  background: rgba(66, 116, 217, 0.06);
+  border-left-color: rgb(66, 116, 217);
 }
 
+/* ─── Footer ──────────────────────────────────────────────── */
 :host .sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   margin-top: auto;
-  padding: 20px 16px;
-  /* Mantener padding aquí */
-  border-top: 1px solid #E5E7EB;
+  padding: 16px 12px;
+  border-top: 1px solid rgba(149, 204, 221, 0.2);
   background: #ffffff;
   z-index: 10;
   flex-shrink: 0;
@@ -425,120 +371,126 @@ body {
 :host .sidebar-utility {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 12px;
+  padding: 10px 14px;
   border-radius: 8px;
   text-decoration: none;
-  color: #1F2937;
+  color: #374151;
   transition: all 0.2s ease;
-  font-size: 15px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.84rem;
+  font-family: 'Inter', system-ui, sans-serif;
   margin: 0;
   font-weight: 400;
   line-height: 1.5;
+  border: 1px solid transparent;
 }
 
 :host .sidebar-utility:hover {
-  background: #F9FAFB;
-  color: #111827;
+  background: rgba(208, 231, 230, 0.3);
+  color: rgb(41, 54, 129);
+  border-color: rgba(149, 204, 221, 0.3);
 }
 
 :host .sidebar-utility.active {
-  background: #EFF6FF;
-  color: #2563EB;
+  background: rgba(66, 116, 217, 0.07);
+  color: rgb(41, 54, 129);
+  font-weight: 500;
+  border-color: rgba(66, 116, 217, 0.25);
 }
 
 :host .sidebar-utility .utility-icon {
-  min-width: 22px;
-  width: 22px;
-  font-size: 20px;
+  min-width: 20px;
+  width: 20px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6B7280;
+  color: rgb(66, 116, 217);
   transition: color 0.2s ease;
   line-height: 1;
   flex-shrink: 0;
 }
 
 :host .sidebar-utility:hover .utility-icon {
-  color: #4B5563;
+  color: rgb(41, 54, 129);
 }
 
 :host .sidebar-utility.active .utility-icon {
-  color: #2563EB;
+  color: rgb(41, 54, 129);
 }
 
+/* ─── User Card ────────────────────────────────────────────── */
 :host .sidebar-user-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 6px;
-  background: #F9FAFB;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(208, 231, 230, 0.2);
   border-radius: 10px;
   margin-top: 0;
   min-width: 0;
   overflow: visible;
+  border: 1px solid rgba(149, 204, 221, 0.25);
 }
 
 :host .user-avatar {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   border-radius: 50%;
-  background: #2563EB;
+  background: rgb(66, 116, 217);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.75rem;
   letter-spacing: 0.02em;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   flex-shrink: 0;
 }
 
 :host .user-meta {
   display: flex;
   flex-direction: column;
-  line-height: 1.4;
-  gap: 3px;
+  line-height: 1.3;
+  gap: 2px;
   flex: 1;
   min-width: 0;
   overflow: visible;
 }
 
 :host .user-name {
-  font-weight: 500;
-  color: #111827;
-  font-size: 14px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 600;
+  color: rgb(41, 54, 129);
+  font-size: 0.8rem;
+  font-family: 'Inter', system-ui, sans-serif;
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.3;
 }
 
 :host .user-role {
-  font-size: 12px;
-  color: #6B7280;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.7rem;
+  color: #718096;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 :host .user-action {
   margin-left: auto;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid rgba(149, 204, 221, 0.25);
   background: transparent;
-  color: #6B7280;
+  color: rgb(66, 116, 217);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 18px;
+  font-size: 16px;
   text-decoration: none;
   padding: 0;
   flex-shrink: 0;
@@ -549,14 +501,16 @@ body {
   align-items: center;
   justify-content: center;
   line-height: 1;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 :host .user-action:hover {
-  background: #FFFFFF;
-  color: #2563EB;
+  background: rgba(66, 116, 217, 0.08);
+  border-color: rgb(66, 116, 217);
+  color: rgb(41, 54, 129);
 }
 
+/* ─── Collapse Labels ──────────────────────────────────────── */
 :host .collapse-label {
   transition: opacity 0.2s ease, width 0.3s ease, margin 0.3s ease;
   white-space: nowrap;
@@ -572,18 +526,36 @@ body {
   display: inline-block;
 }
 
-/* Desktop: ocultar labels cuando está colapsado - Sobrescribir estilos globales */
+/* ==============================================================
+   Collapsed icon adjustments
+   ============================================================== */
+:host .saint-sidebar.collapsed .sidebar-link i,
+:host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link i {
+  margin: 0 !important;
+  min-width: 20px !important;
+  width: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:host .saint-sidebar.collapsed .sidebar-link.has-arrow .arrow-icon,
+:host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.has-arrow .arrow-icon {
+  display: none !important;
+}
+
+/* ==============================================================
+   DESKTOP: collapsed state
+   ============================================================== */
 @media (min-width: 768px) {
 
   :host .saint-sidebar.collapsed .sidebar-content,
   :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-content {
     overflow: hidden !important;
-    /* IMPORTANTE: Mantener contenido dentro de los límites flex */
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
     padding: 0 8px !important;
-    /* Reducir padding lateral en modo colapsado */
   }
 
   :host .saint-sidebar.collapsed .scroll-sidebar.saint-scroll-sidebar,
@@ -612,18 +584,27 @@ body {
   :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link {
     justify-content: center !important;
     margin: 2px 0 !important;
-    padding: 11px !important;
+    padding: 10px !important;
     gap: 0 !important;
     width: 100% !important;
+    border: none !important;
+  }
+
+  :host .saint-sidebar.collapsed .sidebar-link.active,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.active {
+    border-left: none !important;
+    background: rgba(66, 116, 217, 0.08) !important;
+    border-radius: 8px !important;
   }
 
   :host .saint-sidebar.collapsed .sidebar-utility,
   :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-utility {
     justify-content: center !important;
     margin: 2px 0 !important;
-    padding: 11px !important;
+    padding: 10px !important;
     gap: 0 !important;
     width: 100% !important;
+    border: none !important;
   }
 
   :host .saint-sidebar.collapsed .sidebar-utility .utility-icon,
@@ -644,8 +625,8 @@ body {
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 12px 8px !important;
-    gap: 8px !important;
+    padding: 10px 6px !important;
+    gap: 6px !important;
   }
 
   :host .saint-sidebar.collapsed .user-action,
@@ -664,32 +645,27 @@ body {
     display: none !important;
   }
 
-  /* Ocultar submenús cuando el sidebar está colapsado */
   :host .saint-sidebar.collapsed .sidebar-submenu,
   :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-submenu {
     display: none !important;
   }
 
-  /* Prevenir que los estilos globales afecten el sidebar colapsado */
-  :host .saint-sidebar.collapsed .sidebar-nav.saint-sidebar-nav #sidebarnav>li>a,
-  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-nav.saint-sidebar-nav #sidebarnav>li>a {
-    padding: 11px !important;
+  :host .saint-sidebar.collapsed .sidebar-nav.saint-sidebar-nav #sidebarnav > li > a,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-nav.saint-sidebar-nav #sidebarnav > li > a {
+    padding: 10px !important;
     width: 100% !important;
   }
 
-  :host .saint-sidebar.collapsed .sidebar-nav.saint-sidebar-nav #sidebarnav>li:hover>a,
-  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-nav.saint-sidebar-nav #sidebarnav>li:hover>a {
+  :host .saint-sidebar.collapsed .sidebar-nav.saint-sidebar-nav #sidebarnav > li:hover > a,
+  :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-nav.saint-sidebar-nav #sidebarnav > li:hover > a {
     width: 100% !important;
   }
 }
 
 /* ==============================================================
-   TABLET Y DESKTOP - Estilos para pantallas >= 768px
+   TABLET Y DESKTOP - Sidebar visible
    ============================================================== */
-
 @media (min-width: 768px) {
-
-  /* Sidebar visible por defecto en desktop */
   :host .left-sidebar.saint-sidebar {
     width: 240px;
     transform: translateX(0);
@@ -698,77 +674,49 @@ body {
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Sidebar colapsado en desktop */
   :host .left-sidebar.saint-sidebar.collapsed,
   :host-context(.mini-sidebar) :host .left-sidebar.saint-sidebar {
     width: 70px;
   }
 
-  /* Mostrar botón toggle en desktop */
   :host .sidebar-toggle {
     display: flex;
   }
 
-  /* Desktop: ajustes cuando está colapsado */
   :host .saint-sidebar.collapsed .sidebar-link,
   :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link,
   :host .saint-sidebar.collapsed .sidebar-link.has-arrow,
   :host-context(.mini-sidebar) :host .saint-sidebar .sidebar-link.has-arrow {
     justify-content: center !important;
     margin: 2px 0 !important;
-    padding: 11px !important;
+    padding: 10px !important;
     gap: 0 !important;
     width: 100% !important;
   }
 }
 
 /* ==============================================================
-   Ajustes globales para móvil - page-wrapper sin margen
+   MOBILE - Page wrapper sin margen
    ============================================================== */
-
-/* Prevenir scroll del body cuando el sidebar está abierto en móvil */
 body.sidebar-mobile-open {
   overflow: hidden;
   position: fixed;
   width: 100%;
 }
 
-/* ==============================================================
-   MOBILE (< 768px) - Sin margen, contenido a pantalla completa
-   Sobrescribir estilos de style.css que aplican margin-left
-   ============================================================== */
 @media (max-width: 767px) {
-
-  /* Forzar que el contenido principal NO tenga margen en móvil */
-  /* Usar selectores más específicos para sobrescribir style.css */
   .page-wrapper,
   #main-wrapper .page-wrapper,
-  #main-wrapper>.page-wrapper,
+  #main-wrapper > .page-wrapper,
   body .page-wrapper,
   html body .page-wrapper,
   :host-context(#main-wrapper) .page-wrapper,
   :host-context(body) .page-wrapper {
     margin-left: 0 !important;
     padding-top: 56px !important;
-    /* Espacio para el header móvil */
     transition: none !important;
-    -webkit-transition: none !important;
-    -o-transition: none !important;
   }
 
-  /* Sobrescribir específicamente el estilo de style.css para max-width: 1023px */
-  @media (max-width: 1023px) {
-
-    .page-wrapper,
-    #main-wrapper .page-wrapper,
-    #main-wrapper>.page-wrapper,
-    body .page-wrapper,
-    html body .page-wrapper {
-      margin-left: 0 !important;
-    }
-  }
-
-  /* Asegurar que el sidebar no afecte el layout en móvil */
   :host .left-sidebar.saint-sidebar {
     position: fixed !important;
     transform: translateX(-100%);
@@ -780,10 +728,9 @@ body.sidebar-mobile-open {
 }
 
 /* ==============================================================
-   TABLETS (768px - 1023px) - Margen para sidebar colapsado
+   TABLETS (768px - 1023px)
    ============================================================== */
 @media (min-width: 768px) and (max-width: 1023px) {
-
   .page-wrapper,
   #main-wrapper .page-wrapper {
     margin-left: 70px !important;
@@ -802,10 +749,9 @@ body.sidebar-mobile-open {
 }
 
 /* ==============================================================
-   DESKTOP (>= 1024px) - Margen completo para sidebar
+   DESKTOP (>= 1024px)
    ============================================================== */
 @media (min-width: 1024px) {
-
   .page-wrapper,
   #main-wrapper .page-wrapper {
     margin-left: 240px !important;
@@ -823,39 +769,49 @@ body.sidebar-mobile-open {
   }
 }
 
+/* ==============================================================
+   Float Panel (collapsed submenu)
+   ============================================================== */
 .sidebar-float-panel {
   position: fixed;
   left: 80px;
-  /* donde termina el sidebar colapsado */
-  background: #fff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  border-radius: 6px;
-  padding: 10px 0;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(41, 54, 129, 0.12);
+  border-radius: 10px;
+  padding: 8px 0;
   z-index: 9999;
-  min-width: 220px;
+  min-width: 200px;
   animation: fadeIn 0.15s ease-out;
+  border: 1px solid rgba(149, 204, 221, 0.25);
+}
+
+.floating-submenu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .floating-submenu li a {
   display: block;
-  padding: 10px 15px;
-  color: #333;
+  padding: 9px 16px;
+  color: #374151;
   text-decoration: none;
   white-space: nowrap;
+  font-size: 0.82rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: all 0.15s ease;
+  border-left: 2px solid transparent;
 }
 
 .floating-submenu li a:hover {
-  background: #f2f2f2;
+  background: rgba(208, 231, 230, 0.3);
+  color: rgb(41, 54, 129);
+  border-left-color: rgb(149, 204, 221);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.floating-submenu li a.active {
+  background: rgba(66, 116, 217, 0.07);
+  color: rgb(41, 54, 129);
+  font-weight: 500;
+  border-left-color: rgb(66, 116, 217);
 }

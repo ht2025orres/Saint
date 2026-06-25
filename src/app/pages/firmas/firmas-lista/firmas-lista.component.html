@@ -1,58 +1,66 @@
-<div class="table-responsive">
-  <table class="table table-hover align-middle mb-0">
-    <thead class="bg-light">
-      <tr>
-        <th class="ps-4">Firmante</th>
-        <th>Fecha de Firma</th>
-        <th>Motivo</th>
-        <th>Estado</th>
-        <th class="text-end pe-4">Acciones</th>
+<div class="overflow-x-auto">
+  <table class="w-full text-xs">
+    <thead>
+      <tr class="bg-slate-50 border-b border-slate-200">
+        <th class="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Firmante</th>
+        <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Fecha de Firma</th>
+        <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Motivo</th>
+        <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500">Estado</th>
+        <th class="px-5 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Acciones</th>
       </tr>
     </thead>
-    <tbody>
-      <tr *ngFor="let doc of documentos">
-        <td class="ps-4">
-          <div class="d-flex align-items-center">
-            <div class="avatar-sm bg-primary-soft text-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: rgba(13, 110, 253, 0.1);">
+    <tbody class="divide-y divide-slate-100">
+      <tr *ngFor="let doc of documentos" class="hover:bg-slate-50 transition-colors duration-100">
+        <td class="px-5 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold">
               <i class="bi bi-person"></i>
             </div>
             <div>
-              <h6 class="mb-0 fw-bold">{{doc.nombre_firmante}}</h6>
-              <small class="text-muted">{{doc.email_firmante}}</small>
+              <div class="font-semibold text-gray-900 text-xs">{{doc.nombre_firmante}}</div>
+              <div class="text-[10px] text-slate-400">{{doc.email_firmante}}</div>
             </div>
           </div>
         </td>
-        <td>{{doc.firmado_at | date:'short'}}</td>
-        <td>{{doc.motivo_firma}}</td>
-        <td>
-          <span class="badge" [class.bg-success]="doc.estado === 'firmado'" [class.bg-warning]="doc.estado === 'pendiente'" [class.bg-danger]="doc.estado === 'error'">
-            {{doc.estado | uppercase}}
+        <td class="px-4 py-3 text-slate-600">{{doc.firmado_at | date:'short'}}</td>
+        <td class="px-4 py-3 text-slate-600 max-w-[200px] truncate">{{doc.motivo_firma}}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                [ngClass]="{
+                  'bg-emerald-50 text-emerald-700': doc.estado === 'firmado',
+                  'bg-amber-50 text-amber-700': doc.estado === 'pendiente',
+                  'bg-red-50 text-red-700': doc.estado === 'error'
+                }">
+            {{doc.estado}}
           </span>
         </td>
-        <td class="text-end pe-4">
-          <div class="btn-group">
-            <button class="btn btn-sm btn-outline-primary" (click)="descargar(doc)" title="Descargar">
-              <i class="bi bi-download"></i>
+        <td class="px-5 py-3 text-right">
+          <div class="flex items-center justify-end gap-1">
+            <button class="w-7 h-7 inline-flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all duration-150"
+                    (click)="descargar(doc)" title="Descargar">
+              <i class="bi bi-download text-xs"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger" (click)="eliminar(doc)" title="Eliminar">
-              <i class="bi bi-trash"></i>
+            <button class="w-7 h-7 inline-flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all duration-150"
+                    (click)="eliminar(doc)" title="Eliminar">
+              <i class="bi bi-trash text-xs"></i>
             </button>
           </div>
         </td>
       </tr>
+
+      <!-- Empty state -->
       <tr *ngIf="documentos.length === 0 && !loading">
-        <td colspan="5" class="text-center py-5">
-          <div class="text-muted">
-            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-            No se han encontrado documentos firmados
-          </div>
+        <td colspan="5" class="px-4 py-12 text-center">
+          <i class="bi bi-inbox text-3xl text-slate-300 block mb-3"></i>
+          <p class="text-sm font-semibold text-slate-500">No se han encontrado documentos firmados</p>
         </td>
       </tr>
+
+      <!-- Loading -->
       <tr *ngIf="loading">
-        <td colspan="5" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-          </div>
+        <td colspan="5" class="px-4 py-12 text-center">
+          <div class="spinner-border spinner-border-sm text-blue-600" role="status"></div>
+          <p class="text-xs text-slate-400 mt-2">Cargando documentos...</p>
         </td>
       </tr>
     </tbody>

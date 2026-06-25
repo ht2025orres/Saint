@@ -1,29 +1,356 @@
-.card {
-  transition: transform 0.2s, box-shadow 0.2s;
+/* ═══════════════════════════════════════════════════════════════
+   Report Dashboard - Estilo corporativo limpio
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Page Header ──────────────────────────────────────────── */
+.saint-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(149, 204, 221, 0.2);
 }
 
-.card:hover {
+.saint-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgb(41, 54, 129);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.saint-page-header .breadcrumb {
+  margin: 0;
+  padding: 0;
+  font-size: 0.8rem;
+}
+
+/* ─── Filters Bar ──────────────────────────────────────────── */
+.saint-filters-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(149, 204, 221, 0.15);
+}
+
+.saint-filters-bar__fields {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.saint-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.saint-filter-field--search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.saint-filter-field label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.saint-filters-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-outline-secondary {
+  border: 1.5px solid #e0e0e0 !important;
+  color: #4a5568 !important;
+  background: transparent !important;
+}
+
+.btn-outline-secondary:hover {
+  background: #f5f5f5 !important;
+  border-color: #ccc !important;
+}
+
+.btn-outline-success {
+  border: 1.5px solid rgba(16, 185, 129, 0.4) !important;
+  color: #065f46 !important;
+  background: transparent !important;
+}
+
+.btn-outline-success:hover {
+  background: rgba(16, 185, 129, 0.06) !important;
+  border-color: #10b981 !important;
+}
+
+/* ─── Loading ──────────────────────────────────────────────── */
+.saint-loading {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.saint-loading p {
+  margin-top: 16px;
+  color: #718096;
+  font-size: 0.85rem;
+}
+
+/* ─── KPI Grid ─────────────────────────────────────────────── */
+.saint-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.saint-kpi-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 4px solid transparent;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.saint-kpi-card:hover {
+  box-shadow: 0 4px 16px rgba(41, 54, 129, 0.06);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-.table-responsive {
-  max-height: 600px;
+.saint-kpi-card--blue { border-left-color: rgb(66, 116, 217); }
+.saint-kpi-card--cyan { border-left-color: rgb(149, 204, 221); }
+.saint-kpi-card--amber { border-left-color: #f59e0b; }
+.saint-kpi-card--teal { border-left-color: #14b8a6; }
+.saint-kpi-card--green { border-left-color: #10b981; }
+
+.saint-kpi-card__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.saint-kpi-card__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: rgb(41, 54, 129);
+}
+
+/* ─── Compliance Bar ───────────────────────────────────────── */
+.saint-compliance-bar {
+  display: flex;
+  gap: 24px;
+  padding: 18px 24px;
+  background: #fff;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(149, 204, 221, 0.15);
+}
+
+.saint-compliance-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.saint-compliance-item__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.saint-compliance-item__value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: rgb(41, 54, 129);
+}
+
+.saint-compliance-item__value--highlight {
+  color: rgb(66, 116, 217);
+}
+
+/* ─── Card ─────────────────────────────────────────────────── */
+.saint-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.saint-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(149, 204, 221, 0.12);
+}
+
+.saint-card__header h2 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgb(41, 54, 129);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saint-card__header h2 i {
+  color: rgb(66, 116, 217);
+}
+
+.saint-card__body {
+  padding: 24px;
+}
+
+.saint-count-badge {
+  background: rgba(66, 116, 217, 0.08);
+  color: rgb(66, 116, 217);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* ─── Table ────────────────────────────────────────────────── */
+.saint-table-wrapper {
+  overflow-x: auto;
+  max-height: 500px;
   overflow-y: auto;
 }
 
-.table thead {
+.saint-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.saint-table thead {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background-color: #f8f9fa;
+  z-index: 5;
 }
 
-.badge {
-  padding: 0.5em 0.75em;
-  font-size: 0.875rem;
+.saint-table thead th {
+  background: rgba(208, 231, 230, 0.2);
+  color: rgb(41, 54, 129);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 14px;
+  border-bottom: 2px solid rgba(149, 204, 221, 0.2);
+  white-space: nowrap;
+  text-align: center;
 }
 
-.spinner-border {
-  border-width: 0.3em;
+.saint-table tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(208, 231, 230, 0.3);
+  color: #2d3748;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.saint-table tbody tr:hover {
+  background: rgba(208, 231, 230, 0.12);
+}
+
+/* ─── Status Badges ────────────────────────────────────────── */
+.saint-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.saint-status-badge--pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+}
+
+.saint-status-badge--progress {
+  background: rgba(149, 204, 221, 0.2);
+  color: rgb(41, 54, 129);
+}
+
+.saint-status-badge--done {
+  background: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+}
+
+/* ─── Priority Badges ──────────────────────────────────────── */
+.saint-priority-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.saint-priority-badge--medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+}
+
+.saint-priority-badge--high {
+  background: rgba(239, 68, 68, 0.08);
+  color: #991b1b;
+}
+
+/* ─── Charts Grid ──────────────────────────────────────────── */
+.saint-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+  margin-top: 8px;
+}
+
+/* ─── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .saint-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .saint-filters-bar__fields {
+    flex-direction: column;
+  }
+
+  .saint-filters-bar__actions {
+    flex-wrap: wrap;
+  }
+
+  .saint-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .saint-compliance-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .saint-charts-grid {
+    grid-template-columns: 1fr;
+  }
 }

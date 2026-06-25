@@ -1,200 +1,343 @@
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-}
+/* ═══════════════════════════════════════════════════════════════
+   Dashboard - Estilo limpio, corporativo, futurista
+   ═══════════════════════════════════════════════════════════════ */
 
-.metric-card {
-  border-radius: 1rem;
-  padding: 1.5rem;
-  color: #fff;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+// Variables locales
+$primary: rgb(41, 54, 129);
+$secondary: rgb(66, 116, 217);
+$accent: rgb(149, 204, 221);
+$light: rgb(208, 231, 230);
+$radius: 16px;
 
-.metric-card.accent {
-  background-color: #007bff;
-}
-
-.metric-card.warning {
-  background-color: #ffc107;
-}
-
-.metric-card.success {
-  background-color: #28a745;
-}
-
-.dashboard {
-  padding: 2rem;
-}
-
+/* ─── Admin Dashboard Container ────────────────────────────── */
 .admin-dashboard {
-  padding: 20px;
+  padding: 0;
 
   .nav-tabs {
-    border-bottom: 2px solid #dee2e6;
+    border: none;
+    background: #fff;
+    border-radius: $radius;
+    padding: 6px;
+    display: inline-flex;
+    gap: 4px;
+    box-shadow: 0 1px 4px rgba($primary, 0.04);
 
     .nav-link {
-      color: #495057;
+      color: #4a5568;
       border: none;
-      border-bottom: 3px solid transparent;
-      padding: 12px 24px;
+      padding: 10px 22px;
       font-weight: 500;
-      transition: all 0.3s;
+      font-size: 0.84rem;
+      border-radius: 12px;
+      transition: all 0.2s;
 
       &:hover {
-        color: #007bff;
-        background-color: #f8f9fa;
+        color: $secondary;
+        background: rgba($light, 0.4);
       }
 
       &.active {
-        color: #007bff;
-        border-bottom-color: #007bff;
-        background-color: transparent;
+        color: #fff;
+        background: $secondary;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba($secondary, 0.25);
       }
     }
   }
 
   .tab-content {
-    padding: 30px 0;
+    padding: 24px 0;
   }
 }
 
+/* ─── Metrics Grid ─────────────────────────────────────────── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 0;
+}
+
+/* ─── Cards ────────────────────────────────────────────────── */
 .card {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: none;
+  border-radius: $radius;
+  box-shadow: 0 2px 8px rgba($primary, 0.04);
+  transition: all 0.25s ease;
+  overflow: hidden;
 
   &:hover {
+    box-shadow: 0 6px 20px rgba($primary, 0.07);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  &.bg-primary,
-  &.bg-success,
-  &.bg-warning,
-  &.bg-info,
-  &.bg-secondary,
-  &.bg-dark {
-    .card-body {
-      h6 {
-        opacity: 0.9;
-        font-size: 0.875rem;
-        margin-bottom: 8px;
-        font-weight: 600;
-      }
-
-      h3 {
-        font-weight: 700;
-        margin: 0;
-        font-size: 1.5rem;
-      }
-    }
   }
 
   .card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 15px 20px;
+    background: #fff;
+    border-bottom: 1px solid rgba($accent, 0.15);
+    padding: 18px 24px;
 
     h5 {
-      margin: 0;
-      font-weight: 600;
-      color: #495057;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: $primary;
+      margin: 0 0 2px 0;
+
+      i {
+        margin-right: 8px;
+        color: $secondary;
+      }
+    }
+
+    small {
+      display: block;
+      font-size: 0.75rem;
+      color: #718096;
+      margin-top: 4px;
     }
   }
 
   .card-body {
-    padding: 20px;
+    padding: 24px;
+
+    h3 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: $primary;
+    }
+
+    h6 {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #718096;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
   }
 }
 
+/* ─── Indicadores principales (sin gradientes) ─────────────── */
+.bg-gradient-primary,
+.bg-gradient-success,
+.bg-gradient-info,
+.bg-gradient-warning,
+.bg-gradient-danger {
+  background: #fff !important;
+  color: $primary !important;
+  border-left: 4px solid $secondary;
+
+  h6, small, .text-muted {
+    color: #718096 !important;
+  }
+
+  h3 {
+    color: $primary !important;
+  }
+
+  i {
+    color: $secondary !important;
+    opacity: 0.6 !important;
+  }
+}
+
+.bg-gradient-success {
+  border-left-color: #10b981;
+
+  i { color: #10b981 !important; }
+}
+
+.bg-gradient-info {
+  border-left-color: $accent;
+
+  i { color: $accent !important; }
+}
+
+.bg-gradient-warning {
+  border-left-color: #f59e0b;
+
+  i { color: #f59e0b !important; }
+}
+
+.bg-gradient-danger {
+  border-left-color: #ef4444;
+
+  i { color: #ef4444 !important; }
+}
+
+/* ─── Tablas ───────────────────────────────────────────────── */
 .table {
-  font-size: 0.9rem;
+  font-size: 0.84rem;
+  margin-bottom: 0;
 
   thead {
-    background-color: #f8f9fa;
-
     th {
-      border-top: none;
-      border-bottom: 2px solid #dee2e6;
+      background: rgba($light, 0.2);
+      border-bottom: 2px solid rgba($accent, 0.2);
       font-weight: 600;
-      color: #495057;
-      padding: 12px;
+      color: $primary;
+      padding: 14px 16px;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      border-top: none;
     }
   }
 
   tbody {
     tr {
-      transition: background-color 0.2s;
+      border-bottom: 1px solid rgba($light, 0.4);
+      transition: background 0.15s;
 
       &:hover {
-        background-color: #f8f9fa;
+        background: rgba($light, 0.15);
       }
 
       td {
-        padding: 12px;
+        padding: 12px 16px;
         vertical-align: middle;
+        color: #2d3748;
       }
     }
   }
 
   tfoot {
     tr {
-      background-color: #f8f9fa;
-      border-top: 2px solid #dee2e6;
+      border-top: 2px solid rgba($accent, 0.25);
+      background: rgba($light, 0.15);
 
       td {
-        padding: 12px;
-        font-weight: 600;
+        padding: 14px 16px;
+        font-weight: 700;
+        color: $primary;
       }
     }
   }
 }
 
-// Tabla expandible
-.expandable-table {
-  .clickable-row {
-    cursor: pointer;
-    transition: background-color 0.2s;
+/* ─── Badges ───────────────────────────────────────────────── */
+.badge {
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+
+  &.bg-success {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #065f46 !important;
+  }
+
+  &.bg-warning {
+    background: rgba(245, 158, 11, 0.1) !important;
+    color: #92400e !important;
+  }
+
+  &.bg-danger {
+    background: rgba(239, 68, 68, 0.08) !important;
+    color: #991b1b !important;
+  }
+}
+
+/* ─── Botones ──────────────────────────────────────────────── */
+.btn {
+  border-radius: 10px;
+  font-weight: 500;
+  padding: 9px 18px;
+  font-size: 0.84rem;
+  transition: all 0.2s;
+  border: none;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($primary, 0.12);
+  }
+
+  &.btn-primary {
+    background: $secondary;
+    color: #fff;
 
     &:hover {
-      background-color: #e9ecef !important;
-    }
-
-    td:first-child {
-      color: #007bff;
-      font-size: 1.2rem;
+      background: $primary;
     }
   }
 
-  .expanded-content {
-    background-color: #f8f9fa;
+  &.btn-info {
+    background: rgba($accent, 0.15);
+    color: $primary;
 
-    td {
-      padding: 0 !important;
+    &:hover {
+      background: $accent;
     }
+  }
 
-    .table {
-      margin-bottom: 0;
-      font-size: 0.85rem;
+  &.btn-outline-primary {
+    background: transparent;
+    border: 1.5px solid rgba($secondary, 0.4);
+    color: $secondary;
+
+    &:hover {
+      background: $secondary;
+      color: #fff;
+      border-color: $secondary;
     }
+  }
+
+  &.btn-outline-info {
+    background: transparent;
+    border: 1.5px solid rgba($accent, 0.4);
+    color: $primary;
+
+    &:hover {
+      background: rgba($accent, 0.15);
+      border-color: $accent;
+    }
+  }
+
+  &.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    border-radius: 8px;
   }
 }
 
-.badge {
-  padding: 6px 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
+/* ─── Formularios ──────────────────────────────────────────── */
+.form-select,
+.form-control {
+  border-radius: 10px;
+  border: 1.5px solid #e8ecf0;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    border-color: $secondary;
+    box-shadow: 0 0 0 3px rgba($secondary, 0.08);
+  }
 }
 
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 6px;
 }
 
-// Modal styles
+.input-group {
+  .input-group-text {
+    background: rgba($light, 0.3);
+    border: 1.5px solid #e8ecf0;
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    color: $secondary;
+  }
+
+  .form-control {
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+  }
+}
+
+/* ─── Modal ────────────────────────────────────────────────── */
 .modal {
   &.show {
     display: block !important;
@@ -202,10 +345,10 @@
 
   .modal-dialog {
     max-height: 90vh;
-    margin: 1.75rem auto;
+    margin: 2rem auto;
 
     &.modal-xl {
-      max-width: 1140px;
+      max-width: 1100px;
     }
   }
 
@@ -213,20 +356,30 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba($primary, 0.12);
+    overflow: hidden;
   }
 
   .modal-header {
     flex-shrink: 0;
-    padding: 1rem 1.5rem;
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
+    padding: 18px 24px;
+    background: #fff;
+    border-bottom: 1px solid rgba($accent, 0.15);
+
+    .modal-title {
+      font-weight: 700;
+      color: $primary;
+      font-size: 1rem;
+    }
 
     &.bg-info {
-      background-color: #17a2b8 !important;
-      color: white;
-      
+      background: rgba($accent, 0.08) !important;
+      border-bottom-color: rgba($accent, 0.2);
+
       .modal-title {
-        color: white;
+        color: $primary;
       }
     }
   }
@@ -234,560 +387,71 @@
   .modal-body {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: 1.5rem;
-    max-height: calc(90vh - 180px);
-    
+    padding: 24px;
+    max-height: calc(90vh - 160px);
+
     .sticky-filters {
       position: sticky;
       top: 0;
-      background: white;
+      background: #fff;
       z-index: 100;
-      padding-bottom: 1rem;
-      margin-bottom: 1rem;
-      border-bottom: 1px solid #dee2e6;
-    }
-
-    .table-responsive {
-      max-height: none;
-      overflow-x: auto;
-      
-      table {
-        margin-bottom: 0;
-        
-        thead.sticky-header {
-          // position: sticky;
-          top: 80px;
-          z-index: 99;
-          background: white;
-          
-          th {
-            background-color: #f8f9fa;
-            box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
-          }
-        }
-      }
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba($accent, 0.12);
     }
   }
 
   .modal-footer {
     flex-shrink: 0;
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #dee2e6;
+    padding: 14px 24px;
+    border-top: 1px solid rgba($accent, 0.1);
+    background: #fff;
   }
 }
 
-.modal-backdrop {
-  &.show {
-    opacity: 0.5;
-  }
+.modal-backdrop.show {
+  opacity: 0.3;
+  background: $primary;
 }
 
-// Paginación
+/* ─── Paginación ───────────────────────────────────────────── */
 .pagination {
-  margin: 0;
-  
-  .page-item {
-    margin: 0 2px;
-    
-    .page-link {
-      padding: 0.375rem 0.75rem;
-      border-radius: 0.25rem;
-      border: 1px solid #dee2e6;
-      
-      &:hover:not(.disabled) {
-        background-color: #007bff;
-        color: white;
-        border-color: #007bff;
-      }
-    }
-    
-    &.active .page-link {
-      background-color: #007bff;
-      border-color: #007bff;
-      color: white;
-    }
-    
-    &.disabled .page-link {
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-  }
-}
-
-// Barra de búsqueda
-.input-group {
-  .input-group-text {
-    background-color: #f8f9fa;
-    border-right: none;
-  }
-
-  .form-control {
-    border-left: none;
-
-    &:focus {
-      border-color: #ced4da;
-      box-shadow: none;
-    }
-  }
-}
-
-// Responsive
-@media (max-width: 768px) {
-  .admin-dashboard {
-    padding: 10px;
-  }
-
-  .metrics-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .table-responsive {
-    font-size: 0.8rem;
-  }
-
-  .card {
-    &.bg-primary,
-    &.bg-success,
-    &.bg-warning,
-    &.bg-info,
-    &.bg-secondary,
-    &.bg-dark {
-      .card-body {
-        h6 {
-          font-size: 0.75rem;
-        }
-
-        h3 {
-          font-size: 1.2rem;
-        }
-      }
-    }
-  }
-
-  .modal-dialog {
-    margin: 10px;
-    
-    &.modal-xl {
-      max-width: calc(100% - 20px);
-    }
-  }
-
-  .expandable-table {
-    .expanded-content {
-      .table {
-        font-size: 0.75rem;
-      }
-    }
-  }
-}
-
-// Chart container
-canvas {
-  max-height: 400px;
-}
-
-// Animaciones suaves
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.card,
-.table-responsive {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-// Colores adicionales para las tablas
-.table-info {
-  background-color: #d1ecf1;
-}
-
-.table-secondary {
-  background-color: #e2e3e5;
-}
-
-// Botones en acciones
-.btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  border-radius: 0.2rem;
-}
-
-// Mejora visual de iconos
-.bi {
-  vertical-align: middle;
-}
-
-// Estado hover para filas
-tr.clickable-row {
-  &:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-}
-
-// Variables de color
-$primary-gradient: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-$success-gradient: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-$info-gradient: linear-gradient(135deg, #17a2b8 0%, #0c5460 100%);
-$warning-gradient: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-$danger-gradient: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
-
-// Backgrounds con gradiente
-.bg-gradient-primary {
-  background: $primary-gradient !important;
-  color: white;
-
-  h6, h3, small, .text-muted {
-    color: white !important;
-  }
-}
-
-.bg-gradient-success {
-  background: $success-gradient !important;
-  color: white;
-
-  h6, h3, small, .text-muted {
-    color: white !important;
-  }
-}
-
-.bg-gradient-info {
-  background: $info-gradient !important;
-  color: white;
-
-  h6, h3, small, .text-muted {
-    color: white !important;
-  }
-}
-
-.bg-gradient-warning {
-  background: $warning-gradient !important;
-  color: white;
-
-  h6, h3, small, .text-muted {
-    color: white !important;
-  }
-}
-
-.bg-gradient-danger {
-  background: $danger-gradient !important;
-  color: white;
-
-  h6, h3, small, .text-muted {
-    color: white !important;
-  }
-}
-
-// Tarjetas de indicadores
-.card {
-  transition: all 0.3s ease;
-  border-radius: 0.5rem;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
-  }
-
-  .card-body {
-    padding: 1.5rem;
-
-    h3 {
-      font-size: 1.75rem;
-      font-weight: 700;
-    }
-
-    h6 {
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-  }
-}
-
-// Card headers mejorados
-.card-header {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #e3e6f0;
-  padding: 1.25rem 1.5rem;
-
-  h5 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-    color: #2c3e50;
-
-    i {
-      margin-right: 0.5rem;
-      font-size: 1.2rem;
-    }
-  }
-
-  small {
-    display: block;
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-  }
-}
-
-// Tablas mejoradas
-.table {
-  margin-bottom: 0;
-
-  thead {
-    background-color: #f8f9fa;
-
-    th {
-      border-bottom: 2px solid #dee2e6;
-      font-weight: 700;
-      color: #495057;
-      padding: 1rem;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-      letter-spacing: 0.5px;
-    }
-  }
-
-  tbody {
-    tr {
-      border-bottom: 1px solid #dee2e6;
-
-      &:hover {
-        background-color: #f8f9fa;
-      }
-
-      td {
-        padding: 0.875rem 1rem;
-        vertical-align: middle;
-      }
-    }
-  }
-
-  tfoot {
-    tr {
-      border-top: 2px solid #dee2e6;
-      font-weight: 700;
-      background-color: #f8f9fa;
-
-      td {
-        padding: 1rem;
-      }
-    }
-  }
-}
-
-// Badges mejorados
-.badge {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 0.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  &.bg-success {
-    background-color: #28a745 !important;
-    color: white;
-  }
-
-  &.bg-warning {
-    background-color: #ffc107 !important;
-    color: #333;
-  }
-
-  &.bg-danger {
-    background-color: #dc3545 !important;
-    color: white;
-  }
-}
-
-// Botones mejorados
-.btn {
-  border-radius: 0.375rem;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-
-  i {
-    margin-right: 0.25rem;
-  }
-}
-
-// Selectores y input mejorados
-.form-select,
-.form-control {
-  border-radius: 0.375rem;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 0.75rem;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-
-  &:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  }
-}
-
-.form-label {
-  margin-bottom: 0.5rem;
-  color: #495057;
-  font-size: 0.95rem;
-}
-
-// Contenedor de gráficos
-.chart-container {
-  position: relative;
-  margin: 1rem 0;
-}
-
-canvas {
-  max-width: 100%;
-}
-
-// Inputs en modales mejorados
-.input-group {
-  margin-bottom: 1rem;
-
-  .input-group-text {
-    background-color: #e9ecef;
-    border: 1px solid #dee2e6;
-    color: #495057;
-  }
-
-  .form-control {
-    border: 1px solid #dee2e6;
-
-    &:focus {
-      border-color: #007bff;
-    }
-  }
-}
-
-// Spinners y estados de carga
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-}
-
-// Text utilities
-.text-muted {
-  color: #6c757d !important;
-}
-
-.text-success {
-  color: #28a745 !important;
-}
-
-.text-danger {
-  color: #dc3545 !important;
-}
-
-// Responsive mejorado
-@media (max-width: 768px) {
-  .card-body {
-    padding: 1rem;
-
-    h3 {
-      font-size: 1.4rem;
-    }
-  }
-
-  .table {
-    font-size: 0.9rem;
-
-    thead th,
-    tbody td,
-    tfoot td {
-      padding: 0.75rem 0.5rem;
-    }
-  }
-
-  .btn-sm {
-    padding: 0.375rem 0.5rem;
-    font-size: 0.8rem;
-  }
-}
-
-// Efecto hover en filas de tabla
-.clickable-row {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: #e7f3ff !important;
-  }
-}
-
-// Estilos para expanded content en tablas
-.expanded-content {
-  background-color: #f8f9fa;
-
-  td {
-    padding: 0 !important;
-  }
-}
-
-// Paginación mejorada
-.pagination {
-  gap: 0.5rem;
+  gap: 4px;
 
   .page-link {
-    border-radius: 0.375rem;
-    border: 1px solid #dee2e6;
-    color: #007bff;
-    padding: 0.5rem 0.75rem;
-    transition: all 0.15s ease;
+    border-radius: 8px;
+    border: 1.5px solid #e8ecf0;
+    color: $secondary;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    transition: all 0.2s;
 
     &:hover {
-      background-color: #007bff;
-      color: white;
-      border-color: #007bff;
+      background: $secondary;
+      color: #fff;
+      border-color: $secondary;
     }
 
     &.active {
-      background-color: #007bff;
-      border-color: #007bff;
+      background: $secondary;
+      border-color: $secondary;
+      color: #fff;
     }
 
     &.disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
     }
   }
 }
 
-// Gaps mejorados
-.gap-2 {
-  gap: 0.5rem !important;
-}
-
-.gap-3 {
-  gap: 1rem !important;
-}
-
-// Sombras suaves
-.shadow-sm {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-}
-
-// Agregar en dashboard.component.scss
-
+/* ─── Tooltip ──────────────────────────────────────────────── */
 .custom-tooltip {
   position: fixed;
   z-index: 9999;
   transform: translate(-50%, -100%);
   pointer-events: none;
-  
+
   .tooltip-arrow {
     position: absolute;
     bottom: -6px;
@@ -797,26 +461,30 @@ canvas {
     height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 6px solid rgba(0, 0, 0, 0.9);
+    border-top: 6px solid $primary;
   }
-  
+
   .tooltip-content {
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
+    background: $primary;
+    color: #fff;
     padding: 12px 16px;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
     white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    
+    box-shadow: 0 8px 24px rgba($primary, 0.3);
+
+    .fw-bold {
+      color: #fff;
+    }
+
     .tooltip-row {
       display: flex;
       justify-content: space-between;
       gap: 20px;
       padding: 4px 0;
-      
+
       &:not(:last-child) {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(#fff, 0.1);
       }
     }
   }
@@ -825,60 +493,203 @@ canvas {
 .remis-anterior-value {
   display: inline-block;
   padding: 2px 4px;
-  border-radius: 3px;
-  transition: background-color 0.2s;
-  
+  border-radius: 4px;
+  transition: background 0.2s;
+
   &:hover {
-    background-color: rgba(108, 117, 125, 0.1);
+    background: rgba($accent, 0.15);
   }
 }
 
+/* ─── Billing Tab specifics ─────────────────────────────────── */
+.tab-pane {
+  .row.mb-4:first-child {
+    // Filtros row
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid rgba($accent, 0.15);
+    margin-bottom: 24px !important;
+
+    .form-label {
+      font-size: 0.65rem !important;
+      font-weight: 700 !important;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b !important;
+    }
+  }
+}
+
+/* ─── Clickable rows ───────────────────────────────────────── */
 .clickable-row {
   cursor: pointer;
-  transition: background-color 0.15s;
-  
+  transition: background 0.15s;
+
   &:hover {
-    background-color: #f8f9fa !important;
+    background: rgba($light, 0.2) !important;
   }
-  
+
   td:first-child i {
+    color: $secondary;
     transition: transform 0.2s;
   }
 }
 
 .expanded-content {
-  .table {
-    font-size: 0.875rem;
-    
-    td, th {
-      padding: 0.5rem;
-    }
+  td {
+    padding: 0 !important;
+  }
+
+  .bg-light,
+  .p-3 {
+    background: rgba($light, 0.15) !important;
+    border-radius: 0;
+  }
+
+  .table-secondary th,
+  .table-secondary td {
+    background: rgba($accent, 0.12) !important;
+    color: $primary !important;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 }
 
+/* ─── Table primary header (billing) ──────────────────────── */
+.table-primary th,
+thead.table-primary th {
+  background: rgba($secondary, 0.06) !important;
+  color: $primary !important;
+  font-weight: 700 !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-bottom: 2px solid rgba($accent, 0.2) !important;
+}
+
+.table-info th,
+thead.table-info th {
+  background: rgba($accent, 0.1) !important;
+  color: $primary !important;
+  font-weight: 700 !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-bottom: 2px solid rgba($accent, 0.2) !important;
+}
+
+/* ─── Card header bg-primary override for billing ──────────── */
+.card-header.bg-primary {
+  background: $primary !important;
+  border-radius: 14px 14px 0 0;
+
+  h5, .text-white {
+    color: #fff !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* ─── Sticky filters in modals ─────────────────────────────── */
+.sticky-filters {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 100;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba($accent, 0.12);
+}
+
+/* ─── Charts ───────────────────────────────────────────────── */
+canvas {
+  max-width: 100%;
+  max-height: 380px;
+}
+
+/* ─── Spinner ──────────────────────────────────────────────── */
+.spinner-border {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: $secondary;
+}
+
+/* ─── Table hover for billing detail table ─────────────────── */
+.table-hover tbody tr:hover {
+  background: rgba($light, 0.2) !important;
+}
+
+/* ─── Card bg-light header consistency ─────────────────────── */
+.card-header.bg-light {
+  background: #fff !important;
+  border-bottom: 1px solid rgba($accent, 0.12) !important;
+  padding: 16px 24px !important;
+
+  h5 {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: $primary !important;
+
+    i {
+      color: $secondary !important;
+      margin-right: 8px;
+    }
+  }
+
+  small {
+    font-size: 0.7rem !important;
+    color: #94a3b8 !important;
+  }
+}
+
+/* ─── Responsive ───────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .modal-dialog {
-    margin: 0.5rem;
-    max-width: calc(100% - 1rem);
-    
+  .admin-dashboard {
+    .nav-tabs {
+      width: 100%;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+
+      .nav-link {
+        white-space: nowrap;
+        padding: 8px 16px;
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card .card-body {
+    padding: 16px;
+
+    h3 {
+      font-size: 1.3rem;
+    }
+  }
+
+  .modal .modal-dialog {
+    margin: 10px;
+
     &.modal-xl {
-      max-width: calc(100% - 1rem);
+      max-width: calc(100% - 20px);
     }
   }
-  
-  .modal-body {
-    padding: 1rem;
-    
-    .table {
-      font-size: 0.8rem;
-    }
-  }
-  
-  .pagination {
-    font-size: 0.875rem;
-    
-    .page-link {
-      padding: 0.25rem 0.5rem;
+
+  .table {
+    font-size: 0.78rem;
+
+    thead th,
+    tbody td,
+    tfoot td {
+      padding: 10px 10px;
     }
   }
 }

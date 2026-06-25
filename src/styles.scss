@@ -4,9 +4,78 @@
 
 @import "../node_modules/bootstrap/scss/bootstrap";
 
-/* Sobrescribir el color de fondo del body sin modificar style.css */
+/* ═══════════════════════════════════════════════════════════════════
+   SAINT Design System - Variables Globales
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Paleta principal */
+  --saint-primary: 41, 54, 129;         /* rgb(41, 54, 129) - Azul oscuro */
+  --saint-secondary: 66, 116, 217;      /* rgb(66, 116, 217) - Azul medio */
+  --saint-accent: 149, 204, 221;        /* rgb(149, 204, 221) - Azul claro */
+  --saint-light: 208, 231, 230;         /* rgb(208, 231, 230) - Azul pálido */
+
+  /* Colores directos para uso fácil */
+  --saint-primary-color: rgb(41, 54, 129);
+  --saint-secondary-color: rgb(66, 116, 217);
+  --saint-accent-color: rgb(149, 204, 221);
+  --saint-light-color: rgb(208, 231, 230);
+
+  /* Fondos */
+  --saint-bg-page: #f8f9fc;
+  --saint-bg-card: #ffffff;
+  --saint-bg-sidebar: #ffffff;
+
+  /* Texto */
+  --saint-text-primary: #1a1a2e;
+  --saint-text-secondary: #4a5568;
+  --saint-text-muted: #718096;
+  --saint-text-on-dark: #ffffff;
+
+  /* Bordes */
+  --saint-border: rgba(149, 204, 221, 0.3);
+  --saint-border-strong: rgba(66, 116, 217, 0.4);
+
+  /* Tipografía */
+  --saint-font: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Sombras */
+  --saint-shadow-sm: 0 1px 3px rgba(41, 54, 129, 0.06);
+  --saint-shadow-md: 0 4px 12px rgba(41, 54, 129, 0.08);
+  --saint-shadow-lg: 0 8px 24px rgba(41, 54, 129, 0.12);
+
+  /* Radios */
+  --saint-radius-sm: 8px;
+  --saint-radius-md: 14px;
+  --saint-radius-lg: 20px;
+
+  /* Transiciones */
+  --saint-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Base Reset - Fuente Inter como estándar global
+   ═══════════════════════════════════════════════════════════════════ */
 body {
-  background: #f4f6f9 !important;
+  font-family: var(--saint-font) !important;
+  background: var(--saint-bg-page) !important;
+  color: var(--saint-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+* {
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--saint-font) !important;
+  font-weight: 600;
+  color: var(--saint-text-primary);
+}
+
+p, span, a, li, td, th, label, input, select, textarea, button {
+  font-family: var(--saint-font) !important;
 }
 
 /* ─── Fix: Bootstrap sobrescribe los botones de ícono de Tailwind ──────────
@@ -533,4 +602,790 @@ app-print-technical-data-sheet {
   u {
     text-decoration: underline;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   FASE 3: Layout Principal, Cards, Tipografía y Espaciado
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Page Wrapper ─────────────────────────────────────────────── */
+.page-wrapper {
+  background: var(--saint-bg-page) !important;
+  padding-bottom: 80px;
+  min-height: 100vh;
+}
+
+.page-wrapper > .container,
+.page-wrapper > .container-fluid {
+  padding: 24px 32px !important;
+  max-width: 1440px;
+}
+
+@media (max-width: 768px) {
+  .page-wrapper > .container,
+  .page-wrapper > .container-fluid {
+    padding: 16px !important;
+  }
+}
+
+/* ─── Page Titles / Breadcrumb ─────────────────────────────────── */
+.page-titles {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 0 16px 0 !important;
+  margin-bottom: 24px !important;
+  border-bottom: 1px solid rgba(var(--saint-accent), 0.25) !important;
+}
+
+.page-titles h3,
+.page-titles .text-themecolor {
+  font-family: var(--saint-font) !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: var(--saint-primary-color) !important;
+  margin: 0 !important;
+  letter-spacing: -0.02em;
+}
+
+.breadcrumb {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 0.8125rem;
+}
+
+.breadcrumb-item a {
+  color: var(--saint-secondary-color) !important;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--saint-transition);
+}
+
+.breadcrumb-item a:hover {
+  color: var(--saint-primary-color) !important;
+}
+
+.breadcrumb-item.active {
+  color: var(--saint-text-muted) !important;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+  color: var(--saint-text-muted) !important;
+}
+
+/* ─── Cards ────────────────────────────────────────────────────── */
+.card {
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 8px rgba(41, 54, 129, 0.04) !important;
+  transition: box-shadow var(--saint-transition), transform var(--saint-transition);
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(41, 54, 129, 0.07) !important;
+}
+
+.card .card-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(149, 204, 221, 0.15) !important;
+  padding: 18px 24px !important;
+  font-weight: 600;
+}
+
+.card .card-header h5,
+.card .card-header .card-title {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: var(--saint-text-primary) !important;
+  margin: 0 !important;
+}
+
+.card .card-body {
+  padding: 24px !important;
+}
+
+.card .card-footer {
+  background: #ffffff !important;
+  border-top: 1px solid rgba(149, 204, 221, 0.1) !important;
+  padding: 14px 24px !important;
+}
+
+/* ─── Tablas ───────────────────────────────────────────────────── */
+.table {
+  font-size: 0.8rem !important;
+  color: var(--saint-text-primary) !important;
+}
+
+.table thead th,
+.table-light th {
+  background: rgba(241, 245, 249, 0.8) !important;
+  color: rgb(41, 54, 129) !important;
+  font-weight: 700 !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 10px 14px !important;
+  border-bottom: 1.5px solid #e2e8f0 !important;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 9px 14px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+  font-size: 0.8rem !important;
+}
+
+.table tbody tr:hover {
+  background: rgba(241, 245, 249, 0.5) !important;
+}
+
+.table tfoot td,
+.table tfoot th {
+  background: rgba(241, 245, 249, 0.6) !important;
+  border-top: 1.5px solid #e2e8f0 !important;
+  font-weight: 700 !important;
+  color: rgb(41, 54, 129) !important;
+  padding: 10px 14px !important;
+  font-size: 0.8rem !important;
+}
+
+/* ─── Botones ──────────────────────────────────────────────────── */
+.btn {
+  font-family: var(--saint-font) !important;
+  font-weight: 500 !important;
+  font-size: 0.84rem !important;
+  border-radius: 10px !important;
+  padding: 10px 20px !important;
+  transition: all var(--saint-transition) !important;
+  letter-spacing: 0.01em;
+  border: none !important;
+}
+
+.btn-primary {
+  background: rgb(66, 116, 217) !important;
+  border-color: rgb(66, 116, 217) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background: rgb(41, 54, 129) !important;
+  border-color: rgb(41, 54, 129) !important;
+  box-shadow: 0 4px 14px rgba(66, 116, 217, 0.25) !important;
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+  color: rgb(66, 116, 217) !important;
+  border: 1.5px solid rgb(66, 116, 217) !important;
+  background: transparent !important;
+}
+
+.btn-outline-primary:hover {
+  background: rgb(66, 116, 217) !important;
+  color: #fff !important;
+}
+
+.btn-info {
+  background: rgba(149, 204, 221, 0.15) !important;
+  border-color: transparent !important;
+  color: rgb(41, 54, 129) !important;
+}
+
+.btn-info:hover {
+  background: rgb(149, 204, 221) !important;
+  border-color: transparent !important;
+  color: rgb(41, 54, 129) !important;
+}
+
+/* ─── Formularios ──────────────────────────────────────────────── */
+.form-control,
+.form-select {
+  font-family: var(--saint-font) !important;
+  font-size: 0.875rem !important;
+  border: 1.5px solid #e8ecf0 !important;
+  border-radius: 10px !important;
+  padding: 11px 16px !important;
+  color: var(--saint-text-primary) !important;
+  background: #fff !important;
+  transition: border-color var(--saint-transition), box-shadow var(--saint-transition);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgb(66, 116, 217) !important;
+  box-shadow: 0 0 0 3px rgba(66, 116, 217, 0.1) !important;
+  outline: none !important;
+}
+
+.form-control::placeholder {
+  color: #b0b8c4 !important;
+  font-weight: 400;
+}
+
+.form-label,
+label {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  margin-bottom: 4px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.input-group-text {
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  color: #94a3b8 !important;
+  font-size: 0.8rem !important;
+}
+
+/* ─── Badges ───────────────────────────────────────────────────── */
+.badge {
+  font-family: var(--saint-font) !important;
+  font-weight: 700 !important;
+  font-size: 0.6rem !important;
+  padding: 3px 8px !important;
+  border-radius: 20px !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge.bg-primary {
+  background: rgba(66, 116, 217, 0.1) !important;
+  color: rgb(41, 54, 129) !important;
+}
+
+.badge.bg-info {
+  background: rgba(149, 204, 221, 0.15) !important;
+  color: rgb(41, 54, 129) !important;
+}
+
+/* ─── Nav Tabs ─────────────────────────────────────────────────── */
+.nav-tabs {
+  border-bottom: none !important;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.nav-tabs .nav-link {
+  font-family: var(--saint-font) !important;
+  font-weight: 500 !important;
+  font-size: 0.78rem !important;
+  color: #64748b !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  transition: all 0.15s;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #1e293b !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: rgb(66, 116, 217) !important;
+  font-weight: 600 !important;
+  background: #fff !important;
+  border-bottom: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ─── Modales ──────────────────────────────────────────────────── */
+.modal-content {
+  border: none !important;
+  border-radius: var(--saint-radius-lg) !important;
+  box-shadow: var(--saint-shadow-lg) !important;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: rgba(var(--saint-primary), 0.03) !important;
+  border-bottom: 1px solid rgba(var(--saint-accent), 0.2) !important;
+  padding: 16px 24px !important;
+}
+
+.modal-header .modal-title {
+  font-weight: 600 !important;
+  color: var(--saint-primary-color) !important;
+  font-size: 1.05rem !important;
+}
+
+.modal-body {
+  padding: 24px !important;
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(var(--saint-accent), 0.15) !important;
+  padding: 12px 24px !important;
+}
+
+/* ─── Alerts / Info sections ───────────────────────────────────── */
+.alert {
+  border-radius: var(--saint-radius-sm) !important;
+  font-size: 0.8375rem !important;
+  border: none !important;
+}
+
+.alert-info {
+  background: rgba(var(--saint-accent), 0.15) !important;
+  color: var(--saint-primary-color) !important;
+}
+
+.alert-warning {
+  background: #FFF8E1 !important;
+  color: #8B6914 !important;
+}
+
+.alert-danger {
+  background: #FEE2E2 !important;
+  color: #991B1B !important;
+}
+
+.alert-success {
+  background: #ECFDF5 !important;
+  color: #065F46 !important;
+}
+
+/* ─── Spinners ─────────────────────────────────────────────────── */
+.spinner-border.text-primary {
+  color: var(--saint-secondary-color) !important;
+}
+
+/* ─── Footer ───────────────────────────────────────────────────── */
+.footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(var(--saint-accent), 0.2);
+  padding: 16px 32px !important;
+}
+
+.footer p,
+.footer small,
+.footer a {
+  font-size: 0.75rem !important;
+  color: var(--saint-text-muted) !important;
+}
+
+.footer a {
+  color: var(--saint-secondary-color) !important;
+  font-weight: 500 !important;
+}
+
+/* ─── Scrollbars globales ──────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(var(--saint-light), 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--saint-primary), 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--saint-primary), 0.25);
+}
+
+/* ─── Utilidades de espaciado Saint ────────────────────────────── */
+.saint-section {
+  margin-bottom: 24px;
+}
+
+.saint-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--saint-primary-color);
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Tipografía utility ───────────────────────────────────────── */
+.text-saint-primary {
+  color: var(--saint-primary-color) !important;
+}
+
+.text-saint-secondary {
+  color: var(--saint-secondary-color) !important;
+}
+
+.text-saint-muted {
+  color: var(--saint-text-muted) !important;
+}
+
+.bg-saint-primary {
+  background-color: var(--saint-primary-color) !important;
+}
+
+.bg-saint-light {
+  background-color: rgba(var(--saint-light), 0.4) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   OVERRIDE: Anular estilos del template viejo (style.css) que
+   interfieren con el sidebar nuevo
+   ═══════════════════════════════════════════════════════════════════ */
+.left-sidebar,
+.left-sidebar .sidebar-nav,
+.sidebar-nav,
+aside.left-sidebar,
+aside.left-sidebar .sidebar-nav {
+  background: #ffffff !important;
+}
+
+.sidebar-nav ul li a,
+.sidebar-nav > ul > li > a,
+.sidebar-nav ul li a.active,
+.sidebar-nav > ul > li > a.active,
+.sidebar-nav > ul > li.active > a {
+  color: #374151 !important;
+  background: transparent !important;
+}
+
+.sidebar-nav ul li a:hover {
+  color: rgb(41, 54, 129) !important;
+  background: rgba(208, 231, 230, 0.3) !important;
+}
+
+.sidebar-nav ul li a.active {
+  background: rgb(66, 116, 217) !important;
+  color: #fff !important;
+  border-radius: 10px;
+}
+
+.sidebar-nav > ul > li > a i,
+.sidebar-nav ul li a i {
+  color: rgb(66, 116, 217) !important;
+}
+
+.sidebar-nav ul li a.active i,
+.sidebar-nav ul li a:hover i {
+  color: rgb(41, 54, 129) !important;
+}
+
+.sidebar-nav ul li a.active i {
+  color: #fff !important;
+}
+
+/* Quitar la flecha ::after del template viejo */
+.sidebar-nav .has-arrow::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Forzar submenus sin fondo extraño */
+.sidebar-nav ul li ul,
+.sidebar-nav ul li ul li a {
+  background: transparent !important;
+}
+
+.sidebar-nav ul li ul li a {
+  color: #4a5568 !important;
+}
+
+.sidebar-nav ul li ul li a:hover {
+  color: rgb(41, 54, 129) !important;
+  background: rgba(208, 231, 230, 0.25) !important;
+}
+
+.sidebar-nav ul li ul li a.active {
+  color: rgb(41, 54, 129) !important;
+  background: rgba(66, 116, 217, 0.08) !important;
+  font-weight: 500;
+}
+
+/* Quitar sombra del sidebar viejo */
+.left-sidebar {
+  box-shadow: none !important;
+}
+
+/* Mini sidebar override */
+.mini-sidebar .sidebar-nav,
+.mini-sidebar .sidebar-nav #sidebarnav > li:hover > a {
+  background: #ffffff !important;
+}
+
+.mini-sidebar .sidebar-nav #sidebarnav > li:hover > a {
+  background: rgba(208, 231, 230, 0.3) !important;
+  width: auto !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   OVERRIDE GLOBAL: Clases del template viejo usadas en todas las páginas
+   Esto cubre automáticamente fichas técnicas, inconsistencias, reportes, etc.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── DataTables Wrapper (toolbar de búsqueda y select) ────── */
+.dataTables_wrapper {
+  font-family: var(--saint-font) !important;
+}
+
+.dataTables_length {
+  margin-bottom: 12px;
+
+  label {
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    color: #4a5568 !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  select {
+    border: 1.5px solid #e8ecf0 !important;
+    border-radius: 8px !important;
+    padding: 6px 10px !important;
+    font-size: 0.8rem !important;
+    color: #1a1a2e !important;
+    background: #fff !important;
+    cursor: pointer;
+    margin: 0 6px;
+  }
+}
+
+.dataTables_filter {
+  label {
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    color: #4a5568 !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input[type="search"] {
+    border: 1.5px solid #e8ecf0 !important;
+    border-radius: 10px !important;
+    padding: 10px 16px !important;
+    font-size: 0.84rem !important;
+    color: #1a1a2e !important;
+    background: #fff !important;
+    width: 280px !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+
+    &:focus {
+      border-color: rgb(66, 116, 217) !important;
+      box-shadow: 0 0 0 3px rgba(66, 116, 217, 0.08) !important;
+    }
+  }
+}
+
+/* ─── Table headers con inline styles del template viejo ───── */
+table th[style*="rgba(75, 197, 232"],
+table th[style*="rgba(75,197,232"] {
+  background: rgba(208, 231, 230, 0.2) !important;
+  color: rgb(41, 54, 129) !important;
+  font-weight: 600 !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  padding: 14px 16px !important;
+  border-bottom: 2px solid rgba(149, 204, 221, 0.25) !important;
+}
+
+table tr[style*="rgba(75, 197, 232"],
+table tr[style*="rgba(75,197,232"] {
+  background: rgba(208, 231, 230, 0.15) !important;
+}
+
+/* ─── Botones de acción circulares del template viejo ──────── */
+.btn-cicle-sheet {
+  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s !important;
+  box-shadow: none !important;
+
+  i {
+    font-size: 13px !important;
+  }
+}
+
+.sombra-buttoms {
+  box-shadow: none !important;
+}
+
+.btn-themecolor {
+  background: rgb(66, 116, 217) !important;
+  border-color: rgb(66, 116, 217) !important;
+  color: #fff !important;
+
+  &:hover {
+    background: rgb(41, 54, 129) !important;
+  }
+}
+
+.btn-rounded {
+  border-radius: 10px !important;
+}
+
+/* ─── Badges del template viejo ────────────────────────────── */
+.badge-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #065f46 !important;
+  border-radius: 20px !important;
+  padding: 5px 12px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #991b1b !important;
+  border-radius: 20px !important;
+  padding: 5px 12px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #92400e !important;
+  border-radius: 20px !important;
+  padding: 5px 12px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+.badge-info {
+  background: rgba(149, 204, 221, 0.2) !important;
+  color: rgb(41, 54, 129) !important;
+  border-radius: 20px !important;
+  padding: 5px 12px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+}
+
+/* ─── Text theme color (títulos de página del template) ────── */
+.text-themecolor {
+  color: rgb(41, 54, 129) !important;
+  font-weight: 700 !important;
+  font-size: 1.4rem !important;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Progress bar ─────────────────────────────────────────── */
+.progress {
+  border-radius: 8px !important;
+  background: rgba(208, 231, 230, 0.3) !important;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: rgb(66, 116, 217) !important;
+  border-radius: 8px !important;
+}
+
+.progress-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 20px rgba(41, 54, 129, 0.1);
+  border: 1px solid rgba(149, 204, 221, 0.2);
+  z-index: 1050;
+  min-width: 220px;
+}
+
+/* ─── Alerts mejorados ─────────────────────────────────────── */
+.alert-success {
+  background: rgba(16, 185, 129, 0.06) !important;
+  color: #065f46 !important;
+  border: 1px solid rgba(16, 185, 129, 0.15) !important;
+  border-radius: 12px !important;
+  font-size: 0.84rem !important;
+}
+
+.alert-info {
+  background: rgba(149, 204, 221, 0.1) !important;
+  color: rgb(41, 54, 129) !important;
+  border: 1px solid rgba(149, 204, 221, 0.2) !important;
+  border-radius: 12px !important;
+  font-size: 0.84rem !important;
+}
+
+.alert-danger {
+  background: rgba(239, 68, 68, 0.05) !important;
+  color: #991b1b !important;
+  border: 1px solid rgba(239, 68, 68, 0.12) !important;
+  border-radius: 12px !important;
+  font-size: 0.84rem !important;
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.06) !important;
+  color: #92400e !important;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+  border-radius: 12px !important;
+  font-size: 0.84rem !important;
+}
+
+/* ─── Table striped del template viejo ─────────────────────── */
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(208, 231, 230, 0.08) !important;
+}
+
+.table-striped tbody tr:hover {
+  background-color: rgba(208, 231, 230, 0.2) !important;
+}
+
+/* ─── Responsive text helper del template viejo ────────────── */
+.responsive-text {
+  font-size: 0.82rem !important;
+}
+
+.vertical-center {
+  vertical-align: middle !important;
+}
+
+/* ─── General link styling ─────────────────────────────────── */
+a {
+  color: rgb(66, 116, 217);
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    color: rgb(41, 54, 129);
+    text-decoration: none;
+  }
+}
+
+/* ─── Preloader ────────────────────────────────────────────── */
+.preloader {
+  background: #ffffff !important;
+}
+
+.loader__label {
+  color: rgb(41, 54, 129) !important;
+  font-family: var(--saint-font) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em;
+}
+
+.loader__figure {
+  border-top-color: rgb(66, 116, 217) !important;
 }

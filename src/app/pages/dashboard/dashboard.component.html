@@ -1,50 +1,39 @@
-<!-- ============================================================== -->
-<!-- Bread crumb -->
-<!-- ============================================================== -->
-<div class="row page-titles mt-3">
-  <div class="col-md-5 align-self-center">
-    <h3 class="text-themecolor">Dashboard</h3>
+<!-- Page Header -->
+<header class="flex items-start justify-between mb-6 pb-5 border-b border-[rgba(149,204,221,0.2)]">
+  <div>
+    <h1 class="text-2xl font-bold text-[rgb(41,54,129)] tracking-tight mb-1">Dashboard</h1>
+    <nav>
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a routerLink="/dashboard">Inicio</a></li>
+        <li class="breadcrumb-item active">Dashboard</li>
+      </ol>
+    </nav>
   </div>
-  <div class="col-md-7 align-self-center d-flex justify-content-end align-items-center">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item">
-        <a routerLink="/dashboard">Inicio</a>
-      </li>
-      <li class="breadcrumb-item">páginas</li>
-      <li class="breadcrumb-item active">Dashboard</li>
-    </ol>
-  </div>
-</div>
+</header>
 
 <!-- ============================================================== -->
 <!-- End Bread crumb -->
 <!-- ============================================================== -->
 
 <!-- Vista estándar (usuarios normales) -->
-<div *ngIf="!isAdmin && !isBillingConsultant" class="content">
-  <div class="container-fluid">
-    <section id="about">
-      <div class="container">
-        <div class="row about-container">
-          <div class="col-lg-6">
-            <header>
-              <h3>Bienvenid&#64; al nuevo SaINT</h3>
-            </header>
-            <p>
-              SaINT o Sistema administrativo integrado es una plataforma web interna,
-              diseñada para ser aprovechada por todos nuestros
-              colaboradores y que puedan acceder a servicios
-              exclusivos y privados de la compañía,
-              con el objetivo de promover nuevas formas de colaboración
-              y acceso a los sistemas.
-            </p>
-          </div>
-          <div class="col-lg-4">
-            <img src="../../assets/images/about-extra-1.svg" class="img-fluid" alt="about-img"/>
-          </div>
-        </div>
+<div *ngIf="!isAdmin && !isBillingConsultant" class="py-8">
+  <div class="bg-white rounded-2xl p-8 md:p-12 shadow-sm max-w-4xl">
+    <div class="flex flex-col md:flex-row items-center gap-8">
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold text-[rgb(41,54,129)] mb-3">Bienvenid&#64; a SaINT</h2>
+        <p class="text-gray-600 leading-relaxed text-sm">
+          SaINT o Sistema administrativo integrado es una plataforma web interna,
+          diseñada para ser aprovechada por todos nuestros
+          colaboradores y que puedan acceder a servicios
+          exclusivos y privados de la compañía,
+          con el objetivo de promover nuevas formas de colaboración
+          y acceso a los sistemas.
+        </p>
       </div>
-    </section>
+      <div class="flex-shrink-0 w-48 md:w-56">
+        <img src="../../assets/images/about-extra-1.svg" class="w-full h-auto" alt="about-img"/>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -96,113 +85,77 @@
     <div *ngIf="activeTab === 'billing' && shouldShowTab('billing')" class="tab-pane active">
       
       <!-- Filtros -->
-      <div class="row mb-4">
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Año:</label>
-          <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBillingData()">
-            <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Mes:</label>
-          <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
-            <option [value]="1">Enero</option>
-            <option [value]="2">Febrero</option>
-            <option [value]="3">Marzo</option>
-            <option [value]="4">Abril</option>
-            <option [value]="5">Mayo</option>
-            <option [value]="6">Junio</option>
-            <option [value]="7">Julio</option>
-            <option [value]="8">Agosto</option>
-            <option [value]="9">Septiembre</option>
-            <option [value]="10">Octubre</option>
-            <option [value]="11">Noviembre</option>
-            <option [value]="12">Diciembre</option>
-          </select>
-        </div>
-        <div class="col-md-6 d-flex align-items-end gap-2">
-          <button class="btn btn-primary flex-grow-1" (click)="openInvoiceModal()">
-            <i class="bi bi-file-earmark-text"></i> Ver Facturas
-          </button>
-          <button class="btn btn-info flex-grow-1" (click)="openShipmentModal()">
-            <i class="bi bi-box-seam"></i> Ver Remisiones
-          </button>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <div class="flex flex-wrap items-end gap-4">
+          <div class="flex-1 min-w-[140px]">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Año</label>
+            <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBillingData()">
+              <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-[140px]">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Mes</label>
+            <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
+              <option [value]="1">Enero</option>
+              <option [value]="2">Febrero</option>
+              <option [value]="3">Marzo</option>
+              <option [value]="4">Abril</option>
+              <option [value]="5">Mayo</option>
+              <option [value]="6">Junio</option>
+              <option [value]="7">Julio</option>
+              <option [value]="8">Agosto</option>
+              <option [value]="9">Septiembre</option>
+              <option [value]="10">Octubre</option>
+              <option [value]="11">Noviembre</option>
+              <option [value]="12">Diciembre</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 ml-auto">
+            <button class="btn btn-primary" (click)="openInvoiceModal()">
+              <i class="bi bi-file-earmark-text"></i> Facturas
+            </button>
+            <button class="btn btn-outline-primary" (click)="openShipmentModal()">
+              <i class="bi bi-box-seam"></i> Remisiones
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Indicadores Principales -->
-      <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-primary">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">Presupuesto Total</h6>
-                  <h3 class="mb-0">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</h3>
-                  <small class="text-muted">Mes {{getMonthName(selectedMonth)}}</small>
-                </div>
-                <i class="bi bi-cash-coin" style="font-size: 2rem; color: #007bff; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-5 border-l-4 border-l-blue-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Presupuesto Total</span>
+          <span class="text-xl font-bold text-gray-900 block">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</span>
+          <span class="text-[10px] text-slate-400">Mes {{getMonthName(selectedMonth)}}</span>
         </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-success">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">Facturación</h6>
-                  <h3 class="mb-0">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</h3>
-                  <small class="text-muted">{{((billingData.totalReal / billingData.totalPresupuesto) * 100) | number:'1.0-0'}}% del presupuesto</small>
-                </div>
-                <i class="bi bi-graph-up" style="font-size: 2rem; color: #28a745; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-5 border-l-4 border-l-emerald-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Facturación</span>
+          <span class="text-xl font-bold text-gray-900 block">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</span>
+          <span class="text-[10px] text-slate-400">{{((billingData.totalReal / billingData.totalPresupuesto) * 100) | number:'1.0-0'}}% del presupuesto</span>
         </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-info">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">Ingreso Real</h6>
-                  <h3 class="mb-0" 
-                      [class.text-success]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0" 
-                      [class.text-danger]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) < 0">
-                    {{(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) | currency:'$':'symbol':'1.0-0'}}
-                    <small *ngIf="billingData.isPastMonth" class="text-muted d-block" style="font-size: 0.7rem;">
-                      ({{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}})
-                    </small>
-                  </h3>
-                  <small class="text-muted">Facturación + Remisionado - Remis. Anterior</small>
-                </div>
-                <i class="bi bi-arrow-left-right" style="font-size: 2rem; color: #17a2b8; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-5 border-l-4 border-l-cyan-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Ingreso Real</span>
+          <span class="text-xl font-bold block"
+                [class.text-emerald-700]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0" 
+                [class.text-red-700]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) < 0">
+            {{(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) | currency:'$':'symbol':'1.0-0'}}
+          </span>
+          <small *ngIf="billingData.isPastMonth" class="text-[10px] text-slate-400 block">
+            ({{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}})
+          </small>
+          <span class="text-[10px] text-slate-400">Fact. + Remis. - Anterior</span>
         </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-warning">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">% Ejecutado</h6>
-                  <h3 class="mb-0">
-                    {{(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) | number:'1.0-0'}}%
-                    <small *ngIf="billingData.isPastMonth" class="text-muted d-block" style="font-size: 0.7rem;">
-                      ({{billingData.porcentajeEjecutado | number:'1.0-0'}}%)
-                    </small>
-                  </h3>
-                  <small class="text-muted">Meta de desempeño</small>
-                </div>
-                <i class="bi bi-speedometer2" style="font-size: 2rem; color: #ffc107; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-5 border-l-4 border-l-amber-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">% Ejecutado</span>
+          <span class="text-xl font-bold text-gray-900 block">
+            {{(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) | number:'1.0-0'}}%
+          </span>
+          <small *ngIf="billingData.isPastMonth" class="text-[10px] text-slate-400 block">
+            ({{billingData.porcentajeEjecutado | number:'1.0-0'}}%)
+          </small>
+          <span class="text-[10px] text-slate-400">Meta de desempeño</span>
         </div>
+      </div>
 
       <!-- Cargando -->
       <div *ngIf="loading" class="text-center my-5">
@@ -213,114 +166,97 @@
       </div>
 
       <div *ngIf="!loading && billingData">
-        <!-- Gráficos Principales (2x2) -->
-        <div class="row mb-4">
-          <!-- Gráfico 1: Comparativa Presupuesto vs Real -->
-          <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-bar-chart-fill text-primary"></i> Comparativa: Presupuesto vs Facturación
-                </h5>
-                <small class="text-muted">Análisis por unidad de negocio</small>
+        <!-- Gráficos Principales -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <!-- Gráfico 1: Comparativa -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+              <i class="bi bi-bar-chart-fill text-blue-600 text-sm"></i>
+              <div>
+                <h5 class="text-xs font-bold text-gray-900 mb-0">Presupuesto vs Facturación</h5>
+                <span class="text-[10px] text-slate-400">Análisis por unidad de negocio</span>
               </div>
-              <div class="card-body">
-                <canvas id="comparisonChart" style="max-height: 350px;"></canvas>
-              </div>
+            </div>
+            <div class="p-5">
+              <canvas id="comparisonChart" style="max-height: 320px;"></canvas>
             </div>
           </div>
 
           <!-- Gráfico 2: % Ejecución General -->
-          <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-pie-chart text-info"></i> % de Ejecución General
-                </h5>
-                <small class="text-muted">Progreso del presupuesto</small>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+              <i class="bi bi-pie-chart text-cyan-600 text-sm"></i>
+              <div>
+                <h5 class="text-xs font-bold text-gray-900 mb-0">% de Ejecución General</h5>
+                <span class="text-[10px] text-slate-400">Progreso del presupuesto</span>
               </div>
-              <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 350px;">
-                <div style="max-width: 250px; width: 100%;">
-                  <canvas id="executionChart"></canvas>
-                </div>
+            </div>
+            <div class="p-5 flex justify-center items-center" style="min-height: 320px;">
+              <div style="max-width: 220px; width: 100%;">
+                <canvas id="executionChart"></canvas>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Gráficos Secundarios (2x1) -->
-        <div class="row mb-4">
-          <!-- Gráfico 3: % Ejecución por Unidad -->
-          <div class="col-lg-12 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-percent text-success"></i> % de Ejecución por Unidad de Negocio
-                </h5>
-                <small class="text-muted">Verde ≥80% | Amarillo 50-79% | Rojo &lt;50%</small>
-              </div>
-              <div class="card-body">
-                <canvas id="variationChart" style="max-height: 300px;"></canvas>
-              </div>
+        <!-- Gráfico 3: % Ejecución por Unidad -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6 transition-all duration-200 hover:shadow-md">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+            <i class="bi bi-percent text-emerald-600 text-sm"></i>
+            <div>
+              <h5 class="text-xs font-bold text-gray-900 mb-0">% de Ejecución por Unidad de Negocio</h5>
+              <span class="text-[10px] text-slate-400">Verde ≥80% | Amarillo 50-79% | Rojo &lt;50%</span>
             </div>
+          </div>
+          <div class="p-5">
+            <canvas id="variationChart" style="max-height: 280px;"></canvas>
           </div>
         </div>
 
         <!-- Gráfico 4: Diferencia -->
-        <div class="row mb-4">
-          <div class="col-lg-12">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-graph-up-arrow text-danger"></i> Diferencia por Unidad (Real + Remisionado - Anterior)
-                </h5>
-                <small class="text-muted">Verde: Ingreso positivo | Rojo: Ingreso negativo</small>
-              </div>
-              <div class="card-body">
-                <canvas id="differenceChart" style="max-height: 300px;"></canvas>
-              </div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6 transition-all duration-200 hover:shadow-md">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+            <i class="bi bi-graph-up-arrow text-red-500 text-sm"></i>
+            <div>
+              <h5 class="text-xs font-bold text-gray-900 mb-0">Diferencia por Unidad (Real + Remisionado - Anterior)</h5>
+              <span class="text-[10px] text-slate-400">Verde: Ingreso positivo | Rojo: Ingreso negativo</span>
             </div>
+          </div>
+          <div class="p-5">
+            <canvas id="differenceChart" style="max-height: 280px;"></canvas>
           </div>
         </div>
 
         <!-- Tabla de Detalle de Presupuesto por Unidad -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light border-bottom">
-            <div class="row align-items-center">
-              <div class="col-md-6">
-                <h5 class="mb-0">
-                  <i class="bi bi-table"></i> Presupuesto Detallado por Unidad de Negocio
-                </h5>
-              </div>
-              <div class="col-md-6">
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-search"></i></span>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Buscar por U.N. o Descripción..."
-                    [(ngModel)]="filterUnidad">
-                </div>
-              </div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
+          <div class="px-5 py-4 border-b border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i class="bi bi-table text-blue-600 text-sm"></i>
+              <h5 class="text-xs font-bold text-gray-900 mb-0">Presupuesto Detallado por Unidad de Negocio</h5>
+            </div>
+            <div class="relative w-full md:w-64">
+              <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-400 transition-colors"
+                     placeholder="Buscar por U.N. o Descripción..."
+                     [(ngModel)]="filterUnidad">
             </div>
           </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead class="table-light">
-                  <tr>
-                    <th><i class="bi bi-hash"></i> U.N.</th>
-                    <th>Descripción</th>
-                    <th class="text-end">Presupuesto</th>
-                    <th class="text-end">Facturado</th>
-                    <th class="text-end">Remis. Actual</th>
-                    <th class="text-end">Remis. Anterior</th>
-                    <th class="text-end">Ingreso Real</th>
-                    <th class="text-end">% Ejecutado</th>
-                    <th class="text-center">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">U.N.</th>
+                  <th class="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">Descripción</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Presupuesto</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Facturado</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Remis. Actual</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Remis. Anterior</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Ingreso Real</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">% Ejec.</th>
+                  <th class="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-slate-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
                   <tr *ngFor="let item of filteredBillingUnits" class="align-middle">
                     <td><strong>{{item.unidad}}</strong></td>
                     <td>{{item.descripcion}}</td>
@@ -421,7 +357,6 @@
               </table>
             </div>
           </div>
-        </div>
       </div>
     </div>
     </div>

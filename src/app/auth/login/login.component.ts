@@ -42,7 +42,7 @@ export class LoginComponent implements OnInit {
 
     this.checkMaintenanceStatus();
     
-    if (this.authService.isAuthenticated()) { /* Cada vez que llega a la pagina de login valida si el pages esta autenticado */
+    if (this.authService.isAuthenticated()) {
       Swal.fire({
         title: 'Login',
         html: `Hola ${this.authService.user.firstName}, ya estás autenticado en el sistema`,

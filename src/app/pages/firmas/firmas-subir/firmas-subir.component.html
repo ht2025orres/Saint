@@ -1,145 +1,155 @@
-<div class="p-4 bg-light">
-  <div class="row justify-content-center">
-    <div class="col-lg-6">
-      <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-          <h5 class="mb-4 fw-bold">Subir documento para firma</h5>
-          
-          <form>
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Seleccionar PDF</label>
-              <div class="input-group">
-                <input type="file" class="form-control" (change)="onFileChange($event)" accept="application/pdf">
-                <span class="input-group-text bg-white"><i class="bi bi-file-pdf text-danger"></i></span>
+<div class="p-5 bg-slate-50/50">
+  <div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div class="p-6">
+        <h2 class="text-sm font-bold text-gray-900 mb-5 flex items-center gap-2">
+          <i class="bi bi-upload text-blue-600 text-sm"></i>
+          Subir documento para firma
+        </h2>
+
+        <form>
+          <!-- File input -->
+          <div class="mb-5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Seleccionar PDF</label>
+            <div class="flex items-center gap-2">
+              <input type="file" class="flex-1 text-xs file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 border border-slate-200 rounded-lg py-1.5 px-3 text-slate-600 cursor-pointer transition-all"
+                     (change)="onFileChange($event)" accept="application/pdf">
+              <span class="w-9 h-9 flex items-center justify-center bg-red-50 text-red-500 rounded-lg">
+                <i class="bi bi-file-pdf text-base"></i>
+              </span>
+            </div>
+            <span class="text-[10px] text-slate-400 mt-1 block">El archivo será firmado digitalmente de forma automática.</span>
+          </div>
+
+          <!-- PDF Preview -->
+          <div *ngIf="archivo" class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1">
+                <i class="bi bi-eye"></i> Previsualización Interactiva
+              </label>
+              <div class="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
+                <button type="button" class="w-7 h-7 flex items-center justify-center rounded-md text-slate-500 hover:bg-white hover:shadow-sm transition-all" (click)="changeZoom(-0.1)">
+                  <i class="bi bi-zoom-out text-xs"></i>
+                </button>
+                <span class="px-2 text-[10px] font-bold text-slate-600 min-w-[40px] text-center">{{ (zoom * 100) | number:'1.0-0' }}%</span>
+                <button type="button" class="w-7 h-7 flex items-center justify-center rounded-md text-slate-500 hover:bg-white hover:shadow-sm transition-all" (click)="changeZoom(0.1)">
+                  <i class="bi bi-zoom-in text-xs"></i>
+                </button>
               </div>
-              <small class="text-muted">El archivo será firmado digitalmente de forma automática.</small>
             </div>
 
-            <!-- Previsualización y Selección de Ubicación -->
-            <div *ngIf="archivo" class="mb-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label fw-bold text-primary mb-0">
-                  <i class="bi bi-eye me-1"></i> Previsualización Interactiva
-                </label>
-                <div class="btn-group shadow-sm">
-                  <button type="button" class="btn btn-sm btn-light border" (click)="changeZoom(-0.1)" title="Alejar">
-                    <i class="bi bi-zoom-out"></i>
-                  </button>
-                  <span class="btn btn-sm btn-white border-top border-bottom" style="min-width: 60px;">
-                    {{ (zoom * 100) | number:'1.0-0' }}%
-                  </span>
-                  <button type="button" class="btn btn-sm btn-light border" (click)="changeZoom(0.1)" title="Acercar">
-                    <i class="bi bi-zoom-in"></i>
-                  </button>
-                </div>
-              </div>
+            <div class="border border-slate-200 rounded-xl bg-slate-100 relative overflow-hidden shadow-inner" style="height: 500px;">
+              <div class="h-full overflow-auto p-4 flex justify-center items-start"
+                   (mouseup)="onMouseUp($event)"
+                   (mouseleave)="onMouseUp($event)">
+                <div class="relative shadow-lg bg-white" style="user-select: none;">
+                  <canvas id="pdf-canvas"
+                          class="cursor-crosshair"
+                          (mousedown)="onMouseDown($event)"
+                          (mousemove)="onMouseMove($event)"></canvas>
 
-              <div class="pdf-viewer-wrapper border rounded bg-secondary bg-opacity-10 position-relative overflow-hidden shadow-inner" style="height: 600px;">
-                <div class="pdf-scroll-container h-100 overflow-auto p-4 d-flex justify-content-center align-items-start shadow-inner" 
-                     (mouseup)="onMouseUp($event)"
-                     (mouseleave)="onMouseUp($event)">
-                  <div class="position-relative shadow-lg bg-white" style="user-select: none;">
-                    <canvas id="pdf-canvas" 
-                            class="cursor-crosshair" 
-                            (mousedown)="onMouseDown($event)"
-                            (mousemove)="onMouseMove($event)"></canvas>
-                    
-                    <!-- Ghost Signature Box (Drawing style) -->
-                    <div *ngIf="showGhost" 
-                         class="position-absolute border border-primary bg-primary bg-opacity-10 pointer-events-none"
-                         [style.left.px]="ghostX" 
-                         [style.top.px]="ghostY"
-                         [style.width.px]="ghostW"
-                         [style.height.px]="ghostH"
-                         style="border-width: 2px !important; border-style: dashed !important; z-index: 10;">
-                      <div class="d-flex align-items-center h-100 px-1 overflow-hidden" *ngIf="ghostW > 20 && ghostH > 8">
-                        <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded-1 me-1" 
-                             [style.width.px]="ghostH * 0.7" [style.height.px]="ghostH * 0.7">
-                          <i class="bi bi-qr-code" [style.font-size.px]="ghostH * 0.5"></i>
-                        </div>
-                        <div class="lh-1" *ngIf="ghostW > 40">
-                          <div class="fw-bold text-primary" [style.font-size.px]="ghostH * 0.25">FIRMADO</div>
-                        </div>
+                  <!-- Ghost Signature Box -->
+                  <div *ngIf="showGhost"
+                       class="absolute border-2 border-dashed border-blue-500 bg-blue-500/10 pointer-events-none"
+                       [style.left.px]="ghostX"
+                       [style.top.px]="ghostY"
+                       [style.width.px]="ghostW"
+                       [style.height.px]="ghostH"
+                       style="z-index: 10;">
+                    <div class="flex items-center h-full px-1 overflow-hidden" *ngIf="ghostW > 20 && ghostH > 8">
+                      <div class="bg-blue-600 text-white flex items-center justify-center rounded mr-1"
+                           [style.width.px]="ghostH * 0.7" [style.height.px]="ghostH * 0.7">
+                        <i class="bi bi-qr-code" [style.font-size.px]="ghostH * 0.5"></i>
+                      </div>
+                      <div class="leading-none" *ngIf="ghostW > 40">
+                        <div class="font-bold text-blue-700" [style.font-size.px]="ghostH * 0.25">FIRMADO</div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <!-- Floating Controls -->
-                <div class="pdf-floating-controls position-absolute bottom-0 start-50 translate-middle-x mb-4 bg-dark bg-opacity-75 rounded-pill px-4 py-2 text-white shadow-lg d-flex align-items-center" style="z-index: 20;">
-                  <button type="button" class="btn btn-link text-white p-0" (click)="changePage(-1)" [disabled]="pagina <= 1">
-                    <i class="bi bi-chevron-left fs-5"></i>
-                  </button>
-                  <div class="mx-4 text-center" style="min-width: 120px;">
-                    <span class="small d-block text-white-50">Página</span>
-                    <span class="fw-bold">{{pagina}} / {{totalPages}}</span>
-                  </div>
-                  <button type="button" class="btn btn-link text-white p-0" (click)="changePage(1)" [disabled]="pagina >= totalPages">
-                    <i class="bi bi-chevron-right fs-5"></i>
-                  </button>
-                </div>
               </div>
-              
-              <div class="mt-3 bg-white border rounded p-3 shadow-sm">
-                <div class="row align-items-end">
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small text-muted uppercase">Tamaño del sello (mm)</label>
-                    <div class="input-group input-group-sm">
-                      <span class="input-group-text bg-light">Ancho</span>
-                      <input type="number" class="form-control" [(ngModel)]="ancho" name="ancho" (change)="updateGhostSize()" min="20" max="200">
-                      <span class="input-group-text bg-light">Alto</span>
-                      <input type="number" class="form-control" [(ngModel)]="alto" name="alto" (change)="updateGhostSize()" min="8" max="100">
-                    </div>
+
+              <!-- Floating page controls -->
+              <div class="absolute bottom-0 left-1/2 -translate-x-1/2 mb-3 bg-slate-800/80 backdrop-blur-sm rounded-full px-4 py-1.5 text-white flex items-center gap-3 shadow-lg" style="z-index: 20;">
+                <button type="button" class="text-white/70 hover:text-white transition" (click)="changePage(-1)" [disabled]="pagina <= 1">
+                  <i class="bi bi-chevron-left text-sm"></i>
+                </button>
+                <div class="text-center min-w-[80px]">
+                  <span class="text-[9px] text-white/50 block uppercase tracking-wider">Página</span>
+                  <span class="text-xs font-bold">{{pagina}} / {{totalPages}}</span>
+                </div>
+                <button type="button" class="text-white/70 hover:text-white transition" (click)="changePage(1)" [disabled]="pagina >= totalPages">
+                  <i class="bi bi-chevron-right text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Size controls -->
+            <div class="mt-3 bg-white border border-slate-200 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Tamaño del sello (mm)</label>
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] text-slate-400">Ancho</span>
+                    <input type="number" class="w-16 px-2 py-1 text-xs border border-slate-200 rounded-lg text-center outline-none focus:border-blue-400" [(ngModel)]="ancho" name="ancho" (change)="updateGhostSize()" min="20" max="200">
                   </div>
-                  <div class="col-md-6 text-end">
-                    <div *ngIf="showGhost" class="small text-primary fw-bold">
-                      <i class="bi bi-check-circle-fill me-1"></i> Posición: Pág {{pagina}} ({{posicion_x}}mm, {{posicion_y}}mm)
-                    </div>
-                    <div *ngIf="!showGhost" class="small text-muted">
-                      <i class="bi bi-info-circle me-1"></i> Haga clic en el documento para ubicar la firma
-                    </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] text-slate-400">Alto</span>
+                    <input type="number" class="w-16 px-2 py-1 text-xs border border-slate-200 rounded-lg text-center outline-none focus:border-blue-400" [(ngModel)]="alto" name="alto" (change)="updateGhostSize()" min="8" max="100">
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Motivo de la firma</label>
-              <textarea class="form-control" [(ngModel)]="motivo" name="motivo" rows="2" placeholder="Ej: Aprobación de presupuesto, Entrega de equipo..."></textarea>
-            </div>
-
-            <!-- Valores de posición (Ocultos o Solo lectura para confirmación) -->
-            <div *ngIf="archivo" class="row bg-light border rounded p-2 mb-4 mx-0 small">
-              <div class="col-4"><strong>Página:</strong> {{pagina}}</div>
-              <div class="col-4"><strong>Eje X:</strong> {{posicion_x}}mm</div>
-              <div class="col-4"><strong>Eje Y:</strong> {{posicion_y}}mm</div>
-            </div>
-
-            <div class="form-check form-switch mb-4">
-              <input class="form-check-input" type="checkbox" id="externalSwitch" [(ngModel)]="isExternal" name="isExternal">
-              <label class="form-check-label" for="externalSwitch">¿Es para un tercero/externo?</label>
-            </div>
-
-            <div *ngIf="isExternal" class="row">
-              <div class="col-md-6 mb-4">
-                <label class="form-label fw-semibold">Nombre del firmante</label>
-                <input type="text" class="form-control" [(ngModel)]="nombre_firmante" name="nombre_firmante" placeholder="Nombre completo">
-              </div>
-              <div class="col-md-6 mb-4">
-                <label class="form-label fw-semibold">Email del firmante</label>
-                <input type="email" class="form-control" [(ngModel)]="email_firmante" name="email_firmante" placeholder="Email de contacto">
+              <div class="text-right">
+                <div *ngIf="showGhost" class="text-[10px] font-semibold text-blue-600">
+                  <i class="bi bi-check-circle-fill mr-1"></i> Posición: Pág {{pagina}} ({{posicion_x}}mm, {{posicion_y}}mm)
+                </div>
+                <div *ngIf="!showGhost" class="text-[10px] text-slate-400">
+                  <i class="bi bi-info-circle mr-1"></i> Haga clic en el documento para ubicar la firma
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="d-grid mt-2">
-              <button type="button" class="btn btn-primary btn-lg" [disabled]="loading || !archivo" (click)="submit()">
-                <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
-                <i *ngIf="!loading" class="bi bi-pencil-square me-2"></i>
-                Firmar Documento
-              </button>
+          <!-- Motivo -->
+          <div class="mb-5">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Motivo de la firma</label>
+            <textarea class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-400 transition-colors resize-none" [(ngModel)]="motivo" name="motivo" rows="2" placeholder="Ej: Aprobación de presupuesto, Entrega de equipo..."></textarea>
+          </div>
+
+          <!-- Position info -->
+          <div *ngIf="archivo" class="flex gap-4 bg-slate-50 border border-slate-200 rounded-lg p-3 mb-5">
+            <div class="text-[10px]"><strong class="text-slate-500">Página:</strong> <span class="font-bold text-gray-900">{{pagina}}</span></div>
+            <div class="text-[10px]"><strong class="text-slate-500">Eje X:</strong> <span class="font-bold text-gray-900">{{posicion_x}}mm</span></div>
+            <div class="text-[10px]"><strong class="text-slate-500">Eje Y:</strong> <span class="font-bold text-gray-900">{{posicion_y}}mm</span></div>
+          </div>
+
+          <!-- External toggle -->
+          <div class="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded-lg border border-slate-100">
+            <input class="w-4 h-4 rounded accent-blue-600" type="checkbox" id="externalSwitch" [(ngModel)]="isExternal" name="isExternal">
+            <label class="text-xs font-medium text-slate-700 cursor-pointer" for="externalSwitch">¿Es para un tercero/externo?</label>
+          </div>
+
+          <!-- External fields -->
+          <div *ngIf="isExternal" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Nombre del firmante</label>
+              <input type="text" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-400 transition-colors" [(ngModel)]="nombre_firmante" name="nombre_firmante" placeholder="Nombre completo">
             </div>
-          </form>
-        </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Email del firmante</label>
+              <input type="email" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-400 transition-colors" [(ngModel)]="email_firmante" name="email_firmante" placeholder="Email de contacto">
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="button"
+                  class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  [disabled]="loading || !archivo" (click)="submit()">
+            <span *ngIf="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <i *ngIf="!loading" class="bi bi-pencil-square"></i>
+            Firmar Documento
+          </button>
+        </form>
       </div>
     </div>
   </div>

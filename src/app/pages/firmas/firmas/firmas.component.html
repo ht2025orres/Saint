@@ -1,30 +1,36 @@
-<div class="container-fluid py-4">
-  <div class="row">
-    <div class="col-12">
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom py-3">
-          <div class="d-flex justify-content-between align-items-center">
-            <h4 class="mb-0 fw-bold text-primary">Módulo de Firmas Digitales</h4>
-            <div class="btn-group" role="group">
-              <button *ngFor="let t of tabs" 
-                      type="button" 
-                      class="btn px-4"
-                      [class.btn-primary]="vista === t.id"
-                      [class.btn-outline-primary]="vista !== t.id"
-                      (click)="cambiarVista(t.id)">
-                <i class="bi {{t.icon}} me-2"></i> {{t.label}}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-0">
-          <!-- Vistas -->
-          <div [ngSwitch]="vista">
-            <app-firmas-lista *ngSwitchCase="'lista'"></app-firmas-lista>
-            <app-firmas-subir *ngSwitchCase="'subir'" (completado)="cambiarVista('lista')"></app-firmas-subir>
-          </div>
-        </div>
+<div class="p-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+        <i class="bi bi-pencil-square text-white text-base"></i>
       </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 tracking-tight">Firmas Digitales</h1>
+        <p class="text-xs text-slate-500 font-medium">Gestión y firma electrónica de documentos</p>
+      </div>
+    </div>
+
+    <!-- Tabs tipo pill -->
+    <div class="flex items-center gap-0.5 bg-slate-100 p-1 rounded-xl">
+      <button *ngFor="let t of tabs"
+              type="button"
+              (click)="cambiarVista(t.id)"
+              class="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-150"
+              [ngClass]="vista === t.id
+                ? 'bg-white text-blue-700 shadow-sm font-bold'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'">
+        <i class="bi {{t.icon}} text-sm"></i>
+        <span>{{t.label}}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div [ngSwitch]="vista">
+      <app-firmas-lista *ngSwitchCase="'lista'"></app-firmas-lista>
+      <app-firmas-subir *ngSwitchCase="'subir'" (completado)="cambiarVista('lista')"></app-firmas-subir>
     </div>
   </div>
 </div>

@@ -1,21 +1,28 @@
-<div class="container mt-4">
-  <h2 class="mb-4">Dashboard - Terminación y Empaque</h2>
+<div class="p-6">
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-6 pb-5 border-b border-slate-200">
+    <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+      <i class="bi bi-box-seam text-white text-base"></i>
+    </div>
+    <div>
+      <h1 class="text-lg font-bold text-gray-900 tracking-tight">Dashboard — Terminación y Empaque</h1>
+      <p class="text-xs text-slate-500">Control de OPs, PVs y desempeño de empacadores</p>
+    </div>
+  </div>
 
-  <!-- Pestañas -->
-  <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="empaque-tab" data-bs-toggle="tab" data-bs-target="#empaque-panel" 
-              type="button" role="tab" aria-controls="empaque-panel" aria-selected="true">
-        <i class="bi bi-box"></i> Dashboard Empaque
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="ops-tab" data-bs-toggle="tab" data-bs-target="#ops-panel" 
-              type="button" role="tab" aria-controls="ops-panel" aria-selected="false">
-        <i class="bi bi-list-task"></i> Dashboard OPs
-      </button>
-    </li>
-  </ul>
+  <!-- Pestañas estilo pill -->
+  <div class="flex items-center gap-0.5 bg-slate-100 p-1 rounded-xl mb-6 w-fit">
+    <button class="nav-link flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-150 active"
+            id="empaque-tab" data-bs-toggle="tab" data-bs-target="#empaque-panel" 
+            type="button" role="tab" aria-controls="empaque-panel" aria-selected="true">
+      <i class="bi bi-box text-sm"></i> Dashboard Empaque
+    </button>
+    <button class="nav-link flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-150"
+            id="ops-tab" data-bs-toggle="tab" data-bs-target="#ops-panel" 
+            type="button" role="tab" aria-controls="ops-panel" aria-selected="false">
+      <i class="bi bi-list-task text-sm"></i> Dashboard OPs
+    </button>
+  </div>
 
   <!-- Contenido de las pestañas -->
   <div class="tab-content" id="dashboardTabsContent">
@@ -55,38 +62,22 @@
       </div>
 
       <!-- KPIs -->
-      <div class="row mb-4">
-        <div class="col-md-3">
-          <div class="card text-white bg-primary">
-            <div class="card-body">
-              <h5 class="card-title">PVs</h5>
-              <p class="card-text display-4">{{ kpis.total_pvs || 0 }}</p>
-            </div>
-          </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-blue-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">PVs</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpis.total_pvs || 0 }}</span>
         </div>
-        <div class="col-md-3">
-          <div class="card text-white bg-success">
-            <div class="card-body">
-              <h5 class="card-title">OPs</h5>
-              <p class="card-text display-4">{{ kpis.total_ops || 0 }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-emerald-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">OPs</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpis.total_ops || 0 }}</span>
         </div>
-        <div class="col-md-3">
-          <div class="card text-white bg-info">
-            <div class="card-body">
-              <h5 class="card-title">Ítems Empacados</h5>
-              <p class="card-text display-4">{{ kpis.total_items || 0 }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-cyan-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Ítems Empacados</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpis.total_items || 0 }}</span>
         </div>
-        <div class="col-md-3">
-          <div class="card text-white bg-warning">
-            <div class="card-body">
-              <h5 class="card-title">Empacadores</h5>
-              <p class="card-text display-4">{{ kpis.total_empacadores || 0 }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-amber-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Empacadores</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpis.total_empacadores || 0 }}</span>
         </div>
       </div>
 
@@ -255,39 +246,19 @@
       </div>
 
       <!-- KPIs de OPs -->
-      <div class="row mb-4">
-        <div class="col-md-4">
-          <div class="card text-white bg-primary">
-            <div class="card-body">
-              <h5 class="card-title">Total OPs</h5>
-              <p class="card-text display-4">{{ kpisOP.total_ops || 0 }}</p>
-            </div>
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-blue-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total OPs</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpisOP.total_ops || 0 }}</span>
         </div>
-        <div class="col-md-4">
-          <div class="card text-white bg-success">
-            <div class="card-body">
-              <h5 class="card-title">OPs Completadas</h5>
-              <p class="card-text display-4">{{ kpisOP.ops_completadas || 0 }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-emerald-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">OPs Completadas</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpisOP.ops_completadas || 0 }}</span>
         </div>
-        <div class="col-md-4">
-          <div class="card text-white bg-warning">
-            <div class="card-body">
-              <h5 class="card-title">En Proceso</h5>
-              <p class="card-text display-4">{{ kpisOP.ops_en_proceso || 0 }}</p>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl p-4 border-l-4 border-l-amber-500 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">En Proceso</span>
+          <span class="text-2xl font-bold text-gray-900">{{ kpisOP.ops_en_proceso || 0 }}</span>
         </div>
-        <!-- <div class="col-md-3">
-          <div class="card text-white bg-danger">
-            <div class="card-body">
-              <h5 class="card-title">Pendientes</h5>
-              <p class="card-text display-4">{{ kpisOP.ops_pendientes || 0 }}</p>
-            </div>
-          </div>
-        </div> -->
       </div>
 
       <!-- Barra de búsqueda y paginación -->
