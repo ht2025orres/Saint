@@ -16,16 +16,22 @@
 /* ─── Base ─────────────────────────────────────────────────── */
 .topnav {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-  padding: 0 20px;
+  flex-direction: column;
   background: #ffffff;
   border-bottom: 1px solid #E8EAF3;
   box-shadow: 0 2px 12px rgba(20, 20, 40, 0.04);
   position: relative;
   z-index: 1000;
   overflow: visible;
+}
+
+/* Fila principal (siempre visible) */
+.topnav-header {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 20px;
+  width: 100%;
 }
 
 /* ─── Zona Izquierda ──────────────────────────────────────── */
@@ -204,6 +210,11 @@
   gap: 2px;
   height: 100%;
   overflow: visible;
+}
+
+.topnav-menu-desktop {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ─── Menu Item ───────────────────────────────────────────── */
@@ -391,6 +402,44 @@
   flex-shrink: 0;
 }
 
+.topnav-right-desktop {
+  margin-left: auto;
+}
+
+/* ─── Mobile Panel (desplegable debajo de la barra) ───────── */
+.topnav-mobile-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-top: 1px solid #E8EAF3;
+  animation: mobileSlideDown 0.2s ease-out;
+}
+
+@keyframes mobileSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.topnav-mobile-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.topnav-mobile-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid #E8EAF3;
+  background: #FAFBFD;
+}
+
 /* Action buttons (config, logout) */
 .topnav-action {
   display: flex;
@@ -509,6 +558,28 @@
    RESPONSIVE
    ============================================================== */
 
+/* Desktop: scroll horizontal si hay muchos items */
+@media (min-width: 768px) {
+  .topnav-menu-desktop {
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .topnav-menu-desktop::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topnav-hamburger {
+    display: none !important;
+  }
+
+  .topnav-mobile-panel {
+    display: none !important;
+  }
+}
+
 /* Tablets: ocultar username */
 @media (max-width: 1280px) {
   .topnav-username {
@@ -520,118 +591,119 @@
   }
 }
 
-/* Mobile: menú vertical desplegable */
+/* ══════════════════════════════════════════════════════════════
+   MOBILE (< 768px)
+   ══════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-  .topnav {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 56px;
-    padding: 8px 16px;
-    gap: 0;
+
+  .topnav-header {
+    padding: 0 12px;
+    height: 56px;
   }
 
-  .topnav-left {
-    order: 1;
-    flex: 0 0 auto;
+  .topnav-brand {
+    padding: 0 8px 0 0;
   }
 
+  .topnav-logo {
+    height: 24px;
+  }
+
+  .topnav-divider {
+    margin: 0 8px;
+    height: 20px;
+  }
+
+  .topnav-divider-desktop {
+    display: none;
+  }
+
+  /* Ocultar el menú desktop y la zona derecha desktop en mobile */
+  .topnav-menu-desktop {
+    display: none !important;
+  }
+
+  .topnav-right-desktop {
+    display: none !important;
+  }
+
+  /* Hamburger visible */
   .topnav-hamburger {
     display: flex;
-    order: 2;
     margin-left: auto;
   }
 
-  .topnav-right {
-    order: 3;
-    display: none;
+  /* Mobile panel: items siempre muestran labels */
+  .topnav-mobile-panel .topnav-label {
+    max-width: 220px !important;
+    opacity: 1 !important;
+    margin-left: 10px !important;
   }
 
-  .topnav-divider:last-of-type {
-    display: none;
+  .topnav-mobile-panel .topnav-arrow {
+    max-width: 20px !important;
+    opacity: 1 !important;
+    margin-left: auto !important;
   }
 
-  .topnav-menu {
-    display: none;
-    order: 4;
-    width: 100%;
+  .topnav-mobile-panel .topnav-item {
+    height: auto;
     flex-direction: column;
     align-items: stretch;
-    gap: 2px;
-    padding: 12px 0;
-    border-top: 1px solid #E8EAF3;
-    margin-top: 8px;
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
   }
 
-  /* Cuando está abierto */
-  .topnav.mobile-open .topnav-menu {
-    display: flex;
-  }
-
-  .topnav.mobile-open .topnav-right {
-    display: flex;
-    order: 5;
+  .topnav-mobile-panel .topnav-link {
     width: 100%;
-    justify-content: center;
-    padding: 12px 0;
-    border-top: 1px solid #E8EAF3;
-    margin-top: 4px;
+    height: 46px;
+    padding: 0 14px;
+    border-radius: 12px;
   }
 
-  .topnav.mobile-open .topnav-username {
-    display: inline;
-  }
-
-  /* En mobile siempre mostrar labels */
-  .topnav-label {
-    max-width: 200px;
-    opacity: 1;
-    margin-left: 10px;
-  }
-
-  .topnav-arrow {
-    max-width: 20px;
-    opacity: 1;
-    margin-left: auto;
-  }
-
-  .topnav-item {
-    height: auto;
-  }
-
-  .topnav-link {
-    width: 100%;
-    height: 44px;
-    padding: 0 12px;
-    border-radius: 10px;
-  }
-
-  /* Dropdown en mobile: no flotar, inline */
-  .topnav-dropdown {
+  /* Dropdown en mobile: inline */
+  .topnav-mobile-panel .topnav-dropdown {
     position: static !important;
     border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    padding: 0 0 0 32px !important;
-    margin-top: 2px !important;
+    padding: 4px 0 4px 36px !important;
+    margin-top: 0 !important;
     background: transparent !important;
+    animation: none !important;
   }
 
-  .topnav-dropdown.show {
+  .topnav-mobile-panel .topnav-dropdown.show {
     display: block !important;
   }
 
-  .topnav-dropdown-link {
+  .topnav-mobile-panel .topnav-dropdown-link {
     padding: 10px 14px;
+    border-radius: 8px;
   }
 
-  /* Group selector en mobile */
+  /* Group selector mobile */
+  .group-selector-btn {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .group-selector-icon {
+    font-size: 14px;
+  }
+
   .group-dropdown {
     position: fixed;
     top: 56px;
-    left: 16px;
-    right: 16px;
+    left: 12px;
+    right: 12px;
     min-width: auto;
+    border-radius: 12px;
+  }
+
+  /* Mobile footer username visible */
+  .topnav-mobile-footer .topnav-username {
+    display: inline;
   }
 }
+

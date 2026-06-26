@@ -5,8 +5,8 @@
 <!-- Navbar horizontal superior -->
 <nav class="topnav" [class.mobile-open]="isMobile && isMobileOpen">
 
-  <!-- Zona izquierda: Logo + Selector de grupo + Menú -->
-  <div class="topnav-left">
+  <!-- Fila principal: Logo + Group Selector + (Desktop: Menu + Right) | (Mobile: Hamburger) -->
+  <div class="topnav-header">
     <!-- Logo -->
     <a class="topnav-brand" routerLink="/dashboard">
       <img src="../../../assets/images/logo (1).png" alt="SaINT" class="topnav-logo" />
@@ -37,15 +37,13 @@
       </div>
     </div>
 
-    <!-- Separador (solo si hay grupos) -->
-    <div class="topnav-divider" *ngIf="menuGroups.length > 0"></div>
+    <!-- Separador (solo desktop, antes del menu) -->
+    <div class="topnav-divider topnav-divider-desktop" *ngIf="menuGroups.length > 0"></div>
 
-    <!-- Menu items (filtrados por grupo activo) -->
-    <div class="topnav-menu">
+    <!-- Menu items (desktop: inline / mobile: oculto aquí) -->
+    <div class="topnav-menu topnav-menu-desktop">
       <ng-container *ngFor="let item of visibleMenuItems">
         <div *ngIf="canShowMenuItem(item)" class="topnav-item" [class.has-submenu]="item.submenu" [class.is-open]="item.isOpen">
-
-          <!-- Item sin submenú -->
           <a *ngIf="!item.submenu"
              class="topnav-link"
              [routerLink]="item.link"
@@ -54,8 +52,6 @@
             <i [class]="item.icon" class="topnav-icon"></i>
             <span class="topnav-label">{{ item.label }}</span>
           </a>
-
-          <!-- Item con submenú -->
           <ng-container *ngIf="item.submenu">
             <a class="topnav-link"
                href="javascript:void(0)"
@@ -66,8 +62,6 @@
               <span class="topnav-label">{{ item.label }}</span>
               <i class="bi bi-chevron-down topnav-arrow" [class.rotated]="item.isOpen"></i>
             </a>
-
-            <!-- Dropdown submenú -->
             <div class="topnav-dropdown" [class.show]="item.isOpen">
               <ng-container *ngFor="let sub of item.submenu">
                 <a *ngIf="canShowMenuItem(sub)"
@@ -79,31 +73,86 @@
               </ng-container>
             </div>
           </ng-container>
-
         </div>
       </ng-container>
     </div>
-  </div>
 
-  <!-- Zona derecha: Usuario + Config + Logout -->
-  <div class="topnav-right">
-    <a class="topnav-action" [routerLink]="['/my-profile']" routerLinkActive="active" title="Configuración">
-      <i class="bi bi-gear"></i>
-    </a>
-
-    <div class="topnav-user">
-      <div class="topnav-avatar">{{ userInitials }}</div>
-      <span class="topnav-username">{{ userName }}</span>
+    <!-- Zona derecha (desktop) -->
+    <div class="topnav-right topnav-right-desktop">
+      <a class="topnav-action" [routerLink]="['/menu-access-pilot']" routerLinkActive="active" title="Piloto IAM">
+        <i class="bi bi-sliders"></i>
+      </a>
+      <a class="topnav-action" [routerLink]="['/my-profile']" routerLinkActive="active" title="Configuración">
+        <i class="bi bi-gear"></i>
+      </a>
+      <div class="topnav-user">
+        <div class="topnav-avatar">{{ userInitials }}</div>
+        <span class="topnav-username">{{ userName }}</span>
+      </div>
+      <a class="topnav-action logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
     </div>
 
-    <a class="topnav-action logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
-      <i class="bi bi-box-arrow-right"></i>
-    </a>
+    <!-- Botón hamburguesa (solo mobile) -->
+    <button *ngIf="isMobile" type="button" class="topnav-hamburger" (click)="toggleSidebar()" aria-label="Abrir menú">
+      <i class="bi" [ngClass]="isMobileOpen ? 'bi-x-lg' : 'bi-list'"></i>
+    </button>
   </div>
 
-  <!-- Botón hamburguesa móvil -->
-  <button *ngIf="isMobile" type="button" class="topnav-hamburger" (click)="toggleSidebar()" aria-label="Abrir menú">
-    <i class="bi bi-list"></i>
-  </button>
+  <!-- Panel desplegable mobile (debajo de la barra) -->
+  <div class="topnav-mobile-panel" *ngIf="isMobile && isMobileOpen">
+    <!-- Menu items mobile -->
+    <div class="topnav-mobile-menu">
+      <ng-container *ngFor="let item of visibleMenuItems">
+        <div *ngIf="canShowMenuItem(item)" class="topnav-item" [class.has-submenu]="item.submenu" [class.is-open]="item.isOpen">
+          <a *ngIf="!item.submenu"
+             class="topnav-link"
+             [routerLink]="item.link"
+             routerLinkActive="active">
+            <i [class]="item.icon" class="topnav-icon"></i>
+            <span class="topnav-label">{{ item.label }}</span>
+          </a>
+          <ng-container *ngIf="item.submenu">
+            <a class="topnav-link"
+               href="javascript:void(0)"
+               [attr.aria-expanded]="item.isOpen"
+               (click)="toggleSubmenu(item)">
+              <i [class]="item.icon" class="topnav-icon"></i>
+              <span class="topnav-label">{{ item.label }}</span>
+              <i class="bi bi-chevron-down topnav-arrow" [class.rotated]="item.isOpen"></i>
+            </a>
+            <div class="topnav-dropdown" [class.show]="item.isOpen">
+              <ng-container *ngFor="let sub of item.submenu">
+                <a *ngIf="canShowMenuItem(sub)"
+                   class="topnav-dropdown-link"
+                   [routerLink]="sub.link"
+                   routerLinkActive="active">
+                  {{ sub.label }}
+                </a>
+              </ng-container>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Zona derecha mobile -->
+    <div class="topnav-mobile-footer">
+      <a class="topnav-action" [routerLink]="['/menu-access-pilot']" routerLinkActive="active" title="Piloto IAM">
+        <i class="bi bi-sliders"></i>
+      </a>
+      <a class="topnav-action" [routerLink]="['/my-profile']" routerLinkActive="active" title="Configuración">
+        <i class="bi bi-gear"></i>
+      </a>
+      <div class="topnav-user">
+        <div class="topnav-avatar">{{ userInitials }}</div>
+        <span class="topnav-username">{{ userName }}</span>
+      </div>
+      <a class="topnav-action logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </a>
+    </div>
+  </div>
 
 </nav>

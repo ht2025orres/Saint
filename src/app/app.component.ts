@@ -17,7 +17,7 @@ declare let $: any;
  * (F12 → Application → Session Storage → Clear) y recarga.
  * ═══════════════════════════════════════════════════════════════
  */
-const DEV_PROFILE: 'admin' | 'user' | 'billing' | 'none' = 'admin';
+const DEV_PROFILE: 'admin' | 'user' | 'billing' | 'none' = 'user';
 
 @Component({
   selector: 'app-root',
@@ -45,12 +45,12 @@ export class AppComponent implements OnInit {
       },
       user: {
         firstName: 'Usuario',
-        lastName: 'Estándar',
+        lastName: 'Pruebas',
         roles: [
           { id: 3, name: 'Operario' }
         ],
-        permissions: [2, 3, 4, 5],
-        modules: [1, 2, 3]
+        permissions: [],
+        modules: []
       },
       billing: {
         firstName: 'Consultor',
