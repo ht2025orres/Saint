@@ -1,124 +1,105 @@
-<div class="container">
-  <h3>Crear Reporte</h3>
-
-  <!-- Cambiamos el formulario para que no use ngSubmit -->
-  <form class="mt-3" #reportForm="ngForm">
-    
-    <!-- ORIGEN + TIPO REPORTE -->
-    <div class="row">
-      <div class="col-md-6">
-        <label>Origen</label>
-        <select [(ngModel)]="report.origen" name="origen" class="form-control" required>
-            <option value="calidad">Calidad</option>
-            <option value="produccion">Producción</option>
-            <option value="ingenieria">Ingeniería</option>
-          </select>
-      </div>
-
-      <div class="col-md-6">
-        <label>Tipo de Reporte</label>
-        <select [(ngModel)]="report.tipo_reporte" name="tipo_reporte" class="form-control" required>
-          <option value="FT DESCRIPCION">FT Descripción</option>
-          <option value="FT FOTO">FT Foto</option>
-          <option value="FT TALLA">FT Talla</option>
-          <option value="patronaje">Patronaje</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- OP -->
-    <div class="row mt-3">
-      <div class="col-md-6">
-        <label>OP</label>
-        <input type="text" [(ngModel)]="report.op_reporte" name="op_reporte" class="form-control"
-          placeholder="Ingrese la OP" required (blur)="buscarOP()" 
-          [class.input-limit-exceeded]="isCharLimitExceeded(report.op_reporte, 20)" />
-        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.op_reporte, 20)">
-          {{ getCharCount(report.op_reporte, 20) }}
-        </span>
-      </div>
-
-      <!-- CLIENTE (desde la búsqueda manual o desde la OP) -->
-      <div class="col-md-6">
-        <label>Cliente</label>
-
-        <input type="text" list="clientesOP" class="form-control" id="cliente" name="cliente"
-          [(ngModel)]="report.cliente" autocomplete="off" placeholder="Buscar cliente..."
-          (keyup)="searchCustomer($event)" (change)="assingCustomerValues($event)" required 
-          [class.input-limit-exceeded]="isCharLimitExceeded(report.cliente, 150)" />
-        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.cliente, 150)">
-          {{ getCharCount(report.cliente, 150) }}
-        </span>
-
-        <datalist id="clientesOP">
-          <!-- CLIENTES DE LA OP -->
-          <option *ngFor="let it of itemsOP" [value]="it.cliente"></option>
-
-          <!-- CLIENTES BUSCADOS MANUALMENTE -->
-          <option *ngFor="let customer of customers" [value]="customer.customerName">
-          </option>
-        </datalist>
-      </div>
-
-      <!-- ITEM -->
-      <div class="col-md-6 mt-3">
-        <label>Item</label>
-
-        <input list="itemsList" type="text" [(ngModel)]="report.item" name="item" class="form-control"
-          placeholder="Seleccione o escriba un item" required (change)="asignarItemDesdeLista($event)" 
-          [class.input-limit-exceeded]="isCharLimitExceeded(report.item, 100)" />
-        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.item, 100)">
-          {{ getCharCount(report.item, 100) }}
-        </span>
-
-        <datalist id="itemsList">
-          <option *ngFor="let it of itemsOP" [value]="it.codigo_item">
-            {{ it.descripcion }} - {{ it.cliente }}
-          </option>
-        </datalist>
-      </div>
-
-      <!-- PRENDA -->
-      <div class="col-md-6 mt-3">
-        <label>Prenda</label>
-
-        <input list="prendasList" type="text" [(ngModel)]="report.prenda" name="prenda" class="form-control"
-          placeholder="Seleccione o escriba una prenda" required 
-          [class.input-limit-exceeded]="isCharLimitExceeded(report.prenda, 100)" />
-        <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.prenda, 100)">
-          {{ getCharCount(report.prenda, 100) }}
-        </span>
-
-        <datalist id="prendasList">
-          <option *ngFor="let it of itemsOP" [value]="it.descripcion">
-          </option>
-        </datalist>
-      </div>
-    </div>
-
-    <!-- OBSERVACIÓN -->
-    <div class="mt-3">
-      <label>Observación</label>
-      <textarea [(ngModel)]="report.observacion" name="observacion" class="form-control" required
-        [class.input-limit-exceeded]="isCharLimitExceeded(report.observacion, 500)"></textarea>
-      <span class="char-count" [class.limit-exceeded]="isCharLimitExceeded(report.observacion, 500)">
-        {{ getCharCount(report.observacion, 500) }}
-      </span>
-    </div>
-
-    <!-- ARCHIVOS -->
-    <div class="mb-3 mt-3">
-      <label for="evidencia" class="form-label">Evidencia (opcional)</label>
-      <input type="file" class="form-control" (change)="onFileSelected($event)" name="evidencia" />
-      <small class="text-muted">Puedes subir imagen, PDF o Word. No es obligatorio.</small>
-    </div>
-
-    <!-- BOTÓN - Cambiado a type="button" con (click) -->
-    <div class="text-end mt-4">
-      <button type="button" class="btn btn-primary" (click)="crearReporte()" [disabled]="!reportForm.valid">
-        Crear Reporte
-      </button>
-    </div>
-
-  </form>
+<!-- Header -->
+<div class="mb-6 max-w-3xl mx-auto">
+  <h1 class="text-xl font-bold text-[#1F1E25] tracking-tight" style="font-family: 'Quicksand', sans-serif;">
+    Crear Reporte
+  </h1>
+  <p class="text-[13px] text-[#6C6D72] mt-1">Registra un nuevo reporte de calidad, producción o ingeniería</p>
 </div>
+
+<form #reportForm="ngForm" class="max-w-3xl mx-auto">
+
+  <!-- Origen + Tipo -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6 pb-6 border-b border-[#F1F3F5]">
+    <div>
+      <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Origen</label>
+      <select [(ngModel)]="report.origen" name="origen" required
+              class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors">
+        <option value="calidad">Calidad</option>
+        <option value="produccion">Producción</option>
+        <option value="ingenieria">Ingeniería</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Tipo de Reporte</label>
+      <select [(ngModel)]="report.tipo_reporte" name="tipo_reporte" required
+              class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors">
+        <option value="FT DESCRIPCION">FT Descripción</option>
+        <option value="FT FOTO">FT Foto</option>
+        <option value="FT TALLA">FT Talla</option>
+        <option value="patronaje">Patronaje</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- OP + Cliente -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+    <div>
+      <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">OP</label>
+      <input type="text" [(ngModel)]="report.op_reporte" name="op_reporte" required (blur)="buscarOP()"
+             placeholder="Ingrese la OP"
+             class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors placeholder:text-[#929298]">
+      <span class="text-[11px] text-[#929298] mt-1 block">{{ getCharCount(report.op_reporte, 20) }}</span>
+    </div>
+    <div>
+      <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Cliente</label>
+      <input type="text" list="clientesOP" [(ngModel)]="report.cliente" name="cliente" required
+             autocomplete="off" placeholder="Buscar cliente..."
+             (keyup)="searchCustomer($event)" (change)="assingCustomerValues($event)"
+             class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors placeholder:text-[#929298]">
+      <span class="text-[11px] text-[#929298] mt-1 block">{{ getCharCount(report.cliente, 150) }}</span>
+      <datalist id="clientesOP">
+        <option *ngFor="let it of itemsOP" [value]="it.cliente"></option>
+        <option *ngFor="let customer of customers" [value]="customer.customerName"></option>
+      </datalist>
+    </div>
+  </div>
+
+  <!-- Item + Prenda -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+    <div>
+      <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Item</label>
+      <input list="itemsList" type="text" [(ngModel)]="report.item" name="item" required
+             placeholder="Seleccione o escriba un item" (change)="asignarItemDesdeLista($event)"
+             class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors placeholder:text-[#929298]">
+      <span class="text-[11px] text-[#929298] mt-1 block">{{ getCharCount(report.item, 100) }}</span>
+      <datalist id="itemsList">
+        <option *ngFor="let it of itemsOP" [value]="it.codigo_item">{{ it.descripcion }} - {{ it.cliente }}</option>
+      </datalist>
+    </div>
+    <div>
+      <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Prenda</label>
+      <input list="prendasList" type="text" [(ngModel)]="report.prenda" name="prenda" required
+             placeholder="Seleccione o escriba una prenda"
+             class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors placeholder:text-[#929298]">
+      <span class="text-[11px] text-[#929298] mt-1 block">{{ getCharCount(report.prenda, 100) }}</span>
+      <datalist id="prendasList">
+        <option *ngFor="let it of itemsOP" [value]="it.descripcion"></option>
+      </datalist>
+    </div>
+  </div>
+
+  <!-- Observación -->
+  <div class="mb-5">
+    <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Observación</label>
+    <textarea [(ngModel)]="report.observacion" name="observacion" required rows="3"
+              class="w-full px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors resize-none placeholder:text-[#929298]"></textarea>
+    <span class="text-[11px] text-[#929298] mt-1 block">{{ getCharCount(report.observacion, 500) }}</span>
+  </div>
+
+  <!-- Evidencia -->
+  <div class="mb-6 pb-6 border-b border-[#F1F3F5]">
+    <label class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold block mb-1.5">Evidencia (opcional)</label>
+    <input type="file" (change)="onFileSelected($event)" name="evidencia"
+           class="text-[13px] file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-[#F7F8FA] file:text-[#47484F] hover:file:bg-[#E8EAF0] cursor-pointer">
+    <span class="text-[11px] text-[#929298] mt-1 block">Imagen, PDF o Word</span>
+  </div>
+
+  <!-- Submit -->
+  <div class="flex justify-end">
+    <button type="button" (click)="crearReporte()" [disabled]="!reportForm.valid"
+            class="px-5 py-2.5 text-[13px] font-semibold rounded-lg bg-[#00CEC8] text-white hover:bg-[#00B6B1] transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed">
+      Crear Reporte
+    </button>
+  </div>
+
+</form>

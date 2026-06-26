@@ -6,24 +6,52 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        saint: {
-          primary: 'rgb(41, 54, 129)',       // Azul oscuro - sidebar, headers
-          secondary: 'rgb(66, 116, 217)',    // Azul medio - botones, links activos
-          accent: 'rgb(149, 204, 221)',      // Azul claro - bordes, highlights
-          light: 'rgb(208, 231, 230)',       // Azul pálido - fondos, hover
-          50: '#eef5fa',
-          100: '#d0e7e6',                    // ~rgb(208,231,230)
-          200: '#95ccdd',                    // ~rgb(149,204,221)
-          300: '#6ba8d4',
-          400: '#4274d9',                    // ~rgb(66,116,217)
-          500: '#3a56a8',
-          600: '#293681',                    // ~rgb(41,54,129)
-          700: '#1f2a66',
-          800: '#161d4a',
-          900: '#0d1230',
-        }
+        teal: {
+          DEFAULT: '#00CEC8',
+          50: '#E6FFFE',
+          100: '#CCFFFD',
+          200: '#99FFFB',
+          300: '#66FFF9',
+          400: '#33FFF7',
+          500: '#00CEC8',
+          600: '#00A8A3',
+          700: '#007F7B',
+          800: '#005654',
+          900: '#002D2C',
+        },
+        cream: {
+          DEFAULT: '#FCEFC3',
+          50: '#FFFDF5',
+          100: '#FEFAEB',
+          200: '#FDF5D7',
+          300: '#FCEFC3',
+          400: '#FAEA9F',
+          500: '#F8E57B',
+        },
+        peach: {
+          DEFAULT: '#FF9C5F',
+          50: '#FFF4ED',
+          100: '#FFE9DB',
+          200: '#FFD3B7',
+          300: '#FFBD93',
+          400: '#FFA76F',
+          500: '#FF9C5F',
+          600: '#FF7B2E',
+        },
+        orange: {
+          DEFAULT: '#EB4203',
+          50: '#FEF2EE',
+          100: '#FDE3DB',
+          200: '#FBC5B5',
+          300: '#F89E82',
+          400: '#F4714E',
+          500: '#EB4203',
+          600: '#D43B03',
+          700: '#B03202',
+        },
       },
       fontFamily: {
+        quicksand: ['Quicksand', 'sans-serif'],
         inter: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
     },

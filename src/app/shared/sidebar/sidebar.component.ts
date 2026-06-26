@@ -16,6 +16,7 @@ interface MenuItem {
   submenu?: SubmenuItem[];
   isOpen?: boolean;
   condition?: () => boolean;
+  group?: string; // Grupo al que pertenece
 }
 
 interface SubmenuItem {
@@ -25,6 +26,12 @@ interface SubmenuItem {
   permissions?: number[];
   modules?: number[];
   condition?: () => boolean;
+}
+
+interface MenuGroup {
+  id: string;
+  label: string;
+  icon: string;
 }
 
 @Component({
@@ -42,6 +49,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   currentUser: User | null = null;
 
   menuItems: MenuItem[] = [];
+  activeGroup: string = 'admin';
+  isGroupMenuOpen: boolean = false;
+
+  menuGroups: MenuGroup[] = [
+    { id: 'admin', label: 'Admin', icon: 'bi bi-gear-wide-connected' },
+    { id: 'protejer', label: 'Protejer', icon: 'bi bi-shield-check' }
+  ];
 
   hoveredSubmenu: SubmenuItem[] | null = null;
   floatPanelTop = 0;
@@ -74,6 +88,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isCollapsed = false;
       this.renderer.removeClass(document.body, 'mini-sidebar');
     }
+
+    // Recuperar grupo activo de localStorage
+    const savedGroup = localStorage.getItem('activeMenuGroup');
+    if (savedGroup) {
+      this.activeGroup = savedGroup;
+    }
   }
 
   ngOnInit(): void {
@@ -81,7 +101,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentUser = user;
       this.updateUserSummary(user);
       this.initMenuStructure();
-      this.cdr.detectChanges(); // Trigger change detection
+      this.cdr.detectChanges();
     });
     this.setupResizeListener();
     this.initMenuStructure();
@@ -116,34 +136,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private initMenuStructure(): void {
     this.menuItems = [
+      // ─── Sin grupo (siempre visibles) ───
       {
         label: 'Inicio',
         icon: 'bi bi-speedometer2',
         link: '/dashboard'
-      },
-      {
-        label: 'Administración de Seguridad',
-        icon: 'bi bi-shield-lock',
-        link: '/security',
-        permissions: [1]
-      },
-      {
-        label: 'Workflows',
-        icon: 'bi bi-diagram-3',
-        link: '/workflows',
-        permissions: [1]
-      },
-      {
-        label: 'Admin Usuarios',
-        icon: 'bi bi-people',
-        link: '/users/page/0',
-        permissions: [1]
-      },
-      {
-        label: 'Registro de Correos',
-        icon: 'bi bi-envelope-paper',
-        link: '/email-logs',
-        permissions: [1]
       },
       {
         label: 'Seguimiento',
@@ -159,10 +156,70 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         permissions: [1]
       },
       {
+        label: 'Seguimiento Documentos',
+        icon: 'bi bi-clipboard2-data',
+        link: '/seguimiento-documentos',
+        modules: [10],
+        permissions: [1, 50, 51]
+      },
+      {
+        label: 'Inventario',
+        icon: 'bi bi-boxes',
+        modules: [5],
+        permissions: [1, 25, 26, 27, 34],
+        submenu: [
+          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas', permissions: [1, 27] },
+          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27] },
+          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27] },
+          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27] },
+          { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26, 34] },
+          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
+        ]
+      },
+      {
+        label: 'Centros de Costos',
+        icon: 'bi bi-building',
+        link: '/centros-costos',
+        permissions: [1]
+      },
+
+      // ─── Grupo: Admin ───
+      {
+        label: 'Administración de Seguridad',
+        icon: 'bi bi-shield-lock',
+        link: '/security',
+        permissions: [1],
+        group: 'admin'
+      },
+      {
+        label: 'Workflows',
+        icon: 'bi bi-diagram-3',
+        link: '/workflows',
+        permissions: [1],
+        group: 'admin'
+      },
+      {
+        label: 'Admin Usuarios',
+        icon: 'bi bi-people',
+        link: '/users/page/0',
+        permissions: [1],
+        group: 'admin'
+      },
+      {
+        label: 'Registro de Correos',
+        icon: 'bi bi-envelope-paper',
+        link: '/email-logs',
+        permissions: [1],
+        group: 'admin'
+      },
+
+      // ─── Grupo: Protejer ───
+      {
         label: 'Reporte de Fichas',
         icon: 'bi bi-file-earmark-bar-graph',
         modules: [6],
         permissions: [1],
+        group: 'protejer',
         submenu: [
           {
             label: 'Análisis por Mes',
@@ -191,12 +248,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         ]
       },
-
       {
         label: 'Fichas tecnicas',
         icon: 'bi bi-file-earmark-text',
         modules: [6],
         permissions: [1],
+        group: 'protejer',
         submenu: [
           {
             label: 'Crear ficha técnica',
@@ -240,6 +297,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         icon: 'bi bi-exclamation-triangle',
         modules: [2],
         permissions: [1],
+        group: 'protejer',
         submenu: [
           {
             label: 'Mis Inconsistencias',
@@ -279,10 +337,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         ]
       },
       {
-        label: 'Terminación ',
+        label: 'Terminación',
         icon: 'bi bi-box-seam',
         modules: [3],
         permissions: [1],
+        group: 'protejer',
         submenu: [
           {
             label: 'Recepción de OP',
@@ -316,6 +375,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         icon: 'bi bi-truck',
         modules: [4],
         permissions: [1],
+        group: 'protejer',
         submenu: [
           {
             label: 'Dashboard',
@@ -338,24 +398,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         ]
       },
       {
-        label: 'Inventario',
-        icon: 'bi bi-boxes',
-        modules: [5],
-        permissions: [1, 25, 26, 27, 34],
-        submenu: [
-          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas', permissions: [1, 27] },
-          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27] },
-          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27] },
-          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27] },
-          { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26, 34] },
-          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
-        ]
-      },
-      {
         label: 'Comerciales',
         icon: 'bi bi-briefcase',
         modules: [7],
         permissions: [1],
+        group: 'protejer',
         submenu: [
           { label: 'Hub Comercial', link: '/comerciales' },
           { label: 'Mis Costeos', link: '/comerciales/costeos' },
@@ -365,44 +412,66 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         label: 'Tiempos Ítems',
         icon: 'bi bi-clock-history',
         link: '/tiempos-items',
-        permissions: [1]
+        permissions: [1],
+        group: 'protejer'
       },
       {
         label: 'Planeación',
         icon: 'bi bi-calendar-check',
         link: '/planeacion',
-        permissions: [1]
-      },
-      {
-        label: 'Centros de Costos',
-        icon: 'bi bi-building',
-        link: '/centros-costos',
-        permissions: [1]
+        permissions: [1],
+        group: 'protejer'
       },
       {
         label: 'Moldes y OPM',
         icon: 'bi bi-grid-3x3-gap',
         modules: [9],
         permissions: [1, 40],
+        group: 'protejer',
         submenu: [
           { label: 'Ver Moldes', link: '/moldes', permissions: [1, 40] },
           { label: 'Crear Molde', link: '/moldes/admin', permissions: [1, 41] },
           { label: 'Generar OPM', link: '/moldes/opm-generator', permissions: [1, 46] },
         ]
-      },
-      {
-        label: 'Seguimiento Documentos',
-        icon: 'bi bi-clipboard2-data',
-        link: '/seguimiento-documentos',
-        modules: [10],
-        permissions: [1, 50, 51]
       }
     ];
   }
 
-  toggleSubmenu(item: MenuItem): void {
-    if (this.isCollapsed && !this.isMobile) return;
+  /** Obtiene los items visibles según el grupo activo */
+  get visibleMenuItems(): MenuItem[] {
+    return this.menuItems.filter(item => {
+      // Items sin grupo siempre se muestran
+      if (!item.group) return true;
+      // Items del grupo activo se muestran
+      return item.group === this.activeGroup;
+    });
+  }
 
+  /** Obtiene el grupo activo actual */
+  get currentGroup(): MenuGroup {
+    return this.menuGroups.find(g => g.id === this.activeGroup) || this.menuGroups[0];
+  }
+
+  /** Cambia el grupo activo */
+  selectGroup(groupId: string): void {
+    this.activeGroup = groupId;
+    this.isGroupMenuOpen = false;
+    localStorage.setItem('activeMenuGroup', groupId);
+    // Cerrar submenús abiertos
+    this.menuItems.forEach(m => m.isOpen = false);
+  }
+
+  /** Toggle del menú de grupos */
+  toggleGroupMenu(): void {
+    this.isGroupMenuOpen = !this.isGroupMenuOpen;
+  }
+
+  /** Cierra el menú de grupos */
+  closeGroupMenu(): void {
+    this.isGroupMenuOpen = false;
+  }
+
+  toggleSubmenu(item: MenuItem): void {
     // Close other menus
     this.menuItems.forEach(m => {
       if (m !== item) m.isOpen = false;
@@ -424,10 +493,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
     clearTimeout(this.floatCloseTimeout);
 
-    // Filtrar opciones según perfiles del usuario
     this.hoveredSubmenu = this.filterSubmenuByPerfiles(submenu);
 
-    // Solo mostrar si hay al menos una opción visible
     if (this.hoveredSubmenu.length === 0) {
       this.hoveredSubmenu = null;
       return;
@@ -440,21 +507,14 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /**
-   * Filtra las opciones del submenú según los perfiles del usuario
-   */
   private filterSubmenuByPerfiles(submenu: SubmenuItem[]): SubmenuItem[] {
     return submenu.filter(item => {
-      // Si no tiene perfiles, permisos ni módulos definidos, es visible para todos
       if ((!item.perfiles || item.perfiles.length === 0) && (!item.permissions || item.permissions.length === 0) && (!item.modules || item.modules.length === 0)) {
         return true;
       }
 
-      // Verificar si el usuario tiene alguno de los perfiles requeridos
       const perfilMatch = item.perfiles && item.perfiles.length > 0 && this.authService.hasAnyRole(item.perfiles);
-      // Verificar si el usuario tiene alguno de los permisos requeridos
       const permissionMatch = item.permissions && item.permissions.length > 0 && this.authService.hasAnyPermission(item.permissions);
-      // Verificar si el usuario tiene acceso a alguno de los módulos requeridos
       const moduleMatch = item.modules && item.modules.length > 0 && this.authService.hasAnyModule(item.modules);
 
       return perfilMatch || permissionMatch || moduleMatch;
@@ -471,43 +531,25 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     clearTimeout(this.floatCloseTimeout);
   }
 
-  /**
-   * Verifica si una opción debe mostrarse según roles y condición opcional
-   */
   canShowMenuItem(item: MenuItem | SubmenuItem): boolean {
     const perfiles = item.perfiles || [];
     const permissions = item.permissions || [];
     const modules = item.modules || [];
-    
-    // 1. Si NO hay ninguna restricción técnica definida, el item es público para logueados
+
     if (perfiles.length === 0 && permissions.length === 0 && modules.length === 0) return true;
 
-    // 2. Verificar cumplimiento de cada criterio (solo si el criterio está definido)
     const perfilMatch = perfiles.length > 0 && this.authService.hasAnyRole(perfiles);
     const permissionMatch = permissions.length > 0 && this.authService.hasAnyPermission(permissions);
     const moduleMatch = modules.length > 0 && this.authService.hasAnyModule(modules);
 
-    // 3. Si cumple CUALQUIERA de las restricciones definidas, tiene acceso
     const hasAccess = perfilMatch || permissionMatch || moduleMatch;
-
-    // 4. Se suma la condición lógica extra (si existe, como la de horario)
     const conditionMatch = !item.condition || item.condition();
 
     return hasAccess && conditionMatch;
   }
 
   private updateActiveParentStates(): void {
-    const parentMenuItems = document.querySelectorAll('app-sidebar .sidebar-list > li');
-
-    parentMenuItems.forEach((parentLi) => {
-      const hasActiveSubmenu = parentLi.querySelector('.sidebar-sublink.active') !== null;
-
-      if (hasActiveSubmenu) {
-        parentLi.classList.add('active-parent');
-      } else {
-        parentLi.classList.remove('active-parent');
-      }
-    });
+    // No longer needed for horizontal nav but kept for compatibility
   }
 
   ngOnDestroy(): void {
@@ -590,42 +632,6 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-
-
-  private getPerfilAsString(perfil: any): string {
-    if (!perfil) return '';
-    if (typeof perfil === 'string') return perfil;
-    if (typeof perfil === 'object' && perfil !== null && 'name' in perfil) {
-      return perfil.name || '';
-    }
-    return String(perfil);
-  }
-
-  private getInitials(text: string): string {
-    const initials = text
-      .split(' ')
-      .filter(Boolean)
-      .map(part => part[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-    return initials || 'US';
-  }
-
-  private formatPerfil(perfil: string): string {
-    if (!perfil) return '';
-    const cleaned = perfil
-      .replace(/\(.*?\)/g, '')
-      .replace(/[-_]/g, ' ')
-      .toLowerCase();
-
-    return cleaned
-      .split(' ')
-      .filter(Boolean)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-
   @HostListener('click', ['$event'])
   onMobileClick(event: Event): void {
     if (this.isMobile) {
@@ -634,6 +640,19 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       if (link && link.getAttribute('routerLink')) {
         this.closeMobileSidebar();
       }
+    }
+  }
+
+  /** Cierra el dropdown de grupos y submenús si se hace click fuera */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.group-selector')) {
+      this.isGroupMenuOpen = false;
+    }
+    // Cerrar submenús si click fuera del topnav-item
+    if (!target.closest('.topnav-item')) {
+      this.menuItems.forEach(m => m.isOpen = false);
     }
   }
 

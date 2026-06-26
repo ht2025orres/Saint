@@ -1,8 +1,8 @@
-<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
+<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1F1E25]/50 backdrop-blur-md animate-in fade-in duration-300">
   <div (click)="$event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
     
     <!-- HEADER -->
-    <div class="px-6 py-4 bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 flex justify-between items-center shrink-0 border-b border-orange-700/35">
+    <div class="px-6 py-4 bg-[#FF9C5F] flex justify-between items-center shrink-0 border-b border-[#f08840]">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-white/10 rounded-xl border border-white/20">
           <i class="bi bi-cone-striped text-xl text-white"></i>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- BODY -->
-    <div class="p-6 bg-slate-50 flex-1 overflow-y-auto custom-scrollbar">
+    <div class="p-6 bg-[#F7F8FA] flex-1 overflow-y-auto custom-scrollbar">
       
       <!-- ALERTA ACTIVA -->
       <div *ngIf="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active" 
@@ -48,13 +48,13 @@
              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Motivo del mantenimiento</label>
              <input type="text" [(ngModel)]="maintenanceReason" placeholder="Ej: Actualización de base de datos..." 
                     [disabled]="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
-                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all duration-200 disabled:opacity-50">
+                    class="w-full px-3 py-2 bg-[#F7F8FA] border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all duration-200 disabled:opacity-50">
           </div>
           <div>
              <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Duración Est. (min)</label>
              <input type="number" [(ngModel)]="maintenanceDuration" 
                     [disabled]="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
-                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all duration-200 disabled:opacity-50">
+                    class="w-full px-3 py-2 bg-[#F7F8FA] border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all duration-200 disabled:opacity-50">
           </div>
         </div>
       </div>
@@ -63,25 +63,25 @@
       <div class="flex gap-3 mb-6">
         <button *ngIf="!(maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active)"
                 (click)="startMaintenance()" 
-                class="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-rose-600 hover:to-red-700 transition-all duration-200 shadow-sm shadow-red-500/10 flex items-center justify-center gap-2">
+                class="flex-1 py-2.5 bg-[#EB4203] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#d13a03] transition-all duration-200  flex items-center justify-center gap-2">
           <i class="bi bi-power text-sm"></i> Activar Mantenimiento
         </button>
         <button *ngIf="maintenanceHistory.length > 0 && maintenanceHistory[0]?.is_active"
                 (click)="stopMaintenance()" 
-                class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-sm shadow-emerald-500/10 flex items-center justify-center gap-2">
+                class="flex-1 py-2.5 bg-[#00CEC8] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#00B6B1] transition-all duration-200  flex items-center justify-center gap-2">
           <i class="bi bi-play-fill text-sm"></i> Restablecer Sistema (Online)
         </button>
       </div>
 
       <!-- HISTORIAL -->
       <div class="flex items-center gap-2 mb-3">
-        <i class="bi bi-clock-history text-indigo-600 text-sm"></i>
+        <i class="bi bi-clock-history text-[#00CEC8] text-sm"></i>
         <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Historial de Mantenimientos</h6>
       </div>
       
       <div class="border border-slate-200 rounded-xl overflow-hidden bg-white max-h-60 overflow-y-auto custom-scrollbar shadow-sm">
         <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-50 sticky top-0 z-10 border-b border-slate-200">
+          <thead class="bg-[#F7F8FA] sticky top-0 z-10 border-b border-slate-200">
             <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
               <th class="p-3">Estado</th>
               <th class="p-3">Motivo</th>
@@ -91,7 +91,7 @@
             </tr>
           </thead>
           <tbody class="text-xs text-slate-700 divide-y divide-slate-100">
-            <tr *ngFor="let m of maintenanceHistory" class="hover:bg-slate-50/50 transition-colors">
+            <tr *ngFor="let m of maintenanceHistory" class="hover:bg-[#F7F8FA]/50 transition-colors">
               <td class="p-3">
                 <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider inline-block"
                       [ngClass]="m.is_active ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'">

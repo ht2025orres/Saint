@@ -222,6 +222,61 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  renderProductionPieChart(): void {
+    const canvas = document.getElementById('productionPieChart') as HTMLCanvasElement;
+    if (!canvas || !this.metrics || this.metrics.length === 0) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Destroy existing chart if any
+    if (this.charts.has('productionPie')) {
+      this.charts.get('productionPie')!.destroy();
+    }
+
+    const config: ChartConfiguration = {
+      type: 'doughnut',
+      data: {
+        labels: this.metrics.map(m => m.proceso),
+        datasets: [{
+          data: this.metrics.map(m => m.salida || m.entrada || 0),
+          backgroundColor: this.metrics.map(m => m.color || '#00CEC8'),
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#47484F',
+              font: { size: 11, family: 'Inter' },
+              padding: 12,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1F1E25',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            padding: 10,
+            cornerRadius: 8,
+            titleFont: { family: 'Inter', size: 11, weight: 'bold' },
+            bodyFont: { family: 'Inter', size: 11 }
+          },
+          datalabels: { display: false }
+        }
+      }
+    };
+
+    const chart = new Chart(ctx, config);
+    this.charts.set('productionPie', chart);
+  }
+
   loadBillingData(): void {
     this.loading = true;
     const periodo = parseInt(`${this.selectedYear}${this.selectedMonth.toString().padStart(2, '0')}`);
@@ -730,18 +785,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
           {
             label: 'Presupuesto',
             data: units.map(u => u.presupuesto),
-            backgroundColor: 'rgba(54, 162, 235, 0.8)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 2,
-            borderRadius: 5
+            backgroundColor: 'rgba(0, 206, 200, 0.15)',
+            borderColor: '#00CEC8',
+            borderWidth: 1.5,
+            borderRadius: 6
           },
           {
             label: 'Facturado Real',
             data: units.map(u => u.real),
-            backgroundColor: 'rgba(75, 192, 192, 0.8)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 2,
-            borderRadius: 5
+            backgroundColor: 'rgba(0, 206, 200, 0.6)',
+            borderColor: '#00B6B1',
+            borderWidth: 1.5,
+            borderRadius: 6
           }
         ]
       },
@@ -752,11 +807,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         plugins: {
           legend: {
             position: 'top',
-            labels: { font: { size: 12, weight: 'bold' } }
+            labels: { font: { size: 11, family: 'Inter', weight: 'bold' }, color: '#47484F', padding: 16, usePointStyle: true, pointStyle: 'circle' }
           },
           tooltip: {
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: '#1F1E25',
+            titleColor: '#fff',
+            bodyColor: '#fff',
             padding: 12,
+            cornerRadius: 8,
+            titleFont: { family: 'Inter', size: 12, weight: '600' },
+            bodyFont: { family: 'Inter', size: 11 },
             callbacks: {
               label: (context) => `${context.dataset.label}: $${context.parsed.x.toLocaleString('es-CO')}`
             }
@@ -765,15 +825,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
             anchor: 'end',
             align: 'right',
             formatter: (value) => '$' + value.toLocaleString('es-CO'),
-            color: '#000',
-            font: { weight: 'bold', size: 10 }
+            color: '#47484F',
+            font: { weight: 'bold', size: 9, family: 'Inter' }
           }
         },
         scales: {
           x: {
+            grid: { color: '#F1F3F5', drawBorder: false },
             ticks: {
+              color: '#6C6D72',
+              font: { size: 10, family: 'Inter' },
               callback: (value) => '$' + (value as number).toLocaleString('es-CO')
             }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#47484F', font: { size: 11, family: 'Inter' } }
           }
         }
       }
@@ -793,11 +860,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const percentage = this.billingData.porcentajeEjecutado;
     const remaining = 100 - percentage;
 
-    let color = 'rgba(75, 192, 75, 0.8)';
+    let color = 'rgba(0, 206, 200, 0.8)';
     if (percentage < 50) {
-      color = 'rgba(255, 99, 99, 0.8)';
+      color = 'rgba(235, 66, 3, 0.7)';
     } else if (percentage < 75) {
-      color = 'rgba(255, 193, 7, 0.8)';
+      color = 'rgba(255, 156, 95, 0.8)';
     }
 
     const config: ChartConfiguration = {
@@ -806,9 +873,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         labels: ['Ejecutado', 'Pendiente'],
         datasets: [{
           data: [percentage, remaining],
-          backgroundColor: [color, 'rgba(200, 200, 200, 0.3)'],
-          borderColor: [color, 'rgba(200, 200, 200, 1)'],
-          borderWidth: 2
+          backgroundColor: [color, 'rgba(241, 243, 245, 0.5)'],
+          borderColor: [color, 'rgba(232, 234, 240, 1)'],
+          borderWidth: 1
         }]
       },
       options: {
@@ -847,9 +914,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const units = this.billingData.detalleUnidades;
     
     const colors = units.map(u => 
-      u.porcentajeEjecutado >= 80 ? 'rgba(75, 192, 75, 0.8)' :
-      u.porcentajeEjecutado >= 50 ? 'rgba(255, 193, 7, 0.8)' :
-      'rgba(255, 99, 99, 0.8)'
+      u.porcentajeEjecutado >= 80 ? 'rgba(0, 206, 200, 0.7)' :
+      u.porcentajeEjecutado >= 50 ? 'rgba(255, 156, 95, 0.7)' :
+      'rgba(235, 66, 3, 0.6)'
     );
 
     const config: ChartConfiguration = {
@@ -910,7 +977,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!ctx) return;
 
     const units = this.billingData.detalleUnidades;
-    const colors = units.map(u => u.diferencia >= 0 ? 'rgba(75, 192, 75, 0.8)' : 'rgba(255, 99, 99, 0.8)');
+    const colors = units.map(u => u.diferencia >= 0 ? 'rgba(0, 206, 200, 0.7)' : 'rgba(235, 66, 3, 0.6)');
 
     const config: ChartConfiguration = {
       type: 'bar',

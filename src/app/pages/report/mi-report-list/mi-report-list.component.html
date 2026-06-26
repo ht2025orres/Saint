@@ -1,167 +1,107 @@
-<div class="container-fluid px-3 py-0">
-  <h3 class="mb-2 text-center fs-5">Mis Reportes Generados</h3>
-
-  <div *ngIf="loading" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status"></div>
-    <p class="mt-2 small">Cargando reportes...</p>
-  </div>
-
-  <div *ngIf="!loading && reports.length === 0" class="alert alert-info text-center">
-    No has generado ningún reporte aún.
-  </div>
-
-  <div *ngIf="!loading && reports.length > 0">
-    <!-- Filtros -->
-    <div class="card mb-2 shadow-sm">
-      <div class="card-body p-2">
-        <div class="row g-2">
-          <!-- Búsqueda general -->
-          <div class="col-12 col-lg-6">
-            <label class="form-label small fw-semibold mb-1">Buscar en todos los campos</label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              placeholder="Buscar por cualquier campo..."
-              [(ngModel)]="filters.busqueda"
-              (input)="applyFilters()">
-          </div>
-
-          <!-- Filtro por origen -->
-          <div class="col-6 col-md-4 col-lg-2">
-            <label class="form-label small fw-semibold mb-1">Origen</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="filters.origen"
-              (change)="applyFilters()">
-              <option value="">Todos</option>
-              <option *ngFor="let origen of origenes" [value]="origen">
-                {{ origen | titlecase }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Filtro por tipo -->
-          <div class="col-6 col-md-4 col-lg-2">
-            <label class="form-label small fw-semibold mb-1">Tipo</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="filters.tipo"
-              (change)="applyFilters()">
-              <option value="">Todos</option>
-              <option *ngFor="let tipo of tipos" [value]="tipo">
-                {{ tipo | titlecase }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Filtro por estado -->
-          <div class="col-6 col-md-4 col-lg-2">
-            <label class="form-label small fw-semibold mb-1">Estado</label>
-            <select
-              class="form-select form-select-sm"
-              [(ngModel)]="filters.estado"
-              (change)="applyFilters()">
-              <option value="">Todos</option>
-              <option *ngFor="let estado of estados" [value]="estado">
-                {{ estado | titlecase }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Botón limpiar filtros -->
-        <div class="row mt-2">
-          <div class="col-12 text-end">
-            <button
-              class="btn btn-sm btn-outline-secondary"
-              (click)="clearFilters()"
-              *ngIf="filters.busqueda || filters.origen || filters.tipo || filters.estado">
-              <i class="fas fa-times me-1"></i> Limpiar filtros
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabla de reportes -->
-    <div class="table-responsive shadow-sm rounded">
-      <table class="table table-sm table-striped table-hover align-middle mb-0">
-        <thead class="table-primary sticky-top">
-          <tr>
-            <th class="text-center" style="width: 50px;">#</th>
-            <th style="width: 90px;">Origen</th>
-            <th style="width: 100px;">Tipo</th>
-            <th class="text-center" style="width: 70px;">Item</th>
-            <th class="text-center" style="width: 70px;">OP</th>
-            <th style="width: 130px;">Cliente</th>
-            <th style="width: 130px;">Prenda</th>
-            <th class="text-center" style="width: 100px;">Estado</th>
-            <th style="width: 140px;">Fecha Creación</th>
-            <th style="width: 140px;">Últ. Seguimiento</th>
-            <th style="width: 150px;">Respuesta</th>
-            <th class="text-center" style="width: 90px;">Evidencia</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let r of currentReports; let i = index">
-            <td class="text-center small">{{ r.id }}</td>
-            <td class="small">{{ r.origen | titlecase }}</td>
-            <td class="small">{{ r.tipo_reporte | titlecase }}</td>
-            <td class="text-center small">{{ r.item }}</td> 
-            <td class="text-center small">{{ r.op_reporte }}</td>
-            <td class="small text-truncate" style="max-width: 130px;" [title]="r.cliente">
-              {{ r.cliente }}
-            </td>
-            <td class="small text-truncate" style="max-width: 130px;" [title]="r.prenda">
-              {{ r.prenda }}
-            </td>
-            <td class="text-center">
-              <span
-                class="badge rounded-pill"
-                [ngClass]="{
-                  'bg-warning text-dark': r.estado === 'pendiente',
-                  'bg-success': r.estado === 'liberado',
-                  'bg-info': r.estado === 'en proceso'
-                }">
-                {{ r.estado | titlecase }}
-              </span>
-            </td>
-            <td class="small">{{ r.fecha_creacion | date: 'dd/MM/yy HH:mm' }}</td>
-            <td class="small">{{ r.fecha_actualizacion | date: 'dd/MM/yy HH:mm' }}</td>
-            <td class="small text-truncate" style="max-width: 150px;" [title]="r.respuesta || 'N/A'">
-              {{ r.respuesta || 'N/A' }}
-            </td>
-            <td class="text-center">
-              <button *ngIf="r.evidencia_respuesta" 
-                class="btn btn-outline-primary btn-sm py-1 px-2" 
-                (click)="verEvidencia(r.id, r.estado)"
-                title="Ver evidencia">
-                <i class="bi bi-eye"></i>
-              </button>
-              <span *ngIf="!r.evidencia_respuesta" class="text-muted small">N/A</span>
-              -
-              <button *ngIf="r.evidencia" 
-                class="btn btn-outline-primary btn-sm py-1 px-2" 
-                (click)="verEvidencia(r.id, r.estado)"
-                title="Ver evidencia">
-                <i class="bi bi-eye"></i>
-              </button>
-              <span *ngIf="!r.evidencia" class="text-muted small">N/A</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Paginador -->
-    <div class="mt-3">
-      <app-shared-paginator
-        *ngIf="paginationService.getPaginatorState(paginatorId)"
-        [instanceId]="paginatorId"
-        [showPageSizeSelector]="true"
-        [pageSizeOptions]="[5, 10, 25, 50]">
-      </app-shared-paginator>
-    </div>
-  </div>
+<!-- Header -->
+<div class="mb-6">
+  <h1 class="text-xl font-bold text-[#1F1E25] tracking-tight" style="font-family: 'Quicksand', sans-serif;">
+    Mis Reportes
+  </h1>
+  <p class="text-[13px] text-[#6C6D72] mt-1">Reportes que has generado y su estado actual</p>
 </div>
 
+<!-- Loading -->
+<div *ngIf="loading" class="flex flex-col items-center py-16">
+  <div class="w-6 h-6 border-2 border-[#00CEC8] border-t-transparent rounded-full animate-spin mb-3"></div>
+  <p class="text-[13px] text-[#6C6D72]">Cargando reportes...</p>
+</div>
+
+<!-- Sin reportes -->
+<div *ngIf="!loading && reports.length === 0" class="py-16 text-center">
+  <p class="text-[#929298] text-sm">No has generado ningún reporte aún.</p>
+</div>
+
+<!-- Contenido -->
+<div *ngIf="!loading && reports.length > 0">
+
+  <!-- Filtros -->
+  <div class="flex flex-wrap items-center gap-3 mb-6 pb-6 border-b border-[#F1F3F5]">
+    <div class="relative flex-1 max-w-xs">
+      <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#929298] text-sm"></i>
+      <input type="text" placeholder="Buscar..."
+             class="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors placeholder:text-[#929298]"
+             [(ngModel)]="filters.busqueda" (input)="applyFilters()">
+    </div>
+    <select class="px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#47484F] outline-none focus:border-[#00CEC8] transition-colors"
+            [(ngModel)]="filters.origen" (change)="applyFilters()">
+      <option value="">Origen</option>
+      <option *ngFor="let origen of origenes" [value]="origen">{{ origen | titlecase }}</option>
+    </select>
+    <select class="px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#47484F] outline-none focus:border-[#00CEC8] transition-colors"
+            [(ngModel)]="filters.tipo" (change)="applyFilters()">
+      <option value="">Tipo</option>
+      <option *ngFor="let tipo of tipos" [value]="tipo">{{ tipo | titlecase }}</option>
+    </select>
+    <select class="px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#47484F] outline-none focus:border-[#00CEC8] transition-colors"
+            [(ngModel)]="filters.estado" (change)="applyFilters()">
+      <option value="">Estado</option>
+      <option *ngFor="let estado of estados" [value]="estado">{{ estado | titlecase }}</option>
+    </select>
+    <button *ngIf="filters.busqueda || filters.origen || filters.tipo || filters.estado"
+            class="px-3 py-2.5 text-[13px] text-[#6C6D72] hover:text-[#1F1E25] transition-colors"
+            (click)="clearFilters()">Limpiar</button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-[13px]">
+      <thead>
+        <tr class="border-b border-[#E8EAF0]">
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">#</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Origen</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Tipo</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">OP</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Cliente</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Prenda</th>
+          <th class="px-4 py-3 text-center text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Estado</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Creado</th>
+          <th class="px-4 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Respuesta</th>
+          <th class="px-4 py-3 text-center text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Evidencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of currentReports" class="border-b border-[#F1F3F5] hover:bg-[#F7F8FA] transition-colors duration-100">
+          <td class="px-4 py-3.5 text-[#929298]">{{ r.id }}</td>
+          <td class="px-4 py-3.5 text-[#47484F]">{{ r.origen | titlecase }}</td>
+          <td class="px-4 py-3.5 text-[#47484F]">{{ r.tipo_reporte | titlecase }}</td>
+          <td class="px-4 py-3.5 font-medium text-[#1F1E25]">{{ r.op_reporte }}</td>
+          <td class="px-4 py-3.5 text-[#6C6D72] max-w-[130px] truncate" [title]="r.cliente">{{ r.cliente }}</td>
+          <td class="px-4 py-3.5 text-[#6C6D72] max-w-[130px] truncate" [title]="r.prenda">{{ r.prenda }}</td>
+          <td class="px-4 py-3.5 text-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  [ngClass]="{
+                    'bg-[#FCEFC3] text-[#92400E]': r.estado === 'pendiente',
+                    'bg-[#E6FBFA] text-[#00807C]': r.estado === 'en proceso',
+                    'bg-emerald-50 text-emerald-700': r.estado === 'liberado'
+                  }">{{ r.estado | titlecase }}</span>
+          </td>
+          <td class="px-4 py-3.5 text-[#6C6D72]">{{ r.fecha_creacion | date: 'dd/MM/yy HH:mm' }}</td>
+          <td class="px-4 py-3.5 text-[#6C6D72] max-w-[150px] truncate" [title]="r.respuesta || 'N/A'">{{ r.respuesta || '—' }}</td>
+          <td class="px-4 py-3.5 text-center">
+            <button *ngIf="r.evidencia" (click)="verEvidencia(r.id, r.estado)"
+                    class="w-7 h-7 inline-flex items-center justify-center rounded-md text-[#00CEC8] hover:bg-[#E6FBFA] transition-colors">
+              <i class="bi bi-eye text-sm"></i>
+            </button>
+            <span *ngIf="!r.evidencia" class="text-[#929298]">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginador -->
+  <div class="pt-4 mt-2 border-t border-[#F1F3F5]">
+    <app-shared-paginator
+      *ngIf="paginationService.getPaginatorState(paginatorId)"
+      [instanceId]="paginatorId"
+      [showPageSizeSelector]="true"
+      [pageSizeOptions]="[5, 10, 25, 50]">
+    </app-shared-paginator>
+  </div>
+</div>

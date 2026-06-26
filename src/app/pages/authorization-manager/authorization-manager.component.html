@@ -2,67 +2,67 @@
   <!-- DROPDOWN BACKDROP -->
   <div *ngIf="activeDropdown" (click)="activeDropdown = null" class="fixed inset-0 z-[90]"></div>
   <!-- LOADING -->
-  <div *ngIf="loading" class="fixed top-4 right-4 z-[200] bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
+  <div *ngIf="loading" class="fixed top-4 right-4 z-[200] bg-[#00CEC8] text-white px-4 py-2 rounded-lg flex items-center gap-2">
     <i class="bi bi-arrow-repeat animate-spin"></i>
     <span class="text-xs font-bold uppercase tracking-widest">Cargando...</span>
   </div>
 
   <!-- ERROR -->
-  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm flex items-center">
-    <i class="bi bi-exclamation-triangle-fill text-red-500 text-xl mr-3"></i>
-    <span class="text-red-800 text-sm font-medium">{{ errorMessage }}</span>
+  <div *ngIf="errorMessage" class="mb-6 p-4 border-l-4 border-[#EB4203] bg-red-50/50 rounded-r-lg flex items-center">
+    <i class="bi bi-exclamation-triangle-fill text-[#EB4203] text-lg mr-3"></i>
+    <span class="text-[#EB4203] text-[13px] font-medium">{{ errorMessage }}</span>
   </div>
 
   <!-- HEADER -->
-  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
     <div class="flex items-center gap-3">
-      <div class="p-2.5 bg-blue-600 rounded-xl shadow-lg shadow-blue-200">
+      <div class="p-2.5 bg-[#00CEC8] rounded-xl">
         <i class="bi bi-shield-lock text-white text-lg"></i>
       </div>
       <div>
-        <h1 class="text-lg font-bold text-slate-800 tracking-tight">Gestión de Acceso</h1>
-        <p class="text-xs text-slate-500 font-medium">Control de usuarios, roles, permisos y estructura.</p>
+        <h1 class="text-xl font-bold text-[#1F1E25] tracking-tight" style="font-family: 'Quicksand', sans-serif;">Gestión de Acceso</h1>
+        <p class="text-[13px] text-[#6C6D72]">Control de usuarios, roles, permisos y estructura.</p>
       </div>
     </div>
     <div class="flex flex-wrap gap-2">
-      <button (click)="openManageUser(null)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px hover:shadow-md flex items-center shadow-sm">
+      <button (click)="openManageUser(null)" class="px-4 py-2.5 bg-[#00CEC8] hover:bg-[#00B6B1] text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px flex items-center">
         <i class="bi bi-person-plus-fill mr-2"></i> Nuevo Usuario
       </button>
-      <button (click)="openStructureModal()" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 flex items-center shadow-sm">
+      <button (click)="openStructureModal()" class="px-4 py-2.5 bg-white border border-[#E8EAF0] hover:bg-[#F7F8FA] text-[#47484F] rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 flex items-center">
         <i class="bi bi-diagram-3 mr-2"></i> Estructura
       </button>
-      <button (click)="openAuditModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px hover:shadow-md flex items-center shadow-sm">
+      <button (click)="openAuditModal()" class="px-4 py-2.5 bg-[#1F1E25] hover:bg-[#2d2c33] text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px flex items-center">
         <i class="bi bi-clock-history mr-2"></i> Trazabilidad
       </button>
-      <button (click)="openMaintenanceModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px hover:shadow-md flex items-center shadow-sm">
+      <button (click)="openMaintenanceModal()" class="px-4 py-2.5 bg-[#FF9C5F] hover:bg-[#f08840] text-white rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all duration-150 hover:-translate-y-px flex items-center">
         <i class="bi bi-cone-striped mr-2"></i> Mantenimiento
       </button>
     </div>
   </div>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <div class="bg-white rounded-2xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
+  <div class="bg-white rounded-2xl border border-[#E8EAF0] flex flex-col overflow-hidden">
     <!-- BARRA DE HERRAMIENTAS -->
-    <div class="p-5 border-b border-slate-100 bg-slate-50/50" style="overflow: visible; position: relative; z-index: 50;">
+    <div class="p-5 border-b border-[#F1F3F5]" style="overflow: visible; position: relative; z-index: 50;">
       <!-- Fila 1: Búsqueda + Dropdowns -->
       <div class="flex flex-wrap gap-3 items-center mb-3">
         <div class="relative flex-1 min-w-[200px] max-w-sm">
-          <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-[#929298]"></i>
           <input type="text" [(ngModel)]="filters.busqueda" (input)="applyFilters()" autocomplete="new-password" name="search_field_no_autofill"
                  placeholder="Buscar usuario por nombre, correo, ID..." 
-                 class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all shadow-sm">
+                 class="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-all">
         </div>
         
         <!-- DROPDOWN PERFIL -->
         <div class="relative" style="min-width: 150px;">
-          <button (click)="toggleDropdown('perfil')" class="w-full text-left py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all shadow-sm flex justify-between items-center">
+          <button (click)="toggleDropdown('perfil')" class="w-full text-left py-2 px-3 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#47484F] outline-none focus:border-[#00CEC8] transition-all flex justify-between items-center">
             <span class="truncate">{{ getDropdownLabel('perfil') }}</span>
             <i class="bi bi-chevron-down text-[10px] ml-2 shrink-0"></i>
           </button>
           <div *ngIf="activeDropdown === 'perfil'" class="absolute z-[100] mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-60">
             <div class="p-2 border-b border-slate-100 shrink-0 relative">
               <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-blue-400">
+              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-[#00CEC8]">
             </div>
             <div class="overflow-y-auto custom-scrollbar flex-1 p-1">
               <button (click)="selectDropdownOption('perfil', '')" class="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded">Todos los Perfiles</button>
@@ -73,14 +73,14 @@
 
         <!-- DROPDOWN MODULO -->
         <div class="relative" style="min-width: 150px;">
-          <button (click)="toggleDropdown('module')" class="w-full text-left py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all shadow-sm flex justify-between items-center">
+          <button (click)="toggleDropdown('module')" class="w-full text-left py-2 px-3 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#47484F] outline-none focus:border-[#00CEC8] transition-all flex justify-between items-center">
             <span class="truncate">{{ getDropdownLabel('module') }}</span>
             <i class="bi bi-chevron-down text-[10px] ml-2 shrink-0"></i>
           </button>
           <div *ngIf="activeDropdown === 'module'" class="absolute z-[100] mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-60">
             <div class="p-2 border-b border-slate-100 shrink-0 relative">
               <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-blue-400">
+              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-[#00CEC8]">
             </div>
             <div class="overflow-y-auto custom-scrollbar flex-1 p-1">
               <button (click)="selectDropdownOption('module', '')" class="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded">Todos los Módulos</button>
@@ -91,14 +91,14 @@
 
         <!-- DROPDOWN PERMISO -->
         <div class="relative" style="min-width: 160px;">
-          <button (click)="toggleDropdown('permission')" class="w-full text-left py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all shadow-sm flex justify-between items-center">
+          <button (click)="toggleDropdown('permission')" class="w-full text-left py-2 px-3 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#47484F] outline-none focus:border-[#00CEC8] transition-all flex justify-between items-center">
             <span class="truncate">{{ getDropdownLabel('permission') }}</span>
             <i class="bi bi-chevron-down text-[10px] ml-2 shrink-0"></i>
           </button>
           <div *ngIf="activeDropdown === 'permission'" class="absolute right-0 z-[100] mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-60">
             <div class="p-2 border-b border-slate-100 shrink-0 relative">
               <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-blue-400">
+              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-[#00CEC8]">
             </div>
             <div class="overflow-y-auto custom-scrollbar flex-1 p-1">
               <button (click)="selectDropdownOption('permission', '')" class="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded">Todos los Permisos</button>
@@ -131,13 +131,13 @@
             <td class="p-4 pl-6 text-slate-500">#{{ u.id }}</td>
             <td class="p-4">
               <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"
-                    [ngClass]="u.enabled ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'">
+                    [ngClass]="u.enabled ? 'bg-[#E6FBFA] text-[#00807C]' : 'bg-red-50 text-[#EB4203]'">
                 {{ u.enabled ? 'Activo' : 'Inactivo' }}
               </span>
             </td>
             <td class="p-4">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black text-sm uppercase">
+                <div class="w-8 h-8 rounded-full bg-[#E6FBFA] text-[#00CEC8] flex items-center justify-center font-black text-sm uppercase">
                   {{ (u.firstName || u.name || '?').charAt(0) }}
                 </div>
                 <div>
@@ -148,13 +148,13 @@
             </td>
             <td class="p-4 text-slate-500">{{ u.email }}</td>
             <td class="p-4 text-right pr-6 space-x-1">
-              <button (click)="openManageUser(u)" class="w-8 h-8 inline-flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" title="Editar / Permisos">
+              <button (click)="openManageUser(u)" class="w-8 h-8 inline-flex items-center justify-center bg-[#E6FBFA] text-[#00CEC8] hover:bg-[#00CEC8] hover:text-white rounded-lg transition-colors" title="Editar / Permisos">
                 <i class="bi bi-pencil-square"></i>
               </button>
               <button (click)="impersonateUser(u)" class="w-8 h-8 inline-flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors" title="Personificar Cuenta">
                 <i class="bi bi-incognito"></i>
               </button>
-              <button (click)="openAuditModal(u)" class="w-8 h-8 inline-flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white rounded-lg transition-colors" title="Trazabilidad del usuario">
+              <button (click)="openAuditModal(u)" class="w-8 h-8 inline-flex items-center justify-center bg-[#F7F8FA] text-[#47484F] hover:bg-[#1F1E25] hover:text-white rounded-lg transition-colors" title="Trazabilidad del usuario">
                 <i class="bi bi-clock-history"></i>
               </button>
             </td>

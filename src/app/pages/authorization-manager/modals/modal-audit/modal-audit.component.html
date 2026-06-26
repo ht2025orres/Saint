@@ -1,18 +1,18 @@
-<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
+<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1F1E25]/50 backdrop-blur-md animate-in fade-in duration-300">
   <div (click)="$event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[85vh] flex flex-col border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
     
     <!-- HEADER -->
     <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 flex justify-between items-center shrink-0 border-b border-slate-800">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-slate-800/60 rounded-xl border border-slate-700/50">
-          <i class="bi bi-clock-history text-xl text-indigo-400"></i>
+          <i class="bi bi-clock-history text-xl text-[#00CEC8]"></i>
         </div>
         <div>
           <h2 class="text-sm font-black uppercase tracking-widest text-slate-100">Trazabilidad de Cambios</h2>
           <p class="text-[11px] text-slate-400 font-medium">Historial completo de auditoría y modificaciones de permisos</p>
         </div>
         <span *ngIf="auditTargetUser" class="ml-3 px-3 py-1 bg-slate-800/80 border border-slate-700/50 rounded-xl text-[10px] font-bold text-slate-300 flex items-center gap-1.5">
-          <i class="bi bi-person text-xs text-indigo-400"></i>
+          <i class="bi bi-person text-xs text-[#00CEC8]"></i>
           Usuario: {{ getAuditUserDisplay(auditTargetUser) }}
         </span>
       </div>
@@ -22,10 +22,10 @@
     </div>
 
     <!-- BODY -->
-    <div class="flex-1 bg-slate-50 flex flex-col overflow-hidden relative">
+    <div class="flex-1 bg-[#F7F8FA] flex flex-col overflow-hidden relative">
       <div *ngIf="loading" class="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center">
         <div class="flex flex-col items-center gap-3">
-          <div class="w-10 h-10 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div class="w-10 h-10 border-4 border-[#00CEC8]/30 border-t-indigo-600 rounded-full animate-spin"></div>
           <span class="text-slate-600 font-black text-xs uppercase tracking-widest">Cargando registros...</span>
         </div>
       </div>
@@ -42,7 +42,7 @@
             </tr>
           </thead>
           <tbody class="text-xs text-slate-700 divide-y divide-slate-100">
-            <tr *ngFor="let log of auditLogs" class="bg-white hover:bg-slate-50/50 transition-all duration-150">
+            <tr *ngFor="let log of auditLogs" class="bg-white hover:bg-[#F7F8FA]/50 transition-all duration-150">
               <td class="p-4 text-slate-500 font-medium">{{ log.created_at | date:'dd/MM/yyyy HH:mm:ss' }}</td>
               <td class="p-4">
                 <div class="flex flex-col">
@@ -108,11 +108,11 @@
       </div>
       <div class="flex gap-2">
         <button (click)="changeAuditPage(-1)" [disabled]="auditPage === 1"
-          class="px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 disabled:opacity-50 flex items-center gap-1">
+          class="px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:bg-[#F7F8FA] hover:border-slate-300 transition-all duration-200 disabled:opacity-50 flex items-center gap-1">
           <i class="bi bi-chevron-left"></i> Anterior
         </button>
         <button (click)="changeAuditPage(1)" [disabled]="auditPage === auditTotalPages"
-          class="px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 disabled:opacity-50 flex items-center gap-1">
+          class="px-4 py-2 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:bg-[#F7F8FA] hover:border-slate-300 transition-all duration-200 disabled:opacity-50 flex items-center gap-1">
           Siguiente <i class="bi bi-chevron-right"></i>
         </button>
       </div>

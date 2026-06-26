@@ -2,96 +2,108 @@
 <div class="sidebar-overlay" *ngIf="isMobile && isMobileOpen" (click)="closeMobileSidebar()" aria-label="Cerrar menú">
 </div>
 
-<aside class="left-sidebar saint-sidebar" [class.collapsed]="!isMobile && isCollapsed"
-  [class.mobile-open]="isMobile && isMobileOpen">
-  <div class="sidebar-surface">
-    <div class="sidebar-brand">
-      <a class="brand-block" routerLink="/dashboard">
-        <img src="../../../assets/images/logo (1).png" alt="SaINT" class="brand-logo collapse-label" />
-      </a>
-      <button type="button" class="sidebar-toggle" aria-label="Alternar tamaño del menú" (click)="toggleSidebar()">
-        <i class="bi" [ngClass]="isCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'"></i>
+<!-- Navbar horizontal superior -->
+<nav class="topnav" [class.mobile-open]="isMobile && isMobileOpen">
+
+  <!-- Zona izquierda: Logo + Selector de grupo + Menú -->
+  <div class="topnav-left">
+    <!-- Logo -->
+    <a class="topnav-brand" routerLink="/dashboard">
+      <img src="../../../assets/images/logo (1).png" alt="SaINT" class="topnav-logo" />
+    </a>
+
+    <!-- Separador -->
+    <div class="topnav-divider"></div>
+
+    <!-- Selector de grupo/categoría -->
+    <div class="group-selector" [class.open]="isGroupMenuOpen">
+      <button class="group-selector-btn" (click)="toggleGroupMenu()" type="button">
+        <i [class]="currentGroup.icon" class="group-selector-icon"></i>
+        <span class="group-selector-label">{{ currentGroup.label }}</span>
+        <i class="bi bi-chevron-down group-selector-arrow" [class.rotated]="isGroupMenuOpen"></i>
       </button>
+
+      <!-- Dropdown de grupos -->
+      <div class="group-dropdown" [class.show]="isGroupMenuOpen">
+        <button *ngFor="let group of menuGroups"
+                class="group-dropdown-item"
+                [class.active]="activeGroup === group.id"
+                (click)="selectGroup(group.id)"
+                type="button">
+          <i [class]="group.icon" class="group-dropdown-icon"></i>
+          <span class="group-dropdown-label">{{ group.label }}</span>
+          <i class="bi bi-check2 group-dropdown-check" *ngIf="activeGroup === group.id"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="sidebar-content">
-      <div class="scroll-sidebar saint-scroll-sidebar">
-        <nav class="sidebar-nav saint-sidebar-nav">
-          <ul id="sidebarnav" class="sidebar-list saint-sidebar-list">
-            <ng-container *ngFor="let item of menuItems">
-              <li *ngIf="canShowMenuItem(item)">
-                <!-- Item sin submenú -->
-                <a *ngIf="!item.submenu" 
-                   class="sidebar-link waves-effect waves-dark" 
-                   [routerLink]="item.link" 
+    <!-- Separador -->
+    <div class="topnav-divider"></div>
+
+    <!-- Menu items (filtrados por grupo activo) -->
+    <div class="topnav-menu">
+      <ng-container *ngFor="let item of visibleMenuItems">
+        <div *ngIf="canShowMenuItem(item)" class="topnav-item" [class.has-submenu]="item.submenu" [class.is-open]="item.isOpen">
+
+          <!-- Item sin submenú -->
+          <a *ngIf="!item.submenu"
+             class="topnav-link"
+             [routerLink]="item.link"
+             routerLinkActive="active"
+             [title]="item.label">
+            <i [class]="item.icon" class="topnav-icon"></i>
+            <span class="topnav-label">{{ item.label }}</span>
+          </a>
+
+          <!-- Item con submenú -->
+          <ng-container *ngIf="item.submenu">
+            <a class="topnav-link"
+               href="javascript:void(0)"
+               [attr.aria-expanded]="item.isOpen"
+               (click)="toggleSubmenu(item)"
+               [title]="item.label">
+              <i [class]="item.icon" class="topnav-icon"></i>
+              <span class="topnav-label">{{ item.label }}</span>
+              <i class="bi bi-chevron-down topnav-arrow" [class.rotated]="item.isOpen"></i>
+            </a>
+
+            <!-- Dropdown submenú -->
+            <div class="topnav-dropdown" [class.show]="item.isOpen">
+              <ng-container *ngFor="let sub of item.submenu">
+                <a *ngIf="canShowMenuItem(sub)"
+                   class="topnav-dropdown-link"
+                   [routerLink]="sub.link"
                    routerLinkActive="active">
-                  <i [class]="item.icon"></i>
-                  <span class="hide-menu saint-menu-label">{{ item.label }}</span>
+                  {{ sub.label }}
                 </a>
+              </ng-container>
+            </div>
+          </ng-container>
 
-                <!-- Item con submenú -->
-                <ng-container *ngIf="item.submenu">
-                  <a class="sidebar-link has-arrow waves-effect waves-dark" 
-                     href="javascript:void(0)" 
-                     [attr.aria-expanded]="item.isOpen"
-                     (click)="toggleSubmenu(item)"
-                     (mouseenter)="openFloatPanel(item.submenu, $event)" 
-                     (mouseleave)="closeFloatPanel()">
-                    <i [class]="item.icon"></i>
-                    <span class="hide-menu saint-menu-label">{{ item.label }}</span>
-                    <i class="bi bi-chevron-right arrow-icon"></i>
-                  </a>
-                  <ul [class.show]="item.isOpen" class="collapse sidebar-submenu">
-                    <ng-container *ngFor="let sub of item.submenu">
-                      <li *ngIf="canShowMenuItem(sub)">
-                        <a class="sidebar-sublink" 
-                           [routerLink]="sub.link" 
-                           routerLinkActive="active">
-                          {{ sub.label }}
-                        </a>
-                      </li>
-                    </ng-container>
-                  </ul>
-                </ng-container>
-              </li>
-            </ng-container>
-          </ul>
-        </nav>
-      </div>
-    </div>
-    <div class="sidebar-footer">
-
-      <a class="sidebar-utility"
-        [routerLink]="['/my-profile']"
-        routerLinkActive="active">
-        <i class="bi bi-gear utility-icon"></i>
-        <span class="utility-text collapse-label">Configuración</span>
-      </a>
-
-      <div class="sidebar-user-card">
-          <div class="user-avatar">{{ userInitials }}</div>
-          <div class="user-meta collapse-label">
-            <span class="user-name">{{ userName }}</span>
-
-          </div>
-
-          <a (click)="logout()"
-          style="cursor: pointer"
-          class="user-action"
-          title="Cerrar sesión"
-          aria-label="Cerrar sesión">
-          <i class="bi bi-box-arrow-right"></i>
-        </a>
-      </div>
+        </div>
+      </ng-container>
     </div>
   </div>
-</aside>
-<!-- Panel flotante cuando sidebar está colapsado -->
-<div class="sidebar-float-panel" *ngIf="isCollapsed && hoveredSubmenu && !isMobile" [style.top.px]="floatPanelTop"
-  (mouseenter)="keepFloatPanelOpen()" (mouseleave)="closeFloatPanel()">
-  <ul class="floating-submenu">
-    <li *ngFor="let item of hoveredSubmenu">
-      <a [routerLink]="item.link" routerLinkActive="active">{{ item.label }}</a>
-    </li>
-  </ul>
-</div>
+
+  <!-- Zona derecha: Usuario + Config + Logout -->
+  <div class="topnav-right">
+    <a class="topnav-action" [routerLink]="['/my-profile']" routerLinkActive="active" title="Configuración">
+      <i class="bi bi-gear"></i>
+    </a>
+
+    <div class="topnav-user">
+      <div class="topnav-avatar">{{ userInitials }}</div>
+      <span class="topnav-username">{{ userName }}</span>
+    </div>
+
+    <a class="topnav-action logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+  </div>
+
+  <!-- Botón hamburguesa móvil -->
+  <button *ngIf="isMobile" type="button" class="topnav-hamburger" (click)="toggleSidebar()" aria-label="Abrir menú">
+    <i class="bi bi-list"></i>
+  </button>
+
+</nav>

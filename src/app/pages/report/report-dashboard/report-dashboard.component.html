@@ -1,176 +1,157 @@
-<!-- Page Header -->
-<header class="saint-page-header">
-  <div class="saint-page-header__left">
-    <h1 class="saint-page-title">Dashboard de Reportes</h1>
-    <nav>
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a routerLink="/dashboard">Inicio</a></li>
-        <li class="breadcrumb-item"><span>Reportes</span></li>
-        <li class="breadcrumb-item active">Dashboard</li>
-      </ol>
-    </nav>
-  </div>
-</header>
+<!-- Header -->
+<div class="mb-6">
+  <h1 class="text-xl font-bold text-[#1F1E25] tracking-tight" style="font-family: 'Quicksand', sans-serif;">
+    Dashboard de Reportes
+  </h1>
+  <p class="text-[13px] text-[#6C6D72] mt-1">Seguimiento y análisis de reportes por período</p>
+</div>
 
-<!-- Filtros -->
-<section class="saint-filters-bar">
-  <div class="saint-filters-bar__fields">
-    <div class="saint-filter-field">
-      <label>Mes</label>
-      <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadDashboard()">
-        <option *ngFor="let m of months" [value]="m.value">{{ m.name }}</option>
-      </select>
-    </div>
-    <div class="saint-filter-field">
-      <label>Año</label>
-      <select class="form-select" [(ngModel)]="selectedYear" (change)="loadDashboard()">
-        <option *ngFor="let y of years" [value]="y">{{ y }}</option>
-      </select>
-    </div>
-    <div class="saint-filter-field saint-filter-field--search">
-      <label>Buscar</label>
-      <input type="text" class="form-control" [(ngModel)]="searchTerm" 
-             (keyup.enter)="applyFilter()" placeholder="Buscar por cualquier campo..."/>
-    </div>
+<!-- Filtros — toolbar inline -->
+<div class="flex flex-wrap items-center gap-3 mb-8 pb-6 border-b border-[#F1F3F5]">
+  <select class="px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors"
+          [(ngModel)]="selectedMonth" (change)="loadDashboard()">
+    <option *ngFor="let m of months" [value]="m.value">{{ m.name }}</option>
+  </select>
+  <select class="px-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors"
+          [(ngModel)]="selectedYear" (change)="loadDashboard()">
+    <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+  </select>
+  <div class="relative flex-1 max-w-xs">
+    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#929298] text-sm"></i>
+    <input type="text"
+           class="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E8EAF0] rounded-lg text-[13px] text-[#1F1E25] outline-none focus:border-[#00CEC8] transition-colors placeholder:text-[#929298]"
+           [(ngModel)]="searchTerm" (keyup.enter)="applyFilter()" placeholder="Buscar...">
   </div>
-  <div class="saint-filters-bar__actions">
-    <button class="btn btn-primary" (click)="applyFilter()">
-      <i class="bi bi-search"></i> Buscar
-    </button>
-    <button class="btn btn-outline-secondary" (click)="resetFilter()">
-      <i class="bi bi-arrow-clockwise"></i> Limpiar
-    </button>
-    <button class="btn btn-outline-success" (click)="exportarExcel()">
-      <i class="bi bi-file-earmark-excel"></i> Excel
-    </button>
-  </div>
-</section>
+  <button class="px-3 py-2.5 text-[13px] text-[#6C6D72] hover:text-[#1F1E25] transition-colors"
+          (click)="resetFilter()">Limpiar</button>
+  <button class="px-4 py-2.5 text-[13px] font-semibold rounded-lg bg-[#00CEC8] text-white hover:bg-[#00B6B1] transition-all duration-150"
+          (click)="applyFilter()">
+    Buscar
+  </button>
+  <button class="px-4 py-2.5 text-[13px] font-medium rounded-lg bg-white border border-[#E8EAF0] text-[#47484F] hover:bg-[#F7F8FA] transition-all duration-150"
+          (click)="exportarExcel()">
+    <i class="bi bi-download mr-1.5"></i>Excel
+  </button>
+</div>
 
 <!-- Error -->
-<div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center gap-2">
+<div *ngIf="errorMessage" class="flex items-center gap-2 mb-6 p-3 border-l-3 border-[#EB4203] bg-red-50/50 rounded-r-lg text-[13px] text-[#EB4203]">
   <i class="bi bi-exclamation-triangle"></i>
   <span>{{ errorMessage }}</span>
-  <button type="button" class="btn-close ms-auto" (click)="errorMessage = ''"></button>
+  <button class="ml-auto text-[#929298] hover:text-[#1F1E25]" (click)="errorMessage = ''"><i class="bi bi-x-lg"></i></button>
 </div>
 
 <!-- Loading -->
-<div *ngIf="loading" class="saint-loading">
-  <div class="spinner-border text-primary" role="status">
-    <span class="visually-hidden">Cargando...</span>
-  </div>
-  <p>Cargando datos del dashboard...</p>
+<div *ngIf="loading" class="flex flex-col items-center justify-center py-16">
+  <div class="w-6 h-6 border-2 border-[#00CEC8] border-t-transparent rounded-full animate-spin mb-3"></div>
+  <p class="text-[13px] text-[#6C6D72]">Cargando datos...</p>
 </div>
 
-<!-- Contenido principal -->
+<!-- Contenido -->
 <div *ngIf="!loading && !errorMessage">
 
-  <!-- KPIs -->
-  <section class="saint-kpi-grid">
-    <div class="saint-kpi-card saint-kpi-card--blue">
-      <span class="saint-kpi-card__label">Reportes Generados</span>
-      <span class="saint-kpi-card__value">{{ resumen.total }}</span>
+  <!-- KPIs — sin cajas, solo métricas con separador -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8 pb-8 border-b border-[#F1F3F5]">
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">Reportes</span>
+      <span class="text-2xl font-bold text-[#1F1E25]">{{ resumen.total }}</span>
     </div>
-    <div class="saint-kpi-card saint-kpi-card--cyan">
-      <span class="saint-kpi-card__label">Promedio Atención</span>
-      <span class="saint-kpi-card__value">{{ resumen.promedio_horas }} h</span>
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">Prom. Atención</span>
+      <span class="text-2xl font-bold text-[#1F1E25]">{{ resumen.promedio_horas }}<span class="text-sm font-normal text-[#6C6D72] ml-0.5">h</span></span>
     </div>
-    <div class="saint-kpi-card saint-kpi-card--amber">
-      <span class="saint-kpi-card__label">Pendientes</span>
-      <span class="saint-kpi-card__value">{{ resumen.pendientes }}</span>
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">Pendientes</span>
+      <span class="text-2xl font-bold text-[#FF9C5F]">{{ resumen.pendientes }}</span>
     </div>
-    <div class="saint-kpi-card saint-kpi-card--teal">
-      <span class="saint-kpi-card__label">En proceso</span>
-      <span class="saint-kpi-card__value">{{ resumen.en_proceso }}</span>
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">En proceso</span>
+      <span class="text-2xl font-bold text-[#00CEC8]">{{ resumen.en_proceso }}</span>
     </div>
-    <div class="saint-kpi-card saint-kpi-card--green">
-      <span class="saint-kpi-card__label">Liberados</span>
-      <span class="saint-kpi-card__value">{{ resumen.liberados }}</span>
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">Liberados</span>
+      <span class="text-2xl font-bold text-[#059669]">{{ resumen.liberados }}</span>
     </div>
-  </section>
+  </div>
 
-  <!-- Cumplimiento -->
-  <section class="saint-compliance-bar">
-    <div class="saint-compliance-item">
-      <span class="saint-compliance-item__label">Total Reportes</span>
-      <span class="saint-compliance-item__value">{{ resumen.total }}</span>
+  <!-- Cumplimiento — inline metrics -->
+  <div class="flex items-center gap-8 mb-8 pb-8 border-b border-[#F1F3F5]">
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">Total</span>
+      <span class="text-lg font-bold text-[#1F1E25]">{{ resumen.total }}</span>
     </div>
-    <div class="saint-compliance-item">
-      <span class="saint-compliance-item__label">Cumplen</span>
-      <span class="saint-compliance-item__value">{{ resumen.cumplen }}</span>
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">Cumplen</span>
+      <span class="text-lg font-bold text-[#1F1E25]">{{ resumen.cumplen }}</span>
     </div>
-    <div class="saint-compliance-item">
-      <span class="saint-compliance-item__label">% Cumplimiento</span>
-      <span class="saint-compliance-item__value saint-compliance-item__value--highlight">{{ resumen.porcentaje_cumplimiento }}%</span>
+    <div>
+      <span class="text-[11px] uppercase tracking-wider text-[#6C6D72] font-medium block mb-1">% Cumplimiento</span>
+      <span class="text-lg font-bold text-[#00CEC8]">{{ resumen.porcentaje_cumplimiento }}%</span>
     </div>
-  </section>
+  </div>
 
   <!-- Tabla de reportes -->
-  <section class="saint-card">
-    <div class="saint-card__header">
-      <h2><i class="bi bi-file-earmark-text"></i> Listado de Reportes</h2>
-      <span class="saint-count-badge">{{ filteredReports().length }}</span>
+  <div class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-[15px] font-semibold text-[#1F1E25]">Listado de Reportes</h2>
+      <span class="text-[12px] text-[#929298]">{{ filteredReports().length }} registros</span>
     </div>
-    <div class="saint-table-wrapper">
-      <table class="saint-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>OP</th>
-            <th>Cliente</th>
-            <th>Usuario</th>
-            <th>Estado</th>
-            <th>Fecha Creación</th>
-            <th>Fecha Respuesta</th>
-            <th>Tiempo Atención</th>
-            <th>Prioridad</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let reporte of reports">
-            <td class="font-semibold">{{ reporte.id }}</td>
-            <td>{{ reporte.op_reporte }}</td>
-            <td>{{ reporte.cliente }}</td>
-            <td>{{ reporte.usuario }}</td>
-            <td>
-              <span class="saint-status-badge" [ngClass]="{
-                'saint-status-badge--pending': reporte.estado === 'pendiente',
-                'saint-status-badge--progress': reporte.estado === 'en proceso',
-                'saint-status-badge--done': reporte.estado === 'liberado'
-              }">{{ reporte.estado }}</span>
-            </td>
-            <td>{{ reporte.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
-            <td>{{ reporte.fecha_respuesta ? (reporte.fecha_respuesta | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
-            <td>{{ (reporte.minutos_laborales / 60) | number:'1.0-0' }}h {{ (reporte.minutos_laborales % 60) | number:'2.0-0' }}m</td>
-            <td>
-              <span class="saint-priority-badge" [ngClass]="{
-                'saint-priority-badge--medium': reporte.prioridad === 'media',
-                'saint-priority-badge--high': reporte.prioridad === 'alta'
-              }">{{ reporte.prioridad }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
 
-  <!-- Gráficas -->
-  <section class="saint-charts-grid">
-    <div class="saint-card">
-      <div class="saint-card__header">
-        <h2><i class="bi bi-bar-chart"></i> Top 5 Usuarios con Más Reportes</h2>
-      </div>
-      <div class="saint-card__body">
-        <canvas id="chartUsuarios" height="250"></canvas>
-      </div>
+    <div class="bg-white border border-[#E8EAF0] rounded-xl overflow-hidden">
+    <table class="w-full text-[13px]">
+      <thead>
+        <tr class="border-b border-[#E8EAF0]">
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">ID</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">OP</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Cliente</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Usuario</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Estado</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Creación</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Respuesta</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Tiempo</th>
+          <th class="px-5 py-3 text-left text-[11px] uppercase tracking-wider text-[#6C6D72] font-semibold">Prioridad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let reporte of reports" class="border-b border-[#F1F3F5] hover:bg-[#F7F8FA] transition-colors duration-100">
+          <td class="px-5 py-3.5 font-medium text-[#1F1E25]">{{ reporte.id }}</td>
+          <td class="px-5 py-3.5 text-[#47484F]">{{ reporte.op_reporte }}</td>
+          <td class="px-5 py-3.5 text-[#47484F]">{{ reporte.cliente }}</td>
+          <td class="px-5 py-3.5 text-[#47484F]">{{ reporte.usuario }}</td>
+          <td class="px-5 py-3.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  [ngClass]="{
+                    'bg-[#FCEFC3] text-[#92400E]': reporte.estado === 'pendiente',
+                    'bg-[#E6FBFA] text-[#00807C]': reporte.estado === 'en proceso',
+                    'bg-emerald-50 text-emerald-700': reporte.estado === 'liberado'
+                  }">{{ reporte.estado }}</span>
+          </td>
+          <td class="px-5 py-3.5 text-[#6C6D72]">{{ reporte.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="px-5 py-3.5 text-[#6C6D72]">{{ reporte.fecha_respuesta ? (reporte.fecha_respuesta | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+          <td class="px-5 py-3.5 text-[#47484F]">{{ (reporte.minutos_laborales / 60) | number:'1.0-0' }}h {{ (reporte.minutos_laborales % 60) | number:'2.0-0' }}m</td>
+          <td class="px-5 py-3.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  [ngClass]="{
+                    'bg-[#FCEFC3] text-[#92400E]': reporte.prioridad === 'media',
+                    'bg-red-50 text-[#EB4203]': reporte.prioridad === 'alta'
+                  }">{{ reporte.prioridad }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
     </div>
-    <div class="saint-card">
-      <div class="saint-card__header">
-        <h2><i class="bi bi-pie-chart"></i> Distribución por Estado</h2>
-      </div>
-      <div class="saint-card__body">
-        <canvas id="chartEstados" height="250"></canvas>
-      </div>
+  </div>
+
+  <!-- Gráficas — sin cajas, integradas con separadores -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-8 border-t border-[#F1F3F5]">
+    <div>
+      <h3 class="text-[14px] font-semibold text-[#1F1E25] mb-4">Top 5 Usuarios</h3>
+      <canvas id="chartUsuarios" height="240"></canvas>
     </div>
-  </section>
+    <div>
+      <h3 class="text-[14px] font-semibold text-[#1F1E25] mb-4">Distribución por Estado</h3>
+      <canvas id="chartEstados" height="240"></canvas>
+    </div>
+  </div>
 
 </div>

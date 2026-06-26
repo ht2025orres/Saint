@@ -1,85 +1,343 @@
+# Sistema de Diseño — SaINT Design System
+
+## Objetivo
+
+Toda interfaz generada debe seguir estrictamente este lenguaje visual. No crear componentes nuevos que rompan la identidad. Antes de añadir elementos, reutilizar patrones existentes.
+
+La referencia es un dashboard financiero moderno inspirado en **Stripe**, **Linear**, **Vercel** y **Arc Browser**, combinando estética corporativa con sensación premium.
+
+## Cinco Pilares
+
+1. Simplicidad
+2. Jerarquía visual evidente
+3. Navegabilidad inmediata
+4. Consistencia absoluta
+5. Convencionalidad (el usuario nunca debe preguntarse dónde está algo)
+
+## Filosofía
+
+El sistema transmite: **precisión, confianza, claridad, orden, elegancia**.
+
+- Todo elemento debe tener un propósito.
+- Eliminar cualquier ruido visual.
+- Si una decisión de diseño no mejora la comprensión del usuario, eliminarla.
+
+## Estilo General
+
+- Visual limpio
+- Muchísimo espacio en blanco
+- Bordes suaves
+- Contrastes bajos
+- Sombras delicadas
+- Microdetalles elegantes
+- Nada debe sentirse pesado
+
+## Personalidad
+
+El sistema debe sentirse como una mezcla de: Stripe Dashboard, Linear, Arc Browser, Notion (espaciado), Vercel, Raycast.
+
+Nunca parecer:
+- Un template de Bootstrap
+- Un panel administrativo genérico
+- Material Design clásico
+
 ---
-inclusion: auto
+
+## Paleta Principal
+
+| Rol | Color | Hex | Uso |
+|-----|-------|-----|-----|
+| **Primary** | Deep Indigo | `#3F347F` | Header, Navbar, Sidebar, Botones primarios, Elementos activos |
+| **Primary Dark** | — | `#31296B` | Hover, Elementos seleccionados, Fondos secundarios |
+| **Primary Light** | — | `#5A4CB4` | Estados activos, Pequeños acentos, Indicadores |
+| **Background** | — | `#F6F7FB` | Fondo principal de la aplicación (nunca blanco puro) |
+| **Cards** | — | `#FFFFFF` | Superficies de tarjetas |
+| **Borders** | — | `#E8EAF3` | Bordes y separadores |
+| **Text Primary** | — | `#111827` | Texto principal |
+| **Text Secondary** | — | `#6B7280` | Texto secundario |
+| **Text Tertiary** | — | `#9CA3AF` | Texto terciario / placeholder |
+
+## Colores Semánticos
+
+| Estado | Principal | Fondo | Borde |
+|--------|-----------|-------|-------|
+| Error | `#EF4444` | `#FEECEC` | `#F87171` |
+| Warning | `#F59E0B` | `#FFF7E8` | `#FBBF24` |
+| Success | `#10B981` | `#ECFDF5` | `#34D399` |
+| Neutral | `#64748B` | — | — |
+
+## Colores KPI
+
+| KPI | Color |
+|-----|-------|
+| Costo | Rojo |
+| Ahorro | Verde |
+| Tiempo | Gris |
+| Neto | Morado |
+| Advertencia | Naranja |
+
 ---
 
-# Saint Design System — Guía de Estilo Visual
+## Tipografía
 
-## Paleta de Colores
+| Uso | Fuente | Peso |
+|-----|--------|------|
+| Títulos (Dashboard, Cards, Tabs, Menús, KPIs, Encabezados) | **Quicksand** | 700 |
+| Texto (descripciones, labels, tablas, inputs, ayudas, tooltips) | **Inter** | 400 |
 
-| Token | Valor | Uso |
-|-------|-------|-----|
-| Primary | `rgb(41, 54, 129)` / `blue-900` | Títulos, texto principal bold, estados importantes |
-| Secondary | `rgb(66, 116, 217)` / `blue-600` | Botones activos, links, tabs activos, iconos |
-| Accent | `rgb(149, 204, 221)` | Bordes decorativos, badges info, scrollbars |
-| Light | `rgb(208, 231, 230)` | Fondos hover, separadores, backgrounds sutiles |
-| Background | `#f8f9fc` | Fondo de página |
-| Surface | `#ffffff` | Cards, modales, sidebars |
+### Escala Tipográfica (px)
 
-## Tipografía (Inter)
+| Nivel | Tamaño |
+|-------|--------|
+| Dashboard | 34 |
+| Página | 28 |
+| Sección | 22 |
+| Card | 18 |
+| Subtítulo | 16 |
+| Texto | 14 |
+| Ayuda | 12 |
+| Microtexto | 11 |
 
-| Elemento | Clases Tailwind |
-|----------|----------------|
-| Título de página | `text-lg font-bold text-gray-900 tracking-tight` |
-| Subtítulo / section header | `text-sm font-semibold text-gray-900` |
-| Labels de filtros | `text-[10px] font-black uppercase tracking-wider` |
-| Texto de body / tabla | `text-xs` o `text-sm` |
-| Text muted | `text-slate-400` o `text-gray-500` |
-| Valores numéricos grandes | `text-xl font-bold text-gray-900` |
+---
 
-## Componentes Base
+## Espaciado
 
-### Contenedores de filtros
-```html
-<div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+- **Base:** 8px
+- **Escala:** 4, 8, 12, 16, 20, 24, 32, 40, 48, 64
+- Nunca usar espacios arbitrarios.
+
+## Border Radius
+
+| Elemento | Radius |
+|----------|--------|
+| Inputs | 12px |
+| Cards | 18px |
+| Botones | 12px |
+| Charts | 18px |
+| Modales | 24px |
+| Floating button | 999px |
+
+## Sombras
+
+Muy suaves. Ejemplo: `0 6px 24px rgba(20, 20, 40, 0.06)`
+
+Nunca sombras oscuras.
+
+---
+
+## Componentes
+
+### Header
+
+- Ocupa todo el ancho
+- Altura: 90–110px
+- Color: Deep Indigo
+- Contenido izquierda: icono + título + descripción
+- Contenido derecha: filtros (todos alineados horizontalmente, mismo alto, nunca romper alineación)
+
+### Cards KPI (Diseño Obligatorio)
+
+```
+┌─────────────────────────────────
+│  icono
+│  título pequeño
+│  valor grande
+│  descripción
+│  detalle inferior
+└─────────────────────────────────
 ```
 
-### Botón de filtro activo/inactivo
-```html
-<!-- Activo -->
-<button class="px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md bg-blue-600 text-white shadow-sm">
-<!-- Inactivo -->
-<button class="px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-50">
+Características:
+- Fondo blanco
+- Borde izquierdo coloreado
+- Esquina muy redondeada
+- Sombra ligera
+- Icono sobre fondo pastel
+- Decoración circular muy transparente en esquina superior derecha
+- Mucho padding
+
+### Inputs
+
+- Altura: 44–48px
+- Radius: 12px
+- Borde: `#D9DCE7`
+- Hover: `#BFC5D8`
+- Focus: Color primario + shadow muy suave
+
+### Botones
+
+| Tipo | Estilo |
+|------|--------|
+| Primario | Deep Indigo, texto blanco, radius 12, hover más oscuro |
+| Secundario | Fondo blanco, borde gris |
+| Ghost | Sin fondo |
+
+### Tablas
+
+- Muy limpias
+- Cabecera gris muy clara
+- Filas altas
+- Hover extremadamente suave
+- Separadores finos
+- Nunca líneas fuertes
+
+### Gráficos
+
+- Mucho espacio
+- Grid muy tenue
+- Leyendas arriba
+- Colores: Rojo `#EF4444`, Naranja `#F59E0B`, Verde `#10B981`, Morado `#6366F1`, Azul `#3B82F6`
+- No más de 5 colores simultáneamente
+
+---
+
+## Iconografía
+
+- Únicamente iconos **outline**
+- Stroke: 2px
+- Nunca usar iconos rellenos
+- Bibliotecas: Lucide, Heroicons, Tabler Icons
+
+---
+
+## Distribución de Página (Jerarquía Obligatoria)
+
+```
+Header
+  ↓
+KPIs
+  ↓
+Gráfico principal
+  ↓
+Gráficos secundarios
+  ↓
+Tablas
+  ↓
+Detalle
 ```
 
-### Input de búsqueda
-```html
-<input class="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs outline-none focus:border-blue-400 transition-colors" />
-```
+Nunca alterar este orden.
 
-### Cards
-```html
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-```
+---
 
-### Tabs estilo pill
-```html
-<nav class="flex items-center gap-0.5 bg-gray-100 p-1 rounded-xl">
-  <!-- Tab activo -->
-  <button class="px-3 py-1.5 text-xs font-medium rounded-lg bg-white text-blue-700 shadow-sm">
-  <!-- Tab inactivo -->
-  <button class="px-3 py-1.5 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-800 hover:bg-white/60">
-</nav>
-```
+## Navegación
 
-### Status badges
-```html
-<span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-green-100 text-green-700">
-```
+El usuario debe comprender dónde está en menos de 3 segundos. Toda pantalla responde:
+- ¿Qué estoy viendo?
+- ¿Dónde estoy?
+- ¿Qué puedo hacer?
+- ¿Qué es importante?
 
-### Toast/Alerts
-```html
-<div class="flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border text-sm font-medium bg-green-50 border-green-200 text-green-800">
-```
+---
 
-## Principios
+## Espacio Negativo
 
-1. **Compacto**: Usar `gap-0.5` a `gap-2`, `px-2 py-1` a `px-3 py-1.5`. Nada de padding excesivo.
-2. **Pesos definidos**: `font-black` para labels uppercase, `font-bold`/`font-semibold` para títulos, `font-medium` para texto activo.
-3. **Colores slate**: Preferir `slate-200`, `slate-400`, `slate-600` sobre `gray` para tonos fríos.
-4. **Bordes sutiles**: `border border-slate-200` en vez de sombras pesadas.
-5. **Rounded suave**: `rounded-lg` (8px) para elementos internos, `rounded-xl` (12px) para cards.
-6. **Sin gradientes**: Solo colores sólidos. Excepción: icono de brand.
-7. **Uppercase tracking-wider**: Para labels de filtros y categorías, siempre en `text-[10px]`.
-8. **Estados claros**: Activo = fondo sólido azul + texto blanco. Inactivo = texto gris + hover sutil.
-9. **Transiciones**: `transition-all duration-150` o `transition-colors` para suavidad.
-10. **Iconos**: Bootstrap Icons (`bi bi-*`) o Material Design Icons (`mdi mdi-*`), siempre `text-sm` o `text-xs`.
+El espacio vacío es parte del diseño. No rellenarlo. Respirar entre bloques. Nunca compactar demasiado.
+
+---
+
+## Animaciones
+
+- Duración: 200–250ms
+- Easing: `ease-out`
+- Animar únicamente: hover, focus, apertura, expansión, cambio de filtros
+- Nunca animaciones largas, rebotes, ni efectos exagerados
+
+---
+
+## Accesibilidad
+
+- Contraste AA
+- Estados hover visibles
+- Estados focus claros
+- Iconos acompañados de texto en acciones críticas
+- Nunca depender únicamente del color
+
+---
+
+## Responsive
+
+- **Desktop primero**
+- Breakpoints: 1440, 1280, 1024, 768, 480
+- Las cards KPI se reorganizan manteniendo el mismo tamaño visual
+
+---
+
+## Componentes Reutilizables
+
+Crear únicamente mediante composición:
+
+- `DashboardHeader`
+- `SectionHeader`
+- `StatCard`
+- `MetricCard`
+- `ChartCard`
+- `TableCard`
+- `InfoBadge`
+- `StatusBadge`
+- `FilterBar`
+- `SearchInput`
+- `PrimaryButton`
+- `SecondaryButton`
+- `GhostButton`
+- `FloatingActionButton`
+- `EmptyState`
+- `LoadingSkeleton`
+
+No crear variantes innecesarias.
+
+---
+
+## Estados Vacíos
+
+No mostrar únicamente "Sin datos". Mostrar:
+- Icono
+- Mensaje
+- Explicación
+- Acción recomendada
+
+Mantener el mismo estilo visual.
+
+---
+
+## Reglas Estrictas — Siempre Respetar
+
+- ✓ Márgenes consistentes
+- ✓ Padding uniforme
+- ✓ Quicksand para títulos
+- ✓ Inter para contenido
+- ✓ Mucho espacio en blanco
+- ✓ Bordes suaves
+- ✓ Colores semánticos consistentes
+- ✓ Sombras mínimas
+- ✓ Jerarquía clara
+- ✓ Componentes reutilizables
+- ✓ Alineaciones perfectas
+- ✓ Iconografía outline
+- ✓ Layout limpio
+- ✓ Diseño modular
+- ✓ Consistencia absoluta
+
+---
+
+## Prohibido
+
+- ✗ Degradados fuertes
+- ✗ Tarjetas oscuras sobre fondos claros (excepto header)
+- ✗ Colores saturados
+- ✗ Más de una familia visual de iconos
+- ✗ Bordes negros
+- ✗ Tipografías diferentes a Quicksand/Inter
+- ✗ Más de dos pesos tipográficos por componente
+- ✗ Tablas densas
+- ✗ Sombras pronunciadas
+- ✗ Esquinas rectas
+- ✗ Animaciones decorativas
+- ✗ Romper el sistema de espaciado
+- ✗ Nuevos colores fuera de la paleta
+- ✗ Cambiar la jerarquía visual establecida
+- ✗ Componentes únicos cuando puedan componerse a partir de los existentes
+- ✗ Glassmorphism
+- ✗ Neomorphism
+- ✗ Gradientes agresivos
+- ✗ Efectos llamativos

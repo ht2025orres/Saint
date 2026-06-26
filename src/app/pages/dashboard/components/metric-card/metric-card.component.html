@@ -1,26 +1,28 @@
-<div class="process-card">
-  <div class="card-header" [style.borderTopColor]="metric.color">
-    <i [class]="metric.icono"></i>
-    <h3>{{ metric.proceso }}</h3>
+<div class="metric-card" [style.--card-color]="metric.color">
+  <div class="metric-card__header">
+    <i [class]="metric.icono" class="metric-card__icon"></i>
+    <span class="metric-card__title">{{ metric.proceso }}</span>
   </div>
 
-  <div class="card-body">
-    <div *ngIf="metric.entrada !== undefined" class="metric-row">
-      <span>Entradas:</span>
-      <strong>{{ metric.entrada | number }}</strong>
+  <div class="metric-card__metrics">
+    <div class="metric-card__metric" *ngIf="metric.entrada !== undefined">
+      <span class="metric-card__label">Entradas</span>
+      <span class="metric-card__value">{{ metric.entrada | number }}</span>
     </div>
-
-    <div *ngIf="metric.salida !== undefined" class="metric-row">
-      <span>Salidas:</span>
-      <strong>{{ metric.salida | number }}</strong>
-    </div>
-
-    <div class="progress-bar" *ngIf="metric.porcentajeAvance">
-      <div class="bar" [style.width.%]="metric.porcentajeAvance" [style.background]="metric.color"></div>
-    </div>
-
-    <div *ngIf="metric.porcentajeAvance" class="progress-text">
-      {{ metric.porcentajeAvance }}% completado
+    <div class="metric-card__metric" *ngIf="metric.salida !== undefined">
+      <span class="metric-card__label">Salidas</span>
+      <span class="metric-card__value metric-card__value--primary">{{ metric.salida | number }}</span>
     </div>
   </div>
+
+  <div class="metric-card__progress" *ngIf="metric.porcentajeAvance">
+    <div class="metric-card__progress-bar">
+      <div class="metric-card__progress-fill" [style.width.%]="metric.porcentajeAvance" [style.background]="metric.color"></div>
+    </div>
+    <span class="metric-card__progress-text">{{ metric.porcentajeAvance }}%</span>
+  </div>
+
+  <p class="metric-card__description">
+    Proceso de <strong>{{ metric.proceso | lowercase }}</strong> — control de unidades procesadas y avance operativo.
+  </p>
 </div>
