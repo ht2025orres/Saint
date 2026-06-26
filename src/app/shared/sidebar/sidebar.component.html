@@ -16,10 +16,10 @@
     <div class="topnav-divider"></div>
 
     <!-- Selector de grupo/categoría -->
-    <div class="group-selector" [class.open]="isGroupMenuOpen">
+    <div class="group-selector" [class.open]="isGroupMenuOpen" *ngIf="menuGroups.length > 0">
       <button class="group-selector-btn" (click)="toggleGroupMenu()" type="button">
-        <i [class]="currentGroup.icon" class="group-selector-icon"></i>
-        <span class="group-selector-label">{{ currentGroup.label }}</span>
+        <i [class]="currentGroup?.icon" class="group-selector-icon"></i>
+        <span class="group-selector-label">{{ currentGroup?.label }}</span>
         <i class="bi bi-chevron-down group-selector-arrow" [class.rotated]="isGroupMenuOpen"></i>
       </button>
 
@@ -37,8 +37,8 @@
       </div>
     </div>
 
-    <!-- Separador -->
-    <div class="topnav-divider"></div>
+    <!-- Separador (solo si hay grupos) -->
+    <div class="topnav-divider" *ngIf="menuGroups.length > 0"></div>
 
     <!-- Menu items (filtrados por grupo activo) -->
     <div class="topnav-menu">

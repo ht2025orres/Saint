@@ -1,0 +1,141 @@
+<div class="p-8 max-w-4xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900 tracking-tight" style="font-family: 'Quicksand', sans-serif;">
+      Piloto IAM — Control de Acceso a Menú
+    </h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Panel de pruebas para simular asignación de perfiles y overrides. Los cambios se guardan en localStorage.
+    </p>
+  </div>
+
+  <!-- Info del usuario actual -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3" style="font-family: 'Quicksand', sans-serif;">
+      Usuario Actual
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div>
+        <span class="text-gray-400 text-xs uppercase tracking-wider">ID</span>
+        <p class="font-semibold text-gray-900">{{ userId }}</p>
+      </div>
+      <div>
+        <span class="text-gray-400 text-xs uppercase tracking-wider">Nombre</span>
+        <p class="font-semibold text-gray-900">{{ userName }}</p>
+      </div>
+      <div>
+        <span class="text-gray-400 text-xs uppercase tracking-wider">Permisos JWT</span>
+        <p class="font-mono text-xs text-gray-600">{{ getUserPermissions().join(', ') || 'Ninguno' }}</p>
+      </div>
+      <div>
+        <span class="text-gray-400 text-xs uppercase tracking-wider">Módulos JWT</span>
+        <p class="font-mono text-xs text-gray-600">{{ getUserModules().join(', ') || 'Ninguno' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grupos accesibles actualmente -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3" style="font-family: 'Quicksand', sans-serif;">
+      Grupos Accesibles (resultado)
+    </h2>
+    <div class="flex flex-wrap gap-3" *ngIf="accessibleGroups.length > 0">
+      <div *ngFor="let group of accessibleGroups" 
+           class="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 border border-indigo-200">
+        <i [class]="group.icon" class="text-indigo-700"></i>
+        <span class="text-sm font-semibold text-indigo-700">{{ group.label }}</span>
+      </div>
+    </div>
+    <p *ngIf="accessibleGroups.length === 0" class="text-sm text-gray-400 italic">
+      Sin acceso a ningún grupo. Asigna un perfil o un override abajo.
+    </p>
+  </div>
+
+  <!-- Asignación de Perfiles -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4" style="font-family: 'Quicksand', sans-serif;">
+      <i class="bi bi-person-badge mr-2"></i>Perfiles (Plantillas)
+    </h2>
+    <p class="text-xs text-gray-500 mb-4">
+      Asignar un perfil otorga acceso a los grupos y permisos que define. Equivalente a agregar un usuario a un "Group" en AWS IAM.
+    </p>
+    <div class="space-y-3">
+      <div *ngFor="let profile of allProfiles" 
+           class="flex items-center justify-between p-4 rounded-xl border transition-all"
+           [ngClass]="isProfileAssigned(profile.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-gray-900">{{ profile.name }}</span>
+            <span *ngIf="isProfileAssigned(profile.id)" class="text-xs font-bold uppercase tracking-wider bg-indigo-700 text-white px-2 py-0.5 rounded-full">Asignado</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">{{ profile.description }}</p>
+          <div class="flex gap-2 mt-2">
+            <span *ngFor="let gId of profile.grantedGroups" class="text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+              {{ gId }}
+            </span>
+          </div>
+        </div>
+        <button (click)="toggleProfile(profile.id)" 
+                class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                [ngClass]="isProfileAssigned(profile.id) ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-indigo-700 text-white hover:bg-indigo-800'">
+          {{ isProfileAssigned(profile.id) ? 'Quitar' : 'Asignar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Override de Grupos -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4" style="font-family: 'Quicksand', sans-serif;">
+      <i class="bi bi-unlock mr-2"></i>Overrides de Grupo (Individual)
+    </h2>
+    <p class="text-xs text-gray-500 mb-4">
+      Otorgar acceso directo a un grupo sin necesidad de asignar un perfil completo. Equivalente a una "Inline Policy" en AWS IAM.
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <button *ngFor="let group of allGroups"
+              (click)="toggleGroupOverride(group.id)"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all"
+              [ngClass]="isGroupOverridden(group.id) ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-gray-200 text-gray-700'">
+        <i [class]="group.icon"></i>
+        <span>{{ group.label }}</span>
+        <i *ngIf="isGroupOverridden(group.id)" class="bi bi-check-circle-fill text-green-600 ml-1"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Override de Permisos individuales -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+    <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4" style="font-family: 'Quicksand', sans-serif;">
+      <i class="bi bi-key mr-2"></i>Overrides de Permiso Individual
+    </h2>
+    <p class="text-xs text-gray-500 mb-4">
+      Agregar un permiso numérico extra al usuario. Si el permiso coincide con los requeridos por un grupo, el usuario verá ese grupo.
+    </p>
+    <div class="flex items-center gap-3 mb-4">
+      <input type="number" [(ngModel)]="newPermissionOverride" placeholder="ID del permiso"
+             class="w-40 px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-indigo-500">
+      <button (click)="addPermissionOverride()" 
+              class="px-4 py-2 bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-indigo-800 transition-all">
+        Agregar
+      </button>
+    </div>
+    <div class="flex flex-wrap gap-2" *ngIf="currentAccess.permissionOverrides.length > 0">
+      <span *ngFor="let perm of currentAccess.permissionOverrides" 
+            class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700">
+        Permiso #{{ perm }}
+        <button (click)="removePermissionOverride(perm)" class="ml-1 text-blue-400 hover:text-red-500">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+      </span>
+    </div>
+    <p *ngIf="currentAccess.permissionOverrides.length === 0" class="text-xs text-gray-400 italic">Sin overrides de permisos.</p>
+  </div>
+
+  <!-- Reset -->
+  <div class="flex justify-end">
+    <button (click)="resetAll()" class="px-6 py-3 bg-red-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-600 transition-all">
+      <i class="bi bi-arrow-counterclockwise mr-2"></i>Resetear Todo
+    </button>
+  </div>
+</div>

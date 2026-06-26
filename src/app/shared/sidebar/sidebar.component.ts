@@ -2,6 +2,7 @@ import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, ChangeDetect
 import { AuthService } from '../../services/auth.service';
 import { Router, NavigationEnd } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
+import { MenuAccessService, MenuGroup as AccessMenuGroup } from '../../services/menu-access.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { User } from '../../models/User';
@@ -49,13 +50,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   currentUser: User | null = null;
 
   menuItems: MenuItem[] = [];
-  activeGroup: string = 'admin';
+  activeGroup: string = '';
   isGroupMenuOpen: boolean = false;
 
-  menuGroups: MenuGroup[] = [
-    { id: 'admin', label: 'Admin', icon: 'bi bi-gear-wide-connected' },
-    { id: 'protejer', label: 'Protejer', icon: 'bi bi-shield-check' }
-  ];
+  /** Grupos accesibles para el usuario actual (dinámico desde MenuAccessService) */
+  menuGroups: MenuGroup[] = [];
 
   hoveredSubmenu: SubmenuItem[] | null = null;
   floatPanelTop = 0;
@@ -64,11 +63,13 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   private resizeListener?: () => void;
   private sidebarToggleSubscription?: Subscription;
   private userSubscription?: Subscription;
+  private menuAccessSubscription?: Subscription;
 
   constructor(
     public authService: AuthService,
     private router: Router,
     private sidebarService: SidebarService,
+    private menuAccessService: MenuAccessService,
     private cdr: ChangeDetectorRef,
     private renderer: Renderer2
   ) {
@@ -103,6 +104,20 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       this.initMenuStructure();
       this.cdr.detectChanges();
     });
+
+    // Suscribirse a los grupos accesibles (IAM)
+    this.menuAccessSubscription = this.menuAccessService.getAccessibleGroups$().subscribe(groups => {
+      this.menuGroups = groups.map(g => ({ id: g.id, label: g.label, icon: g.icon }));
+
+      // Si el grupo activo ya no es accesible, seleccionar el primero disponible
+      if (this.menuGroups.length > 0 && !this.menuGroups.some(g => g.id === this.activeGroup)) {
+        this.activeGroup = this.menuGroups[0].id;
+        localStorage.setItem('activeMenuGroup', this.activeGroup);
+      }
+
+      this.cdr.detectChanges();
+    });
+
     this.setupResizeListener();
     this.initMenuStructure();
 
@@ -448,7 +463,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /** Obtiene el grupo activo actual */
-  get currentGroup(): MenuGroup {
+  get currentGroup(): MenuGroup | null {
+    if (this.menuGroups.length === 0) return null;
     return this.menuGroups.find(g => g.id === this.activeGroup) || this.menuGroups[0];
   }
 
@@ -561,6 +577,9 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     if (this.userSubscription) {
       this.userSubscription.unsubscribe();
+    }
+    if (this.menuAccessSubscription) {
+      this.menuAccessSubscription.unsubscribe();
     }
     clearTimeout(this.floatCloseTimeout);
   }

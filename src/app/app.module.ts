@@ -76,6 +76,7 @@ import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.modul
 import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
 import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
 import { EmailLogsComponent } from './pages/email-logs/email-logs.component';
+import { MenuAccessPilotComponent } from './pages/menu-access-pilot/menu-access-pilot.component';
 
 // import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
@@ -108,7 +109,8 @@ registerLocaleData(localeEs, 'es-CO');
         MiReportListComponent,
         ReportDashboardComponent,
         UserProfileComponent,
-        EmailLogsComponent
+        EmailLogsComponent,
+        MenuAccessPilotComponent
 
     ],
     bootstrap: [AppComponent],
