@@ -358,7 +358,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         icon: 'bi bi-box-seam',
         modules: [3],
         permissions: [1],
-        group: 'protejer',
+        group: 'logistica',
         submenu: [
           {
             label: 'Recepción de OP',

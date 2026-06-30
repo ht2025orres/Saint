@@ -31,7 +31,8 @@ export class MenuAccessService {
    */
   private readonly menuGroups: MenuGroup[] = [
     { id: 'admin', label: 'Admin', icon: 'bi bi-gear-wide-connected' },
-    { id: 'protejer', label: 'Protejer', icon: 'bi bi-shield-check' }
+    { id: 'protejer', label: 'Protejer', icon: 'bi bi-shield-check' },
+    { id: 'logistica', label: 'Logística', icon: 'bi bi-truck' }
   ];
 
   private accessibleGroups$ = new BehaviorSubject<MenuGroup[]>([]);
