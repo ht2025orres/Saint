@@ -2,7 +2,7 @@ import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, ChangeDetect
 import { AuthService } from '../../services/auth.service';
 import { Router, NavigationEnd } from '@angular/router';
 import { SidebarService } from '../../services/sidebar.service';
-import { MenuAccessService, MenuGroup as AccessMenuGroup } from '../../services/menu-access.service';
+import { MenuAccessService } from '../../services/menu-access.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { User } from '../../models/User';
@@ -102,10 +102,11 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       this.currentUser = user;
       this.updateUserSummary(user);
       this.initMenuStructure();
+      this.updateAccessibleGroups();
       this.cdr.detectChanges();
     });
 
-    // Suscribirse a los grupos accesibles (IAM)
+    // Suscribirse a los grupos accesibles
     this.menuAccessSubscription = this.menuAccessService.getAccessibleGroups$().subscribe(groups => {
       this.menuGroups = groups.map(g => ({ id: g.id, label: g.label, icon: g.icon }));
 
@@ -120,6 +121,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.setupResizeListener();
     this.initMenuStructure();
+    this.updateAccessibleGroups();
 
     this.sidebarToggleSubscription = this.sidebarService.toggle$.subscribe(() => {
       this.toggleSidebar();
@@ -460,6 +462,22 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
       // Items del grupo activo se muestran
       return item.group === this.activeGroup;
     });
+  }
+
+  /**
+   * Determina qué grupos mostrar en el selector.
+   * Un grupo se muestra solo si el usuario tiene al menos UN item visible en ese grupo.
+   */
+  private updateAccessibleGroups(): void {
+    const visibleGroupIds = new Set<string>();
+
+    for (const item of this.menuItems) {
+      if (item.group && this.canShowMenuItem(item)) {
+        visibleGroupIds.add(item.group);
+      }
+    }
+
+    this.menuAccessService.setAccessibleGroups(Array.from(visibleGroupIds));
   }
 
   /** Obtiene el grupo activo actual */
