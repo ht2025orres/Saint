@@ -30,6 +30,7 @@ export class TechnicalDataSheetsReportComponent {
   cantidadfc: number = 0;
   cantidadfcs: number = 0;
   chart: any;
+  statusChart: any;
   datosFiltro: TechnicalDataSheet[] = [];
   // Agregar estas nuevas propiedades
   textoFiltro: string = '';
@@ -114,6 +115,7 @@ export class TechnicalDataSheetsReportComponent {
       this.chart.destroy();
     }
     this.createChart();
+    this.createStatusPieChart();
   }
   
   
@@ -234,6 +236,43 @@ export class TechnicalDataSheetsReportComponent {
             }
           }
         }
+      }
+    });
+  }
+
+  createStatusPieChart(): void {
+    const statuses = ['TERMINADO', 'DESARROLLO', 'PRIMERA REVISION', 'SEGUNDA REVISION', 'CALIDAD'];
+    const counts = statuses.map(s => this.filterGrafi.filter(item => item.status === s).length);
+
+    if (this.statusChart) {
+      this.statusChart.destroy();
+    }
+
+    this.statusChart = new Chart('statusPieChart', {
+      type: 'doughnut',
+      data: {
+        labels: statuses,
+        datasets: [{
+          data: counts,
+          backgroundColor: ['#10B981', '#3B82F6', '#EF4444', '#F59E0B', '#6366F1'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 10,
+              padding: 12,
+              font: { size: 11, family: 'Inter' }
+            }
+          }
+        },
+        cutout: '60%'
       }
     });
   }
@@ -404,6 +443,9 @@ export class TechnicalDataSheetsReportComponent {
     // Destruir el gráfico si existe
     if (this.chart) {
       this.chart.destroy();
+    }
+    if (this.statusChart) {
+      this.statusChart.destroy();
     }
   }
 }

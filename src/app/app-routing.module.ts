@@ -54,7 +54,6 @@ import { WorkflowManagerComponent } from './pages/authorization-manager/workflow
 import { CarteraInconsistenciasComponent } from './pages/inconsistencias/cartera-inconsistencias/cartera-inconsistencias.component';
 import { DashboardFinancieroInconsistenciasComponent } from './pages/inconsistencias/dashboard-financiero/dashboard-financiero.component';
 import { EmailLogsComponent } from './pages/email-logs/email-logs.component';
-import { MenuAccessPilotComponent } from './pages/menu-access-pilot/menu-access-pilot.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -113,8 +112,7 @@ const routes: Routes = [
       { path: 'cartera-inconsistencias', component: CarteraInconsistenciasComponent, title: 'Cartera Inconsistencias' },
       { path: 'dashboard-financiero-inconsistencias', component: DashboardFinancieroInconsistenciasComponent, title: 'Dashboard Financiero Inconsistencias' },
       { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' },
-      { path: 'my-profile', component: UserProfileComponent, title: 'Mi Perfil' },
-      { path: 'menu-access-pilot', component: MenuAccessPilotComponent, title: 'Piloto IAM' }
+      { path: 'my-profile', component: UserProfileComponent, title: 'Mi Perfil' }
     ]
   },
 
