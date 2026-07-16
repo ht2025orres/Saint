@@ -51,6 +51,8 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   mostrarPlantillas: boolean = false;
   busqueda            = '';
   vista: VistaProyectos = 'tarjetas';
+  dropdownEstadoOpen: boolean = false;
+  dropdownTipoOpen: boolean = false;
 
   // ── Detalle de proyecto ──────────────────────────────────────────
   showDetalle        = false;
@@ -134,17 +136,17 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       filtrados = filtrados.filter(p => p.es_proyecto_informe);
     }
 
-    // Si el filtro es "todos", aplicamos el orden solicitado:
+    // Si el filtro es "todos", excluimos los completados y ordenamos el resto:
     // 1. en_ejecucion (más importantes primero)
-    // 2. pendiente (añadido para lógica completa)
+    // 2. pendiente
     // 3. pausado
-    // 4. completado
     if (this.filtroEstado === 'todos') {
+      filtrados = filtrados.filter(p => p.estado !== 'completado');
+
       const orden: Record<string, number> = {
         'en_ejecucion': 1,
         'pendiente':    2,
-        'pausado':      3,
-        'completado':   4
+        'pausado':      3
       };
 
       return filtrados.sort((a, b) => {

@@ -16,11 +16,11 @@ export class ConteoComponent implements OnInit {
   asignacionSeleccionada: any = null;
   conteos: any[] = [];
   todasAsignaciones: any[] = []; // Nueva: para guardar todo sin filtrar por modo
-  
+
   modoActual: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar' = 'conteo';
-  validaciones: any[] = []; 
+  validaciones: any[] = [];
   validacionesGlobales: any[] = []; // Para canEnterReconteo y progreso global
-  
+
   // Para la lista de items que DEBERÍAN estar en la zona
   itemsDeZona: any[] = [];
   cargandoItems = false;
@@ -37,7 +37,7 @@ export class ConteoComponent implements OnInit {
   };
   cargando = false;
   usuarioActual: any;
-  busquedaItemFiltro = ''; 
+  busquedaItemFiltro = '';
   campoActivo: string | null = null; // Para saber qué dropdown mostrar
 
   get porcentajeProgreso() {
@@ -51,7 +51,7 @@ export class ConteoComponent implements OnInit {
   }
 
   isItemContado(item: any) {
-    return this.conteos.some(c => 
+    return this.conteos.some(c =>
       this.normalize(c.id_item_siesa) === this.normalize(item.id_item) &&
       this.normalize(c.referencia) === this.normalize(item.referencia) &&
       this.normalize(c.id_talla) === this.normalize(item.id_talla) &&
@@ -60,7 +60,7 @@ export class ConteoComponent implements OnInit {
   }
 
   getConteoDetalle(item: any) {
-    return this.conteos.filter(c => 
+    return this.conteos.filter(c =>
       this.normalize(c.id_item_siesa) === this.normalize(item.id_item) &&
       this.normalize(c.referencia) === this.normalize(item.referencia) &&
       this.normalize(c.id_talla) === this.normalize(item.id_talla) &&
@@ -78,7 +78,7 @@ export class ConteoComponent implements OnInit {
     const conteo = conteosItem[0]; // Ahora solo debería haber uno
     const fechaCreacion = new Date(conteo.created_at);
     const diferenciaMinutos = (new Date().getTime() - fechaCreacion.getTime()) / (1000 * 60);
-    const puedeEditar = diferenciaMinutos <= 30;
+    const puedeEditar = diferenciaMinutos <= 1440;
 
     let html = `
       <div class="text-left">
@@ -106,7 +106,7 @@ export class ConteoComponent implements OnInit {
               <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full ${puedeEditar ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
                 <span class="text-[10px] font-bold ${puedeEditar ? 'text-emerald-600' : 'text-rose-600'} uppercase">
-                  ${puedeEditar ? 'Editable' : 'Bloqueado (>30min)'}
+                  ${puedeEditar ? 'Editable' : 'Bloqueado (>2h)'}
                 </span>
               </div>
             </div>
@@ -188,10 +188,10 @@ export class ConteoComponent implements OnInit {
 
   get itemsDeZonaFiltrados() {
     let items = this.itemsDeZona;
-    
+
     if (this.busquedaItemFiltro) {
       const search = this.busquedaItemFiltro.toLowerCase();
-      items = items.filter(i => 
+      items = items.filter(i =>
         (i.id_item && String(i.id_item).toLowerCase().includes(search)) ||
         (i.referencia && String(i.referencia).toLowerCase().includes(search)) ||
         (i.descripcion && String(i.descripcion).toLowerCase().includes(search)) ||
@@ -212,7 +212,7 @@ export class ConteoComponent implements OnInit {
   getRecomendaciones(campo: string) {
     const valor = (this.nuevoConteo as any)[campo];
     if (!valor || valor.length < 2) return [];
-    
+
     const search = String(valor).toLowerCase();
     return this.itemsDeZona.filter(i => {
       const target = campo === 'id_item_siesa' ? i.id_item : (i as any)[campo.replace('id_', '')] || (i as any)[campo];
@@ -222,7 +222,7 @@ export class ConteoComponent implements OnInit {
 
   cargarAsignaciones() {
     this.cargando = true;
-    
+
     // Obtener TODAS las asignaciones para saber qué inventarios y modos están disponibles
     this.inventarioService.getAsignaciones(undefined, this.usuarioActual?.id).subscribe({
       next: (resp) => {
@@ -260,8 +260,8 @@ export class ConteoComponent implements OnInit {
 
     // 2. Si hay un inventario seleccionado, filtrar sus asignaciones para el modo actual
     if (this.inventarioSeleccionado) {
-      this.asignacionesFiltradas = this.todasAsignaciones.filter(asig => 
-        asig.id_inventario === this.inventarioSeleccionado.id && 
+      this.asignacionesFiltradas = this.todasAsignaciones.filter(asig =>
+        asig.id_inventario === this.inventarioSeleccionado.id &&
         this.normalizeModo(asig.tipo_conteo) === this.modoActual
       );
       this.cargarValidacionesGlobales();
@@ -273,7 +273,7 @@ export class ConteoComponent implements OnInit {
     // Si cambiamos de modo, reiniciamos la selección de zona para evitar errores de contexto
     this.asignacionSeleccionada = null;
     this.itemsDeZona = [];
-    
+
     if (this.inventarioSeleccionado) {
       // Si ya hay un inventario seleccionado, refrescamos sus asignaciones para el nuevo modo
       this.seleccionarInventario(this.inventarioSeleccionado);
@@ -307,14 +307,14 @@ export class ConteoComponent implements OnInit {
   seleccionarInventario(inv: any) {
     this.inventarioSeleccionado = inv;
     this.asignacionSeleccionada = null;
-    
+
     // Cargar validaciones globales primero para tener el universo de ítems
     this.inventarioService.getValidacionesReconteo(inv.id, false).subscribe(resp => {
       if (resp.success) {
         this.validacionesGlobales = (resp.data || []).filter((v: any) => v.estado_validacion !== 'sin_conteo');
         // Después de tener las validaciones, filtramos las asignaciones del modo actual
-        this.asignacionesFiltradas = this.todasAsignaciones.filter(asig => 
-          asig.id_inventario === inv.id && 
+        this.asignacionesFiltradas = this.todasAsignaciones.filter(asig =>
+          asig.id_inventario === inv.id &&
           (asig.tipo_conteo || 'conteo') === this.modoActual
         );
         this.calcularAvanceAsignaciones();
@@ -344,7 +344,7 @@ export class ConteoComponent implements OnInit {
 
   get progresoGlobalInventario() {
     if (!this.inventarioSeleccionado) return 0;
-    
+
     let total = 0;
     let contados = 0;
 
@@ -353,7 +353,7 @@ export class ConteoComponent implements OnInit {
       const asigsInv = this.todasAsignaciones.filter(a => a.id_inventario === this.inventarioSeleccionado.id && this.normalizeModo(a.tipo_conteo) === 'conteo');
       total = asigsInv.reduce((acc, a) => acc + (a.total_items_zona || 0), 0);
       contados = asigsInv.reduce((acc, a) => acc + (a.items_contados_zona || 0), 0);
-      
+
       // Si por alguna razón total es 0, intentar con el total_items del inventario
       if (total === 0) total = this.inventarioSeleccionado.total_items || 0;
     } else if (this.modoActual === 'reconteo1') {
@@ -376,19 +376,19 @@ export class ConteoComponent implements OnInit {
       if (this.modoActual !== 'conteo') {
         const nombreZona = asig.zona?.nombre;
         const etapaAnterior = this.modoActual === 'reconteo1' ? 'conteo' : 'reconteo1';
-        const universoReconteo = this.validacionesGlobales.filter(v => 
-          (v.tipo_conteo || 'conteo') === etapaAnterior && 
+        const universoReconteo = this.validacionesGlobales.filter(v =>
+          (v.tipo_conteo || 'conteo') === etapaAnterior &&
           v.estado_validacion === 'reconteo' &&
           this.normalize(v.zona) === this.normalize(nombreZona)
         );
-        
-        const contados = this.validacionesGlobales.filter(v => 
-          v.tipo_conteo === this.modoActual && 
+
+        const contados = this.validacionesGlobales.filter(v =>
+          v.tipo_conteo === this.modoActual &&
           this.normalize(v.zona) === this.normalize(nombreZona)
         );
 
-        asig.avance = universoReconteo.length > 0 
-          ? Math.round((contados.length / universoReconteo.length) * 100) 
+        asig.avance = universoReconteo.length > 0
+          ? Math.round((contados.length / universoReconteo.length) * 100)
           : 0;
       }
     });
@@ -410,30 +410,30 @@ export class ConteoComponent implements OnInit {
 
   cargarItemsDeZona() {
     if (!this.asignacionSeleccionada?.zona) return;
-    
+
     this.cargandoItems = true;
     this.inventarioService.getItemsPorBodega(this.asignacionSeleccionada.zona.codigo_bodega).subscribe(resp => {
       if (resp.success) {
         // Filtrar items que pertenecen a esta zona según ItemZonaPropuesta
-        let items = resp.data.filter((i: any) => 
+        let items = resp.data.filter((i: any) =>
           i.zonas?.some((z: any) => z.id == this.asignacionSeleccionada.id_zona)
         );
 
         // Aplicar restricciones de la asignación (incluir/excluir)
         if (this.asignacionSeleccionada.tipo_items === 'incluir') {
-          items = items.filter((i: any) => 
+          items = items.filter((i: any) =>
             this.asignacionSeleccionada.items_detalle.some((id: any) => String(id) === String(i.id_item))
           );
         } else if (this.asignacionSeleccionada.tipo_items === 'excluir') {
-          items = items.filter((i: any) => 
+          items = items.filter((i: any) =>
             !this.asignacionSeleccionada.items_detalle.some((id: any) => String(id) === String(i.id_item))
           );
         } else if (this.modoActual !== 'conteo') {
           // Si es RECONTEO y dice "TODOS", forzar filtro de lo marcado para reconteo
           const etapaAnterior = this.modoActual === 'reconteo1' ? 'conteo' : 'reconteo1';
           const itemsMarcados = new Set(this.validacionesGlobales
-            .filter(v => 
-              this.normalizeModo(v.tipo_conteo) === etapaAnterior && 
+            .filter(v =>
+              this.normalizeModo(v.tipo_conteo) === etapaAnterior &&
               v.estado_validacion === 'reconteo' &&
               this.normalize(v.zona) === this.normalize(this.asignacionSeleccionada.zona?.nombre)
             )
@@ -510,13 +510,73 @@ export class ConteoComponent implements OnInit {
 
   buscarItem() {
     const search = this.nuevoConteo.id_item_siesa.toLowerCase();
-    const itemEncontrado = this.itemsDeZona.find(i => 
-      i.id_item.toLowerCase() === search || 
+    const itemEncontrado = this.itemsDeZona.find(i =>
+      i.id_item.toLowerCase() === search ||
       i.referencia.toLowerCase() === search
     );
 
     if (itemEncontrado) {
       this.seleccionarItemParaConteo(itemEncontrado);
     }
+  }
+
+  eliminarConteo(conteo: any) {
+    const fechaCreacion = new Date(conteo.created_at);
+    const diferenciaMinutos = (new Date().getTime() - fechaCreacion.getTime()) / (1000 * 60);
+    const puedeEliminar = diferenciaMinutos <= 1440;
+
+    if (!puedeEliminar) {
+      Swal.fire('Atención', 'No se puede eliminar este registro. Han pasado más de 24 horas desde el registro inicial.', 'warning');
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Eliminar Conteo?',
+      text: `¿Estás seguro de que deseas eliminar el conteo del ítem ${conteo.referencia}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'rounded-[2.5rem]',
+        confirmButton: 'rounded-xl font-black text-xs uppercase tracking-widest px-8 py-3',
+        cancelButton: 'rounded-xl font-black text-xs uppercase tracking-widest px-8 py-3'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.cargando = true;
+        const userId = this.authService.user.id || 0;
+        this.inventarioService.deleteConteo(conteo.id, userId).subscribe({
+          next: (resp) => {
+            if (resp.success) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Conteo eliminado',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+              });
+              this.cargarConteos(this.asignacionSeleccionada.id);
+              this.cargarAsignaciones();
+            }
+            this.cargando = false;
+          },
+          error: (err) => {
+            const message = err.error?.message || 'No se pudo eliminar el conteo';
+            Swal.fire('Atención', message, 'warning');
+            this.cargando = false;
+          }
+        });
+      }
+    });
+  }
+  puedeEditarConteo(conteo: any): boolean {
+    if (!conteo || !conteo.created_at) return false;
+    const fechaCreacion = new Date(conteo.created_at);
+    const diferenciaMinutos = (new Date().getTime() - fechaCreacion.getTime()) / (1000 * 60);
+    return diferenciaMinutos <= 1440;
   }
 }

@@ -28,8 +28,9 @@ export class UserService {
   }
 
   /** Lista básica de usuarios (id + nombre). Sin restricción de admin. */
-  getAllBasic(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiLaravelUrl}/users/basic`);
+  getAllBasic(sameProcess?: boolean): Observable<any[]> {
+    const params = sameProcess ? { same_process: 'true' } : {};
+    return this.http.get<any[]>(`${this.apiLaravelUrl}/users/basic`, { params });
   }
 
   getById(id: any): Observable<User> {

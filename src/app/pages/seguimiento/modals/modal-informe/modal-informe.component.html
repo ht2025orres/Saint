@@ -14,7 +14,7 @@
           <h3 class="text-xl font-black text-gray-900 leading-tight">
             {{ informe ? 'Editar Informe' : 'Nuevo Informe de Auditoría' }}
           </h3>
-          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Documentación de hallazgos y riesgos</p>
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Documentación de hallazgos y acciones</p>
         </div>
       </div>
       <button (click)="onCerrar.emit()" class="w-9 h-9 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors">
@@ -55,28 +55,71 @@
                 placeholder="Ej: Hallazgo en proceso de autenticación">
             </div>
 
-            <div>
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de Informe</label>
-              <div class="relative">
-                <select formControlName="tipo" 
-                  class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
-                  <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
-                </select>
-                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
-                  <i class="bi bi-chevron-down"></i>
+            <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-5 gap-5">
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Fuente</label>
+                <div class="relative">
+                  <select formControlName="tipo" 
+                    class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
+                    <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                    <i class="bi bi-chevron-down"></i>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nivel de Impacto</label>
-              <div class="relative">
-                <select formControlName="nivel_impacto" 
-                  class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
-                  <option *ngFor="let n of niveles" [value]="n">{{ n }}</option>
-                </select>
-                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
-                  <i class="bi bi-chevron-down"></i>
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de Acción</label>
+                <div class="relative">
+                  <select formControlName="tipo_accion" 
+                    class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
+                    <option [ngValue]="null">Seleccionar...</option>
+                    <option *ngFor="let ta of tiposAccion" [value]="ta">{{ ta }}</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                    <i class="bi bi-chevron-down"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nivel de Impacto</label>
+                <div class="relative">
+                  <select formControlName="nivel_impacto" 
+                    class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
+                    <option *ngFor="let n of niveles" [value]="n">{{ n }}</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                    <i class="bi bi-chevron-down"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nivel de Riesgo</label>
+                <div class="relative">
+                  <select formControlName="nivel_riesgo" 
+                    class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
+                    <option *ngFor="let n of niveles" [value]="n">{{ n }}</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                    <i class="bi bi-chevron-down"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Proceso Afectado</label>
+                <div class="relative">
+                  <select formControlName="proceso_id" 
+                    class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all appearance-none cursor-pointer text-sm">
+                    <option [ngValue]="null">Ninguno</option>
+                    <option *ngFor="let proc of procesos" [value]="proc.id">{{ proc.nombre }}</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                    <i class="bi bi-chevron-down"></i>
+                  </div>
                 </div>
               </div>
             </div>
@@ -89,7 +132,7 @@
                 class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all text-sm">
             </div>
             <div>
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Fecha Implementación Estimada</label>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Fecha Límite de Ejecución</label>
               <input type="date" formControlName="fecha_implementacion" 
                 class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-gray-900 font-bold outline-none transition-all text-sm">
             </div>
@@ -97,7 +140,7 @@
 
           <!-- Editor Enriquecido para Descripción (TinyMCE) -->
           <div>
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Descripción del Hallazgo</label>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Descripción de la Situación</label>
             <div class="border border-gray-200 rounded-xl overflow-hidden focus-within:border-blue-500 transition-all bg-gray-50">
               <textarea id="descripcion-hallazgo-editor" class="w-full"></textarea>
             </div>
@@ -120,10 +163,10 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Causa Raíz</label>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Análisis de Causa</label>
               <textarea formControlName="causa_raiz" rows="4"
                 class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-sm text-gray-900 font-bold placeholder:text-gray-300 transition-all outline-none resize-none"
-                placeholder="¿Por qué ocurrió este hallazgo o incidente?"></textarea>
+                placeholder="¿Cuál es la causa de esta situación?"></textarea>
             </div>
             <div>
               <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Sistemas Afectados</label>
@@ -135,16 +178,16 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Acción Correctiva</label>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Acción Propuesta</label>
               <textarea formControlName="accion_correctiva" rows="4"
                 class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-sm text-gray-900 font-bold placeholder:text-gray-300 transition-all outline-none resize-none"
-                placeholder="Acciones tomadas para resolver el problema inmediatamente."></textarea>
+                placeholder="Acciones propuestas para resolver la situación."></textarea>
             </div>
             <div>
-              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Acción Preventiva</label>
+              <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Actividades que dan Cumplimiento a la Acción</label>
               <textarea formControlName="accion_preventiva" rows="4"
                 class="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-sm text-gray-900 font-bold placeholder:text-gray-300 transition-all outline-none resize-none"
-                placeholder="Acciones a largo plazo para evitar que vuelva a suceder."></textarea>
+                placeholder="Actividades para dar cumplimiento a la acción propuesta."></textarea>
             </div>
           </div>
         </div>

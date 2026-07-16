@@ -85,10 +85,10 @@ export class MisInconsistenciasComponent implements OnInit {
 
   ngOnInit(): void {
     const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    this.filtroFechaDesde = firstDay.toISOString().split('T')[0];
+    this.filtroFechaDesde = firstDayPrevMonth.toISOString().split('T')[0];
     this.filtroFechaHasta = lastDay.toISOString().split('T')[0];
 
     this.cargarInconsistencias();

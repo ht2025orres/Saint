@@ -64,6 +64,17 @@
                 class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200">
                 <i class="bi" [ngClass]="colapsado ? 'bi-layout-sidebar-inset' : 'bi-layout-sidebar'"></i>
             </button>
+            <button (click)="corregirDuplicadas()"
+                [disabled]="corrigiendo"
+                class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+              <span *ngIf="!corrigiendo">
+                <i class="bi bi-wrench mr-2"></i>Corregir duplicadas
+              </span>
+              <span *ngIf="corrigiendo" class="flex items-center gap-2">
+                <span class="inline-block animate-spin w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full"></span>
+                Corrigiendo...
+              </span>
+            </button>
             <button (click)="abrirModalNuevaZona()" 
                 class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-100 active:scale-95">
                 <i class="bi bi-plus-lg mr-2"></i>Nueva Zona
@@ -79,8 +90,26 @@
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
                 <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zonas Activas</h3>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {{ filtroActivo === 'true' ? 'Zonas Activas' : filtroActivo === 'false' ? 'Zonas Inactivas' : 'Todas las Zonas' }}
+                        </h3>
                         <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-black rounded-full">{{zonasFiltradas.length}}</span>
+                    </div>
+
+                    <!-- Toggle Activas / Inactivas -->
+                    <div class="flex bg-slate-100 rounded-lg p-0.5 text-[10px] font-black">
+                        <button (click)="cambiarFiltroActivo('true')"
+                            [class]="filtroActivo === 'true' ? 'flex-1 py-1 bg-white text-blue-600 rounded-md shadow-sm' : 'flex-1 py-1 text-slate-400 hover:text-slate-600'">
+                            Activas
+                        </button>
+                        <button (click)="cambiarFiltroActivo('false')"
+                            [class]="filtroActivo === 'false' ? 'flex-1 py-1 bg-white text-rose-500 rounded-md shadow-sm' : 'flex-1 py-1 text-slate-400 hover:text-slate-600'">
+                            Inactivas
+                        </button>
+                        <button (click)="cambiarFiltroActivo('all')"
+                            [class]="filtroActivo === 'all' ? 'flex-1 py-1 bg-white text-slate-700 rounded-md shadow-sm' : 'flex-1 py-1 text-slate-400 hover:text-slate-600'">
+                            Todas
+                        </button>
                     </div>
                     
                     <!-- Filtros de Zonas -->
@@ -100,15 +129,20 @@
                 <div class="flex-1 overflow-y-auto divide-y divide-slate-50">
                     <div *ngFor="let z of zonasFiltradas" 
                         [class.bg-blue-50]="zonaSeleccionada?.id === z.id"
+                        [class.opacity-50]="!z.activo"
                         class="p-4 hover:bg-slate-50 transition-colors cursor-pointer group"
                         (click)="seleccionarZona(z)">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm group-hover:border-blue-200 transition-all">
-                                    <i class="bi bi-box-seam text-slate-400 group-hover:text-blue-500"></i>
+                                    <i class="bi text-slate-400 group-hover:text-blue-500"
+                                       [ngClass]="z.activo ? 'bi-box-seam' : 'bi-box-seam text-rose-300'"></i>
                                 </div>
                                 <div>
-                                    <h4 class="text-xs font-bold text-slate-800">{{z.nombre}}</h4>
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="text-xs font-bold text-slate-800">{{z.nombre}}</h4>
+                                        <span *ngIf="!z.activo" class="px-1.5 py-0.5 bg-rose-100 text-rose-500 text-[9px] font-black rounded uppercase">Inactiva</span>
+                                    </div>
                                     <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">{{getNombreBodega(z.codigo_bodega)}}</p>
                                 </div>
                             </div>

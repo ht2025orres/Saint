@@ -16,6 +16,9 @@ export class SeguimientoStateService {
   private _usuariosCache$ = new BehaviorSubject<UsuarioCache[]>([]);
   readonly usuariosCache$ = this._usuariosCache$.asObservable();
 
+  /** Mapa de TODOS los usuarios del sistema (solo para resolución de nombres) */
+  private _todosNombresMap = new Map<number, string>();
+
   get usuariosCache(): UsuarioCache[] { return this._usuariosCache$.value; }
 
   /**
@@ -39,8 +42,26 @@ export class SeguimientoStateService {
     this._usuariosCache$.next(usuarios);
   }
 
+  setTodosNombresMap(usuarios: { id: number; nombre: string }[]): void {
+    this._todosNombresMap.clear();
+    usuarios.forEach(u => this._todosNombresMap.set(u.id, u.nombre));
+  }
+
+  /** Obtiene un UsuarioCache para un id que NO esté en el proceso */
+  getUsuarioExterno(uid: number): UsuarioCache | null {
+    if (this._usuariosCache$.value.some(u => u.id === uid)) return null;
+    const nombre = this._todosNombresMap.get(uid);
+    if (!nombre) return null;
+    return { id: uid, nombre };
+  }
+
   nombreUsuario(uid: number | string): string {
-    const u = this._usuariosCache$.value.find(u => u.id === +uid);
+    const id = +uid;
+    // Primero buscar en el mapa completo (todos los usuarios)
+    const nombreCompleto = this._todosNombresMap.get(id);
+    if (nombreCompleto) return nombreCompleto;
+    // Fallback al caché de proceso
+    const u = this._usuariosCache$.value.find(u => u.id === id);
     return u?.nombre ?? `Usuario #${uid}`;
   }
 
@@ -49,7 +70,9 @@ export class SeguimientoStateService {
     if (!nombre || nombre.startsWith('Usuario #')) return '??';
     const partes = nombre.split(' ').filter(p => p.length > 0);
     if (partes.length === 0) return '??';
-    return (partes[0][0] + (partes[1]?.[0] ?? '')).toUpperCase();
+    const primerNombre = partes[0];
+    const inicialApellido = partes[1] ? ` ${partes[1][0].toUpperCase()}.` : '';
+    return `${primerNombre}${inicialApellido}`;
   }
 
   getColorPorId(id: number): string {

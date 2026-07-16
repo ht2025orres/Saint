@@ -34,10 +34,12 @@ export class GestionZonasComponent implements OnInit, OnDestroy {
   selectedItems: any[] = [];
   mostrarModalMigrar = false;
   guardandoMigracion = false;
+  corrigiendo = false;
   
   colapsado = false;
   busquedaZonas: string = '';
   bodegaFiltro: string = '';
+  filtroActivo: 'true' | 'false' | 'all' = 'true';
 
   private subscription: Subscription = new Subscription();
   instanceId = 'propuesta-items-zona';
@@ -78,7 +80,7 @@ export class GestionZonasComponent implements OnInit, OnDestroy {
 
   cargarZonas() {
     this.cargando = true;
-    this.inventarioService.getZonas().subscribe(resp => {
+    this.inventarioService.getZonas(undefined, this.filtroActivo).subscribe(resp => {
       if (resp.success) {
         this.zonas = resp.data;
       }
@@ -88,6 +90,14 @@ export class GestionZonasComponent implements OnInit, OnDestroy {
 
   abrirModalNuevaZona() {
     this.mostrarModalZona = true;
+  }
+
+  cambiarFiltroActivo(valor: 'true' | 'false' | 'all') {
+    this.filtroActivo = valor;
+    this.zonaSeleccionada = null;
+    this.itemsRaw = [];
+    this.itemsPaginados = [];
+    this.cargarZonas();
   }
 
   crearZona(data: any) {
@@ -102,8 +112,12 @@ export class GestionZonasComponent implements OnInit, OnDestroy {
         }
         this.guardandoZona = false;
       },
-      error: () => {
-        Swal.fire('Error', 'No se pudo crear la zona', 'error');
+      error: (error: any) => {
+        if (error.status === 422 && error.error?.message) {
+          Swal.fire('Zona duplicada', error.error.message, 'warning');
+        } else {
+          Swal.fire('Error', 'No se pudo crear la zona', 'error');
+        }
         this.guardandoZona = false;
       }
     });
@@ -255,6 +269,45 @@ export class GestionZonasComponent implements OnInit, OnDestroy {
                 this.selectedItems = [];
                 this.cargarItems();
             }
+        });
+      }
+    });
+  }
+
+  corregirDuplicadas() {
+    Swal.fire({
+      title: '¿Corregir zonas duplicadas?',
+      text: 'Se deshabilitarán las zonas duplicadas y sus ítems serán reasignados a la zona principal.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, corregir',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.corrigiendo = true;
+        this.inventarioService.corregirZonasDuplicadas().subscribe({
+          next: (resp) => {
+            if (resp.grupos_procesados === 0) {
+              Swal.fire('Sin cambios', resp.message, 'info');
+            } else {
+              Swal.fire({
+                title: 'Corrección completada',
+                html: `
+                  <div style="text-align:left; font-size:14px;">
+                    <p><strong>Grupos procesados:</strong> ${resp.grupos_procesados}</p>
+                    <p><strong>Zonas deshabilitadas:</strong> ${resp.zonas_deshabilitadas}</p>
+                    <p><strong>Ítems reasignados:</strong> ${resp.items_reasignados}</p>
+                  </div>`,
+                icon: 'success'
+              });
+            }
+            this.cargarZonas();
+            this.corrigiendo = false;
+          },
+          error: () => {
+            Swal.fire('Error', 'No se pudo ejecutar la corrección', 'error');
+            this.corrigiendo = false;
+          }
         });
       }
     });

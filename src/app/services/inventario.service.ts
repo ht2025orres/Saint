@@ -51,7 +51,7 @@ export interface ItemBodega {
 export class InventarioService {
   private apiLaravelUrl = environment.URL_API_LARAVEL;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getBodegas(): Observable<any> {
     return this.http.get(`${this.apiLaravelUrl}/inventario/bodegas`);
@@ -59,7 +59,7 @@ export class InventarioService {
 
   // Alias para compatibilidad con Dashboard
   getWarehousesSummary(): Observable<BodegaSummary[]> {
-    return this.http.get<{success: boolean, data: BodegaSummary[]}>(`${this.apiLaravelUrl}/inventario/bodegas`)
+    return this.http.get<{ success: boolean, data: BodegaSummary[] }>(`${this.apiLaravelUrl}/inventario/bodegas`)
       .pipe(
         map(response => response.data.map(warehouse => ({
           ...warehouse,
@@ -81,10 +81,10 @@ export class InventarioService {
     return this.http.post(`${this.apiLaravelUrl}/inventario/zonas/migrar`, {});
   }
 
-  getZonas(codigoBodega?: string): Observable<any> {
-    let url = `${this.apiLaravelUrl}/inventario/zonas`;
+  getZonas(codigoBodega?: string, activo: 'true' | 'false' | 'all' = 'true'): Observable<any> {
+    let url = `${this.apiLaravelUrl}/inventario/zonas?activo=${activo}`;
     if (codigoBodega) {
-        url += `?codigo_bodega=${codigoBodega}`;
+      url += `&codigo_bodega=${codigoBodega}`;
     }
     return this.http.get(url);
   }
@@ -139,6 +139,10 @@ export class InventarioService {
     return this.http.put(`${this.apiLaravelUrl}/inventario/conteos/${id}`, data);
   }
 
+  deleteConteo(id: number, idUsuario: number): Observable<any> {
+    return this.http.delete(`${this.apiLaravelUrl}/inventario/conteos/${id}?id_usuario=${idUsuario}`);
+  }
+
   getContadores(): Observable<any> {
     return this.http.get(`${this.apiLaravelUrl}/inventario/usuarios-saint`);
   }
@@ -151,7 +155,7 @@ export class InventarioService {
 
   // Alias para compatibilidad con Dashboard
   getWarehouseItems(codigoBodega: string): Observable<ItemBodega[]> {
-    return this.http.get<{success: boolean, data: ItemBodega[]}>(`${this.apiLaravelUrl}/inventario/bodegas/${codigoBodega}/items`)
+    return this.http.get<{ success: boolean, data: ItemBodega[] }>(`${this.apiLaravelUrl}/inventario/bodegas/${codigoBodega}/items`)
       .pipe(map(resp => resp.data));
   }
 
@@ -171,8 +175,16 @@ export class InventarioService {
     return this.http.get(`${this.apiLaravelUrl}/inventario/inventarios/${idInventario}/validaciones?sincronizar=${sincronizar}`);
   }
 
-  bulkUpdateValidaciones(payload: { ids: number[], estado: string, justificacion?: string }, idUsuario: number): Observable<any> {
+  bulkUpdateValidaciones(payload: { ids: number[], estado: string, justificacion?: string, virtual_item?: any }, idUsuario: number): Observable<any> {
     return this.http.post(`${this.apiLaravelUrl}/inventario/validaciones/bulk-update`, { ...payload, id_usuario: idUsuario });
+  }
+
+  justificarPorTolerancia(idInventario: number, toleranciaTelas: number, toleranciaInsumos: number, idUsuario: number): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/inventario/inventarios/${idInventario}/validaciones/tolerancia`, { 
+      tolerancia_telas: toleranciaTelas, 
+      tolerancia_insumos: toleranciaInsumos, 
+      id_usuario: idUsuario 
+    });
   }
 
   getHistoricoMovimientos(params?: { id_inventario?: number, id_usuario?: number, tipo_movimiento?: string, page?: number }): Observable<any> {
@@ -181,7 +193,7 @@ export class InventarioService {
     if (params?.id_usuario) httpParams = httpParams.set('id_usuario', params.id_usuario.toString());
     if (params?.tipo_movimiento) httpParams = httpParams.set('tipo_movimiento', params.tipo_movimiento);
     if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-    
+
     return this.http.get(`${this.apiLaravelUrl}/inventario/historico-movimientos`, { params: httpParams });
   }
 
@@ -267,5 +279,9 @@ export class InventarioService {
       .set('bodega', bodega)
       .set('dias', dias.toString());
     return this.http.get(`${this.apiLaravelUrl}/inventario/ciclico/items-contados-recientes`, { params });
+  }
+
+  corregirZonasDuplicadas(): Observable<any> {
+    return this.http.post(`${this.apiLaravelUrl}/inventario/zonas/corregir-duplicadas`, {});
   }
 }

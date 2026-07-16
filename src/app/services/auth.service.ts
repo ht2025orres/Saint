@@ -297,8 +297,8 @@ export class AuthService {
       sessionStorage.removeItem('admin_refresh_token');
       sessionStorage.removeItem('admin_user');
 
-      // Redirect to the user list page after stopping impersonation
-      this.router.navigate(['/users/page/0']);
+      // Redirect to home page after stopping impersonation
+      this.router.navigate(['/']);
     }
   }
 

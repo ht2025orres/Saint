@@ -55,7 +55,7 @@ export class TechnicalSheetService {
             'loops', 'neckline', 'opening', 'packaging', 'pins', 'prewash',
             'purses', 'qa_comments', 'reflective', 'shirt_collar', 'shoulder_union',
             'shoulders', 'side_pulls', 'sleeve_connection', 'sleeves', 'stamped',
-            'stitching', 'straps', 'waistband', 'zipper', 'observations', 'logo_description', 'bill_materials', 'characteristic_image_1', 'characteristic_image_2',
+            'stitching', 'straps', 'waistband', 'zipper', 'observations', 'logo_description', 'stitches', 'bill_materials', 'characteristic_image_1', 'characteristic_image_2',
             'characteristic_image_3', 'characteristic_image_4', 'logo_technical_data_sheet',
             'product_image_1', 'product_image_2', 'side_stand', 'version'
         ];

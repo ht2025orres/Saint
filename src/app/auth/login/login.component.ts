@@ -79,14 +79,14 @@ export class LoginComponent implements OnInit {
 
   createForm() {
     this.formGr = this.fb.group({
-      email: ['', [Validators.required, Validators.pattern('[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$')]],
+      email: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,3}$')]],
       password: ['', Validators.required]
     });
   }
 
     login(): void {
         if (this.formGr.valid) {
-            this.user.email = this.formGr.get('email').value;
+            this.user.email = this.formGr.get('email').value.trim().toLowerCase();
             this.user.password = this.formGr.get('password').value;
             this.authService.login(this.user).subscribe(response => {
                 this.authService.saveUser(response.access_token);

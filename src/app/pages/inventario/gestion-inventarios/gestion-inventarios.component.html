@@ -132,7 +132,7 @@
                 <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Inventarios</h2>
-                        <button (click)="mostrarModalInventario = true" 
+                        <button *ngIf="!isReadOnly" (click)="mostrarModalInventario = true" 
                             class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
                             <i class="bi bi-plus-lg"></i>
                         </button>
@@ -242,8 +242,9 @@
                         [modoActual]="modoActual"
                         [validaciones]="validaciones"
                         [statsModo]="statsModoActual"
+                        [isReadOnly]="isReadOnly"
                         (onAsignacionCambiada)="cargarAsignaciones(); cargarInventarios(); cargarValidaciones()">
-                    </app-asignacion-inventario>
+                      </app-asignacion-inventario>
 
                     <!-- Sub-interfaz de Reconteo -->
                     <app-reconteo-inventario *ngSwitchCase="'reconteo'"
@@ -253,7 +254,8 @@
                         [modoActual]="modoActual"
                         [validaciones]="validaciones"
                         [sincronizandoSiesa]="sincronizandoSiesa"
-                        (onValidacionCambiada)="cargarValidaciones()">
+                        [isReadOnly]="isReadOnly"
+                        (onValidacionCambiada)="cargarValidaciones($event)">
                     </app-reconteo-inventario>
 
                     <!-- Sub-interfaz de Justificación -->
@@ -264,7 +266,8 @@
                         [modoActual]="modoActual"
                         [validaciones]="validaciones"
                         [sincronizandoSiesa]="sincronizandoSiesa"
-                        (onValidacionCambiada)="cargarValidaciones()">
+                        [isReadOnly]="isReadOnly"
+                        (onValidacionCambiada)="cargarValidaciones($event)">
                     </app-reconteo-inventario>
                 </ng-container>
             </div>
@@ -278,7 +281,7 @@
                 <p class="text-slate-400 max-w-md text-sm font-medium leading-relaxed mb-8">
                     Selecciona un inventario de la lista lateral para gestionar sus zonas y asignar responsables.
                 </p>
-                <button (click)="mostrarModalInventario = true" 
+                <button *ngIf="!isReadOnly" (click)="mostrarModalInventario = true" 
                     class="px-8 py-4 bg-blue-600 text-white text-xs font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 uppercase tracking-widest">
                     Crear Nuevo Inventario
                 </button>

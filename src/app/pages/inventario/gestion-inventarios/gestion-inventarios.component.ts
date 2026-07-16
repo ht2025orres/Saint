@@ -14,12 +14,12 @@ export class GestionInventariosComponent implements OnInit {
   contadores: any[] = [];
   colapsado = false;
   limiteZonas = 3;
-  
+
   // Selección
   inventarioSeleccionado: any = null;
   asignaciones: any[] = [];
   validaciones: any[] = [];
-  
+
   // Filtros Sidebar
   busquedaInventarios = '';
   filtroEstado = '';
@@ -28,7 +28,7 @@ export class GestionInventariosComponent implements OnInit {
   // Control de modales
   mostrarModalInventario = false;
   guardandoInventario = false;
-  
+
   // Formulario nuevo inventario
   nuevoInventario = {
     nombre: '',
@@ -44,7 +44,7 @@ export class GestionInventariosComponent implements OnInit {
   private _modoActual: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar' = 'conteo';
   set modoActual(val: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar') {
     this._modoActual = val;
-    
+
     // Sincronizar la vista de las tarjetas del sidebar con el modo seleccionado
     this.inventarios.forEach(inv => {
       // Solo sincronizar si la etapa existe en las estadísticas del inventario
@@ -146,6 +146,14 @@ export class GestionInventariosComponent implements OnInit {
     private authService: AuthService
   ) { }
 
+  /**
+   * Modo de solo lectura: el usuario tiene permiso de consulta (54)
+   * pero NO tiene permisos de edición (1=Admin Sistema, 27=Admin Inventario).
+   */
+  get isReadOnly(): boolean {
+    return this.authService.hasPermission(54) && !this.authService.hasAnyPermission([1, 27]);
+  }
+
   ngOnInit(): void {
     this.cargarInventarios();
     this.cargarZonas();
@@ -171,7 +179,7 @@ export class GestionInventariosComponent implements OnInit {
     return this.inventarios.filter(inv => {
       const matchBusqueda = inv.nombre.toLowerCase().includes(this.busquedaInventarios.toLowerCase());
       const matchEstado = !this.filtroEstado || inv.estado === this.filtroEstado;
-      
+
       // Filtro por bodega si hay alguna seleccionada
       let matchBodega = true;
       if (this.filtroBodega) {
@@ -182,7 +190,7 @@ export class GestionInventariosComponent implements OnInit {
         // sin cargar todas las asignaciones de todos los inventarios.
         // Por ahora, lo dejaremos pasar o lo simplificaremos.
       }
-      
+
       return matchBusqueda && matchEstado && matchBodega;
     });
   }
@@ -213,10 +221,10 @@ export class GestionInventariosComponent implements OnInit {
 
   cambiarEtapaCard(event: Event, inv: any, direccion: number) {
     event.stopPropagation(); // Evitar seleccionar el inventario al hacer click en las flechas
-    
+
     const etapas = ['conteo', 'reconteo1', 'reconteo2'];
     const etapasDisponibles = etapas.filter(e => inv.stats_etapas && inv.stats_etapas[e] && inv.stats_etapas[e].disponible);
-    
+
     let currentIndex = etapasDisponibles.indexOf(inv.etapaVista);
     let nextIndex = currentIndex + direccion;
 
@@ -227,7 +235,7 @@ export class GestionInventariosComponent implements OnInit {
   }
 
   getLabelEtapa(etapa: string): string {
-    switch(etapa) {
+    switch (etapa) {
       case 'conteo': return '1° Conteo';
       case 'reconteo1': return '1° Reconteo';
       case 'reconteo2': return '2° Reconteo';
@@ -251,33 +259,35 @@ export class GestionInventariosComponent implements OnInit {
     // 1. Limpiar datos previos para forzar el uso de estadísticas estáticas del objeto 'inv'
     this.validaciones = [];
     this.asignaciones = [];
-    
+
     // 2. Seleccionar el nuevo inventario
     this.inventarioSeleccionado = inv;
     this._modoActual = 'conteo'; // Reset a conteo sin disparar recarga inmediata
-    
+
     // 3. Cargar datos frescos
     this.cargarAsignaciones();
-    this.cargarValidaciones();
+    this.cargarValidaciones(true);
   }
 
-  cargarValidaciones() {
+  cargarValidaciones(syncSiesa: boolean = false) {
     if (!this.inventarioSeleccionado || this.sincronizandoSiesa) return;
-    
+
     // 1. Carga rápida inicial (sin sincronizar con SIESA)
     this.inventarioService.getValidacionesReconteo(this.inventarioSeleccionado.id, false).subscribe(resp => {
       if (resp.success) {
         this.validaciones = resp.data;
-        
-        // 2. Inmediatamente después, disparar la sincronización real en segundo plano
-        this.ejecutarSincronizacionSiesa();
+
+        // 2. Solo sincronizar con SIESA si se solicita explícitamente
+        if (syncSiesa) {
+          this.ejecutarSincronizacionSiesa();
+        }
       }
     });
   }
 
   ejecutarSincronizacionSiesa() {
     if (!this.inventarioSeleccionado || this.sincronizandoSiesa) return;
-    
+
     this.sincronizandoSiesa = true;
     this.inventarioService.getValidacionesReconteo(this.inventarioSeleccionado.id, true).subscribe({
       next: (resp) => {

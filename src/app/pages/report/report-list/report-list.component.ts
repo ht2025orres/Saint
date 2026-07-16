@@ -278,6 +278,29 @@ export class ReportListComponent implements OnInit {
     });
   }
 
+  verEvidenciaRespuesta(id: number): void {
+    this.reportService.GetEvidenceLiberationByReport(id).subscribe({
+      next: (url: string) => {
+        if (!url) {
+          Swal.fire({
+            icon: 'error',
+            title: 'No disponible',
+            text: 'La evidencia de respuesta no está disponible en este momento.',
+          });
+          return;
+        }
+        window.open(url, '_blank');
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'info',
+          title: 'Ups',
+          text: 'No existe evidencia de respuesta asociada a este reporte.',
+        });
+      },
+    });
+  }
+
   verDetalle(id: number, estado: string): void {
     // 🔹 Buscar el reporte dentro del array reports
     const reporte = this.reports.find(r => r.id === id);
@@ -286,10 +309,8 @@ export class ReportListComponent implements OnInit {
       return;
     }
 
-    // ✅ Abrir modal con SweetAlert2 mostrando la información completa
-    Swal.fire({
-      title: `Detalle del Reporte #${id}`,
-      html: `
+    // Preparar el HTML
+    let htmlContent = `
     <table style="width: 100%; text-align: left; border-collapse: collapse; border-radius: 8px; overflow: hidden;">
       <tbody>
         <tr style="background-color: #f8f9fa;">
@@ -309,13 +330,48 @@ export class ReportListComponent implements OnInit {
           <td style="padding: 12px 16px; color: #212529;">${reporte.prenda}</td>
         </tr>
         <tr style="background-color: #f8f9fa;">
+          <td style="padding: 12px 16px; font-weight: 600; color: #495057;">Estado</td>
+          <td style="padding: 12px 16px; color: #212529;">${reporte.estado}</td>
+        </tr>
+        <tr style="background-color: #ffffff;">
           <td style="padding: 12px 16px; font-weight: 600; color: #495057;">Observación</td>
           <td style="padding: 12px 16px; color: #212529;">${reporte.observacion || '-'}</td>
         </tr>
+    `;
+
+    if (reporte.estado === 'liberado') {
+      htmlContent += `
+        <tr style="background-color: #f8f9fa; border-top: 2px solid #dee2e6;">
+          <td style="padding: 12px 16px; font-weight: 600; color: #198754;">Respuesta</td>
+          <td style="padding: 12px 16px; color: #212529; font-weight: 500;">${reporte.respuesta || '-'}</td>
+        </tr>
+      `;
+    }
+
+    htmlContent += `
       </tbody>
     </table>
-  `,
+    `;
+
+    // ✅ Abrir modal con SweetAlert2 mostrando la información completa
+    Swal.fire({
+      title: `Detalle del Reporte #${id}`,
+      html: htmlContent,
       showCloseButton: true,
+      showDenyButton: reporte.evidencia ? true : false,
+      showCancelButton: (reporte.estado === 'liberado' && reporte.evidencia_respuesta) ? true : false,
+      denyButtonText: '<i class="bi bi-eye"></i> Ver Evidencia Inicial',
+      cancelButtonText: '<i class="bi bi-file-earmark-check"></i> Ver Evidencia Respuesta',
+      confirmButtonText: 'Cerrar',
+      denyButtonColor: '#007bff',
+      cancelButtonColor: '#28a745',
+      confirmButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isDenied) {
+        this.verEvidencia(id, estado);
+      } else if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
+        this.verEvidenciaRespuesta(id);
+      }
     });
 
     // ✅ Cambiar estado a "en proceso" solo si está pendiente

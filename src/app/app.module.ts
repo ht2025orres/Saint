@@ -35,8 +35,6 @@ import { ReportDashboardComponent } from './pages/report/report-dashboard/report
 import { AngularEditorModule } from '@kolkov/angular-editor';
 
 // Users
-import { ListUserComponent } from './pages/user/list-user/list-user.component';
-import { CreateUserComponent } from './pages/user/create-user/create-user.component';
 import { AuthorizationManagerModule } from './pages/authorization-manager/authorization-manager.module';
 import { UserProfileComponent } from './pages/user-profile/user-profile.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
@@ -97,8 +95,6 @@ registerLocaleData(localeEs, 'es-CO');
         ViewTechnicalSheetComponent,
         AnnulmentManagementComponent,
         NopagefoundComponent,
-        ListUserComponent,
-        CreateUserComponent,
         SignaturePadComponent,
         TechnicalReportBigbagComponent,
         ViewReportBigbagComponent,

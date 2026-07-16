@@ -26,7 +26,7 @@ export class ForgotPasswordComponent implements OnInit {
 
   createForm() {
     this.formGr = this.fb.group({
-      email: ['', [Validators.required, Validators.pattern('[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,3}$')]]
+      email: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,3}$')]]
     });
   }
 
@@ -40,7 +40,7 @@ export class ForgotPasswordComponent implements OnInit {
     }
 
     this.loading = true;
-    const email = this.formGr.get('email').value;
+    const email = this.formGr.get('email').value.trim().toLowerCase();
 
     this.authService.forgotPassword(email).subscribe({
       next: (response) => {

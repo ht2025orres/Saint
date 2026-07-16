@@ -119,7 +119,12 @@ export interface Informe {
   titulo: string;
   descripcion_hallazgo: string;
   tipo: TipoInforme;
+  tipo_accion?: string | null;
   nivel_impacto: NivelImpacto;
+  nivel_riesgo?: 'Bajo' | 'Medio' | 'Alto' | 'Crítico';
+  prioridad?: 'Baja' | 'Media' | 'Alta' | 'Crítica';
+  proceso_id?: number | null;
+  proceso_nombre?: string | null;
   fecha_evento: string;
   causa_raiz?: string | null;
   sistemas_afectados?: string | null;
@@ -131,6 +136,7 @@ export interface Informe {
   estado: EstadoInforme;
   creado_por: number;
   proyecto_id?: number | null;
+  consecutivo?: string;
   created_at: string;
   updated_at: string;
   total_tareas?: number;
@@ -139,6 +145,7 @@ export interface Informe {
   progreso?: number;
   puede_gestionar?: boolean;
   es_creador?: boolean;
+  mostrar_progreso?: boolean;
   tareas?: InformeTarea[];
 }
 
@@ -543,6 +550,10 @@ export class ProyectoService {
 
   eliminarInforme(id: number, usuarioId: number): Observable<ApiMessage> {
     return this.http.delete<ApiMessage>(`${this.api}/informes/${id}`, { params: { usuario_id: usuarioId } });
+  }
+
+  listarProcesosParaInformes(): Observable<ApiResponse<{ id: number; nombre: string }[]>> {
+    return this.http.get<ApiResponse<{ id: number; nombre: string }[]>>(`${this.api}/informes/procesos`);
   }
 
   descargarPdfInformeUrl(id: number, usuarioId: number): string {

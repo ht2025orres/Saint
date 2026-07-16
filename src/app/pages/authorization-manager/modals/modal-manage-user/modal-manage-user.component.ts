@@ -17,6 +17,7 @@ export class ModalManageUserComponent {
   @Input() permissions: any[] = [];
   @Input() profiles: any[] = [];
   @Input() modules: any[] = [];
+  @Input() procesos: any[] = [];
 
   @Output() onClose = new EventEmitter<void>();
   @Output() onSaved = new EventEmitter<void>();
@@ -28,6 +29,7 @@ export class ModalManageUserComponent {
   userPasswordConfirm = '';
   isEditingSelf: boolean = false;
   userProfiles: any[] = [];
+  userProcesoIds: number[] = [];
   isModuleDropdownOpen = false;
   moduleSearchTerm = '';
   selectedModuleIds: number[] = [];
@@ -50,11 +52,13 @@ export class ModalManageUserComponent {
       this.editingUser = { ...user, firstName: user.firstName || user.name, lastName: user.lastName || '' };
       this.isEditingSelf = this.authService.user?.id === user.id;
       this.userProfiles = Array.isArray(user.perfiles) ? [...user.perfiles] : [];
+      this.userProcesoIds = Array.isArray(user.proceso_ids) ? [...user.proceso_ids] : [];
       this.loadUserEffectivePermissions(user.id);
     } else {
       this.editingUser = { id: null, firstName: '', lastName: '', email: '', enabled: true };
       this.isEditingSelf = false;
       this.userProfiles = [];
+      this.userProcesoIds = [];
       this.effectivePermissions = { direct: [], inherited: [] };
     }
     
@@ -73,7 +77,23 @@ export class ModalManageUserComponent {
     this.editingUser = null;
     this.effectivePermissions = null;
     this.pendingPermissions = new Map();
+    this.userProcesoIds = [];
     this.onClose.emit();
+  }
+
+  hasProceso(procesoId: number): boolean {
+    return this.userProcesoIds.includes(procesoId);
+  }
+
+  toggleProceso(procesoId: number, event: any) {
+    const isChecked = event.target.checked;
+    if (isChecked) {
+      if (!this.userProcesoIds.includes(procesoId)) {
+        this.userProcesoIds.push(procesoId);
+      }
+    } else {
+      this.userProcesoIds = this.userProcesoIds.filter(id => id !== procesoId);
+    }
   }
 
   saveMegaUser() {
@@ -108,33 +128,43 @@ export class ModalManageUserComponent {
         // Si es un usuario nuevo, el backend nos devuelve el usuario creado con su ID
         const userId = this.editingUser.id || resp.id;
         
-        const permOps = Array.from(this.pendingPermissions.entries()).map(([permId, action]) => {
-          const perm = this.permissions.find(p => p.id === permId);
-          if (!perm) return null;
-          return action === 'REMOVE'
-            ? this.permissionService.removeFromUser(userId, permId)
-            : this.permissionService.assignToUser(userId, permId, action as 'ALLOW' | 'DENY');
-        }).filter(Boolean) as any[];
-
-        if (permOps.length === 0) {
-          this.loading = false;
-          Swal.fire('Guardado', this.editingUser.id ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente', 'success');
-          this.cerrar();
-          this.onSaved.emit();
-          return;
-        }
-
-        forkJoin(permOps).pipe(finalize(() => this.loading = false)).subscribe({
+        // Sincronizar procesos del usuario
+        this.facade.syncUserProcesos(userId, this.userProcesoIds).subscribe({
           next: () => {
-            Swal.fire('Guardado', 'Usuario y permisos actualizados correctamente', 'success');
-            this.cerrar();
-            this.onSaved.emit();
+            const permOps = Array.from(this.pendingPermissions.entries()).map(([permId, action]) => {
+              const perm = this.permissions.find(p => p.id === permId);
+              if (!perm) return null;
+              return action === 'REMOVE'
+                ? this.permissionService.removeFromUser(userId, permId)
+                : this.permissionService.assignToUser(userId, permId, action as 'ALLOW' | 'DENY');
+            }).filter(Boolean) as any[];
+
+            if (permOps.length === 0) {
+              this.loading = false;
+              Swal.fire('Guardado', this.editingUser.id ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente', 'success');
+              this.cerrar();
+              this.onSaved.emit();
+              return;
+            }
+
+            forkJoin(permOps).pipe(finalize(() => this.loading = false)).subscribe({
+              next: () => {
+                Swal.fire('Guardado', 'Usuario, procesos y permisos actualizados correctamente', 'success');
+                this.cerrar();
+                this.onSaved.emit();
+              },
+              error: (err) => {
+                console.error(err);
+                Swal.fire('Atención', 'Info guardada, pero hubo un error al aplicar algunos permisos', 'warning');
+                this.cerrar();
+                this.onSaved.emit();
+              }
+            });
           },
           error: (err) => {
+            this.loading = false;
             console.error(err);
-            Swal.fire('Atención', 'Info guardada, pero hubo un error al aplicar algunos permisos', 'warning');
-            this.cerrar();
-            this.onSaved.emit();
+            Swal.fire('Error', 'No se pudieron sincronizar los procesos del usuario', 'error');
           }
         });
       },

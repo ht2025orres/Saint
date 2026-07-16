@@ -141,6 +141,7 @@
       <th>Fecha Respuesta</th>
       <th>Tiempo Atención</th>
       <th>prioridad</th>
+      <th>Acciones</th>
     </tr>
   </thead>
   <tbody>
@@ -149,24 +150,45 @@
       <td>{{ reporte.op_reporte }}</td>
       <td>{{ reporte.cliente }}</td>
       <td>{{ reporte.usuario }}</td>
-     <td>
-      <span class="badge rounded-pill" [ngClass]="{
-        'bg-warning text-dark': reporte.estado === 'pendiente',
-        'bg-info': reporte.estado === 'en proceso',
-        'bg-success': reporte.estado === 'liberado'
-      }">{{ reporte.estado }}</span>
-    </td>
+      <td>
+        <span class="badge rounded-pill" [ngClass]="{
+          'bg-warning text-dark': reporte.estado === 'pendiente',
+          'bg-info': reporte.estado === 'en proceso',
+          'bg-success': reporte.estado === 'liberado'
+        }">{{ reporte.estado }}</span>
+      </td>
       <td>{{ reporte.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
       <td>{{ reporte.fecha_respuesta ? (reporte.fecha_respuesta | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
       <td>
- {{ (reporte.minutos_laborales / 60) | number: '1.0-0' | number: '2.0-0' }}h 
-{{ (reporte.minutos_laborales % 60) | number: '2.0-0' }}m
-
-</td>
-      <th><span class="badge rounded-pill" [ngClass]="{
+        {{ (reporte.minutos_laborales / 60) | number: '1.0-0' | number: '2.0-0' }}h 
+        {{ (reporte.minutos_laborales % 60) | number: '2.0-0' }}m
+      </td>
+      <td>
+        <span class="badge rounded-pill" [ngClass]="{
           'bg-warning': reporte.prioridad === 'media',
           'bg-danger': reporte.prioridad === 'alta'
-        }">{{ reporte.prioridad }}</span></th>
+        }">{{ reporte.prioridad }}</span>
+      </td>
+      <td>
+        <button *ngIf="reporte.evidencia" 
+          class="btn btn-outline-primary btn-sm me-1" 
+          (click)="verEvidencia(reporte.id)"
+          title="Ver evidencia inicial">
+          <i class="bi bi-eye"></i>
+        </button>
+        <button *ngIf="reporte.estado === 'liberado' && reporte.evidencia_respuesta" 
+          class="btn btn-outline-success btn-sm me-1" 
+          (click)="verEvidenciaRespuesta(reporte.id)"
+          title="Ver evidencia de respuesta">
+          <i class="bi bi-file-earmark-check"></i>
+        </button>
+        <button 
+          class="btn btn-outline-primary btn-sm" 
+          (click)="verDetalle(reporte.id)"
+          title="Ver detalle">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+      </td>
     </tr>
   </tbody>
 </table>

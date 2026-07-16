@@ -1,7 +1,28 @@
+<!-- Toast de Carga No Bloqueante -->
+<div *ngIf="loading" class="fixed bottom-4 right-4 z-[9999] flex items-center gap-3 bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 pointer-events-none transition-all duration-300">
+  <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+  <div class="flex flex-col">
+    <span class="text-xs font-semibold tracking-wide">Cargando datos...</span>
+    <span class="text-[10px] text-slate-400">Puedes seguir interactuando</span>
+  </div>
+</div>
+
 <!-- Encabezado -->
 <header class="mb-4 flex flex-col md:flex-row md:items-center justify-between" role="banner">
   <div>
-    <h1 class="text-xl font-bold text-gray-800">{{ title }}</h1>
+    <div class="flex items-center gap-3">
+      <h1 class="text-xl font-bold text-gray-800">{{ title }}</h1>
+      <span *ngIf="loading" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 shadow-sm animate-pulse">
+        <svg class="animate-spin h-3 w-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Actualizando
+      </span>
+    </div>
     <nav aria-label="Breadcrumb" class="text-xs text-gray-400 mt-0.5 flex gap-1">
       <a routerLink="/dashboard" class="hover:text-blue-600 transition-colors">Inicio</a>
       <span>/</span><span>Inconsistencias</span>
@@ -18,7 +39,8 @@
   <!-- Filtro de búsqueda -->
   <section class="mb-4" aria-label="Filtros">
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-      <div class="flex flex-wrap gap-2 items-end">
+      <div class="flex flex-wrap gap-3 items-end">
+        <!-- Búsqueda -->
         <div class="flex-1 min-w-[180px]">
           <label for="searchInput" class="block text-xs font-medium text-gray-500 mb-1">Buscar</label>
           <div class="relative">
@@ -29,6 +51,80 @@
               class="block w-full pl-7 pr-3 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
               placeholder="Cliente, solicitante, consecutivo..." [(ngModel)]="filters.busqueda"
               (input)="applyFilters()">
+          </div>
+        </div>
+
+        <!-- Estado (Filtro) -->
+        <div class="w-full md:w-[200px]">
+          <label for="stateFilter" class="block text-xs font-medium text-gray-500 mb-1">Estado</label>
+          <select id="stateFilter"
+            class="block w-full px-2.5 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white font-medium text-gray-700 cursor-pointer"
+            [(ngModel)]="filters.estado" (change)="onEstadoChange()">
+            <option value="pendientes">Pendientes</option>
+            <option value="en_espera">En Espera</option>
+            <option value="aprobadas">Aprobadas</option>
+            <option value="anuladas">Anuladas (por mí)</option>
+          </select>
+        </div>
+
+        <!-- Personalizar Columnas Dropdown -->
+        <div class="relative">
+          <!-- Backdrop para cerrar al hacer clic fuera -->
+          <div *ngIf="mostrarConfigurador" (click)="mostrarConfigurador = false" class="fixed inset-0 z-40 bg-transparent"></div>
+          
+          <button type="button" (click)="toggleConfigurador()" 
+            class="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 z-50 relative">
+            <i class="fa-solid fa-table-columns text-gray-500"></i>
+            <span>Personalizar Columnas</span>
+            <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
+          </button>
+          
+          <!-- Dropdown menu -->
+          <div *ngIf="mostrarConfigurador" 
+            class="absolute right-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50 p-2 flex flex-col gap-1">
+            <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 py-1 mb-1">Columnas Adicionales</span>
+            
+            <button type="button" (click)="columnasAdicionales.item = !columnasAdicionales.item; saveColumnSettings()"
+              class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+              [ngClass]="columnasAdicionales.item ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+              <span>Item</span>
+              <i *ngIf="columnasAdicionales.item" class="fa-solid fa-check text-blue-600"></i>
+            </button>
+            
+            <button type="button" (click)="columnasAdicionales.descripcion = !columnasAdicionales.descripcion; saveColumnSettings()"
+              class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+              [ngClass]="columnasAdicionales.descripcion ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+              <span>Descripción</span>
+              <i *ngIf="columnasAdicionales.descripcion" class="fa-solid fa-check text-blue-600"></i>
+            </button>
+            
+            <button type="button" (click)="columnasAdicionales.accion = !columnasAdicionales.accion; saveColumnSettings()"
+              class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+              [ngClass]="columnasAdicionales.accion ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+              <span>Acción Correctiva</span>
+              <i *ngIf="columnasAdicionales.accion" class="fa-solid fa-check text-blue-600"></i>
+            </button>
+            
+            <button type="button" (click)="columnasAdicionales.nota_credito = !columnasAdicionales.nota_credito; saveColumnSettings()"
+              class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+              [ngClass]="columnasAdicionales.nota_credito ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+              <span>Nota Crédito</span>
+              <i *ngIf="columnasAdicionales.nota_credito" class="fa-solid fa-check text-blue-600"></i>
+            </button>
+            
+            <button type="button" (click)="columnasAdicionales.observacion_logistica = !columnasAdicionales.observacion_logistica; saveColumnSettings()"
+              class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+              [ngClass]="columnasAdicionales.observacion_logistica ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+              <span>Obs. Logística</span>
+              <i *ngIf="columnasAdicionales.observacion_logistica" class="fa-solid fa-check text-blue-600"></i>
+            </button>
+
+            <button type="button" (click)="columnasAdicionales.razon_anulacion = !columnasAdicionales.razon_anulacion; saveColumnSettings()"
+              class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+              [ngClass]="columnasAdicionales.razon_anulacion ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+              <span>Razón Anulación</span>
+              <i *ngIf="columnasAdicionales.razon_anulacion" class="fa-solid fa-check text-blue-600"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -45,10 +141,16 @@
             <th class="px-3 py-2 whitespace-nowrap">Solicitante</th>
             <th class="px-3 py-2 whitespace-nowrap">Tipo</th>
             <th class="px-3 py-2 whitespace-nowrap">OP</th>
-            <th class="px-3 py-2 whitespace-nowrap">Item</th>
+            <th *ngIf="columnasAdicionales.item" class="px-3 py-2 whitespace-nowrap">Item</th>
             <th class="px-3 py-2 whitespace-nowrap text-center">Cant. Sol.</th>
             <th class="px-3 py-2 whitespace-nowrap text-center">Cant. Inc.</th>
             <th class="px-3 py-2 whitespace-nowrap text-right">Total</th>
+            <!-- Columnas adicionales condicionales -->
+            <th *ngIf="columnasAdicionales.descripcion" class="px-3 py-2 whitespace-nowrap">Descripción</th>
+            <th *ngIf="columnasAdicionales.accion" class="px-3 py-2 whitespace-nowrap">Acción</th>
+            <th *ngIf="columnasAdicionales.nota_credito" class="px-3 py-2 whitespace-nowrap">Nota Crédito</th>
+            <th *ngIf="columnasAdicionales.observacion_logistica" class="px-3 py-2 whitespace-nowrap">Obs. Logística</th>
+            <th *ngIf="columnasAdicionales.razon_anulacion" class="px-3 py-2 whitespace-nowrap">Razón Anulación</th>
             <th class="px-3 py-2 whitespace-nowrap text-center">Detalles</th>
           </tr>
           <ng-template #cabeceraNoLider>
@@ -56,10 +158,18 @@
               <th class="px-3 py-2 whitespace-nowrap">Fecha</th>
               <th class="px-3 py-2 whitespace-nowrap">ID</th>
               <th class="px-3 py-2 whitespace-nowrap">OP</th>
+              <th *ngIf="columnasAdicionales.item" class="px-3 py-2 whitespace-nowrap">Item</th>
               <th class="px-3 py-2 whitespace-nowrap">Cliente</th>
               <th class="px-3 py-2 whitespace-nowrap">Solicitante</th>
               <th class="px-3 py-2 whitespace-nowrap text-center">Cant. Sol.</th>
+              <th class="px-3 py-2 whitespace-nowrap text-center">Cant. Inc.</th>
               <th *ngIf="mostrarAccionTomar" class="px-3 py-2 whitespace-nowrap text-center">Etapa</th>
+              <!-- Columnas adicionales condicionales -->
+              <th *ngIf="columnasAdicionales.descripcion" class="px-3 py-2 whitespace-nowrap">Descripción</th>
+              <th *ngIf="columnasAdicionales.accion" class="px-3 py-2 whitespace-nowrap">Acción</th>
+              <th *ngIf="columnasAdicionales.nota_credito" class="px-3 py-2 whitespace-nowrap">Nota Crédito</th>
+              <th *ngIf="columnasAdicionales.observacion_logistica" class="px-3 py-2 whitespace-nowrap">Obs. Logística</th>
+              <th *ngIf="columnasAdicionales.razon_anulacion" class="px-3 py-2 whitespace-nowrap">Razón Anulación</th>
               <th class="px-3 py-2 whitespace-nowrap text-center">Detalles</th>
             </tr>
           </ng-template>
@@ -81,8 +191,10 @@
               </td>
               <!-- OP -->
               <td class="px-3 py-2 whitespace-nowrap text-gray-600">{{ inco.tipo_de_orden || 'N/A' }}</td>
-              <!-- Item -->
-              <td class="px-3 py-2 max-w-[150px] truncate text-gray-500" [title]="inco.item">{{ inco.item || 'N/A' }}</td>
+              <td *ngIf="columnasAdicionales.item" class="px-3 py-2 max-w-[150px] truncate text-gray-500" [title]="(inco.item || 'N/A') + ' - ' + (inco.nombre_item || '')">
+                <strong class="text-gray-700 font-semibold">{{ inco.item || 'N/A' }}</strong>
+                <span class="block text-[10px] text-gray-500 truncate">{{ inco.nombre_item || '' }}</span>
+              </td>
               <!-- Cant. Sol. -->
               <td class="px-3 py-2 text-center whitespace-nowrap">{{ inco.cantidad_solicitada_op || '0' }} {{ inco.unidad_medida ? (inco.unidad_medida.toString().substring(0, 3) | titlecase) : '' }}</td>
               <!-- Cant. Inc. -->
@@ -90,6 +202,22 @@
               <!-- Total -->
               <td class="px-3 py-2 text-right whitespace-nowrap font-semibold text-red-600">
                 {{ inco.precio_total_inconsistencia ? (inco.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0') : 'N/A' }}
+              </td>
+              <!-- Celdas adicionales condicionales con hover -->
+              <td *ngIf="columnasAdicionales.descripcion" class="px-3 py-2 celda-expandible" [title]="inco.descripcion_inconsistencia || ''">
+                {{ inco.descripcion_inconsistencia || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.accion" class="px-3 py-2 celda-expandible" [title]="inco.accion_inconsistencia || ''">
+                {{ inco.accion_inconsistencia || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.nota_credito" class="px-3 py-2 celda-expandible" [title]="inco.nota_credito || ''">
+                {{ inco.nota_credito || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.observacion_logistica" class="px-3 py-2 celda-expandible" [title]="inco.observacion_logistica || ''">
+                {{ inco.observacion_logistica || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.razon_anulacion" class="px-3 py-2 celda-expandible" [title]="inco.razon_anulacion || ''">
+                {{ inco.razon_anulacion || 'N/A' }}
               </td>
               <!-- Detalles -->
               <td class="px-3 py-2 whitespace-nowrap text-center">
@@ -102,7 +230,7 @@
                 </div>
               </td>
             </ng-container>
-
+ 
             <ng-template #noLiderCuerpo>
               <td class="px-3 py-2 whitespace-nowrap text-gray-500">
                 <time [attr.datetime]="inco.fecha_inconsistencia">{{ inco.fecha_inconsistencia | date:'dd/MM/yyyy' }}</time>
@@ -114,9 +242,15 @@
               <td class="px-3 py-2 whitespace-nowrap text-gray-600">
                 {{ inco.tipo_de_orden || 'N/A' }}
               </td>
+              <!-- Item -->
+              <td *ngIf="columnasAdicionales.item" class="px-3 py-2 max-w-[150px] truncate text-gray-500" [title]="(inco.item || 'N/A') + ' - ' + (inco.nombre_item || '')">
+                <strong class="text-gray-700 font-semibold">{{ inco.item || 'N/A' }}</strong>
+                <span class="block text-[10px] text-gray-500 truncate">{{ inco.nombre_item || '' }}</span>
+              </td>
               <td class="px-3 py-2 max-w-[110px] truncate" [title]="inco.Cliente">{{ inco.Cliente }}</td>
               <td class="px-3 py-2 max-w-[110px] truncate" [title]="inco.solicitante">{{ inco.solicitante }}</td>
               <td class="px-3 py-2 text-center whitespace-nowrap">{{ inco.cantidad_solicitada_op || '0' }} {{ inco.unidad_medida ? (inco.unidad_medida.toString().substring(0, 3) | titlecase) : '' }}</td>
+              <td class="px-3 py-2 text-center whitespace-nowrap font-bold text-red-600">{{ inco.cantidad_inconsistencia }} {{ inco.unidad_medida ? (inco.unidad_medida.toString().substring(0, 3) | titlecase) : '' }}</td>
 
               <!-- Columna Etapa: solo visible para Logística -->
               <td *ngIf="mostrarAccionTomar" class="px-3 py-2 whitespace-nowrap text-center">
@@ -128,6 +262,23 @@
                   }">
                   {{ traducirEtapa(inco.etapa) || inco.etapa || 'N/A' }}
                 </span>
+              </td>
+
+              <!-- Celdas adicionales condicionales con hover -->
+              <td *ngIf="columnasAdicionales.descripcion" class="px-3 py-2 celda-expandible" [title]="inco.descripcion_inconsistencia || ''">
+                {{ inco.descripcion_inconsistencia || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.accion" class="px-3 py-2 celda-expandible" [title]="inco.accion_inconsistencia || ''">
+                {{ inco.accion_inconsistencia || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.nota_credito" class="px-3 py-2 celda-expandible" [title]="inco.nota_credito || ''">
+                {{ inco.nota_credito || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.observacion_logistica" class="px-3 py-2 celda-expandible" [title]="inco.observacion_logistica || ''">
+                {{ inco.observacion_logistica || 'N/A' }}
+              </td>
+              <td *ngIf="columnasAdicionales.razon_anulacion" class="px-3 py-2 celda-expandible" [title]="inco.razon_anulacion || ''">
+                {{ inco.razon_anulacion || 'N/A' }}
               </td>
 
               <td class="px-3 py-2 whitespace-nowrap text-center">
@@ -150,8 +301,12 @@
     <ng-template #sinDatos>
       <div class="flex flex-col items-center justify-center py-12 text-center" role="status">
         <i class="fa-regular fa-folder-open text-3xl text-gray-300 mb-3"></i>
-        <p class="text-sm font-medium text-gray-600">No hay inconsistencias pendientes</p>
-        <p class="text-xs text-gray-400 mt-1">Las inconsistencias aparecerán aquí cuando sean reportadas.</p>
+        <p class="text-sm font-medium text-gray-600">
+          {{ filters.estado === 'aprobadas' ? 'No hay inconsistencias aprobadas' : (filters.estado === 'anuladas' ? 'No hay inconsistencias anuladas' : (filters.estado === 'en_espera' ? 'No hay inconsistencias en espera' : 'No hay inconsistencias pendientes')) }}
+        </p>
+        <p class="text-xs text-gray-400 mt-1">
+          {{ filters.estado === 'aprobadas' ? 'Las inconsistencias aprobadas aparecerán aquí.' : (filters.estado === 'anuladas' ? 'Las inconsistencias anuladas por ti aparecerán aquí.' : (filters.estado === 'en_espera' ? 'Las inconsistencias en espera aparecerán aquí.' : 'Las inconsistencias aparecerán aquí cuando sean reportadas.')) }}
+        </p>
       </div>
     </ng-template>
   </div>

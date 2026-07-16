@@ -6,7 +6,10 @@ export interface InformeForm {
   titulo:               string;
   descripcion_hallazgo: string;
   tipo:                 TipoInforme;
+  tipo_accion?:         string | null;
   nivel_impacto:        NivelImpacto;
+  nivel_riesgo:         'Bajo' | 'Medio' | 'Alto' | 'Crítico';
+  proceso_id?:          number | null;
   fecha_evento:         string;
   causa_raiz?:          string;
   sistemas_afectados?:  string;
@@ -25,6 +28,7 @@ export class ModalInformeComponent implements OnChanges, OnDestroy {
   @Input() show = false;
   @Input() informe: Informe | null = null;
   @Input() saving = false;
+  @Input() procesos: { id: number; nombre: string }[] = [];
 
   @Output() onCerrar = new EventEmitter<void>();
   @Output() onGuardar = new EventEmitter<InformeForm>();
@@ -40,12 +44,17 @@ export class ModalInformeComponent implements OnChanges, OnDestroy {
 
   readonly niveles: NivelImpacto[] = ['Crítico', 'Alto', 'Medio', 'Bajo'];
 
+  readonly tiposAccion: string[] = ['ACCIÓN CORRECTIVA', 'CORRECCIÓN', 'ACCIÓN DE MEJORA'];
+
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
       titulo:               ['', [Validators.required]],
       descripcion_hallazgo: ['', [Validators.required]],
       tipo:                 ['Incidente', [Validators.required]],
+      tipo_accion:          [null],
       nivel_impacto:        ['Medio', [Validators.required]],
+      nivel_riesgo:         ['Medio', [Validators.required]],
+      proceso_id:           [null],
       fecha_evento:         [new Date().toISOString().split('T')[0], [Validators.required]],
       causa_raiz:           [''],
       sistemas_afectados:   [''],
@@ -65,7 +74,10 @@ export class ModalInformeComponent implements OnChanges, OnDestroy {
           titulo:               this.informe.titulo,
           descripcion_hallazgo: this.informe.descripcion_hallazgo,
           tipo:                 this.informe.tipo,
+          tipo_accion:          this.informe.tipo_accion || null,
           nivel_impacto:        this.informe.nivel_impacto,
+          nivel_riesgo:         this.informe.nivel_riesgo || 'Medio',
+          proceso_id:           this.informe.proceso_id || null,
           fecha_evento:         this.informe.fecha_evento,
           causa_raiz:           this.informe.causa_raiz || '',
           sistemas_afectados:   this.informe.sistemas_afectados || '',
@@ -81,8 +93,9 @@ export class ModalInformeComponent implements OnChanges, OnDestroy {
         }
       } else {
         this.form.reset({
-          titulo: '', descripcion_hallazgo: '', tipo: 'Incidente', 
-          nivel_impacto: 'Medio', fecha_evento: new Date().toISOString().split('T')[0],
+          titulo: '', descripcion_hallazgo: '', tipo: 'Incidente', tipo_accion: null,
+          nivel_impacto: 'Medio', nivel_riesgo: 'Medio', proceso_id: null,
+          fecha_evento: new Date().toISOString().split('T')[0],
           causa_raiz: '', sistemas_afectados: '', impacto_negocio: '',
           accion_correctiva: '', accion_preventiva: '', control_tecnologico: '',
           fecha_implementacion: ''

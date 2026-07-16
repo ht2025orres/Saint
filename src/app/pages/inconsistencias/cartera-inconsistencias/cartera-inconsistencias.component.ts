@@ -65,7 +65,7 @@ export class CarteraInconsistenciasComponent implements OnInit {
 
   cargarInconsistencias(): void {
     this.cargando = true;
-    this.inconsistenciasService.listarInconsistenciasPorDepartamento().subscribe({
+    this.inconsistenciasService.listarInconsistenciasCartera().subscribe({
       next: (res: any) => {
         this.inconsistencias = res.data || [];
         this.paginationService.initializePaginator(

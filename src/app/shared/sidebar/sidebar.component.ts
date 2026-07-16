@@ -133,12 +133,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         link: '/workflows',
         permissions: [1]
       },
-      {
-        label: 'Admin Usuarios',
-        icon: 'bi bi-people',
-        link: '/users/page/0',
-        permissions: [1]
-      },
+
       {
         label: 'Registro de Correos',
         icon: 'bi bi-envelope-paper',
@@ -254,7 +249,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'Aprobar Inconsistencias',
             link: '/aprobar-inconsistencias',
-            permissions: [1, 7, 8, 9, 10, 11, 12, 13, 28, 29, 30]
+            permissions: [1, 7, 8, 9, 10, 11, 12, 13, 29, 30]
           },
           {
             label: 'Inconsistencias Cartera',
@@ -264,17 +259,17 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'Histórico Inconsistencias',
             link: '/historico-inconsistencias',
-            permissions: [1, 48]
+            permissions: [1, 9]
           },
           {
             label: 'Revisión de Consumo',
             link: '/revision-consumo',
-            permissions: [1, 49, 50]
+            permissions: [1, 11]
           },
           {
             label: 'Dashboard de Inconsistencias',
             link: '/dashboard-financiero-inconsistencias',
-            permissions: [1, 9, 35]
+            permissions: [1, 9]
           }
         ]
       },
@@ -341,12 +336,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         label: 'Inventario',
         icon: 'bi bi-boxes',
         modules: [5],
-        permissions: [1, 25, 26, 27, 34],
+        permissions: [1, 25, 26, 27, 34, 54],
         submenu: [
           { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas', permissions: [1, 27] },
           { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27] },
           { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27] },
-          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27] },
+          { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27, 54] },
           { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26, 34] },
           { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
         ]

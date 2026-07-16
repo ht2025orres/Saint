@@ -193,7 +193,9 @@ export function getDetallesHtml(
 
   // ── Sección: Información Económica + Acción (con textarea editable si no hay acción) ──
   const tieneAccion = inconsistencia.accion_inconsistencia && inconsistencia.accion_inconsistencia.trim() !== '';
-  const esEtapaCalidad = inconsistencia.etapa === 'calidad';
+  const etapaLower = (inconsistencia.etapa || '').toLowerCase().trim();
+  const esCreadoPorCalidad = inconsistencia.creado_por_calidad === true || inconsistencia.creado_por_calidad === 1 || String(inconsistencia.creado_por_calidad).toLowerCase() === 'true';
+  const esEtapaCalidad = etapaLower === 'calidad' || (etapaLower === 'lider' && esCreadoPorCalidad);
   const esContabilidad = inconsistencia.tipo_inconsistencia === 'documental_contabilidad'
     || (inconsistencia.tipo_inconsistencia || '').toLowerCase().includes('contabilidad');
 
@@ -333,7 +335,10 @@ export function getDetallesHtml(
                   <td style="padding:8px;">${tipos_inco[inconsistencia.tipo_inconsistencia] || inconsistencia.tipo_inconsistencia || 'N/A'}</td>
                   <td style="padding:8px;">${inconsistencia.cantidad_solicitada_op || '0'}</td>
                   <td style="padding:8px; color:#d32f2f; font-weight:bold;">${inconsistencia.cantidad_inconsistencia || '0'}</td>
-                  <td style="padding:8px;">${escapeHtml(inconsistencia.item || 'N/A')}</td>
+                  <td style="padding:8px;">
+                    <strong style="color:#1e293b;">${escapeHtml(inconsistencia.item || 'N/A')}</strong>
+                    ${inconsistencia.nombre_item ? `<br><span style="font-size:10px; color:#64748b;">${escapeHtml(inconsistencia.nombre_item)}</span>` : ''}
+                  </td>
                   <td style="padding:8px;">${escapeHtml(inconsistencia.tipo_de_orden || 'N/A')} <br> <span style="font-size:10px; color:#666;">${inconsistencia.estado_orden || ''}</span></td>
                 </tr>
               </tbody>

@@ -28,12 +28,41 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
   };
 
   private subscription = new Subscription();
+  
+  mostrarConfigurador = false;
+  columnasAdicionales = {
+    item: true,
+    accion: true,
+    etapa: true,
+    estado: true,
+    consumo: true,
+    precio_total: true
+  };
 
   constructor(
     private inconsistenciasService: InconsistenciaService,
     public authService: AuthService,
     public paginationService: PaginationService
   ) { }
+
+  toggleConfigurador(): void {
+    this.mostrarConfigurador = !this.mostrarConfigurador;
+  }
+
+  loadColumnSettings(): void {
+    const saved = localStorage.getItem('columnas_inconsistencias_consumo');
+    if (saved) {
+      try {
+        this.columnasAdicionales = JSON.parse(saved);
+      } catch (e) {
+        console.error('Error al cargar configuración de columnas de consumo', e);
+      }
+    }
+  }
+
+  saveColumnSettings(): void {
+    localStorage.setItem('columnas_inconsistencias_consumo', JSON.stringify(this.columnasAdicionales));
+  }
 
   ngOnInit(): void {
     this.inicializarComponente();
@@ -44,6 +73,7 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
   }
 
   private inicializarComponente(): void {
+    this.loadColumnSettings();
     this.cargarTipos();
     this.cargarDatos();
   }
@@ -131,9 +161,10 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
 
     // Filtro por estado de consumo
     if (this.filters.estadoConsumo) {
-      datosFiltrados = datosFiltrados.filter(item =>
-        item?.estado_consumo === this.filters.estadoConsumo
-      );
+      datosFiltrados = datosFiltrados.filter(item => {
+        const estado = (item?.estado_consumo || 'POR CONSUMIR').trim().toUpperCase();
+        return estado === this.filters.estadoConsumo;
+      });
     }
 
     // Filtro por etapa
@@ -187,7 +218,7 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
   }
 
   getColorConsumo(estado: string): string {
-    if (!estado) return 'secondary';
+    if (!estado) return 'danger';
 
     const estadoNormalizado = estado.toUpperCase();
     switch (estadoNormalizado) {
@@ -274,7 +305,8 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
 
   puedeConsumir(item: any): boolean {
     if (!item) return false;
-    return item.etapa === 'terminada' && item.estado_consumo !== 'CONSUMIDO';
+    const etapa = (item.etapa || '').toLowerCase();
+    return (etapa === 'terminada' || etapa === 'espera') && item.estado_consumo !== 'CONSUMIDO';
   }
 
   consumirInconsistencia(item: any): void {
@@ -331,6 +363,17 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
           <small class="form-text text-muted">Ingresa el código de consumo</small>
         </div>
       </div>
+
+      <!-- Observación del Consumo -->
+      <div class="mb-3">
+        <label for="observacion-consumo" class="form-label fw-bold">Observación del Consumo:</label>
+        <textarea 
+          id="observacion-consumo" 
+          class="form-control" 
+          rows="3" 
+          placeholder="Escribe una observación o comentario sobre el consumo (opcional)..."
+        ></textarea>
+      </div>
     </div>
   `;
 
@@ -350,6 +393,7 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
         const codigoSimpleHint = document.getElementById('codigo-simple-hint') as HTMLElement;
         const codigoTrnInput = document.getElementById('codigo-trn') as HTMLInputElement;
         const codigoConsumoInput = document.getElementById('codigo-consumo') as HTMLInputElement;
+        const observacionInput = document.getElementById('observacion-consumo') as HTMLTextAreaElement;
 
         // Listener para mostrar los inputs según el tipo seleccionado
         tipoSelect.addEventListener('change', (e) => {
@@ -363,6 +407,9 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
           codigoSimpleInput.value = '';
           codigoTrnInput.value = '';
           codigoConsumoInput.value = '';
+          if (observacionInput) {
+            observacionInput.value = '';
+          }
 
           if (tipo === 'consumo') {
             // Mostrar los dos inputs para Consumo
@@ -387,8 +434,10 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
         const codigoSimpleInput = document.getElementById('codigo-simple') as HTMLInputElement;
         const codigoTrnInput = document.getElementById('codigo-trn') as HTMLInputElement;
         const codigoConsumoInput = document.getElementById('codigo-consumo') as HTMLInputElement;
+        const observacionInput = document.getElementById('observacion-consumo') as HTMLTextAreaElement;
 
         const tipo = tipoSelect.value;
+        const observacion = observacionInput ? observacionInput.value.trim() : '';
 
         if (!tipo) {
           Swal.showValidationMessage('Debes seleccionar un tipo de consumo');
@@ -409,7 +458,7 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
             return false;
           }
 
-          return { tipo, codigoTrn: trn, codigoConsumo: consumo };
+          return { tipo, codigoTrn: trn, codigoConsumo: consumo, observacion_consumo: observacion };
         } else {
           const codigo = codigoSimpleInput.value.trim();
 
@@ -418,7 +467,7 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
             return false;
           }
 
-          return { tipo, codigo };
+          return { tipo, codigo, observacion_consumo: observacion };
         }
       }
     }).then((result) => {
@@ -440,6 +489,10 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
     `;
     } else {
       codigosHtml = `<p><strong>Código:</strong> ${datos.codigo}</p>`;
+    }
+
+    if (datos.observacion_consumo) {
+      codigosHtml += `<p><strong>Observación:</strong> ${datos.observacion_consumo}</p>`;
     }
 
     Swal.fire({

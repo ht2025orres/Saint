@@ -8,35 +8,37 @@
             <div>
                 <h1 class="text-xl font-bold text-slate-800">Conteo de Inventario</h1>
                 <div class="flex items-center gap-2" *ngIf="inventarioSeleccionado">
-                    <span class="text-xs font-black text-slate-400 uppercase tracking-widest">Progreso Modo Actual:</span>
+                    <span class="text-xs font-black text-slate-400 uppercase tracking-widest">Progreso Modo
+                        Actual:</span>
                     <div class="flex items-center gap-2">
-                        <div class="w-32 h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-300 shadow-inner">
+                        <div
+                            class="w-32 h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-300 shadow-inner">
                             <div [class]="modoActual === 'conteo' ? 'bg-emerald-500' : (modoActual === 'reconteo1' ? 'bg-amber-500' : 'bg-rose-500')"
-                                class="h-full transition-all duration-1000" [style.width.%]="progresoGlobalInventario"></div>
+                                class="h-full transition-all duration-1000" [style.width.%]="progresoGlobalInventario">
+                            </div>
                         </div>
                         <span class="text-xs font-black text-slate-600">{{progresoGlobalInventario}}%</span>
                     </div>
                 </div>
-                <p class="text-sm text-slate-500" *ngIf="!inventarioSeleccionado">Registro directo de existencias por zona</p>
+                <p class="text-sm text-slate-500" *ngIf="!inventarioSeleccionado">Registro directo de existencias por
+                    zona</p>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
             <!-- Selector de Modo -->
             <div class="flex bg-slate-200 p-1 rounded-xl mr-2 shadow-inner">
-                <button (click)="cambiarModo('conteo')" 
+                <button (click)="cambiarModo('conteo')"
                     [class]="modoActual === 'conteo' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
                     class="px-3 py-1.5 rounded-lg transition-all duration-300 flex items-center gap-2 group">
                     <span class="text-[9px] font-black uppercase tracking-widest">1° Conteo</span>
                 </button>
-                <button (click)="cambiarModo('reconteo1')" 
-                    [disabled]="!canEnterReconteo1"
+                <button (click)="cambiarModo('reconteo1')" [disabled]="!canEnterReconteo1"
                     [class]="modoActual === 'reconteo1' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed'"
                     class="px-3 py-1.5 rounded-lg transition-all duration-300 flex items-center gap-2 group">
                     <span class="text-[9px] font-black uppercase tracking-widest">1° Reconteo</span>
                 </button>
-                <button (click)="cambiarModo('reconteo2')" 
-                    [disabled]="!canEnterReconteo2"
+                <button (click)="cambiarModo('reconteo2')" [disabled]="!canEnterReconteo2"
                     [class]="modoActual === 'reconteo2' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed'"
                     class="px-3 py-1.5 rounded-lg transition-all duration-300 flex items-center gap-2 group">
                     <span class="text-[9px] font-black uppercase tracking-widest">2° Reconteo</span>
@@ -44,11 +46,12 @@
             </div>
 
             <div *ngIf="inventarioSeleccionado || asignacionSeleccionada" class="flex items-center gap-2">
-                <button *ngIf="asignacionSeleccionada" (click)="asignacionSeleccionada = null; itemsDeZona = []" 
+                <button *ngIf="asignacionSeleccionada" (click)="asignacionSeleccionada = null; itemsDeZona = []"
                     class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2">
                     <i class="bi bi-arrow-left"></i>Mis Zonas
                 </button>
-                <button *ngIf="inventarioSeleccionado && !asignacionSeleccionada" (click)="inventarioSeleccionado = null" 
+                <button *ngIf="inventarioSeleccionado && !asignacionSeleccionada"
+                    (click)="inventarioSeleccionado = null"
                     class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2">
                     <i class="bi bi-arrow-left"></i>Mis Inventarios
                 </button>
@@ -57,16 +60,18 @@
     </div>
 
     <!-- VISTA 1: MIS INVENTARIOS -->
-    <div *ngIf="!inventarioSeleccionado && !asignacionSeleccionada" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-300">
-        <div *ngFor="let inv of inventarios" 
-            (click)="seleccionarInventario(inv)"
+    <div *ngIf="!inventarioSeleccionado && !asignacionSeleccionada"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-300">
+        <div *ngFor="let inv of inventarios" (click)="seleccionarInventario(inv)"
             class="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all cursor-pointer group flex flex-col items-center text-center">
-            <div class="w-20 h-20 rounded-[2rem] bg-blue-50 text-blue-600 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+            <div
+                class="w-20 h-20 rounded-[2rem] bg-blue-50 text-blue-600 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
                 <i class="bi bi-clipboard-data text-4xl"></i>
             </div>
             <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">{{inv.nombre}}</h3>
-            <p class="text-xs text-slate-400 font-medium italic mb-6 line-clamp-2">{{inv.descripcion || 'Sin descripción'}}</p>
-            
+            <p class="text-xs text-slate-400 font-medium italic mb-6 line-clamp-2">{{inv.descripcion || 'Sin
+                descripción'}}</p>
+
             <div class="mt-auto w-full pt-6 border-t border-slate-50 flex justify-between items-center">
                 <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Entrar al inventario</span>
                 <i class="bi bi-arrow-right text-blue-300 group-hover:translate-x-1 transition-transform"></i>
@@ -74,48 +79,58 @@
         </div>
 
         <div *ngIf="inventarios.length === 0 && !cargando" class="col-span-full py-20 text-center">
-            <div class="w-24 h-24 bg-white rounded-[3rem] border border-slate-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <div
+                class="w-24 h-24 bg-white rounded-[3rem] border border-slate-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
                 <i class="bi bi-clipboard-x text-slate-200 text-4xl"></i>
             </div>
             <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight">No tienes inventarios asignados</h3>
-            <p class="text-slate-400 text-sm font-medium">Cuando un administrador te asigne zonas en un inventario, aparecerá aquí.</p>
+            <p class="text-slate-400 text-sm font-medium">Cuando un administrador te asigne zonas en un inventario,
+                aparecerá aquí.</p>
         </div>
     </div>
 
     <!-- VISTA 2: MIS ZONAS ASIGNADAS EN EL INVENTARIO -->
-    <div *ngIf="inventarioSeleccionado && !asignacionSeleccionada" class="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+    <div *ngIf="inventarioSeleccionado && !asignacionSeleccionada"
+        class="space-y-6 animate-in fade-in zoom-in-95 duration-300">
         <div [class]="modoActual === 'conteo' ? 'bg-blue-600' : (modoActual === 'reconteo1' ? 'bg-amber-600' : 'bg-rose-600')"
             class="rounded-[2.5rem] p-8 text-white shadow-xl shadow-blue-100 flex items-center justify-between transition-all duration-500">
             <div class="flex-1">
-                <span class="text-[10px] font-black uppercase tracking-[0.2em] !text-white/80">Inventario Seleccionado</span>
-                <h2 class="text-2xl font-black uppercase tracking-tight !text-white drop-shadow-md">{{inventarioSeleccionado.nombre}}</h2>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] !text-white/80">Inventario
+                    Seleccionado</span>
+                <h2 class="text-2xl font-black uppercase tracking-tight !text-white drop-shadow-md">
+                    {{inventarioSeleccionado.nombre}}</h2>
             </div>
             <div class="flex items-center gap-8 pr-4">
                 <div class="text-right">
-                    <span class="block text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">Zonas Asignadas</span>
+                    <span class="block text-[10px] font-black text-white/60 uppercase tracking-widest mb-1">Zonas
+                        Asignadas</span>
                     <span class="text-2xl font-black text-white">{{asignacionesFiltradas.length}}</span>
                 </div>
-                <div class="w-16 h-16 rounded-[2rem] bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                <div
+                    class="w-16 h-16 rounded-[2rem] bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
                     <i class="bi bi-geo-alt-fill text-3xl"></i>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div *ngFor="let asig of asignacionesFiltradas" 
-                (click)="seleccionarAsignacion(asig)"
+            <div *ngFor="let asig of asignacionesFiltradas" (click)="seleccionarAsignacion(asig)"
                 class="bg-white rounded-[2.5rem] border-2 border-slate-100 p-8 cursor-pointer hover:border-blue-400 hover:shadow-xl transition-all group relative overflow-hidden flex flex-col h-full">
-                
+
                 <div class="flex items-center gap-4 mb-6">
                     <div [class]="modoActual === 'conteo' ? 'group-hover:bg-blue-600' : (modoActual === 'reconteo1' ? 'group-hover:bg-amber-600' : 'group-hover:bg-rose-600')"
                         class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 group-hover:text-white transition-all flex items-center justify-center text-2xl shadow-inner">
                         <i class="bi bi-geo-alt"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{{asig.zona?.nombre}}</h3>
+                        <h3
+                            class="text-lg font-black text-slate-800 uppercase tracking-tight group-hover:text-blue-600 transition-colors">
+                            {{asig.zona?.nombre}}</h3>
                         <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{asig.zona?.codigo_bodega}}</span>
-                            <span [class]="asig.tipo_conteo === 'reconteo1' ? 'bg-amber-100 text-amber-600' : (asig.tipo_conteo === 'reconteo2' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600')"
+                            <span
+                                class="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{asig.zona?.codigo_bodega}}</span>
+                            <span
+                                [class]="asig.tipo_conteo === 'reconteo1' ? 'bg-amber-100 text-amber-600' : (asig.tipo_conteo === 'reconteo2' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600')"
                                 class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border border-slate-100">
                                 {{asig.tipo_conteo || 'conteo'}}
                             </span>
@@ -130,24 +145,26 @@
                     </div>
                     <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
                         <div [class]="modoActual === 'conteo' ? 'bg-blue-500' : (modoActual === 'reconteo1' ? 'bg-amber-500' : 'bg-rose-500')"
-                            class="h-full transition-all duration-1000 shadow-[0_0_8px_rgba(59,130,246,0.3)]" [style.width.%]="asig.avance || 0"></div>
+                            class="h-full transition-all duration-1000 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                            [style.width.%]="asig.avance || 0"></div>
                     </div>
                 </div>
 
-                <div class="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center group-hover:bg-slate-50/50 transition-colors -mx-8 -mb-8 px-8 pb-8">
+                <div
+                    class="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center group-hover:bg-slate-50/50 transition-colors -mx-8 -mb-8 px-8 pb-8">
                     <div class="flex flex-col">
                         <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest">Estado</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest"
-                            [ngClass]="{
-                                'text-amber-500': asig.estado === 'pendiente',
-                                'text-blue-500': asig.estado === 'en_conteo',
-                                'text-emerald-500': asig.estado === 'completado'
+                        <span class="text-[10px] font-black uppercase tracking-widest" [ngClass]="{
+                                'text-amber-500': (asig.avance || 0) < 100 && asig.estado === 'pendiente',
+                                'text-blue-500': (asig.avance || 0) < 100 && asig.estado === 'en_conteo',
+                                'text-emerald-500': (asig.avance || 0) >= 100 || asig.estado === 'completado'
                             }">
-                            {{asig.estado}}
+                            {{ (asig.avance || 0) >= 100 ? 'completado' : asig.estado }}
                         </span>
                     </div>
                     <div class="flex items-center gap-2 text-blue-600">
-                        <span class="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
+                        <span
+                            class="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Entrar</span>
                         <i class="bi bi-chevron-right text-lg"></i>
                     </div>
                 </div>
@@ -158,34 +175,42 @@
     <!-- VISTA 3: INTERFAZ DE CONTEO -->
     <div *ngIf="asignacionSeleccionada" class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
         <!-- Header Zona -->
-        <div class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 p-4 lg:p-8 shadow-sm flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-3 lg:gap-6">
+        <div
+            class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 p-4 lg:p-8 shadow-sm flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-3 lg:gap-6">
             <div class="flex items-center gap-4 lg:gap-6">
-                <div class="w-12 h-12 lg:w-16 lg:h-16 rounded-xl lg:rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
+                <div
+                    class="w-12 h-12 lg:w-16 lg:h-16 rounded-xl lg:rounded-[2rem] bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
                     <i class="bi bi-geo-fill text-2xl lg:text-3xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-lg lg:text-2xl font-black text-slate-800 uppercase tracking-tight">{{asignacionSeleccionada.zona?.nombre}}</h2>
+                    <h2 class="text-lg lg:text-2xl font-black text-slate-800 uppercase tracking-tight">
+                        {{asignacionSeleccionada.zona?.nombre}}</h2>
                     <div class="flex items-center gap-3">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bodega: {{asignacionSeleccionada.zona?.codigo_bodega}}</p>
-                        <span *ngIf="asignacionSeleccionada.tipo_items !== 'todos'" 
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bodega:
+                            {{asignacionSeleccionada.zona?.codigo_bodega}}</p>
+                        <span *ngIf="asignacionSeleccionada.tipo_items !== 'todos'"
                             [class]="'px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ' + (asignacionSeleccionada.tipo_items === 'incluir' ? 'bg-blue-100 text-blue-600' : 'bg-rose-100 text-rose-600')">
-                            {{ asignacionSeleccionada.tipo_items === 'incluir' ? 'Solo ciertos items' : 'Items excluidos' }}
+                            {{ asignacionSeleccionada.tipo_items === 'incluir' ? 'Solo ciertos items' : 'Items
+                            excluidos' }}
                         </span>
                     </div>
                 </div>
             </div>
             <div class="flex-1 max-w-md mx-0 lg:mx-10 w-full lg:w-auto">
                 <div class="flex justify-between items-end mb-2">
-                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Avance del Conteo</span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Avance del
+                        Conteo</span>
                     <span class="text-sm font-black text-emerald-600">{{porcentajeProgreso}}%</span>
                 </div>
                 <div class="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200 shadow-inner">
-                    <div class="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]" [style.width.%]="porcentajeProgreso"></div>
+                    <div class="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                        [style.width.%]="porcentajeProgreso"></div>
                 </div>
             </div>
             <div class="flex items-center gap-4 lg:gap-10">
                 <div class="text-right">
-                    <span class="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Items Contados</span>
+                    <span class="block text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Items
+                        Contados</span>
                     <span class="text-3xl font-black text-slate-800">{{conteos.length}}</span>
                 </div>
             </div>
@@ -193,91 +218,126 @@
 
         <!-- Mobile Tab Navigation -->
         <div class="flex lg:hidden bg-white rounded-2xl border border-slate-200 p-1.5 shadow-sm">
-            <button (click)="activeMobileTab = 'registrar'" 
+            <button (click)="activeMobileTab = 'registrar'"
                 [ngClass]="activeMobileTab === 'registrar' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500'"
                 class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5">
                 <i class="bi bi-plus-circle"></i>
                 Registrar
             </button>
-            <button (click)="activeMobileTab = 'items'" 
+            <button (click)="activeMobileTab = 'items'"
                 [ngClass]="activeMobileTab === 'items' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500'"
                 class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5">
                 <i class="bi bi-list-ul"></i>
                 Items
-                <span class="px-1.5 py-0.5 rounded-full text-[8px]" [ngClass]="activeMobileTab === 'items' ? 'bg-white/20' : 'bg-slate-100'">{{itemsDeZona.length}}</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[8px]"
+                    [ngClass]="activeMobileTab === 'items' ? 'bg-white/20' : 'bg-slate-100'">{{itemsDeZona.length}}</span>
             </button>
-            <button (click)="activeMobileTab = 'historial'" 
+            <button (click)="activeMobileTab = 'historial'"
                 [ngClass]="activeMobileTab === 'historial' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500'"
                 class="flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1.5">
                 <i class="bi bi-clock-history"></i>
                 Historial
-                <span class="px-1.5 py-0.5 rounded-full text-[8px]" [ngClass]="activeMobileTab === 'historial' ? 'bg-white/20' : 'bg-slate-100'">{{conteos.length}}</span>
+                <span class="px-1.5 py-0.5 rounded-full text-[8px]"
+                    [ngClass]="activeMobileTab === 'historial' ? 'bg-white/20' : 'bg-slate-100'">{{conteos.length}}</span>
             </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Formulario y Historial (Izquierda) -->
-            <div [ngClass]="(activeMobileTab === 'registrar' || activeMobileTab === 'historial') ? '' : 'hidden lg:block'" class="lg:col-span-8 space-y-6">
+            <div [ngClass]="(activeMobileTab === 'registrar' || activeMobileTab === 'historial') ? '' : 'hidden lg:block'"
+                class="lg:col-span-8 space-y-6">
                 <!-- Formulario Conteo -->
-                <div [ngClass]="activeMobileTab === 'registrar' ? '' : 'hidden lg:block'" class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div [ngClass]="activeMobileTab === 'registrar' ? '' : 'hidden lg:block'"
+                    class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Registrar Nuevo Ítem</h3>
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Registrar Nuevo Ítem
+                        </h3>
                     </div>
                     <div class="p-4 lg:p-8">
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                             <!-- ID Siesa / QR -->
                             <div class="md:col-span-4 space-y-2 relative">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ID Siesa / QR</label>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ID
+                                    Siesa / QR</label>
                                 <div class="relative">
-                                    <i class="bi bi-upc-scan absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"></i>
-                                    <input type="text" [(ngModel)]="nuevoConteo.id_item_siesa" (focus)="campoActivo = 'id_item_siesa'" (blur)="campoActivo = null"
+                                    <i
+                                        class="bi bi-upc-scan absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"></i>
+                                    <input type="text" [(ngModel)]="nuevoConteo.id_item_siesa"
+                                        (focus)="campoActivo = 'id_item_siesa'" (blur)="campoActivo = null"
                                         class="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-400 outline-none transition-all font-bold text-slate-700"
                                         placeholder="ID Item">
                                 </div>
-                                <div *ngIf="campoActivo === 'id_item_siesa' && getRecomendaciones('id_item_siesa').length > 0" class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                    <div *ngFor="let rec of getRecomendaciones('id_item_siesa')" (mousedown)="seleccionarItemParaConteo(rec)"
+                                <div *ngIf="campoActivo === 'id_item_siesa' && getRecomendaciones('id_item_siesa').length > 0"
+                                    class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div *ngFor="let rec of getRecomendaciones('id_item_siesa')"
+                                        (mousedown)="seleccionarItemParaConteo(rec)"
                                         class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center">
-                                        <div class="flex flex-col"><span class="text-xs font-black text-slate-700">{{rec.id_item}}</span><span class="text-[9px] font-bold text-slate-400">{{rec.referencia}}</span></div>
-                                        <div class="flex gap-1"><span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black rounded uppercase">T: {{rec.id_talla}}</span><span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-black rounded uppercase">C: {{rec.id_color}}</span></div>
+                                        <div class="flex flex-col"><span
+                                                class="text-xs font-black text-slate-700">{{rec.id_item}}</span><span
+                                                class="text-[9px] font-bold text-slate-400">{{rec.referencia}}</span>
+                                        </div>
+                                        <div class="flex gap-1"><span
+                                                class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black rounded uppercase">T:
+                                                {{rec.id_talla}}</span><span
+                                                class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-black rounded uppercase">C:
+                                                {{rec.id_color}}</span></div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Referencia -->
                             <div class="md:col-span-4 space-y-2 relative">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referencia</label>
-                                <input type="text" [(ngModel)]="nuevoConteo.referencia" (focus)="campoActivo = 'referencia'" (blur)="campoActivo = null"
+                                <label
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referencia</label>
+                                <input type="text" [(ngModel)]="nuevoConteo.referencia"
+                                    (focus)="campoActivo = 'referencia'" (blur)="campoActivo = null"
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-400 outline-none transition-all font-bold text-slate-700"
                                     placeholder="Ref">
-                                <div *ngIf="campoActivo === 'referencia' && getRecomendaciones('referencia').length > 0" class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                    <div *ngFor="let rec of getRecomendaciones('referencia')" (mousedown)="seleccionarItemParaConteo(rec)"
+                                <div *ngIf="campoActivo === 'referencia' && getRecomendaciones('referencia').length > 0"
+                                    class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div *ngFor="let rec of getRecomendaciones('referencia')"
+                                        (mousedown)="seleccionarItemParaConteo(rec)"
                                         class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center">
-                                        <div class="flex flex-col"><span class="text-xs font-black text-slate-700">{{rec.referencia}}</span><span class="text-[9px] font-bold text-slate-400">ID: {{rec.id_item}}</span></div>
-                                        <div class="flex gap-1"><span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black rounded uppercase">T: {{rec.id_talla}}</span><span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-black rounded uppercase">C: {{rec.id_color}}</span></div>
+                                        <div class="flex flex-col"><span
+                                                class="text-xs font-black text-slate-700">{{rec.referencia}}</span><span
+                                                class="text-[9px] font-bold text-slate-400">ID: {{rec.id_item}}</span>
+                                        </div>
+                                        <div class="flex gap-1"><span
+                                                class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black rounded uppercase">T:
+                                                {{rec.id_talla}}</span><span
+                                                class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-black rounded uppercase">C:
+                                                {{rec.id_color}}</span></div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Cantidad -->
                             <div class="md:col-span-4 space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cantidad</label>
-                                <input type="number" [(ngModel)]="nuevoConteo.cantidad" 
+                                <label
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cantidad</label>
+                                <input type="number" [(ngModel)]="nuevoConteo.cantidad"
                                     class="w-full px-6 py-4 bg-blue-50 border-2 border-blue-200 rounded-2xl outline-none font-black text-blue-700 text-xl text-center"
                                     placeholder="0">
                             </div>
 
                             <!-- Talla -->
                             <div class="md:col-span-3 space-y-2 relative">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Talla</label>
-                                <input type="text" [(ngModel)]="nuevoConteo.id_talla" (focus)="campoActivo = 'id_talla'" (blur)="campoActivo = null"
+                                <label
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Talla</label>
+                                <input type="text" [(ngModel)]="nuevoConteo.id_talla" (focus)="campoActivo = 'id_talla'"
+                                    (blur)="campoActivo = null"
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-400 outline-none transition-all font-bold text-slate-700"
                                     placeholder="Talla">
-                                <div *ngIf="campoActivo === 'id_talla' && getRecomendaciones('id_talla').length > 0" class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                    <div *ngFor="let rec of getRecomendaciones('id_talla')" (mousedown)="seleccionarItemParaConteo(rec)"
+                                <div *ngIf="campoActivo === 'id_talla' && getRecomendaciones('id_talla').length > 0"
+                                    class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div *ngFor="let rec of getRecomendaciones('id_talla')"
+                                        (mousedown)="seleccionarItemParaConteo(rec)"
                                         class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center">
                                         <div class="flex items-center gap-3">
-                                            <span class="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg uppercase">{{rec.id_talla}}</span>
-                                            <span class="text-[10px] font-bold text-slate-400 uppercase">{{rec.referencia}}</span>
+                                            <span
+                                                class="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-black rounded-lg uppercase">{{rec.id_talla}}</span>
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400 uppercase">{{rec.referencia}}</span>
                                         </div>
                                         <span class="text-[9px] text-slate-400">ID: {{rec.id_item}}</span>
                                     </div>
@@ -286,16 +346,22 @@
 
                             <!-- Color -->
                             <div class="md:col-span-3 space-y-2 relative">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Color</label>
-                                <input type="text" [(ngModel)]="nuevoConteo.id_color" (focus)="campoActivo = 'id_color'" (blur)="campoActivo = null"
+                                <label
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Color</label>
+                                <input type="text" [(ngModel)]="nuevoConteo.id_color" (focus)="campoActivo = 'id_color'"
+                                    (blur)="campoActivo = null"
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-400 outline-none transition-all font-bold text-slate-700"
                                     placeholder="Color">
-                                <div *ngIf="campoActivo === 'id_color' && getRecomendaciones('id_color').length > 0" class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                    <div *ngFor="let rec of getRecomendaciones('id_color')" (mousedown)="seleccionarItemParaConteo(rec)"
+                                <div *ngIf="campoActivo === 'id_color' && getRecomendaciones('id_color').length > 0"
+                                    class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div *ngFor="let rec of getRecomendaciones('id_color')"
+                                        (mousedown)="seleccionarItemParaConteo(rec)"
                                         class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center">
                                         <div class="flex items-center gap-3">
-                                            <span class="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-lg uppercase">{{rec.id_color}}</span>
-                                            <span class="text-[10px] font-bold text-slate-400 uppercase">{{rec.referencia}}</span>
+                                            <span
+                                                class="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-lg uppercase">{{rec.id_color}}</span>
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400 uppercase">{{rec.referencia}}</span>
                                         </div>
                                         <span class="text-[9px] text-slate-400">ID: {{rec.id_item}}</span>
                                     </div>
@@ -304,16 +370,22 @@
 
                             <!-- Descripción -->
                             <div class="md:col-span-6 space-y-2 relative">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descripción</label>
-                                <input type="text" [(ngModel)]="nuevoConteo.descripcion" (focus)="campoActivo = 'descripcion'" (blur)="campoActivo = null"
+                                <label
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descripción</label>
+                                <input type="text" [(ngModel)]="nuevoConteo.descripcion"
+                                    (focus)="campoActivo = 'descripcion'" (blur)="campoActivo = null"
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-400 outline-none transition-all font-bold text-slate-700"
                                     placeholder="Descripción del producto">
-                                <div *ngIf="campoActivo === 'descripcion' && getRecomendaciones('descripcion').length > 0" class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                    <div *ngFor="let rec of getRecomendaciones('descripcion')" (mousedown)="seleccionarItemParaConteo(rec)"
+                                <div *ngIf="campoActivo === 'descripcion' && getRecomendaciones('descripcion').length > 0"
+                                    class="absolute z-20 left-0 right-0 mt-2 bg-white border border-slate-100 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div *ngFor="let rec of getRecomendaciones('descripcion')"
+                                        (mousedown)="seleccionarItemParaConteo(rec)"
                                         class="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex flex-col gap-1">
-                                        <span class="text-[10px] font-black text-slate-700 truncate">{{rec.descripcion}}</span>
+                                        <span
+                                            class="text-[10px] font-black text-slate-700 truncate">{{rec.descripcion}}</span>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-[9px] font-bold text-slate-400 uppercase">{{rec.referencia}}</span>
+                                            <span
+                                                class="text-[9px] font-bold text-slate-400 uppercase">{{rec.referencia}}</span>
                                             <span class="text-[9px] text-slate-400">ID: {{rec.id_item}}</span>
                                         </div>
                                     </div>
@@ -322,14 +394,16 @@
 
                             <!-- Observaciones -->
                             <div class="md:col-span-6 space-y-2 relative">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Notas / Observaciones (Opcional)</label>
-                                <textarea [(ngModel)]="nuevoConteo.observaciones" 
+                                <label
+                                    class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Notas /
+                                    Observaciones (Opcional)</label>
+                                <textarea [(ngModel)]="nuevoConteo.observaciones"
                                     class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-emerald-400 outline-none transition-all font-bold text-slate-700 min-h-[58px]"
                                     placeholder="Ejem: Empaque dañado, sin etiqueta..."></textarea>
                             </div>
-                            
+
                             <div class="md:col-span-12 flex justify-center lg:justify-end pt-4">
-                                <button (click)="registrarConteo()" 
+                                <button (click)="registrarConteo()"
                                     class="w-full lg:w-auto px-8 lg:px-12 py-4 lg:py-5 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
                                     <i class="bi bi-check2-circle text-xl"></i>
                                     Guardar Registro
@@ -340,20 +414,34 @@
                 </div>
 
                 <!-- Tabla de Historial -->
-                <div [ngClass]="activeMobileTab === 'historial' ? '' : 'hidden lg:block'" class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div [ngClass]="activeMobileTab === 'historial' ? '' : 'hidden lg:block'"
+                    class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Últimos Conteos en esta Zona</h3>
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Últimos Conteos en
+                            esta Zona</h3>
                     </div>
                     <div class="overflow-x-auto custom-scrollbar hidden lg:block">
                         <table class="w-full text-left">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-100">
-                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Item</th>
-                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción</th>
-                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Talla / Color</th>
-                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Cantidad</th>
-                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hora</th>
-                                    <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Acción</th>
+                                    <th
+                                        class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        Item</th>
+                                    <th
+                                        class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        Descripción</th>
+                                    <th
+                                        class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        Talla / Color</th>
+                                    <th
+                                        class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                                        Cantidad</th>
+                                    <th
+                                        class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        Hora</th>
+                                    <th
+                                        class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
+                                        Acción</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -361,7 +449,8 @@
                                     <td class="px-8 py-5">
                                         <div class="flex flex-col">
                                             <span class="text-sm font-black text-slate-800">{{c.id_item_siesa}}</span>
-                                            <span class="text-[10px] font-bold text-slate-400 uppercase">{{c.referencia}}</span>
+                                            <span
+                                                class="text-[10px] font-bold text-slate-400 uppercase">{{c.referencia}}</span>
                                         </div>
                                     </td>
                                     <td class="px-8 py-5">
@@ -370,33 +459,40 @@
                                     <td class="px-8 py-5">
                                         <div class="flex items-center gap-4">
                                             <div class="flex flex-col">
-                                                <span class="text-[9px] font-black text-slate-300 uppercase mb-0.5">Color</span>
+                                                <span
+                                                    class="text-[9px] font-black text-slate-300 uppercase mb-0.5">Color</span>
                                                 <div class="flex items-center gap-1.5">
                                                     <span class="text-xs font-bold text-slate-600">{{c.id_color}}</span>
                                                 </div>
                                             </div>
                                             <div class="flex flex-col border-l border-slate-100 pl-4">
-                                                <span class="text-[9px] font-black text-slate-300 uppercase mb-0.5">Talla</span>
+                                                <span
+                                                    class="text-[9px] font-black text-slate-300 uppercase mb-0.5">Talla</span>
                                                 <span class="text-xs font-black text-slate-700">{{c.id_talla}}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-8 py-5 text-center">
-                                        <span class="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-xl font-black text-sm border border-blue-100">
+                                        <span
+                                            class="px-4 py-1.5 bg-blue-50 text-blue-700 rounded-xl font-black text-sm border border-blue-100">
                                             {{formatCantidad(c.cantidad)}}
                                         </span>
                                     </td>
                                     <td class="px-8 py-5">
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase">{{c.fecha_conteo | date:'shortTime'}}</span>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase">{{c.fecha_conteo |
+                                            date:'shortTime'}}</span>
                                     </td>
                                     <td class="px-8 py-5 text-right">
                                         <div class="flex justify-end gap-2">
-                                            <button *ngIf="c.observaciones" (click)="verNotaDirecto(c)" 
+                                            <button *ngIf="c.observaciones" (click)="verNotaDirecto(c)"
                                                 class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 hover:bg-amber-100 transition-all flex items-center justify-center"
                                                 title="Ver Nota">
                                                 <i class="bi bi-chat-left-text"></i>
                                             </button>
-                                            <button class="w-10 h-10 rounded-full text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition-all">
+                                            <button (click)="eliminarConteo(c)"
+                                                [ngClass]="puedeEditarConteo(c) ? 'text-rose-500 hover:bg-rose-50' : 'text-slate-300 cursor-not-allowed opacity-40'"
+                                                [title]="puedeEditarConteo(c) ? 'Eliminar Conteo' : 'No se puede eliminar (límite de 2 horas superado)'"
+                                                class="w-10 h-10 rounded-full transition-all">
                                                 <i class="bi bi-trash3"></i>
                                             </button>
                                         </div>
@@ -405,7 +501,8 @@
                                 <tr *ngIf="conteos.length === 0">
                                     <td colspan="6" class="px-8 py-20 text-center">
                                         <i class="bi bi-inbox text-slate-200 text-4xl mb-4 block"></i>
-                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No hay registros aún</p>
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No
+                                            hay registros aún</p>
                                     </td>
                                 </tr>
                             </tbody>
@@ -414,30 +511,46 @@
 
                     <!-- Mobile History Cards -->
                     <div class="lg:hidden p-3 space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                        <div *ngFor="let c of conteos" class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
+                        <div *ngFor="let c of conteos"
+                            class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-2">
                             <div class="flex justify-between items-start">
                                 <div class="min-w-0 flex-1 mr-3">
-                                    <span class="text-sm font-black text-slate-800 block truncate">{{c.id_item_siesa}}</span>
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase block truncate">{{c.referencia}}</span>
+                                    <span
+                                        class="text-sm font-black text-slate-800 block truncate">{{c.id_item_siesa}}</span>
+                                    <span
+                                        class="text-[10px] font-bold text-slate-400 uppercase block truncate">{{c.referencia}}</span>
                                 </div>
-                                <span class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl font-black text-sm border border-blue-100 whitespace-nowrap shrink-0">
+                                <span
+                                    class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl font-black text-sm border border-blue-100 whitespace-nowrap shrink-0">
                                     {{formatCantidad(c.cantidad)}}
                                 </span>
                             </div>
                             <p class="text-xs text-slate-500 italic line-clamp-1">{{c.descripcion}}</p>
                             <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100">
-                                <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase border border-blue-100">T: {{c.id_talla}}</span>
-                                <span class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[9px] font-black uppercase border border-amber-100">C: {{c.id_color}}</span>
-                                <span class="ml-auto text-[10px] text-slate-400 font-bold">{{c.fecha_conteo | date:'shortTime'}}</span>
-                                <button *ngIf="c.observaciones" (click)="verNotaDirecto(c)" 
-                                    class="w-7 h-7 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-100">
-                                    <i class="bi bi-chat-left-text text-[10px]"></i>
-                                </button>
+                                <span
+                                    class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase border border-blue-100">T:
+                                    {{c.id_talla}}</span>
+                                <span
+                                    class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[9px] font-black uppercase border border-amber-100">C:
+                                    {{c.id_color}}</span>
+                                <span class="ml-auto text-[10px] text-slate-400 font-bold">{{c.fecha_conteo |
+                                    date:'shortTime'}}</span>
+                                 <button *ngIf="c.observaciones" (click)="verNotaDirecto(c)"
+                                     class="w-7 h-7 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-100">
+                                     <i class="bi bi-chat-left-text text-[10px]"></i>
+                                 </button>
+                                 <button (click)="eliminarConteo(c)"
+                                     [ngClass]="puedeEditarConteo(c) ? 'bg-rose-50 text-rose-500 border-rose-100 hover:bg-rose-100' : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-50'"
+                                     [title]="puedeEditarConteo(c) ? 'Eliminar Conteo' : 'No se puede eliminar (límite de 2 horas superado)'"
+                                     class="w-7 h-7 rounded-full flex items-center justify-center border transition-all">
+                                     <i class="bi bi-trash3 text-[10px]"></i>
+                                 </button>
                             </div>
                         </div>
                         <div *ngIf="conteos.length === 0" class="py-12 text-center">
                             <i class="bi bi-inbox text-slate-200 text-3xl mb-3 block"></i>
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No hay registros aún</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">No hay registros
+                                aún</p>
                         </div>
                     </div>
                 </div>
@@ -445,39 +558,43 @@
 
             <!-- Listado de Items que deben estar en la zona (Derecha) -->
             <div [ngClass]="activeMobileTab === 'items' ? '' : 'hidden lg:block'" class="lg:col-span-4 space-y-6">
-                <div class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[70vh] lg:h-[800px]">
+                <div
+                    class="bg-white rounded-2xl lg:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[70vh] lg:h-[800px]">
                     <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-4">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ítems de esta Zona</h3>
-                            <span class="px-3 py-1 bg-blue-600 text-white rounded-full text-[10px] font-black">{{itemsDeZona.length}}</span>
+                            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ítems de esta
+                                Zona</h3>
+                            <span
+                                class="px-3 py-1 bg-blue-600 text-white rounded-full text-[10px] font-black">{{itemsDeZona.length}}</span>
                         </div>
                         <div class="relative">
                             <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" [(ngModel)]="busquedaItemFiltro" 
+                            <input type="text" [(ngModel)]="busquedaItemFiltro"
                                 class="w-full pl-11 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all"
                                 placeholder="Buscar por ID, Ref, Color, Talla...">
                         </div>
                     </div>
-                    
+
                     <div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
                         <div *ngIf="cargandoItems" class="py-12 text-center">
                             <div class="spinner-border text-blue-600 mb-4"></div>
                             <p class="text-[10px] font-black text-slate-400 uppercase">Cargando lista...</p>
                         </div>
 
-                        <div *ngFor="let item of itemsDeZonaFiltrados" 
-                            (click)="verDetallesConteo(item)"
+                        <div *ngFor="let item of itemsDeZonaFiltrados" (click)="verDetallesConteo(item)"
                             class="p-5 rounded-[2rem] border transition-all cursor-pointer group shadow-sm hover:shadow-md relative overflow-hidden"
                             [ngClass]="{
                                 'bg-emerald-50/50 border-emerald-100 hover:border-emerald-300': isItemContado(item),
                                 'bg-slate-50/30 border-slate-100 hover:border-blue-300 hover:bg-blue-50': !isItemContado(item)
                             }">
-                            
+
                             <!-- Indicador de Contado -->
                             <div *ngIf="isItemContado(item)" class="absolute top-0 right-0">
-                                <div class="bg-emerald-500 text-white px-3 py-1 rounded-bl-2xl shadow-sm flex items-center gap-1.5">
+                                <div
+                                    class="bg-emerald-500 text-white px-3 py-1 rounded-bl-2xl shadow-sm flex items-center gap-1.5">
                                     <i class="bi bi-check-circle-fill text-[10px]"></i>
-                                    <span class="text-[8px] font-black uppercase tracking-tighter">Contado ({{getConteoDetalle(item).length}})</span>
+                                    <span class="text-[8px] font-black uppercase tracking-tighter">Contado
+                                        ({{getConteoDetalle(item).length}})</span>
                                 </div>
                             </div>
 
@@ -486,26 +603,32 @@
                                 <div class="flex flex-col gap-2 min-w-[50px]">
                                     <div class="flex flex-col items-center">
                                         <span class="text-[8px] font-black text-slate-400 uppercase mb-0.5">Talla</span>
-                                        <span class="w-full px-2 py-1 bg-blue-100 text-blue-700 text-[11px] font-black rounded-lg uppercase border border-blue-200 text-center shadow-inner">{{item.id_talla}}</span>
+                                        <span
+                                            class="w-full px-2 py-1 bg-blue-100 text-blue-700 text-[11px] font-black rounded-lg uppercase border border-blue-200 text-center shadow-inner">{{item.id_talla}}</span>
                                     </div>
                                     <div class="flex flex-col items-center">
                                         <span class="text-[8px] font-black text-slate-400 uppercase mb-0.5">Color</span>
-                                        <span class="w-full px-2 py-1 bg-amber-100 text-amber-700 text-[11px] font-black rounded-lg uppercase border border-amber-200 text-center shadow-inner">{{item.id_color}}</span>
+                                        <span
+                                            class="w-full px-2 py-1 bg-amber-100 text-amber-700 text-[11px] font-black rounded-lg uppercase border border-amber-200 text-center shadow-inner">{{item.id_color}}</span>
                                     </div>
                                 </div>
 
                                 <!-- Información Central -->
                                 <div class="flex-1 min-w-0">
                                     <div class="flex justify-between items-start mb-2 gap-2">
-                                        <span class="text-sm font-black text-slate-800 group-hover:text-blue-700 transition-colors truncate">{{item.id_item}}</span>
-                                        <span class="px-4 py-2 bg-white border-2 border-blue-500 text-[15px] font-black text-blue-600 rounded-2xl uppercase shadow-md whitespace-nowrap">{{item.referencia}}</span>
+                                        <span
+                                            class="text-sm font-black text-slate-800 group-hover:text-blue-700 transition-colors truncate">{{item.id_item}}</span>
+                                        <span
+                                            class="px-4 py-2 bg-white border-2 border-blue-500 text-[15px] font-black text-blue-600 rounded-2xl uppercase shadow-md whitespace-nowrap">{{item.referencia}}</span>
                                     </div>
-                                    <p class="text-[13px] text-slate-500 font-medium line-clamp-2 italic leading-tight">{{item.descripcion}}</p>
+                                    <p class="text-[13px] text-slate-500 font-medium line-clamp-2 italic leading-tight">
+                                        {{item.descripcion}}</p>
                                 </div>
 
                                 <!-- Acción -->
                                 <div class="pl-2">
-                                    <i class="bi bi-plus-circle-fill text-blue-200 group-hover:text-blue-600 transition-all text-2xl shadow-sm rounded-full bg-white"></i>
+                                    <i
+                                        class="bi bi-plus-circle-fill text-blue-200 group-hover:text-blue-600 transition-all text-2xl shadow-sm rounded-full bg-white"></i>
                                 </div>
                             </div>
                         </div>
@@ -517,7 +640,8 @@
                     </div>
 
                     <div class="p-6 bg-slate-50 border-t border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 italic text-center">Pulsa un ítem para cargar sus datos automáticamente en el formulario.</p>
+                        <p class="text-[9px] font-bold text-slate-400 italic text-center">Pulsa un ítem para cargar sus
+                            datos automáticamente en el formulario.</p>
                     </div>
                 </div>
             </div>
@@ -526,17 +650,20 @@
 </div>
 
 <style>
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #cbd5e1;
-}
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+    }
 </style>

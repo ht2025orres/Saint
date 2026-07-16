@@ -34,7 +34,7 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     { id: 'proyectos',    label: 'Proyectos',      icon: 'bi-kanban'             },
     { id: 'tareas',       label: 'Tareas',         icon: 'bi-check2-square'      },
     { id: 'seguimientos', label: 'Seguimientos',   icon: 'bi-calendar3'          },
-    { id: 'informes',     label: 'Informes',       icon: 'bi-file-earmark-text'  },
+    { id: 'informes',     label: 'Hallazgos',     icon: 'bi-file-earmark-text'  },
   ];
 
   private _subs = new Subscription();
@@ -119,7 +119,9 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   // ── Usuarios (carga única, compartida con sub-componentes) ──────
   private _cargarUsuarios(): void {
     if (this.state.usuariosCache.length) return;
-    this.userService.getAllBasic().subscribe({
+
+    // 1. Usuarios del proceso (para selectores/botones)
+    this.userService.getAllBasic(true).subscribe({
       next: (us: any[]) => {
         this.state.setUsuariosCache(
           us.map(u => ({
@@ -131,6 +133,18 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: () => this.state.showToast('No se pudo cargar la lista de usuarios', 'error'),
+    });
+
+    // 2. TODOS los usuarios (solo para resolución de nombres/iniciales)
+    this.userService.getAllBasic().subscribe({
+      next: (us: any[]) => {
+        this.state.setTodosNombresMap(
+          us.map(u => ({
+            id: u.id,
+            nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+          })),
+        );
+      },
     });
   }
 }

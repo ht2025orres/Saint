@@ -140,6 +140,17 @@ export class RegistrarEmpaqueComponent implements OnInit {
   }
 
   obtenerEstado(pv: any): string {
+    // Usar el estado calculado por el backend (almacenado en BD, basado en item_hash)
+    const estadoDB = pv.estado_empaque;
+    if (estadoDB === 'completa') {
+      return 'Terminada';
+    } else if (estadoDB === 'con_asignacion') {
+      return 'Con asignación';
+    } else if (estadoDB === 'sin_asignacion') {
+      return 'En espera';
+    }
+
+    // Fallback: si no hay estado en BD, calcular localmente
     const asignado = parseFloat(pv.asignado ?? 0);
     const empacado = parseFloat(pv.empacado ?? 0);
     const teorico = parseFloat(pv.teorico ?? 0);

@@ -48,6 +48,67 @@
   <div class="mb-2 flex items-center justify-between">
     <span class="text-xs text-gray-500"><strong class="text-gray-700">{{ currentData.length }}</strong> {{
       currentData.length === 1 ? 'registro' : 'registros' }}</span>
+    
+    <!-- Personalizar Columnas Dropdown -->
+    <div class="relative">
+      <!-- Backdrop para cerrar al hacer clic fuera -->
+      <div *ngIf="mostrarConfigurador" (click)="mostrarConfigurador = false" class="fixed inset-0 z-40 bg-transparent"></div>
+      
+      <button type="button" (click)="toggleConfigurador()" 
+        class="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 z-50 relative">
+        <i class="fa-solid fa-table-columns text-gray-500"></i>
+        <span>Personalizar Columnas</span>
+        <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
+      </button>
+      
+      <!-- Dropdown menu -->
+      <div *ngIf="mostrarConfigurador" 
+        class="absolute right-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50 p-2 flex flex-col gap-1">
+        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 py-1 mb-1">Columnas Adicionales</span>
+        
+        <button type="button" (click)="columnasAdicionales.item = !columnasAdicionales.item; saveColumnSettings()"
+          class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+          [ngClass]="columnasAdicionales.item ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+          <span>Item</span>
+          <i *ngIf="columnasAdicionales.item" class="fa-solid fa-check text-blue-600"></i>
+        </button>
+
+        <button type="button" (click)="columnasAdicionales.accion = !columnasAdicionales.accion; saveColumnSettings()"
+          class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+          [ngClass]="columnasAdicionales.accion ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+          <span>Acción</span>
+          <i *ngIf="columnasAdicionales.accion" class="fa-solid fa-check text-blue-600"></i>
+        </button>
+        
+        <button type="button" (click)="columnasAdicionales.etapa = !columnasAdicionales.etapa; saveColumnSettings()"
+          class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+          [ngClass]="columnasAdicionales.etapa ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+          <span>Etapa</span>
+          <i *ngIf="columnasAdicionales.etapa" class="fa-solid fa-check text-blue-600"></i>
+        </button>
+        
+        <button type="button" (click)="columnasAdicionales.estado = !columnasAdicionales.estado; saveColumnSettings()"
+          class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+          [ngClass]="columnasAdicionales.estado ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+          <span>Estado</span>
+          <i *ngIf="columnasAdicionales.estado" class="fa-solid fa-check text-blue-600"></i>
+        </button>
+        
+        <button type="button" (click)="columnasAdicionales.consumo = !columnasAdicionales.consumo; saveColumnSettings()"
+          class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+          [ngClass]="columnasAdicionales.consumo ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+          <span>Consumo</span>
+          <i *ngIf="columnasAdicionales.consumo" class="fa-solid fa-check text-blue-600"></i>
+        </button>
+        
+        <button type="button" (click)="columnasAdicionales.precio_total = !columnasAdicionales.precio_total; saveColumnSettings()"
+          class="flex items-center justify-between w-full text-left text-xs px-3 py-2 rounded transition-colors focus:outline-none"
+          [ngClass]="columnasAdicionales.precio_total ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'">
+          <span>Precio Total</span>
+          <i *ngIf="columnasAdicionales.precio_total" class="fa-solid fa-check text-blue-600"></i>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Sin resultados -->
@@ -73,11 +134,14 @@
           <th class="px-3 py-2 whitespace-nowrap">Cliente</th>
           <th class="px-3 py-2 whitespace-nowrap">Solicitante</th>
           <th class="px-3 py-2 whitespace-nowrap">Tipo</th>
-          <th class="px-3 py-2 whitespace-nowrap">Acción</th>
-          <th class="px-3 py-2 whitespace-nowrap">Etapa</th>
-          <th class="px-3 py-2 whitespace-nowrap">Estado</th>
-          <th class="px-3 py-2 whitespace-nowrap">Consumo</th>
-          <th class="px-3 py-2 whitespace-nowrap text-right">Precio Total</th>
+          <th *ngIf="columnasAdicionales.item" class="px-3 py-2 whitespace-nowrap">Item</th>
+          <th class="px-3 py-2 whitespace-nowrap text-center">Cant. Sol.</th>
+          <th class="px-3 py-2 whitespace-nowrap text-center">Cant. Inc.</th>
+          <th *ngIf="columnasAdicionales.accion" class="px-3 py-2 whitespace-nowrap">Acción</th>
+          <th *ngIf="columnasAdicionales.etapa" class="px-3 py-2 whitespace-nowrap">Etapa</th>
+          <th *ngIf="columnasAdicionales.estado" class="px-3 py-2 whitespace-nowrap">Estado</th>
+          <th *ngIf="columnasAdicionales.consumo" class="px-3 py-2 whitespace-nowrap">Consumo</th>
+          <th *ngIf="columnasAdicionales.precio_total" class="px-3 py-2 whitespace-nowrap text-right">Precio Total</th>
           <th class="px-3 py-2 whitespace-nowrap text-center">Acciones</th>
         </tr>
       </thead>
@@ -100,27 +164,33 @@
               {{ tipos[item?.tipo_inconsistencia] || item?.tipo_inconsistencia || 'N/A' }}
             </span>
           </td>
-          <td class="px-3 py-2 max-w-[120px] truncate text-gray-600" [title]="item?.accion_inconsistencia || 'N/A'">
+          <td *ngIf="columnasAdicionales.item" class="px-3 py-2 max-w-[150px] truncate" [title]="(item?.item || 'N/A') + ' - ' + (item?.nombre_item || '')">
+            <strong class="text-gray-700 font-semibold">{{ item?.item || 'N/A' }}</strong>
+            <span class="block text-[10px] text-gray-500 truncate">{{ item?.nombre_item || '' }}</span>
+          </td>
+          <td class="px-3 py-2 text-center whitespace-nowrap">{{ item?.cantidad_solicitada_op || '0' }} {{ item?.unidad_medida ? (item.unidad_medida.toString().substring(0, 3) | titlecase) : '' }}</td>
+          <td class="px-3 py-2 text-center whitespace-nowrap font-bold text-red-600">{{ item?.cantidad_inconsistencia }} {{ item?.unidad_medida ? (item.unidad_medida.toString().substring(0, 3) | titlecase) : '' }}</td>
+          <td *ngIf="columnasAdicionales.accion" class="px-3 py-2 max-w-[120px] truncate text-gray-600" [title]="item?.accion_inconsistencia || 'N/A'">
             {{ item?.accion_inconsistencia || 'N/A' }}
           </td>
-          <td class="px-3 py-2 whitespace-nowrap">
+          <td *ngIf="columnasAdicionales.etapa" class="px-3 py-2 whitespace-nowrap">
             <span class="px-1.5 py-0.5 rounded text-xs font-medium"
               [ngClass]="'bg-' + getColorEtapa(item?.etapa)">
               {{ (item?.etapa || 'N/A').toUpperCase() }}
             </span>
           </td>
-          <td class="px-3 py-2 whitespace-nowrap">
+          <td *ngIf="columnasAdicionales.estado" class="px-3 py-2 whitespace-nowrap">
             <span class="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
               {{ item?.estado_inconsistencia || 'N/A' }}
             </span>
           </td>
-          <td class="px-3 py-2 whitespace-nowrap">
+          <td *ngIf="columnasAdicionales.consumo" class="px-3 py-2 whitespace-nowrap">
             <span class="px-1.5 py-0.5 rounded text-xs font-medium"
               [ngClass]="'bg-' + getColorConsumo(item?.estado_consumo)">
               {{ item?.estado_consumo || 'POR CONSUMIR' }}
             </span>
           </td>
-          <td class="px-3 py-2 whitespace-nowrap text-right font-medium text-gray-800">
+          <td *ngIf="columnasAdicionales.precio_total" class="px-3 py-2 whitespace-nowrap text-right font-medium text-gray-800">
             {{ item?.precio_total_inconsistencia | currency:'COP':'symbol-narrow':'1.0-0' }}
           </td>
           <td class="px-3 py-2 whitespace-nowrap text-center">

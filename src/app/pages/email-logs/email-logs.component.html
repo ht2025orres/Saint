@@ -1,285 +1,308 @@
-<div class="row page-titles">
-  <div class="col-md-5 align-self-center">
-    <h3 class="text-themecolor">Registro de Correos</h3>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Registro de Correos</h1>
+    <p class="text-sm text-slate-500 mt-1">Monitoreo e historial de notificaciones del sistema.</p>
   </div>
-  <div class="col-md-7 align-self-center">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="javascript:void(0)">Inicio</a></li>
-      <li class="breadcrumb-item">Administración</li>
-      <li class="breadcrumb-item active">Registro de Correos</li>
-    </ol>
-  </div>
+  <!-- Breadcrumbs -->
+  <nav class="flex text-sm text-slate-500 font-medium">
+    <span class="hover:text-slate-700">Inicio</span>
+    <span class="mx-2 text-slate-400">/</span>
+    <span class="hover:text-slate-700">Administración</span>
+    <span class="mx-2 text-slate-400">/</span>
+    <span class="text-[#002A3F] font-semibold">Registro de Correos</span>
+  </nav>
 </div>
 
-<div class="container-fluid">
+<div class="space-y-6">
   
   <!-- Cards de Estadísticas -->
-  <div class="row">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
     <!-- Card Total -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <div class="d-flex flex-row">
-            <div class="round round-lg align-self-center round-info">
-              <i class="fa fa-envelope"></i>
-            </div>
-            <div class="m-l-10 align-self-center">
-              <h3 class="m-b-0 font-light">{{ stats.total }}</h3>
-              <h5 class="text-muted m-b-0">Total Generados</h5>
-            </div>
-          </div>
-        </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+      <div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl">
+        <i class="fa fa-envelope text-xl"></i>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Generados</p>
+        <h3 class="text-2xl font-extrabold text-slate-800 mt-1">{{ stats.total }}</h3>
       </div>
     </div>
 
     <!-- Card Enviados -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <div class="d-flex flex-row">
-            <div class="round round-lg align-self-center round-success" style="background-color: #28a745;">
-              <i class="fa fa-check"></i>
-            </div>
-            <div class="m-l-10 align-self-center">
-              <h3 class="m-b-0 font-light text-success">{{ stats.sent }}</h3>
-              <h5 class="text-muted m-b-0">Enviados</h5>
-            </div>
-          </div>
-        </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+      <div class="p-4 bg-emerald-50 text-emerald-600 rounded-xl">
+        <i class="fa fa-check text-xl"></i>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Enviados</p>
+        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1">{{ stats.sent }}</h3>
       </div>
     </div>
 
     <!-- Card Fallidos -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <div class="d-flex flex-row">
-            <div class="round round-lg align-self-center round-danger" style="background-color: #dc3545;">
-              <i class="fa fa-times"></i>
-            </div>
-            <div class="m-l-10 align-self-center">
-              <h3 class="m-b-0 font-light text-danger">{{ stats.failed }}</h3>
-              <h5 class="text-muted m-b-0">Fallidos</h5>
-            </div>
-          </div>
-        </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+      <div class="p-4 bg-rose-50 text-rose-600 rounded-xl">
+        <i class="fa fa-times text-xl"></i>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fallidos</p>
+        <h3 class="text-2xl font-extrabold text-rose-600 mt-1">{{ stats.failed }}</h3>
       </div>
     </div>
 
     <!-- Card En Cola -->
-    <div class="col-lg-3 col-md-6">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <div class="d-flex flex-row">
-            <div class="round round-lg align-self-center round-warning" style="background-color: #ffc107;">
-              <i class="fa fa-clock-o"></i>
-            </div>
-            <div class="m-l-10 align-self-center">
-              <h3 class="m-b-0 font-light text-warning">{{ stats.queued }}</h3>
-              <h5 class="text-muted m-b-0">En Cola</h5>
-            </div>
-          </div>
-        </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+      <div class="p-4 bg-amber-50 text-amber-600 rounded-xl">
+        <i class="fa fa-clock-o text-xl"></i>
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">En Cola</p>
+        <h3 class="text-2xl font-extrabold text-amber-600 mt-1">{{ stats.queued }}</h3>
       </div>
     </div>
   </div>
 
   <!-- Filtros de Búsqueda -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h4 class="card-title font-weight-bold" style="color: #002A3F;">Filtros de Búsqueda</h4>
-          <div class="row">
-            <div class="col-md-3">
-              <div class="form-group">
-                <label>Destinatario</label>
-                <input type="text" class="form-control" [(ngModel)]="filters.to_email" placeholder="ejemplo@correo.com" (keyup.enter)="applyFilters()">
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="form-group">
-                <label>Asunto</label>
-                <input type="text" class="form-control" [(ngModel)]="filters.subject" placeholder="Asunto del correo" (keyup.enter)="applyFilters()">
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div class="form-group">
-                <label>Estado</label>
-                <select class="form-control" [(ngModel)]="filters.status" (change)="applyFilters()">
-                  <option value="">Todos</option>
-                  <option value="sent">Enviado</option>
-                  <option value="failed">Fallido</option>
-                  <option value="queued">En Cola</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div class="form-group">
-                <label>Desde</label>
-                <input type="date" class="form-control" [(ngModel)]="filters.fecha_desde" (change)="applyFilters()">
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div class="form-group">
-                <label>Hasta</label>
-                <input type="date" class="form-control" [(ngModel)]="filters.fecha_hasta" (change)="applyFilters()">
-              </div>
-            </div>
-          </div>
-          <div class="row mt-2">
-            <div class="col-12 text-right">
-              <button class="btn btn-secondary m-r-10" (click)="limpiarFiltros()">Limpiar</button>
-              <button class="btn btn-themecolor" (click)="applyFilters()">Buscar</button>
-            </div>
-          </div>
-        </div>
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <i class="fa fa-sliders text-[#002A3F] text-lg"></i>
+      <h4 class="text-base font-bold text-slate-800">Filtros de Búsqueda</h4>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Destinatario -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Destinatario</label>
+        <input type="text" 
+               class="w-full bg-slate-50 border border-slate-200 text-sm text-slate-700 placeholder-slate-400 rounded-xl px-4 py-2.5 transition-all duration-200 focus:outline-none focus:bg-white focus:border-[#002A3F] focus:ring-2 focus:ring-[#002A3F]/10" 
+               [(ngModel)]="filters.to_email" 
+               placeholder="ejemplo@correo.com" 
+               (keyup.enter)="applyFilters()">
       </div>
+      <!-- Asunto -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Asunto</label>
+        <input type="text" 
+               class="w-full bg-slate-50 border border-slate-200 text-sm text-slate-700 placeholder-slate-400 rounded-xl px-4 py-2.5 transition-all duration-200 focus:outline-none focus:bg-white focus:border-[#002A3F] focus:ring-2 focus:ring-[#002A3F]/10" 
+               [(ngModel)]="filters.subject" 
+               placeholder="Asunto del correo" 
+               (keyup.enter)="applyFilters()">
+      </div>
+      <!-- Estado -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Estado</label>
+        <select class="w-full bg-slate-50 border border-slate-200 text-sm text-slate-700 rounded-xl px-4 py-2.5 transition-all duration-200 focus:outline-none focus:bg-white focus:border-[#002A3F] focus:ring-2 focus:ring-[#002A3F]/10 cursor-pointer" 
+                [(ngModel)]="filters.status" 
+                (change)="applyFilters()">
+          <option value="">Todos</option>
+          <option value="sent">Enviado</option>
+          <option value="failed">Fallido</option>
+          <option value="queued">En Cola</option>
+        </select>
+      </div>
+      <!-- Desde -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Desde</label>
+        <input type="date" 
+               class="w-full bg-slate-50 border border-slate-200 text-sm text-slate-700 rounded-xl px-4 py-2.5 transition-all duration-200 focus:outline-none focus:bg-white focus:border-[#002A3F] focus:ring-2 focus:ring-[#002A3F]/10" 
+               [(ngModel)]="filters.fecha_desde" 
+               (change)="applyFilters()">
+      </div>
+      <!-- Hasta -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hasta</label>
+        <input type="date" 
+               class="w-full bg-slate-50 border border-slate-200 text-sm text-slate-700 rounded-xl px-4 py-2.5 transition-all duration-200 focus:outline-none focus:bg-white focus:border-[#002A3F] focus:ring-2 focus:ring-[#002A3F]/10" 
+               [(ngModel)]="filters.fecha_hasta" 
+               (change)="applyFilters()">
+      </div>
+    </div>
+    <!-- Botones -->
+    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+      <button class="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors duration-200 focus:outline-none" 
+              (click)="limpiarFiltros()">
+        Limpiar
+      </button>
+      <button class="px-5 py-2.5 bg-[#002A3F] hover:bg-[#003854] text-white rounded-xl text-sm font-semibold transition-colors duration-200 focus:outline-none shadow-md shadow-[#002A3F]/15" 
+              (click)="applyFilters()">
+        Buscar
+      </button>
     </div>
   </div>
 
   <!-- Tabla de Logs -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="d-flex no-block align-items-center">
-            <h4 class="card-title font-weight-bold" style="color: #002A3F;">Historial de Correos</h4>
-            <div class="ml-auto" *ngIf="isLoading">
-              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-            </div>
-          </div>
-
-          <div class="table-responsive m-t-20">
-            <table class="table table-hover table-striped table-bordered text-center vertical-align-middle">
-              <thead style="background-color: #002A3F; color: white;">
-                <tr>
-                  <th>Fecha</th>
-                  <th>Destinatario</th>
-                  <th>Asunto</th>
-                  <th>Estado</th>
-                  <th>Intentos</th>
-                  <th>F. Envío</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngIf="currentLogs.length === 0">
-                  <td colspan="7" class="text-muted text-center py-4">No se encontraron registros de correos</td>
-                </tr>
-                <tr *ngFor="let log of currentLogs">
-                  <td>{{ log.created_at | date:'short' }}</td>
-                  <td class="text-left font-weight-medium">{{ log.to_email }}</td>
-                  <td class="text-left">{{ log.subject }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'badge-success': log.status === 'sent',
-                      'badge-danger': log.status === 'failed',
-                      'badge-warning': log.status === 'queued'
-                    }" style="font-size: 0.85rem; padding: 5px 10px;">
-                      {{ log.status === 'sent' ? 'Enviado' : log.status === 'failed' ? 'Fallido' : 'En Cola' }}
-                    </span>
-                  </td>
-                  <td>{{ log.attempts }}</td>
-                  <td>{{ log.sent_at ? (log.sent_at | date:'short') : '-' }}</td>
-                  <td>
-                    <button class="btn btn-sm btn-outline-info m-r-5" (click)="verDetalle(log)" title="Ver Detalle">
-                      <i class="fa fa-eye"></i> Detalle
-                    </button>
-                    <button *ngIf="log.status === 'failed' || log.status === 'queued'" 
-                            class="btn btn-sm btn-outline-warning" 
-                            (click)="reintentarEnvio(log)" 
-                            title="Reintentar Envío">
-                      <i class="fa fa-refresh"></i> Reintentar
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Paginador -->
-          <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="totalLogs > 0">
-            <span class="text-muted" style="font-size: 0.9rem;">
-              Mostrando registros del <strong>{{ getStartIndex() }}</strong> al <strong>{{ getEndIndex() }}</strong> de un total de <strong>{{ totalLogs }}</strong>
-            </span>
-            <app-shared-paginator [instanceId]="paginatorId"></app-shared-paginator>
-          </div>
-
-        </div>
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <!-- Header -->
+    <div class="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
+      <div class="flex items-center gap-2">
+        <i class="fa fa-list text-[#002A3F] text-lg"></i>
+        <h4 class="text-base font-bold text-slate-800">Historial de Correos</h4>
       </div>
+      <div class="flex items-center gap-3">
+        <!-- Spinner -->
+        <div *ngIf="isLoading" class="animate-spin h-5 w-5 text-[#002A3F] border-2 border-t-transparent border-current rounded-full" role="status"></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto w-full">
+      <table class="w-full text-sm text-left text-slate-600 border-collapse">
+        <thead>
+          <tr class="bg-slate-100/75 border-b border-slate-200 text-slate-500 font-semibold text-xs tracking-wider uppercase">
+            <th class="py-4 px-6 text-center">Fecha</th>
+            <th class="py-4 px-6">Destinatario</th>
+            <th class="py-4 px-6">Asunto</th>
+            <th class="py-4 px-6 text-center">Estado</th>
+            <th class="py-4 px-6 text-center">Intentos</th>
+            <th class="py-4 px-6 text-center">F. Envío</th>
+            <th class="py-4 px-6 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Sin registros -->
+          <tr *ngIf="currentLogs.length === 0">
+            <td colspan="7" class="text-slate-400 text-center py-12 bg-white">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <i class="fa fa-envelope-o text-3xl text-slate-300"></i>
+                 <span>No se encontraron registros de correos</span>
+              </div>
+            </td>
+          </tr>
+          <!-- Con registros -->
+          <tr *ngFor="let log of currentLogs" class="border-b border-slate-100 hover:bg-slate-50/40 transition-colors duration-150">
+            <td class="py-4 px-6 text-center text-slate-500 whitespace-nowrap">
+              {{ log.created_at | date:'short' }}
+            </td>
+            <td class="py-4 px-6 font-semibold text-slate-800 break-all max-w-[200px]">
+              {{ log.to_email }}
+            </td>
+            <td class="py-4 px-6 truncate max-w-[250px]" [title]="log.subject">
+              {{ log.subject }}
+            </td>
+            <td class="py-4 px-6 text-center whitespace-nowrap">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
+                    [ngClass]="{
+                      'bg-emerald-50 text-emerald-700 border border-emerald-100': log.status === 'sent',
+                      'bg-rose-50 text-rose-700 border border-rose-100': log.status === 'failed',
+                      'bg-amber-50 text-amber-800 border border-amber-100': log.status === 'queued'
+                    }">
+                <span class="w-1.5 h-1.5 rounded-full mr-1.5"
+                      [ngClass]="{
+                        'bg-emerald-500': log.status === 'sent',
+                        'bg-rose-500': log.status === 'failed',
+                        'bg-amber-500': log.status === 'queued'
+                      }"></span>
+                {{ log.status === 'sent' ? 'Enviado' : log.status === 'failed' ? 'Fallido' : 'En Cola' }}
+              </span>
+            </td>
+            <td class="py-4 px-6 text-center font-medium text-slate-700">
+              {{ log.attempts }}
+            </td>
+            <td class="py-4 px-6 text-center text-slate-500 whitespace-nowrap">
+              {{ log.sent_at ? (log.sent_at | date:'short') : '-' }}
+            </td>
+            <td class="py-4 px-6 text-center whitespace-nowrap">
+              <div class="inline-flex gap-2">
+                <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors duration-150" 
+                        (click)="verDetalle(log)" 
+                        title="Ver Detalle">
+                  <i class="fa fa-eye"></i> Detalle
+                </button>
+                <button *ngIf="log.status === 'failed' || log.status === 'queued'" 
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/50 rounded-lg text-xs font-semibold transition-colors duration-150" 
+                        (click)="reintentarEnvio(log)" 
+                        title="Reintentar Envío">
+                  <i class="fa fa-refresh"></i> Reintentar
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination footer -->
+    <div class="flex flex-col sm:flex-row justify-between items-center p-6 bg-slate-50 border-t border-slate-100 gap-4" *ngIf="totalLogs > 0">
+      <span class="text-sm text-slate-500">
+        Mostrando registros del <strong class="text-slate-800">{{ getStartIndex() }}</strong> al <strong class="text-slate-800">{{ getEndIndex() }}</strong> de un total de <strong class="text-slate-800">{{ totalLogs }}</strong>
+      </span>
+      <app-shared-paginator [instanceId]="paginatorId"></app-shared-paginator>
     </div>
   </div>
 
 </div>
 
 <!-- Modal Detalle del Correo -->
-<div class="modal fade show" tabindex="-1" role="dialog" style="display: block; background: rgba(0,0,0,0.5);" *ngIf="showDetailModal">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header" style="background-color: #002A3F; color: white;">
-        <h5 class="modal-title font-weight-bold">Detalle del Registro de Correo</h5>
-        <button type="button" class="close text-white" (click)="cerrarModal()" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300" *ngIf="showDetailModal">
+  <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform scale-100 transition-all duration-300">
+    <!-- Header -->
+    <div class="bg-[#002A3F] text-white p-6 flex justify-between items-center">
+      <h5 class="text-lg font-bold">Detalle del Registro de Correo</h5>
+      <button type="button" class="text-white/80 hover:text-white text-xl focus:outline-none transition-colors" (click)="cerrarModal()" aria-label="Close">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+    <!-- Body -->
+    <div class="p-6 space-y-6" *ngIf="selectedLog">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h6 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Destinatario</h6>
+          <p class="text-sm font-semibold text-slate-800 mt-1 break-all">{{ selectedLog.to_email }}</p>
+        </div>
+        <div>
+          <h6 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Asunto</h6>
+          <p class="text-sm font-semibold text-slate-800 mt-1">{{ selectedLog.subject }}</p>
+        </div>
       </div>
-      <div class="modal-body" *ngIf="selectedLog">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Destinatario:</strong>
-            <p class="text-muted">{{ selectedLog.to_email }}</p>
-          </div>
-          <div class="col-md-6">
-            <strong>Asunto:</strong>
-            <p class="text-muted">{{ selectedLog.subject }}</p>
-          </div>
-        </div>
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <strong>Estado:</strong>
-            <p>
-              <span class="badge" [ngClass]="{
-                'badge-success': selectedLog.status === 'sent',
-                'badge-danger': selectedLog.status === 'failed',
-                'badge-warning': selectedLog.status === 'queued'
-              }">
-                {{ selectedLog.status === 'sent' ? 'Enviado' : selectedLog.status === 'failed' ? 'Fallido' : 'En Cola' }}
-              </span>
-            </p>
-          </div>
-          <div class="col-md-4">
-            <strong>Intentos Realizados:</strong>
-            <p class="text-muted">{{ selectedLog.attempts }}</p>
-          </div>
-          <div class="col-md-4">
-            <strong>Vista Blade Utilizada:</strong>
-            <p class="text-muted"><code>{{ selectedLog.template_view }}</code></p>
-          </div>
-        </div>
-        
-        <div class="row mb-3" *ngIf="selectedLog.error_message">
-          <div class="col-12">
-            <strong class="text-danger">Mensaje de Error:</strong>
-            <div class="alert alert-danger bg-light-danger border-danger text-danger mt-1 font-weight-medium">
-              {{ selectedLog.error_message }}
-            </div>
-          </div>
-        </div>
 
-        <div class="row">
-          <div class="col-12">
-            <strong>Contexto de Envío (Datos JSON):</strong>
-            <pre class="bg-light p-3 border rounded text-dark mt-1" style="max-height: 250px; overflow-y: auto; font-size: 0.85rem;"><code>{{ formatContext(selectedLog.context) }}</code></pre>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div>
+          <h6 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</h6>
+          <div class="mt-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  [ngClass]="{
+                    'bg-emerald-50 text-emerald-700 border border-emerald-100': selectedLog.status === 'sent',
+                    'bg-rose-50 text-rose-700 border border-rose-100': selectedLog.status === 'failed',
+                    'bg-amber-50 text-amber-800 border border-amber-100': selectedLog.status === 'queued'
+                  }">
+              {{ selectedLog.status === 'sent' ? 'Enviado' : selectedLog.status === 'failed' ? 'Fallido' : 'En Cola' }}
+            </span>
           </div>
         </div>
+        <div>
+          <h6 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Intentos Realizados</h6>
+          <p class="text-sm text-slate-700 mt-1 font-medium">{{ selectedLog.attempts }}</p>
+        </div>
+        <div>
+          <h6 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Vista Blade Utilizada</h6>
+          <p class="text-sm text-slate-700 mt-1"><code class="bg-slate-100 text-indigo-600 px-2 py-1 rounded text-xs">{{ selectedLog.template_view }}</code></p>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cerrar</button>
-        <button type="button" *ngIf="selectedLog && (selectedLog.status === 'failed' || selectedLog.status === 'queued')" 
-                class="btn btn-warning" (click)="reintentarEnvio(selectedLog); cerrarModal()">
-          <i class="fa fa-refresh"></i> Reintentar Envío
-        </button>
+      
+      <div *ngIf="selectedLog.error_message" class="space-y-2">
+        <h6 class="text-xs font-semibold text-rose-500 uppercase tracking-wider">Mensaje de Error</h6>
+        <div class="p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-xl font-medium text-sm leading-relaxed max-h-40 overflow-y-auto">
+          {{ selectedLog.error_message }}
+        </div>
       </div>
+
+      <div class="space-y-2">
+        <h6 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Contexto de Envío (Datos JSON)</h6>
+        <pre class="bg-slate-950 text-slate-200 font-mono text-xs rounded-xl p-4 overflow-auto max-h-60 border border-slate-800"><code>{{ formatContext(selectedLog.context) }}</code></pre>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-100">
+      <button type="button" 
+              class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-100 transition-colors focus:outline-none" 
+              (click)="cerrarModal()">
+        Cerrar
+      </button>
+      <button type="button" 
+              *ngIf="selectedLog && (selectedLog.status === 'failed' || selectedLog.status === 'queued')" 
+              class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold shadow-md shadow-amber-500/10 transition-colors focus:outline-none" 
+              (click)="reintentarEnvio(selectedLog); cerrarModal()">
+        <i class="fa fa-refresh"></i> Reintentar Envío
+      </button>
     </div>
   </div>
 </div>

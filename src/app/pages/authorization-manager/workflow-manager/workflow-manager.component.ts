@@ -22,6 +22,13 @@ export class WorkflowManagerComponent implements OnInit {
   selectedTipo: any = null;
   selectedVersion: any = null;
 
+  activeTab: 'designer' | 'instances' = 'designer';
+  instances: any[] = [];
+  loadingInstances = false;
+  selectedInstanceForHistory: any = null;
+  searchTermInstances = '';
+  statusFilterInstances = 'todos';
+
   searchTerm: string = '';
   activePermissionStepIndex: number | null = null; // Para saber qué buscador de permiso está abierto
   permissionSearchTerm: string = '';
@@ -109,6 +116,9 @@ export class WorkflowManagerComponent implements OnInit {
     this.selectedVersion = version;
     this.pasos = JSON.parse(JSON.stringify(version.pasos || []));
     this.updateGrupos();
+    if (this.activeTab === 'instances') {
+      this.cargarInstancias();
+    }
   }
 
   // MÉTODOS DE CREACIÓN
@@ -363,5 +373,63 @@ export class WorkflowManagerComponent implements OnInit {
     this.workflowService.storePasos(this.selectedVersion.id, this.pasos).subscribe(() => {
       Swal.fire('Éxito', 'Pasos actualizados', 'success');
     });
+  }
+
+  changeTab(tab: 'designer' | 'instances') {
+    this.activeTab = tab;
+    if (tab === 'instances') {
+      this.cargarInstancias();
+    }
+  }
+
+  cargarInstancias() {
+    if (!this.selectedVersion) return;
+    this.loadingInstances = true;
+    this.workflowService.listInstancias(this.selectedVersion.id).subscribe({
+      next: (res) => {
+        this.instances = res;
+        this.loadingInstances = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.loadingInstances = false;
+        Swal.fire('Error', 'No se pudieron cargar las instancias de flujo', 'error');
+      }
+    });
+  }
+
+  get instancesFiltradas() {
+    let filtered = this.instances;
+    
+    // Filtro de estado
+    if (this.statusFilterInstances !== 'todos') {
+      filtered = filtered.filter(i => i.estado === this.statusFilterInstances);
+    }
+    
+    // Filtro de búsqueda
+    if (this.searchTermInstances) {
+      const term = this.searchTermInstances.toLowerCase();
+      filtered = filtered.filter(i => 
+        i.identificador?.toString().toLowerCase().includes(term) ||
+        i.detalles?.toLowerCase().includes(term) ||
+        i.paso_actual?.toLowerCase().includes(term)
+      );
+    }
+    
+    return filtered;
+  }
+
+  showInstanceHistory(instance: any) {
+    this.selectedInstanceForHistory = instance;
+  }
+
+  traducirEstadoInstancia(estado: string): string {
+    const estados: { [key: string]: string } = {
+      'en_proceso': 'En Proceso',
+      'completada': 'Completada',
+      'denegada': 'Rechazada',
+      'anulada': 'Anulada',
+    };
+    return estados[estado] || estado;
   }
 }

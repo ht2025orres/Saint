@@ -4,46 +4,90 @@
      ══════════════════════════════════════════════════════════════════ -->
 
 <!-- ── BARRA DE ACCIONES + FILTROS ───────────────────────────────── -->
-<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 
-  <!-- Filtros de estado -->
-  <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
-    <button
-      *ngFor="let f of [
-        {v:'todos',       l:'Todos',        i:'mdi mdi-apps'},
-        {v:'pendiente',   l:'Pendiente',    i:'mdi mdi-clock-outline'},
-        {v:'en_ejecucion',l:'En ejecución', i:'mdi mdi-play-circle-outline'},
-        {v:'completado',  l:'Completados',  i:'mdi mdi-check-circle-outline'},
-        {v:'pausado',     l:'Pausados',     i:'mdi mdi-pause-circle-outline'}
-      ]"
-      (click)="cambiarFiltro(f.v)"
-      class="flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all"
-      [ngClass]="filtroEstado === f.v
-        ? 'bg-blue-600 text-white shadow-sm'
-        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'"
-    >
-      <i [class]="f.i"></i>
-      <span class="hidden md:inline">{{ f.l }}</span>
-    </button>
-  </div>
+  <div class="flex items-center gap-3">
+    <!-- Filtros de estado (Dropdown) -->
+    <div class="relative">
+      <button
+        (click)="dropdownEstadoOpen = !dropdownEstadoOpen; dropdownTipoOpen = false"
+        class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-black uppercase tracking-wider text-slate-600 hover:text-slate-800 hover:border-slate-300 transition-all shadow-sm"
+      >
+        <i class="mdi mdi-filter-variant text-slate-400"></i>
+        <span>Estado: </span>
+        <span class="text-blue-600 font-extrabold capitalize">
+          {{ filtroEstado === 'todos' ? 'Todos' : filtroEstado.replace('_', ' ') }}
+        </span>
+        <i class="mdi mdi-chevron-down text-slate-400 transition-transform duration-200" [ngClass]="{'rotate-180': dropdownEstadoOpen}"></i>
+      </button>
 
-  <!-- Filtros de tipo de proyecto -->
-  <div class="flex items-center gap-0.5 bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
-    <button
-      *ngFor="let t of [
-        {v:'todos',    l:'Todos',       i:'mdi mdi-folder-multiple'},
-        {v:'normales',  l:'Estándar',    i:'mdi mdi-folder'},
-        {v:'informes',  l:'De Informes', i:'mdi mdi-file-document-outline'}
-      ]"
-      (click)="cambiarFiltroTipo(t.v)"
-      class="flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all"
-      [ngClass]="filtroTipoProyecto === t.v
-        ? 'bg-amber-500 text-white shadow-sm'
-        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'"
-    >
-      <i [class]="t.i"></i>
-      <span class="hidden md:inline">{{ t.l }}</span>
-    </button>
+      <!-- Panel Dropdown Estado -->
+      <div
+        *ngIf="dropdownEstadoOpen"
+        class="absolute left-0 mt-1.5 w-52 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1.5 animate-in fade-in slide-in-from-top-2 duration-150"
+      >
+        <button
+          *ngFor="let f of [
+            {v:'todos',       l:'Todos',        i:'mdi mdi-apps', color: 'text-slate-400'},
+            {v:'pendiente',   l:'Pendiente',    i:'mdi mdi-clock-outline', color: 'text-amber-500'},
+            {v:'en_ejecucion',l:'En ejecución', i:'mdi mdi-play-circle-outline', color: 'text-blue-500'},
+            {v:'completado',  l:'Completados',  i:'mdi mdi-check-circle-outline', color: 'text-emerald-500'},
+            {v:'pausado',     l:'Pausados',     i:'mdi mdi-pause-circle-outline', color: 'text-rose-500'}
+          ]"
+          (click)="cambiarFiltro(f.v); dropdownEstadoOpen = false"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+          [ngClass]="filtroEstado === f.v
+            ? 'bg-blue-50 text-blue-600 font-extrabold shadow-sm'
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+        >
+          <span class="flex items-center gap-2">
+            <i [class]="f.i + ' ' + f.color + ' text-sm'"></i>
+            <span>{{ f.l }}</span>
+          </span>
+          <i *ngIf="filtroEstado === f.v" class="mdi mdi-check text-blue-600 text-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtros de tipo de proyecto (Dropdown) -->
+    <div class="relative">
+      <button
+        (click)="dropdownTipoOpen = !dropdownTipoOpen; dropdownEstadoOpen = false"
+        class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-black uppercase tracking-wider text-slate-600 hover:text-slate-800 hover:border-slate-300 transition-all shadow-sm"
+      >
+        <i class="mdi mdi-folder-multiple-outline text-slate-400"></i>
+        <span>Tipo: </span>
+        <span class="text-amber-500 font-extrabold">
+          {{ filtroTipoProyecto === 'todos' ? 'Todos' : (filtroTipoProyecto === 'normales' ? 'Estándar' : 'De Informes') }}
+        </span>
+        <i class="mdi mdi-chevron-down text-slate-400 transition-transform duration-200" [ngClass]="{'rotate-180': dropdownTipoOpen}"></i>
+      </button>
+
+      <!-- Panel Dropdown Tipo -->
+      <div
+        *ngIf="dropdownTipoOpen"
+        class="absolute left-0 mt-1.5 w-52 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1.5 animate-in fade-in slide-in-from-top-2 duration-150"
+      >
+        <button
+          *ngFor="let t of [
+            {v:'todos',    l:'Todos',       i:'mdi mdi-folder-multiple', color: 'text-slate-400'},
+            {v:'normales',  l:'Estándar',    i:'mdi mdi-folder', color: 'text-amber-500'},
+            {v:'informes',  l:'De Informes', i:'mdi mdi-file-document-outline', color: 'text-indigo-500'}
+          ]"
+          (click)="cambiarFiltroTipo(t.v); dropdownTipoOpen = false"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+          [ngClass]="filtroTipoProyecto === t.v
+            ? 'bg-amber-50 text-amber-600 font-extrabold shadow-sm'
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'"
+        >
+          <span class="flex items-center gap-2">
+            <i [class]="t.i + ' ' + t.color + ' text-sm'"></i>
+            <span>{{ t.l }}</span>
+          </span>
+          <i *ngIf="filtroTipoProyecto === t.v" class="mdi mdi-check text-amber-600 text-sm"></i>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Búsqueda -->
@@ -220,8 +264,8 @@
             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Responsables:</span>
             <div class="flex items-center">
               <div *ngFor="let rid of (p.responsables || []).slice(0, 4); let i = index"
-                class="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-black
-                       ring-4 ring-white flex-shrink-0 shadow-md hover:scale-110 hover:z-10 transition-all"
+                class="h-10 px-3 min-w-[40px] rounded-full flex items-center justify-center text-white text-xs font-black
+                       ring-4 ring-white flex-shrink-0 shadow-md hover:scale-110 hover:z-10 transition-all whitespace-nowrap"
                 [class.-ml-2.5]="i > 0"
                 [ngClass]="state.getColorPorId(rid)"
                 [title]="state.nombreUsuario(rid)">
@@ -313,7 +357,7 @@
                   <!-- Avatares compactos en lista -->
                   <div *ngIf="(p.responsables?.length ?? 0) > 0" class="flex items-center mt-1">
                     <div *ngFor="let rid of (p.responsables || []).slice(0,5); let i = index"
-                      class="w-5 h-5 rounded-full flex items-center justify-center text-white font-black ring-1 ring-white shadow-sm"
+                      class="h-5 px-1 min-w-[20px] rounded-full flex items-center justify-center text-white font-black ring-1 ring-white shadow-sm whitespace-nowrap"
                       [class.-ml-1]="i > 0" [ngClass]="state.getColorPorId(rid)"
                       style="font-size:7px;">
                       {{ state.getInicialesResponsable(rid) }}

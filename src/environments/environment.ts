@@ -12,16 +12,16 @@ export const environment = {
     URL_C_PANEL: 'https://colegioprovidencia.edu.co/Sdp',
     // URL_LOGIN : 'https://lb.protejer.com',
     // URL_TECHNICAL_DATA_SHEET : 'https://lb.protejer.com',
-    // URL_LOGIN : 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
-    // URL_TECHNICAL_DATA_SHEET : 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
-    // URL_API_LARAVEL: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
-    URL_API_LARAVEL : 'http://127.0.0.1:8000/api',
-    URL_LOGIN : 'http://127.0.0.1:8000/api',
-    URL_TECHNICAL_DATA_SHEET : 'http://127.0.0.1:8000/api',
+    URL_LOGIN : 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
+    URL_TECHNICAL_DATA_SHEET : 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
+    URL_API_LARAVEL: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
+    // URL_API_LARAVEL : 'http://127.0.0.1:8000/api',
+    // URL_LOGIN : 'http://127.0.0.1:8000/api',
+    // URL_TECHNICAL_DATA_SHEET : 'http://127.0.0.1:8000/api',
 
     // --- CONFIGURACIÓN DE BUCKET S3 ---
-    // S3_FOLDER: 'produccion', // Descomentar para usar carpeta de producción
-    S3_FOLDER: 'pruebas',    // Por defecto en local usamos carpeta de pruebas
+    S3_FOLDER: 'produccion', // Descomentar para usar carpeta de producción
+    // S3_FOLDER: 'pruebas',    // Por defecto en local usamos carpeta de pruebas
 };
 
 /*

@@ -105,6 +105,24 @@
             </div>
           </div>
         </div>
+
+        <!-- DROPDOWN PROCESO -->
+        <div class="relative w-full sm:w-56">
+          <button (click)="toggleDropdown('proceso')" class="w-full text-left py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none focus:border-blue-400 transition-all shadow-sm flex justify-between items-center truncate">
+            <span class="truncate">{{ getDropdownLabel('proceso') }}</span>
+            <i class="bi bi-chevron-down text-[10px] ml-2 shrink-0"></i>
+          </button>
+          <div *ngIf="activeDropdown === 'proceso'" class="absolute right-0 z-[100] mt-1 w-full sm:w-80 bg-white border border-slate-200 rounded-lg shadow-xl flex flex-col max-h-60">
+            <div class="p-2 border-b border-slate-100 shrink-0 relative">
+              <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+              <input type="text" [(ngModel)]="dropdownSearch" placeholder="Buscar..." class="w-full pl-8 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:border-blue-400">
+            </div>
+            <div class="overflow-y-auto custom-scrollbar flex-1 p-1">
+              <button (click)="selectDropdownOption('proceso', '')" class="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded">Todos los Procesos</button>
+              <button *ngFor="let pr of getFilteredDropdownOptions('proceso')" (click)="selectDropdownOption('proceso', pr.id)" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded truncate">{{ pr.nombre }}</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
@@ -121,6 +139,7 @@
             <th class="p-4">Estado</th>
             <th class="p-4">Nombre Completo</th>
             <th class="p-4">Correo Electrónico</th>
+            <th class="p-4">Procesos</th>
             <th class="p-4 text-right pr-6">Acciones</th>
           </tr>
         </thead>
@@ -145,6 +164,11 @@
               </div>
             </td>
             <td class="p-4 text-slate-500">{{ u.email }}</td>
+            <td class="p-4">
+              <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-semibold">
+                {{ getUserProcesoNames(u) }}
+              </span>
+            </td>
             <td class="p-4 text-right pr-6 space-x-1">
               <button (click)="openManageUser(u)" class="w-8 h-8 inline-flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-colors" title="Editar / Permisos">
                 <i class="bi bi-pencil-square"></i>
@@ -158,7 +182,7 @@
             </td>
           </tr>
           <tr *ngIf="pagedUsers.length === 0 && !loading">
-            <td colspan="5" class="p-12 text-center text-slate-400">
+            <td colspan="6" class="p-12 text-center text-slate-400">
               <i class="bi bi-search text-3xl block mb-3"></i>
               <p class="text-sm font-bold uppercase tracking-widest">No se encontraron usuarios.</p>
             </td>
@@ -176,7 +200,7 @@
 
 <!-- MODALES EXTRAÍDOS -->
 <app-modal-manage-user #modalManageUser 
-  [permissions]="permissions" [profiles]="profiles" [modules]="modules"
+  [permissions]="permissions" [profiles]="profiles" [modules]="modules" [procesos]="procesos"
   (onSaved)="loadAll()">
 </app-modal-manage-user>
 

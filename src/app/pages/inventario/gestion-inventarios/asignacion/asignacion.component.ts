@@ -14,6 +14,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   @Input() contadores: any[] = [];
   @Input() validaciones: any[] = [];
   @Input() statsModo: any = null;
+  @Input() isReadOnly = false;
   private _modoActual: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar' = 'conteo';
   @Input() set modoActual(val: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar') {
     this._modoActual = val;
@@ -21,7 +22,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   get modoActual() {
     return this._modoActual;
   }
-  
+
   @Output() onAsignacionCambiada = new EventEmitter<void>();
 
   // Resize Observer para agrupar zonas dinámicamente
@@ -33,6 +34,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   // Barra de búsqueda global de la sub-interfaz
   busquedaGlobal = '';
   filtroBodega = '';
+  bannerPendientesExpandido = false;
 
   // Control de modal de asignación
   mostrarModalAsignacion = false;
@@ -55,13 +57,14 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   excepciones_por_zona: { [id_zona: number]: { tipo_items: 'todos' | 'incluir' | 'excluir', items_detalle: any[] } } = {};
   busquedaZonasAsignacion = '';
   filtroBodegaAsignacion = '';
-  filtroSoloNoAsignadas = false;
+  filtroAsignacionZona: 'todas' | 'sin_asignar' | 'parciales' | 'completas' = 'todas';
 
   // Paso 2: Configuración por zona
   zona_activa_edicion: number | null = null;
   filtroBodegaPaso2 = '';
   busquedaItemAsignacion = '';
   filtroTipoItem = '';
+  filtroEstadoAsignacionItem: '' | 'asignado' | 'sin_asignar' = '';
   itemsDeZona: any[] = [];
   cargandoItemsZona = false;
 
@@ -122,7 +125,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     // Dejamos margen para el contador y otros elementos
     const widthDisponible = width - 40; // padding
     const limite = Math.max(1, Math.floor(widthDisponible / 130));
-    
+
     if (this.limitesZonas[idUsuario] !== limite) {
       this.limitesZonas[idUsuario] = limite;
     }
@@ -167,7 +170,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
 
       // Filtro texto libre
       if (search) {
-        const matchTexto = 
+        const matchTexto =
           (v.id_item || '').toLowerCase().includes(search) ||
           (v.referencia || '').toLowerCase().includes(search) ||
           (v.descripcion || '').toLowerCase().includes(search) ||
@@ -195,6 +198,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   getEstadoLabel(estado: string): string {
     switch (estado) {
       case 'sin_conteo': return 'Sin Conteo';
+      case 'no_asignado': return 'Sin Asignar';
       case 'pendiente': return 'Pendiente';
       case 'validado': return 'Validado';
       case 'reconteo': return 'Reconteo';
@@ -208,21 +212,22 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
       case 'reconteo': return 'bg-amber-50 text-amber-600 border-amber-100';
       case 'pendiente': return 'bg-blue-50 text-blue-600 border-blue-100';
       case 'sin_conteo': return 'bg-rose-50 text-rose-600 border-rose-100';
+      case 'no_asignado': return 'bg-orange-50 text-orange-600 border-orange-100';
       default: return 'bg-slate-50 text-slate-500 border-slate-100';
     }
   }
 
   contarPorEstado(estado: string): number {
-    return this.validacionesFiltradas.filter(v => (v.estado_validacion || 'sin_conteo') === estado).length;
+    return this.validacionesFiltradas.filter(v => (v.estado_validacion || 'no_asignado') === estado).length;
   }
 
   get bodegasDisponibles() {
     // 1. Extraer bodegas de las asignaciones (más completo desde el inicio)
     const bodegasAsignadas = this.asignaciones.map(a => a.zona?.codigo_bodega).filter(b => !!b);
-    
+
     // 2. Extraer bodegas de todas las zonas (por si hay zonas sin asignar)
     const bodegasZonas = this.zonas.map(z => z.codigo_bodega).filter(b => !!b);
-    
+
     // Unir y eliminar duplicados
     const todas = [...bodegasAsignadas, ...bodegasZonas];
     return Array.from(new Set(todas)).sort();
@@ -246,7 +251,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   // Getters para filtrado y lógica de negocio
   get asignacionesAgrupadas() {
     const grupos: { [id_usuario: number]: { contador: any, asignaciones: any[] } } = {};
-    
+
     // Filtrar por búsqueda global (zona o responsable) y por bodega
     const search = this.busquedaGlobal.toLowerCase();
     const asignacionesFiltradas = this.asignaciones.filter(asig => {
@@ -258,10 +263,10 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
       const nombreContador = asig.contador?.nombre_completo?.toLowerCase() || '';
       const nombreZona = asig.zona?.nombre?.toLowerCase() || '';
       const matchSearch = !this.busquedaGlobal || nombreContador.includes(search) || nombreZona.includes(search);
-      
+
       // Filtro por bodega
       const matchBodega = !this.filtroBodega || asig.zona?.codigo_bodega === this.filtroBodega;
-      
+
       return matchSearch && matchBodega;
     });
 
@@ -286,12 +291,12 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   get contadoresFiltrados() {
     const actual = this.authService.user;
     let lista = [...this.contadores];
-    
+
     if (this.busquedaContador) {
       const search = this.busquedaContador.toLowerCase();
-      lista = lista.filter(c => 
+      lista = lista.filter(c =>
         (c.nombre_completo && c.nombre_completo.toLowerCase().includes(search)) ||
-        (c.nombres && c.nombres.toLowerCase().includes(search)) || 
+        (c.nombres && c.nombres.toLowerCase().includes(search)) ||
         (c.apellidos && c.apellidos.toLowerCase().includes(search)) ||
         (c.cedula && c.cedula.includes(search)) ||
         (c.email && c.email.toLowerCase().includes(search))
@@ -314,29 +319,98 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     return lista;
   }
 
+  getZonasEstadoAsignacion(nombreZona: string) {
+    const modo = this.normalizeModo(this.modoActual);
+
+    let itemsUniverso: any[] = [];
+    if (modo === 'conteo') {
+      itemsUniverso = this.validaciones.filter(v => 
+        String(v.zona).trim().toUpperCase() === String(nombreZona).trim().toUpperCase() &&
+        this.normalizeModo(v.tipo_conteo) === 'conteo'
+      );
+    } else {
+      const etapaAnterior = modo === 'reconteo1' ? 'conteo' : 'reconteo1';
+      itemsUniverso = this.validaciones.filter(v => 
+        String(v.zona).trim().toUpperCase() === String(nombreZona).trim().toUpperCase() &&
+        this.normalizeModo(v.tipo_conteo) === etapaAnterior &&
+        v.estado_validacion === 'reconteo'
+      );
+    }
+
+    if (itemsUniverso.length === 0) {
+      return { total: 0, asignados: 0, sinAsignar: 0, estado: 'sin_items' };
+    }
+
+    let asignados = 0;
+    let sinAsignar = 0;
+
+    if (modo === 'conteo') {
+      asignados = itemsUniverso.filter(v => v.estado_validacion !== 'no_asignado').length;
+      sinAsignar = itemsUniverso.filter(v => v.estado_validacion === 'no_asignado').length;
+    } else {
+      // Para reconteos, evaluar si cada variación de ítem que requiere reconteo ya está asignada en la etapa actual
+      itemsUniverso.forEach(uni => {
+        const keyItem = String(uni.id_item || '').trim();
+        const keyTalla = String(uni.id_talla || '').trim();
+        const keyColor = String(uni.id_color || '').trim();
+
+        const regEtapaActual = this.validaciones.find(v => 
+          String(v.zona).trim().toUpperCase() === String(nombreZona).trim().toUpperCase() &&
+          this.normalizeModo(v.tipo_conteo) === modo &&
+          String(v.id_item || '').trim() === keyItem &&
+          String(v.id_talla || '').trim() === keyTalla &&
+          String(v.id_color || '').trim() === keyColor
+        );
+
+        if (regEtapaActual && regEtapaActual.estado_validacion !== 'no_asignado') {
+          asignados++;
+        } else {
+          sinAsignar++;
+        }
+      });
+    }
+
+    let estado = 'completamente_asignada';
+    if (asignados === 0) {
+      estado = 'totalmente_sin_asignar';
+    } else if (sinAsignar > 0) {
+      estado = 'parcialmente_asignada';
+    }
+
+    return {
+      total: itemsUniverso.length,
+      asignados,
+      sinAsignar,
+      estado
+    };
+  }
+
   get zonasDisponiblesAsignacion() {
-    let filtradas = this.zonas;
+    let filtradas = this.zonas.filter(z => {
+      const stats = this.getZonasEstadoAsignacion(z.nombre);
+      return stats.estado !== 'sin_items';
+    });
 
     // Si estamos en reconteo, solo mostrar zonas que tengan items marcados para reconteo en la ETAPA ANTERIOR
     // Y que estén realmente asignadas en este inventario
     if (this.modoActual !== 'conteo') {
       const etapaAnterior = this.modoActual === 'reconteo1' ? 'conteo' : 'reconteo1';
-      
+
       // 1. Obtener IDs de zonas que están asignadas en conteo para este inventario
       const zonasAsignadasConteo = new Set(
         this.asignaciones
           .filter(a => this.normalizeModo(a.tipo_conteo) === etapaAnterior)
           .map(a => Number(a.id_zona))
       );
-      
+
       // 2. Obtener nombres de zonas que tienen ítems marcados para reconteo
       const zonasConReconteo = new Set((this.validaciones || [])
         .filter(v => this.normalizeModo(v.tipo_conteo) === etapaAnterior && v.estado_validacion === 'reconteo')
         .map(v => String(v.zona || '').trim().toUpperCase()));
-      
+
       // 3. Filtrar: la zona debe estar en las asignaciones del inventario Y tener ítems de reconteo
-      filtradas = filtradas.filter(z => 
-        zonasAsignadasConteo.has(Number(z.id)) && 
+      filtradas = filtradas.filter(z =>
+        zonasAsignadasConteo.has(Number(z.id)) &&
         zonasConReconteo.has(String(z.nombre || '').trim().toUpperCase())
       );
     }
@@ -346,14 +420,30 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     }
     if (this.busquedaZonasAsignacion) {
       const search = this.busquedaZonasAsignacion.toLowerCase();
-      filtradas = filtradas.filter(z => 
-        z.nombre.toLowerCase().includes(search) || 
+      filtradas = filtradas.filter(z =>
+        z.nombre.toLowerCase().includes(search) ||
         z.codigo_bodega.toLowerCase().includes(search)
       );
     }
-    if (this.filtroSoloNoAsignadas) {
-      filtradas = filtradas.filter(z => !this.getAsignacionZona(z.id));
+
+    // Filtrar por estado de asignación de zona
+    if (this.filtroAsignacionZona === 'sin_asignar') {
+      filtradas = filtradas.filter(z => {
+        const stats = this.getZonasEstadoAsignacion(z.nombre);
+        return stats.estado === 'totalmente_sin_asignar';
+      });
+    } else if (this.filtroAsignacionZona === 'parciales') {
+      filtradas = filtradas.filter(z => {
+        const stats = this.getZonasEstadoAsignacion(z.nombre);
+        return stats.estado === 'parcialmente_asignada';
+      });
+    } else if (this.filtroAsignacionZona === 'completas') {
+      filtradas = filtradas.filter(z => {
+        const stats = this.getZonasEstadoAsignacion(z.nombre);
+        return stats.estado === 'completamente_asignada';
+      });
     }
+
     return filtradas;
   }
 
@@ -371,27 +461,35 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     // Si estamos en reconteo, solo mostrar items marcados para reconteo de la ETAPA ANTERIOR
     if (this.modoActual !== 'conteo') {
       const etapaAnterior = this.modoActual === 'reconteo1' ? 'conteo' : 'reconteo1';
-      
+
       const itemsConReconteo = new Set((this.validaciones || [])
         .filter(v => this.normalizeModo(v.tipo_conteo) === etapaAnterior && v.estado_validacion === 'reconteo')
         .map(v => `${String(v.id_item || '').trim()}|${String(v.referencia || '').trim()}|${String(v.id_talla || '').trim()}|${String(v.id_color || '').trim()}`.toUpperCase()));
-      
+
       filtrados = filtrados.filter(i => {
         const key = `${String(i.id_item || '').trim()}|${String(i.referencia || '').trim()}|${String(i.id_talla || '').trim()}|${String(i.id_color || '').trim()}`.toUpperCase();
         return itemsConReconteo.has(key);
       });
     }
-    
+
     if (this.filtroTipoItem) {
       filtrados = filtrados.filter(i => {
         const esTela = i.referencia?.startsWith('1110');
         return this.filtroTipoItem === 'telas' ? esTela : !esTela;
       });
     }
+
+    // Filtro por estado de asignación del item
+    if (this.filtroEstadoAsignacionItem === 'asignado') {
+      filtrados = filtrados.filter(i => i.ya_asignado);
+    } else if (this.filtroEstadoAsignacionItem === 'sin_asignar') {
+      filtrados = filtrados.filter(i => !i.ya_asignado);
+    }
+
     if (this.busquedaItemAsignacion) {
       const search = this.busquedaItemAsignacion.toLowerCase();
-      filtrados = filtrados.filter(i => 
-        i.id_item.toLowerCase().includes(search) || 
+      filtrados = filtrados.filter(i =>
+        i.id_item.toLowerCase().includes(search) ||
         i.referencia.toLowerCase().includes(search) ||
         i.descripcion.toLowerCase().includes(search)
       );
@@ -433,10 +531,10 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
       items_detalle: [],
       tipo_conteo: this.modoActual
     };
-    
+
     this.busquedaContador = grupo.contador.nombre_completo || (grupo.contador.nombres + ' ' + (grupo.contador.apellidos || ''));
     this.id_zonas_seleccionadas = grupo.asignaciones.map((a: any) => Number(a.id_zona));
-    
+
     this.excepciones_por_zona = {};
     grupo.asignaciones.forEach((a: any) => {
       this.excepciones_por_zona[Number(a.id_zona)] = {
@@ -448,7 +546,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     this.zona_activa_edicion = this.id_zonas_seleccionadas[0] || null;
     this.pasoAsignacion = 1;
     this.mostrarModalAsignacion = true;
-    
+
     if (this.zona_activa_edicion) {
       this.setZonaActiva(this.zona_activa_edicion);
     }
@@ -456,7 +554,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
 
   editarAsignacion(asig: any) {
     const grupoAsignaciones = this.asignaciones.filter(a => a.id_usuario == asig.id_usuario);
-    
+
     this.asignacion = {
       id: null,
       id_inventario: asig.id_inventario,
@@ -478,7 +576,7 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
 
     this.zona_activa_edicion = asig.id_zona;
     this.pasoAsignacion = 2;
-    
+
     if (asig.contador) {
       this.busquedaContador = asig.contador.nombre_completo || (asig.contador.nombres + ' ' + (asig.contador.apellidos || ''));
     }
@@ -503,6 +601,9 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
             Swal.fire('Eliminado', 'Asignación removida', 'success');
             this.onAsignacionCambiada.emit();
           }
+        }, err => {
+          const msg = err?.error?.message || 'Error al eliminar la asignación';
+          Swal.fire('No se puede eliminar', msg, 'warning');
         });
       }
     });
@@ -556,12 +657,44 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     this.cargandoItemsZona = true;
     this.inventarioService.getItemsPorBodega(zona.codigo_bodega).subscribe(resp => {
       if (resp.success) {
-        this.itemsDeZona = resp.data.filter((i: any) => 
+        // Obtener los items que ya están asignados en esta zona para la etapa actual
+        const asignacionesDeEstaZona = this.asignaciones.filter(a =>
+          Number(a.id_zona) === Number(this.zona_activa_edicion) &&
+          this.normalizeModo(a.tipo_conteo) === this.modoActual
+        );
+
+        // Construir set de items ya asignados con su dueño
+        const itemsYaAsignados: { [key: string]: string[] } = {};
+        asignacionesDeEstaZona.forEach(a => {
+          if (a.tipo_items === 'incluir' && a.items_detalle?.length) {
+            a.items_detalle.forEach((idItem: string) => {
+              const k = String(idItem).trim();
+              if (!itemsYaAsignados[k]) itemsYaAsignados[k] = [];
+              const nombre = a.contador?.nombre_completo || `User ${a.id_usuario}`;
+              if (!itemsYaAsignados[k].includes(nombre)) itemsYaAsignados[k].push(nombre);
+            });
+          } else if (a.tipo_items === 'todos') {
+            // Si alguien tiene 'todos', marcar con un flag especial
+            const nombre = a.contador?.nombre_completo || `User ${a.id_usuario}`;
+            if (!itemsYaAsignados['__TODOS__']) itemsYaAsignados['__TODOS__'] = [];
+            if (!itemsYaAsignados['__TODOS__'].includes(nombre)) itemsYaAsignados['__TODOS__'].push(nombre);
+          }
+        });
+
+        this.itemsDeZona = resp.data.filter((i: any) =>
           i.zonas?.some((z: any) => z.id == this.zona_activa_edicion)
-        ).map((i: any) => ({
-          ...i,
-          seleccionado: this.asignacion.items_detalle.some((id: any) => String(id) === String(i.id_item))
-        }));
+        ).map((i: any) => {
+          const k = String(i.id_item).trim();
+          const asignadoDirecto = itemsYaAsignados[k] || [];
+          const asignadoTodos = itemsYaAsignados['__TODOS__'] || [];
+          const todosAsignados = [...new Set([...asignadoDirecto, ...asignadoTodos])];
+          return {
+            ...i,
+            seleccionado: this.asignacion.items_detalle.some((id: any) => String(id) === String(i.id_item)),
+            ya_asignado: todosAsignados.length > 0,
+            asignado_a: todosAsignados
+          };
+        });
       }
       this.cargandoItemsZona = false;
     });
@@ -610,12 +743,12 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     let errores = 0;
     let exitos = 0;
     const zonasUnicas = Array.from(new Set(this.id_zonas_seleccionadas));
-    
+
     const userId = this.authService.user.id || 0;
     for (const idZona of zonasUnicas) {
       const config = this.excepciones_por_zona[idZona] || { tipo_items: 'todos', items_detalle: [] };
       const asigExistente = asignacionesUsuario.find(a => a.id_zona == idZona);
-      
+
       let itemsFinales = config.items_detalle || [];
       let tipoFinal = config.tipo_items || 'todos';
 
@@ -623,10 +756,10 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
       if (this.modoActual !== 'conteo' && tipoFinal === 'todos') {
         const etapaAnterior = this.modoActual === 'reconteo1' ? 'conteo' : 'reconteo1';
         const zonaObj = this.zonas.find(z => z.id == idZona);
-        
+
         const itemsParaReconteo = this.validaciones
-          .filter(v => 
-            (v.tipo_conteo || 'conteo') === etapaAnterior && 
+          .filter(v =>
+            (v.tipo_conteo || 'conteo') === etapaAnterior &&
             v.estado_validacion === 'reconteo' &&
             String(v.zona).trim().toUpperCase() === String(zonaObj?.nombre).trim().toUpperCase()
           )
@@ -657,17 +790,24 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
         }
         if (resp && resp.success) exitos++;
         else errores++;
-      } catch (e) { 
+      } catch (e) {
         console.error('Error guardando asignación:', e);
-        errores++; 
+        errores++;
       }
     }
 
     const idsZonasSeleccionadas = new Set(zonasUnicas);
     for (const asig of asignacionesUsuario) {
       if (!idsZonasSeleccionadas.has(asig.id_zona)) {
-        try { await this.inventarioService.deleteAsignacion(asig.id, userId).toPromise(); } 
-        catch (e) { errores++; }
+        try { await this.inventarioService.deleteAsignacion(asig.id, userId).toPromise(); }
+        catch (e: any) {
+          const msg = e?.error?.message || '';
+          if (msg.includes('conteos registrados')) {
+            console.warn(`Asignación ${asig.id} tiene conteos, no se eliminó (conteos transferidos o protegidos)`);
+          } else {
+            errores++;
+          }
+        }
       }
     }
 
@@ -683,6 +823,10 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     return this.asignaciones.find(a => a.id_zona == idZona && this.normalizeModo(a.tipo_conteo) === this.modoActual);
   }
 
+  getTodasAsignacionesZona(idZona: number): any[] {
+    return this.asignaciones.filter(a => a.id_zona == idZona && this.normalizeModo(a.tipo_conteo) === this.modoActual);
+  }
+
   getNombreZona(id: number) {
     return this.zonas.find(z => z.id == id)?.nombre || 'Zona';
   }
@@ -690,5 +834,24 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   esBodegaMP001(idZona: number | null): boolean {
     if (!idZona) return false;
     return this.zonas.find(z => z.id == idZona)?.codigo_bodega === 'MP001';
+  }
+
+  get zonasConPendientes() {
+    let filtradas = this.zonas;
+    if (this.filtroBodega) {
+      filtradas = filtradas.filter(z => z.codigo_bodega === this.filtroBodega);
+    }
+    return filtradas.map(z => {
+      const status = this.getZonasEstadoAsignacion(z.nombre);
+      return {
+        ...z,
+        status
+      };
+    }).filter(z => z.status.estado === 'totalmente_sin_asignar' || z.status.estado === 'parcialmente_asignada');
+  }
+
+  abrirAsignacionParaZona(z: any) {
+    this.abrirNuevaAsignacion();
+    this.toggleZonaAsignacion(z.id);
   }
 }

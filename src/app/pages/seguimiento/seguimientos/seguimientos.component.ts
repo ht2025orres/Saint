@@ -41,6 +41,11 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
   // Estado del calendario (mes visualizado)
   mesCalendario = new Date();
 
+  // Variables optimizadas para evitar bucles de renderizado
+  compromisosUnificadosList: any[] = [];
+  diasCalendarioList: any[] = [];
+  historialFlujosList: any[] = [];
+
   private _subs = new Subscription();
 
   constructor(
@@ -50,6 +55,11 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     private _el: ElementRef,
   ) {
     this.fechaSeleccionada = this.formatLocal(new Date());
+    this.actualizarDiasCalendario();
+  }
+
+  seleccionarHoy(): void {
+    this.seleccionarFecha(this.formatLocal(new Date()));
   }
 
   @HostListener('document:click', ['$event'])
@@ -102,8 +112,11 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     return enDia || enPasados;
   }
 
-  get compromisosUnificados(): any[] {
-    if (!this.flujoActivo) return [];
+  actualizarCompromisosUnificados(): void {
+    if (!this.flujoActivo) {
+      this.compromisosUnificadosList = [];
+      return;
+    }
     
     const pasados = (this.flujoActivo as any).compromisos_pasados || [];
     const actuales = this.flujoActivo.compromisos || [];
@@ -112,7 +125,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     const pasadosMarcados = pasados.map((c: any) => ({ ...c, esPasado: true }));
     const actualesMarcados = actuales.map((c: any) => ({ ...c, esPasado: false }));
     
-    return [...pasadosMarcados, ...actualesMarcados];
+    this.compromisosUnificadosList = [...pasadosMarcados, ...actualesMarcados];
   }
 
   saturacionPct(total: number): number {
@@ -197,6 +210,19 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
         seen.add(date);
         return !duplicate;
       }).sort((a: any, b: any) => b.fecha.localeCompare(a.fecha));
+
+      // Mapear historialFlujosList
+      this.historialFlujosList = this.historialFlujos.map((f: any) => {
+        const fechaLimpia = f.fecha.includes('T') ? f.fecha.split('T')[0] : f.fecha.split(' ')[0];
+        return {
+          original: f,
+          fechaLimpia: fechaLimpia,
+          parsedDate: this.parseFechaAPI(f.fecha),
+          estado: f.estado
+        };
+      });
+
+      this.actualizarDiasCalendario();
       this._cdr.markForCheck();
     });
 
@@ -216,13 +242,21 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
             fecha: hoy,
           }).subscribe(resNuevo => {
             this.flujoActivo = resNuevo.data;
+            this.actualizarCompromisosUnificados();
             this._cdr.markForCheck();
           });
+        } else {
+          this.actualizarCompromisosUnificados();
         }
         
         this._cdr.markForCheck();
       },
-      error: () => { this.loadingFlujo = false; this.loading = false; this._cdr.markForCheck(); },
+      error: () => { 
+        this.loadingFlujo = false; 
+        this.loading = false; 
+        this.actualizarCompromisosUnificados();
+        this._cdr.markForCheck(); 
+      },
     });
   }
 
@@ -237,6 +271,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
       this.mesCalendario = new Date(d.getFullYear(), d.getMonth(), 1);
     }
     
+    this.actualizarDiasCalendario();
     this.cargarDatos();
   }
 
@@ -248,6 +283,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     const parts = fecha.split('-').map(Number);
     this.mesCalendario = new Date(parts[0], parts[1] - 1, 1);
     
+    this.actualizarDiasCalendario();
     this.cargarDatos();
   }
 
@@ -287,7 +323,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  get diasCalendario(): Date[] {
+  actualizarDiasCalendario(): void {
     const year = this.mesCalendario.getFullYear();
     const month = this.mesCalendario.getMonth();
     
@@ -296,8 +332,6 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     // Último día del mes
     const ultimoDia = new Date(year, month + 1, 0);
     
-    // Ajustar para que la semana empiece en Lunes (0=Dom, 1=Lun, ..., 6=Sáb)
-    // En JS getDay() es 0=Dom. Queremos 0=Lun, ..., 6=Dom.
     let startDay = primerDia.getDay();
     if (startDay === 0) startDay = 7; // Domingo es 7
     startDay--; // Ahora 0=Lun, ..., 6=Dom
@@ -320,25 +354,26 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
       dias.push(new Date(year, month + 1, i));
     }
     
-    return dias;
+    // Mapear a un array estático de objetos precalculados
+    this.diasCalendarioList = dias.map(d => {
+      const dStr = this.formatLocal(d);
+      const tieneFlujo = (this.historialFlujos || []).some(h => {
+        const hFecha = h.fecha.includes('T') ? h.fecha.split('T')[0] : h.fecha.split(' ')[0];
+        return hFecha === dStr;
+      });
+      return {
+        date: d,
+        dateStr: dStr,
+        esMismoMes: d.getMonth() === month,
+        tieneFlujo
+      };
+    });
   }
 
   cambiarMesCalendario(offset: number): void {
     this.mesCalendario = new Date(this.mesCalendario.getFullYear(), this.mesCalendario.getMonth() + offset, 1);
+    this.actualizarDiasCalendario();
     this._cdr.markForCheck();
-  }
-
-  getFlujoEnFecha(fecha: Date): any {
-    const fStr = this.formatLocal(fecha);
-    // Asegurar que solo comparamos la fecha sin hora
-    return this.historialFlujos.find(h => {
-      const hFecha = h.fecha.includes('T') ? h.fecha.split('T')[0] : h.fecha.split(' ')[0];
-      return hFecha === fStr;
-    });
-  }
-
-  esMismoMes(fecha: Date): boolean {
-    return fecha.getMonth() === this.mesCalendario.getMonth();
   }
 
 
@@ -428,6 +463,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
               notas: form.descripcion
             };
           }
+          this.actualizarCompromisosUnificados();
         } else {
           // Si es nuevo, sí recargamos para obtener el ID y orden real
           this.cargarDatos(); 
@@ -579,6 +615,7 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
               notas: this.compromisoInline!.notas
             };
           }
+          this.actualizarCompromisosUnificados();
         } else {
           // Si es nuevo, recargamos para obtener el ID real
           this.cargarDatos();
@@ -610,6 +647,16 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
 
   esResponsableInline(uid: number): boolean {
     return this.compromisoInline?.responsables.includes(uid) ?? false;
+  }
+
+  /** Usuarios asignados al compromiso que NO están en el proceso (para poder quitarlos) */
+  get responsablesExternosInline(): any[] {
+    if (!this.compromisoInline?.responsables) return [];
+    const idsProceso = new Set(this.state.usuariosAdministradores.map(u => u.id));
+    return this.compromisoInline.responsables
+      .filter((rid: number) => !idsProceso.has(rid))
+      .map((rid: number) => this.state.getUsuarioExterno(rid))
+      .filter((u: any) => u !== null);
   }
 
   // ── Flujo ────────────────────────────────────────────────────────────────

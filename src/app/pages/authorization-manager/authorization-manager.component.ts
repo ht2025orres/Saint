@@ -27,6 +27,7 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
   profiles: any[] = [];
   modules: any[] = [];
   permissions: any[] = [];
+  procesos: any[] = [];
 
   // UI
   loading = false;
@@ -34,12 +35,12 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
 
   // search + pagination (client)
   paginatorId = 'auth-users-paginator';
-  filters: any = { busqueda: '', perfil_id: '', module_id: '', permission_id: '' };
+  filters: any = { busqueda: '', perfil_id: '', module_id: '', permission_id: '', proceso_id: '' };
   pagedUsers: any[] = [];
   private subscription: Subscription = new Subscription();
 
   // Custom Dropdowns
-  activeDropdown: 'perfil' | 'module' | 'permission' | null = null;
+  activeDropdown: 'perfil' | 'module' | 'permission' | 'proceso' | null = null;
   dropdownSearch: string = '';
 
   constructor(
@@ -67,6 +68,7 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
           this.profiles = res.profiles ?? [];
           this.modules = res.modules ?? [];
           this.permissions = res.permissions ?? [];
+          this.procesos = res.procesos ?? [];
           this.inicializarPaginacion();
         },
         error: (err) => {
@@ -124,6 +126,13 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
       const pId = Number(filtros.perfil_id);
       const hasPerfil = user.perfiles && user.perfiles.some((p: any) => p.id === pId);
       if (!hasPerfil) return false;
+    }
+
+    // 3. Filtro por proceso
+    if (filtros.proceso_id) {
+      const procId = Number(filtros.proceso_id);
+      const hasProceso = user.proceso_ids && user.proceso_ids.includes(procId);
+      if (!hasProceso) return false;
     }
 
     // Calcular permisos efectivos para módulo o permiso si se requiere
@@ -205,7 +214,7 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
   // -----------------------
   // CUSTOM DROPDOWNS
   // -----------------------
-  toggleDropdown(type: 'perfil' | 'module' | 'permission') {
+  toggleDropdown(type: 'perfil' | 'module' | 'permission' | 'proceso') {
     if (this.activeDropdown === type) {
       this.activeDropdown = null;
     } else {
@@ -214,26 +223,32 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectDropdownOption(type: 'perfil' | 'module' | 'permission', id: string | number) {
+  selectDropdownOption(type: 'perfil' | 'module' | 'permission' | 'proceso', id: string | number) {
     this.filters[type + '_id'] = id;
     this.activeDropdown = null;
     this.applyFilters();
   }
 
-  getFilteredDropdownOptions(type: 'perfil' | 'module' | 'permission') {
+  getFilteredDropdownOptions(type: 'perfil' | 'module' | 'permission' | 'proceso') {
     const term = this.dropdownSearch.toLowerCase().trim();
     let options: any[] = [];
     if (type === 'perfil') options = this.profiles;
     if (type === 'module') options = this.modules;
     if (type === 'permission') options = this.permissions;
+    if (type === 'proceso') options = this.procesos;
 
     if (!term) return options;
-    return options.filter(o => o.name?.toLowerCase().includes(term));
+    return options.filter(o => (o.name || o.nombre || '').toLowerCase().includes(term));
   }
 
-  getDropdownLabel(type: 'perfil' | 'module' | 'permission'): string {
+  getDropdownLabel(type: 'perfil' | 'module' | 'permission' | 'proceso'): string {
     const val = this.filters[type + '_id'];
-    if (!val) return type === 'perfil' ? 'Todos los Perfiles' : (type === 'module' ? 'Todos los Módulos' : 'Todos los Permisos');
+    if (!val) {
+      if (type === 'perfil') return 'Todos los Perfiles';
+      if (type === 'module') return 'Todos los Módulos';
+      if (type === 'permission') return 'Todos los Permisos';
+      if (type === 'proceso') return 'Todos los Procesos';
+    }
     
     if (type === 'perfil') return this.profiles.find(p => p.id == val)?.name || 'Todos los Perfiles';
     if (type === 'module') return this.modules.find(m => m.id == val)?.name || 'Todos los Módulos';
@@ -241,7 +256,17 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
         const pm = this.permissions.find(p => p.id == val);
         return pm ? `${pm.name} (${pm.module?.name})` : 'Todos los Permisos';
     }
+    if (type === 'proceso') return this.procesos.find(p => p.id == val)?.nombre || 'Todos los Procesos';
     return '';
+  }
+
+  /** Helper: obtener los nombres de procesos de un usuario */
+  getUserProcesoNames(user: any): string {
+    if (!user.proceso_ids || user.proceso_ids.length === 0) return '—';
+    return user.proceso_ids
+      .map((pid: number) => this.procesos.find(p => p.id === pid)?.nombre)
+      .filter(Boolean)
+      .join(', ') || '—';
   }
 
   // -----------------------

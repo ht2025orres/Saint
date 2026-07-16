@@ -92,15 +92,20 @@ export class InconsistenciaService {
         });
     }
 
-    listarInconsistenciasPorDepartamento(rol?: string) {
+    listarInconsistenciasPorDepartamento(rol?: string, estado?: string) {
         let params = new HttpParams();
         if (rol) {
             params = params.set('rol', rol);
         }
+        if (estado) {
+            params = params.set('estado', estado);
+        }
         return this.http.get(`${this.baseUrlCpanel}/listar_inconsistencias_departamento`, { params });
     }
 
-
+    listarInconsistenciasCartera() {
+        return this.http.get(`${this.baseUrlCpanel}/listar_inconsistencias_cartera`);
+    }
 
     aprobarInconsistencia(id_inconsistencia: string, motivo: string = '', estado_orden: string | null = null): Observable<any> {
         const body: any = {
@@ -138,12 +143,13 @@ export class InconsistenciaService {
     * Obtiene los tiempos de proceso de una inconsistencia específica
     */
 
-    listarHistorico(mes: number, year?: number): Observable<any> {
-        const params = new HttpParams()
-            .set('mes', mes.toString())
-            .set('year', (year || new Date().getFullYear()).toString());
+    listarHistorico(mes?: number, year?: number, desde?: string, hasta?: string): Observable<any> {
+        let params = new HttpParams();
+        if (mes !== undefined && mes !== null) params = params.set('mes', mes.toString());
+        if (year !== undefined && year !== null) params = params.set('year', year.toString());
+        if (desde) params = params.set('desde', desde);
+        if (hasta) params = params.set('hasta', hasta);
 
-        // ✅ Paréntesis normales con template string dentro
         return this.http.get(`${this.baseUrlCpanel}/historico`, { params });
     }
 
@@ -178,6 +184,7 @@ export class InconsistenciaService {
         return this.http.post(`${this.baseUrlCpanel}/consumir`, {
             id_inconsistencia: idInconsistencia,
             tipo_consumo: datos.tipo,
+            observacion_consumo: datos.observacion_consumo || null,
             ...(datos.tipo === 'consumo'
                 ? { codigo_trn: datos.codigoTrn, codigo_consumo: datos.codigoConsumo }
                 : { codigo_validacion: datos.codigo }

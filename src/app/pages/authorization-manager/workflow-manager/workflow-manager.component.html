@@ -98,14 +98,26 @@
             <!-- COL 4: DESIGNER (ETAPAS UNIFICADAS) -->
             <div class="flex-1 flex flex-col bg-white">
                 <div class="px-4 py-1.5 bg-white border-b border-slate-200 flex justify-between items-center sticky top-0 z-40">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Configurador</span>
+                    <div class="flex items-center gap-3">
+                        <div *ngIf="selectedVersion" class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                            <button (click)="changeTab('designer')" 
+                                    [ngClass]="activeTab === 'designer' ? 'bg-white text-indigo-600 font-black shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-2.5 py-1 text-[9px] rounded-md transition-all flex items-center gap-1 uppercase tracking-tight">
+                                <i class="fas fa-project-diagram"></i> Diseñador
+                            </button>
+                            <button (click)="changeTab('instances')" 
+                                    [ngClass]="activeTab === 'instances' ? 'bg-white text-indigo-600 font-black shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-2.5 py-1 text-[9px] rounded-md transition-all flex items-center gap-1 uppercase tracking-tight">
+                                <i class="fas fa-list-ul"></i> Instancias de Flujo
+                            </button>
+                        </div>
+                        <span *ngIf="!selectedVersion" class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Configurador</span>
                         <div *ngIf="selectedVersion" class="flex items-center gap-2">
                              <div class="h-3 w-[1px] bg-slate-200"></div>
                              <span class="text-[9px] text-indigo-600 font-black bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-tighter">v{{ selectedVersion.version }}.0</span>
                         </div>
                     </div>
-                    <div class="flex gap-1.5" *ngIf="selectedVersion">
+                    <div class="flex gap-1.5" *ngIf="selectedVersion && activeTab === 'designer'">
                         <!-- Botón de Publicación (Movido aquí) -->
                         <button *ngIf="selectedVersion.estado !== 'publicado'" 
                                 (click)="publicarVersion(selectedVersion)"
@@ -131,7 +143,7 @@
                     </div>
 
                     <!-- DESIGNER CANVAS (Agrupado por Orden) -->
-                    <div *ngIf="selectedVersion" cdkDropList (cdkDropListDropped)="drop($event)" class="space-y-1 relative">
+                    <div *ngIf="selectedVersion && activeTab === 'designer'" cdkDropList (cdkDropListDropped)="drop($event)" class="space-y-1 relative">
                         
                         <!-- Bloque de Orden (Contenedor de Arrastre) -->
                         <div *ngFor="let grupo of grupos; let gIndex = index" cdkDrag 
@@ -244,6 +256,94 @@
                             </div>
                         </div>
 
+                    </div>
+
+                    <!-- VISTA DE INSTANCIAS (REGISTROS DEL FLUJO) -->
+                    <div *ngIf="selectedVersion && activeTab === 'instances'" class="h-full flex flex-col">
+                        <!-- Buscador y Filtros -->
+                        <div class="bg-white rounded-xl border border-slate-200 p-3 mb-4 flex flex-col md:flex-row gap-3 items-center justify-between shadow-sm">
+                            <div class="relative flex-1 w-full">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+                                <input type="text" [(ngModel)]="searchTermInstances" 
+                                       class="w-full pl-8 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] outline-none focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all font-medium" 
+                                       placeholder="Buscar por ID, detalles, etapa actual...">
+                            </div>
+                            
+                            <div class="flex gap-2 w-full md:w-auto">
+                                <select [(ngModel)]="statusFilterInstances" 
+                                        class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-slate-600 outline-none cursor-pointer focus:bg-white focus:border-indigo-600 transition-all">
+                                    <option value="todos">Todos los Estados</option>
+                                    <option value="en_proceso">En Proceso</option>
+                                    <option value="completada">Completados</option>
+                                    <option value="denegada">Rechazados</option>
+                                    <option value="anulada">Anulados</option>
+                                </select>
+                                <button (click)="cargarInstancias()" class="w-7 h-7 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 rounded-lg transition-all flex items-center justify-center">
+                                    <i class="fas fa-sync-alt text-xs" [class.animate-spin]="loadingInstances"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Indicador de Carga -->
+                        <div *ngIf="loadingInstances" class="flex-1 flex flex-col items-center justify-center py-20 text-slate-400">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-3 text-indigo-600"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider">Obteniendo registros activos...</span>
+                        </div>
+
+                        <!-- Lista de Registros -->
+                        <div *ngIf="!loadingInstances" class="flex-1 overflow-y-auto scrollbar-thin">
+                            <!-- Sin Registros -->
+                            <div *ngIf="instancesFiltradas.length === 0" class="h-64 flex flex-col items-center justify-center bg-white border border-slate-200 rounded-xl p-6 text-center text-slate-400">
+                                <i class="fas fa-folder-open text-4xl mb-3 opacity-60 text-indigo-100"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-wider">No se encontraron registros</span>
+                                <p class="text-[9px] text-slate-400 mt-1">No hay instancias que coincidan con la búsqueda o el filtro de estado.</p>
+                            </div>
+
+                            <!-- Tabla de Registros -->
+                            <div *ngIf="instancesFiltradas.length > 0" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                                <table class="w-full text-left text-[10px] border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200 text-[8px]">
+                                            <th class="p-3">ID Registro</th>
+                                            <th class="p-3">Detalle del Registro</th>
+                                            <th class="p-3">Etapa Actual</th>
+                                            <th class="p-3 text-center">Estado</th>
+                                            <th class="p-3">Fecha de Inicio</th>
+                                            <th class="p-3 text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 font-medium">
+                                        <tr *ngFor="let instance of instancesFiltradas" class="hover:bg-slate-50/50 transition-colors">
+                                            <td class="p-3 font-bold text-indigo-600">{{ instance.identificador }}</td>
+                                            <td class="p-3 text-slate-600 max-w-xs truncate" [title]="instance.detalles">{{ instance.detalles }}</td>
+                                            <td class="p-3">
+                                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200 text-[8px] uppercase">
+                                                    {{ instance.paso_actual }}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <span class="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase border"
+                                                      [ngClass]="{
+                                                        'bg-amber-100 text-amber-700 border-amber-200': instance.estado === 'en_proceso',
+                                                        'bg-emerald-100 text-emerald-700 border-emerald-200': instance.estado === 'completada',
+                                                        'bg-rose-100 text-rose-700 border-rose-200': instance.estado === 'denegada',
+                                                        'bg-slate-100 text-slate-600 border-slate-200': instance.estado === 'anulada'
+                                                      }">
+                                                    {{ traducirEstadoInstancia(instance.estado) }}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 text-slate-500 font-mono">{{ instance.fecha_inicio | date:'dd/MM/yyyy HH:mm' }}</td>
+                                            <td class="p-3 text-center">
+                                                <button (click)="showInstanceHistory(instance)" 
+                                                        class="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-600 hover:border-indigo-600 hover:text-white rounded-md text-[9px] font-bold transition-all flex items-center gap-1.5 mx-auto">
+                                                    <i class="fas fa-history"></i> Historial
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                           <!-- MODAL: DECLARACIÓN DE CONDICIONES (DISEÑO SOLICITADO) -->
             <div *ngIf="showCondicionModal" class="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-300">
@@ -478,5 +578,95 @@
             </div>
         </ng-container>
 
+    </div>
+</div>
+
+<!-- MODAL: HISTORIAL DE PASOS DE LA INSTANCIA -->
+<div *ngIf="selectedInstanceForHistory" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4 animate-in fade-in duration-300">
+    <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] overflow-hidden relative animate-in zoom-in duration-300">
+        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div class="flex items-center gap-2.5">
+                <i class="fas fa-history text-indigo-600 text-lg"></i>
+                <div>
+                    <h3 class="text-slate-800 font-black text-xs uppercase tracking-tight">Historial de Workflow - Registro {{ selectedInstanceForHistory.identificador }}</h3>
+                    <p class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Tipo: {{ selectedInstanceForHistory.entidad_tipo.split('\\').pop() }} • Estado: {{ traducirEstadoInstancia(selectedInstanceForHistory.estado) }}</p>
+                </div>
+            </div>
+            <button (click)="selectedInstanceForHistory = null" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6 max-h-[60vh] overflow-y-auto scrollbar-thin">
+            <div class="relative pl-6 border-l-2 border-slate-100 space-y-6">
+                <div *ngFor="let paso of selectedInstanceForHistory.historial" class="relative">
+                    <!-- Icono del Estado del Paso -->
+                    <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center shadow-sm"
+                         [ngClass]="{
+                           'border-emerald-500 text-emerald-500': paso.estado === 'completado' || paso.estado === 'aprobado',
+                           'border-amber-500 text-amber-500': paso.estado === 'pendiente' || paso.estado === 'en_proceso',
+                           'border-rose-500 text-rose-500 bg-rose-50': paso.estado === 'rechazado' || paso.estado === 'denegado',
+                           'border-slate-300 text-slate-400': paso.estado !== 'completado' && paso.estado !== 'aprobado' && paso.estado !== 'pendiente' && paso.estado !== 'en_proceso' && paso.estado !== 'rechazado' && paso.estado !== 'denegado'
+                         }">
+                        <i class="fas text-[8px]" 
+                           [ngClass]="{
+                             'fa-check': paso.estado === 'completado' || paso.estado === 'aprobado',
+                             'fa-clock': paso.estado === 'pendiente' || paso.estado === 'en_proceso',
+                             'fa-times': paso.estado === 'rechazado' || paso.estado === 'denegado'
+                           }"></i>
+                    </div>
+                    
+                    <!-- Detalles del Paso -->
+                    <div class="bg-slate-50/50 hover:bg-slate-50 border border-slate-200/60 rounded-xl p-4 transition-all">
+                        <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+                            <h4 class="text-xs font-black text-slate-800 uppercase tracking-tight">{{ paso.nombre }}</h4>
+                            <span class="text-[8px] px-2 py-0.5 rounded-full font-bold border uppercase"
+                                  [ngClass]="{
+                                    'bg-emerald-100 text-emerald-700 border-emerald-200': paso.estado === 'completado' || paso.estado === 'aprobado',
+                                    'bg-amber-100 text-amber-700 border-amber-200': paso.estado === 'pendiente' || paso.estado === 'en_proceso',
+                                    'bg-rose-100 text-rose-700 border-rose-200': paso.estado === 'rechazado' || paso.estado === 'denegado',
+                                    'bg-slate-100 text-slate-500 border-slate-200': paso.estado !== 'completado' && paso.estado !== 'aprobado' && paso.estado !== 'pendiente' && paso.estado !== 'en_proceso' && paso.estado !== 'rechazado' && paso.estado !== 'denegado'
+                                  }">
+                                {{ paso.estado }}
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[9px] text-slate-500 font-medium mb-2">
+                            <div class="flex items-center gap-1.5">
+                                <i class="fas fa-user-circle text-slate-400"></i>
+                                <span>Operador: <strong class="text-slate-700">{{ paso.usuario }}</strong></span>
+                            </div>
+                            <div class="flex items-center gap-1.5" *ngIf="paso.duracion">
+                                <i class="fas fa-hourglass-half text-slate-400"></i>
+                                <span>Duración: <strong class="text-slate-700">{{ paso.duracion }} minutos</strong></span>
+                            </div>
+                            <div class="flex items-center gap-1.5" *ngIf="paso.fecha_inicio">
+                                <i class="fas fa-calendar-alt text-slate-400"></i>
+                                <span>Inicio: <strong class="text-slate-700 font-mono">{{ paso.fecha_inicio | date:'dd/MM/yyyy HH:mm' }}</strong></span>
+                            </div>
+                            <div class="flex items-center gap-1.5" *ngIf="paso.fecha_fin">
+                                <i class="fas fa-calendar-check text-slate-400"></i>
+                                <span>Fin: <strong class="text-slate-700 font-mono">{{ paso.fecha_fin | date:'dd/MM/yyyy HH:mm' }}</strong></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Comentarios -->
+                        <div *ngIf="paso.observaciones" class="mt-2 bg-white border border-slate-200 rounded-lg p-2.5 text-[10px] text-slate-600 font-normal italic">
+                            <i class="fas fa-comment-dots text-slate-400 mr-1.5 not-italic"></i>
+                            "{{ paso.observaciones }}"
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-slate-100 flex justify-end bg-slate-50">
+            <button (click)="selectedInstanceForHistory = null" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-indigo-100 uppercase">Cerrar</button>
+        </div>
     </div>
 </div>

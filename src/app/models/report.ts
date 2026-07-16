@@ -1,7 +1,7 @@
 export interface Report {
   id: number;
   origen: 'calidad' | 'produccion';
-  tipo_reporte: 'FT DESCRIPCION' | 'FT FOTO' | 'FT TALLA' | 'patronaje';
+  tipo_reporte: 'FT DESCRIPCION' | 'FT FOTO' | 'FT TALLA' | 'patronaje' | 'FICHA TECNICA';
   op_reporte: string;
   cliente: string;
   item: string;
@@ -18,4 +18,5 @@ export interface Report {
   actualizado_por?: number | null;
   fecha_respuesta?: string | null;
   respuesta?: string | null;
+  evidencia_respuesta?: string | null;
 }

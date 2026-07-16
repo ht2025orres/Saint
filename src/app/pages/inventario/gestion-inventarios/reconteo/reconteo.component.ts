@@ -15,7 +15,6 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   @Input() set inventarioSeleccionado(val: any) {
     this._inventarioSeleccionado = val;
     this.resetearFiltros();
-    this.cargarValidaciones();
   }
   get inventarioSeleccionado() {
     return this._inventarioSeleccionado;
@@ -32,7 +31,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
 
   private _validaciones: any[] = [];
   @Input() set validaciones(val: any[]) {
-    this._validaciones = (val || []).filter(v => v.estado_validacion !== 'sin_conteo');
+    this._validaciones = val || [];
     this.actualizarBodegasDisponibles();
     this.actualizarListasFiltradas();
   }
@@ -41,6 +40,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   }
 
   @Input() sincronizandoSiesa = false;
+  @Input() isReadOnly = false;
 
   private _modoActual: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar' = 'conteo';
   @Input() set modoActual(val: 'conteo' | 'reconteo1' | 'reconteo2' | 'justificar') {
@@ -53,7 +53,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     return this._modoActual;
   }
 
-  @Output() onValidacionCambiada = new EventEmitter<void>();
+  @Output() onValidacionCambiada = new EventEmitter<boolean>();
 
   // Navegación interna
   vistaActual: 'menu' | 'lista' = 'menu';
@@ -73,12 +73,12 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     return this._busquedaItems;
   }
 
-  private _filtroEstado: 'todos' | 'pendiente' | 'validado' | 'reconteo' = 'todos';
-  set filtroEstado(val: 'todos' | 'pendiente' | 'validado' | 'reconteo') {
+  private _filtroEstado: 'todos' | 'pendiente' | 'validado' | 'reconteo' | 'sin_conteo' | 'no_asignado' | 'sin_zona' | 'tolerancia' | 'justificacion_pendiente' = 'todos';
+  set filtroEstado(val: 'todos' | 'pendiente' | 'validado' | 'reconteo' | 'sin_conteo' | 'no_asignado' | 'sin_zona' | 'tolerancia' | 'justificacion_pendiente') {
     this._filtroEstado = val;
     this.actualizarListasFiltradas();
   }
-  get filtroEstado(): 'todos' | 'pendiente' | 'validado' | 'reconteo' {
+  get filtroEstado(): 'todos' | 'pendiente' | 'validado' | 'reconteo' | 'sin_conteo' | 'no_asignado' | 'sin_zona' | 'tolerancia' | 'justificacion_pendiente' {
     return this._filtroEstado;
   }
 
@@ -90,7 +90,28 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   get filtroBodega(): string {
     return this._filtroBodega;
   }
-  
+
+  filtroTipoItem = ''; // '' | 'telas' | 'insumos'
+  filtroUmbral: 'todos' | 'unidades' | 'precio' = 'todos';
+
+  private _filtroExclusion: 'todos' | 'excluir_tolerancia' | 'excluir_justificados' = 'todos';
+  set filtroExclusion(val: 'todos' | 'excluir_tolerancia' | 'excluir_justificados') {
+    this._filtroExclusion = val;
+    this.actualizarListasFiltradas();
+  }
+  get filtroExclusion(): 'todos' | 'excluir_tolerancia' | 'excluir_justificados' {
+    return this._filtroExclusion;
+  }
+
+  private _filtroCantConteos: 'todos' | '1' | '2' | '3' = 'todos';
+  set filtroCantConteos(val: 'todos' | '1' | '2' | '3') {
+    this._filtroCantConteos = val;
+    this.actualizarListasFiltradas();
+  }
+  get filtroCantConteos(): 'todos' | '1' | '2' | '3' {
+    return this._filtroCantConteos;
+  }
+
   // Selección masiva
   itemsSeleccionados: Set<number> = new Set();
 
@@ -126,7 +147,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     private inventarioService: InventarioService,
     private authService: AuthService,
     public paginationService: PaginationService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Suscribirse al paginador de validaciones
@@ -157,13 +178,13 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
 
   cargarValidaciones(silencioso: boolean = false) {
     if (!this.inventarioSeleccionado) return;
-    // Notificar al padre para que dispare la lógica de carga dual (rápida + sync SIESA)
-    this.onValidacionCambiada.emit();
+    // Notificar al padre para que dispare la lógica de carga rápida sin sync SIESA
+    this.onValidacionCambiada.emit(false);
   }
 
   ejecutarSincronizacionSiesa() {
-    // Simplemente notificamos al padre para que dispare la sincronización real
-    this.onValidacionCambiada.emit();
+    // Simplemente notificamos al padre para que dispare la sincronización real con SIESA
+    this.onValidacionCambiada.emit(true);
   }
 
   private normalizeModo(modo: string): string {
@@ -176,9 +197,16 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   // Getters para agrupaciones del menú
   get statsBodegaSeleccionada() {
     let base = (this.validaciones || []).filter(v => this.normalizeModo(v.tipo_conteo) === this.modoActual);
-    
+
     if (this.filtroBodega) {
       base = base.filter(v => v.codigo_bodega === this.filtroBodega);
+    }
+
+    if (this.filtroBodega === 'MP001' && this.filtroTipoItem) {
+      base = base.filter(v => {
+        const esTela = v.referencia?.startsWith('1110');
+        return this.filtroTipoItem === 'telas' ? esTela : !esTela;
+      });
     }
 
     return {
@@ -192,32 +220,43 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   actualizarBodegasDisponibles() {
     let asignacionesFiltradas = this.asignaciones || [];
     let validacionesFiltradas = this.validaciones || [];
-    
+
     if (this.modoActual !== 'justificar') {
       asignacionesFiltradas = asignacionesFiltradas.filter(a => this.normalizeModo(a.tipo_conteo) === this.modoActual);
       validacionesFiltradas = validacionesFiltradas.filter(v => this.normalizeModo(v.tipo_conteo) === this.modoActual);
     }
-    
+
     const bodegasAsignadas = asignacionesFiltradas
       .map(a => a.zona?.codigo_bodega)
       .filter(b => !!b);
-      
+
     const bodegasValidaciones = validacionesFiltradas
       .map(v => v.codigo_bodega);
-      
+
     const todas = [...bodegasAsignadas, ...bodegasValidaciones];
     this.bodegasDisponibles = Array.from(new Set(todas)).sort();
   }
 
   onFiltroBodegaChange() {
+    if (this.filtroBodega !== 'MP001') {
+      this.filtroTipoItem = '';
+    }
+    this.itemsSeleccionados.clear();
+    this.actualizarListasFiltradas();
+  }
+
+  onFiltroTipoItemChange() {
     this.itemsSeleccionados.clear();
     this.actualizarListasFiltradas();
   }
 
   resetearFiltros() {
     this._filtroBodega = '';
+    this.filtroTipoItem = '';
     this._filtroEstado = 'todos';
     this._busquedaItems = '';
+    this._filtroExclusion = 'todos';
+    this._filtroCantConteos = 'todos';
     this.itemsSeleccionados.clear();
     this.vistaActual = 'menu';
     this.filtroActual = null;
@@ -226,7 +265,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   }
 
   // Métodos de actualización de listas cacheadas
-  actualizarListasFiltradas() {
+  actualizarListasFiltradas(preservePage: boolean = false) {
     const modo = this.modoActual;
     const base = this.validaciones || [];
 
@@ -237,6 +276,13 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       filtrados = filtrados.filter(v => v.codigo_bodega === this.filtroBodega);
     }
 
+    if (this.filtroBodega === 'MP001' && this.filtroTipoItem) {
+      filtrados = filtrados.filter(v => {
+        const esTela = v.referencia?.startsWith('1110');
+        return this.filtroTipoItem === 'telas' ? esTela : !esTela;
+      });
+    }
+
     if (this.filtroActual === 'contador' && this.itemSeleccionado) {
       filtrados = filtrados.filter(v => v.responsable === this.itemSeleccionado);
     } else if (this.filtroActual === 'zona' && this.itemSeleccionado) {
@@ -244,29 +290,54 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     }
 
     if (this.filtroEstado !== 'todos') {
-      filtrados = filtrados.filter(v => v.estado_validacion === this.filtroEstado);
+      if (this.filtroEstado === 'tolerancia') {
+        filtrados = filtrados.filter(v => v.justificacion && v.justificacion.toLowerCase().includes('tolerancia'));
+      } else if (this.filtroEstado === 'justificacion_pendiente') {
+        filtrados = filtrados.filter(v => v.justificacion && v.justificacion.toLowerCase().includes('pendiente'));
+      } else {
+        filtrados = filtrados.filter(v => v.estado_validacion === this.filtroEstado);
+      }
+    }
+
+    if (this.filtroUmbral === 'unidades') {
+      filtrados = filtrados.filter(v => Math.abs((v.cantidad_conteo || 0) - (v.cantidad_siesa || 0)) >= this.umbralUnidades);
+    } else if (this.filtroUmbral === 'precio') {
+      filtrados = filtrados.filter(v => (Math.abs((v.cantidad_conteo || 0) - (v.cantidad_siesa || 0)) * (v.costo_unitario || 0)) >= this.umbralPrecio);
     }
 
     if (this.busquedaItems) {
       const search = this.busquedaItems.toLowerCase();
-      filtrados = filtrados.filter(v => 
-        (v.referencia && v.referencia.toLowerCase().includes(search)) || 
+      filtrados = filtrados.filter(v =>
+        (v.referencia && v.referencia.toLowerCase().includes(search)) ||
         (v.descripcion && v.descripcion.toLowerCase().includes(search)) ||
         (v.id_item && String(v.id_item).toLowerCase().includes(search))
       );
     }
 
+    if (this.filtroExclusion === 'excluir_tolerancia') {
+      filtrados = filtrados.filter(v => !(v.justificacion && v.justificacion.toLowerCase().includes('tolerancia')));
+    } else if (this.filtroExclusion === 'excluir_justificados') {
+      filtrados = filtrados.filter(v => !v.justificacion);
+    }
+
     this.validacionesFiltradas = filtrados;
     this.totalValidacionesFiltradas = filtrados.length;
-    this.paginationService.updatePaginator(this.valPaginatorId, filtrados, this.itemsPorPagina);
+    this.paginationService.updatePaginator(this.valPaginatorId, filtrados, this.itemsPorPagina, null, null, preservePage);
 
     // --- 2. Agrupar contadores y zonas para el menú principal ---
     const gruposContadores: { [key: string]: any } = {};
     const gruposZonas: { [key: string]: any } = {};
-    
+
     let validacionesBaseMenu = base.filter(v => this.normalizeModo(v.tipo_conteo) === modo);
     if (this.filtroBodega) {
       validacionesBaseMenu = validacionesBaseMenu.filter(v => v.codigo_bodega === this.filtroBodega);
+    }
+
+    if (this.filtroBodega === 'MP001' && this.filtroTipoItem) {
+      validacionesBaseMenu = validacionesBaseMenu.filter(v => {
+        const esTela = v.referencia?.startsWith('1110');
+        return this.filtroTipoItem === 'telas' ? esTela : !esTela;
+      });
     }
 
     validacionesBaseMenu.forEach(v => {
@@ -277,7 +348,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
         gruposContadores[v.responsable].total++;
         if (v.estado_validacion === 'pendiente') gruposContadores[v.responsable].pendientes++;
       }
-      
+
       if (v.zona) {
         if (!gruposZonas[v.zona]) {
           gruposZonas[v.zona] = { nombre: v.zona, total: 0, pendientes: 0 };
@@ -298,10 +369,17 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       baseJustificacion = baseJustificacion.filter(v => v.codigo_bodega === this.filtroBodega);
     }
 
+    if (this.filtroBodega === 'MP001' && this.filtroTipoItem) {
+      baseJustificacion = baseJustificacion.filter(v => {
+        const esTela = v.referencia?.startsWith('1110');
+        return this.filtroTipoItem === 'telas' ? esTela : !esTela;
+      });
+    }
+
     if (this.busquedaItems) {
       const search = this.busquedaItems.toLowerCase();
-      baseJustificacion = baseJustificacion.filter(v => 
-        (v.referencia && v.referencia.toLowerCase().includes(search)) || 
+      baseJustificacion = baseJustificacion.filter(v =>
+        (v.referencia && v.referencia.toLowerCase().includes(search)) ||
         (v.descripcion && v.descripcion.toLowerCase().includes(search)) ||
         (v.id_item && String(v.id_item).toLowerCase().includes(search))
       );
@@ -312,6 +390,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       if (!mapa.has(key)) {
         mapa.set(key, {
           id_item: v.id_item,
+          id_asignacion: v.id_asignacion,
           referencia: v.referencia,
           descripcion: v.descripcion,
           id_talla: v.id_talla,
@@ -320,11 +399,13 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
           codigo_bodega: v.codigo_bodega,
           costo_unitario: v.costo_unitario || 0,
           cantidad_siesa: v.cantidad_siesa || 0,
-          
+          responsable: v.responsable || 'Sin Asignar',
+          estado_validacion: v.estado_validacion,
+
           conteo: null as number | null,
           reconteo1: null as number | null,
           reconteo2: null as number | null,
-          
+
           conteoIds: [] as number[],
           justificacion: v.justificacion || '',
           comentarios: [] as string[]
@@ -342,6 +423,16 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       }
 
       if (v.id) item.conteoIds.push(v.id);
+      if (v.id_asignacion && !item.id_asignacion) {
+        item.id_asignacion = v.id_asignacion;
+      }
+
+      if (v.justificacion) {
+        item.justificacion = v.justificacion;
+      }
+      if (v.estado_validacion === 'validado') {
+        item.estado_validacion = 'validado';
+      }
 
       if (v.observaciones) {
         item.comentarios.push(`${v.tipo_conteo === 'conteo' ? '1° Conteo' : (v.tipo_conteo === 'reconteo1' ? '1° Reconteo' : '2° Reconteo')}: ${v.observaciones}`);
@@ -367,11 +458,43 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       itemsList = itemsList.filter(i => i.diferencia !== 0 && i.justificacion);
     } else if (this.filtroEstado === 'reconteo') {
       itemsList = itemsList.filter(i => i.diferencia !== 0);
+    } else if (this.filtroEstado === 'sin_conteo') {
+      itemsList = itemsList.filter(i => i.estado_validacion === 'sin_conteo');
+    } else if (this.filtroEstado === 'no_asignado') {
+      itemsList = itemsList.filter(i => i.estado_validacion === 'no_asignado');
+    } else if (this.filtroEstado === 'sin_zona') {
+      itemsList = itemsList.filter(i => i.estado_validacion === 'sin_zona');
+    } else if (this.filtroEstado === 'tolerancia') {
+      itemsList = itemsList.filter(i => i.justificacion && i.justificacion.toLowerCase().includes('tolerancia'));
+    } else if (this.filtroEstado === 'justificacion_pendiente') {
+      itemsList = itemsList.filter(i => i.justificacion && i.justificacion.toLowerCase().includes('pendiente'));
+    }
+
+    if (this.filtroExclusion === 'excluir_tolerancia') {
+      itemsList = itemsList.filter(i => !(i.justificacion && i.justificacion.toLowerCase().includes('tolerancia')));
+    } else if (this.filtroExclusion === 'excluir_justificados') {
+      itemsList = itemsList.filter(i => !i.justificacion);
+    }
+
+    if (this.filtroCantConteos !== 'todos') {
+      itemsList = itemsList.filter(i => {
+        let count = 0;
+        if (i.conteo !== null && i.conteo !== undefined) count++;
+        if (i.reconteo1 !== null && i.reconteo1 !== undefined) count++;
+        if (i.reconteo2 !== null && i.reconteo2 !== undefined) count++;
+        return count.toString() === this.filtroCantConteos;
+      });
+    }
+
+    if (this.filtroUmbral === 'unidades') {
+      itemsList = itemsList.filter(i => Math.abs(i.diferencia) >= this.umbralUnidades);
+    } else if (this.filtroUmbral === 'precio') {
+      itemsList = itemsList.filter(i => i.diferencia_valor >= this.umbralPrecio);
     }
 
     this.itemsAgrupadosJustificacion = itemsList;
     this.totalItemsAgrupadosJustificacion = itemsList.length;
-    this.paginationService.updatePaginator(this.justPaginatorId, itemsList, this.itemsPorPagina);
+    this.paginationService.updatePaginator(this.justPaginatorId, itemsList, this.itemsPorPagina, null, null, preservePage);
   }
 
   getMathMin(a: number, b: number): number {
@@ -417,7 +540,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     }
 
     let justificacion = '';
-    
+
     // Si se está validando en reconteo, permitir justificación
     if (nuevoEstado === 'validado' && this.modoActual !== 'conteo') {
       const { value: text } = await Swal.fire({
@@ -431,7 +554,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
         confirmButtonText: 'Validar con Justificación',
         cancelButtonText: 'Cancelar'
       });
-      
+
       if (text === undefined) return; // Cancelado
       justificacion = text;
     } else {
@@ -447,15 +570,30 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     }
 
     const userId = this.authService.user.id || 0;
+    const selectedIds = Array.from(this.itemsSeleccionados);
+
     this.inventarioService.bulkUpdateValidaciones({
-      ids: Array.from(this.itemsSeleccionados),
+      ids: selectedIds,
       estado: nuevoEstado,
       justificacion: justificacion || undefined
     }, userId).subscribe(resp => {
       if (resp.success) {
         Swal.fire('Éxito', 'Estados actualizados', 'success');
+
+        // Actualización local en memoria
+        this.validaciones = this.validaciones.map(v => {
+          if (selectedIds.includes(v.id)) {
+            return {
+              ...v,
+              estado_validacion: nuevoEstado,
+              justificacion: justificacion || v.justificacion
+            };
+          }
+          return v;
+        });
+
         this.itemsSeleccionados.clear();
-        this.cargarValidaciones();
+        this.actualizarListasFiltradas(true);
       }
     });
   }
@@ -463,7 +601,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   // Cálculos Automáticos
   marcarPorUmbral(tipo: 'unidades' | 'precio') {
     const idsParaReconteo: number[] = [];
-    
+
     this.validacionesFiltradas.forEach(v => {
       if (tipo === 'unidades') {
         if (Math.abs(v.diferencia) >= this.umbralUnidades) {
@@ -498,12 +636,26 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     const key = `${item.id_item}|${item.referencia}|${item.id_talla ?? ''}|${item.id_color ?? ''}|${item.zona}`;
     this.guardandoJustificacion[key] = true;
     const userId = this.authService.user.id || 0;
+    const ids = (item.conteoIds || []).filter((id: any) => id !== null && id !== undefined);
 
-    this.inventarioService.bulkUpdateValidaciones({
-      ids: item.conteoIds,
+    const payload: any = {
+      ids: ids,
       estado: 'validado',
       justificacion: item.justificacion
-    }, userId).subscribe({
+    };
+
+    if (ids.length === 0) {
+      payload.virtual_item = {
+        id_asignacion: item.id_asignacion,
+        id_item_siesa: item.id_item,
+        referencia: item.referencia,
+        descripcion: item.descripcion,
+        id_talla: item.id_talla,
+        id_color: item.id_color
+      };
+    }
+
+    this.inventarioService.bulkUpdateValidaciones(payload, userId).subscribe({
       next: (resp) => {
         this.guardandoJustificacion[key] = false;
         if (resp.success) {
@@ -515,7 +667,43 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
             showConfirmButton: false,
             timer: 2000
           });
-          this.cargarValidaciones();
+
+          // Actualización local en memoria
+          const justText = item.justificacion;
+          const createdId = resp.created_id;
+
+          if (ids.length > 0) {
+            this.validaciones = this.validaciones.map(v => {
+              if (ids.includes(v.id)) {
+                return {
+                  ...v,
+                  justificacion: justText,
+                  estado_validacion: 'validado'
+                };
+              }
+              return v;
+            });
+          } else if (createdId) {
+            this.validaciones = this.validaciones.map(v => {
+              const matchItem = String(v.id_item) === String(item.id_item);
+              const matchTalla = String(v.id_talla ?? '') === String(item.id_talla ?? '');
+              const matchColor = String(v.id_color ?? '') === String(item.id_color ?? '');
+              const matchZona = String(v.zona) === String(item.zona);
+              
+              if (matchItem && matchTalla && matchColor && matchZona) {
+                return {
+                  ...v,
+                  id: createdId,
+                  justificacion: justText,
+                  estado_validacion: 'validado',
+                  cantidad_conteo: 0.0
+                };
+              }
+              return v;
+            });
+          }
+
+          this.actualizarListasFiltradas(true);
         }
       },
       error: () => {
@@ -591,7 +779,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       Sheets: { 'Reporte': worksheet },
       SheetNames: ['Reporte']
     };
-    
+
     const maxCols = dataToExport.reduce((acc, row) => Math.max(acc, Object.keys(row).length), 0);
     const wscols = [];
     for (let i = 0; i < maxCols; i++) {
@@ -617,7 +805,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
 
   abrirModalComentarios(item: any) {
     const comentarios: { etapa: string; texto: string }[] = [];
-    
+
     // 1. Si es un ítem de validación normal, puede tener observaciones en sí mismo
     if (item.observaciones) {
       comentarios.push({
@@ -693,11 +881,11 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   }
 
   guardarJustificacionDesdeModal(item: any) {
-    const ids = item.conteoIds ? item.conteoIds : [item.id];
-    const key = item.conteoIds 
+    const ids = (item.conteoIds ? item.conteoIds : [item.id]).filter((id: any) => id !== null && id !== undefined && id !== '');
+    const key = item.conteoIds
       ? `${item.id_item}|${item.referencia}|${item.id_talla ?? ''}|${item.id_color ?? ''}|${item.zona}`
       : `val_${item.id}`;
-      
+
     if (!item.justificacion || !item.justificacion.trim()) {
       Swal.fire('Atención', 'Escriba una justificación antes de guardar.', 'warning');
       return;
@@ -706,11 +894,24 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     this.guardandoJustificacion[key] = true;
     const userId = this.authService.user.id || 0;
 
-    this.inventarioService.bulkUpdateValidaciones({
+    const payload: any = {
       ids: ids,
       estado: 'validado',
       justificacion: item.justificacion
-    }, userId).subscribe({
+    };
+
+    if (ids.length === 0) {
+      payload.virtual_item = {
+        id_asignacion: item.id_asignacion,
+        id_item_siesa: item.id_item,
+        referencia: item.referencia,
+        descripcion: item.descripcion,
+        id_talla: item.id_talla,
+        id_color: item.id_color
+      };
+    }
+
+    this.inventarioService.bulkUpdateValidaciones(payload, userId).subscribe({
       next: (resp) => {
         this.guardandoJustificacion[key] = false;
         if (resp.success) {
@@ -723,7 +924,43 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
             timer: 2000
           });
           this.cerrarModalComentarios();
-          this.cargarValidaciones();
+
+          // Actualización local en memoria
+          const justText = item.justificacion;
+          const createdId = resp.created_id;
+
+          if (ids.length > 0) {
+            this.validaciones = this.validaciones.map(v => {
+              if (ids.includes(v.id)) {
+                return {
+                  ...v,
+                  justificacion: justText,
+                  estado_validacion: 'validado'
+                };
+              }
+              return v;
+            });
+          } else if (createdId) {
+            this.validaciones = this.validaciones.map(v => {
+              const matchItem = String(v.id_item) === String(item.id_item);
+              const matchTalla = String(v.id_talla ?? '') === String(item.id_talla ?? '');
+              const matchColor = String(v.id_color ?? '') === String(item.id_color ?? '');
+              const matchZona = String(v.zona) === String(item.zona);
+              
+              if (matchItem && matchTalla && matchColor && matchZona) {
+                return {
+                  ...v,
+                  id: createdId,
+                  justificacion: justText,
+                  estado_validacion: 'validado',
+                  cantidad_conteo: 0.0
+                };
+              }
+              return v;
+            });
+          }
+
+          this.actualizarListasFiltradas(true);
         }
       },
       error: () => {
@@ -732,5 +969,93 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  // Justificación automática por tolerancia
+  toleranciaTelas = 8;
+  toleranciaInsumos = 2;
+  ejecutandoTolerancia = false;
+
+  async ejecutarJustificacionTolerancia() {
+    if (!this.inventarioSeleccionado) return;
+
+    const result = await Swal.fire({
+      title: 'Justificar por Tolerancia',
+      html: `
+        <p class="text-sm text-gray-600 mb-4">
+          Se marcarán como <strong>"Validado"</strong> todos los ítems cuyo descuadre sea:
+          <br><br>
+          • Telas: <strong>≤ ${this.toleranciaTelas}%</strong>
+          <br>
+          • Insumos: <strong>≤ ${this.toleranciaInsumos}%</strong>
+          <br><br>
+          respecto al stock de Siesa.
+        </p>
+        <p class="text-xs text-gray-400">Esta acción no se puede deshacer fácilmente. Los ítems justificados quedarán con la etiqueta "Justificado por tolerancia".</p>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, justificar automáticamente',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#059669'
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.ejecutandoTolerancia = true;
+    const userId = this.authService.user.id || 0;
+
+    this.inventarioService.justificarPorTolerancia(
+      this.inventarioSeleccionado.id,
+      this.toleranciaTelas,
+      this.toleranciaInsumos,
+      userId
+    ).subscribe({
+      next: (resp) => {
+        this.ejecutandoTolerancia = false;
+        if (resp.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Tolerancia aplicada',
+            text: resp.message,
+            confirmButtonColor: '#059669'
+          });
+
+          // Actualización local en memoria
+          this.validaciones = this.validaciones.map(v => {
+            const cantidadSiesa = parseFloat(v.cantidad_siesa || 0);
+            const cantidadConteo = parseFloat(v.cantidad_conteo || 0);
+            const diferencia = cantidadConteo - cantidadSiesa;
+
+            if (cantidadSiesa > 0 && diferencia !== 0) {
+              const porcentajeDescuadre = (Math.abs(diferencia) / cantidadSiesa) * 100;
+              const esTela = v.referencia && v.referencia.startsWith('1110');
+              const limite = esTela ? this.toleranciaTelas : this.toleranciaInsumos;
+              const tipoItem = esTela ? 'Tela' : 'Insumo';
+
+              if (porcentajeDescuadre <= limite) {
+                const porcentajeFormatted = porcentajeDescuadre.toFixed(2).replace('.', ',');
+                return {
+                  ...v,
+                  estado_validacion: 'validado',
+                  justificacion: `Justificado por tolerancia (${tipoItem}, diferencia de ${porcentajeFormatted}% <= ${limite}%). Stock Siesa: ${cantidadSiesa} uds. Conteo final: ${cantidadConteo} uds.`,
+                  observaciones: `Justificado por tolerancia por Usuario ID: ${userId}`
+                };
+              }
+            }
+            return v;
+          });
+
+          this.actualizarListasFiltradas(true);
+        } else {
+          Swal.fire('Error', resp.message, 'error');
+        }
+      },
+      error: (err) => {
+        this.ejecutandoTolerancia = false;
+        Swal.fire('Error', err.error?.message || 'Error al ejecutar la justificación por tolerancia', 'error');
+      }
+    });
+  }
 }
+
 

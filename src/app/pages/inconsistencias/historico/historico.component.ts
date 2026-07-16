@@ -5,6 +5,8 @@ import { PaginationService } from '../../../shared/pagination/pagination.service
 import { AuthService } from '../../../services/auth.service';
 import Swal from 'sweetalert2';
 import { getDetallesHtml, generarTiemposHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
+import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
 @Component({
   selector: 'app-historico-inconsistencias',
   templateUrl: './historico.component.html',
@@ -29,10 +31,14 @@ export class HistoricoInconsistenciasComponent implements OnInit {
   evidenciasActuales: string[] = [];
 mostrandoEvidencias = false;
 
+  lastLoadedDesde = '';
+  lastLoadedHasta = '';
+
   filters = {
     busqueda: '',
     estado: '',
-    mes: ''
+    desde: '',
+    hasta: ''
   };
 
   @ViewChild('modalTiempos') modalTiempos!: TemplateRef<any>;
@@ -46,7 +52,21 @@ mostrandoEvidencias = false;
 
   ngOnInit(): void {
     this.cargarTiposInconsistencias();
+    
+    // Rango de fechas por defecto: primer día del mes actual al día de hoy
+    const hoy = new Date();
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    this.filters.desde = this.formatDate(primerDia);
+    this.filters.hasta = this.formatDate(hoy);
+
     this.cargarInconsistencias();
+  }
+
+  formatDate(date: Date): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   cargarTiposInconsistencias(): void {
@@ -56,12 +76,10 @@ mostrandoEvidencias = false;
   }
 
   cargarInconsistencias(): void {
-    // Solo obtener el mes actual por defecto si no hay filtro de mes
-    const [year, month] = this.filters.mes
-      ? this.filters.mes.split('-').map(Number)
-      : [new Date().getFullYear(), new Date().getMonth() + 1];
+    this.lastLoadedDesde = this.filters.desde;
+    this.lastLoadedHasta = this.filters.hasta;
 
-    this.inconsistenciasService.listarHistorico(month, year).subscribe({
+    this.inconsistenciasService.listarHistorico(undefined, undefined, this.filters.desde, this.filters.hasta).subscribe({
       next: (res: any) => {
         // La respuesta del backend tiene la forma { success: true, data: [...] }
         const datos = res.data || res;
@@ -76,6 +94,7 @@ mostrandoEvidencias = false;
         this.aplicarFiltrosLocales();
       },
       error: (err) => {
+        console.error('Error al cargar inconsistencias:', err);
       }
     });
   }
@@ -94,10 +113,8 @@ mostrandoEvidencias = false;
         item.item?.toLowerCase().includes(texto) ||
         item.descripcion_inconsistencia?.toLowerCase().includes(texto) ||
         item.id_inconsistencia?.toString().includes(texto) ||
-        (item.nombre_solicitante + ' ' + item.apellido_solicitante)?.toLowerCase().includes(texto.toLowerCase()) ||
+        (item.nombre_solicitante + ' ' + item.apellido_solicitante)?.toLowerCase().includes(texto) ||
         item.tipo_de_orden?.toLowerCase().includes(texto);
-
-
 
       // Filtro de estado
       const coincideEstado = !this.filters.estado || item.estado === this.filters.estado;
@@ -121,13 +138,68 @@ mostrandoEvidencias = false;
    * Método llamado cuando se aplican los filtros desde la interfaz
    */
   applyFilters(): void {
-    // Si cambió el filtro de mes, recargar desde el servidor
-    if (this.filters.mes) {
+    if (this.filters.desde !== this.lastLoadedDesde || this.filters.hasta !== this.lastLoadedHasta) {
       this.cargarInconsistencias();
     } else {
-      // Si solo son filtros de búsqueda o estado, filtrar localmente
       this.aplicarFiltrosLocales();
     }
+  }
+
+  clearFilters(): void {
+    const hoy = new Date();
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    this.filters = {
+      busqueda: '',
+      estado: '',
+      desde: this.formatDate(primerDia),
+      hasta: this.formatDate(hoy)
+    };
+    this.cargarInconsistencias();
+  }
+
+  exportarExcel(): void {
+    if (!this.inconsistenciasFiltradas || this.inconsistenciasFiltradas.length === 0) {
+      Swal.fire('Atención', 'No hay datos filtrados para exportar', 'warning');
+      return;
+    }
+
+    const data = this.inconsistenciasFiltradas.map(inco => {
+      return {
+        'Fecha': inco.fecha_inconsistencia ? new Date(inco.fecha_inconsistencia).toLocaleDateString('es-ES') : '',
+        'ID Inconsistencia': inco.id_inconsistencia,
+        'Cliente': inco.Cliente || 'N/A',
+        'Solicitante': inco.solicitante || 'N/A',
+        'Departamento': inco.departamento || 'N/A',
+        'Tipo de Inconsistencia': this.tipos_inco[inco.tipo_inconsistencia] || inco.tipo_inconsistencia || 'N/A',
+        'Cant. Solicitada OP': inco.cantidad_solicitada_op,
+        'Cant. Inconsistencia': inco.cantidad_inconsistencia,
+        'Item': inco.item || 'N/A',
+        'Orden/Pedido': `${inco.tipo_de_orden || ''} ${inco.estado_orden || ''}`.trim(),
+        'Precio Unitario': inco.precio_unitario,
+        'Precio Total': inco.precio_total_inconsistencia,
+        'Estado': this.getEstadoLabel(inco.estado),
+        'Descripción': inco.descripcion_inconsistencia || '',
+        'Acción Sugerida': inco.accion_inconsistencia || ''
+      };
+    });
+
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(data);
+    const workbook: XLSX.WorkBook = {
+      Sheets: { 'Histórico Inconsistencias': worksheet },
+      SheetNames: ['Histórico Inconsistencias']
+    };
+
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    const blob = new Blob([excelBuffer], {
+      type: 'application/octet-stream'
+    });
+
+    const nombreArchivo = `Historico_Inconsistencias_${this.filters.desde || 'inicio'}_a_${this.filters.hasta || 'fin'}.xlsx`;
+    saveAs(blob, nombreArchivo);
   }
 
   abrirModalDetalles(inconsistencia: any): void {

@@ -12,8 +12,6 @@ import { NopagefoundComponent } from './nopagefound/nopagefound.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
 import { AuthRoutingModule } from './auth/auth.routing';
-import { ListUserComponent } from './pages/user/list-user/list-user.component';
-import { CreateUserComponent } from './pages/user/create-user/create-user.component';
 import { GenerarComponent } from './pages/inconsistencias/generar/generar.component';
 import { MisInconsistenciasComponent } from './pages/inconsistencias/mis-inconsistencias/mis-inconsistencias.component';
 import { AprobacionComponent } from './pages/inconsistencias/aprobacion/aprobacion.component';
@@ -66,9 +64,7 @@ const routes: Routes = [
       { path: 'technical-data-sheets-report', component: TechnicalDataSheetsReportComponent, title: 'Reporte de fichas' },
       { path: 'gestion-anulaciones-fichas', component: AnnulmentManagementComponent, title: 'Gestión de Anulaciones' },
       { path: 'listTechnicalDataSheet/page/:page/:status', component: ListTechnicalSheetComponent, title: 'Listar fichas técnicas' },
-      { path: 'users/page/:page', component: ListUserComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Listar usuarios' },
       { path: 'email-logs', component: EmailLogsComponent, canActivate: [RoleGuard], data: { role: 'Administrador del sistema' }, title: 'Registro de Correos' },
-      { path: 'createUser/:id', component: CreateUserComponent, title: 'Crear usuario' },
       { path: 'generar-inconsistencias', component: GenerarComponent, title: 'Generar inconsistencias' },
       { path: 'mis-inconsistencias', component: MisInconsistenciasComponent, title: 'Mis inconsistencias' },
       { path: 'aprobar-inconsistencias', component: AprobacionComponent, title: 'Aprobar inconsistencias' },

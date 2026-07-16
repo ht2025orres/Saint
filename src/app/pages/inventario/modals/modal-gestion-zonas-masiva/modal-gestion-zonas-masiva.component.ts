@@ -34,12 +34,17 @@ export class ModalGestionZonasMasivaComponent implements OnChanges {
     if (this.mode === 'asignar') {
       baseZonas = this.zonas;
     } else {
-      // Para quitar, solo mostrar zonas que al menos uno de los items seleccionados tenga
-      const idsZonasPresentes = new Set<number>();
+      // Para quitar, mostrar todas las zonas que al menos uno de los items seleccionados tenga,
+      // incluso si no pertenecen a la lista de zonas de la bodega actual.
+      const zonasPresentesMap = new Map<number, any>();
       this.selectedItems.forEach(item => {
-        item.zonas?.forEach((z: any) => idsZonasPresentes.add(z.id));
+        item.zonas?.forEach((z: any) => {
+          if (z && z.id) {
+            zonasPresentesMap.set(z.id, z);
+          }
+        });
       });
-      baseZonas = this.zonas.filter(z => idsZonasPresentes.has(z.id));
+      baseZonas = Array.from(zonasPresentesMap.values());
     }
 
     // Aplicar búsqueda local

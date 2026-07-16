@@ -29,24 +29,49 @@
     <!-- BODY -->
     <div class="p-6 overflow-y-auto bg-slate-50 flex-1 custom-scrollbar flex flex-col gap-6">
       
-      <!-- PERFILES ASIGNADOS (Full Width at the top) -->
-      <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-3">
-        <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-          <i class="bi bi-people text-indigo-600"></i>
-          <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Perfiles Asignados</h6>
+      <!-- PERFILES Y PROCESOS ASIGNADOS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- PERFILES ASIGNADOS -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-3">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+            <i class="bi bi-people text-indigo-600"></i>
+            <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Perfiles Asignados</h6>
+          </div>
+          
+          <div class="max-h-24 overflow-y-auto custom-scrollbar pr-1">
+            <div class="flex flex-wrap gap-2.5">
+              <label *ngFor="let prof of getSortedProfiles()" 
+                     class="flex items-center gap-2 px-3 py-1.5 border rounded-xl cursor-pointer transition-all duration-200 select-none group"
+                     [ngClass]="hasProfile(prof.id) 
+                       ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
+                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-55'">
+                <input type="checkbox" [checked]="hasProfile(prof.id)" (change)="toggleProfile(prof, $event)" [disabled]="isEditingSelf" class="hidden">
+                <i class="bi" [ngClass]="hasProfile(prof.id) ? 'bi-patch-check-fill text-indigo-600' : 'bi-circle text-slate-300 group-hover:text-slate-400'"></i>
+                <span class="text-[11px]">{{ prof.name }}</span>
+              </label>
+            </div>
+          </div>
         </div>
-        
-        <div class="max-h-24 overflow-y-auto custom-scrollbar pr-1">
-          <div class="flex flex-wrap gap-2.5">
-            <label *ngFor="let prof of getSortedProfiles()" 
-                   class="flex items-center gap-2 px-3 py-1.5 border rounded-xl cursor-pointer transition-all duration-200 select-none group"
-                   [ngClass]="hasProfile(prof.id) 
-                     ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
-                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-55'">
-              <input type="checkbox" [checked]="hasProfile(prof.id)" (change)="toggleProfile(prof, $event)" [disabled]="isEditingSelf" class="hidden">
-              <i class="bi" [ngClass]="hasProfile(prof.id) ? 'bi-patch-check-fill text-indigo-600' : 'bi-circle text-slate-300 group-hover:text-slate-400'"></i>
-              <span class="text-[11px]">{{ prof.name }}</span>
-            </label>
+
+        <!-- PROCESOS ASIGNADOS -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-3">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+            <i class="bi bi-diagram-3 text-indigo-600"></i>
+            <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Procesos Asignados</h6>
+          </div>
+          
+          <div class="max-h-24 overflow-y-auto custom-scrollbar pr-1">
+            <div class="flex flex-wrap gap-2.5">
+              <label *ngFor="let pr of procesos" 
+                     class="flex items-center gap-2 px-3 py-1.5 border rounded-xl cursor-pointer transition-all duration-200 select-none group"
+                     [ngClass]="hasProceso(pr.id) 
+                       ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
+                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-55'">
+                <input type="checkbox" [checked]="hasProceso(pr.id)" (change)="toggleProceso(pr.id, $event)" class="hidden">
+                <i class="bi" [ngClass]="hasProceso(pr.id) ? 'bi-patch-check-fill text-indigo-600' : 'bi-circle text-slate-300 group-hover:text-slate-400'"></i>
+                <span class="text-[11px]">{{ pr.nombre }}</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>

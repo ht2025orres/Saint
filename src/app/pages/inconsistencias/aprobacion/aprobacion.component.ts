@@ -21,7 +21,8 @@ export class AprobacionComponent implements OnInit {
   currentData: any[] = [];
 
   filters = {
-    busqueda: ''
+    busqueda: '',
+    estado: 'pendientes'
   };
 
   mostrarAccionTomar = false;
@@ -34,6 +35,16 @@ export class AprobacionComponent implements OnInit {
 
   loading: boolean = false;
 
+  mostrarConfigurador = false;
+  columnasAdicionales = {
+    item: true,
+    descripcion: false,
+    accion: false,
+    nota_credito: false,
+    observacion_logistica: false,
+    razon_anulacion: false
+  };
+
   constructor(
     private inconsistenciasService: InconsistenciaService,
     public authService: AuthService,
@@ -42,6 +53,7 @@ export class AprobacionComponent implements OnInit {
 
 
   ngOnInit(): void {
+    this.loadColumnSettings();
     this.cargarInconsistencias();
     this.obtenerTipos();
     this.verificarRolLogistica(); // 👈 Agregar esta línea
@@ -104,6 +116,25 @@ export class AprobacionComponent implements OnInit {
     };
   }
 
+  toggleConfigurador(): void {
+    this.mostrarConfigurador = !this.mostrarConfigurador;
+  }
+
+  loadColumnSettings(): void {
+    const saved = localStorage.getItem('columnas_inconsistencias_aprobacion');
+    if (saved) {
+      try {
+        this.columnasAdicionales = JSON.parse(saved);
+      } catch (e) {
+        console.error('Error al cargar configuración de columnas', e);
+      }
+    }
+  }
+
+  saveColumnSettings(): void {
+    localStorage.setItem('columnas_inconsistencias_aprobacion', JSON.stringify(this.columnasAdicionales));
+  }
+
   verificarMostrarDepartamento(): void {
     // IDs de permisos para Líder:
     // 7 - Lider Aprobador (inconsistencias)
@@ -146,7 +177,7 @@ cargarInconsistencias(): void {
   // ✅ 3. Llamar al servicio SIN id_departamento
   this.subscription.add(
     this.inconsistenciasService
-      .listarInconsistenciasPorDepartamento() // 👈 Quitamos el envío explícito del departamento
+      .listarInconsistenciasPorDepartamento(undefined, this.filters.estado) // 👈 Enviamos el estado seleccionado
       .subscribe({
         next: (res: any) => {
           // console.log(rolInconsistencia);
@@ -193,14 +224,12 @@ verificarRolLogistica(): void {
 }
 
 estaEnEspera(inco: any): boolean {
-  // Verificar múltiples campos que pueden indicar que está en espera
+  const etapa = (inco.etapa || '').toLowerCase();
+  const estado = (inco.estado_inconsistencia || '').toLowerCase();
   return (
-    inco.etapa === 'espera' ||
-    inco.etapa === 'En espera' ||
+    etapa === 'espera' ||
     inco.fecha_espera != null ||
-    inco.estado_inconsistencia === 'En espera' ||
-    inco.estado_inconsistencia === 'en_espera' ||
-    (inco.estado_inconsistencia && inco.estado_inconsistencia.toLowerCase().includes('espera'))
+    estado.includes('espera')
   );
 }
 
@@ -214,7 +243,8 @@ traducirEtapa(etapa: string): string {
     'patronaje': 'Aprobación Patronaje',
     'contabilidad': 'Aprobación Contabilidad',
     'cartera': 'Aprobación Cartera',
-    'finalizacion': 'Finalización'
+    'finalizacion': 'Finalización',
+    'espera': 'En Espera'
   };
   return etapas[etapa] || etapa;
 }
@@ -292,40 +322,51 @@ abrirModalDetalles(inconsistencia: any): void {
 
       // ── Generar panel de acciones con formularios inline dentro del popup ──
       let botonesAccionHtml = '';
-      const estado = inconsistencia.estado_inconsistencia || '';
-      const terminada = inconsistencia.etapa === 'terminada';
-      const inactiva = estado === 'Denegada' || estado === 'Aprobada' || inconsistencia.fecha_anulacion;
-      const esEtapaCalidad = inconsistencia.etapa === 'calidad';
-      const tieneAccionPrevia = inconsistencia.accion_inconsistencia && inconsistencia.accion_inconsistencia.trim() !== '';
-      const estadoOrdenInvalido = !inconsistencia.estado_orden || inconsistencia.estado_orden.trim() === '' || inconsistencia.estado_orden.toLowerCase() === 'pendiente';
+      const estado = (inconsistencia.estado_inconsistencia || '').toLowerCase().trim();
+      const etapaLower = (inconsistencia.etapa || '').toLowerCase().trim();
+      const terminada = etapaLower === 'terminada';
+      const inactiva = estado === 'denegada' || estado === 'aprobada' || inconsistencia.fecha_anulacion;
+      const esCreadoPorCalidad = inconsistencia.creado_por_calidad === true || inconsistencia.creado_por_calidad === 1 || String(inconsistencia.creado_por_calidad).toLowerCase() === 'true';
+      const esEtapaCalidad = (etapaLower === 'calidad') || (etapaLower === 'lider' && esCreadoPorCalidad);
       // Mostrar "En Espera" si: (a) el rol del usuario es logística, O (b) la inconsistencia está en etapa 'logistica'
-      const esEtapaLogistica = inconsistencia.etapa === 'logistica' || inconsistencia.etapa === 'logística';
-      const mostrarEspera = (this.mostrarAccionTomar || esEtapaLogistica) && !this.estaEnEspera(inconsistencia);
+      const esEtapaLogistica = etapaLower === 'logistica' || etapaLower === 'logística';
+      // Si estamos en la pestaña "en_espera", nunca mostrar el botón de espera (ya están en espera)
+      const mostrarEspera = this.filters.estado !== 'en_espera' && (this.mostrarAccionTomar || esEtapaLogistica) && !this.estaEnEspera(inconsistencia);
       
       // Validar si el usuario tiene algún permiso de aprobación de inconsistencias
       const esAprobador = this.authService.hasAnyPermission([7, 8, 9, 10, 11, 12, 13, 28, 29, 30]);
 
-      if (!terminada && !inactiva && esAprobador) {
+      if ((this.filters.estado === 'pendientes' || this.filters.estado === 'en_espera') && !terminada && !inactiva && esAprobador) {
         // ── Campos condicionales para Aprobar ──
-        const camposAprobar = (esEtapaCalidad && (!tieneAccionPrevia || estadoOrdenInvalido)) ? `
-          ${!tieneAccionPrevia ? `
-          <div style="margin-bottom:12px; text-align:left;">
-            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Acción a tomar <span style="color:red;">*</span></label>
-            <textarea id="pop-accion" rows="3"
-              style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
-              placeholder="Describe la acción correctiva o preventiva..."></textarea>
-          </div>` : ''}
-          ${estadoOrdenInvalido ? `
-          <div style="margin-bottom:12px; text-align:left;">
-            <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Estado de la OP <span style="color:red;">*</span></label>
-            <select id="pop-estado-orden"
-              style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; background:white; box-sizing:border-box;">
-              <option value="">Seleccione el estado...</option>
-              <option value="Abierta">Abierta</option>
-              <option value="Cerrada">Cerrada</option>
-            </select>
-          </div>` : ''}
-        ` : '';
+        let camposAprobar = '';
+        if (esEtapaCalidad) {
+          camposAprobar = `
+            <div style="margin-bottom:12px; text-align:left;">
+              <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Acción a tomar <span style="color:red;">*</span></label>
+              <textarea id="pop-accion" rows="3"
+                style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
+                placeholder="Describe la acción correctiva o preventiva...">${inconsistencia.accion_inconsistencia || ''}</textarea>
+            </div>
+            <div style="margin-bottom:12px; text-align:left;">
+              <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Estado de la OP <span style="color:red;">*</span></label>
+              <select id="pop-estado-orden"
+                style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; background:white; box-sizing:border-box;">
+                <option value="">Seleccione el estado...</option>
+                <option value="Abierta" ${inconsistencia.estado_orden === 'Abierta' ? 'selected' : ''}>Abierta</option>
+                <option value="Cerrada" ${inconsistencia.estado_orden === 'Cerrada' ? 'selected' : ''}>Cerrada</option>
+              </select>
+            </div>
+          `;
+        } else if (etapaLower === 'logistica' || etapaLower === 'logística') {
+          camposAprobar = `
+            <div style="margin-bottom:12px; text-align:left;">
+              <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Observación de Logística</label>
+              <textarea id="pop-logistica-observacion" rows="3"
+                style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
+                placeholder="Escribe alguna observación o comentario de logística (opcional)...">${inconsistencia.observacion_logistica || ''}</textarea>
+            </div>
+          `;
+        }
 
         botonesAccionHtml = `
           <div style="margin-top:30px; padding-top:20px; border-top:2px solid #E5E7EB;">
@@ -355,10 +396,25 @@ abrirModalDetalles(inconsistencia: any): void {
                 <button onclick="document.getElementById('pop-form-aprobar').style.display='none';"
                   style="background:#E5E7EB; color:#374151; border:none; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Cancelar</button>
                 <button onclick="
-                  var accion = (document.getElementById('pop-accion') ? document.getElementById('pop-accion').value : '${tieneAccionPrevia ? inconsistencia.accion_inconsistencia : ''}').trim();
-                  var estadoOrden = (document.getElementById('pop-estado-orden') ? document.getElementById('pop-estado-orden').value : '${!estadoOrdenInvalido ? inconsistencia.estado_orden : ''}').trim();
-                  ${esEtapaCalidad && !tieneAccionPrevia ? `if (!accion) { alert('La acción a tomar es obligatoria.'); return; }` : ''}
-                  ${esEtapaCalidad && estadoOrdenInvalido ? `if (!estadoOrden) { alert('El estado de la OP es obligatorio.'); return; }` : ''}
+                  var accion = '';
+                  var estadoOrden = '';
+                  var elAccion = document.getElementById('pop-accion');
+                  var elEstado = document.getElementById('pop-estado-orden');
+                  var elObsLog = document.getElementById('pop-logistica-observacion');
+                  if (elAccion) {
+                    accion = elAccion.value.trim();
+                  } else if (elObsLog) {
+                    accion = elObsLog.value.trim();
+                  } else {
+                    accion = '';
+                  }
+                  if (elEstado) {
+                    estadoOrden = elEstado.value.trim();
+                  } else {
+                    estadoOrden = '';
+                  }
+                  ${esEtapaCalidad ? `if (!accion) { alert('La acción a tomar es obligatoria.'); return; }
+                  if (!estadoOrden) { alert('El estado de la OP es obligatorio.'); return; }` : ''}
                   window.opener.aprobarDesdePopup(${inconsistencia.id}, accion, estadoOrden);
                   window.close();
                 " style="background:#16a34a; color:white; border:none; padding:8px 20px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Confirmar Aprobación</button>
@@ -446,15 +502,9 @@ abrirModalDetalles(inconsistencia: any): void {
 }
 
 aprobarInconsistencia(inco: any): void {
-  // Determinar si la inconsistencia está actualmente en la etapa de calidad
-  const esEtapaCalidad = inco.etapa === 'calidad';
-
-  // Verificar si la inconsistencia YA tiene una acción registrada (por ejemplo, porque la ingresaron al generar)
-  const tieneAccionPrevia = inco.accion_inconsistencia && inco.accion_inconsistencia.trim() !== '';
-  const estadoOrdenInvalido = !inco.estado_orden || inco.estado_orden.trim() === '' || inco.estado_orden.toLowerCase() === 'pendiente';
-
-  // Si está en etapa Calidad y la inconsistencia NO tiene acción o el estado de OP no es válido
-  const solicitarDatosCalidad = esEtapaCalidad && (!tieneAccionPrevia || estadoOrdenInvalido);
+  const esCreadoPorCalidad = inco.creado_por_calidad === true || inco.creado_por_calidad === 1 || String(inco.creado_por_calidad).toLowerCase() === 'true';
+  const esEtapaCalidad = (inco.etapa && inco.etapa.toLowerCase().trim() === 'calidad') ||
+                         (inco.etapa && inco.etapa.toLowerCase().trim() === 'lider' && esCreadoPorCalidad);
 
   // Configurar el modal según el rol
   const modalConfig: any = {
@@ -467,62 +517,45 @@ aprobarInconsistencia(inco: any): void {
   };
 
   // Si requiere solicitar datos de calidad
-  if (solicitarDatosCalidad) {
-    let htmlForm = `<p>¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?</p>`;
-    
-    if (!tieneAccionPrevia) {
-        htmlForm += `
-          <div class="mt-3">
-            <label for="accion-tomar" class="form-label fw-bold">Acción a tomar:</label>
-            <textarea 
-              id="accion-tomar" 
-              class="form-control" 
-              rows="4" 
-              placeholder="Describe la acción correctiva o preventiva a implementar..."
-            ></textarea>
-          </div>
-        `;
-    }
-
-    if (estadoOrdenInvalido) {
-        htmlForm += `
-          <div class="mt-3">
-            <label for="estado-orden" class="form-label fw-bold">Estado de la OP:</label>
-            <select id="estado-orden" class="form-select">
-                <option value="">Seleccione el estado de la OP...</option>
-                <option value="Abierta">Abierta</option>
-                <option value="Cerrada">Cerrada</option>
-            </select>
-          </div>
-        `;
-    }
+  if (esEtapaCalidad) {
+    let htmlForm = `
+      <p>¿Deseas aprobar la inconsistencia #${inco.id_inconsistencia}?</p>
+      <div class="mt-3" style="text-align: left;">
+        <label for="accion-tomar" class="form-label fw-bold">Acción a tomar <span class="text-danger">*</span>:</label>
+        <textarea 
+          id="accion-tomar" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Describe la acción correctiva o preventiva a implementar..."
+        >${inco.accion_inconsistencia || ''}</textarea>
+      </div>
+      <div class="mt-3" style="text-align: left;">
+        <label for="estado-orden" class="form-label fw-bold">Estado de la OP <span class="text-danger">*</span>:</label>
+        <select id="estado-orden" class="form-select">
+            <option value="">Seleccione el estado de la OP...</option>
+            <option value="Abierta" ${inco.estado_orden === 'Abierta' ? 'selected' : ''}>Abierta</option>
+            <option value="Cerrada" ${inco.estado_orden === 'Cerrada' ? 'selected' : ''}>Cerrada</option>
+        </select>
+      </div>
+    `;
 
     modalConfig.html = htmlForm;
     delete modalConfig.text;
 
     modalConfig.preConfirm = () => {
-      let accionTomar = inco.accion_inconsistencia;
-      let estadoOrden = inco.estado_orden;
+      const accionInput = (document.getElementById('accion-tomar') as HTMLTextAreaElement)?.value;
+      const estadoInput = (document.getElementById('estado-orden') as HTMLSelectElement)?.value;
 
-      if (!tieneAccionPrevia) {
-          const accionInput = (document.getElementById('accion-tomar') as HTMLTextAreaElement)?.value;
-          if (!accionInput || accionInput.trim() === '') {
-            Swal.showValidationMessage('La acción a tomar es obligatoria');
-            return false;
-          }
-          accionTomar = accionInput;
+      if (!accionInput || accionInput.trim() === '') {
+        Swal.showValidationMessage('La acción a tomar es obligatoria');
+        return false;
+      }
+      if (!estadoInput || estadoInput.trim() === '') {
+        Swal.showValidationMessage('El estado de la OP es obligatorio');
+        return false;
       }
 
-      if (estadoOrdenInvalido) {
-          const estadoInput = (document.getElementById('estado-orden') as HTMLSelectElement)?.value;
-          if (!estadoInput || estadoInput.trim() === '') {
-            Swal.showValidationMessage('El estado de la OP es obligatorio');
-            return false;
-          }
-          estadoOrden = estadoInput;
-      }
-
-      return { accionTomar, estadoOrden };
+      return { accionTomar: accionInput, estadoOrden: estadoInput };
     };
   }
 
@@ -530,8 +563,8 @@ aprobarInconsistencia(inco: any): void {
     if (result.isConfirmed) {
       this.loading = true;
 
-      const accionTomar = solicitarDatosCalidad && result.value ? result.value.accionTomar : null;
-      const estadoOrden = solicitarDatosCalidad && result.value ? result.value.estadoOrden : null;
+      const accionTomar = esEtapaCalidad && result.value ? result.value.accionTomar : null;
+      const estadoOrden = esEtapaCalidad && result.value ? result.value.estadoOrden : null;
 
       this.inconsistenciasService.aprobarInconsistencia(
         inco.id,
@@ -691,6 +724,23 @@ ponerEnEspera(inco: any): void {
     );
     const state = this.paginationService.getPaginatorState(this.paginatorId);
     this.currentData = state?.currentData || [];
+  }
+
+  onEstadoChange(): void {
+    this.updateTitle();
+    this.cargarInconsistencias();
+  }
+
+  updateTitle(): void {
+    if (this.filters.estado === 'aprobadas') {
+      this.title = 'Inconsistencias Aprobadas';
+    } else if (this.filters.estado === 'anuladas') {
+      this.title = 'Inconsistencias Anuladas';
+    } else if (this.filters.estado === 'en_espera') {
+      this.title = 'Inconsistencias En Espera';
+    } else {
+      this.title = 'Inconsistencias Pendientes de Aprobación';
+    }
   }
 
   ngOnDestroy(): void {
