@@ -137,7 +137,7 @@ export class AprobacionComponent implements OnInit {
 
   verificarMostrarDepartamento(): void {
     // IDs de permisos para Líder:
-    // 7 - Lider Aprobador (inconsistencias)
+    // 7 - Aprobar (inconsistencias)
     // 8 - Matriz de reemplazo (inconsistencias)
     this.esLider = this.authService.hasAnyPermission([7, 8]);
     

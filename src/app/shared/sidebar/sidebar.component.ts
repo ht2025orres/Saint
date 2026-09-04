@@ -127,6 +127,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         link: '/security',
         permissions: [1]
       },
+
       {
         label: 'Workflows',
         icon: 'bi bi-diagram-3',
@@ -141,7 +142,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         permissions: [1]
       },
       {
-        label: 'Seguimiento',
+        label: 'Seguimiento de Proyectos',
         icon: 'bi bi-kanban',
         link: '/seguimiento',
         modules: [8],
@@ -151,7 +152,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         label: 'Firmas Digitales',
         icon: 'bi bi-pencil-square',
         link: '/firmas',
-        permissions: [1]
+        modules: [13],
+        permissions: [1, 58]
       },
       {
         label: 'Reporte de Fichas',
@@ -166,7 +168,8 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           {
             label: 'Dashboard',
-            link: '/report-dashboard'
+            link: '/report-dashboard',
+            permissions: [1, 32]
           },
           {
             label: 'Generar reporte',
@@ -259,7 +262,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
           {
             label: 'Histórico Inconsistencias',
             link: '/historico-inconsistencias',
-            permissions: [1, 9]
+            permissions: [1, 9, 55]
           },
           {
             label: 'Revisión de Consumo',
@@ -338,23 +341,20 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         modules: [5],
         permissions: [1, 25, 26, 27, 34, 54],
         submenu: [
-          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas', permissions: [1, 27] },
-          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27] },
-          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27] },
+          { label: 'Gestión de Zonas', link: '/inventario/gestion-zonas', permissions: [1, 27, 54] },
+          { label: 'Gestión de Bodegas', link: '/inventario/gestion-bodegas', permissions: [1, 25, 26, 27, 54] },
+          { label: 'Ver Conteos Cíclicos', link: '/inventario/inventario-ciclico/ver', permissions: [1, 25, 26, 27, 54] },
           { label: 'Gestión de Inventarios', link: '/inventario/gestion-inventarios', permissions: [1, 27, 54] },
           { label: 'Realizar Conteo', link: '/inventario/conteo', permissions: [1, 25, 26, 34] },
-          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27] },
+          { label: 'Histórico de Movimientos', link: '/inventario/historico-movimientos', permissions: [1, 27, 54] },
         ]
       },
       {
         label: 'Comerciales',
         icon: 'bi bi-briefcase',
+        link: '/comerciales',
         modules: [7],
-        permissions: [1],
-        submenu: [
-          { label: 'Hub Comercial', link: '/comerciales' },
-          { label: 'Mis Costeos', link: '/comerciales/costeos' },
-        ]
+        permissions: [1]
       },
       {
         label: 'Tiempos Ítems',
@@ -391,6 +391,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         link: '/seguimiento-documentos',
         modules: [10],
         permissions: [1, 50, 51]
+      },
+      {
+        label: 'Seguimiento Financiero',
+        icon: 'bi bi-bar-chart-line',
+        link: '/seguimiento-proyectos/proyectos-activos',
+        permissions: [1, 56, 57]
       }
     ];
   }
@@ -473,7 +479,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
     const perfiles = item.perfiles || [];
     const permissions = item.permissions || [];
     const modules = item.modules || [];
-    
+
     // 1. Si NO hay ninguna restricción técnica definida, el item es público para logueados
     if (perfiles.length === 0 && permissions.length === 0 && modules.length === 0) return true;
 

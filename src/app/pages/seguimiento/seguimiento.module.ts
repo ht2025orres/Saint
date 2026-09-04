@@ -10,9 +10,10 @@ import { SeguimientoComponent } from './seguimiento/seguimiento.component';
  
 // Sub-interfaces
 import { ProyectosComponent } from './proyectos/proyectos.component';
-import { SeguimientosComponent } from './seguimientos/seguimientos.component';
+
 import { TareasComponent } from './tareas/tareas.component';
 import { InformesComponent } from './informes/informes.component';
+import { EstadisticasComponent } from './estadisticas/estadisticas.component';
 
 // Componentes de Proyectos
 import { TareaItemComponent } from './proyectos/components/tarea-item.component';
@@ -25,31 +26,27 @@ import { ProyectoDetalleComponent } from './proyectos/components/proyecto-detall
 import { ModalProyectoComponent } from './modals/modal-proyecto/modal-proyecto.component';
 import { ModalActividadComponent } from './modals/modal-actividad/modal-actividad.component';
 import { ModalTareaComponent } from './modals/modal-tarea/modal-tarea.component';
-import { ModalCompromisoComponent } from './modals/modal-compromiso/modal-compromiso.component';
-import { ModalFlujoComponent } from './modals/modal-flujo/modal-flujo.component';
+import { ModalReunionComponent } from './modals/modal-reunion/modal-reunion.component';
+
 import { ModalDiaDetalleComponent } from './modals/modal-dia-detalle/modal-dia-detalle.component';
 import { ModalInformeComponent } from './modals/modal-informe/modal-informe.component';
 import { ModalInformeTareaComponent } from './modals/modal-informe-tarea/modal-informe-tarea.component';
 import { ModalPermisosProyectoComponent } from './modals/modal-permisos-proyecto/modal-permisos-proyecto.component';
 import { ModalCalcularFechasComponent } from './modals/modal-calcular-fechas/modal-calcular-fechas.component';
 import { ModalPlantillaProyectoComponent } from './modals/modal-plantilla-proyecto/modal-plantilla-proyecto.component';
- 
-// Servicio compartido (provideIn: 'root' — ya se registra solo)
-// import { SeguimientoStateService } from './seguimiento-state.service';
- 
-// Componentes compartidos de la app
-// import { SharedPaginatorModule } from 'src/app/shared/pagination/pagination.module';
- 
+import { ModalDetalleTareasEstadisticasComponent } from './estadisticas/modals/modal-detalle-tareas/modal-detalle-tareas.component';
+
 @NgModule({
   declarations: [
     // ── Shell principal ───────────────────────────────────────────
     SeguimientoComponent,
- 
+
     // ── Sub-interfaces ────────────────────────────────────────────
     ProyectosComponent,
-    SeguimientosComponent,
+
     TareasComponent,
     InformesComponent,
+    EstadisticasComponent,
 
     // ── Componentes de Proyectos ──────────────────────────────────
     TareaItemComponent,
@@ -62,14 +59,15 @@ import { ModalPlantillaProyectoComponent } from './modals/modal-plantilla-proyec
     ModalProyectoComponent,
     ModalActividadComponent,
     ModalTareaComponent,
-    ModalCompromisoComponent,
-    ModalFlujoComponent,
+    ModalReunionComponent,
+
     ModalDiaDetalleComponent,
     ModalInformeComponent,
     ModalInformeTareaComponent,
     ModalPermisosProyectoComponent,
     ModalCalcularFechasComponent,
     ModalPlantillaProyectoComponent,
+    ModalDetalleTareasEstadisticasComponent,
   ],
   imports: [
     CommonModule,

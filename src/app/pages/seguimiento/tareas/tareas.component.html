@@ -68,6 +68,13 @@
           Nueva Tarea
         </button>
 
+        <!-- Botón Reunión del Día / Minuta (Solo Gestor) -->
+        <button *ngIf="vistaMes?.es_gestor" (click)="abrirModalReunion()"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-wider shadow-md hover:bg-indigo-700 transition-all">
+          <i class="bi bi-people-fill text-xs"></i>
+          + Reunión / Minuta
+        </button>
+
         <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
           
           <!-- Filtro Estados -->
@@ -160,7 +167,7 @@
             <!-- Dropdown Orígenes -->
             <div *ngIf="showFiltroOrigenes" class="absolute top-full left-0 mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-[100] p-2.5 animate-in fade-in slide-in-from-top-2 duration-150">
               <div class="space-y-1">
-                <label *ngFor="let orig of [{v:'seguimiento', l:'Seguimiento'}, {v:'proyecto', l:'Proyectos'}, {v:'informe', l:'Informes'}, {v:'glpi', l:'GLPI'}, {v:'compromiso', l:'Compromisos'}]" 
+                <label *ngFor="let orig of [{v:'seguimiento', l:'Seguimiento'}, {v:'proyecto', l:'Proyectos'}, {v:'informe', l:'Informes'}, {v:'glpi', l:'GLPI'}]" 
                   class="flex items-center gap-3 p-2 hover:bg-emerald-50/50 rounded-xl cursor-pointer transition-all border border-transparent"
                   [ngClass]="{'bg-emerald-50 border-emerald-100': filtroOrigenesSelec.includes(orig.v)}">
                   <div class="relative flex items-center justify-center">
@@ -399,6 +406,17 @@
                     <span *ngIf="t.actividad_titulo" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
                     </span>
+                    <span *ngIf="t.es_creada_por_gestor || t.reunion_id" 
+                      class="px-2 py-0.5 rounded-md text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200/80 uppercase tracking-wider inline-flex items-center gap-1 shadow-2xs"
+                      title="Tarea creada o asignada por el Gestor de Proyecto">
+                      <i class="bi bi-shield-check text-amber-600 text-[10px]"></i> Gestor
+                    </span>
+                    <span *ngIf="t.reunion_fecha" 
+                      (click)="verDetalleReunionRapido(t, $event)"
+                      class="px-2 py-0.5 rounded-md text-[8px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 uppercase tracking-wider cursor-pointer hover:bg-indigo-100 transition-colors"
+                      [title]="t.reunion_descripcion || 'Ver minuta de reunión'">
+                      <i class="bi bi-people-fill mr-1 text-indigo-500"></i> Reunión {{ t.reunion_fecha | date:'dd/MM yyyy' }}
+                    </span>
                     <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                       <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
                     </span>
@@ -439,12 +457,7 @@
                     <i class="bi bi-check-lg text-base"></i>
                   </button>
 
-                  <button *ngIf="t.estado === 'completado' && t.origen === 'compromiso'" 
-                    (click)="reabrirTareaRapido(t, 'compromiso', $event)"
-                    class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
-                    title="Descompletar compromiso">
-                    <i class="bi bi-arrow-counterclockwise text-base"></i>
-                  </button>
+
 
                   <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
                 </div>
@@ -487,6 +500,17 @@
                   <div class="flex items-center gap-2 mt-1">
                     <span *ngIf="t.actividad_titulo" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
+                    </span>
+                    <span *ngIf="t.es_creada_por_gestor || t.reunion_id" 
+                      class="px-2 py-0.5 rounded-md text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200/80 uppercase tracking-wider inline-flex items-center gap-1 shadow-2xs"
+                      title="Tarea creada o asignada por el Gestor de Proyecto">
+                      <i class="bi bi-shield-check text-amber-600 text-[10px]"></i> Gestor
+                    </span>
+                    <span *ngIf="t.reunion_fecha" 
+                      (click)="verDetalleReunionRapido(t, $event)"
+                      class="px-2 py-0.5 rounded-md text-[8px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 uppercase tracking-wider cursor-pointer hover:bg-indigo-100 transition-colors"
+                      [title]="t.reunion_descripcion || 'Ver minuta de reunión'">
+                      <i class="bi bi-people-fill mr-1 text-indigo-500"></i> Reunión {{ t.reunion_fecha | date:'dd/MM yyyy' }}
                     </span>
                     <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                       <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
@@ -689,80 +713,7 @@
             </div>
           </div>
 
-          <!-- SECCIÓN: COMPROMISOS -->
-          <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
-            <div class="px-8 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
-                  <i class="bi bi-lightning-charge"></i>
-                </div>
-                <span class="text-lg font-black text-gray-900">Compromisos Diarios</span>
-              </div>
-              <span class="text-xs font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-xl uppercase tracking-widest">{{ tareasCompromisoFiltradas.length }} Compromisos</span>
-            </div>
-            <div class="divide-y divide-gray-50">
-              <div *ngFor="let t of tareasCompromisoPaginadas" class="px-8 py-3 flex items-center justify-between hover:bg-gray-50 transition group cursor-pointer"
-                (click)="abrirTareaEspecifica(t, 'compromiso')">
-                <div class="flex items-center gap-4 min-w-0">
-                  <div class="w-2 h-2 rounded-full flex-shrink-0 bg-blue-400 shadow-sm"></div>
-                  <div class="min-w-0">
-                    <h4 class="text-base font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ t.titulo }}</h4>
-                    <span class="inline-flex items-center gap-1.5 text-[10px] text-blue-600 font-black uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-md mt-1">
-                      <i class="bi bi-tag"></i> {{ t.origen_sub }}
-                    </span>
-                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 ml-2">
-                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
-                    </span>
-                  </div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="flex -space-x-2">
-                    <!-- Si hay responsables (array), los mostramos todos -->
-                    <ng-container *ngIf="t.responsables && t.responsables.length > 0; else singleUser">
-                      <div *ngFor="let uid of t.responsables" 
-                        class="h-7 px-2 min-w-[28px] rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm whitespace-nowrap" 
-                        [ngClass]="state.getColorPorId(uid)"
-                        [title]="state.nombreUsuario(uid)">
-                        {{ state.getInicialesResponsable(uid) }}
-                      </div>
-                    </ng-container>
-                    
-                    <!-- Si no hay responsables, mostramos el usuario_id o responsable_id -->
-                    <ng-template #singleUser>
-                      <div *ngIf="t.responsable_id || t.usuario_id" class="h-7 px-2 min-w-[28px] rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm whitespace-nowrap" 
-                        [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
-                        [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
-                        {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
-                      </div>
-                    </ng-template>
-                  </div>
-                  <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
-                  
-                  <button *ngIf="t.estado === 'completado'" 
-                    (click)="reabrirTareaRapido(t, 'compromiso', $event)"
-                    class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
-                    title="Descompletar compromiso">
-                    <i class="bi bi-arrow-counterclockwise text-base"></i>
-                  </button>
 
-                  <button *ngIf="t.estado !== 'completado'" 
-                    (click)="completarTareaRapido(t, 'compromiso', $event)"
-                    class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
-                    title="Completar compromiso">
-                    <i class="bi bi-check-lg text-base"></i>
-                  </button>
-
-                  <i class="bi bi-chevron-right text-gray-300 group-hover:text-blue-600 transition-all group-hover:translate-x-1"></i>
-                </div>
-              </div>
-              <div *ngIf="!tareasCompromisoFiltradas.length" class="py-20 text-center">
-                <p class="text-gray-400 font-bold italic">No hay compromisos registrados</p>
-              </div>
-            </div>
-            <div class="px-8 py-4 bg-gray-50/50 border-t border-gray-100">
-              <app-shared-paginator [instanceId]="paginadorCompId"></app-shared-paginator>
-            </div>
-          </div>
 
           <!-- SECCIÓN: TICKETS GLPI -->
           <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
@@ -782,23 +733,26 @@
                   <div class="w-2 h-2 rounded-full flex-shrink-0 bg-orange-400 shadow-sm"></div>
                   <div class="min-w-0">
                     <h4 class="text-base font-bold text-gray-800 truncate group-hover:text-orange-600 transition-colors">{{ t.titulo }}</h4>
-                    <span class="inline-flex items-center gap-1.5 text-[10px] text-orange-600 font-black uppercase tracking-widest bg-orange-50 px-2 py-0.5 rounded-md mt-1">
-                      <i class="bi bi-tag"></i> GLPI #{{ t.id }}
-                    </span>
-                    <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1 ml-2">
-                      <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
-                    </span>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                      <span class="inline-flex items-center gap-1 text-[10px] text-orange-600 font-black uppercase tracking-widest bg-orange-50 px-2 py-0.5 rounded-md">
+                        <i class="bi bi-tag"></i> GLPI #{{ t.id }}
+                      </span>
+                      <span *ngIf="t.solicitante_nombre || t.usuario_nombre" class="text-[9px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                        <i class="bi bi-person mr-1"></i> Solicitado por: {{ t.solicitante_nombre || t.usuario_nombre }}
+                      </span>
+                      <span *ngIf="t.asignado_nombre" class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                        <i class="bi bi-person-badge mr-1"></i> Asignado a: {{ t.asignado_nombre }}
+                      </span>
+                      <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                        <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div class="flex -space-x-2">
-                    <div *ngIf="t.responsable_id || t.usuario_id" class="h-7 px-2 min-w-[28px] rounded-xl border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-sm whitespace-nowrap" 
-                      [ngClass]="state.getColorPorId(t.responsable_id || t.usuario_id)"
-                      [title]="state.nombreUsuario(t.responsable_id || t.usuario_id)">
-                      {{ state.getInicialesResponsable(t.responsable_id || t.usuario_id) }}
-                    </div>
-                  </div>
-                  <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">{{ t.estado }}</span>
+                  <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-orange-100 text-orange-700 border border-orange-200">
+                    {{ t.glpi_estado_nombre || t.estado }}
+                  </span>
                   <i class="bi bi-chevron-right text-gray-300 group-hover:text-orange-600 transition-all group-hover:translate-x-1"></i>
                 </div>
               </div>
@@ -816,23 +770,19 @@
     </div>
   </ng-container>
 
-  <!-- ── MODAL DETALLE DÍA ─────────────────────────────────────────── -->
-  <app-modal-dia-detalle
-    [show]="showModalDia"
-    [dia]="diaSeleccionado"
-    (onCerrar)="showModalDia = false">
-  </app-modal-dia-detalle>
+
 
   <!-- ── MODALES DE TAREAS ───────────────────────────────────────────── -->
   <app-modal-tarea
     [show]="showModalTarea"
     [tarea]="tareaParaEditar"
-    [proyectoId]="tareaParaEditar?.proyecto_id || 1"
+    [proyectoId]="tareaParaEditar?.proyecto_id || null"
     [proyecto]="proyectoSeleccionado"
-    [actividades]="actividadesProyecto"
-    [usuariosDisponibles]="state.usuariosAdministradores"
+    [actividades]="[]"
+    [esSeguimiento]="true"
+    [usuariosDisponibles]="state.usuariosCache"
     [saving]="savingTarea"
-    [esAdmin]="esAdminParaModal"
+    [esAdmin]="!!vistaMes?.es_gestor"
     (onCerrar)="showModalTarea = false"
     (onGuardar)="onGuardarTarea($event)">
   </app-modal-tarea>
@@ -847,14 +797,23 @@
     (onGuardar)="onGuardarInformeTarea($event)">
   </app-modal-informe-tarea>
 
-  <app-modal-compromiso
-    [show]="showModalCompromiso"
-    [compromiso]="compromisoParaEditar"
-    [usuarios]="state.usuariosAdministradores"
-    [saving]="savingCompromiso"
-    (onCerrar)="showModalCompromiso = false"
-    (onGuardar)="onGuardarCompromiso($event)">
-  </app-modal-compromiso>
+  <!-- ── MODAL DETALLE DÍA ─────────────────────────────────────────── -->
+  <app-modal-dia-detalle
+    [show]="showModalDia"
+    [dia]="diaSeleccionado"
+    (onCerrar)="showModalDia = false">
+  </app-modal-dia-detalle>
+
+  <!-- ── MODAL REUNIONES Y MINUTAS ───────────────────────────────────── -->
+  <app-modal-reunion
+    [show]="showModalReunion"
+    [seguimientoId]="seguimientoActual?.id || 0"
+    [usuarioId]="usuarioId"
+    [usuariosDisponibles]="state.usuariosCache"
+    [esGestor]="!!vistaMes?.es_gestor"
+    (onCerrar)="showModalReunion = false"
+    (onGuardado)="cargarDatos()">
+  </app-modal-reunion>
 
 </div>
 

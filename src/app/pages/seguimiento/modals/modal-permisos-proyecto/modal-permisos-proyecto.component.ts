@@ -59,6 +59,7 @@ export class ModalPermisosProyectoComponent implements OnChanges {
     this.asignaciones.push({
       usuario_id: Number(this.usuarioSeleccionadoId),
       nombre: user?.nombre || 'Usuario',
+      proceso_nombre: user?.proceso_nombre || null,
       puede_ver: true,
       puede_crear: true,
       puede_editar: true,

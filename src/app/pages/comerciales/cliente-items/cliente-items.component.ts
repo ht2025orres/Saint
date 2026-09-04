@@ -58,6 +58,11 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     this.clienteNombre = this.route.snapshot.queryParamMap.get('nombre') || '';
     this.clienteNit = this.route.snapshot.queryParamMap.get('nit') || '';
 
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab === 'solicitudes' || initialTab === 'ordenes') {
+      this.activeTab = initialTab;
+    }
+
     this.loadItems();
     this.loadSolicitudes();
     this.loadOrdenes();
@@ -150,7 +155,11 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   // ==================== SOLICITUDES ====================
   loadSolicitudes(): void {
     this.isLoadingSolicitudes = true;
-    this.comercialService.listarSolicitudes({ cliente_id: this.clienteId }).subscribe({
+    this.comercialService.listarSolicitudes({ 
+      cliente_id: this.clienteId,
+      cliente_nit: this.clienteNit,
+      cliente_nombre: this.clienteNombre
+    }).subscribe({
       next: (res) => {
         this.solicitudes = res.data || [];
         this.initSolicitudesPaginator();

@@ -2,7 +2,13 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 export interface Role { id: number; nombre: string; }
-export interface UsuarioCache { id: number; nombre: string; roles?: Role[]; }
+export interface UsuarioCache {
+  id: number;
+  nombre: string;
+  proceso_nombre?: string | null;
+  procesos?: string[];
+  roles?: Role[];
+}
 export interface Toast { id: number; message: string; type: 'success' | 'error' | 'info' | 'warning'; }
 export type Semaforo = 'rojo' | 'amarillo' | 'verde' | 'gris' | 'azul' | 'rojo_tarde';
 
@@ -65,14 +71,26 @@ export class SeguimientoStateService {
     return u?.nombre ?? `Usuario #${uid}`;
   }
 
-  getInicialesResponsable(uid: number): string {
+  getNombreCorto(uid: number | string): string {
     const nombre = this.nombreUsuario(uid);
     if (!nombre || nombre.startsWith('Usuario #')) return '??';
     const partes = nombre.split(' ').filter(p => p.length > 0);
     if (partes.length === 0) return '??';
-    const primerNombre = partes[0];
-    const inicialApellido = partes[1] ? ` ${partes[1][0].toUpperCase()}.` : '';
-    return `${primerNombre}${inicialApellido}`;
+    if (partes.length === 1) return partes[0];
+    return `${partes[0]} ${partes[1]}`;
+  }
+
+  getInicialesResponsable(uid: number): string {
+    return this.getInicialesCorta(uid);
+  }
+
+  getInicialesCorta(uid: number): string {
+    const nombre = this.nombreUsuario(uid);
+    if (!nombre || nombre.startsWith('Usuario #')) return '??';
+    const partes = nombre.split(' ').filter(p => p.length > 0);
+    if (partes.length === 0) return '??';
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return `${partes[0][0]}${partes[1][0]}`.toUpperCase();
   }
 
   getColorPorId(id: number): string {

@@ -329,30 +329,32 @@ export class GenerarComponent implements OnInit, OnDestroy {
 
     if (!idMaterialSeleccionado) return;
 
-    // Buscar el material seleccionado en el array usando id_material (llave coherente del backend)
+    // Buscar el material seleccionado en el array usando codigo_completo o id_material (llave coherente del backend)
     const materialEncontrado = this.itemsDisponibles.find(
-      mat => mat.id_material === idMaterialSeleccionado
+      mat => mat.codigo_completo === idMaterialSeleccionado || mat.id_material === idMaterialSeleccionado || mat.f120_id === idMaterialSeleccionado
     );
 
     if (materialEncontrado) {
-      const precioUnitario = parseFloat(materialEncontrado.precio_unitario_material) || 0;
+      const precioUnitario = parseFloat(materialEncontrado.precio_unitario_material || materialEncontrado.precio_unitario) || 0;
 
       // Determinar la unidad de medida para el select del frontend
       let unidadFrontend = 'unidades'; // valor por defecto
-      const unidadSiesa = (materialEncontrado.unidad_medida_material || '').trim().toUpperCase();
+      const unidadSiesa = (materialEncontrado.unidad_medida_material || materialEncontrado.unidad_medida || '').trim().toUpperCase();
       if (unidadSiesa === 'MTS' || unidadSiesa === 'MT') {
         unidadFrontend = 'metros';
       } else if (unidadSiesa === 'CM' || unidadSiesa === 'CMS') {
         unidadFrontend = 'centimetros';
       }
 
+      const codigoCompletoItem = materialEncontrado.codigo_completo || materialEncontrado.id_material || materialEncontrado.f120_id;
+
       // Rellenar automáticamente los campos del formulario
       this.inconsistenciaForm.patchValue({
-        nombre_item: materialEncontrado.id_material,
-        item: [materialEncontrado.descripcion_material, materialEncontrado.color_material, materialEncontrado.talla_material]
+        nombre_item: codigoCompletoItem,
+        item: [materialEncontrado.descripcion_material || materialEncontrado.descripcion, materialEncontrado.color_material || materialEncontrado.color, materialEncontrado.talla_material || materialEncontrado.talla]
           .filter(Boolean)
           .join(' - '),
-        cantidad_solicitada_op: this.formatNumber(materialEncontrado.cantidad_requerida),
+        cantidad_solicitada_op: this.formatNumber(materialEncontrado.cantidad_requerida || materialEncontrado.cantidad),
         precio_unitario: precioUnitario > 0 ? this.formatNumber(precioUnitario) : '0',
         estado_op: materialEncontrado.estado_op || 'Pendiente',
         unidad_medida: unidadFrontend

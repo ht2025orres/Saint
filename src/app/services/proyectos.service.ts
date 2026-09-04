@@ -67,8 +67,9 @@ export interface MisPermisos {
 }
 
 export interface PermisoGranular extends MisPermisos {
-  usuario_id: number;
-  nombre?:    string;
+  usuario_id:     number;
+  nombre?:        string;
+  proceso_nombre?: string | null;
 }
 
 export interface ConfiguracionSemaforo {
@@ -81,6 +82,7 @@ export interface Proyecto {
   id: number; titulo: string; descripcion?: string;
   estado: EstadoProyecto; fecha_limite_entrega?: string;
   usuario_creador_id: number;
+  proceso_id?: number; proceso_nombre?: string;
   es_plantilla?: boolean;
   total_actividades?: number; total_tareas?: number;
   tareas_completadas?: number; tareas_vencidas?: number;
@@ -207,12 +209,28 @@ export interface SeguimientoSemana {
   es_gestor?: boolean;
 }
 
+export interface SeguimientoReunion {
+  id: number;
+  seguimiento_id: number;
+  fecha: string;
+  titulo: string;
+  descripcion?: string | null;
+  creado_por: number;
+  tareas?: SeguimientoTarea[];
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface SeguimientoTarea {
-  id: number; semana_id: number; usuario_id: number;
+  id: number; semana_id?: number; usuario_id: number;
   titulo: string; descripcion?: string; estado: string;
   notas?: string; fecha_limite_entrega?: string; fecha_completado?: string;
   semaforo?: Semaforo;
-  responsables?: number[];   // ← NUEVO
+  responsables?: number[];
+  reunion_id?: number;
+  reunion_fecha?: string;
+  reunion_titulo?: string;
+  reunion_descripcion?: string;
 }
 
 // ── INTERFACES FLUJOS DIARIOS ─────────────────────────────────────────────────
@@ -308,6 +326,15 @@ export class ProyectoService {
 
   getDashboard(usuarioId: number): Observable<ApiResponse<any>> {
     return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/dashboard`, { params: { usuario_id: usuarioId } });
+  }
+
+  getEstadisticas(usuarioId: number, mes: number, anio: number, vistaMode?: string): Observable<ApiResponse<any>> {
+    let params = new HttpParams()
+      .set('usuario_id', usuarioId)
+      .set('mes', mes)
+      .set('anio', anio);
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
+    return this.http.get<ApiResponse<any>>(`${this.api}/proyectos/estadisticas`, { params });
   }
 
   getDetalleCompleto(proyectoId: number, usuarioId: number): Observable<ApiResponse<Proyecto>> {
@@ -454,6 +481,25 @@ export class ProyectoService {
 
   cerrarSeguimiento(id: number, usuarioId: number): Observable<ApiMessage> {
     return this.http.post<ApiMessage>(`${this.api}/seguimientos/${id}/cerrar`, { usuario_id: usuarioId });
+  }
+
+  // ── REUNIONES Y MINUTAS ───────────────────────────────────────────────────
+
+  getReuniones(seguimientoId: number, usuarioId: number): Observable<ApiResponse<SeguimientoReunion[]>> {
+    return this.http.get<ApiResponse<SeguimientoReunion[]>>(`${this.api}/seguimientos/${seguimientoId}/reuniones`, {
+      params: new HttpParams().set('usuario_id', usuarioId)
+    });
+  }
+
+  crearReunionConTareas(data: {
+    seguimiento_id: number;
+    usuario_id: number;
+    fecha?: string;
+    titulo?: string;
+    descripcion?: string;
+    tareas?: { titulo: string; descripcion?: string; responsables?: number[]; fecha_limite_entrega?: string }[];
+  }): Observable<ApiResponse<SeguimientoReunion> & ApiMessage> {
+    return this.http.post<any>(`${this.api}/seguimientos/${data.seguimiento_id}/reuniones`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
   // ── TAREAS DE SEGUIMIENTO ─────────────────────────────────────────────────

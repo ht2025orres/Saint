@@ -1,0 +1,308 @@
+<div class="container-fluid p-4">
+  <!-- Header Banner -->
+  <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+    <div>
+      <h3 class="mb-1 text-primary font-weight-bold"><i class="fas fa-users-cog me-2"></i>Hub Central de Colaboradores</h3>
+      <p class="text-muted mb-0">Gestión unificada de nómina (Siesa), accesos a plataformas (Conecta, Saint, GLPI), correos y firmas Canva</p>
+    </div>
+    <div>
+      <button class="btn btn-outline-primary me-2" (click)="loadColaboradores()">
+        <i class="fas fa-sync-alt me-1"></i> Refrescar
+      </button>
+      <button class="btn btn-success" (click)="syncSiesa()" [disabled]="syncing">
+        <i class="fas fa-database me-1"></i> {{ syncing ? 'Sincronizando...' : 'Sincronizar desde Siesa' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0" placeholder="Buscar por nombre, apellidos, cédula o correo..." [(ngModel)]="searchTerm" (keyup.enter)="onSearch()">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" [(ngModel)]="estadoFilter" (change)="onSearch()">
+            <option value="">-- Todos los estados --</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos / Retirados</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary w-100" (click)="onSearch()">Filtrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Colaborador</th>
+              <th>Cédula</th>
+              <th>Cargo</th>
+              <th>Correos</th>
+              <th class="text-center">Conecta</th>
+              <th class="text-center">Saint</th>
+              <th class="text-center">Correo</th>
+              <th class="text-center">GLPI</th>
+              <th class="text-center">Siesa Nube</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of colaboradores">
+              <td class="fw-bold">#{{ c.id }}</td>
+              <td>
+                <div class="fw-bold text-dark">{{ c.nombres }} {{ c.apellidos }}</div>
+                <small class="text-muted" *ngIf="c.fecha_ingreso">Ingreso: {{ c.fecha_ingreso }}</small>
+              </td>
+              <td><code>{{ c.cedula }}</code></td>
+              <td><span class="badge bg-light text-dark border">{{ c.cargo || 'Sin Asignar' }}</span></td>
+              <td>
+                <div *ngIf="c.correo_corporativo" class="text-primary small"><i class="fas fa-envelope me-1"></i>{{ c.correo_corporativo }}</div>
+                <div *ngIf="c.correo_personal" class="text-muted small"><i class="far fa-envelope me-1"></i>{{ c.correo_personal }}</div>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="c.requiere_conecta ? 'bg-success' : 'bg-secondary'">{{ c.requiere_conecta ? 'SI' : 'NO' }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="c.requiere_saint ? 'bg-success' : 'bg-secondary'">{{ c.requiere_saint ? 'SI' : 'NO' }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="c.requiere_correo ? 'bg-info text-dark' : 'bg-secondary'">{{ c.requiere_correo ? 'SI' : 'NO' }}</span>
+                <i class="fas fa-check-circle text-success ms-1" *ngIf="c.firma_canva_generada" title="Firma Canva Inyectada"></i>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="c.requiere_glpi ? 'bg-warning text-dark' : 'bg-secondary'">{{ c.requiere_glpi ? 'SI' : 'NO' }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="c.requiere_siesa_nube ? 'bg-purple text-white' : 'bg-secondary'">{{ c.requiere_siesa_nube ? 'SI' : 'NO' }}</span>
+              </td>
+              <td>
+                <span class="badge rounded-pill" [ngClass]="c.estado === 'activo' ? 'bg-success' : 'bg-danger'">
+                  {{ c.estado | uppercase }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary" (click)="openEditModal(c)" title="Editar Colaborador">
+                    <i class="fas fa-edit me-1"></i> Editar
+                  </button>
+                  <button class="btn btn-sm btn-dark" (click)="abrirModalPlataformas(c)" title="Gestión Multi-Plataforma (GLPI & Google)">
+                    <i class="fas fa-network-wired me-1"></i> Plataformas
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="colaboradores.length === 0">
+              <td colspan="12" class="text-center py-4 text-muted">
+                No se encontraron colaboradores registrados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Gestionar Colaborador -->
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showModal && selectedColaborador" style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Gestionar Colaborador #{{ selectedColaborador.id }} - {{ selectedColaborador.nombres }} {{ selectedColaborador.apellidos }}</h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Correo Corporativo</label>
+              <input type="email" class="form-control" [(ngModel)]="selectedColaborador.correo_corporativo">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Correo Personal</label>
+              <input type="email" class="form-control" [(ngModel)]="selectedColaborador.correo_personal">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Usuario Siesa Nube</label>
+              <input type="text" class="form-control" [(ngModel)]="selectedColaborador.usuario_siesa_nube">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Usuario GLPI</label>
+              <input type="text" class="form-control" [(ngModel)]="selectedColaborador.usuario_glpi">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Contraseña Conecta</label>
+              <input type="password" class="form-control" placeholder="••••••••" [(ngModel)]="selectedColaborador.password_conecta">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label font-weight-bold">Contraseña Saint</label>
+              <input type="password" class="form-control" placeholder="••••••••" [(ngModel)]="selectedColaborador.password_saint">
+            </div>
+
+            <hr class="my-3">
+            <h6 class="text-primary font-weight-bold">Accesos y Provisionamiento por Plataforma</h6>
+
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="swConecta" [(ngModel)]="selectedColaborador.requiere_conecta">
+                <label class="form-check-label font-weight-bold" for="swConecta">Conecta Portal</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="swSaint" [(ngModel)]="selectedColaborador.requiere_saint">
+                <label class="form-check-label font-weight-bold" for="swSaint">Saint Platform</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="swCorreo" [(ngModel)]="selectedColaborador.requiere_correo">
+                <label class="form-check-label font-weight-bold" for="swCorreo">Correo / Firma Canva</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="swGlpi" [(ngModel)]="selectedColaborador.requiere_glpi">
+                <label class="form-check-label font-weight-bold" for="swGlpi">GLPI Helpdesk</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="swSiesaNube" [(ngModel)]="selectedColaborador.requiere_siesa_nube">
+                <label class="form-check-label font-weight-bold" for="swSiesaNube">Siesa Nube</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label font-weight-bold">Estado General</label>
+              <select class="form-select" [(ngModel)]="selectedColaborador.estado">
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="saveColaborador()" [disabled]="saving">
+            <i class="fas fa-save me-1"></i> {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Control Multi-Plataforma (GLPI DB/API & Google OAuth2) -->
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showPlatformsModal && selectedColaborador" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content border-0 shadow-lg rounded-3 overflow-hidden">
+        <div class="modal-header bg-dark text-white py-3">
+          <h5 class="modal-title font-weight-bold flex items-center gap-2">
+            <i class="fas fa-network-wired text-info me-2"></i> Control Multi-Plataforma: {{ selectedColaborador.nombres }} {{ selectedColaborador.apellidos }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="cerrarModalPlataformas()"></button>
+        </div>
+
+        <div class="modal-body p-4 bg-light">
+          
+          <div *ngIf="platformStatusLoading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2 font-weight-bold">Verificando estado en tiempo real en la base de datos de GLPI y Google Workspace...</p>
+          </div>
+
+          <div *ngIf="!platformStatusLoading && platformStatusData" class="row g-4">
+            
+            <!-- PANEL GLPI -->
+            <div class="col-md-6">
+              <div class="card h-100 border-0 shadow-sm rounded-3">
+                <div class="card-header bg-primary text-white font-weight-bold d-flex justify-content-between align-items-center">
+                  <span><i class="fas fa-headset me-2"></i> GLPI Helpdesk (DB / API)</span>
+                  <span class="badge" [ngClass]="platformStatusData.glpi?.exists ? (platformStatusData.glpi?.is_active ? 'bg-success' : 'bg-warning text-dark') : 'bg-secondary'">
+                    {{ platformStatusData.glpi?.exists ? (platformStatusData.glpi?.is_active ? 'ACTIVO' : 'INACTIVO') : 'NO EXISTE' }}
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div *ngIf="platformStatusData.glpi?.exists" class="small text-muted mb-3">
+                    <div><strong>ID GLPI:</strong> #{{ platformStatusData.glpi?.id }}</div>
+                    <div><strong>Usuario:</strong> <code>{{ platformStatusData.glpi?.username }}</code></div>
+                    <div><strong>Correo GLPI:</strong> {{ platformStatusData.glpi?.email || 'N/A' }}</div>
+                    <div><strong>Estado en DB:</strong> {{ platformStatusData.glpi?.is_active ? '✅ Habilitado (is_active = 1)' : '🚫 Inhabilitado (is_active = 0)' }}</div>
+                  </div>
+
+                  <div *ngIf="!platformStatusData.glpi?.exists" class="alert alert-warning small mb-3">
+                    <i class="fas fa-exclamation-triangle me-1"></i> No se encontró una cuenta de usuario creada en GLPI para este colaborador.
+                  </div>
+
+                  <!-- ACCIONES GLPI -->
+                  <div class="d-grid gap-2">
+                    <button *ngIf="!platformStatusData.glpi?.exists" (click)="ejecutarAccionGlpi('create')" [disabled]="platformActionLoading" class="btn btn-sm btn-success">
+                      <i class="fas fa-user-plus me-1"></i> Crear Usuario en GLPI
+                    </button>
+                    <button *ngIf="platformStatusData.glpi?.exists && !platformStatusData.glpi?.is_active" (click)="ejecutarAccionGlpi('enable')" [disabled]="platformActionLoading" class="btn btn-sm btn-primary">
+                      <i class="fas fa-user-check me-1"></i> Activar Usuario en GLPI
+                    </button>
+                    <button *ngIf="platformStatusData.glpi?.exists && platformStatusData.glpi?.is_active" (click)="ejecutarAccionGlpi('disable')" [disabled]="platformActionLoading" class="btn btn-sm btn-danger">
+                      <i class="fas fa-user-slash me-1"></i> Deshabilitar Usuario en GLPI
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANEL GOOGLE WORKSPACE -->
+            <div class="col-md-6">
+              <div class="card h-100 border-0 shadow-sm rounded-3">
+                <div class="card-header bg-danger text-white font-weight-bold d-flex justify-content-between align-items-center">
+                  <span><i class="fab fa-google me-2"></i> Correo Google Workspace</span>
+                  <span class="badge" [ngClass]="platformStatusData.google?.exists ? (platformStatusData.google?.isSuspended ? 'bg-warning text-dark' : 'bg-success') : 'bg-secondary'">
+                    {{ platformStatusData.google?.exists ? (platformStatusData.google?.isSuspended ? 'SUSPENDIDO' : 'ACTIVO') : 'NO EXISTE' }}
+                  </span>
+                </div>
+                <div class="card-body">
+                  <div class="small text-muted mb-3">
+                    <div><strong>Correo Corp:</strong> {{ selectedColaborador.correo_corporativo || 'Sin asignar' }}</div>
+                    <div><strong>OAuth Token:</strong> {{ platformStatusData.google?.tokenConnected ? '🔑 Token Vinculado' : 'Sin vincular' }}</div>
+                    <div *ngIf="platformStatusData.google?.exists"><strong>Estado Google:</strong> {{ platformStatusData.google?.isSuspended ? '⏸️ Suspendido' : '✅ Cuenta Activa' }}</div>
+                  </div>
+
+                  <div *ngIf="!selectedColaborador.correo_corporativo" class="alert alert-secondary small mb-3">
+                    Debes asignar un correo corporativo al colaborador para crear su cuenta.
+                  </div>
+
+                  <!-- ACCIONES GOOGLE -->
+                  <div class="d-grid gap-2" *ngIf="selectedColaborador.correo_corporativo">
+                    <button *ngIf="!platformStatusData.google?.exists" (click)="ejecutarAccionGoogle('create')" [disabled]="platformActionLoading" class="btn btn-sm btn-success">
+                      <i class="fas fa-envelope-open me-1"></i> Crear Correo en Google
+                    </button>
+                    <button *ngIf="platformStatusData.google?.exists && !platformStatusData.google?.isSuspended" (click)="ejecutarAccionGoogle('suspend')" [disabled]="platformActionLoading" class="btn btn-sm btn-warning text-dark">
+                      <i class="fas fa-pause-circle me-1"></i> Suspender Correo
+                    </button>
+                    <button *ngIf="platformStatusData.google?.exists && platformStatusData.google?.isSuspended" (click)="ejecutarAccionGoogle('activate')" [disabled]="platformActionLoading" class="btn btn-sm btn-primary">
+                      <i class="fas fa-play-circle me-1"></i> Reactivar Correo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalPlataformas()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

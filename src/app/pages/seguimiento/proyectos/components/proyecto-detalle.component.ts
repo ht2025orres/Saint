@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Proyecto, Tarea, Actividad } from '../../../../services/proyectos.service';
 import { SeguimientoStateService } from '../../seguimiento-state.service';
 
@@ -14,7 +14,14 @@ export class ProyectoDetalleComponent {
   @Input() detalle: Proyecto | null = null;
   @Input() loading = false;
   @Input() vistaDetalle: VistaDetalle = 'tareas';
-  @Input() tareasPlanas: any[] = [];
+  
+  @Input() set tareasPlanas(val: any[]) {
+    this._tareasPlanas = val ?? [];
+    this.cdr.markForCheck();
+  }
+  get tareasPlanas(): any[] { return this._tareasPlanas; }
+  private _tareasPlanas: any[] = [];
+
   @Input() usuarioId = 0;
   @Input() puedeGestionarModulo = false;
   @Input() aplicandoPlantilla = false;
@@ -29,7 +36,7 @@ export class ProyectoDetalleComponent {
   @Output() onEditActividad = new EventEmitter<any>();
   @Output() onChangeVista = new EventEmitter<VistaDetalle>();
 
-  constructor(public state: SeguimientoStateService) {}
+  constructor(public state: SeguimientoStateService, private cdr: ChangeDetectorRef) {}
 
   // Helpers de permisos (copiados de ProyectosComponent para lógica local)
   puedeEditarProyecto(p: Proyecto): boolean {

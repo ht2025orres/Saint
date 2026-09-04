@@ -55,6 +55,10 @@ export class MoldService {
     return this.http.post(`${this.apiUrl}/technical-specs`, data);
   }
 
+  updateTechnicalSpec(id: number, data: { mold_id?: number; reference?: string; user_created?: string; parts: any[] }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/technical-specs/${id}`, data);
+  }
+
   getTechnicalSpec(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/technical-specs/${id}`);
   }

@@ -1,0 +1,406 @@
+<!-- MODAL REUNIÓN / MINUTA DEL DÍA Y HISTÓRICO DE COMPROMISOS -->
+<div
+  *ngIf="show"
+  class="fixed inset-0 z-[2000] flex items-center justify-center p-2 md:p-4 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden"
+  style="background: rgba(15,23,42,0.65);"
+  (dblclick)="cerrar()"
+>
+  <div
+    class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl md:max-w-6xl max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200"
+    (click)="$event.stopPropagation()"
+    (dblclick)="$event.stopPropagation()"
+  >
+    <!-- Header Premium -->
+    <div class="relative px-6 md:px-8 py-4 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-900 text-white flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shadow-inner">
+            <i class="bi bi-people-fill text-xl"></i>
+          </div>
+          <div>
+            <h2 class="font-black text-white text-lg tracking-tight">Reuniones y Minutas de Seguimiento</h2>
+            <p class="text-[10px] font-bold text-blue-200/70 uppercase tracking-widest mt-0.5">
+              Crea compromisos versátiles del día y consulta la trazabilidad histórica
+            </p>
+          </div>
+        </div>
+        <button
+          (click)="cerrar()"
+          class="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+        >
+          <i class="bi bi-x-lg text-base"></i>
+        </button>
+      </div>
+
+      <!-- Pestañas / Navegación interna -->
+      <div class="flex items-center gap-2 mt-4 border-t border-white/10 pt-3">
+        <button
+          (click)="modoTab = 'nueva'"
+          class="px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
+          [ngClass]="modoTab === 'nueva' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-gray-300 hover:bg-white/10'"
+        >
+          <i class="bi bi-plus-circle-fill"></i>
+          + Nueva Reunión / Minuta
+        </button>
+        <button
+          (click)="modoTab = 'historico'; cargarHistorico()"
+          class="px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
+          [ngClass]="modoTab === 'historico' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' : 'text-gray-300 hover:bg-white/10'"
+        >
+          <i class="bi bi-clock-history"></i>
+          Histórico de Reuniones ({{ reunionesHistoricas.length }})
+        </button>
+      </div>
+    </div>
+
+    <!-- Body Scrollable -->
+    <div class="px-6 md:px-8 pt-5 pb-32 flex-1 overflow-y-auto custom-scrollbar space-y-5">
+
+      <!-- ── TAB 1: NUEVA REUNIÓN & ASIGNACIÓN INLINE COMPACTA ────────── -->
+      <ng-container *ngIf="modoTab === 'nueva'">
+        
+        <!-- Tarjeta Información de la Reunión -->
+        <div class="bg-gray-50/80 p-4 rounded-2xl border border-gray-100 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-black text-gray-700 uppercase tracking-widest flex items-center gap-2">
+              <i class="bi bi-card-text text-blue-600"></i>
+              Detalles de la Reunión / Minuta
+            </h3>
+            <span class="text-[9px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+              Registrado por Gestor
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Fecha y Hora -->
+            <div>
+              <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Fecha de la Reunión <span class="text-red-500">*</span></label>
+              <input
+                type="datetime-local"
+                [(ngModel)]="fechaReunion"
+                class="w-full px-3 py-2 bg-white border-2 border-gray-100 rounded-xl text-xs font-bold text-gray-800 focus:border-blue-500 transition-all outline-none"
+              />
+            </div>
+            
+            <!-- Título de la Reunión -->
+            <div class="md:col-span-2">
+              <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Asunto / Título de la Reunión</label>
+              <input
+                type="text"
+                [(ngModel)]="tituloReunion"
+                placeholder="Ej: Reunión diaria de coordinación..."
+                class="w-full px-3 py-2 bg-white border-2 border-gray-100 rounded-xl text-xs font-bold text-gray-800 focus:border-blue-500 transition-all outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Descripción / Temas tratados (Minuta) -->
+          <div>
+            <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Minuta / Acuerdos de la Reunión</label>
+            <textarea
+              [(ngModel)]="descripcionReunion"
+              rows="2"
+              placeholder="Resumen de temas tratados o decisiones clave..."
+              class="w-full px-3 py-2 bg-white border-2 border-gray-100 rounded-xl text-xs font-medium text-gray-700 focus:border-blue-500 transition-all outline-none resize-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Sección: Tabla Compacta Inline para Crear Tareas del Mes -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                <i class="bi bi-check2-all text-indigo-600"></i>
+                Tareas Asignadas en la Reunión (Filas Inline)
+              </h3>
+              <p class="text-[10px] text-gray-400 font-bold mt-0.5">Agrega tareas rápidamente en la tabla inline. Presiona Enter en el título para añadir la siguiente fila.</p>
+            </div>
+            <button
+              (click)="agregarFilaTarea()"
+              class="px-3.5 py-1.5 bg-indigo-50 border border-indigo-100 hover:bg-indigo-600 hover:text-white text-indigo-600 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+            >
+              <i class="bi bi-plus-lg"></i>
+              + Agregar Tarea
+            </button>
+          </div>
+
+          <!-- TABLA INLINE COMPACTA -->
+          <div class="bg-white border-2 border-indigo-100/70 rounded-2xl shadow-sm relative">
+            <!-- Encabezados de la Tabla Inline -->
+            <div class="grid grid-cols-12 bg-slate-900 text-slate-300 text-[9px] font-black uppercase tracking-wider px-3 py-2.5 rounded-t-2xl border-b border-slate-800 gap-2">
+              <div class="col-span-1 text-center">#</div>
+              <div class="col-span-4">¿Qué tarea deseas asignar? (Enter)</div>
+              <div class="col-span-3">Responsable(s)</div>
+              <div class="col-span-2">Fecha Límite</div>
+              <div class="col-span-2 text-right">Acción</div>
+            </div>
+
+            <!-- Filas Inline -->
+            <div class="divide-y divide-gray-100">
+              <div
+                *ngFor="let tFila of tareasMinuta; let i = index"
+                class="grid grid-cols-12 items-center px-3 py-2 gap-2 hover:bg-indigo-50/30 transition-colors group"
+              >
+                <!-- # Fila -->
+                <div class="col-span-1 text-center">
+                  <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 font-black text-[10px] inline-flex items-center justify-center border border-indigo-100">
+                    {{ i + 1 }}
+                  </span>
+                </div>
+
+                <!-- Título Tarea (Inline Input) -->
+                <div class="col-span-4 min-w-0">
+                  <input
+                    type="text"
+                    [(ngModel)]="tFila.titulo"
+                    (keydown)="onTituloKeydown($event, i)"
+                    placeholder="Escribe la tarea..."
+                    class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:bg-white focus:border-indigo-500 outline-none transition-all"
+                  />
+                  <!-- Input secundario sutil para instrucciones/detalles -->
+                  <input
+                    type="text"
+                    [(ngModel)]="tFila.descripcion"
+                    placeholder="Detalles u observaciones opcionales..."
+                    class="w-full px-2.5 py-0.5 bg-transparent border-0 text-[10px] text-gray-400 placeholder:text-gray-300 focus:text-gray-700 outline-none mt-0.5"
+                  />
+                </div>
+
+                <!-- Responsables Asignados (Inline Chips + Selector Compacto) -->
+                <div class="col-span-3 min-w-0 relative">
+                  <div class="flex items-center gap-1 flex-wrap mb-1" *ngIf="tFila.responsablesSelec.length">
+                    <div
+                      *ngFor="let r of tFila.responsablesSelec"
+                      class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded-md text-[9px] font-bold text-indigo-700"
+                    >
+                      <span>{{ r.nombre }}</span>
+                      <button (click)="quitarResponsableFila(tFila, r.id)" class="text-indigo-300 hover:text-red-500">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Botón selector inline -->
+                  <div class="relative dropdown-container">
+                    <button
+                      type="button"
+                      (click)="tFila.showRespDropdown = !tFila.showRespDropdown"
+                      class="w-full flex items-center justify-between px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 hover:border-indigo-300 focus:bg-white transition-all text-left"
+                    >
+                      <span class="truncate">
+                        {{ tFila.responsablesSelec.length === 0 ? '+ Asignar persona' : 'Agregar otro...' }}
+                      </span>
+                      <i class="bi bi-chevron-down text-[9px] text-gray-400"></i>
+                    </button>
+
+                    <!-- Dropdown flotante con buscador (Abre hacia arriba para evitar el footer) -->
+                    <div
+                      *ngIf="tFila.showRespDropdown"
+                      class="absolute bottom-full left-0 w-64 mb-1.5 bg-white rounded-2xl shadow-2xl border-2 border-indigo-100 z-[3000] p-2 animate-in fade-in slide-in-from-bottom-1 duration-150"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <div class="relative mb-2">
+                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input
+                          type="text"
+                          [(ngModel)]="tFila.busquedaResp"
+                          placeholder="Buscar usuario..."
+                          class="w-full pl-8 pr-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-700 outline-none focus:border-indigo-400 focus:bg-white"
+                        />
+                      </div>
+                      <div class="max-h-44 overflow-y-auto custom-scrollbar space-y-1">
+                        <div
+                          *ngFor="let u of usuariosFiltradosFila(tFila)"
+                          (mousedown)="agregarResponsableFila(tFila, u)"
+                          class="flex items-center gap-2 px-2.5 py-1.5 hover:bg-indigo-50 rounded-xl cursor-pointer transition-colors"
+                        >
+                          <div class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[9px] font-black shadow-sm flex-shrink-0">
+                            {{ state.getInicialesCorta(u.id) }}
+                          </div>
+                          <span class="text-[11px] font-bold text-gray-700 truncate">{{ u.nombre }}</span>
+                        </div>
+                        <div *ngIf="usuariosFiltradosFila(tFila).length === 0" class="py-3 text-center text-[10px] text-gray-400 font-bold">
+                          Sin coincidencias
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fecha Límite (Inline Input) -->
+                <div class="col-span-2">
+                  <input
+                    type="datetime-local"
+                    [(ngModel)]="tFila.fecha_limite_entrega"
+                    class="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-700 focus:bg-white focus:border-indigo-500 outline-none transition-all"
+                  />
+                </div>
+
+                <!-- Acciones (Eliminar fila) -->
+                <div class="col-span-2 text-right">
+                  <button
+                    (click)="eliminarFilaTarea(i)"
+                    class="w-7 h-7 inline-flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    title="Eliminar fila"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Footer de la tabla inline -->
+            <div class="bg-gray-50/60 px-4 py-2 border-t border-gray-100 flex items-center justify-between text-[10px]">
+              <span class="font-bold text-gray-400 uppercase tracking-wider">
+                Total tareas a crear: {{ totalTareasValidas }}
+              </span>
+              <button
+                (click)="agregarFilaTarea()"
+                class="font-black text-indigo-600 hover:underline flex items-center gap-1 uppercase tracking-wider"
+              >
+                <i class="bi bi-plus-circle"></i> + Agregar otra fila
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ── TAB 2: HISTÓRICO DE REUNIONES & TRAZABILIDAD ────────────── -->
+      <ng-container *ngIf="modoTab === 'historico'">
+        
+        <!-- Buscador -->
+        <div class="relative">
+          <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input
+            type="text"
+            [(ngModel)]="busquedaHistorico"
+            placeholder="Buscar reuniones por asunto, minuta o tareas..."
+            class="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:border-indigo-500 transition-all outline-none"
+          />
+        </div>
+
+        <!-- Spinner Carga -->
+        <div *ngIf="loadingHistorico" class="py-16 text-center">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+          <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Cargando trazabilidad de reuniones...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!loadingHistorico && reunionesFiltradasHistoricas.length === 0" class="py-16 text-center bg-gray-50 rounded-3xl border border-gray-100">
+          <i class="bi bi-calendar-x text-3xl text-gray-300 mb-2 block"></i>
+          <p class="text-sm font-black text-gray-500">No hay reuniones registradas en este período</p>
+          <p class="text-xs text-gray-400 mt-1">Usa la pestaña "+ Nueva Reunión" para crear la primera minuta.</p>
+        </div>
+
+        <!-- Listado Acordeón de Reuniones -->
+        <div *ngIf="!loadingHistorico && reunionesFiltradasHistoricas.length > 0" class="space-y-3">
+          <div
+            *ngFor="let r of reunionesFiltradasHistoricas"
+            class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all"
+          >
+            <!-- Cabecera Reunión -->
+            <div
+              (click)="toggleExpandirReunion(r.id)"
+              class="p-4 bg-gradient-to-r from-gray-50 to-white flex items-center justify-between cursor-pointer hover:bg-gray-100/50 transition-colors"
+            >
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                  <i class="bi bi-calendar-event text-base"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <span class="text-xs font-black text-gray-900 truncate">{{ r.titulo }}</span>
+                    <span class="text-[9px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                      {{ (r.tareas || []).length }} Tareas
+                    </span>
+                  </div>
+                  <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    Fecha: {{ r.fecha | date:'dd MMM yyyy, hh:mm a' }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <i class="bi text-gray-400 text-base transition-transform" [ngClass]="reunionExpandidaId === r.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+            </div>
+
+            <!-- Cuerpo Desplegable (Minuta + Tareas Tabla) -->
+            <div *ngIf="reunionExpandidaId === r.id" class="p-4 border-t border-gray-100 bg-white space-y-3 animate-in slide-in-from-top-2 duration-200">
+              
+              <!-- Descripción Minuta -->
+              <div *ngIf="r.descripcion" class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/60">
+                <h4 class="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Minuta / Acuerdos de la Reunión</h4>
+                <p class="text-xs text-amber-900 leading-relaxed font-medium whitespace-pre-wrap">{{ r.descripcion }}</p>
+              </div>
+
+              <!-- Tareas Generadas en Tabla Compacta -->
+              <div>
+                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Compromisos / Tareas Asignadas</h4>
+                
+                <div *ngIf="!r.tareas || r.tareas.length === 0" class="text-xs text-gray-400 italic">
+                  No se asociaron tareas a esta reunión.
+                </div>
+
+                <div *ngIf="r.tareas && r.tareas.length > 0" class="divide-y divide-gray-50 border border-gray-100 rounded-xl overflow-hidden">
+                  <div
+                    *ngFor="let t of r.tareas"
+                    class="p-2.5 bg-gray-50/50 flex items-center justify-between gap-3 hover:bg-white transition-colors"
+                  >
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-2 h-7 rounded-full flex-shrink-0" [ngClass]="state.getSemaforoClass(t.semaforo)"></div>
+                      <div class="min-w-0">
+                        <h5 class="text-xs font-bold text-gray-800 truncate">{{ t.titulo }}</h5>
+                        <p class="text-[10px] text-gray-400 font-medium truncate" *ngIf="t.descripcion">{{ t.descripcion }}</p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2.5 flex-shrink-0">
+                      <div *ngIf="t.usuario_id" class="h-5 px-1.5 min-w-[20px] rounded bg-blue-600 text-white text-[8px] font-black flex items-center justify-center shadow-sm">
+                        {{ state.getInicialesResponsable(t.usuario_id) }}
+                      </div>
+
+                      <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest" [ngClass]="state.getEstadoBadgeClass(t.estado)">
+                        {{ t.estado }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </ng-container>
+
+    </div>
+
+    <!-- Footer Premium -->
+    <div class="px-6 md:px-8 py-3.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
+      <button
+        type="button"
+        (click)="cerrar()"
+        class="px-5 py-2 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 rounded-xl transition-all"
+      >
+        Cancelar
+      </button>
+
+      <button
+        *ngIf="modoTab === 'nueva'"
+        type="button"
+        (click)="guardarReunion()"
+        [disabled]="saving"
+        class="px-7 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
+      >
+        <span *ngIf="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+        <i *ngIf="!saving" class="bi bi-check-circle-fill text-sm"></i>
+        {{ saving ? 'Guardando...' : 'Guardar Reunión y Asignar Tareas' }}
+      </button>
+    </div>
+
+  </div>
+</div>

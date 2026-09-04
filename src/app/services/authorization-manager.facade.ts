@@ -29,4 +29,14 @@ export class AuthorizationManagerFacade {
       proceso_ids: procesoIds
     });
   }
+
+  /** Ejecutar la sincronización manual de colaboradores con Siesa Nómina Web */
+  syncSiesa(dryRun: boolean = false): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/colaboradores/sync-siesa`, { dry_run: dryRun });
+  }
+
+  /** Ejecutar la asignación masiva de procesos, perfiles, permisos o plataformas por cargo */
+  bulkAssignByCargo(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bulk-assign-by-cargo`, payload);
+  }
 }

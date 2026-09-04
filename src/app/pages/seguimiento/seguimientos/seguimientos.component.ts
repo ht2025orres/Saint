@@ -2,7 +2,6 @@ import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ChangeDe
 import { Subscription, Observable } from 'rxjs';
 import { ProyectoService, FlujoDiario, Compromiso, SeguimientoAnual } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService } from '../seguimiento-state.service';
-import { CompromisoForm } from '../modals/modal-compromiso/modal-compromiso.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -400,78 +399,16 @@ export class SeguimientosComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  // ── Compromisos ──────────────────────────────────────────────────────────
-
-  abrirNuevoCompromiso(): void {
-    this.compromisoParaEditar = null;
-    this.showModalCompromiso  = true;
-    this._cdr.markForCheck();
+  abrirCrearCompromiso(): void {
+    this.showModalCompromiso = false;
   }
 
   abrirEditarCompromiso(c: Compromiso): void {
-    this.compromisoParaEditar = c;
-    this.showModalCompromiso  = true;
-    this._cdr.markForCheck();
+    this.showModalCompromiso = false;
   }
 
-  onGuardarCompromiso(form: CompromisoForm): void {
-    if (!this.flujoActivo) return;
-    this.savingCompromiso = true;
-    this._cdr.markForCheck();
-
-    let req$: Observable<any>;
-
-    if (this.compromisoParaEditar) {
-      // Actualización
-      const parts = this.fechaSeleccionada.split('-').map(Number);
-      const body = {
-        flujo_id: this.flujoActivo.id, // Añadimos flujo_id por si el backend lo requiere (error de ruta)
-        anio: parts[0],
-        mes: parts[1],
-        titulo: form.titulo,
-        usuario_id: this.usuarioId,
-        responsables: form.responsables,
-        notas: form.descripcion // En el modal descripcion se usa como notas
-      };
-      req$ = this._proy.actualizarCompromiso(this.compromisoParaEditar.id, body as any);
-    } else {
-      // Creación
-      const body = {
-        flujo_id: this.flujoActivo.id,
-        titulo: form.titulo,
-        usuario_id: this.usuarioId,
-        responsables: form.responsables,
-        descripcion: form.descripcion
-      };
-      req$ = this._proy.crearCompromiso(body);
-    }
-
-    req$.subscribe({
-      next: (res: any) => { 
-        this.savingCompromiso = false; 
-        this.showModalCompromiso = false; 
-        this.state.showToast('Compromiso guardado'); 
-        
-        if (this.compromisoParaEditar && this.flujoActivo) {
-          // Actualización local sin recarga
-          const idx = this.flujoActivo.compromisos.findIndex(c => c.id === this.compromisoParaEditar!.id);
-          if (idx > -1) {
-            this.flujoActivo.compromisos[idx] = { 
-              ...this.flujoActivo.compromisos[idx], 
-              titulo: form.titulo,
-              responsables: [...form.responsables],
-              notas: form.descripcion
-            };
-          }
-          this.actualizarCompromisosUnificados();
-        } else {
-          // Si es nuevo, sí recargamos para obtener el ID y orden real
-          this.cargarDatos(); 
-        }
-        this._cdr.markForCheck();
-      },
-      error: () => { this.savingCompromiso = false; this.state.showToast('Error al guardar', 'error'); this._cdr.markForCheck(); },
-    });
+  onGuardarCompromiso(form: any): void {
+    this.showModalCompromiso = false;
   }
 
   toggleCompromiso(c: Compromiso): void {

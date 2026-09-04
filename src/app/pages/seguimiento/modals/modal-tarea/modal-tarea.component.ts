@@ -34,6 +34,7 @@ export class ModalTareaComponent implements OnChanges {
   @Input() saving = false;
   /** true = admin/gestor; false = solo puede editar lo básico */
   @Input() esAdmin = true;
+  @Input() esSeguimiento = false;
 
   @Output() onCerrar  = new EventEmitter<void>();
   @Output() onGuardar = new EventEmitter<TareaForm>();
@@ -61,7 +62,10 @@ export class ModalTareaComponent implements OnChanges {
   get usuariosFiltrados(): UsuarioCache[] {
     const ids = new Set(this.responsablesSelec.map(r => r.id));
     const q   = this.busquedaResp.toLowerCase().trim();
-    return this.state.usuariosResponsables
+    const lista = (this.usuariosDisponibles && this.usuariosDisponibles.length > 0)
+      ? this.usuariosDisponibles
+      : this.state.usuariosResponsables;
+    return lista
       .filter(u => !ids.has(u.id) && (!q || u.nombre.toLowerCase().includes(q)))
       .slice(0, 8);
   }

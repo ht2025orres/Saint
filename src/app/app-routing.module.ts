@@ -52,6 +52,8 @@ import { WorkflowManagerComponent } from './pages/authorization-manager/workflow
 import { CarteraInconsistenciasComponent } from './pages/inconsistencias/cartera-inconsistencias/cartera-inconsistencias.component';
 import { DashboardFinancieroInconsistenciasComponent } from './pages/inconsistencias/dashboard-financiero/dashboard-financiero.component';
 import { EmailLogsComponent } from './pages/email-logs/email-logs.component';
+import { ColaboradoresGestionComponent } from './pages/colaboradores/colaboradores-gestion.component';
+import { PublicFirmarDocumentoComponent } from './pages/firmas/public-firmar-documento/public-firmar-documento.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full', title: 'Redirección' },
@@ -92,6 +94,8 @@ const routes: Routes = [
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes' },
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes' },
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
+      { path: 'costeos', loadChildren: () => import('./pages/costeos/costeos.module').then(m => m.CosteosModule), title: 'Gestión de Costeos' },
+      { path: 'muestras', loadChildren: () => import('./pages/muestras/muestras.module').then(m => m.MuestrasModule), title: 'Gestión de Muestras' },
       { path: 'comerciales', loadChildren: () => import('./pages/comerciales/comerciales.module').then(m => m.ComercialesModule), title: 'Comerciales' },
       { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
       { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
@@ -102,15 +106,20 @@ const routes: Routes = [
       { path: 'firmas', loadChildren: () => import('./pages/firmas/firmas.module').then(m => m.FirmasModule), title: 'Firmas Digitales' },
       { path: 'moldes', loadChildren: () => import('./pages/moldes/moldes.module').then(m => m.MoldesModule), title: 'Moldes y OPM' },
       { path: 'seguimiento-documentos', loadChildren: () => import('./pages/seguimiento-documentos/seguimiento-documentos.module').then(m => m.SeguimientoDocumentosModule), title: 'Seguimiento Documentos' },
+      { path: 'seguimiento-proyectos', loadChildren: () => import('./pages/seguimiento-proyectos/seguimiento-proyectos.module').then(m => m.SeguimientoProyectosModule), title: 'Seguimiento Financiero de Proyectos' },
       // { path: 'proyectos', component: ProyectosComponent, title: 'Proyectos' },
 
       { path: 'workflows', component: WorkflowManagerComponent, title: 'Gestor de Workflows' },
       { path: 'cartera-inconsistencias', component: CarteraInconsistenciasComponent, title: 'Cartera Inconsistencias' },
       { path: 'dashboard-financiero-inconsistencias', component: DashboardFinancieroInconsistenciasComponent, title: 'Dashboard Financiero Inconsistencias' },
       { path: 'security', component: AuthorizationManagerComponent, title: 'Administrador de autorizaciones' },
+      { path: 'colaboradores', component: ColaboradoresGestionComponent, title: 'Hub Central de Colaboradores' },
       { path: 'my-profile', component: UserProfileComponent, title: 'Mi Perfil' }
     ]
   },
+
+  // RUTA PÚBLICA: Firma por Token sin necesidad de login
+  { path: 'firmar-publico/:token', component: PublicFirmarDocumentoComponent, title: 'Firma Electrónica de Documento' },
 
   { path: '**', component: NopagefoundComponent, title: 'Página no encontrada' }
 ];

@@ -9,6 +9,8 @@ import { PanZoomComponent, PanZoomModel } from 'ngx-panzoom';
 import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
 
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
 // Extended interface for PanZoom model with additional properties
 interface PanZoomModelExtended extends PanZoomModel {
   zoomLevel: number;
@@ -28,6 +30,12 @@ export class ViewTechnicalSheetComponent implements OnInit {
   title = 'Vista previa de ficha técnica';
   loading = false;
   
+  // Pestañas y Ficha Técnica de Bordado
+  activeTab: 'specifications' | 'embroidery' = 'specifications';
+  embroiderySafeUrl: SafeResourceUrl | null = null;
+  hasEmbroideryFile: boolean = false;
+  isEmbroideryPdf: boolean = false;
+
   @Input() technicalDataSheet!: TechnicalDataSheet;
   @ViewChild('mainImage') mainImageEl!: ElementRef;
   @ViewChild('zoomWindow') zoomWindowEl!: ElementRef;
@@ -42,8 +50,6 @@ export class ViewTechnicalSheetComponent implements OnInit {
   zoomPosition = { x: 0, y: 0 };
   imageLoaded = false;
 
-  // Cargar imágenes del producto desde el technicalDataSheet
-  
   // Configuration for pan and zoom
   panzoomConfig = {
     zoomLevels: 5,
@@ -66,6 +72,7 @@ export class ViewTechnicalSheetComponent implements OnInit {
     private activatedRoute: ActivatedRoute,
     private router: Router,
     public authService: AuthService,
+    private sanitizer: DomSanitizer
   ) { }
 
   ngOnInit(): void {
@@ -154,11 +161,37 @@ export class ViewTechnicalSheetComponent implements OnInit {
         this.technicalDataSheetCurrent = sheet;
         console.log(this.technicalDataSheetCurrent);
         this.loadProductImages();
+        this.prepareEmbroideryUrl();
       },
       error: (error) => {
         Swal.fire('Error de carga', 'La información necesaria no se ha cargado correctamente', 'error');
       }
     });
+  }
+
+  prepareEmbroideryUrl(): void {
+    const rawUrl = this.technicalDataSheetCurrent?.logo_technical_data_sheet;
+    if (rawUrl && rawUrl.trim().length > 0) {
+      this.hasEmbroideryFile = true;
+      const lower = rawUrl.toLowerCase();
+      this.isEmbroideryPdf = lower.includes('.pdf');
+      
+      const urlToSanitize = this.isEmbroideryPdf 
+        ? (rawUrl.includes('#') ? rawUrl : rawUrl + '#toolbar=0&navpanes=0&scrollbar=0') 
+        : rawUrl;
+      this.embroiderySafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlToSanitize);
+    } else {
+      this.hasEmbroideryFile = false;
+      this.embroiderySafeUrl = null;
+      this.isEmbroideryPdf = false;
+    }
+  }
+
+  setActiveTab(tab: 'specifications' | 'embroidery'): void {
+    if (tab === 'embroidery' && !this.hasEmbroideryFile) {
+      return;
+    }
+    this.activeTab = tab;
   }
 
   getCategoryDescription(id: any): string {

@@ -27,6 +27,7 @@ interface MoldPart {
 })
 export class MoldesAdminComponent implements OnInit {
   @ViewChild('svgContainer') svgContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('moldImage') moldImage!: ElementRef<HTMLImageElement>;
 
   moldId: number | null = null;
   isEditMode = false;
@@ -221,6 +222,13 @@ export class MoldesAdminComponent implements OnInit {
     }
   }
 
+  switchToEditMode(): void {
+    this.isReadOnly = false;
+    if (this.moldId) {
+      this.router.navigate(['/moldes/admin', this.moldId]);
+    }
+  }
+
   // ==================== DRAFT LOGIC ====================
   private readonly DRAFT_KEY = 'draft_mold_admin';
 
@@ -296,14 +304,15 @@ export class MoldesAdminComponent implements OnInit {
         this.mold_category_id = mold.mold_category_id || null;
         this.customImageUrl = mold.image_signed_url || '';
         this.backImageUrl = mold.back_image_signed_url || '';
+        this.imageLoadError = false;
         
         const allParts = mold.parts || [];
         this.parts = allParts.filter((p: any) => p.view !== 'back');
         this.backParts = allParts.filter((p: any) => p.view === 'back');
 
         // Load garment template from the mold image if available
-        if (this.customImageUrl) {
-          this.currentTemplate = { image: this.customImageUrl };
+        if (this.customImageUrl || this.backImageUrl) {
+          this.currentTemplate = { image: this.customImageUrl || this.backImageUrl };
         }
       },
       error: (err) => {
@@ -342,7 +351,14 @@ export class MoldesAdminComponent implements OnInit {
     });
   }
 
+  imageLoadError = false;
+
+  onImageError(): void {
+    this.imageLoadError = true;
+  }
+
   onCustomImageUpload(event: Event): void {
+    this.imageLoadError = false;
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       const file = input.files[0];
@@ -483,23 +499,26 @@ export class MoldesAdminComponent implements OnInit {
   }
 
   onCanvasClick(event: MouseEvent): void {
-    if (!this.currentTemplate || this.isReadOnly || this.showEditModal) return;
+    if (this.isReadOnly || this.showEditModal || this.isDragging) return;
 
-    const target = event.target as HTMLElement;
-    // Si el clic fue en un pin existente, no crear uno nuevo
-    if (target.closest('.cdk-drag')) return;
+    const imgEl = this.moldImage?.nativeElement || this.svgContainer?.nativeElement?.querySelector('img');
+    if (!imgEl) return;
 
-    const container = this.svgContainer.nativeElement;
-    const rect = container.getBoundingClientRect();
+    const rect = imgEl.getBoundingClientRect();
     
-    // Posición porcentual para el PIN
+    // Posición porcentual relativa a la IMAGEN
     const xPerc = ((event.clientX - rect.left) / rect.width) * 100;
     const yPerc = ((event.clientY - rect.top) / rect.height) * 100;
+
+    if (xPerc < 0 || xPerc > 100 || yPerc < 0 || yPerc > 100) return;
 
     const roundedX = Math.round(xPerc * 100) / 100;
     const roundedY = Math.round(yPerc * 100) / 100;
 
-    this.popoverPosition = { x: event.clientX, y: event.clientY };
+    this.popoverPosition = {
+      x: Math.min(event.clientX, window.innerWidth - 280),
+      y: Math.min(event.clientY, window.innerHeight - 200)
+    };
 
     if (this.awaitingPosition) {
       const list = this.activeParts;
@@ -679,14 +698,17 @@ export class MoldesAdminComponent implements OnInit {
   startDragging(event: MouseEvent, index: number): void {
     if (this.isReadOnly) return;
     event.stopPropagation();
+    event.preventDefault();
+
     this.isDragging = true;
     this.draggedPartIndex = index;
     
+    const imgEl = this.moldImage?.nativeElement || this.svgContainer?.nativeElement?.querySelector('img');
+    
     const onMouseMove = (e: MouseEvent) => {
-      if (!this.isDragging || this.draggedPartIndex === null || !this.svgContainer) return;
+      if (!this.isDragging || this.draggedPartIndex === null || !imgEl) return;
       
-      const container = this.svgContainer.nativeElement;
-      const rect = container.getBoundingClientRect();
+      const rect = imgEl.getBoundingClientRect();
       
       let x = ((e.clientX - rect.left) / rect.width) * 100;
       let y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -699,8 +721,11 @@ export class MoldesAdminComponent implements OnInit {
     };
 
     const onMouseUp = () => {
-      this.isDragging = false;
-      this.draggedPartIndex = null;
+      setTimeout(() => {
+        this.isDragging = false;
+        this.draggedPartIndex = null;
+      }, 50);
+      this.saveDraft();
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };

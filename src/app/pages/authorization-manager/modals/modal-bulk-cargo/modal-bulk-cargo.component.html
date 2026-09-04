@@ -1,0 +1,405 @@
+<div *ngIf="isOpen" class="fixed inset-0 z-[9990] flex items-center justify-center p-3 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+  
+  <div class="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+    
+    <!-- HEADER DEL MODAL -->
+    <div class="px-6 py-4 bg-gradient-to-r from-purple-700 via-indigo-700 to-slate-900 text-white flex items-center justify-between border-b border-purple-500/30">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-white/10 text-white flex items-center justify-center border border-white/20 shadow-md">
+          <i class="bi bi-person-gear text-xl"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold uppercase tracking-wider text-white">Asignación Masiva por Cargo</h2>
+          <p class="text-xs text-purple-200 font-medium">Asigna procesos, roles, permisos y accesos de forma simultánea según la función</p>
+        </div>
+      </div>
+      
+      <button type="button" (click)="cerrar()" class="text-purple-200 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/10">
+        <i class="bi bi-x-lg text-lg"></i>
+      </button>
+    </div>
+
+    <!-- BODY DEL MODAL (SPLIT GRID 4 COLUMNAS CARGO / 8 COLUMNAS ASIGNACIONES) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+      
+      <!-- COLUMNA IZQUIERDA: SELECCIÓN DE CARGO (4 COLS) -->
+      <div class="lg:col-span-4 bg-slate-50/80 border-r border-slate-200 p-4 flex flex-col gap-3 overflow-hidden">
+        
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="bi bi-briefcase-fill text-purple-600"></i> 1. Selecciona Cargo
+          </span>
+          <span class="text-[10px] bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-full font-bold">
+            {{ cargosList.length }} Cargos
+          </span>
+        </div>
+
+        <!-- BUSCADOR DE CARGO -->
+        <div class="relative">
+          <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+          <input type="text" [(ngModel)]="busquedaCargo" placeholder="Buscar cargo..."
+                 class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 shadow-sm">
+        </div>
+
+        <!-- LISTA DE CARGOS -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 max-h-[220px] lg:max-h-none">
+          <button *ngFor="let item of cargosList" (click)="selectedCargo = item.cargo"
+                  type="button"
+                  class="w-full text-left p-3 rounded-2xl border transition-all flex items-center justify-between group"
+                  [ngClass]="selectedCargo === item.cargo
+                    ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-600/20'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50'">
+            <div class="truncate pr-2">
+              <div class="text-xs font-bold truncate group-hover:text-purple-700" [ngClass]="{'text-white group-hover:text-white': selectedCargo === item.cargo}">
+                {{ item.cargo }}
+              </div>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-extrabold shrink-0"
+                  [ngClass]="selectedCargo === item.cargo ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'">
+              {{ item.total }} pers
+            </span>
+          </button>
+
+          <div *ngIf="cargosList.length === 0" class="p-6 text-center text-slate-400 text-xs">
+            No se encontraron cargos coincidentes.
+          </div>
+        </div>
+
+        <!-- LISTADO VISTA PREVIA COLABORADORES DEL CARGO SELECCIONADO -->
+        <div *ngIf="selectedCargo" class="mt-2 pt-3 border-t border-slate-200 flex flex-col gap-2 overflow-hidden">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="font-bold text-slate-700 uppercase tracking-wider">Colaboradores Afectados:</span>
+            <span class="font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">{{ targetUsers.length }}</span>
+          </div>
+
+          <div class="max-h-40 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-200 p-2 space-y-1.5">
+            <div *ngFor="let u of targetUsers" class="flex items-center gap-2 text-xs p-1.5 hover:bg-slate-50 rounded-lg transition-colors">
+              <div class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                {{ (u.firstName || u.name || '?').charAt(0) }}
+              </div>
+              <div class="truncate">
+                <div class="font-bold text-slate-800 truncate text-[11px]">{{ u.firstName || u.name }} {{ u.lastName || '' }}</div>
+                <div class="text-[9px] text-slate-400 truncate">{{ u.email }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: CONFIGURACIÓN DE ASIGNACIONES (8 COLS) -->
+      <div class="lg:col-span-8 p-4 sm:p-6 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+        
+        <div *ngIf="!selectedCargo" class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+          <div class="w-16 h-16 rounded-3xl bg-purple-50 text-purple-600 flex items-center justify-center text-3xl mb-3 shadow-inner">
+            <i class="bi bi-arrow-left-circle"></i>
+          </div>
+          <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-1">Selecciona un Cargo Primero</h3>
+          <p class="text-xs text-slate-500 max-w-sm">Elige un cargo en la columna izquierda para comenzar a configurar sus asignaciones masivas.</p>
+        </div>
+
+        <div *ngIf="selectedCargo" class="flex flex-col gap-4">
+          
+          <!-- BANNER DEL CARGO SELECCIONADO -->
+          <div class="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl flex items-center justify-between shadow-xs">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-purple-600/20">
+                <i class="bi bi-briefcase"></i>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-purple-600 uppercase tracking-widest block">Cargo Seleccionado</span>
+                <h3 class="text-sm font-bold text-slate-900 uppercase tracking-tight">{{ selectedCargo }}</h3>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-bold text-slate-700 block">{{ targetUsers.length }} Colaboradores</span>
+              <span class="text-[10px] text-emerald-600 font-bold bg-emerald-100 px-2 py-0.5 rounded-full inline-block mt-0.5">Listos para recibir accesos</span>
+            </div>
+          </div>
+
+          <!-- NAVEGACIÓN DE PESTAÑAS (DEPARTAMENTOS / ROLES / PERMISOS / PLATAFORMAS) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+            <button (click)="activeTab = 'procesos'" type="button"
+                    class="py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    [ngClass]="activeTab === 'procesos' ? 'bg-white text-purple-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-diagram-2-fill"></i>
+              <span>1. Procesos ({{ selectedProcesoIds.length }})</span>
+            </button>
+            <button (click)="activeTab = 'perfiles'" type="button"
+                    class="py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    [ngClass]="activeTab === 'perfiles' ? 'bg-white text-purple-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-person-badge-fill"></i>
+              <span>2. Roles ({{ selectedPerfilIds.length }})</span>
+            </button>
+            <button (click)="activeTab = 'permisos'" type="button"
+                    class="py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    [ngClass]="activeTab === 'permisos' ? 'bg-white text-purple-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-key-fill"></i>
+              <span>3. Permisos ({{ selectedPermissionIds.length }})</span>
+            </button>
+            <button (click)="activeTab = 'switches'" type="button"
+                    class="py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    [ngClass]="activeTab === 'switches' ? 'bg-white text-purple-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-toggle2-on"></i>
+              <span>4. Plataformas</span>
+            </button>
+          </div>
+
+          <!-- PESTAÑA 1: PROCESOS / DEPARTAMENTOS -->
+          <div *ngIf="activeTab === 'procesos'" class="flex flex-col gap-3 animate-fadeIn">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="text-xs font-bold text-slate-700">Modo de Asignación de Procesos:</span>
+              <div class="flex items-center gap-2 text-xs font-bold">
+                <label class="cursor-pointer flex items-center gap-1">
+                  <input type="radio" name="procAction" [(ngModel)]="procesoAction" value="add" class="accent-purple-600">
+                  <span class="text-purple-700">Adicionar</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1 ml-2">
+                  <input type="radio" name="procAction" [(ngModel)]="procesoAction" value="replace" class="accent-purple-600">
+                  <span class="text-amber-700">Reemplazar</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1 ml-2">
+                  <input type="radio" name="procAction" [(ngModel)]="procesoAction" value="remove" class="accent-purple-600">
+                  <span class="text-rose-700">Remover</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="relative">
+              <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" [(ngModel)]="busquedaProcesos" placeholder="Buscar departamento o proceso..."
+                     class="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-purple-400">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar p-1">
+              <div *ngFor="let pr of procesosFiltrados" (click)="toggleProceso(pr.id)"
+                   class="p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
+                   [ngClass]="selectedProcesoIds.includes(pr.id) ? 'bg-purple-50 border-purple-400 shadow-xs' : 'bg-white border-slate-200 hover:border-slate-300'">
+                <div class="flex items-center gap-2">
+                  <i class="bi" [ngClass]="selectedProcesoIds.includes(pr.id) ? 'bi-check-square-fill text-purple-600 text-base' : 'bi-square text-slate-300 text-base'"></i>
+                  <span class="text-xs font-bold text-slate-800">{{ pr.nombre }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 2: ROLES / PERFILES -->
+          <div *ngIf="activeTab === 'perfiles'" class="flex flex-col gap-3 animate-fadeIn">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <span class="text-xs font-bold text-slate-700">Modo de Asignación de Roles / Perfiles:</span>
+              <div class="flex items-center gap-2 text-xs font-bold">
+                <label class="cursor-pointer flex items-center gap-1">
+                  <input type="radio" name="perfAction" [(ngModel)]="perfilAction" value="add" class="accent-purple-600">
+                  <span class="text-purple-700">Adicionar</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1 ml-2">
+                  <input type="radio" name="perfAction" [(ngModel)]="perfilAction" value="replace" class="accent-purple-600">
+                  <span class="text-amber-700">Reemplazar</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1 ml-2">
+                  <input type="radio" name="perfAction" [(ngModel)]="perfilAction" value="remove" class="accent-purple-600">
+                  <span class="text-rose-700">Remover</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="relative">
+              <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" [(ngModel)]="busquedaPerfiles" placeholder="Buscar rol o perfil..."
+                     class="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-purple-400">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar p-1">
+              <div *ngFor="let prof of perfilesFiltrados" (click)="togglePerfil(prof.id)"
+                   class="p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
+                   [ngClass]="selectedPerfilIds.includes(prof.id) ? 'bg-purple-50 border-purple-400 shadow-xs' : 'bg-white border-slate-200 hover:border-slate-300'">
+                <div class="flex items-center gap-2">
+                  <i class="bi" [ngClass]="selectedPerfilIds.includes(prof.id) ? 'bi-check-square-fill text-purple-600 text-base' : 'bi-square text-slate-300 text-base'"></i>
+                  <span class="text-xs font-bold text-slate-800">{{ prof.name }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 3: PERMISOS DIRECTOS -->
+          <div *ngIf="activeTab === 'permisos'" class="flex flex-col gap-3 animate-fadeIn">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div class="flex items-center gap-3 text-xs font-bold">
+                <span>Estado:</span>
+                <label class="cursor-pointer flex items-center gap-1">
+                  <input type="radio" name="permAllow" [(ngModel)]="permissionAllow" value="ALLOW" class="accent-emerald-600">
+                  <span class="text-emerald-700">Permitir (ALLOW)</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1 ml-2">
+                  <input type="radio" name="permAllow" [(ngModel)]="permissionAllow" value="DENY" class="accent-rose-600">
+                  <span class="text-rose-700">Denegar (DENY)</span>
+                </label>
+              </div>
+
+              <div class="flex items-center gap-3 text-xs font-bold">
+                <span>Acción:</span>
+                <label class="cursor-pointer flex items-center gap-1">
+                  <input type="radio" name="permAction" [(ngModel)]="permissionAction" value="add" class="accent-purple-600">
+                  <span class="text-purple-700">Asignar</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-1 ml-2">
+                  <input type="radio" name="permAction" [(ngModel)]="permissionAction" value="remove" class="accent-purple-600">
+                  <span class="text-rose-700">Remover</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="relative">
+              <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+              <input type="text" [(ngModel)]="busquedaPermisos" placeholder="Buscar permiso por nombre o módulo..."
+                     class="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:border-purple-400">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar p-1">
+              <div *ngFor="let perm of permisosFiltrados" (click)="togglePermiso(perm.id)"
+                   class="p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between"
+                   [ngClass]="selectedPermissionIds.includes(perm.id) ? 'bg-purple-50 border-purple-400 shadow-xs' : 'bg-white border-slate-200 hover:border-slate-300'">
+                <div class="flex items-center gap-2">
+                  <i class="bi" [ngClass]="selectedPermissionIds.includes(perm.id) ? 'bi-check-square-fill text-purple-600 text-base' : 'bi-square text-slate-300 text-base'"></i>
+                  <div>
+                    <div class="text-xs font-bold text-slate-800">{{ perm.name }}</div>
+                    <div class="text-[10px] text-slate-400">{{ perm.module?.name }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑA 4: SWITCHES DE PLATAFORMAS & ESTADO -->
+          <div *ngIf="activeTab === 'switches'" class="flex flex-col gap-3 animate-fadeIn">
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
+              <i class="bi bi-info-circle-fill text-amber-600 text-base shrink-0"></i>
+              <span>Marca la casilla <strong>"Modificar"</strong> únicamente en los accesos de plataforma que deseas actualizar para todo el cargo.</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1">
+              <!-- SAINT -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input type="checkbox" [(ngModel)]="switchesConfig.modificar_saint" class="accent-purple-600">
+                  <span>Plataforma Saint</span>
+                </label>
+                <div *ngIf="switchesConfig.modificar_saint" class="flex items-center gap-2">
+                  <label class="text-xs font-bold cursor-pointer" [ngClass]="switchesConfig.requiere_saint ? 'text-blue-600' : 'text-slate-400'">
+                    <input type="checkbox" [(ngModel)]="switchesConfig.requiere_saint" class="accent-blue-600">
+                    {{ switchesConfig.requiere_saint ? 'Requerido' : 'Desactivado' }}
+                  </label>
+                </div>
+              </div>
+
+              <!-- CONECTA -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input type="checkbox" [(ngModel)]="switchesConfig.modificar_conecta" class="accent-purple-600">
+                  <span>Plataforma Conecta</span>
+                </label>
+                <div *ngIf="switchesConfig.modificar_conecta" class="flex items-center gap-2">
+                  <label class="text-xs font-bold cursor-pointer" [ngClass]="switchesConfig.requiere_conecta ? 'text-purple-600' : 'text-slate-400'">
+                    <input type="checkbox" [(ngModel)]="switchesConfig.requiere_conecta" class="accent-purple-600">
+                    {{ switchesConfig.requiere_conecta ? 'Requerido' : 'Desactivado' }}
+                  </label>
+                </div>
+              </div>
+
+              <!-- SIESA NUBE -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input type="checkbox" [(ngModel)]="switchesConfig.modificar_siesa" class="accent-purple-600">
+                  <span>Siesa Nube</span>
+                </label>
+                <div *ngIf="switchesConfig.modificar_siesa" class="flex items-center gap-2">
+                  <label class="text-xs font-bold cursor-pointer" [ngClass]="switchesConfig.requiere_siesa_nube ? 'text-amber-600' : 'text-slate-400'">
+                    <input type="checkbox" [(ngModel)]="switchesConfig.requiere_siesa_nube" class="accent-amber-600">
+                    {{ switchesConfig.requiere_siesa_nube ? 'Requerido' : 'Desactivado' }}
+                  </label>
+                </div>
+              </div>
+
+              <!-- CORREO WORKSPACE -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input type="checkbox" [(ngModel)]="switchesConfig.modificar_correo" class="accent-purple-600">
+                  <span>Correo Google Workspace</span>
+                </label>
+                <div *ngIf="switchesConfig.modificar_correo" class="flex items-center gap-2">
+                  <label class="text-xs font-bold cursor-pointer" [ngClass]="switchesConfig.requiere_correo ? 'text-emerald-600' : 'text-slate-400'">
+                    <input type="checkbox" [(ngModel)]="switchesConfig.requiere_correo" class="accent-emerald-600">
+                    {{ switchesConfig.requiere_correo ? 'Requerido' : 'Desactivado' }}
+                  </label>
+                </div>
+              </div>
+
+              <!-- GLPI -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input type="checkbox" [(ngModel)]="switchesConfig.modificar_glpi" class="accent-purple-600">
+                  <span>Mesa de Ayuda GLPI</span>
+                </label>
+                <div *ngIf="switchesConfig.modificar_glpi" class="flex items-center gap-2">
+                  <label class="text-xs font-bold cursor-pointer" [ngClass]="switchesConfig.requiere_glpi ? 'text-indigo-600' : 'text-slate-400'">
+                    <input type="checkbox" [(ngModel)]="switchesConfig.requiere_glpi" class="accent-indigo-600">
+                    {{ switchesConfig.requiere_glpi ? 'Requerido' : 'Desactivado' }}
+                  </label>
+                </div>
+              </div>
+
+              <!-- ESTADO GLOBAL -->
+              <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input type="checkbox" [(ngModel)]="switchesConfig.modificar_estado" class="accent-purple-600">
+                  <span>Estado de Cuenta</span>
+                </label>
+                <div *ngIf="switchesConfig.modificar_estado" class="flex items-center gap-2 text-xs font-bold">
+                  <select [(ngModel)]="switchesConfig.estado" class="bg-slate-100 border border-slate-200 rounded px-2 py-1 outline-none text-xs">
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- FOOTER DEL MODAL CON ACCIÓN Y CONFIRMACIÓN -->
+    <div class="px-6 py-4 bg-slate-100 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+      
+      <div class="text-xs text-slate-600 font-medium">
+        <span *ngIf="selectedCargo && hasPendingChanges" class="text-purple-700 font-bold flex items-center gap-1">
+          <i class="bi bi-check-circle-fill text-purple-600"></i>
+          Cambios listos para {{ targetUsers.length }} colaboradores de "{{ selectedCargo }}".
+        </span>
+        <span *ngIf="selectedCargo && !hasPendingChanges" class="text-slate-400">
+          Selecciona procesos, roles o permisos para habilitar la asignación masiva.
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <button type="button" (click)="cerrar()" [disabled]="submitting"
+                class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs">
+          Cancelar
+        </button>
+        
+        <button type="button" (click)="confirmarAsignacionMasiva()" [disabled]="submitting || !hasPendingChanges"
+                class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-md shadow-purple-600/20 disabled:opacity-50 flex items-center justify-center gap-2">
+          <span *ngIf="submitting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <i *ngIf="!submitting" class="bi bi-send-check-fill"></i>
+          Aplicar Asignación Masiva
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

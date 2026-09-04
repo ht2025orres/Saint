@@ -14,6 +14,15 @@ export class CosteoDetailComponent implements OnInit {
   isLoading = false;
 
   activeTab: 'items' | 'versiones' = 'items';
+  selectedOpmItem: any = null;
+
+  openOpmModal(item: any): void {
+    this.selectedOpmItem = item;
+  }
+
+  closeOpmModal(): void {
+    this.selectedOpmItem = null;
+  }
 
   constructor(
     private comercialService: ComercialService,
@@ -135,6 +144,88 @@ export class CosteoDetailComponent implements OnInit {
       'COSTEADO': 'Costeado', 'APROBADO': 'Aprobado', 'RECHAZADO': 'Rechazado',
     };
     return map[estado] || estado;
+  }
+
+  cambiarEstadoCosteo(estado: string): void {
+    Swal.fire({
+      title: '¿Cambiar estado de costeo?',
+      text: `El proceso de costeo pasará a: ${this.getProcesoLabel(estado)}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.comercialService.cambiarEstadoCosteo(this.solicitudId, estado).subscribe({
+          next: (res) => {
+            if (this.costeo) {
+              this.costeo.estado_costeo = estado as any;
+              if (res.data) {
+                this.costeo.fecha_inicio_costeo = res.data.fecha_inicio_costeo;
+                this.costeo.fecha_fin_costeo = res.data.fecha_fin_costeo;
+              }
+            }
+            Swal.fire({ title: 'Costeo Actualizado', icon: 'success', timer: 1500, showConfirmButton: false });
+          },
+          error: () => Swal.fire('Error', 'No se pudo cambiar el estado de costeo', 'error')
+        });
+      }
+    });
+  }
+
+  cambiarEstadoMuestra(estado: string): void {
+    Swal.fire({
+      title: '¿Cambiar estado de muestra?',
+      text: `El proceso de desarrollo de muestra pasará a: ${this.getProcesoLabel(estado)}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.comercialService.cambiarEstadoMuestra(this.solicitudId, estado).subscribe({
+          next: (res) => {
+            if (this.costeo) {
+              this.costeo.estado_muestra = estado as any;
+              if (res.data) {
+                this.costeo.fecha_inicio_muestra = res.data.fecha_inicio_muestra;
+                this.costeo.fecha_fin_muestra = res.data.fecha_fin_muestra;
+              }
+            }
+            Swal.fire({ title: 'Muestra Actualizada', icon: 'success', timer: 1500, showConfirmButton: false });
+          },
+          error: () => Swal.fire('Error', 'No se pudo cambiar el estado de muestra', 'error')
+        });
+      }
+    });
+  }
+
+  getProcesoLabel(estado: string | undefined, requiere: boolean = false): string {
+    if (requiere && (!estado || estado === 'NO_REQUERIDO')) {
+      return 'Sin Iniciar';
+    }
+    const map: Record<string, string> = {
+      'PENDIENTE': 'Sin Iniciar',
+      'EN_PROCESO': 'En Proceso',
+      'COMPLETADO': 'Completado',
+      'RECHAZADO': 'Rechazado',
+      'NO_REQUERIDO': 'No Requerido',
+    };
+    return map[estado || 'PENDIENTE'] || (estado || 'Sin Iniciar');
+  }
+
+  getProcesoBadgeClass(estado: string | undefined, requiere: boolean = false): string {
+    if (requiere && (!estado || estado === 'NO_REQUERIDO')) {
+      return 'badge-en-costeo';
+    }
+    const map: Record<string, string> = {
+      'PENDIENTE': 'badge-en-costeo',
+      'EN_PROCESO': 'badge-enviado',
+      'COMPLETADO': 'badge-costeado',
+      'RECHAZADO': 'badge-rechazado',
+      'NO_REQUERIDO': 'badge-borrador',
+    };
+    return map[estado || 'PENDIENTE'] || 'badge-borrador';
   }
 
   getTotalUnidades(): number {

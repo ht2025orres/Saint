@@ -16,6 +16,18 @@
         </p>
       </div>
       <div class="header-actions">
+        <button *ngIf="!costeo.estado || costeo.estado === 'BORRADOR'" 
+                (click)="cambiarEstado('ENVIADO')" 
+                class="btn-action bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow transition-all flex items-center gap-1.5"
+                title="Enviar Solicitud (Sacar de Borrador)">
+          <i class="bi bi-send-fill"></i> Enviar Solicitud
+        </button>
+        <button *ngIf="costeo.estado === 'ENVIADO'" 
+                (click)="cambiarEstado('BORRADOR')" 
+                class="btn-action bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5"
+                title="Volver a Borrador">
+          <i class="bi bi-arrow-counterclockwise"></i> A Borrador
+        </button>
         <button class="btn-action btn-edit" (click)="editCosteo()" title="Editar">
           <i class="bi bi-pencil"></i>
         </button>
@@ -96,25 +108,41 @@
     </div>
   </div>
 
-  <!-- Estado Actions -->
-  <div class="estado-actions" *ngIf="costeo.estado === 'BORRADOR'">
-    <span class="estado-hint">Acciones de estado:</span>
-    <button class="btn-estado btn-enviado" (click)="cambiarEstado('ENVIADO')">
-      <i class="bi bi-send"></i> Enviar
-    </button>
-  </div>
-  <div class="estado-actions" *ngIf="costeo.estado === 'EN_COSTEO'">
-    <button class="btn-estado btn-costeado" (click)="cambiarEstado('COSTEADO')">
-      <i class="bi bi-check-circle"></i> Marcar Costeado
-    </button>
-  </div>
-  <div class="estado-actions" *ngIf="costeo.estado === 'COSTEADO'">
-    <button class="btn-estado btn-aprobado" (click)="cambiarEstado('APROBADO')">
-      <i class="bi bi-check-all"></i> Aprobar
-    </button>
-    <button class="btn-estado btn-rechazado" (click)="cambiarEstado('RECHAZADO')">
-      <i class="bi bi-x-circle"></i> Rechazar
-    </button>
+  <!-- Paneles de Informativos de Estado de Procesos Independientes -->
+  <div class="summary-grid mb-4" *ngIf="costeo.requiere_costeo || costeo.requiere_muestra">
+    <!-- Panel Proceso Costeo -->
+    <div *ngIf="costeo.requiere_costeo" class="info-card mb-0 border-l-4 border-l-violet-500">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-calculator text-violet-600 font-bold"></i>
+          <span class="font-black text-xs text-slate-800 uppercase tracking-tight">Proceso de Costeo (Producción)</span>
+        </div>
+        <span class="estado-badge" [ngClass]="getProcesoBadgeClass(costeo.estado_costeo, costeo.requiere_costeo)">
+          {{ getProcesoLabel(costeo.estado_costeo, costeo.requiere_costeo) }}
+        </span>
+      </div>
+      <div class="text-xs text-slate-500">
+        <span *ngIf="costeo.fecha_inicio_costeo">Iniciado: {{ costeo.fecha_inicio_costeo | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="!costeo.fecha_inicio_costeo" class="italic text-slate-400">Sin iniciar por el área de costes</span>
+      </div>
+    </div>
+
+    <!-- Panel Proceso Muestra -->
+    <div *ngIf="costeo.requiere_muestra" class="info-card mb-0 border-l-4 border-l-pink-500">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-scissors text-pink-600 font-bold"></i>
+          <span class="font-black text-xs text-slate-800 uppercase tracking-tight">Proceso de Muestra (Producción)</span>
+        </div>
+        <span class="estado-badge" [ngClass]="getProcesoBadgeClass(costeo.estado_muestra, costeo.requiere_muestra)">
+          {{ getProcesoLabel(costeo.estado_muestra, costeo.requiere_muestra) }}
+        </span>
+      </div>
+      <div class="text-xs text-slate-500">
+        <span *ngIf="costeo.fecha_inicio_muestra">Iniciado: {{ costeo.fecha_inicio_muestra | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="!costeo.fecha_inicio_muestra" class="italic text-slate-400">Sin iniciar por confección</span>
+      </div>
+    </div>
   </div>
 
   <!-- Tabs -->
@@ -154,6 +182,73 @@
         <div *ngFor="let t of item.tallas" class="talla-chip">
           <span class="talla-name">{{ t.talla }}</span>
           <span class="talla-qty">{{ t.cantidad }}</span>
+        </div>
+      </div>
+      <!-- INFORMACIÓN COMPLETA DE FICHA Y MOLDE OPM (VISTA COMERCIAL) -->
+      <div *ngIf="item.mold || item.technical_spec" class="opm-detail-section" style="margin-top: 14px; padding: 16px; background: #ffffff; border: 1px solid #cffafe; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <!-- ENCABEZADO OPM -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9;">
+          <div>
+            <span style="font-weight: 900; font-size: 12px; color: #155e75; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-diagram-3-fill" style="color: #0891b2; font-size: 14px;"></i> Ficha OPM: {{ item.mold?.name || 'Molde asignado' }}
+            </span>
+            <p style="font-size: 10px; color: #94a3b8; margin-top: 2px;" *ngIf="item.technical_spec?.reference || item.technical_spec?.user_created">
+              Ref: <span style="font-weight: 700; color: #475569;">{{ item.technical_spec?.reference || ('SPEC-' + item.technical_spec?.id) }}</span>
+              <span *ngIf="item.technical_spec?.user_created"> · Creado por: {{ item.technical_spec.user_created }}</span>
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span *ngIf="item.mold?.category?.name" style="padding: 3px 10px; background: #ecfeff; color: #0e7490; border-radius: 8px; font-size: 10px; font-weight: 800; border: 1px solid #cffafe; text-transform: uppercase;">
+              Categoría: {{ item.mold.category.name }}
+            </span>
+            <span *ngIf="item.technical_spec?.status" style="padding: 3px 10px; background: #ecfdf5; color: #047857; border-radius: 8px; font-size: 10px; font-weight: 800; border: 1px solid #a7f3d0; text-transform: uppercase;">
+              {{ item.technical_spec.status }}
+            </span>
+          </div>
+        </div>
+
+        <!-- IMÁGENES DEL MOLDE -->
+        <div *ngIf="item.mold?.image_signed_url || item.mold?.back_image_signed_url" style="display: flex; align-items: center; gap: 16px; margin: 12px 0;">
+          <div *ngIf="item.mold.image_signed_url" style="text-align: center;">
+            <span style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px;">Vista Frontal</span>
+            <img [src]="item.mold.image_signed_url" alt="Frontal Molde" style="max-height: 100px; border-radius: 8px; border: 1px solid #e2e8f0; padding: 4px; background: #f8fafc;">
+          </div>
+          <div *ngIf="item.mold.back_image_signed_url" style="text-align: center;">
+            <span style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px;">Vista Posterior</span>
+            <img [src]="item.mold.back_image_signed_url" alt="Posterior Molde" style="max-height: 100px; border-radius: 8px; border: 1px solid #e2e8f0; padding: 4px; background: #f8fafc;">
+          </div>
+        </div>
+
+        <!-- COMPONENTES OPM -->
+        <div *ngIf="item.technical_spec?.parts?.length" style="margin-top: 10px;">
+          <span style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">
+            <i class="bi bi-list-stars" style="color: #0891b2;"></i> Componentes OPM Vinculados ({{ item.technical_spec.parts.length }})
+          </span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px;">
+            <div *ngFor="let part of item.technical_spec.parts" style="background: #f8fafc; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 11px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: 800; color: #1e293b; font-size: 12px;">{{ part.name || 'Componente' }}</span>
+                <span [style.background]="part.item_type === 'tela' ? '#dbeafe' : (part.item_type === 'insumo' ? '#d1fae5' : '#f3e8ff')"
+                      [style.color]="part.item_type === 'tela' ? '#1e40af' : (part.item_type === 'insumo' ? '#065f46' : '#6b21a8')"
+                      style="padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+                  {{ part.item_type || 'parte' }}
+                </span>
+              </div>
+
+              <div *ngIf="part.client_spec" style="font-size: 11px; color: #334155; margin-top: 4px; background: #ffffff; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                <span style="font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block;">Espec. Cliente:</span>
+                {{ part.client_spec }}
+              </div>
+              <div *ngIf="part.technical_spec" style="font-size: 11px; color: #164e63; margin-top: 4px; background: #ecfeff; padding: 6px; border-radius: 6px; border: 1px solid #a5f3fc;">
+                <span style="font-size: 9px; font-weight: 700; color: #0891b2; text-transform: uppercase; display: block;">Espec. Técnica:</span>
+                {{ part.technical_spec }}
+              </div>
+
+              <div *ngIf="part.inventory_reference || part.inventory_description" style="font-size: 10px; color: #4338ca; font-weight: 700; margin-top: 6px;">
+                <i class="bi bi-box-seam"></i> Material: {{ part.inventory_reference }} — {{ part.inventory_description }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -215,4 +310,127 @@
 <div *ngIf="isLoading" class="loading-full">
   <div class="loader-spinner"></div>
   <p>Cargando costeo...</p>
+</div>
+
+<!-- MODAL OVERLAY COMPLETO DE FICHA OPM -->
+<div *ngIf="selectedOpmItem" style="position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div style="background: #ffffff; border-radius: 24px; max-width: 1000px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #cbd5e1;">
+    <!-- MODAL HEADER -->
+    <div style="padding: 20px 24px; background: #0f172a; color: #ffffff; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; border-radius: 12px; background: #0891b2; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900;">
+          <i class="bi bi-diagram-3-fill"></i>
+        </div>
+        <div>
+          <span style="font-size: 10px; font-weight: 800; color: #22d3ee; text-transform: uppercase; letter-spacing: 1px; display: block;">Ficha OPM & Especificación Técnica</span>
+          <h2 style="font-size: 18px; font-weight: 900; color: #ffffff; margin: 0;">{{ selectedOpmItem.descripcion }}</h2>
+        </div>
+      </div>
+      <button (click)="closeOpmModal()" style="width: 36px; height: 36px; border-radius: 12px; background: #1e293b; color: #cbd5e1; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- MODAL BODY -->
+    <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+      <!-- GENERAL INFO -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; background: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0; font-size: 12px;">
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px;">Molde Base</span>
+          <strong style="color: #1e293b; font-size: 14px; display: block;">{{ selectedOpmItem.mold?.name || 'Molde Asignado' }}</strong>
+          <span style="color: #64748b;" *ngIf="selectedOpmItem.mold?.category?.name">Categoría: {{ selectedOpmItem.mold.category.name }}</span>
+        </div>
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px;">Referencia Ficha</span>
+          <strong style="color: #0e7490; font-size: 14px; display: block;">{{ selectedOpmItem.technical_spec?.reference || ('SPEC-' + selectedOpmItem.technical_spec?.id) }}</strong>
+          <span style="color: #64748b;" *ngIf="selectedOpmItem.technical_spec?.user_created">Creado por: {{ selectedOpmItem.technical_spec.user_created }}</span>
+        </div>
+        <div>
+          <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px;">Ítem Solicitud</span>
+          <strong style="color: #1e293b; display: block;">{{ selectedOpmItem.siesa_referencia || 'Ítem Local' }}</strong>
+          <span style="color: #64748b;" *ngIf="selectedOpmItem.item_cliente">Ref Cliente: {{ selectedOpmItem.item_cliente }}</span>
+        </div>
+      </div>
+
+      <!-- MOLD IMAGES -->
+      <div *ngIf="selectedOpmItem.mold?.image_signed_url || selectedOpmItem.mold?.back_image_signed_url" style="background: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0;">
+        <h4 style="font-size: 12px; font-weight: 900; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;"><i class="bi bi-image" style="color: #0891b2; margin-right: 6px;"></i> Vistas Gráficas del Molde</h4>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-around; gap: 24px;">
+          <div *ngIf="selectedOpmItem.mold.image_signed_url" style="text-align: center;">
+            <span style="font-size: 10px; font-weight: 700; color: #64748b; display: block; margin-bottom: 8px;">Vista Frontal</span>
+            <img [src]="selectedOpmItem.mold.image_signed_url" alt="Frontal" style="max-height: 220px; width: auto; object-fit: contain; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; padding: 8px;">
+          </div>
+          <div *ngIf="selectedOpmItem.mold.back_image_signed_url" style="text-align: center;">
+            <span style="font-size: 10px; font-weight: 700; color: #64748b; display: block; margin-bottom: 8px;">Vista Posterior</span>
+            <img [src]="selectedOpmItem.mold.back_image_signed_url" alt="Posterior" style="max-height: 220px; width: auto; object-fit: contain; border-radius: 12px; border: 1px solid #e2e8f0; background: #ffffff; padding: 8px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- FULL PARTS TABLE -->
+      <div style="background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;">
+        <div style="padding: 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="font-size: 12px; font-weight: 900; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
+            <i class="bi bi-table" style="color: #0891b2; margin-right: 6px;"></i> Tabla Completa de Componentes y Materiales OPM
+          </h4>
+          <span style="font-size: 12px; font-weight: 700; color: #64748b;">Total: {{ (selectedOpmItem.technical_spec?.parts || selectedOpmItem.mold?.parts)?.length || 0 }} elementos</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; text-align: left; font-size: 12px; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 10px; font-weight: 900; border-bottom: 1px solid #e2e8f0;">
+                <th style="padding: 12px;">#</th>
+                <th style="padding: 12px;">Componente / Pieza</th>
+                <th style="padding: 12px;">Tipo</th>
+                <th style="padding: 12px;">Material Siesa</th>
+                <th style="padding: 12px;">Espec. Cliente</th>
+                <th style="padding: 12px;">Espec. Técnica</th>
+                <th style="padding: 12px;">Posición (X,Y)</th>
+              </tr>
+            </thead>
+            <tbody style="color: #334155;">
+              <tr *ngFor="let part of (selectedOpmItem.technical_spec?.parts || selectedOpmItem.mold?.parts); let idx = index" style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 12px; font-weight: 700; color: #94a3b8;">{{ idx + 1 }}</td>
+                <td style="padding: 12px; font-weight: 900; color: #1e293b;">{{ part.name || part.garment_component?.display_name || 'Parte' }}</td>
+                <td style="padding: 12px;">
+                  <span [style.background]="part.item_type === 'tela' ? '#dbeafe' : (part.item_type === 'insumo' ? '#d1fae5' : '#f3e8ff')"
+                        [style.color]="part.item_type === 'tela' ? '#1e40af' : (part.item_type === 'insumo' ? '#065f46' : '#6b21a8')"
+                        style="padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 900; text-transform: uppercase;">
+                    {{ part.item_type || 'parte' }}
+                  </span>
+                </td>
+                <td style="padding: 12px;">
+                  <span *ngIf="part.inventory_reference || part.inventory_description" style="font-weight: 700; color: #4338ca;">
+                    {{ part.inventory_reference }}
+                    <span style="font-weight: 400; color: #64748b; display: block; font-size: 10px;" *ngIf="part.inventory_description">{{ part.inventory_description }}</span>
+                  </span>
+                  <span *ngIf="!part.inventory_reference && !part.inventory_description" style="color: #94a3b8; font-style: italic;">N/A</span>
+                </td>
+                <td style="padding: 12px; max-width: 200px; font-size: 11px;">
+                  <span *ngIf="part.client_spec" style="color: #334155; font-weight: 500;">{{ part.client_spec }}</span>
+                  <span *ngIf="!part.client_spec" style="color: #94a3b8; font-style: italic;">N/A</span>
+                </td>
+                <td style="padding: 12px; max-width: 200px; font-size: 11px;">
+                  <span *ngIf="part.technical_spec" style="color: #164e63; font-weight: 600;">{{ part.technical_spec }}</span>
+                  <span *ngIf="!part.technical_spec" style="color: #94a3b8; font-style: italic;">N/A</span>
+                </td>
+                <td style="padding: 12px; font-size: 10px; font-weight: 700; color: #64748b;">
+                  <span *ngIf="part.position_x !== null && part.position_x !== undefined">X: {{ part.position_x }}% · Y: {{ part.position_y }}%</span>
+                  <span *ngIf="part.position_x === null || part.position_x === undefined" style="color: #94a3b8;">General</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL FOOTER -->
+    <div style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+      <button (click)="closeOpmModal()" style="padding: 8px 20px; background: #1e293b; color: #ffffff; font-weight: 700; font-size: 12px; border-radius: 12px; border: none; cursor: pointer;">
+        Cerrar Vista OPM
+      </button>
+    </div>
+  </div>
 </div>

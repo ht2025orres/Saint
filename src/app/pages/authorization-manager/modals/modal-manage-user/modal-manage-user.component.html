@@ -1,147 +1,475 @@
-<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto">
-  <div (click)="$event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+<div *ngIf="visible" (click)="cerrar()" class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
+  <div (click)="$event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] xl:max-w-7xl overflow-hidden border border-slate-200 flex flex-col h-[90vh] max-h-[92vh] animate-in zoom-in-95 duration-200">
     
     <!-- HEADER -->
-    <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 flex justify-between items-center shrink-0 border-b border-indigo-950/50">
+    <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 flex justify-between items-center shrink-0 border-b border-indigo-900/50 shadow-sm">
       <div class="flex items-center gap-3">
-        <div class="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-          <i class="bi bi-person-gear text-xl text-indigo-400"></i>
+        <div class="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+          <i class="bi bi-person-gear text-2xl text-indigo-400"></i>
         </div>
         <div>
-          <h2 class="text-sm font-black uppercase tracking-widest text-slate-100">
-            {{ editingUser?.id ? 'Gestión de Usuario' : 'Crear Nuevo Usuario' }}
+          <h2 class="text-base font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <span>{{ editingUser?.id ? 'Gestión de Usuario' : 'Crear Nuevo Usuario' }}</span>
+            <span *ngIf="editingUser?.id" class="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1.5"
+                  [ngClass]="editingUser?.enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'">
+              <span class="w-2 h-2 rounded-full" [ngClass]="editingUser?.enabled ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"></span>
+              {{ editingUser?.enabled ? 'Activo' : 'Inactivo' }}
+            </span>
           </h2>
-          <p class="text-[11px] text-slate-400 font-medium" *ngIf="editingUser?.id">
-            {{ editingUser?.firstName }} {{ editingUser?.lastName }} ({{ editingUser?.email }})
+          <p class="text-xs text-slate-300 font-medium" *ngIf="editingUser?.id">
+            {{ editingUser?.firstName }} {{ editingUser?.lastName }} <span class="text-indigo-300 font-semibold">({{ editingUser?.email }})</span>
           </p>
         </div>
-        <span *ngIf="editingUser?.id" class="ml-2 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full flex items-center gap-1.5"
-              [ngClass]="editingUser?.enabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'">
-          <span class="w-1.5 h-1.5 rounded-full" [ngClass]="editingUser?.enabled ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'"></span>
-          {{ editingUser?.enabled ? 'Activo' : 'Inactivo' }}
-        </span>
       </div>
-      <button (click)="cerrar()" class="text-slate-400 hover:text-white hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-all duration-200">
-        <i class="bi bi-x-lg text-sm"></i>
+      <button (click)="cerrar()" class="text-slate-400 hover:text-white hover:bg-white/10 rounded-full w-9 h-9 flex items-center justify-center transition-all duration-200">
+        <i class="bi bi-x-lg text-base"></i>
       </button>
     </div>
 
     <!-- BODY -->
-    <div class="p-6 overflow-y-auto bg-slate-50 flex-1 custom-scrollbar flex flex-col gap-6">
+    <div class="p-6 overflow-y-auto bg-slate-50/70 flex-1 custom-scrollbar flex flex-col gap-6">
       
       <!-- PERFILES Y PROCESOS ASIGNADOS -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
         <!-- PERFILES ASIGNADOS -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-3">
-          <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-            <i class="bi bi-people text-indigo-600"></i>
-            <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Perfiles Asignados</h6>
+        <div class="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col gap-3 relative">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <i class="bi bi-people-fill text-indigo-600 text-base"></i>
+              <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Perfiles Asignados</h6>
+            </div>
+            <span class="text-[11px] font-bold bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-md border border-indigo-100">
+              {{ userProfiles.length }} seleccionados
+            </span>
           </div>
-          
-          <div class="max-h-24 overflow-y-auto custom-scrollbar pr-1">
-            <div class="flex flex-wrap gap-2.5">
-              <label *ngFor="let prof of getSortedProfiles()" 
-                     class="flex items-center gap-2 px-3 py-1.5 border rounded-xl cursor-pointer transition-all duration-200 select-none group"
-                     [ngClass]="hasProfile(prof.id) 
-                       ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
-                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-55'">
-                <input type="checkbox" [checked]="hasProfile(prof.id)" (change)="toggleProfile(prof, $event)" [disabled]="isEditingSelf" class="hidden">
-                <i class="bi" [ngClass]="hasProfile(prof.id) ? 'bi-patch-check-fill text-indigo-600' : 'bi-circle text-slate-300 group-hover:text-slate-400'"></i>
-                <span class="text-[11px]">{{ prof.name }}</span>
-              </label>
+
+          <!-- Trigger Button Dropdown -->
+          <div class="relative">
+            <div *ngIf="isProfileDropdownOpen" (click)="isProfileDropdownOpen = false; $event.stopPropagation()" class="fixed inset-0 z-40 bg-transparent"></div>
+
+            <button type="button" (click)="toggleProfileDropdown(); $event.stopPropagation()"
+              class="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100/80 transition-all z-50 relative">
+              <div class="flex items-center gap-2 truncate">
+                <i class="bi bi-shield-lock-fill text-indigo-600 text-sm"></i>
+                <span class="truncate font-bold">{{ getSelectedProfilesText() }}</span>
+              </div>
+              <i class="bi text-xs text-slate-400 transition-transform" [ngClass]="isProfileDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+
+            <!-- Dropdown Menu con buscador -->
+            <div *ngIf="isProfileDropdownOpen" (click)="$event.stopPropagation()"
+              class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2 max-h-64 overflow-hidden animate-in fade-in duration-150">
+              <div class="relative">
+                <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" [(ngModel)]="profileSearchTerm" placeholder="Buscar perfil por nombre..."
+                  class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-indigo-500">
+              </div>
+
+              <div class="overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1 max-h-48">
+                <label *ngFor="let prof of getFilteredProfilesForDropdown()"
+                       class="flex items-center justify-between p-2.5 rounded-lg cursor-pointer hover:bg-slate-50 text-xs transition-colors select-none">
+                  <div class="flex items-center gap-2.5">
+                    <input type="checkbox" [checked]="hasProfile(prof.id)" (change)="toggleProfile(prof, $event)" [disabled]="isEditingSelf" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                    <span class="font-bold text-slate-800">{{ prof.name }}</span>
+                  </div>
+                  <i class="bi text-base" [ngClass]="hasProfile(prof.id) ? 'bi-check-circle-fill text-indigo-600' : 'bi-circle text-slate-300'"></i>
+                </label>
+                <div *ngIf="getFilteredProfilesForDropdown().length === 0" class="text-center text-slate-400 text-xs py-4">
+                  No se encontraron perfiles.
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- PROCESOS ASIGNADOS -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-3">
-          <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-            <i class="bi bi-diagram-3 text-indigo-600"></i>
-            <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Procesos Asignados</h6>
+        <div class="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col gap-3 relative">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <i class="bi bi-diagram-3-fill text-indigo-600 text-base"></i>
+              <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Procesos Asignados</h6>
+            </div>
+            <span class="text-[11px] font-bold bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-md border border-indigo-100">
+              {{ userProcesoIds.length }} seleccionados
+            </span>
           </div>
-          
-          <div class="max-h-24 overflow-y-auto custom-scrollbar pr-1">
-            <div class="flex flex-wrap gap-2.5">
-              <label *ngFor="let pr of procesos" 
-                     class="flex items-center gap-2 px-3 py-1.5 border rounded-xl cursor-pointer transition-all duration-200 select-none group"
-                     [ngClass]="hasProceso(pr.id) 
-                       ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
-                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-55'">
-                <input type="checkbox" [checked]="hasProceso(pr.id)" (change)="toggleProceso(pr.id, $event)" class="hidden">
-                <i class="bi" [ngClass]="hasProceso(pr.id) ? 'bi-patch-check-fill text-indigo-600' : 'bi-circle text-slate-300 group-hover:text-slate-400'"></i>
-                <span class="text-[11px]">{{ pr.nombre }}</span>
-              </label>
+
+          <!-- Trigger Button Dropdown -->
+          <div class="relative">
+            <div *ngIf="isProcesoDropdownOpen" (click)="isProcesoDropdownOpen = false; $event.stopPropagation()" class="fixed inset-0 z-40 bg-transparent"></div>
+
+            <button type="button" (click)="toggleProcesoDropdown(); $event.stopPropagation()"
+              class="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100/80 transition-all z-50 relative">
+              <div class="flex items-center gap-2 truncate">
+                <i class="bi bi-gear-wide-connected text-indigo-600 text-sm"></i>
+                <span class="truncate font-bold">{{ getSelectedProcesosText() }}</span>
+              </div>
+              <i class="bi text-xs text-slate-400 transition-transform" [ngClass]="isProcesoDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+
+            <!-- Dropdown Menu con buscador -->
+            <div *ngIf="isProcesoDropdownOpen" (click)="$event.stopPropagation()"
+              class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2 max-h-64 overflow-hidden animate-in fade-in duration-150">
+              <div class="relative">
+                <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" [(ngModel)]="procesoSearchTerm" placeholder="Buscar proceso por nombre..."
+                  class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-indigo-500">
+              </div>
+
+              <div class="overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1 max-h-48">
+                <label *ngFor="let pr of getFilteredProcesosForDropdown()"
+                       class="flex items-center justify-between p-2.5 rounded-lg cursor-pointer hover:bg-slate-50 text-xs transition-colors select-none">
+                  <div class="flex items-center gap-2.5">
+                    <input type="checkbox" [checked]="hasProceso(pr.id)" (change)="toggleProceso(pr.id, $event)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                    <span class="font-bold text-slate-800">{{ pr.nombre }}</span>
+                  </div>
+                  <i class="bi text-base" [ngClass]="hasProceso(pr.id) ? 'bi-check-circle-fill text-indigo-600' : 'bi-circle text-slate-300'"></i>
+                </label>
+                <div *ngIf="getFilteredProcesosForDropdown().length === 0" class="text-center text-slate-400 text-xs py-4">
+                  No se encontraron procesos.
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- DOS COLUMNAS ABAJO -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- MAIN CONTENT: 2 COLUMNAS AMPLIAS (50/50 O 45/55) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
         
-        <!-- COLUMNA IZQUIERDA (Info Personal & Seguridad) -->
-        <div class="lg:col-span-5 flex flex-col gap-6">
+        <!-- COLUMNA IZQUIERDA: Info Personal, Plataformas & Seguridad -->
+        <div class="lg:col-span-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-1">
           
-          <!-- INFO PERSONAL -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
+          <!-- DATOS DEL COLABORADOR -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col gap-4">
             <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <i class="bi bi-card-heading text-indigo-600"></i>
-              <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Información Personal</h6>
+              <i class="bi bi-person-vcard text-indigo-600 text-base"></i>
+              <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Datos Personales y Laborales</h6>
             </div>
             
-            <div class="flex flex-col gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <!-- Cédula -->
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nombre *</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cédula / Documento</label>
                 <div class="relative">
-                  <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="text" [(ngModel)]="editingUser.firstName" placeholder="Nombre"
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                  <i class="bi bi-card-text absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.cedula" placeholder="123456789"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
                 </div>
               </div>
 
+              <!-- Teléfono -->
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Apellido</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Teléfono Móvil</label>
                 <div class="relative">
-                  <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="text" [(ngModel)]="editingUser.lastName" placeholder="Apellido"
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                  <i class="bi bi-telephone absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.telefono" placeholder="300 000 0000"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
                 </div>
               </div>
 
+              <!-- Nombres -->
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Correo Electrónico *</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nombres *</label>
                 <div class="relative">
-                  <i class="bi bi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="email" [(ngModel)]="editingUser.email" placeholder="usuario@empresa.com"
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                  <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.firstName" placeholder="Nombres completados"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <!-- Apellidos -->
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Apellidos *</label>
+                <div class="relative">
+                  <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.lastName" placeholder="Apellidos completados"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <!-- Correo Corporativo -->
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Correo Corporativo *</label>
+                <div class="relative">
+                  <i class="bi bi-envelope-fill absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="email" [(ngModel)]="editingUser.email" placeholder="usuario@colegioprovidencia.edu.co"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <!-- Correo Personal -->
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Correo Personal</label>
+                <div class="relative">
+                  <i class="bi bi-envelope-open absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="email" [(ngModel)]="editingUser.correo_personal" placeholder="correo.personal@gmail.com"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <!-- Cargo -->
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo / Puesto de trabajo</label>
+                <div class="relative">
+                  <i class="bi bi-briefcase-fill absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.cargo" placeholder="Ej: Docente, Coordinador, Asistente..."
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <!-- Usuario Siesa Nube -->
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Usuario Siesa Nube</label>
+                <div class="relative">
+                  <i class="bi bi-cloud-fill absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.usuario_siesa_nube" placeholder="Usuario Siesa"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <!-- Usuario GLPI -->
+              <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Usuario GLPI</label>
+                <div class="relative">
+                  <i class="bi bi-headset absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="text" [(ngModel)]="editingUser.usuario_glpi" placeholder="ID o Usuario GLPI"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACCESO Y ESTADO DE PLATAFORMAS (AMPLIO Y UNIFICADO) -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <i class="bi bi-hdd-network-fill text-indigo-600 text-base"></i>
+                <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Acceso a Plataformas</h6>
+              </div>
+              <div class="flex items-center gap-2">
+                <button *ngIf="editingUser?.id" (click)="cargarEstadoPlataformas(editingUser.id)" [disabled]="platformStatusLoading"
+                  class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-all disabled:opacity-50 flex items-center gap-1 shadow-2xs">
+                  <i class="bi bi-arrow-clockwise" [ngClass]="platformStatusLoading ? 'animate-spin' : ''"></i> Refrescar
+                </button>
+                <span class="text-[10px] text-slate-400 font-medium">Haz clic para activar/desactivar</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold">
+              <!-- SAINT -->
+              <label class="flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all duration-200 select-none group"
+                     [ngClass]="editingUser.requiere_saint 
+                       ? 'bg-blue-50/90 border-blue-400 text-blue-900 shadow-sm' 
+                       : 'bg-slate-50/70 border-slate-200 text-slate-400 hover:bg-slate-100/70'">
+                <div class="flex items-center gap-3">
+                  <i class="bi" [ngClass]="editingUser.requiere_saint ? 'bi-shield-check text-blue-600 text-lg' : 'bi-shield text-slate-400 text-lg'"></i>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-extrabold text-slate-800">Saint</span>
+                    <span class="text-[10px] font-medium" [ngClass]="editingUser.requiere_saint ? 'text-blue-600 font-bold' : 'text-slate-400'">
+                      {{ editingUser.requiere_saint ? 'Acceso Permitido' : 'Sin Acceso' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                        [ngClass]="editingUser.requiere_saint ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'">
+                    {{ editingUser.requiere_saint ? 'ACTIVO' : 'OFF' }}
+                  </span>
+                  <input type="checkbox" [(ngModel)]="editingUser.requiere_saint" class="hidden">
+                  <i class="bi text-lg" [ngClass]="editingUser.requiere_saint ? 'bi-check-circle-fill text-blue-600' : 'bi-circle text-slate-300'"></i>
+                </div>
+              </label>
+
+              <!-- CONECTA -->
+              <label class="flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all duration-200 select-none group"
+                     [ngClass]="editingUser.requiere_conecta 
+                       ? 'bg-purple-50/90 border-purple-400 text-purple-900 shadow-sm' 
+                       : 'bg-slate-50/70 border-slate-200 text-slate-400 hover:bg-slate-100/70'">
+                <div class="flex items-center gap-3">
+                  <i class="bi" [ngClass]="editingUser.requiere_conecta ? 'bi-diagram-2-fill text-purple-600 text-lg' : 'bi-diagram-2 text-slate-400 text-lg'"></i>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-extrabold text-slate-800">Conecta</span>
+                    <span class="text-[10px] font-medium" [ngClass]="editingUser.requiere_conecta ? 'text-purple-600 font-bold' : 'text-slate-400'">
+                      {{ editingUser.requiere_conecta ? 'Acceso Permitido' : 'Sin Acceso' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                        [ngClass]="editingUser.requiere_conecta ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-500'">
+                    {{ editingUser.requiere_conecta ? 'ACTIVO' : 'OFF' }}
+                  </span>
+                  <input type="checkbox" [(ngModel)]="editingUser.requiere_conecta" class="hidden">
+                  <i class="bi text-lg" [ngClass]="editingUser.requiere_conecta ? 'bi-check-circle-fill text-purple-600' : 'bi-circle text-slate-300'"></i>
+                </div>
+              </label>
+
+              <!-- SIESA NUBE -->
+              <label class="flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all duration-200 select-none group sm:col-span-2"
+                     [ngClass]="editingUser.requiere_siesa_nube 
+                       ? 'bg-amber-50/90 border-amber-400 text-amber-900 shadow-sm' 
+                       : 'bg-slate-50/70 border-slate-200 text-slate-400 hover:bg-slate-100/70'">
+                <div class="flex items-center gap-3">
+                  <i class="bi" [ngClass]="editingUser.requiere_siesa_nube ? 'bi-cloud-check-fill text-amber-600 text-lg' : 'bi-cloud text-slate-400 text-lg'"></i>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-extrabold text-slate-800">Siesa Nube</span>
+                    <span class="text-[10px] font-medium" [ngClass]="editingUser.requiere_siesa_nube ? 'text-amber-600 font-bold' : 'text-slate-400'">
+                      {{ editingUser.requiere_siesa_nube ? 'Acceso Permitido' : 'Sin Acceso' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                        [ngClass]="editingUser.requiere_siesa_nube ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-500'">
+                    {{ editingUser.requiere_siesa_nube ? 'ACTIVO' : 'OFF' }}
+                  </span>
+                  <input type="checkbox" [(ngModel)]="editingUser.requiere_siesa_nube" class="hidden">
+                  <i class="bi text-lg" [ngClass]="editingUser.requiere_siesa_nube ? 'bi-check-circle-fill text-amber-600' : 'bi-circle text-slate-300'"></i>
+                </div>
+              </label>
+
+              <!-- GOOGLE WORKSPACE -->
+              <div class="p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3.5 sm:col-span-2"
+                   [ngClass]="editingUser.requiere_correo 
+                     ? 'bg-emerald-50/90 border-emerald-400 text-emerald-950 shadow-sm' 
+                     : 'bg-slate-50/70 border-slate-200 text-slate-400'">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <i class="bi" [ngClass]="editingUser.requiere_correo ? 'bi-google text-emerald-600 text-lg' : 'bi-google text-slate-400 text-lg'"></i>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-extrabold text-slate-800">Google Workspace</span>
+                      <span class="text-[10px] font-medium" [ngClass]="editingUser.requiere_correo ? 'text-emerald-600 font-bold' : 'text-slate-400'">
+                        {{ editingUser.requiere_correo ? 'Acceso Permitido' : 'Sin Acceso' }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span *ngIf="platformStatusData?.google?.exists" class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white"
+                          [ngClass]="platformStatusData.google.isSuspended ? 'bg-amber-500' : 'bg-emerald-600'">
+                      {{ platformStatusData.google.isSuspended ? 'SUSPENDIDO' : 'ACTIVO EN GOOGLE' }}
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                          [ngClass]="editingUser.requiere_correo ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'">
+                      {{ editingUser.requiere_correo ? 'ACTIVO' : 'OFF' }}
+                    </span>
+                    <label class="cursor-pointer flex items-center">
+                      <input type="checkbox" [(ngModel)]="editingUser.requiere_correo" class="hidden">
+                      <i class="bi text-lg" [ngClass]="editingUser.requiere_correo ? 'bi-check-circle-fill text-emerald-600' : 'bi-circle text-slate-300'"></i>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Acciones en tiempo real -->
+                <div *ngIf="editingUser?.id && platformStatusData && editingUser.email" class="pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2 text-[10px]">
+                  <span class="text-slate-500 font-medium truncate" [title]="editingUser.email">
+                    {{ platformStatusData.google?.tokenConnected ? '🔑 Token OAuth Vinculado' : 'OAuth Sin Vincular' }}
+                  </span>
+                  <div class="flex gap-1.5 shrink-0">
+                    <button *ngIf="!platformStatusData.google?.exists" (click)="ejecutarAccionGoogle('create')" [disabled]="platformActionLoading"
+                      class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-2xs">
+                      <i class="bi bi-envelope-plus me-1"></i> Crear Correo
+                    </button>
+                    <button *ngIf="platformStatusData.google?.exists && !platformStatusData.google?.isSuspended" (click)="ejecutarAccionGoogle('suspend')" [disabled]="platformActionLoading"
+                      class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-[10px] font-bold hover:bg-amber-700 transition-colors disabled:opacity-50 shadow-2xs">
+                      <i class="bi bi-pause-circle me-1"></i> Suspender
+                    </button>
+                    <button *ngIf="platformStatusData.google?.exists && platformStatusData.google?.isSuspended" (click)="ejecutarAccionGoogle('activate')" [disabled]="platformActionLoading"
+                      class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-2xs">
+                      <i class="bi bi-play-circle me-1"></i> Reactivar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GLPI (MESA DE AYUDA) -->
+              <div class="p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3.5 sm:col-span-2"
+                   [ngClass]="editingUser.requiere_glpi 
+                     ? 'bg-indigo-50/90 border-indigo-400 text-indigo-950 shadow-sm' 
+                     : 'bg-slate-50/70 border-slate-200 text-slate-400'">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <i class="bi" [ngClass]="editingUser.requiere_glpi ? 'bi-headset text-indigo-600 text-lg' : 'bi-headset text-slate-400 text-lg'"></i>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-extrabold text-slate-800">GLPI (Mesa de Ayuda)</span>
+                      <span class="text-[10px] font-medium" [ngClass]="editingUser.requiere_glpi ? 'text-indigo-600 font-bold' : 'text-slate-400'">
+                        {{ editingUser.requiere_glpi ? 'Acceso Permitido' : 'Sin Acceso' }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span *ngIf="platformStatusData?.glpi?.exists" class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white"
+                          [ngClass]="platformStatusData.glpi.is_active ? 'bg-emerald-600' : 'bg-amber-500'">
+                      {{ platformStatusData.glpi.is_active ? 'ACTIVO EN GLPI' : 'INACTIVO EN GLPI' }}
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                          [ngClass]="editingUser.requiere_glpi ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'">
+                      {{ editingUser.requiere_glpi ? 'ACTIVO' : 'OFF' }}
+                    </span>
+                    <label class="cursor-pointer flex items-center">
+                      <input type="checkbox" [(ngModel)]="editingUser.requiere_glpi" class="hidden">
+                      <i class="bi text-lg" [ngClass]="editingUser.requiere_glpi ? 'bi-check-circle-fill text-indigo-600' : 'bi-circle text-slate-300'"></i>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Acciones en tiempo real -->
+                <div *ngIf="editingUser?.id && platformStatusData" class="pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2 text-[10px]">
+                  <span class="text-slate-500 font-medium">
+                    <span *ngIf="platformStatusData.glpi?.exists">ID: #{{ platformStatusData.glpi.id }} · User: <code class="bg-slate-200/80 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold">{{ platformStatusData.glpi.username }}</code></span>
+                    <span *ngIf="!platformStatusData.glpi?.exists">No registrado en GLPI</span>
+                  </span>
+                  <div class="flex gap-1.5 shrink-0">
+                    <button *ngIf="!platformStatusData.glpi?.exists" (click)="ejecutarAccionGlpi('create')" [disabled]="platformActionLoading"
+                      class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 shadow-2xs">
+                      <i class="bi bi-person-plus me-1"></i> Crear en GLPI
+                    </button>
+                    <button *ngIf="platformStatusData.glpi?.exists && !platformStatusData.glpi?.is_active" (click)="ejecutarAccionGlpi('enable')" [disabled]="platformActionLoading"
+                      class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-2xs">
+                      <i class="bi bi-person-check me-1"></i> Activar
+                    </button>
+                    <button *ngIf="platformStatusData.glpi?.exists && platformStatusData.glpi?.is_active" (click)="ejecutarAccionGlpi('disable')" [disabled]="platformActionLoading"
+                      class="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[10px] font-bold hover:bg-rose-700 transition-colors disabled:opacity-50 shadow-2xs">
+                      <i class="bi bi-person-dash me-1"></i> Deshabilitar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- CONTRASEÑA -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
+          <div class="bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col gap-4">
             <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <i class="bi bi-shield-lock text-indigo-600"></i>
-              <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Seguridad y Acceso</h6>
+              <i class="bi bi-shield-lock-fill text-indigo-600 text-base"></i>
+              <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Seguridad y Credenciales</h6>
             </div>
             
-            <div class="flex flex-col gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contraseña</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Contraseña Saint</label>
                 <div class="relative">
-                  <i class="bi bi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="password" [(ngModel)]="userPassword" placeholder="Nueva contraseña" autocomplete="new-password"
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                  <i class="bi bi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="password" [(ngModel)]="userPassword" placeholder="Nueva contraseña Saint" autocomplete="new-password"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
                 </div>
               </div>
 
               <div>
-                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Confirmar Contraseña</label>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Confirmar Contraseña Saint</label>
                 <div class="relative">
-                  <i class="bi bi-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                  <input type="password" [(ngModel)]="userPasswordConfirm" placeholder="Confirmar contraseña" autocomplete="new-password"
-                    class="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                  <i class="bi bi-lock-fill absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="password" [(ngModel)]="userPasswordConfirm" placeholder="Confirmar contraseña Saint" autocomplete="new-password"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Contraseña Conecta (Opcional)</label>
+                <div class="relative">
+                  <i class="bi bi-key-fill absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                  <input type="password" [(ngModel)]="editingUser.password_conecta" placeholder="Nueva contraseña Conecta" autocomplete="new-password"
+                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
                 </div>
               </div>
             </div>
@@ -149,53 +477,54 @@
           
         </div>
 
-        <!-- COLUMNA DERECHA (Permisos y Módulos) -->
-        <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
-          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <!-- COLUMNA DERECHA: Permisos & Módulos (AMPLIO Y EXPANDIDO) -->
+        <div class="lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3 shrink-0">
             <div class="flex items-center gap-2">
-              <i class="bi bi-grid-3x3-gap text-indigo-600"></i>
+              <i class="bi bi-grid-3x3-gap-fill text-indigo-600 text-base"></i>
               <h6 class="text-xs font-black text-slate-800 uppercase tracking-wider">Módulos y Permisos Adicionales</h6>
             </div>
             <button (click)="askDuplicateTarget()" [disabled]="isEditingSelf"
-              class="px-3 py-1.5 border border-indigo-100 text-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-50 hover:border-indigo-200 transition-all duration-200 disabled:opacity-50 flex items-center gap-1.5">
+              class="px-3 py-1.5 border border-indigo-200 text-indigo-700 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-50 transition-all duration-200 disabled:opacity-50 flex items-center gap-1.5 shadow-2xs">
               <i class="bi bi-files"></i> Duplicar a otro
             </button>
           </div>
 
-          <div class="relative">
+          <!-- Buscador de permisos -->
+          <div class="relative shrink-0">
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-            <input type="text" [(ngModel)]="permSearchTerm" placeholder="Buscar permisos..."
-              class="w-full pl-9 pr-8 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+            <input type="text" [(ngModel)]="permSearchTerm" placeholder="Buscar permisos por nombre..."
+              class="w-full pl-9 pr-8 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
             <button *ngIf="permSearchTerm" (click)="permSearchTerm = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
-              <i class="bi bi-x-circle-fill"></i>
+              <i class="bi bi-x-circle-fill text-sm"></i>
             </button>
           </div>
 
           <!-- Filtro de Módulos (Desplegable Multi-select Excel-style) -->
-          <div class="relative">
+          <div class="relative shrink-0">
             <!-- Backdrop click-outside helper -->
             <div *ngIf="isModuleDropdownOpen" (click)="isModuleDropdownOpen = false; $event.stopPropagation()" class="fixed inset-0 z-40 bg-transparent"></div>
 
             <!-- Trigger Button -->
             <button type="button" (click)="toggleModuleDropdown(); $event.stopPropagation()" 
-              class="w-full flex items-center justify-between px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100/50 hover:border-slate-350 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200 z-50 relative">
-              <div class="flex items-center gap-2">
-                <i class="bi bi-funnel text-indigo-650 text-xs"></i>
+              class="w-full flex items-center justify-between px-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100/70 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200 z-50 relative">
+              <div class="flex items-center gap-2 truncate">
+                <i class="bi bi-funnel-fill text-indigo-600 text-xs"></i>
                 <span class="text-slate-500">Filtrar Módulos:</span>
-                <span class="text-slate-800 font-bold bg-indigo-50 px-2 py-0.5 rounded text-[10px] border border-indigo-100/80">{{ getSelectedModulesText() }}</span>
+                <span class="text-slate-800 font-bold bg-indigo-50 px-2.5 py-0.5 rounded text-[10px] border border-indigo-100">{{ getSelectedModulesText() }}</span>
               </div>
-              <i class="bi text-[10px] text-slate-400 transition-transform duration-200" [ngClass]="isModuleDropdownOpen ? 'bi-chevron-up rotate-180' : 'bi-chevron-down'"></i>
+              <i class="bi text-xs text-slate-400 transition-transform duration-200" [ngClass]="isModuleDropdownOpen ? 'bi-chevron-up rotate-180' : 'bi-chevron-down'"></i>
             </button>
 
             <!-- Dropdown Panel -->
             <div *ngIf="isModuleDropdownOpen" (click)="$event.stopPropagation()"
-              class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-3 flex flex-col gap-2 max-h-[260px] overflow-hidden animate-in slide-in-from-top-2 duration-150">
+              class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2 max-h-72 overflow-hidden animate-in slide-in-from-top-2 duration-150">
               
               <!-- Excel-like Search Bar -->
               <div class="relative">
                 <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                 <input type="text" [(ngModel)]="moduleSearchTerm" placeholder="Buscar módulo..."
-                  class="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-750 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
+                  class="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200">
                 <button *ngIf="moduleSearchTerm" (click)="moduleSearchTerm = ''; $event.stopPropagation()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 transition-colors">
                   <i class="bi bi-x-circle-fill text-xs"></i>
                 </button>
@@ -205,84 +534,83 @@
               <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-1 py-1">
                 <!-- Option "Todos (Seleccionar todo)" -->
                 <div *ngIf="!moduleSearchTerm" (click)="toggleSelectAllModules(); $event.stopPropagation()"
-                  class="flex items-center gap-2.5 px-2.5 py-1.5 border rounded-xl cursor-pointer select-none text-[11px] font-bold transition-all duration-200"
+                  class="flex items-center gap-2.5 px-2.5 py-1.5 border rounded-xl cursor-pointer select-none text-xs font-bold transition-all duration-200"
                   [ngClass]="isAllModulesSelected() 
-                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
+                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-2xs' 
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'">
                   <i class="bi text-xs shrink-0" 
-                     [ngClass]="isAllModulesSelected() ? 'bi-check-square-fill text-indigo-650' : 'bi-square text-slate-300'"></i>
+                     [ngClass]="isAllModulesSelected() ? 'bi-check-square-fill text-indigo-600' : 'bi-square text-slate-300'"></i>
                   <span>(Seleccionar todo)</span>
                 </div>
 
-                <!-- Divider -->
                 <div *ngIf="!moduleSearchTerm" class="border-b border-slate-100 my-0.5"></div>
 
                 <!-- Modules List -->
                 <div *ngFor="let mod of getFilteredModulesForDropdown()" 
                   (click)="toggleModuleSelection(mod.id); $event.stopPropagation()"
-                  class="flex items-center justify-between px-2.5 py-1.5 border rounded-xl cursor-pointer select-none text-[11px] group transition-all duration-200"
+                  class="flex items-center justify-between px-2.5 py-1.5 border rounded-xl cursor-pointer select-none text-xs group transition-all duration-200"
                   [ngClass]="isModuleSelected(mod.id) 
-                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-sm' 
+                    ? 'border-indigo-600 bg-indigo-50/60 text-indigo-700 font-bold shadow-2xs' 
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'">
                   <div class="flex items-center gap-2.5 truncate">
                     <i class="bi text-xs shrink-0" 
-                       [ngClass]="isModuleSelected(mod.id) ? 'bi-check-square-fill text-indigo-650' : 'bi-square text-slate-300 group-hover:text-slate-400'"></i>
-                    <span class="truncate pr-1">{{ mod.name }}</span>
+                       [ngClass]="isModuleSelected(mod.id) ? 'bi-check-square-fill text-indigo-600' : 'bi-square text-slate-300 group-hover:text-slate-400'"></i>
+                    <span class="truncate pr-1 font-bold">{{ mod.name }}</span>
                   </div>
-                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md transition-colors shrink-0"
+                  <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md transition-colors shrink-0"
                     [ngClass]="isModuleSelected(mod.id)
-                      ? 'bg-indigo-150 text-indigo-800'
+                      ? 'bg-indigo-100 text-indigo-800'
                       : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80'">
                     {{ getPermissionsCountByModule(mod.id) }} p.
                   </span>
                 </div>
 
-                <div *ngIf="getFilteredModulesForDropdown().length === 0" class="text-center text-slate-400 py-6 text-[10px] font-semibold">
+                <div *ngIf="getFilteredModulesForDropdown().length === 0" class="text-center text-slate-400 py-6 text-xs font-semibold">
                   No se encontraron módulos.
                 </div>
               </div>
             </div>
           </div>
 
-          <div *ngIf="permSearchTerm" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <div *ngIf="permSearchTerm" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
             <i class="bi bi-funnel"></i> {{ getFilteredPermissions().length }} Coincidencia(s)
           </div>
 
-          <!-- Contenedor Lista Permisos -->
-          <div class="border border-slate-200/80 rounded-xl overflow-hidden bg-slate-50/40 flex-1 max-h-[360px] overflow-y-auto custom-scrollbar">
+          <!-- Contenedor Lista Permisos (EXPANDIDO VERTICALMENTE CON SCROLL) -->
+          <div class="border border-slate-200 rounded-xl bg-slate-50/40 min-h-[250px] max-h-[400px] overflow-y-auto custom-scrollbar">
             <div class="flex flex-col divide-y divide-slate-100">
-              <div *ngFor="let p of getFilteredPermissions(); let last = last" 
-                   class="flex items-center justify-between p-3 bg-white hover:bg-slate-50/80 transition-all duration-150">
-                <div class="flex items-center gap-2 overflow-hidden min-w-0 pr-4">
+              <div *ngFor="let p of getFilteredPermissions()" 
+                   class="flex items-center justify-between p-3.5 bg-white hover:bg-slate-50 transition-all duration-150">
+                <div class="flex items-center gap-3 overflow-hidden min-w-0 pr-4">
                   <span *ngIf="isInherited(p.id)" 
-                        class="w-2 h-2 rounded-full bg-indigo-500 shrink-0" 
+                        class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0" 
                         title="Heredado de perfil"></span>
-                  <span *ngIf="!isInherited(p.id)" class="w-2 h-2 rounded-full bg-slate-200 shrink-0"></span>
+                  <span *ngIf="!isInherited(p.id)" class="w-2.5 h-2.5 rounded-full bg-slate-200 shrink-0"></span>
                   <div class="flex flex-col min-w-0">
-                    <span class="text-[11px] font-bold text-slate-700 truncate" [title]="p.name">{{ p.name }}</span>
-                    <span class="text-[9px] text-slate-400 font-medium truncate" *ngIf="p.description">{{ p.description }}</span>
+                    <span class="text-xs font-bold text-slate-800 truncate" [title]="p.name">{{ p.name }}</span>
+                    <span class="text-[10px] text-slate-400 font-medium truncate" *ngIf="p.description">{{ p.description }}</span>
                   </div>
                 </div>
 
                 <div class="flex items-center gap-1.5 shrink-0">
                   <button (click)="assignPermission(p, 'ALLOW')" [disabled]="isEditingSelf"
-                    class="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 border disabled:opacity-50"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border disabled:opacity-50"
                     [ngClass]="getPermissionStatus(p.id) === 'ALLOW' 
                       ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-500/20' 
                       : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-100'"
                     title="Permitir">
-                    <i class="bi bi-check-lg text-xs"></i>
+                    <i class="bi bi-check-lg text-sm"></i>
                   </button>
                   <button (click)="assignPermission(p, 'DENY')" [disabled]="isEditingSelf"
-                    class="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 border disabled:opacity-50"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 border disabled:opacity-50"
                     [ngClass]="getPermissionStatus(p.id) === 'DENY' 
                       ? 'bg-rose-500 border-rose-500 text-white shadow-sm shadow-rose-500/20' 
                       : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-100'"
                     title="Denegar">
-                    <i class="bi bi-x text-xs"></i>
+                    <i class="bi bi-x text-sm"></i>
                   </button>
                   <button (click)="removePermission(p)" [disabled]="isEditingSelf"
-                    class="w-7 h-7 rounded-lg border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all duration-200 disabled:opacity-50"
+                    class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all duration-200 disabled:opacity-50"
                     [class.invisible]="!getPermissionStatus(p.id)"
                     title="Remover ajuste directo">
                     <i class="bi bi-trash text-xs"></i>
@@ -290,14 +618,14 @@
                 </div>
               </div>
 
-              <div *ngIf="getFilteredPermissions().length === 0" class="text-center text-slate-400 py-10 text-xs font-semibold">
-                <i class="bi bi-slash-circle block text-lg mb-1.5"></i>
+              <div *ngIf="getFilteredPermissions().length === 0" class="text-center text-slate-400 py-12 text-xs font-semibold">
+                <i class="bi bi-slash-circle block text-2xl mb-2 text-slate-300"></i>
                 No se encontraron permisos.
               </div>
             </div>
           </div>
 
-          <div class="text-[9px] text-slate-400 font-medium flex items-center gap-1.5 px-1">
+          <div class="text-[10px] text-slate-400 font-medium flex items-center gap-1.5 px-1 shrink-0">
             <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
             Los permisos con punto azul son heredados automáticamente por los perfiles asignados.
           </div>
@@ -309,23 +637,23 @@
     </div>
 
     <!-- FOOTER -->
-    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center shrink-0 rounded-b-2xl">
+    <div class="px-6 py-4 bg-slate-100/90 border-t border-slate-200 flex justify-between items-center shrink-0 rounded-b-2xl">
       <button (click)="toggleUserStatus()"
-        class="px-4 py-2 border rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5"
+        class="px-4 py-2 border rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 flex items-center gap-2 shadow-2xs"
         [ngClass]="editingUser?.enabled 
           ? 'border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:border-rose-300' 
           : 'border-emerald-200 bg-white text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300'">
-        <i class="bi" [ngClass]="editingUser?.enabled ? 'bi-person-dash' : 'bi-person-check'"></i>
+        <i class="bi text-sm" [ngClass]="editingUser?.enabled ? 'bi-person-dash' : 'bi-person-check'"></i>
         {{ editingUser?.enabled ? 'Desactivar Usuario' : 'Activar Usuario' }}
       </button>
 
-      <div class="flex gap-2">
-        <button (click)="cerrar()" class="px-5 py-2 text-[10px] font-bold text-slate-500 hover:text-slate-800 uppercase tracking-wider transition-colors">
+      <div class="flex gap-3">
+        <button (click)="cerrar()" class="px-5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 uppercase tracking-wider transition-colors">
           Cancelar
         </button>
         <button (click)="saveMegaUser()" [disabled]="loading"
-          class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-sm shadow-indigo-600/10 disabled:opacity-50 flex items-center gap-1.5">
-          <i class="bi" [ngClass]="loading ? 'bi-arrow-repeat animate-spin' : 'bi-save'"></i>
+          class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-md shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-2">
+          <i class="bi text-sm" [ngClass]="loading ? 'bi-arrow-repeat animate-spin' : 'bi-save'"></i>
           {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
         </button>
       </div>
@@ -333,4 +661,3 @@
 
   </div>
 </div>
-

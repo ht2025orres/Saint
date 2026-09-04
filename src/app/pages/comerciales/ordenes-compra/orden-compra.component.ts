@@ -2,10 +2,12 @@ import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
-import { OrdenCompraService } from 'src/app/services/orden-compra.service';
+import { OrdenCompraService, OcrItemExtraido, OcrAnalysisResult, SugerenciaSiesa } from 'src/app/services/orden-compra.service';
 import { FileService } from 'src/app/services/file.service';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/services/auth.service';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 interface OrdenCompra {
   id: number;
@@ -52,6 +54,18 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     fechaEntregaEstimada: null as Date | null
   };
 
+  // OCR
+  isAnalizandoOcr = false;
+  ocrCompletado = false;
+  ocrError = '';
+  ocrItems: OcrItemExtraido[] = [];
+  ocrTextoRaw = '';
+  ocrClienteConfianza = 0;
+  isDraggingOver = false;
+  mostrarTextoRaw = false;
+  archivoPreviewUrl: SafeResourceUrl | null = null;
+  busquedaSugerencia$ = new Subject<{ texto: string; index: number }>();
+
   mostrarModalDocumento = false;
   documentoUrl: SafeResourceUrl | null = null;
   documentoOrdenNumero = '';
@@ -68,7 +82,7 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     public authService: AuthService,
     @Inject(DOCUMENT) private document: Document
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadTailwind();
@@ -188,15 +202,29 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     this.nuevaOrden.fechaEntregaEstimada = fecha;
   }
 
+  seleccionarDiasEntrega(dias: number): void {
+    this.nuevaOrden.diasEntrega = dias.toString();
+    this.calcularFechaEntrega();
+  }
+
   resetearFormulario(): void {
     this.nuevaOrden = {
       clienteId: null,
       clienteNombre: '',
       numeroOrden: '',
       archivo: null,
-      diasEntrega: '',
+      diasEntrega: '30',
       fechaEntregaEstimada: null
     };
+    this.calcularFechaEntrega();
+    this.ocrCompletado = false;
+    this.ocrError = '';
+    this.ocrItems = [];
+    this.ocrTextoRaw = '';
+    this.ocrClienteConfianza = 0;
+    this.isAnalizandoOcr = false;
+    this.mostrarTextoRaw = false;
+    this.archivoPreviewUrl = null;
   }
 
   onClienteInput(): void {
@@ -210,15 +238,145 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     const file = event.target.files[0];
     if (file && this.validarArchivo(file)) {
       this.nuevaOrden.archivo = file;
+      this.generarPreviewArchivo(file);
+      this.ejecutarOcr(file);
     }
   }
 
+  generarPreviewArchivo(file: File): void {
+    try {
+      const url = URL.createObjectURL(file);
+      this.archivoPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    } catch (e) {
+      this.archivoPreviewUrl = null;
+    }
+  }
+
+  // ========== OCR: DRAG & DROP ==========
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver = true;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver = false;
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (this.validarArchivo(file)) {
+        this.nuevaOrden.archivo = file;
+        this.generarPreviewArchivo(file);
+        this.ejecutarOcr(file);
+      }
+    }
+  }
+
+  // ========== OCR: CÁLCULOS TOTALES ==========
+  calcularTotalGeneral(): number {
+    return this.ocrItems.reduce((acc, item) => acc + (item.cantidad * item.precio_unitario), 0);
+  }
+
+  calcularTotalCantidad(): number {
+    return this.ocrItems.reduce((acc, item) => acc + (item.cantidad || 0), 0);
+  }
+
+  // ========== OCR: EJECUCIÓN ==========
+  ejecutarOcr(file: File): void {
+    this.isAnalizandoOcr = true;
+    this.ocrCompletado = false;
+    this.ocrError = '';
+    this.ocrItems = [];
+
+    this.ordenCompraService.analizarDocumentoOcr(file).subscribe({
+      next: (res: OcrAnalysisResult) => {
+        if (res.success && res.data) {
+          // Autocompletar número de orden
+          if (res.data.numero_orden) {
+            this.nuevaOrden.numeroOrden = res.data.numero_orden;
+          }
+
+          // Autocompletar cliente
+          if (res.data.cliente && res.data.cliente.id) {
+            this.ocrClienteConfianza = res.data.cliente.confianza;
+            const clienteLocal = this.clientes.find(c => c.id === res.data!.cliente.id);
+            if (clienteLocal) {
+              this.nuevaOrden.clienteId = clienteLocal.id;
+              this.nuevaOrden.clienteNombre = clienteLocal.razon_social;
+            } else {
+              this.nuevaOrden.clienteNombre = res.data.cliente.razon_social;
+            }
+          }
+
+          // Autocompletar fecha de entrega
+          if (res.data.dias_entrega) {
+            this.nuevaOrden.diasEntrega = res.data.dias_entrega.toString();
+            this.calcularFechaEntrega();
+          }
+
+          // Ítems extraídos
+          this.ocrItems = res.data.items || [];
+          this.ocrTextoRaw = res.data.texto_raw || '';
+          this.ocrCompletado = true;
+        } else {
+          this.ocrError = res.message || 'No se pudo analizar el documento';
+        }
+      },
+      error: (err) => {
+        this.ocrError = err.error?.message || 'Error al procesar el documento con OCR';
+        console.error('OCR Error:', err);
+      },
+      complete: () => {
+        this.isAnalizandoOcr = false;
+      }
+    });
+  }
+
+  // ========== OCR: BUSCAR SUGERENCIAS SIESA POR ÍTEM ==========
+  buscarSugerenciasParaItem(index: number): void {
+    const item = this.ocrItems[index];
+    if (!item || !item.descripcion || item.descripcion.length < 3) return;
+
+    this.ordenCompraService.buscarSugerenciasSiesa(
+      item.descripcion,
+      this.nuevaOrden.clienteId ?? undefined
+    ).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.ocrItems[index].sugerencias_siesa = res.data;
+        }
+      },
+      error: (err) => console.warn('Error buscando sugerencias Siesa:', err)
+    });
+  }
+
+  seleccionarSugerencia(itemIndex: number, sug: SugerenciaSiesa): void {
+    this.ocrItems[itemIndex].rowid_siesa = sug.rowid_siesa;
+    this.ocrItems[itemIndex].referencia = sug.referencia;
+    this.ocrItems[itemIndex].codigo_item = sug.codigo_item;
+    // Cerrar dropdown de sugerencias
+    this.ocrItems[itemIndex].sugerencias_siesa = [];
+  }
+
+  eliminarItemOcr(index: number): void {
+    this.ocrItems.splice(index, 1);
+  }
+
   validarArchivo(file: File): boolean {
-    const formatosValidos = ['application/pdf'];
+    const formatosValidos = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff'];
     const maxSize = 25 * 1024 * 1024; // 25MB
 
     if (!formatosValidos.includes(file.type)) {
-      Swal.fire('Error', 'Solo se permiten archivos PDF', 'error');
+      Swal.fire('Error', 'Solo se permiten archivos PDF, PNG, JPG o TIFF', 'error');
       return false;
     }
 
@@ -258,7 +416,47 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
       formData.append('archivo_url', archivoUrl);
 
       this.ordenCompraService.registrarOrden(formData).subscribe({
-        next: () => {
+        next: (res) => {
+          const ordenCreada = res.data;
+
+          // Guardar ítems OCR como items temporales
+          if (this.ocrItems.length > 0 && ordenCreada?.id) {
+            const itemsParaGuardar = this.ocrItems.map(item => ({
+              codigo_item: item.codigo_item || '',
+              descripcion: item.descripcion,
+              referencia: item.referencia || '',
+              cantidad: item.cantidad,
+              precio_unitario: item.precio_unitario,
+              precio_total: item.precio_total,
+              unidad_medida: item.unidad_medida || 'UND',
+              rowid_siesa: item.rowid_siesa
+            }));
+
+            this.ordenCompraService.guardarItems(ordenCreada.id, itemsParaGuardar).subscribe({
+              error: (err) => console.warn('Error al guardar ítems OCR:', err)
+            });
+
+            // Guardar mapeos aprendidos (ítems con rowid_siesa confirmados)
+            const itemsConMapeo = this.ocrItems
+              .filter(i => i.rowid_siesa)
+              .map(i => ({
+                descripcion_cliente: i.descripcion,
+                rowid_siesa: i.rowid_siesa!,
+                codigo_siesa: i.codigo_item,
+                referencia_siesa: i.referencia,
+                descripcion_siesa: i.descripcion
+              }));
+
+            if (itemsConMapeo.length > 0 && this.nuevaOrden.clienteId) {
+              this.ordenCompraService.guardarMapeoCliente(
+                this.nuevaOrden.clienteId,
+                itemsConMapeo
+              ).subscribe({
+                error: (err) => console.warn('Error al guardar mapeo cliente:', err)
+              });
+            }
+          }
+
           Swal.fire({
             title: '¡Éxito!',
             text: 'Orden registrada correctamente',

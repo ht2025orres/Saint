@@ -100,6 +100,7 @@
           <tr>
             <th class="px-3 py-2 whitespace-nowrap">Fecha</th>
             <th class="px-3 py-2 whitespace-nowrap">ID</th>
+            <th class="px-3 py-2 whitespace-nowrap">NIT</th>
             <th class="px-3 py-2 whitespace-nowrap">Cliente</th>
             <th class="px-3 py-2 whitespace-nowrap">Solicitante</th>
             <th *ngIf="mostrarDepartamento" class="px-3 py-2 whitespace-nowrap">Dpto.</th>
@@ -121,7 +122,12 @@
             <td class="px-3 py-2 whitespace-nowrap">
               <span class="font-semibold text-blue-700">{{ inco.id_inconsistencia }}</span>
             </td>
-            <td class="px-3 py-2 max-w-[110px] truncate" [title]="inco.Cliente">{{ inco.Cliente }}</td>
+            <td class="px-3 py-2 whitespace-nowrap font-mono text-gray-600" [title]="inco.nit_cliente || extraerNit(inco.Cliente)">
+              {{ inco.nit_cliente || extraerNit(inco.Cliente) }}
+            </td>
+            <td class="px-3 py-2 max-w-[140px] truncate" [title]="inco.nombre_cliente || extraerNombreCliente(inco.Cliente)">
+              {{ inco.nombre_cliente || extraerNombreCliente(inco.Cliente) }}
+            </td>
             <td class="px-3 py-2 max-w-[110px] truncate" [title]="inco.solicitante">{{ inco.solicitante || 'N/A' }}</td>
             <td *ngIf="mostrarDepartamento" class="px-3 py-2 whitespace-nowrap">{{ inco.departamento || 'N/A' }}</td>
             <td class="px-3 py-2 whitespace-nowrap">

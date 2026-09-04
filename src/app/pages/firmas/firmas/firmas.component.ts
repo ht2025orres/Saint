@@ -16,8 +16,8 @@ export class FirmasComponent implements OnInit {
   vista: FirmasVista = 'lista';
 
   readonly tabs: NavTab[] = [
-    { id: 'lista', label: 'Documentos Firmados', icon: 'bi-file-earmark-check' },
-    { id: 'subir', label: 'Firmar Nuevo', icon: 'bi-pencil-square' },
+    { id: 'lista', label: 'Seguimiento de Firmas', icon: 'bi-list-check' },
+    { id: 'subir', label: 'Nueva Solicitud', icon: 'bi-plus-circle' },
   ];
 
   constructor() {}

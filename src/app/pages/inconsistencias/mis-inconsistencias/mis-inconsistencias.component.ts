@@ -188,17 +188,7 @@ export class MisInconsistenciasComponent implements OnInit {
     this.busqueda = '';
     this.filtroFechaDesde = '';
     this.filtroFechaHasta = '';
-    this.inconsistenciasFiltradas = this.inconsistencias;
-    // Reinicializar paginador con todos los datos
-    this.paginationService.initializePaginator(
-      this.paginatorId,
-      this.inconsistenciasFiltradas,
-      10,
-      {},
-      () => true
-    ).subscribe(state => {
-      this.currentData = state.currentData;
-    });
+    this.cargarInconsistencias();
   }
 
   abrirModalAnular(inconsistencia: Inconsistencia): void {

@@ -1,11 +1,124 @@
-<header class="topbar mobile-header">
-  <nav class="navbar top-navbar navbar-expand-md navbar-dark bg-info">
-    <div class="navbar-header">
-      <!-- Botón hamburguesa para móvil -->
-      <button *ngIf="isMobile" type="button" class="navbar-toggler mobile-menu-toggle" (click)="toggleSidebar()"
-        aria-label="Abrir menú" aria-expanded="false">
-        <i class="bi bi-list text-white"></i>
+<!-- ═══════════════════════════════════════════════════════════
+     TOPBAR HEADER — Estilo Siesa ERP (Tema Claro Saint)
+     Áreas grandes → Módulos → Sub-interfaces
+     ═══════════════════════════════════════════════════════════ -->
+<header class="topbar-header">
+  <div class="topbar-inner">
+
+    <!-- LEFT: Brand + Mobile Toggle -->
+    <div class="topbar-left">
+      <!-- Mobile Hamburger -->
+      <button type="button" class="mobile-toggle" (click)="toggleSidebar()" aria-label="Abrir menú">
+        <i class="bi bi-list"></i>
       </button>
+
+      <!-- Logo -->
+      <a routerLink="/dashboard" class="brand-link">
+        <img src="assets/images/logo (1).png" alt="SaINT" class="brand-logo" />
+      </a>
     </div>
-  </nav>
+
+    <!-- CENTER: Áreas principales (desktop only) -->
+    <nav class="topbar-nav">
+
+      <!-- Dashboard directo -->
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="area-btn area-home">
+        <i class="bi bi-speedometer2"></i>
+        <span>Inicio</span>
+      </a>
+
+      <!-- Áreas dinámicas -->
+      <ng-container *ngFor="let area of areas; let i = index">
+        <div *ngIf="canShowArea(area)" class="area-wrapper">
+          <button type="button"
+                  class="area-btn area-trigger"
+                  [class.area-active]="openArea === area"
+                  [style.--area-color]="area.color"
+                  (click)="toggleArea(area, $event)">
+            <i [class]="area.icon"></i>
+            <span>{{ area.label }}</span>
+            <i class="bi bi-chevron-down chevron-icon" [class.chevron-open]="openArea === area"></i>
+          </button>
+
+          <!-- ═══ AREA POPOVER DROPDOWN (UBICADO JUSTO DEBAJO) ═══ -->
+          <div *ngIf="openArea === area" 
+               class="area-dropdown-menu" 
+               [class.dropdown-align-right]="shouldAlignRight(area)"
+               [style.--area-color]="area.color">
+            
+            <div class="area-dropdown-header">
+              <i [class]="area.icon" class="area-dropdown-icon" [style.color]="area.color"></i>
+              <span class="area-dropdown-title">{{ area.label }}</span>
+            </div>
+
+            <div class="area-dropdown-modules">
+              <div *ngFor="let mod of getVisibleModules(area)" class="module-card">
+                <div class="module-header">
+                  <i [class]="mod.icon || 'bi bi-folder'" class="module-icon" [style.color]="area.color"></i>
+                  <span class="module-label">{{ mod.label }}</span>
+                </div>
+                <ul class="sub-list">
+                  <li *ngFor="let sub of getVisibleSubInterfaces(mod)">
+                    <a [routerLink]="sub.link"
+                       routerLinkActive="sub-active"
+                       (click)="closeAll()"
+                       class="sub-link">
+                      <i [class]="sub.icon || 'bi bi-chevron-right'" class="sub-icon"></i>
+                      <span>{{ sub.label }}</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </ng-container>
+    </nav>
+
+    <!-- RIGHT: Impersonation + User -->
+    <div class="topbar-right">
+
+      <!-- Impersonation Badge -->
+      <div *ngIf="authService.isImpersonating" class="impersonation-badge">
+        <i class="bi bi-person-gear"></i>
+        <span>Personificando</span>
+        <button (click)="stopImpersonating()" class="impersonation-exit">Salir</button>
+      </div>
+
+      <!-- User Menu -->
+      <div class="user-dropdown">
+        <button type="button" (click)="toggleUserMenu($event)" class="user-btn">
+          <div class="user-avatar">{{ userInitials }}</div>
+          <div class="user-info">
+            <span class="user-name">{{ userName }}</span>
+            <span class="user-role">{{ userRole }}</span>
+          </div>
+          <i class="bi bi-chevron-down user-chevron" [class.chevron-open]="isUserMenuOpen"></i>
+        </button>
+
+        <!-- User Dropdown -->
+        <div *ngIf="isUserMenuOpen" class="user-panel">
+          <div class="user-panel-header">
+            <div class="user-avatar user-avatar-lg">{{ userInitials }}</div>
+            <div>
+              <p class="user-panel-name">{{ userName }}</p>
+              <p class="user-panel-role">{{ userRole }}</p>
+            </div>
+          </div>
+          <div class="user-panel-divider"></div>
+          <a routerLink="/my-profile" (click)="closeAll()" class="user-panel-item">
+            <i class="bi bi-person-gear"></i>
+            <span>Mi Perfil</span>
+          </a>
+          <div class="user-panel-divider"></div>
+          <button type="button" (click)="logout()" class="user-panel-item user-panel-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </header>

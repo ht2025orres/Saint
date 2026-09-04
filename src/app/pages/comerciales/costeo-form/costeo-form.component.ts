@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChildren, QueryList } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ComercialService, Solicitud, SolicitudItem, SolicitudItemTalla } from '../../../services/comercial.service';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
+import { SpecGeneratorComponent } from '../../moldes/spec-generator/spec-generator.component';
 
 import Swal from 'sweetalert2';
 
@@ -28,6 +29,7 @@ interface LocalItem {
   technicalSpecId: number | null;
   specExpanded: boolean;
   availableMolds: any[];
+  activeTab?: 'tallas' | 'molde';
   draftComponents?: any[]; // Store in-progress OPM components
 }
 
@@ -37,6 +39,7 @@ interface LocalItem {
   styleUrls: ['./costeo-form.component.css']
 })
 export class CosteoFormComponent implements OnInit, OnDestroy {
+  @ViewChildren(SpecGeneratorComponent) specGenerators!: QueryList<SpecGeneratorComponent>;
 
   private autoSaveInterval: any;
   private readonly STORAGE_KEY = 'saint_solicitud_draft';
@@ -92,10 +95,8 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
   // Active section
   activeSection = 0;
   sections = [
-    { label: 'Datos Generales', icon: 'bi-info-circle' },
-    { label: 'Ítems', icon: 'bi-box-seam' },
-    { label: 'Empaque & Proyección', icon: 'bi-truck' },
-    { label: 'Moldes por Ítem', icon: 'bi-grid-3x3' },
+    { label: '1. Datos Generales & Empaque', icon: 'bi-file-earmark-text', desc: 'Cliente, entregas, empaque y despacho' },
+    { label: '2. Ítems, Tallas & Moldes (OPM)', icon: 'bi-box-seam', desc: 'Ítems, desglose de tallas y moldes OPM' },
   ];
 
   constructor(
@@ -201,7 +202,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
           siesa_item_ext_rowid: it.siesa_item_ext_rowid,
           siesa_referencia: it.siesa_referencia || '',
           cantidad_muestra: it.cantidad_muestra || 0,
-          tallas: (it.tallas || []).map((t: any) => ({ talla: t.talla, cantidad: t.cantidad })),
+          tallas: (it.tallas || []).map((t: any) => ({ talla: this.cleanTalla(t.talla), cantidad: t.cantidad })),
           isNew: !it.siesa_item_rowid,
           isExpanded: false,
           ref_siesa_item_rowid: it.ref_siesa_item_rowid || null,
@@ -217,6 +218,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         }));
 
         this.isLoading = false;
+        this.restoreMoldInfoForItems();
       },
       error: () => {
         Swal.fire('Error', 'No se pudo cargar la solicitud', 'error');
@@ -229,8 +231,32 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.moldService.getCategories().subscribe({
       next: (res: any) => {
         this.categories = res.data || [];
+        this.restoreMoldInfoForItems();
       },
       error: () => {}
+    });
+  }
+
+  restoreMoldInfoForItems(): void {
+    if (!this.items || this.items.length === 0) return;
+    this.items.forEach((item, index) => {
+      if (item.moldId && !item.categoryName) {
+        this.moldService.getMold(item.moldId).subscribe({
+          next: (res: any) => {
+            if (res.data) {
+              const mold = res.data;
+              item.moldName = mold.name;
+              item.categoryId = mold.id_product_category || mold.category_id || null;
+              if (item.categoryId) {
+                const cat = this.categories.find(c => c.id === item.categoryId);
+                item.categoryName = cat?.name || mold.category?.name || '';
+                this.loadMoldsForItem(index);
+              }
+            }
+          },
+          error: () => {}
+        });
+      }
     });
   }
 
@@ -245,7 +271,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       siesa_referencia: item.f120_referencia || item.referencia || '',
       cantidad_muestra: 0,
       tallas: item.talla ? [{
-        talla: item.talla,
+        talla: this.cleanTalla(item.talla),
         cantidad: 0,
         siesa_item_ext_rowid: item.f121_rowid || item.rowid_item_ext
       }] : [],
@@ -261,6 +287,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       technicalSpecId: null,
       specExpanded: false,
       availableMolds: [],
+      activeTab: 'tallas',
     });
     this.showItemSearch = false;
     // Auto-suggest category for new item
@@ -289,6 +316,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       technicalSpecId: null,
       specExpanded: false,
       availableMolds: [],
+      activeTab: 'tallas',
     });
     this.newItemDesc = '';
     this.newItemRef = '';
@@ -365,7 +393,8 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
 
             const inputOptions: any = {};
             disponibles.forEach(ext => {
-              inputOptions[ext.rowid_item_ext] = `${ext.talla} ${ext.color ? '(' + ext.color + ')' : ''}`;
+              const cleanedName = this.cleanTalla(ext.talla);
+              inputOptions[ext.rowid_item_ext] = `${cleanedName} ${ext.color ? '(' + ext.color + ')' : ''}`;
             });
 
             Swal.fire({
@@ -381,7 +410,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
                 const extSeleccionada = disponibles.find(ext => ext.rowid_item_ext == result.value);
                 if (extSeleccionada) {
                   item.tallas.push({
-                    talla: extSeleccionada.talla,
+                    talla: this.cleanTalla(extSeleccionada.talla),
                     cantidad: 0,
                     siesa_item_ext_rowid: extSeleccionada.rowid_item_ext
                   });
@@ -537,8 +566,121 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.items.length === 0) {
+      Swal.fire('Atención', 'Debe agregar al menos un ítem a la solicitud', 'warning');
+      return;
+    }
+
     this.isSaving = true;
-    this.saveSolicitud();
+    this.processOpmAndSave();
+  }
+
+  private async processOpmAndSave(): Promise<void> {
+    try {
+      const user = this.authService.user;
+      const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+      const generators = this.specGenerators ? this.specGenerators.toArray() : [];
+
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items[i];
+        if (!item.moldId) continue;
+
+        // Intentar encontrar el componente activo para este ítem
+        const gen = generators.find(g => 
+          g.externalMoldId === item.moldId || 
+          (item.technicalSpecId && g.technicalSpecId === item.technicalSpecId)
+        );
+
+        if (gen) {
+          // Invocar guardado directo desde la instancia activa del componente
+          try {
+            const specId = await gen.saveSpec().toPromise();
+            if (specId) {
+              item.technicalSpecId = specId;
+              item.draftComponents = undefined;
+            }
+          } catch (genErr) {
+            console.error(`Error guardando desde componente OPM del ítem ${i + 1}:`, genErr);
+          }
+        } else if (!item.technicalSpecId || (item.draftComponents && item.draftComponents.length > 0)) {
+          // Fallback si no está el componente montado en el DOM
+          let componentsToSave = item.draftComponents;
+
+          if (!componentsToSave || componentsToSave.length === 0) {
+            try {
+              const moldRes: any = await this.moldService.getMold(item.moldId).toPromise();
+              const moldParts = moldRes.data?.parts || [];
+              componentsToSave = moldParts.map((p: any) => ({
+                mold_part_id: p.id,
+                name: p.garment_component?.display_name || p.name || 'Componente',
+                item_type: p.item_type || 'parte',
+                view: p.view || 'front',
+                position_x: p.position_x,
+                position_y: p.position_y,
+                client_spec: '',
+                technical_spec: '',
+                material_exception: null,
+              }));
+            } catch (err) {
+              console.warn('No se pudieron obtener partes base del molde:', err);
+              componentsToSave = [];
+            }
+          }
+
+          const specPayload = {
+            mold_id: item.moldId,
+            user_created: userName || null,
+            parts: (componentsToSave || []).map((c: any) => {
+              let invRef = null;
+              let invDesc = null;
+              if (c.material_exception) {
+                const mat = c.material_exception;
+                const idItem = mat.id_item || mat.referencia || '';
+                const idColor = mat.id_color || '';
+                const idTalla = mat.id_talla || mat.talla || '';
+                const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
+                invRef = codeParts.length > 0 ? codeParts.join('-') : mat.referencia;
+                invDesc = mat.color ? `${mat.descripcion} (${mat.color})` : mat.descripcion;
+              } else {
+                invRef = c.inventory_reference || null;
+                invDesc = c.inventory_description || null;
+              }
+
+              return {
+                mold_part_id: c.mold_part_id || null,
+                name: c.name || 'Componente',
+                item_type: c.item_type || 'parte',
+                view: c.view || 'front',
+                position_x: c.position_x ?? null,
+                position_y: c.position_y ?? null,
+                inventory_reference: invRef,
+                inventory_description: invDesc,
+                client_spec: c.client_spec || null,
+                technical_spec: c.technical_spec || null,
+              };
+            })
+          };
+
+          try {
+            const specRes: any = item.technicalSpecId
+              ? await this.moldService.updateTechnicalSpec(item.technicalSpecId, specPayload).toPromise()
+              : await this.moldService.createTechnicalSpec(specPayload).toPromise();
+
+            if (specRes && specRes.data?.id) {
+              item.technicalSpecId = specRes.data.id;
+              item.draftComponents = undefined;
+            }
+          } catch (specErr) {
+            console.error(`Error guardando OPM para el ítem ${i + 1}:`, specErr);
+          }
+        }
+      }
+
+      this.saveSolicitud();
+    } catch (e) {
+      this.isSaving = false;
+      Swal.fire('Error', 'No se pudieron procesar las fichas OPM de la solicitud', 'error');
+    }
   }
 
   private saveSolicitud(): void {
@@ -722,7 +864,13 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.cantidadPorEntrega = draft.cantidadPorEntrega || 0;
     this.entregasAnual = draft.entregasAnual || 1;
     this.imagenReferenciaUrl = draft.imagenReferenciaUrl || '';
-    this.items = draft.items || [];
+    this.items = (draft.items || []).map((it: any) => ({
+      ...it,
+      tallas: (it.tallas || []).map((t: any) => ({
+        ...t,
+        talla: this.cleanTalla(t.talla)
+      }))
+    }));
     this.activeSection = draft.activeSection || 0;
   }
 
@@ -751,5 +899,10 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
 
   get totalMuestras(): number {
     return this.items.reduce((sum, it) => sum + (it.cantidad_muestra || 0), 0);
+  }
+
+  cleanTalla(talla: string | null | undefined): string {
+    if (!talla) return '';
+    return talla.replace(/^\/+/, '').trim();
   }
 }

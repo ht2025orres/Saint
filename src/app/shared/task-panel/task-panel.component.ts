@@ -331,32 +331,17 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.guardandoNueva = true;
     this.cdr.markForCheck();
 
-    this.proyectoService.obtenerInfoSeguimiento(new Date().getFullYear())
+    this.proyectoService.crearTarea({
+          usuario_creador_id: this.userId,
+          responsables: this.nuevaTareaForm.asignado_id?.length
+            ? this.nuevaTareaForm.asignado_id
+            : [this.userId],
+          titulo: this.nuevaTareaForm.titulo.trim(),
+          descripcion: this.nuevaTareaForm.descripcion || undefined,
+          fecha_limite_entrega: this.nuevaTareaForm.fecha_limite_entrega || undefined,
+          estado: 'pendiente',
+        } as any)
       .pipe(
-        catchError(err => {
-          console.error('Error al obtener ID de seguimiento:', err);
-          return of({ success: false, data: [] });
-        }),
-        switchMap(resp => {
-          // La API ahora devuelve un array de seguimientos para ese año
-          // Buscamos el primero que esté activo
-          const seguimiento = Array.isArray(resp.data) 
-            ? resp.data.find((s: any) => s.estado === 'activo') 
-            : null;
-          
-          const seguimientoId = seguimiento?.id || 0;
-          return this.proyectoService.crearSeguimientoTarea({
-            usuario_id: this.userId,
-            responsables: this.nuevaTareaForm.asignado_id?.length
-              ? this.nuevaTareaForm.asignado_id
-              : [this.userId],
-            seguimiento_id: seguimientoId,
-            titulo: this.nuevaTareaForm.titulo.trim(),
-            descripcion: this.nuevaTareaForm.descripcion || undefined,
-            fecha_limite_entrega: this.nuevaTareaForm.fecha_limite_entrega || undefined,
-            estado: 'pendiente',
-          });
-        }),
         finalize(() => { this.guardandoNueva = false; this.cdr.markForCheck(); }),
         takeUntil(this.destroy$),
       )

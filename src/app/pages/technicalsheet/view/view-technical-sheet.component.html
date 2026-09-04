@@ -9,6 +9,34 @@
             <h3 class="text-themecolor mb-0">{{title}}</h3>
         </div>
     </div>
+
+    <!-- Navegación por pestañas -->
+    <ul class="nav nav-tabs customtab mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link" [class.active]="activeTab === 'specifications'" (click)="setActiveTab('specifications')" role="tab" style="cursor: pointer;">
+                <span class="font-weight-bold"><i class="fa fa-file-text-o mr-2"></i>Especificaciones y Detalles</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" 
+               [class.active]="activeTab === 'embroidery'" 
+               [class.disabled]="!hasEmbroideryFile"
+               (click)="setActiveTab('embroidery')" 
+               role="tab" 
+               [style.cursor]="hasEmbroideryFile ? 'pointer' : 'not-allowed'"
+               [style.opacity]="hasEmbroideryFile ? '1' : '0.6'"
+               [title]="hasEmbroideryFile ? 'Ver Ficha Técnica de Bordado' : 'No hay ficha técnica de bordado adjunta'">
+                <span class="font-weight-bold">
+                    <i class="fa fa-scissors mr-2"></i>Ficha Técnica de Bordado
+                    <span class="badge badge-success ml-2" *ngIf="hasEmbroideryFile"><i class="fa fa-check"></i> Adjunta</span>
+                    <span class="badge badge-secondary ml-2" *ngIf="!hasEmbroideryFile">No disponible</span>
+                </span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Pestaña 1: Especificaciones y Detalles -->
+    <div *ngIf="activeTab === 'specifications'">
     <div class="card">
         <div class="card-body">
             <h4 class="card-title text-center font-weight-bold">ESPECIFICACIONES</h4>
@@ -580,5 +608,58 @@
             </div>          
         </div>              
     </div>
+    </div>
+    <!-- Fin Pestaña 1: Especificaciones y Detalles -->
+
+    <!-- Pestaña 2: Ficha Técnica de Bordado -->
+    <div *ngIf="activeTab === 'embroidery'">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <div>
+                        <h4 class="card-title font-weight-bold mb-1">
+                            <i class="fa fa-scissors text-primary mr-2"></i>FICHA TÉCNICA DE BORDADO
+                        </h4>
+                        <p class="text-muted mb-0" *ngIf="this.technicalDataSheetCurrent.embroidery">
+                            <b>Descripción del bordado:</b> {{this.technicalDataSheetCurrent.embroidery}}
+                        </p>
+                    </div>
+                    <div class="mt-2 mt-sm-0" *ngIf="hasEmbroideryFile">
+                        <a [href]="this.technicalDataSheetCurrent.logo_technical_data_sheet" target="_blank" class="btn btn-outline-primary btn-rounded mr-2">
+                            <i class="fa fa-external-link mr-1"></i> Abrir en nueva ventana
+                        </a>
+                        <a [href]="this.technicalDataSheetCurrent.logo_technical_data_sheet" download class="btn btn-outline-success btn-rounded">
+                            <i class="fa fa-download mr-1"></i> Descargar
+                        </a>
+                    </div>
+                </div>
+
+                <hr class="mt-2 mb-4">
+
+                <!-- Visor del documento de bordado -->
+                <div *ngIf="hasEmbroideryFile" class="embroidery-viewer-container">
+                    <!-- Si es un PDF -->
+                    <div *ngIf="isEmbroideryPdf" style="min-height: 750px; width: 100%;">
+                        <iframe [src]="embroiderySafeUrl" width="100%" height="750px" style="border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);" allowfullscreen></iframe>
+                    </div>
+
+                    <!-- Si es una imagen u otro archivo -->
+                    <div *ngIf="!isEmbroideryPdf" class="text-center p-3 border rounded bg-light" style="box-shadow: inset 0 0 10px rgba(0,0,0,0.03);">
+                        <img [src]="this.technicalDataSheetCurrent.logo_technical_data_sheet" class="img-fluid rounded shadow-sm" style="max-height: 800px; object-fit: contain;" alt="Ficha Técnica de Bordado">
+                    </div>
+                </div>
+
+                <!-- Si no hay archivo de bordado adjunto -->
+                <div *ngIf="!hasEmbroideryFile" class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fa fa-file-pdf-o text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    </div>
+                    <h5 class="text-muted font-weight-bold">Sin Ficha Técnica de Bordado Adjunta</h5>
+                    <p class="text-muted small mb-0">Esta ficha técnica no cuenta actualmente con un documento o archivo de bordado adjunto.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Fin Pestaña 2: Ficha Técnica de Bordado -->
 
 </section>

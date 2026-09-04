@@ -1,32 +1,89 @@
-<div class="min-h-screen bg-slate-50 font-inter flex flex-col">
-  <!-- Header Compacto -->
-  <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-[60] shadow-sm">
-    <div class="flex items-center gap-4">
-      <button class="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-lg text-slate-500 hover:bg-indigo-600 hover:text-white transition-all" (click)="goBack()">
-        <i class="bi bi-arrow-left"></i>
+<div class="h-screen bg-slate-50 font-inter flex flex-col overflow-hidden">
+  <!-- Topbar Unificada (Header + Pestañas + Resumen + Acciones) -->
+  <div class="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-[60] shadow-2xs shrink-0">
+    
+    <!-- IZQUIERDA: Botón Volver + Título + Nombre del Molde -->
+    <div class="flex items-center gap-3 min-w-0">
+      <button type="button" 
+              class="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-xl text-slate-500 hover:bg-indigo-600 hover:text-white transition-all shrink-0" 
+              (click)="goBack()" title="Volver a la lista de moldes">
+        <i class="bi bi-arrow-left text-base"></i>
       </button>
-      <div>
-        <h1 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <i class="bi bi-vector-pen text-indigo-600"></i>
-          {{ isEditMode ? 'Editar Molde' : 'Nuevo Molde' }}
+      <div class="min-w-0">
+        <h1 class="text-base font-black text-slate-900 flex items-center gap-2 truncate leading-tight">
+          <i class="bi" [ngClass]="isReadOnly ? 'bi-eye text-amber-600' : 'bi-vector-pen text-indigo-600'"></i>
+          <span>{{ isReadOnly ? 'Ver Molde' : (isEditMode ? 'Editar Molde' : 'Nuevo Molde') }}</span>
+          <span *ngIf="isReadOnly" class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black rounded-lg uppercase tracking-wider">Solo Lectura</span>
         </h1>
-        <p class="text-[10px] font-medium text-slate-400 uppercase tracking-widest" *ngIf="moldName">{{ moldName }}</p>
+        <p class="text-[11px] font-bold text-indigo-600 truncate" *ngIf="moldName">{{ moldName }}</p>
+        <p class="text-[11px] font-medium text-slate-400 italic truncate" *ngIf="!moldName">Sin nombre asignado</p>
       </div>
     </div>
 
-    <div class="flex gap-2">
-      <div class="flex bg-slate-100 p-1 rounded-xl">
-        <button class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                [ngClass]="activeTab === 'molde' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-indigo-600'"
-                (click)="activeTab = 'molde'">Diseño</button>
-        <button class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                [ngClass]="activeTab === 'formulario' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-indigo-600'"
-                (click)="activeTab = 'formulario'">Estructura</button>
-        <button class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                [ngClass]="activeTab === 'texto' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-indigo-600'"
-                (click)="activeTab = 'texto'; buildTextContent()">Texto</button>
+    <!-- CENTRO: Pestañas de Navegación + Resumen en Badges -->
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Selector de Pestaña -->
+      <div class="flex bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+        <button type="button" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="activeTab === 'molde' ? 'bg-white text-indigo-600 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'"
+                (click)="activeTab = 'molde'">
+          <i class="bi bi-palette-fill"></i>
+          <span>Diseño</span>
+        </button>
+        <button type="button" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="activeTab === 'formulario' ? 'bg-white text-indigo-600 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'"
+                (click)="activeTab = 'formulario'">
+          <i class="bi bi-diagram-3-fill"></i>
+          <span>Estructura</span>
+        </button>
+        <button type="button" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                [ngClass]="activeTab === 'texto' ? 'bg-white text-indigo-600 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'"
+                (click)="activeTab = 'texto'; buildTextContent()">
+          <i class="bi bi-code-slash"></i>
+          <span>Texto</span>
+        </button>
+      </div>
+
+      <!-- Resumen Compacto Integrado -->
+      <div class="hidden lg:flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 text-xs">
+        <span class="px-2.5 py-1 bg-white text-indigo-700 border border-indigo-100 rounded-lg text-[11px] font-extrabold flex items-center gap-1 shadow-2xs">
+          <i class="bi bi-box-seam text-indigo-500"></i> {{ materialParts.length }} Materiales
+        </span>
+        <span class="px-2.5 py-1 bg-white text-amber-700 border border-amber-100 rounded-lg text-[11px] font-extrabold flex items-center gap-1 shadow-2xs">
+          <i class="bi bi-layers text-amber-500"></i> {{ structuralParts.length }} Partes
+        </span>
       </div>
     </div>
+
+    <!-- DERECHA: Botones de Acción Instantáneos (Guardar / Cancelar) -->
+    <div class="flex items-center gap-2 shrink-0">
+      <button type="button" 
+              class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+              *ngIf="isReadOnly && canEdit" (click)="switchToEditMode()">
+        <i class="bi bi-pencil-square"></i>
+        <span>Cambiar a Editar</span>
+      </button>
+
+      <button type="button" 
+              class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all" 
+              (click)="goBack()">
+        {{ isReadOnly ? 'VOLVER' : 'CANCELAR' }}
+      </button>
+
+      <button type="button" 
+              class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+              *ngIf="!isReadOnly"
+              (click)="saveMold()" 
+              [disabled]="saving || !moldName.trim()">
+        <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" *ngIf="saving"></span>
+        <i class="bi bi-check2-circle text-sm" *ngIf="!saving"></i>
+        <span>{{ saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS' }}</span>
+      </button>
+    </div>
+
   </div>
 
   <div class="flex-1 flex overflow-hidden">
@@ -35,27 +92,44 @@
       
       <!-- ═══ TAB: MOLDE (DISEÑO) ═══ -->
       <ng-container *ngIf="activeTab === 'molde'">
-        <div class="flex flex-col lg:flex-row gap-4 h-full">
+        <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 h-full">
           
           <!-- LEFT: Config Panel -->
-          <div class="w-full lg:w-[320px] space-y-4 flex-shrink-0">
-            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-              <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest block mb-2">
-                <i class="bi bi-folder2"></i> Categoría Padre
-              </label>
-              <div class="flex gap-2">
-                <select [(ngModel)]="mold_category_id" (ngModelChange)="saveDraft()" [disabled]="isReadOnly"
-                        class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
-                  <option [ngValue]="null">Seleccionar categoría...</option>
-                  <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>
-                </select>
-                <button class="w-9 h-9 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all"
-                        (click)="showCategoryManager = true" title="Gestionar categorías">
-                  <i class="bi bi-gear text-sm"></i>
-                </button>
+          <div class="space-y-4">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+              <!-- Nombre del Molde -->
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre del Molde *</label>
+                <input type="text" [(ngModel)]="moldName" (ngModelChange)="saveDraft()" [disabled]="isReadOnly"
+                       placeholder="Ej: Camisa Polo Clásica" 
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" />
               </div>
 
-              <div class="mt-4 flex p-1 bg-slate-100 rounded-xl">
+              <!-- Descripción General -->
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción General</label>
+                <textarea [(ngModel)]="moldDescription" (ngModelChange)="saveDraft()" [disabled]="isReadOnly" rows="2"
+                          placeholder="Detalles y observaciones del molde..." 
+                          class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+              </div>
+
+              <!-- Categoría Padre -->
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center justify-between">
+                  <span><i class="bi bi-folder2"></i> Categoría Padre</span>
+                  <button class="text-[9px] text-indigo-600 hover:underline font-bold" (click)="showCategoryManager = true" *ngIf="!isReadOnly">Gestionar</button>
+                </label>
+                <div class="flex gap-2">
+                  <select [(ngModel)]="mold_category_id" (ngModelChange)="saveDraft()" [disabled]="isReadOnly"
+                          class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
+                    <option [ngValue]="null">Seleccionar categoría...</option>
+                    <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Toggle Frente / Espalda -->
+              <div class="flex p-1 bg-slate-100 rounded-xl">
                 <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
                         [ngClass]="activeView === 'front' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
                         (click)="activeView !== 'front' && toggleView()">FRENTE</button>
@@ -69,7 +143,7 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col max-h-[500px]">
               <div class="p-3 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                 <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Componentes ({{ activeParts.length }})</h3>
-                <button (click)="addPartAt(null, null)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                <button *ngIf="!isReadOnly" (click)="addPartAt(null, null)" class="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                   <i class="bi bi-plus-lg text-sm"></i>
                 </button>
               </div>
@@ -117,11 +191,12 @@
 
             <div class="flex-1 relative flex items-center justify-center p-8 bg-[#fcfcfd]">
               <!-- Canvas with image -->
-              <div class="relative w-full max-w-[800px] h-full flex items-center justify-center" 
+              <div class="relative inline-block max-w-full max-h-[600px]" 
                    *ngIf="(activeView === 'front' && customImageUrl) || (activeView === 'back' && backImageUrl)"
                    #svgContainer (click)="onCanvasClick($event)" [class.awaiting]="awaitingPosition">
-                <img [src]="activeView === 'back' ? backImageUrl : customImageUrl" [alt]="moldName + ' - ' + activeView" 
-                     class="max-w-full max-h-[600px] object-contain pointer-events-none drop-shadow-2xl" />
+                <img #moldImage [src]="activeView === 'back' ? backImageUrl : customImageUrl" [alt]="moldName + ' - ' + activeView" 
+                     class="block max-w-full max-h-[600px] object-contain drop-shadow-2xl cursor-crosshair select-none"
+                     (error)="onImageError()" />
                 
                 <!-- Re-upload button overlay -->
                 <label class="absolute top-3 right-3 z-30 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm" 
@@ -134,7 +209,7 @@
                 <svg class="absolute inset-0 pointer-events-none z-10 w-full h-full overflow-visible">
                   <ng-container *ngFor="let part of positionedParts; let i = index">
                     <line [attr.x1]="part.position_x + '%'" [attr.y1]="part.position_y + '%'"
-                          [attr.x2]="(part.position_x! < 50 ? 5 : 95) + '%'" [attr.y2]="part.position_y + '%'" 
+                          [attr.x2]="(part.position_x! < 50 ? 0 : 100) + '%'" [attr.y2]="part.position_y + '%'" 
                           class="leader-line" />
                   </ng-container>
                 </svg>
@@ -156,22 +231,20 @@
                     </button>
                   </div>
 
-                  <!-- Único punto (Pin) con centrado por margen para evitar conflicto con cdkDrag -->
-                  <div class="absolute w-3 h-3 border-2 border-white rounded-full cursor-move shadow-md z-20 hover:scale-125 transition-transform" 
+                  <!-- Único punto (Pin) interactivo -->
+                  <div class="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 border-2 border-white rounded-full cursor-move shadow-lg z-20 hover:scale-125 transition-transform flex items-center justify-center" 
                        [ngClass]="part.item_type === 'parte' ? 'bg-amber-500' : 'bg-indigo-600'"
                        [style.left.%]="part.position_x" [style.top.%]="part.position_y"
-                       style="margin-left: -6px; margin-top: -6px;"
                        *ngIf="!isReadOnly"
                        (mousedown)="startDragging($event, i)"
-                       cdkDrag cdkDragBoundary="#svgContainer" [cdkDragDisabled]="isReadOnly || showEditModal"
-                       (cdkDragEnded)="onDragEnd($event, activeParts.indexOf(part), part)" (click)="$event.stopPropagation()">
+                       (click)="$event.stopPropagation()">
+                    <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
                   </div>
                   
-                  <div class="absolute w-2.5 h-2.5 border-2 border-white rounded-full shadow-sm z-20" 
+                  <div class="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 border-2 border-white rounded-full shadow-sm z-20" 
                        [ngClass]="part.item_type === 'parte' ? 'bg-amber-500' : 'bg-indigo-600'"
                        *ngIf="isReadOnly"
-                       [style.left.%]="part.position_x" [style.top.%]="part.position_y"
-                       style="margin-left: -5px; margin-top: -5px;">
+                       [style.left.%]="part.position_x" [style.top.%]="part.position_y">
                   </div>
                 </ng-container>
 
@@ -230,7 +303,7 @@
 
               <!-- Empty State: Upload prompt -->
               <div class="flex flex-col items-center justify-center py-16" 
-                   *ngIf="(activeView === 'front' && !customImageUrl) || (activeView === 'back' && !backImageUrl)">
+                   *ngIf="imageLoadError || (activeView === 'front' && !customImageUrl) || (activeView === 'back' && !backImageUrl)">
                 <label class="flex flex-col items-center gap-4 cursor-pointer p-10 border-2 border-dashed border-slate-300 rounded-[40px] hover:border-indigo-400 transition-all bg-white shadow-xl" for="garmentUploadEmpty">
                   <i class="bi bi-cloud-arrow-up text-5xl text-indigo-500"></i>
                   <div class="text-center">
@@ -258,11 +331,11 @@
               <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest"><i class="bi bi-info-circle text-indigo-600"></i> Datos Básicos</h3>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre del Molde *</label>
-                <input type="text" [(ngModel)]="moldName" (ngModelChange)="saveDraft()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 transition-all" />
+                <input type="text" [(ngModel)]="moldName" (ngModelChange)="saveDraft()" [disabled]="isReadOnly" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 transition-all" />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción General</label>
-                <textarea [(ngModel)]="moldDescription" (ngModelChange)="saveDraft()" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
+                <textarea [(ngModel)]="moldDescription" (ngModelChange)="saveDraft()" [disabled]="isReadOnly" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
@@ -300,7 +373,7 @@
               <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest">
                 <i class="bi bi-box-seam text-indigo-600"></i> Materiales (Telas e Insumos)
               </h3>
-              <button class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2" (click)="addGeneralComponent('insumo')">
+              <button class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2" *ngIf="!isReadOnly" (click)="addGeneralComponent('insumo')">
                 <i class="bi bi-plus-lg"></i> Agregar Material
               </button>
             </div>
@@ -366,7 +439,7 @@
                   </tr>
                   
                   <!-- Agregar Inline Materiales -->
-                  <tr class="bg-slate-50/30 inline-adding-row" *ngIf="inlineAdding && inlineAddingType === 'general' && (addItemType === 'tela' || addItemType === 'insumo')">
+                  <tr class="bg-slate-50/30 inline-adding-row" *ngIf="!isReadOnly && inlineAdding && inlineAddingType === 'general' && (addItemType === 'tela' || addItemType === 'insumo')">
                     <td class="px-6 py-4" colspan="3">
                       <div class="flex gap-3 items-center">
                         <div class="flex-1 relative">
@@ -398,7 +471,7 @@
                     </td>
                     <td></td>
                   </tr>
-                  <tr *ngIf="!inlineAdding || inlineAddingType !== 'general' || (addItemType !== 'tela' && addItemType !== 'insumo')">
+                  <tr *ngIf="!isReadOnly && (!inlineAdding || inlineAddingType !== 'general' || (addItemType !== 'tela' && addItemType !== 'insumo'))">
                     <td colspan="4" class="px-6 py-3">
                       <button (click)="$event.stopPropagation(); startInlineAdd('general', 'insumo')" class="flex items-center gap-2 text-indigo-500 hover:text-indigo-700 transition-colors">
                         <i class="bi bi-plus-circle"></i>
@@ -417,7 +490,7 @@
               <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest">
                 <i class="bi bi-layers text-amber-500"></i> Partes de la Prenda (Operativos)
               </h3>
-              <button class="px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-amber-100 hover:bg-amber-600 transition-all flex items-center gap-2" (click)="addGeneralComponent('parte')">
+              <button class="px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-amber-100 hover:bg-amber-600 transition-all flex items-center gap-2" *ngIf="!isReadOnly" (click)="addGeneralComponent('parte')">
                 <i class="bi bi-plus-lg"></i> Agregar Parte
               </button>
             </div>
@@ -478,7 +551,7 @@
                   </tr>
                   
                   <!-- Agregar Inline Partes -->
-                  <tr class="bg-slate-50/30 inline-adding-row" *ngIf="inlineAdding && inlineAddingType === 'general' && addItemType === 'parte'">
+                  <tr class="bg-slate-50/30 inline-adding-row" *ngIf="!isReadOnly && inlineAdding && inlineAddingType === 'general' && addItemType === 'parte'">
                     <td class="px-6 py-4" colspan="2">
                       <div class="flex gap-3 items-center">
                         <div class="flex-1 relative">
@@ -506,7 +579,7 @@
                     </td>
                     <td></td>
                   </tr>
-                  <tr *ngIf="!inlineAdding || inlineAddingType !== 'general' || addItemType !== 'parte'">
+                  <tr *ngIf="!isReadOnly && (!inlineAdding || inlineAddingType !== 'general' || addItemType !== 'parte')">
                     <td colspan="3" class="px-6 py-3">
                       <button (click)="$event.stopPropagation(); startInlineAdd('general', 'parte')" class="flex items-center gap-2 text-indigo-500 hover:text-indigo-700 transition-colors">
                         <i class="bi bi-plus-circle"></i>
@@ -530,11 +603,11 @@
               <span class="text-[10px] font-medium text-slate-400 italic">Formato: Nombre (tipo) [vista]</span>
             </div>
             <div class="relative">
-              <textarea [(ngModel)]="textContent" (input)="onTextInput()" (focus)="onTextInput()" rows="15" 
+              <textarea [(ngModel)]="textContent" (input)="onTextInput()" (focus)="onTextInput()" [readonly]="isReadOnly" rows="15" 
                         class="w-full p-6 bg-slate-900 text-indigo-100 font-mono text-sm leading-relaxed rounded-2xl outline-none border-2 border-slate-800 focus:border-indigo-500/30 transition-all custom-scrollbar"></textarea>
               
               <!-- Sugerencias de Texto -->
-              <div class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50" *ngIf="showTextSuggestions">
+              <div class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50" *ngIf="!isReadOnly && showTextSuggestions">
                 <div class="p-2 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
                   <span class="text-[9px] font-black text-slate-400 uppercase px-2">Sugerencias</span>
                   <button (click)="dismissTextSuggestions()"><i class="bi bi-x text-slate-400"></i></button>
@@ -553,25 +626,7 @@
     </div>
   </div>
 
-  <!-- ═══ Footer Compacto ═══ -->
-  <div class="bg-white border-t border-slate-200 px-8 py-3 flex items-center justify-between z-50">
-    <div class="flex items-center gap-8">
-      <div class="flex items-baseline gap-2">
-        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resumen</span>
-        <span class="text-xs font-extrabold text-indigo-600">{{ materialParts.length }} Materiales</span>
-        <span class="text-xs font-extrabold text-amber-500">{{ structuralParts.length }} Partes</span>
-      </div>
-    </div>
-    <div class="flex gap-3">
-      <button class="px-6 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all" (click)="goBack()">CANCELAR</button>
-      <button class="px-8 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-lg shadow-indigo-100 hover:shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2" 
-              (click)="saveMold()" [disabled]="saving || !moldName.trim()">
-        <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" *ngIf="saving"></span>
-        <i class="bi bi-check2-circle" *ngIf="!saving"></i>
-        {{ saving ? 'GUARDANDO...' : 'GUARDAR CAMBIOS' }}
-      </button>
-    </div>
-  </div>
+  <!-- ═══ Fin Área Principal ═══ -->
 </div>
 
 <!-- ═══ MODAL: GESTIÓN DE COMPONENTES (REFAC) ═══ -->

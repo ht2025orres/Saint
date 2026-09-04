@@ -79,6 +79,12 @@ export interface Solicitud {
   cliente_nit?: string;
   requiere_costeo: boolean;
   requiere_muestra: boolean;
+  estado_costeo?: 'NO_REQUERIDO' | 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'RECHAZADO';
+  estado_muestra?: 'NO_REQUERIDO' | 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'RECHAZADO';
+  fecha_inicio_costeo?: string;
+  fecha_fin_costeo?: string;
+  fecha_inicio_muestra?: string;
+  fecha_fin_muestra?: string;
   fecha_entrega_cotizacion?: string;
   fecha_entrega_muestra?: string;
   tipo_despacho: 'INTERNACIONAL' | 'NACIONAL' | 'LOCAL';
@@ -180,6 +186,20 @@ export class ComercialService {
   cambiarEstado(id: number, estado: string): Observable<any> {
     return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}/estado`, {
       estado,
+      usuario_id: this.uid()
+    });
+  }
+
+  cambiarEstadoCosteo(id: number, estado_costeo: string): Observable<any> {
+    return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}/estado-costeo`, {
+      estado_costeo,
+      usuario_id: this.uid()
+    });
+  }
+
+  cambiarEstadoMuestra(id: number, estado_muestra: string): Observable<any> {
+    return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}/estado-muestra`, {
+      estado_muestra,
       usuario_id: this.uid()
     });
   }

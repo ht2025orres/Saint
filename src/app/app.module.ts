@@ -74,6 +74,8 @@ import { PlaneacionModule } from './pages/planeacion/planeacion/planeacion.modul
 import { CentrosCostosModule } from './pages/financiero/centros-costos/centros-costos.module';
 import { SeguimientoModule } from './pages/seguimiento/seguimiento.module';
 import { EmailLogsComponent } from './pages/email-logs/email-logs.component';
+import { ColaboradoresModule } from './pages/colaboradores/colaboradores.module';
+import { PublicFirmarDocumentoComponent } from './pages/firmas/public-firmar-documento/public-firmar-documento.component';
 
 // import { ProyectosModule } from './pages/proyectos/proyectos.module';
 
@@ -104,7 +106,8 @@ registerLocaleData(localeEs, 'es-CO');
         MiReportListComponent,
         ReportDashboardComponent,
         UserProfileComponent,
-        EmailLogsComponent
+        EmailLogsComponent,
+        PublicFirmarDocumentoComponent
 
     ],
     bootstrap: [AppComponent],
@@ -155,6 +158,8 @@ registerLocaleData(localeEs, 'es-CO');
         CentrosCostosModule,
         /* Seguimiento */
         SeguimientoModule,
+        /* Colaboradores */
+        ColaboradoresModule,
         /* Proyectos */
         // ProyectosModule
     ], 

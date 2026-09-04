@@ -75,7 +75,8 @@
                 </div>
                 <div>
                   <p class="text-xs text-gray-500">Fecha Entrega Estimada</p>
-                  <p class="font-medium text-gray-900">{{ orden.fecha_entrega_estimada | date:'dd/MM/yyyy' }}<span class="text-xs text-gray-500">({{ orden.dias_entrega }} días)</span></p>
+                  <p class="font-medium text-gray-900">{{ orden.fecha_entrega_estimada | date:'dd/MM/yyyy' }}<span
+                      class="text-xs text-gray-500">({{ orden.dias_entrega }} días)</span></p>
                 </div>
                 <div>
                   <p class="text-xs text-gray-500">Documento</p>
@@ -97,15 +98,13 @@
             <div class="flex items-stretch justify-between w-full md:w-auto gap-4">
               <!-- Ver / Descargar -->
               <div class="flex gap-2">
-                <button
-                  (click)="verDocumento(orden)"
+                <button (click)="verDocumento(orden)"
                   class="inline-flex items-center justify-center w-9 h-9 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                   [disabled]="isLoadingDocument">
                   <i class="bi bi-eye text-base"></i>
                 </button>
 
-                <button
-                  (click)="descargarDocumento(orden)"
+                <button (click)="descargarDocumento(orden)"
                   class="inline-flex items-center justify-center w-9 h-9 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors">
                   <i class="bi bi-download text-base"></i>
                 </button>
@@ -114,16 +113,13 @@
               <!-- Procesar / Rechazar -->
               <div *ngIf="authService.hasAnyPermission([38]) && orden.estado === 'PENDIENTE'"
                 class="flex flex-col gap-2 ml-auto">
-                <button
-                  (click)="procesarOrden(orden)"
+                <button (click)="procesarOrden(orden)"
                   class="p-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
-                  [disabled]="isProcesando"
-                  title="Procesar y vincular PV">
+                  [disabled]="isProcesando" title="Procesar y vincular PV">
                   <i class="bi bi-check-circle text-lg"></i>
                 </button>
 
-                <button
-                  (click)="abrirModalRechazo(orden)"
+                <button (click)="abrirModalRechazo(orden)"
                   class="p-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   title="Rechazar orden">
                   <i class="bi bi-x-circle text-lg"></i>
@@ -289,8 +285,7 @@
 </div>
 
 <!-- ========== MODAL RECHAZO ========== -->
-<div *ngIf="mostrarModalRechazo"
-  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 p-4">
+<div *ngIf="mostrarModalRechazo" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 p-4">
   <div class="bg-white rounded-lg w-full max-w-md p-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-xl font-bold text-gray-900">Rechazar Orden</h2>
@@ -304,20 +299,16 @@
       Debe indicar el motivo del rechazo (mínimo 10 caracteres).
     </p>
 
-    <textarea
-      [(ngModel)]="motivoRechazo"
+    <textarea [(ngModel)]="motivoRechazo"
       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-      rows="4"
-      placeholder="Escriba el motivo del rechazo..."></textarea>
+      rows="4" placeholder="Escriba el motivo del rechazo..."></textarea>
 
     <div class="flex justify-end gap-3 mt-6">
-      <button
-        (click)="cerrarModalRechazo()"
+      <button (click)="cerrarModalRechazo()"
         class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
         Cancelar
       </button>
-      <button
-        (click)="confirmarRechazo()"
+      <button (click)="confirmarRechazo()"
         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
         [disabled]="!motivoRechazo.trim() || motivoRechazo.length < 10">
         Rechazar Orden

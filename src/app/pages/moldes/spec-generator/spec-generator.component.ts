@@ -12,6 +12,8 @@ export interface OpmMaterial {
   descripcion: string;
   id_color: string;
   color: string;
+  id_talla?: string;
+  talla?: string;
   costo_unitario: number;
   existencias: number;
   is_fabric: boolean;
@@ -40,11 +42,13 @@ export interface ComponentItem {
 })
 export class SpecGeneratorComponent implements OnInit, OnChanges {
   @ViewChild('imageCanvas') imageCanvas!: ElementRef<HTMLDivElement>;
+  @ViewChild('moldImage') moldImage!: ElementRef<HTMLImageElement>;
   @ViewChild('textEditor') textEditor!: ElementRef<HTMLTextAreaElement>;
 
   // Embedded mode (for use inside Solicitud form)
   @Input() embedded = false;
   @Input() externalMoldId: number | null = null;
+  @Input() technicalSpecId: number | null = null;
   @Input() initialComponents: ComponentItem[] | null = null;
   @Output() onSpecSaved = new EventEmitter<number>();
   @Output() onComponentsChange = new EventEmitter<ComponentItem[]>();
@@ -295,14 +299,19 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.embedded && changes['externalMoldId'] && !changes['externalMoldId'].firstChange) {
-      const newId = changes['externalMoldId'].currentValue;
-      if (newId) {
-        this.moldId = newId;
-        this.loadMold();
-      } else {
-        this.mold = null;
-        this.components = [];
+    if (this.embedded) {
+      const moldChanged = changes['externalMoldId'] && !changes['externalMoldId'].firstChange;
+      const specChanged = changes['technicalSpecId'] && !changes['technicalSpecId'].firstChange;
+
+      if (moldChanged || specChanged) {
+        const newMoldId = changes['externalMoldId'] ? changes['externalMoldId'].currentValue : this.externalMoldId;
+        if (newMoldId) {
+          this.moldId = newMoldId;
+          this.loadMold();
+        } else {
+          this.mold = null;
+          this.components = [];
+        }
       }
     }
   }
@@ -368,33 +377,93 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
         this.mold = res.data;
         const parts = this.mold.parts || [];
 
-        this.components = parts.map((p: any) => ({
-          mold_part_id: p.id,
-          name: p.garment_component?.display_name || p.name || 'Componente',
-          item_type: p.item_type || 'parte',
-          view: p.view || 'front',
-          position_x: p.position_x,
-          position_y: p.position_y,
-          is_mandatory: true,
-          client_spec: '',
-          technical_spec: '',
-          material_exception: null,
-          is_from_mold: true,
-          is_expanded: false,
-        }));
-
-        if (this.mold?.id_product_category) {
-          this.loadAvailableComponents(this.mold.id_product_category);
+        // Si tenemos un technicalSpecId guardado previamente, cargamos sus especificaciones existentes
+        if (this.technicalSpecId && (!this.initialComponents || this.initialComponents.length === 0)) {
+          this.moldService.getTechnicalSpec(this.technicalSpecId).subscribe({
+            next: (specRes: any) => {
+              if (specRes && specRes.data) {
+                const spec = specRes.data;
+                this.opmReference = spec.reference || '';
+                if (spec.parts && spec.parts.length > 0) {
+                  this.components = spec.parts.map((p: any) => {
+                    let mat: OpmMaterial | null = null;
+                    if (p.inventory_reference || p.inventory_description) {
+                      mat = {
+                        id_item: p.inventory_reference || '',
+                        referencia: p.inventory_reference || '',
+                        descripcion: p.inventory_description || '',
+                        id_color: '',
+                        color: '',
+                        costo_unitario: 0,
+                        existencias: 0,
+                        is_fabric: false,
+                        assignment_source: 'siesa',
+                      };
+                    }
+                    return {
+                      mold_part_id: p.mold_part_id || null,
+                      name: p.name || 'Componente',
+                      item_type: p.item_type || 'parte',
+                      view: p.view || 'front',
+                      position_x: p.position_x,
+                      position_y: p.position_y,
+                      is_mandatory: true,
+                      client_spec: p.client_spec || '',
+                      technical_spec: p.technical_spec || '',
+                      material_exception: mat,
+                      is_from_mold: !!p.mold_part_id,
+                      is_expanded: false,
+                    };
+                  });
+                }
+              }
+              if (this.mold?.id_product_category) {
+                this.loadAvailableComponents(this.mold.id_product_category);
+              }
+              this.buildTextContent();
+              this.loading = false;
+              this.notifyChanges();
+            },
+            error: () => {
+              this.loadDefaultMoldParts(parts);
+            }
+          });
+        } else {
+          this.loadDefaultMoldParts(parts);
         }
-
-        this.buildTextContent();
-        this.loading = false;
       },
       error: () => {
         this.errorMessage = 'Error al cargar el molde';
         this.loading = false;
       }
     });
+  }
+
+  private loadDefaultMoldParts(parts: any[]): void {
+    if (!this.initialComponents || this.initialComponents.length === 0) {
+      this.components = parts.map((p: any) => ({
+        mold_part_id: p.id,
+        name: p.garment_component?.display_name || p.name || 'Componente',
+        item_type: p.item_type || 'parte',
+        view: p.view || 'front',
+        position_x: p.position_x,
+        position_y: p.position_y,
+        is_mandatory: true,
+        client_spec: '',
+        technical_spec: '',
+        material_exception: null,
+        is_from_mold: true,
+        is_expanded: false,
+      }));
+    }
+
+    if (this.mold?.id_product_category) {
+      this.loadAvailableComponents(this.mold.id_product_category);
+    }
+
+    this.buildTextContent();
+    this.loading = false;
+    this.notifyChanges();
   }
 
   loadAvailableComponents(categoryId: number): void {
@@ -524,24 +593,28 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   // ==================== Canvas Interaction ====================
 
   onCanvasClick(event: MouseEvent): void {
-    if (this.loading || !this.mold || !this.imageCanvas || this.isDragging) return;
+    if (this.loading || !this.mold || this.isDragging) return;
 
-    const container = this.imageCanvas.nativeElement;
-    const rect = container.getBoundingClientRect();
+    const imgEl = this.moldImage?.nativeElement || this.imageCanvas?.nativeElement?.querySelector('img');
+    if (!imgEl) return;
+
+    const rect = imgEl.getBoundingClientRect();
     
-    // Posición porcentual para el PIN
+    // Posición porcentual exacta respecto a la IMAGEN
     const xPerc = ((event.clientX - rect.left) / rect.width) * 100;
     const yPerc = ((event.clientY - rect.top) / rect.height) * 100;
+
+    if (xPerc < 0 || xPerc > 100 || yPerc < 0 || yPerc > 100) return;
 
     this.dynamicPinPosition = { 
       x: Math.round(xPerc * 100) / 100, 
       y: Math.round(yPerc * 100) / 100 
     };
 
-    // Posición en píxeles para el Popover (flotante)
+    // Posición para el Popover flotante
     this.popoverPosition = {
-      x: event.clientX,
-      y: event.clientY
+      x: Math.min(event.clientX, window.innerWidth - 280),
+      y: Math.min(event.clientY, window.innerHeight - 200)
     };
 
     this.openAddModal('component');
@@ -550,23 +623,23 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   // ==================== Drag & Drop ====================
 
   startDragging(event: MouseEvent, index: number): void {
-    const comp = this.components[index];
-    if (comp.is_mandatory) return; // No mover obligatorios
-
     event.stopPropagation();
+    event.preventDefault();
+
     this.isDragging = true;
     this.draggedComponentIndex = index;
     
+    const imgEl = this.moldImage?.nativeElement || this.imageCanvas?.nativeElement?.querySelector('img');
+    
     const onMouseMove = (e: MouseEvent) => {
-      if (!this.isDragging || this.draggedComponentIndex === null || !this.imageCanvas) return;
+      if (!this.isDragging || this.draggedComponentIndex === null || !imgEl) return;
       
-      const container = this.imageCanvas.nativeElement;
-      const rect = container.getBoundingClientRect();
+      const rect = imgEl.getBoundingClientRect();
       
       let x = ((e.clientX - rect.left) / rect.width) * 100;
       let y = ((e.clientY - rect.top) / rect.height) * 100;
 
-      // Limitar dentro del canvas
+      // Limitar estrictamente dentro de la imagen (0% a 100%)
       x = Math.max(0, Math.min(100, x));
       y = Math.max(0, Math.min(100, y));
 
@@ -576,8 +649,10 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     };
 
     const onMouseUp = () => {
-      this.isDragging = false;
-      this.draggedComponentIndex = null;
+      setTimeout(() => {
+        this.isDragging = false;
+        this.draggedComponentIndex = null;
+      }, 50);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
@@ -598,15 +673,24 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   handleInventorySelect(item: any): void {
     if (this.selectedPartIndex === null) return;
+    const idItem = item.id_item || item.referencia || '';
+    const idColor = item.id_color || '';
+    const idTalla = item.id_talla || item.talla || '';
+
+    const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
+    const refCode = codeParts.length > 0 ? codeParts.join('-') : (item.referencia || '');
+
     const mat: OpmMaterial = {
-      id_item: item.id_item || '',
-      referencia: item.referencia || '',
+      id_item: idItem,
+      referencia: refCode,
       descripcion: item.descripcion || '',
-      id_color: item.id_color || '',
+      id_color: idColor,
       color: item.color || '',
+      id_talla: idTalla,
+      talla: item.talla || '',
       costo_unitario: item.costo_unitario || 0,
       existencias: item.existencias || 0,
-      is_fabric: (item.referencia || '').startsWith('1110'),
+      is_fabric: (item.referencia || refCode).startsWith('1110'),
       assignment_source: 'siesa',
     };
     this.components[this.selectedPartIndex].material_exception = mat;
@@ -799,24 +883,49 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       mold_id: this.moldId,
       reference: this.opmReference || null,
       user_created: userName || null,
-      parts: this.components.map(c => ({
-        mold_part_id: c.mold_part_id,
-        name: c.name,
-        item_type: c.item_type,
-        view: c.view,
-        position_x: c.position_x,
-        position_y: c.position_y,
-        client_spec: c.client_spec || null,
-        technical_spec: c.technical_spec || null,
-        material_exception: c.material_exception,
-        is_from_mold: c.is_from_mold,
-      })),
+      parts: this.components.map(c => {
+        let invRef = null;
+        let invDesc = null;
+        if (c.material_exception) {
+          const mat = c.material_exception;
+          const idItem = mat.id_item || mat.referencia || '';
+          const idColor = mat.id_color || '';
+          const idTalla = mat.id_talla || mat.talla || '';
+          const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
+          invRef = codeParts.length > 0 ? codeParts.join('-') : mat.referencia;
+          invDesc = mat.color ? `${mat.descripcion} (${mat.color})` : mat.descripcion;
+        }
+        return {
+          mold_part_id: c.mold_part_id,
+          name: c.name,
+          item_type: c.item_type,
+          view: c.view,
+          position_x: c.position_x,
+          position_y: c.position_y,
+          inventory_reference: invRef,
+          inventory_description: invDesc,
+          client_spec: c.client_spec || null,
+          technical_spec: c.technical_spec || null,
+          material_exception: c.material_exception,
+          is_from_mold: c.is_from_mold,
+        };
+      }),
     };
 
-    return this.moldService.createTechnicalSpec(payload).pipe(
+    const request$ = this.technicalSpecId
+      ? this.moldService.updateTechnicalSpec(this.technicalSpecId, payload)
+      : this.moldService.createTechnicalSpec(payload);
+
+    return request$.pipe(
       tap((res: any) => {
         this.saving = false;
-        this.successMessage = `${this.modeLabel} creada exitosamente`;
+        if (res.data?.id) {
+          this.technicalSpecId = res.data.id;
+          if (res.data.reference) {
+            this.opmReference = res.data.reference;
+          }
+        }
+        this.successMessage = `${this.modeLabel} guardada exitosamente`;
       }),
       map((res: any) => res.data?.id || null)
     );

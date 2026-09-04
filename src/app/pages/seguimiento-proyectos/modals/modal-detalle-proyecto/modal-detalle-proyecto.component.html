@@ -1,0 +1,210 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+  <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden transform transition-all">
+
+    <!-- Modal Header -->
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
+          <i class="bi bi-folder-check text-2xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-800 tracking-tight">{{ proyecto?.codigo_proyecto }}</h3>
+          <p *ngIf="proyecto?.nombre_proyecto" class="text-sm text-slate-700 font-medium">{{ proyecto?.nombre_proyecto }}</p>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-xs text-slate-500 flex items-center gap-1">
+              <i class="bi bi-person"></i> {{ proyecto?.cliente || 'Cliente no especificado' }}
+            </span>
+            <span *ngIf="proyecto?.fecha_inicio" class="text-xs text-slate-400 flex items-center gap-1">
+              <i class="bi bi-calendar3"></i> {{ proyecto?.fecha_inicio | date:'dd/MM/yyyy' }} — {{ proyecto?.fecha_fin | date:'dd/MM/yyyy' }}
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+              [ngClass]="{'bg-emerald-100 text-emerald-700 border border-emerald-200': proyecto?.estado === 'activo', 'bg-slate-100 text-slate-600 border border-slate-200': proyecto?.estado === 'inactivo'}">
+              {{ proyecto?.estado | uppercase }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <button (click)="onCerrar()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition-colors">
+        <i class="bi bi-x-lg text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-6 space-y-6 overflow-y-auto flex-1">
+
+      <!-- Tabla Comparativa Presupuestado vs Real -->
+      <div class="border border-slate-200/80 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="px-4 py-2.5 text-left font-semibold text-slate-600 text-xs">Rubro Financiero</th>
+              <th class="px-4 py-2.5 text-right font-semibold text-slate-600 text-xs">Presupuestado</th>
+              <th class="px-4 py-2.5 text-right font-semibold text-slate-600 text-xs">Ejecutado Real</th>
+              <th class="px-4 py-2.5 text-right font-semibold text-slate-600 text-xs">Diferencia</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 font-medium text-slate-700">Facturación Total</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-800">{{ formatCurrency(proyecto?.facturacion_presupuestada) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-emerald-600 font-semibold">{{ formatCurrency(proyecto?.facturacion_real) }}</td>
+              <td class="px-4 py-3 text-right font-mono font-semibold" [class.text-emerald-600]="(proyecto?.variacion_facturacion || 0) >= 0" [class.text-rose-600]="(proyecto?.variacion_facturacion || 0) < 0">
+                {{ formatCurrency(proyecto?.variacion_facturacion) }}
+              </td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-medium text-slate-700">Costo Directo</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-800">{{ formatCurrency(proyecto?.costo_presupuestado) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-rose-600">{{ formatCurrency(proyecto?.costo_real) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-600">{{ formatCurrency(proyecto?.variacion_costos) }}</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-medium text-slate-700">Administración / Mano Obra</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-800">{{ formatCurrency(proyecto?.admin_mano_obra_presupuestada) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-800">{{ formatCurrency(proyecto?.admin_mano_obra_real) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-500">-</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 font-medium text-slate-700">Comisión</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-800">{{ formatCurrency(proyecto?.comision_presupuestada) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-800">{{ formatCurrency(proyecto?.comision_real) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-slate-500">-</td>
+            </tr>
+            <tr class="bg-indigo-50/40 font-bold border-t border-indigo-100">
+              <td class="px-4 py-3 text-indigo-900">Margen de Rentabilidad %</td>
+              <td class="px-4 py-3 text-right text-indigo-700">{{ formatPercent(proyecto?.margen_presupuestado) }}</td>
+              <td class="px-4 py-3 text-right" [class.text-emerald-600]="(proyecto?.margen_real || 0) >= 30" [class.text-rose-600]="(proyecto?.margen_real || 0) < 20">
+                {{ formatPercent(proyecto?.margen_real) }}
+              </td>
+              <td class="px-4 py-3 text-right text-slate-600">-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Notas y Observaciones -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Nota Adicional Propia (Saint) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-semibold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="bi bi-sticky-fill text-indigo-600"></i> Nota Propia del Proyecto
+            </h4>
+            <button *ngIf="puedeEditar && proyecto" (click)="onEditarNota()"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all text-xs font-medium border border-indigo-200/80 shadow-2xs">
+              <i class="bi bi-pencil-square"></i> {{ proyecto.nota_adicional ? 'Editar Nota' : '+ Agregar Nota' }}
+            </button>
+          </div>
+          <div class="p-3.5 rounded-xl bg-indigo-50/50 border border-indigo-100 text-xs text-slate-800 whitespace-pre-wrap leading-relaxed min-h-[70px]">
+            {{ proyecto?.nota_adicional || 'Sin nota propia registrada.' }}
+          </div>
+        </div>
+
+        <!-- Observación original de Siesa (Solo Lectura) -->
+        <div class="space-y-2">
+          <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="bi bi-info-circle text-slate-400"></i> Observación desde Siesa
+          </h4>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs font-mono text-slate-600 whitespace-pre-wrap leading-relaxed min-h-[70px]">
+            {{ proyecto?.observaciones || 'Sin observaciones registradas en Siesa.' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Despiece de Movimientos en Siesa -->
+      <div>
+        <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          Despiece de Movimientos Reales (Siesa)
+          <span *ngIf="documentosAgrupados.length > 0" class="text-slate-500 font-normal normal-case ml-1">
+            — {{ documentosAgrupados.length }} documento(s), {{ movimientos.length }} ítem(s)
+          </span>
+        </h4>
+        
+        <!-- Loading spinner -->
+        <div *ngIf="loadingDetalle" class="flex justify-center py-6">
+          <div class="w-6 h-6 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!loadingDetalle && documentosAgrupados.length === 0" class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-500 text-center">
+          No hay movimientos reales registrados en Siesa para este proyecto.
+        </div>
+
+        <!-- Grouped Table -->
+        <div *ngIf="!loadingDetalle && documentosAgrupados.length > 0" class="border border-slate-200/80 rounded-xl overflow-hidden max-h-[450px] overflow-y-auto">
+          <table class="w-full text-xs">
+            <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold text-slate-600 w-8"></th>
+                <th class="px-3 py-2 text-left font-semibold text-slate-600">Documento</th>
+                <th class="px-3 py-2 text-left font-semibold text-slate-600">Fecha</th>
+                <th class="px-3 py-2 text-center font-semibold text-slate-600">Ítems</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-600">Vlr. Neto</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-600">Costo Real</th>
+              </tr>
+            </thead>
+            <tbody *ngFor="let doc of documentosAgrupados" class="border-b border-slate-100">
+              <!-- Document Header Row (clickable) -->
+              <tr (click)="toggleDocumento(doc)" class="cursor-pointer hover:bg-indigo-50/40 transition-colors" [class.bg-indigo-50]="doc.expanded">
+                <td class="px-3 py-2.5 text-center">
+                  <i class="bi text-indigo-500 text-[11px] transition-transform duration-200" [class.bi-chevron-right]="!doc.expanded" [class.bi-chevron-down]="doc.expanded"></i>
+                </td>
+                <td class="px-3 py-2.5 font-semibold font-mono text-slate-800">
+                  <div class="flex items-center gap-2">
+                    <span>{{ doc.tipo_docto }} - {{ doc.consec_docto }}</span>
+                    <span *ngIf="doc.tiene_comision" class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold rounded-md px-2 py-0.5 shadow-xs" title="Este documento contiene ítems de Comisión">
+                      <i class="bi bi-award-fill text-amber-600"></i> COMISIÓN
+                    </span>
+                  </div>
+                </td>
+                <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap">{{ doc.fecha }}</td>
+                <td class="px-3 py-2.5 text-center">
+                  <span class="inline-flex items-center justify-center bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-full px-2 py-0.5">
+                    {{ doc.items.length }}
+                  </span>
+                </td>
+                <td class="px-3 py-2.5 text-right text-emerald-700 font-mono font-bold">{{ formatCurrency(doc.total_valor_neto) }}</td>
+                <td class="px-3 py-2.5 text-right text-rose-700 font-mono font-bold">{{ formatCurrency(doc.total_costo_real) }}</td>
+              </tr>
+              <!-- Expanded Item Rows -->
+              <tr *ngFor="let item of doc.items" [hidden]="!doc.expanded" class="border-t border-slate-100 transition-colors" [ngClass]="item.es_comision ? 'bg-amber-50/70' : 'bg-slate-50/60'">
+                <td class="px-3 py-1.5 text-center">
+                  <i *ngIf="item.es_comision" class="bi bi-award-fill text-amber-600 text-xs" title="Ítem de Comisión"></i>
+                </td>
+                <td class="px-3 py-1.5" colspan="2">
+                  <div class="pl-3 border-l-2" [ngClass]="item.es_comision ? 'border-amber-400' : 'border-indigo-200'">
+                    <div class="font-medium text-[11px] flex items-center gap-2" [ngClass]="item.es_comision ? 'text-amber-900 font-bold' : 'text-slate-700'">
+                      <span>{{ item.descripcion }}</span>
+                      <span *ngIf="item.es_comision" class="bg-amber-200/80 text-amber-900 text-[9px] font-bold px-1.5 py-0.2 rounded">
+                        COMISIÓN
+                      </span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">{{ item.referencia }} · Cant: {{ item.cantidad }}</div>
+                  </div>
+                </td>
+                <td class="px-3 py-1.5"></td>
+                <td class="px-3 py-1.5 text-right text-emerald-600 font-mono text-[11px]">{{ formatCurrency(item.valor_neto) }}</td>
+                <td class="px-3 py-1.5 text-right font-mono text-[11px]" [ngClass]="item.es_comision ? 'text-amber-700 font-bold' : 'text-rose-600'">
+                  {{ formatCurrency(item.costo_real) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+      <span *ngIf="movimientos.length > 0" class="text-xs text-slate-400">{{ movimientos.length }} movimientos en Siesa</span>
+      <span *ngIf="movimientos.length === 0"></span>
+      <button (click)="onCerrar()"
+        class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 text-white hover:bg-slate-900 transition-all shadow-sm">
+        Cerrar Detalle
+      </button>
+    </div>
+
+  </div>
+</div>

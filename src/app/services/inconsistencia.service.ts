@@ -329,4 +329,32 @@ export class InconsistenciaService {
         }
         return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/drilldown/motivos`, { params });
     }
+
+    // ==================== GESTIÓN DE DEPARTAMENTOS / PROCESOS ====================
+
+    private baseUrlProcesos = `${environment.URL_API_LARAVEL}/procesos`;
+
+    listarProcesosGestion(): Observable<any> {
+        return this.http.get(`${this.baseUrlProcesos}`);
+    }
+
+    actualizarProcesoGestion(id: number, data: { id_lider?: number | null, id_matriz_remplazo?: number | null, nombre?: string, activo?: boolean }): Observable<any> {
+        return this.http.put(`${this.baseUrlProcesos}/${id}`, data);
+    }
+
+    crearProcesoGestion(data: { nombre: string, id_lider?: number | null, id_matriz_remplazo?: number | null, activo?: boolean, user_ids?: number[] }): Observable<any> {
+        return this.http.post(`${this.baseUrlProcesos}`, data);
+    }
+
+    eliminarProcesoGestion(id: number): Observable<any> {
+        return this.http.delete(`${this.baseUrlProcesos}/${id}`);
+    }
+
+    sincronizarMiembrosProceso(procesoId: number, userIds: number[]): Observable<any> {
+        return this.http.post(`${this.baseUrlProcesos}/${procesoId}/miembros`, { user_ids: userIds });
+    }
+
+    obtenerUsuariosDisponibles(): Observable<any> {
+        return this.http.get(`${this.baseUrlProcesos}/usuarios-disponibles`);
+    }
 }

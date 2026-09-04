@@ -1,620 +1,828 @@
-<div class="costeo-container py-4">
-    <!-- Header Profesional (Similar a Solicitudes) -->
-    <div class="page-header mb-4">
-        <div class="header-row">
-            <button class="btn-back" (click)="goBack()" title="Volver al Hub">
-                <i class="bi bi-arrow-left"></i>
-            </button>
-            <div class="header-info">
-                <h1 class="page-title">Captura Inteligente de OC</h1>
-                <p class="page-subtitle">
-                    <i class="bi bi-magic"></i> Extracción automática de información mediante documentos
-                </p>
-            </div>
-            <div class="header-stats" *ngIf="itemsProcesados.length > 0">
-                <div class="stat-pill">
-                    <i class="bi bi-box"></i> {{ itemsProcesados.length }} ítems
-                </div>
-                <div class="stat-pill">
-                    <i class="bi bi-currency-dollar"></i> ${{ totalOrden * 1.19 | number:'1.2-2' }} Total
+<div class="costeo-container py-2 px-3">
+
+    <!-- Header Compacto cuando NO hay documento cargado -->
+    <div class="page-header mb-2 py-2 px-3" *ngIf="!nombreArchivo || loading">
+        <div class="header-row d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn-back" (click)="goBack()" title="Volver al Hub">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <div class="header-info">
+                    <h1 class="page-title fs-5 mb-0">Captura Inteligente de OC</h1>
+                    <p class="page-subtitle mb-0" style="font-size: 0.72rem;">
+                        <i class="bi bi-cpu me-1"></i> Sube un documento y los datos se extraen automáticamente
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Vista: Orden de Compra -->
-    <div class="fade-in">
+    <!-- ============================================= -->
+    <!-- ESTADO INICIAL: Solo Upload (sin documento)   -->
+    <!-- ============================================= -->
+    <div *ngIf="!nombreArchivo && !loading" class="fade-in">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-body p-5 text-center">
+                <div class="upload-area-large p-5 border-2 border-dashed rounded-3 bg-light mx-auto" style="max-width: 600px;">
+                    <input type="file" id="fileInput" class="d-none" (change)="onFileSelected($event)"
+                        accept=".xlsx,.xls,.pdf,.doc,.docx,.png,.jpg,.jpeg,.tiff,.tif" multiple>
+                    <label for="fileInput" class="mb-0 cursor-pointer w-100">
+                        <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 3rem;"></i>
+                        <h4 class="fw-bold text-dark mt-3 mb-2">Sube la Orden de Compra del cliente</h4>
+                        <p class="text-muted mb-3">Arrastra el archivo aquí o haz clic para seleccionarlo</p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <span class="badge bg-white text-dark border px-3 py-2"><i class="bi bi-file-pdf me-1 text-danger"></i>PDF</span>
+                            <span class="badge bg-white text-dark border px-3 py-2"><i class="bi bi-image me-1 text-success"></i>Imagen</span>
+                            <span class="badge bg-white text-dark border px-3 py-2"><i class="bi bi-file-earmark-excel me-1 text-success"></i>Excel</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- Controles Superiores: Upload & View Options -->
-        <div class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
-            <div class="card-body p-0">
-                <div class="row g-0">
-                    <div class="col-lg-4 bg-light p-4 d-flex flex-column justify-content-center border-end">
-                        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-cloud-arrow-up me-2"></i>1. Cargar Documento</h6>
-                        <div class="upload-area p-3 border-2 border-dashed rounded-3 text-center bg-white">
-                            <input type="file" id="fileInput" class="d-none" (change)="onFileSelected($event)"
-                                accept=".xlsx,.xls,.pdf,.doc,.docx,.png,.jpg,.jpeg" multiple>
-                            <label for="fileInput" class="mb-0 cursor-pointer w-100">
-                                <i class="bi bi-file-earmark-plus text-primary fs-2 mb-2"></i>
-                                <p class="small text-muted mb-0">Haz clic para buscar o arrastra aquí</p>
-                                <span class="badge bg-light text-primary border mt-2">PDF, Excel, Word, Imagen</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-lg-8 p-4 d-flex align-items-center justify-content-between">
-                        <div class="flex-grow-1">
-                            <div *ngIf="!loading && !error && !mensaje" class="text-center w-100 py-3">
-                                <p class="text-muted mb-0" *ngIf="!nombreArchivo">
-                                    <i class="bi bi-info-circle me-2"></i>Sube una orden de compra para comenzar el proceso de extracción automática.
-                                </p>
-                                <div *ngIf="nombreArchivo" class="d-flex align-items-center justify-content-center gap-2">
-                                    <i class="bi bi-file-earmark-text text-primary fs-4"></i>
-                                    <div>
-                                        <p class="mb-0 fw-bold text-dark">{{ nombreArchivo }}</p>
-                                        <small class="text-muted">Documento cargado correctamente</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div *ngIf="loading" class="w-100 text-center py-3">
-                                <div class="spinner-border text-primary mb-2" role="status"></div>
-                                <p class="text-primary fw-medium mb-0">Analizando documento con IA...</p>
-                                <small class="text-muted">Estamos extrayendo cabeceras e ítems automáticamente.</small>
-                            </div>
-                            <div *ngIf="error" class="alert alert-danger w-100 border-0 shadow-sm mb-0">
-                                <div class="d-flex">
-                                    <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
-                                    <div>
-                                        <h6 class="alert-heading fw-bold mb-1">Error de procesamiento</h6>
-                                        <p class="small mb-0">{{ error }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div *ngIf="mensaje" class="alert alert-success w-100 border-0 shadow-sm mb-0">
-                                <div class="d-flex">
-                                    <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-                                    <div>
-                                        <h6 class="alert-heading fw-bold mb-1">¡Éxito!</h6>
-                                        <p class="small mb-0">{{ mensaje }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+    <!-- Estado de carga -->
+    <div *ngIf="loading" class="fade-in">
+        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+            <div class="card-body p-5 text-center">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                <h5 class="fw-bold text-dark mb-2">Analizando documento...</h5>
+                <p class="text-muted mb-0">Extrayendo datos de cabecera, cliente e ítems automáticamente.</p>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Opción de ver documento (Solo si hay contenido) -->
-                        <div class="ms-4 border-start ps-4" *ngIf="datosDocumentoExcel.length > 0 || textoDocumentoPlano || htmlDocumentoPlano">
-                            <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" (click)="toggleViewer()">
-                                <i class="bi" [ngClass]="showViewer ? 'bi-eye-slash' : 'bi-eye'"></i>
-                                {{ showViewer ? 'Ocultar Visor' : 'Ver Documento' }}
-                            </button>
-                        </div>
+    <!-- ============================================= -->
+    <!-- ESTADO PRINCIPAL: Documento cargado           -->
+    <!-- ============================================= -->
+    <div *ngIf="nombreArchivo && !loading" class="fade-in">
+
+        <!-- Header Unificado Ultra-Compacto con información del archivo -->
+        <div class="card shadow-sm border-0 rounded-3 mb-2 bg-white overflow-hidden">
+            <div class="card-body py-1.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-light border py-1 px-2.5 rounded-pill" (click)="goBack()" title="Volver al Hub">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <span class="fw-bold text-dark" style="font-size: 0.95rem;">Captura OC</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 font-monospace" style="font-size: 0.75rem;">
+                        <i class="bi bi-file-earmark-check me-1"></i>{{ nombreArchivo }}
+                    </span>
+                    <label for="fileInputReplace" class="btn btn-outline-secondary btn-sm rounded-pill px-2 py-0 mb-0 cursor-pointer" style="font-size: 0.7rem;">
+                        <i class="bi bi-arrow-repeat me-1"></i> Cambiar
+                    </label>
+                    <input type="file" id="fileInputReplace" class="d-none" (change)="onFileSelected($event)"
+                        accept=".xlsx,.xls,.pdf,.doc,.docx,.png,.jpg,.jpeg,.tiff,.tif" multiple>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <div *ngIf="error" class="text-danger small" style="font-size: 0.72rem;"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</div>
+                    <div *ngIf="mensaje" class="text-success small" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i>{{ mensaje }}</div>
+
+                    <div class="header-stats d-flex gap-2" *ngIf="itemsProcesados.length > 0">
+                        <span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill" style="font-size: 0.72rem;">
+                            <i class="bi bi-box me-1 text-primary"></i><strong>{{ itemsProcesados.length }}</strong> ítems
+                        </span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill" style="font-size: 0.72rem;">
+                            <i class="bi bi-currency-dollar me-0.5"></i><strong>{{ totalFinalOrden | number:'1.2-2' }}</strong>
+                        </span>
                     </div>
+
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm" (click)="guardarOrden()" [disabled]="savingOrder" style="font-size: 0.76rem;">
+                        <span *ngIf="!savingOrder"><i class="bi bi-cloud-check me-1"></i>Guardar OC</span>
+                        <span *ngIf="savingOrder"><span class="spinner-border spinner-border-sm me-1"></span>Guardando...</span>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Layout de Extracción: Izquierda Vista Doc / Derecha Formulario -->
-        <div class="row g-4" *ngIf="(datosDocumentoExcel.length > 0 || textoDocumentoPlano || htmlDocumentoPlano)">
+        <!-- Layout Split Adaptado a Pantalla (Side-by-Side 100vh) -->
+        <div class="row g-2">
 
-            <!-- Columna Izquierda: Vista del Documento -->
-            <div [class]="showViewer ? 'col-lg-7' : 'd-none'">
-                <div class="card shadow-sm border-0 rounded-3 h-100 overflow-hidden">
-                    <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3">
-                            <h6 class="card-title fw-bold mb-0 text-dark">
-                                <i class="bi bi-eye me-2 text-primary"></i>2. Visor de Documento
-                            </h6>
-                            <!-- Selector de Modo de Vista -->
-                            <div class="btn-group btn-group-sm rounded-pill border overflow-hidden p-0.5 bg-light">
-                                <button class="btn btn-sm px-3 border-0 transition-all"
-                                        [ngClass]="viewMode === 'EXTRACTO' ? 'btn-primary shadow-sm' : 'btn-light'"
-                                        (click)="setViewMode('EXTRACTO')">
-                                    <i class="bi bi-magic me-1"></i> Extracto
-                                </button>
-                                <button class="btn btn-sm px-3 border-0 transition-all"
-                                        [ngClass]="viewMode === 'ORIGINAL' ? 'btn-primary shadow-sm' : 'btn-light'"
-                                        (click)="setViewMode('ORIGINAL')">
-                                    <i class="bi bi-file-earmark-pdf me-1"></i> Original
-                                </button>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-2" *ngIf="viewMode === 'EXTRACTO' || (viewMode === 'ORIGINAL' && originalFile?.type === 'application/pdf')">
-                            <div class="selection-indicator px-2 py-1 bg-warning-subtle text-warning-emphasis border border-warning rounded-pill small me-2" 
-                                 *ngIf="textoSeleccionado" style="font-size: 0.65rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                <i class="bi bi-cursor-fill me-1"></i> "{{ textoSeleccionado }}"
-                            </div>
+            <!-- ======================== -->
+            <!-- IZQUIERDA: Visor del Doc -->
+            <!-- ======================== -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 rounded-3 overflow-hidden" style="height: calc(100vh - 120px);">
+                    <div class="card-header bg-white border-bottom py-1.5 px-3 d-flex align-items-center justify-content-between">
+                        <h6 class="card-title fw-bold mb-0 text-dark small" style="font-size: 0.8rem;">
+                            <i class="bi bi-file-earmark-text me-2 text-primary"></i>Documento Original
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
                             <div class="btn-group btn-group-sm border rounded-pill overflow-hidden bg-light">
-                                <button class="btn btn-light border-0 px-3" (click)="zoomOut()" title="Reducir">
+                                <button class="btn btn-light border-0 px-2 py-0" (click)="zoomOut()" title="Reducir" style="font-size: 0.7rem;">
                                     <i class="bi bi-dash-lg"></i>
                                 </button>
-                                <span class="d-flex align-items-center bg-white px-3 fw-bold small" style="min-width: 60px; justify-content: center;">
+                                <span class="d-flex align-items-center bg-white px-2 fw-bold" style="font-size: 0.7rem;">
                                     {{ zoomLevel }}%
                                 </span>
-                                <button class="btn btn-light border-0 px-3" (click)="zoomIn()" title="Ampliar">
+                                <button class="btn btn-light border-0 px-2 py-0" (click)="zoomIn()" title="Ampliar" style="font-size: 0.7rem;">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
                             </div>
-                            <button class="btn btn-sm btn-outline-secondary rounded-circle" (click)="resetZoom()" title="Restablecer">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                            </button>
-                            <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" 
-                                    (mousedown)="$event.preventDefault()"
-                                    (click)="deteccionInteligente()" title="Analizar texto seleccionado">
-                                <i class="bi bi-stars"></i> Detectar Campo
-                            </button>
                         </div>
                     </div>
-                    <div class="card-body p-0 bg-light" style="min-height: 500px;">
-                        <!-- MODO EXTRACTO (MAOPEO) -->
-                        <div *ngIf="viewMode === 'EXTRACTO'" class="fade-in h-100" (mouseup)="capturarSeleccion()">
-                            <div class="p-3 text-center bg-white border-bottom" *ngIf="!htmlDocumentoPlano && !textoDocumentoPlano && datosDocumentoExcel.length === 0">
-                                <p class="text-muted small mb-0"><i class="bi bi-hand-index-thumb me-2"></i>Selecciona texto en el documento para mapearlo a los campos.</p>
-                            </div>
-
-                            <!-- Vista Texto Plano (PDF o Imágenes OCR) -->
-                            <div class="document-viewer p-4 bg-white m-3 rounded shadow-sm"
-                                *ngIf="textoDocumentoPlano" style="max-height: 70vh; overflow: auto; cursor: crosshair;">
-                                <pre class="mb-0 text-dark"
-                                    [style.transform]="'scale(' + zoomLevel/100 + ')'"
-                                    [style.transform-origin]="'top left'"
-                                    style="white-space: pre; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; line-height: 1.4;">{{ textoDocumentoPlano }}</pre>
-                            </div>
-
-                            <!-- Vista HTML (Documentos de Word y PDF reconstruidos) -->
-                            <div class="document-viewer p-4 bg-white m-3 rounded shadow-sm word-doc-container"
-                                *ngIf="htmlDocumentoPlano" style="max-height: 70vh; overflow: auto;">
-
-                                <!-- Botón de Captura de Tabla Manual -->
-                                <div class="sticky-top bg-light p-2 mb-3 border rounded shadow-sm d-flex align-items-center justify-content-between"
-                                    style="z-index: 10;">
-                                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Resalta las filas de la tabla de productos</div>
-                                    <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm"
-                                        (click)="capturarTablaDesdeSeleccion()">
-                                        <i class="bi bi-table me-1"></i> Auto-Capturar Ítems
-                                    </button>
-                                </div>
-
-                                <div [innerHTML]="safeHtmlDocumento"
-                                    [style.transform]="'scale(' + zoomLevel/100 + ')'"
-                                    [style.transform-origin]="'top left'"
-                                    [style.width]="(10000/zoomLevel) + '%'"
-                                    style="font-family: 'Inter', sans-serif; font-size: 0.9rem;"></div>
-                            </div>
-
-                            <!-- Vista Excel (Tabla) -->
-                            <div class="table-responsive p-3" *ngIf="datosDocumentoExcel.length > 0"
-                                style="max-height: 70vh;">
-                                <table class="table table-sm table-bordered table-hover mb-0 bg-white rounded shadow-sm overflow-hidden"
-                                    [style.font-size]="(zoomLevel * 0.008) + 'rem'">
-                                    <thead class="table-dark sticky-top">
-                                        <tr>
-                                            <th *ngFor="let key of getKeys(datosDocumentoExcel[0])"
-                                                class="text-nowrap px-3 py-2">{{ key }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody style="cursor: text;">
-                                        <tr *ngFor="let row of datosDocumentoExcel | slice:0:150">
-                                            <td *ngFor="let key of getKeys(row)" class="px-3 py-2">{{ row[key] }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div class="card-body p-0 bg-light" style="height: calc(100vh - 165px); overflow: auto; user-select: none;"
+                         id="doc-viewer-body"
+                         (contextmenu)="$event.preventDefault()"
+                         (mousedown)="onViewerMouseDown($event)">
+                        <!-- Visor PDF (Custom seleccionable) -->
+                        <div id="pdf-original-container" class="pdf-viewer-scroll p-3"
+                             *ngIf="originalFile?.type === 'application/pdf'"
+                             (mouseup)="capturarSeleccion()">
                         </div>
 
-                        <!-- MODO ORIGINAL (VISOR ESTÁNDAR) -->
-                        <div *ngIf="viewMode === 'ORIGINAL'" class="fade-in h-100 p-3 bg-white" (mouseup)="capturarSeleccion()">
-                            <div class="alert alert-info border-0 small py-2 mb-3 d-flex align-items-center justify-content-between">
-                                <div>
-                                    <i class="bi bi-stars me-2"></i><strong>Modo Original Selectable:</strong> Ahora puedes seleccionar texto directamente sobre la imagen original para detectarlo.
-                                </div>
-                                <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm ms-2"
-                                    *ngIf="originalFile?.type === 'application/pdf'"
-                                    (click)="capturarTablaDesdeSeleccion()">
-                                    <i class="bi bi-table me-1"></i> Auto-Capturar Ítems
-                                </button>
-                            </div>
-                            
-                            <!-- Visor para PDF (Custom Seleccionable) -->
-                            <div id="pdf-original-container" class="pdf-viewer-scroll bg-light p-3 border rounded shadow-sm" 
-                                 *ngIf="originalFile?.type === 'application/pdf'"
-                                 style="max-height: 75vh; overflow-y: auto;">
-                                <!-- Las páginas se renderizan aquí mediante TS -->
-                            </div>
+                        <!-- Visor Imagen -->
+                        <div *ngIf="originalFile && originalFile.type !== 'application/pdf' && originalFileUrl"
+                             class="p-3 text-center" (mouseup)="capturarSeleccion()">
+                            <img [src]="originalFileUrl" class="img-fluid rounded shadow-sm"
+                                 [style.transform]="'scale(' + zoomLevel/100 + ')'"
+                                 [style.transform-origin]="'top left'"
+                                 alt="Documento original">
+                        </div>
 
-                            <!-- Visor para Otros (Iframe fallback) -->
-                            <div class="original-viewer-container rounded border overflow-hidden shadow-sm" 
-                                 *ngIf="originalFile?.type !== 'application/pdf'"
-                                 style="height: 70vh;">
-                                <iframe *ngIf="originalFileUrl" 
-                                        [src]="originalFileUrl" 
-                                        class="w-100 h-100 border-0">
-                                </iframe>
-                                <div *ngIf="!originalFileUrl" class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
-                                    <i class="bi bi-file-earmark-excel fs-1 mb-3"></i>
-                                    <p>No se pudo cargar la vista original del archivo.</p>
-                                </div>
-                            </div>
+                        <!-- Vista HTML (Documentos de Word y PDF reconstruidos) -->
+                        <div class="document-viewer p-4 bg-white m-3 rounded shadow-sm word-doc-container"
+                            *ngIf="htmlDocumentoPlano && !originalFile"
+                            (mouseup)="capturarSeleccion()">
+                            <div [innerHTML]="safeHtmlDocumento" [style.transform]="'scale(' + zoomLevel/100 + ')'"
+                                [style.transform-origin]="'top left'" [style.width]="(10000/zoomLevel) + '%'"
+                                style="font-family: 'Inter', sans-serif; font-size: 0.9rem;"></div>
+                        </div>
+
+                        <!-- Vista Excel -->
+                        <div class="table-responsive p-3" *ngIf="datosDocumentoExcel.length > 0 && !originalFile">
+                            <table class="table table-sm table-bordered table-hover mb-0 bg-white rounded shadow-sm overflow-hidden"
+                                [style.font-size]="(zoomLevel * 0.008) + 'rem'">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th *ngFor="let key of getKeys(datosDocumentoExcel[0])"
+                                            class="text-nowrap px-3 py-2">{{ key }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="cursor: text;">
+                                    <tr *ngFor="let row of datosDocumentoExcel | slice:0:150">
+                                        <td *ngFor="let key of getKeys(row)" class="px-3 py-2">{{ row[key] }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sin preview -->
+                        <div *ngIf="!originalFile && !htmlDocumentoPlano && datosDocumentoExcel.length === 0 && !textoDocumentoPlano"
+                             class="h-100 d-flex flex-column align-items-center justify-content-center text-muted p-5">
+                            <i class="bi bi-file-earmark fs-1 mb-3"></i>
+                            <p>Vista previa no disponible para este formato.</p>
+                        </div>
+
+                        <!-- Texto plano (último recurso) -->
+                        <div class="document-viewer p-4 bg-white m-3 rounded shadow-sm" *ngIf="textoDocumentoPlano && !originalFile">
+                            <pre class="mb-0 text-dark" [style.transform]="'scale(' + zoomLevel/100 + ')'"
+                                [style.transform-origin]="'top left'"
+                                style="white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; font-size: 0.8rem; line-height: 1.5;">{{ textoDocumentoPlano }}</pre>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Columna Derecha: Asistente de Extracción de 2 Pasos -->
-            <div [class]="showViewer ? 'col-lg-5' : 'col-12'">
-                <div class="card shadow-sm border-0 rounded-3 h-100 border-top border-primary border-4">
-                    <div class="card-header bg-white border-bottom py-3">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <h2 class="section-title mb-0">
-                                <i class="bi bi-magic text-primary"></i> 3. Mapeo de Datos
-                            </h2>
-                            <div class="stepper-pills d-flex gap-1">
-                                <span class="badge rounded-pill cursor-pointer transition-all" 
-                                      [ngClass]="pasoActual === 1 ? 'bg-primary shadow-sm' : 'bg-light text-muted border'"
-                                      (click)="irAPaso(1)">
-                                    Cabecera
-                                </span>
-                                <span class="badge rounded-pill cursor-pointer transition-all" 
-                                      [ngClass]="pasoActual === 2 ? 'bg-primary shadow-sm' : 'bg-light text-muted border'"
-                                      (click)="irAPaso(2)">
-                                    Detalle Ítems
+            <!-- ============================== -->
+            <!-- DERECHA: Datos Extraídos       -->
+            <!-- ============================== -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 rounded-3 overflow-hidden d-flex flex-column" style="height: calc(100vh - 120px);">
+                    <div class="card-header bg-white border-bottom py-1.5 px-3 flex-shrink-0">
+                        <h6 class="card-title fw-bold mb-0 text-dark small" style="font-size: 0.8rem;">
+                            <i class="bi bi-magic me-2 text-primary"></i>Datos Extraídos
+                            <span class="badge bg-primary-subtle text-primary rounded-pill ms-2" style="font-size: 0.65rem;">Automático</span>
+                        </h6>
+                    </div>
+                    <div class="card-body p-0 d-flex flex-column overflow-hidden flex-grow-1">
+
+                        <!-- Sección Cabecera Compacta (Grid de 2 filas) -->
+                        <div class="p-2.5 px-3 border-bottom bg-white flex-shrink-0">
+                            <form (submit)="$event.preventDefault()">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted mb-0" style="font-size: 0.68rem;">Número OC <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm py-0.5 px-2" name="numero_oc"
+                                            [(ngModel)]="cabeceraOrden.numero_oc" placeholder="Ej. OC-2024-001" style="font-size: 0.78rem;">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted mb-0" style="font-size: 0.68rem;">NIT</label>
+                                        <input type="text" class="form-control form-control-sm py-0.5 px-2" name="nit"
+                                            [(ngModel)]="cabeceraOrden.nit" placeholder="Identificación"
+                                            (input)="buscarClienteManual($any($event.target).value, 'NIT')" style="font-size: 0.78rem;">
+                                    </div>
+                                    <div class="col-md-6 position-relative">
+                                        <label class="form-label text-muted mb-0" style="font-size: 0.68rem;">Cliente <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm py-0.5 px-2" name="cliente_nombre"
+                                            [(ngModel)]="cabeceraOrden.cliente_nombre"
+                                            placeholder="Nombre o razón social..."
+                                            (input)="buscarClienteManual($any($event.target).value, 'NOMBRE')" style="font-size: 0.78rem;">
+
+                                        <!-- Autocompletado Cliente -->
+                                        <div class="autocomplete-dropdown dropdown-width-wide"
+                                            *ngIf="clientesEncontrados.length > 0 && (buscandoPor === 'NOMBRE' || buscandoPor === 'NIT')">
+                                            <div class="autocomplete-item py-1 px-2" *ngFor="let cli of clientesEncontrados"
+                                                (click)="seleccionarClienteOption(cli)">
+                                                <span class="item-title">{{ cli.customerName }}</span>
+                                                <span class="item-subtitle">
+                                                    <i class="bi bi-card-text"></i> NIT: {{ cli.customerId }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row g-2 align-items-center mt-1">
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted mb-0" style="font-size: 0.68rem;">Fecha Solicitud</label>
+                                        <input type="text" class="form-control form-control-sm py-0.5 px-2" name="fecha_solicitud"
+                                            [(ngModel)]="cabeceraOrden.fecha_solicitud" placeholder="DD/MM/AAAA" style="font-size: 0.78rem;">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-muted mb-0" style="font-size: 0.68rem;">Fecha Entrega</label>
+                                        <input type="text" class="form-control form-control-sm py-0.5 px-2" name="fecha_entrega"
+                                            [(ngModel)]="cabeceraOrden.fecha_entrega" placeholder="DD/MM/AAAA" style="font-size: 0.78rem;">
+                                    </div>
+                                    <!-- Opción Precios Incluyen IVA en línea -->
+                                    <div class="col-md-6">
+                                        <div class="p-1 px-2 bg-light rounded-2 border d-flex align-items-center justify-content-between mt-3">
+                                            <span class="text-secondary fw-medium" style="font-size: 0.7rem;">
+                                                <i class="bi bi-receipt me-1 text-primary"></i>IVA
+                                            </span>
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="switchIVA" name="incluye_iva" [(ngModel)]="cabeceraOrden.incluye_iva" style="cursor: pointer; scale: 0.85;">
+                                                <label class="form-check-label fw-bold ms-1" [class.text-primary]="cabeceraOrden.incluye_iva" [class.text-muted]="!cabeceraOrden.incluye_iva" for="switchIVA" style="cursor: pointer; font-size: 0.7rem;">
+                                                    {{ cabeceraOrden.incluye_iva ? 'IVA Incluido (19%)' : 'Sin IVA' }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Sección Ítems Detectados (Scroll interno) -->
+                        <div class="p-2.5 px-3 flex-grow-1 overflow-y-auto">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold mb-0 small text-dark d-flex align-items-center flex-wrap gap-1" style="font-size: 0.78rem;">
+                                    <span><i class="bi bi-list-check me-1 text-primary"></i>Ítems Detectados</span>
+                                    <span class="badge bg-light text-dark border rounded-pill" style="font-size: 0.65rem;">
+                                        {{ itemsProcesados.length }}
+                                    </span>
+                                </h6>
+                                <button class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.7rem;"
+                                    (click)="pasoActual = 2; agregarNuevoItemVacio()">
+                                    <i class="bi bi-plus me-0.5"></i>Agregar ítem
+                                </button>
+                            </div>
+
+                            <!-- Tabla compacta y diferenciada de ítems (Cliente vs CFIP) -->
+                            <div *ngIf="itemsProcesados.length > 0" class="table-responsive">
+                                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.75rem;">
+                                    <thead>
+                                        <tr class="table-light text-muted text-uppercase border-bottom" style="font-size: 0.62rem;">
+                                            <th class="fw-bold py-2 text-center" style="width: 30px;">#</th>
+                                            <th class="fw-bold text-secondary border-end">Ref. Cliente</th>
+                                            <th class="fw-bold text-secondary border-end">Descripción Cliente</th>
+                                            <th class="fw-bold text-center border-end" style="width: 50px;">Cant.</th>
+                                            <th class="fw-bold text-primary border-end">Ítem CFIP (Siesa)</th>
+                                            <th class="fw-bold text-info text-center border-end" style="width: 60px;">Talla</th>
+                                            <th class="fw-bold text-end border-end" style="width: 80px;">Prc. Unit.</th>
+                                            <th class="fw-bold text-end" style="width: 85px;">Total</th>
+                                            <th class="fw-bold text-center" style="width: 65px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let item of itemsProcesados; let i = index" class="border-bottom">
+                                            <td class="text-muted text-center py-2 fw-bold">{{ i + 1 }}</td>
+                                            
+                                            <!-- Referencia del Cliente -->
+                                            <td class="border-end">
+                                                <span class="badge bg-secondary-subtle text-dark border text-wrap font-monospace" style="font-size: 0.68rem;">
+                                                    {{ item.item_cliente || '—' }}
+                                                </span>
+                                            </td>
+
+                                            <!-- Descripción del Cliente -->
+                                            <td class="border-end text-dark" style="max-width: 170px;">
+                                                <span class="text-truncate d-inline-block w-100" style="max-width: 170px;" [title]="item.descripcion_cliente || item.descripcion">
+                                                    {{ item.descripcion_cliente || item.descripcion }}
+                                                </span>
+                                            </td>
+
+                                            <!-- Cantidad -->
+                                            <td class="text-center fw-bold border-end">{{ item.cantidad | number:'1.0-2' }}</td>
+
+                                            <!-- Ítem CFIP (Nuestro en Siesa) -->
+                                            <td class="border-end">
+                                                <!-- Selector con sugerencias Siesa (Solo ID Ítem) -->
+                                                <div *ngIf="item.sugerencias_siesa && item.sugerencias_siesa.length > 0">
+                                                    <select
+                                                        (change)="seleccionarSugerenciaSiesa(i, item.sugerencias_siesa[$any($event.target).value])"
+                                                        class="form-select form-select-sm border-primary-subtle bg-primary-subtle text-primary fw-bold"
+                                                        style="font-size: 0.68rem; padding: 2px 6px;">
+                                                        <option *ngFor="let sug of item.sugerencias_siesa; let idx = index"
+                                                            [value]="idx" [selected]="sug.rowid_siesa === item.rowid_siesa">
+                                                            ID Ítem: {{ sug.codigo_item }} ({{ sug.coincidencia }}%)
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                                <!-- Sin sugerencias -->
+                                                <span *ngIf="!item.sugerencias_siesa || item.sugerencias_siesa.length === 0"
+                                                    class="badge bg-primary-subtle text-primary border" style="font-size: 0.68rem;">
+                                                    <i class="bi bi-box-seam me-1"></i>{{ item.item_cfip || 'Sin vincular' }}
+                                                </span>
+                                            </td>
+
+                                            <!-- Talla del Producto -->
+                                            <td class="text-center border-end">
+                                                <span *ngIf="item.talla" class="badge bg-info-subtle text-dark border px-2 py-1" style="font-size: 0.68rem;">
+                                                    <i class="bi bi-tag-fill text-info me-1"></i>{{ item.talla }}
+                                                </span>
+                                                <span *ngIf="!item.talla" class="text-muted small">—</span>
+                                            </td>
+
+                                            <!-- Precio Unitario de la Prenda -->
+                                            <td class="text-end text-muted border-end">${{ item.precio_unitario | number:'1.2-2' }}</td>
+
+                                            <!-- Total -->
+                                            <td class="text-end fw-bold text-success">${{ item.precio_total | number:'1.2-2' }}</td>
+
+                                            <!-- Acciones y Botón de Detalle -->
+                                            <td class="text-center">
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-link text-primary p-0 px-1" (click)="desglosarItemUI(i)" title="Desglosar por Tallas / Crear Sub-ítem">
+                                                        <i class="bi bi-diagram-3-fill" style="font-size: 0.8rem;"></i>
+                                                    </button>
+                                                    <button class="btn btn-link text-info p-0 px-1" (click)="verDetalleItem(item, i)" title="Ver Detalle Completo">
+                                                        <i class="bi bi-info-circle-fill" style="font-size: 0.8rem;"></i>
+                                                    </button>
+                                                    <button class="btn btn-link text-warning p-0 px-1" (click)="editarItem(i)" title="Editar">
+                                                        <i class="bi bi-pencil" style="font-size: 0.75rem;"></i>
+                                                    </button>
+                                                    <button class="btn btn-link text-danger p-0 px-1" (click)="eliminarItem(i)" title="Eliminar">
+                                                        <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot class="border-top">
+                                         <tr>
+                                             <td colspan="6" class="text-end text-muted py-2" style="font-size: 0.7rem;">Subtotal (Antes de IVA):</td>
+                                             <td colspan="2" class="text-end fw-bold py-2">${{ subtotalAntesDeIva | number:'1.2-2' }}</td>
+                                             <td></td>
+                                         </tr>
+                                         <tr>
+                                             <td colspan="6" class="text-end text-muted py-1" style="font-size: 0.7rem;">
+                                                 IVA (19%):
+                                                 <span *ngIf="cabeceraOrden.incluye_iva" class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1" style="font-size: 0.6rem;">
+                                                     <i class="bi bi-check-circle-fill me-1"></i>Incluido en precios
+                                                 </span>
+                                             </td>
+                                             <td colspan="2" class="text-end fw-bold py-1">${{ valorIvaCalculado | number:'1.2-2' }}</td>
+                                             <td></td>
+                                         </tr>
+                                         <tr class="bg-light">
+                                             <td colspan="6" class="text-end fw-bold text-dark py-2">
+                                                 TOTAL:
+                                                 <span class="text-muted fw-normal small">({{ cabeceraOrden.incluye_iva ? 'Con IVA Incluido' : 'Subtotal + IVA' }})</span>
+                                             </td>
+                                             <td colspan="2" class="text-end fw-bold text-success fs-6 py-2">${{ totalFinalOrden | number:'1.2-2' }}</td>
+                                             <td></td>
+                                         </tr>
+                                     </tfoot>
+                                </table>
+                            </div>
+
+                        </div>
+
+                        <!-- Panel edición manual rápida de ítems -->
+                        <div class="p-3 bg-light border-top">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="fw-bold small text-dark">
+                                    <i class="bi bi-pencil-square me-1"></i>{{ editIndex !== null ? 'Editar Ítem Seleccionado' : 'Añadir Ítem Manualmente' }}
                                 </span>
                             </div>
+                            <form>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6 position-relative">
+                                        <label class="form-label text-muted mb-1" style="font-size: 0.65rem;">ID Ítem / Referencia</label>
+                                        <input type="text" class="form-control form-control-sm" name="item_cfip"
+                                            [(ngModel)]="itemTemporal.item_cfip" placeholder="Buscar ID o ref..."
+                                            (input)="buscarItemsCFIP($any($event.target).value)">
+                                        <!-- Autocompletado ítems Siesa -->
+                                        <div class="autocomplete-dropdown dropdown-width-wide"
+                                            *ngIf="itemsSiesaEncontrados.length > 0 && buscandoPor === 'ITEM_CFIP'">
+                                            <div class="autocomplete-item" *ngFor="let item of itemsSiesaEncontrados"
+                                                (click)="seleccionarItemSiesa(item)">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="item-title text-primary font-monospace fw-bold">ID Ítem: {{ item.f120_id }}</span>
+                                                    <span class="meta-badge">{{ item.talla || item.id_talla }}</span>
+                                                </div>
+                                                <span class="item-subtitle text-truncate" style="max-width: 350px;">
+                                                    {{ item.f120_descripcion || item.descripcion }}
+                                                </span>
+                                            </div>
+                                            <div class="p-3 text-center text-muted small"
+                                                *ngIf="itemsSiesaEncontrados.length === 0 && busquedaProfundaItem">
+                                                <i class="bi bi-exclamation-circle me-1"></i> Sin resultados.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label text-muted mb-1" style="font-size: 0.65rem;">Cód. Cliente</label>
+                                        <input type="text" class="form-control form-control-sm" name="item_cliente"
+                                            [(ngModel)]="itemTemporal.item_cliente" placeholder="Ref. OC">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label text-muted mb-1" style="font-size: 0.65rem;">Descripción <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" name="descripcion"
+                                        [(ngModel)]="itemTemporal.descripcion" placeholder="Nombre del producto">
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-3">
+                                        <label class="form-label text-muted mb-1" style="font-size: 0.65rem;">Talla</label>
+                                        <input type="text" class="form-control form-control-sm" name="talla"
+                                            [(ngModel)]="itemTemporal.talla" placeholder="S,M,L">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label text-muted mb-1" style="font-size: 0.65rem;">Cantidad <span class="text-danger">*</span></label>
+                                        <input type="number" step="0.01" class="form-control form-control-sm" name="cantidad"
+                                            [(ngModel)]="itemTemporal.cantidad">
+                                    </div>
+                                    <div class="col-5">
+                                        <label class="form-label text-muted mb-1" style="font-size: 0.65rem;">Precio Unitario</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light" style="font-size: 0.7rem;">$</span>
+                                            <input type="number" step="0.01" class="form-control fw-bold text-primary"
+                                                name="precio_unitario" [(ngModel)]="itemTemporal.precio_unitario">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm flex-grow-1 fw-bold rounded-pill"
+                                        [ngClass]="editIndex !== null ? 'btn-warning' : 'btn-success'"
+                                        (click)="agregarItem()">
+                                        <i class="bi me-1" [ngClass]="editIndex !== null ? 'bi-check-circle' : 'bi-plus-circle'"></i>
+                                        {{ editIndex !== null ? 'Guardar' : 'Añadir' }}
+                                    </button>
+                                    <button *ngIf="editIndex !== null" type="button"
+                                        class="btn btn-sm btn-outline-secondary rounded-pill"
+                                        (click)="cancelarEdicion()">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
-                    <div class="card-body p-4">
-                        <form (submit)="$event.preventDefault()">
-
-                            <!-- ============================= -->
-                            <!-- PASO 1: CABECERA              -->
-                            <!-- ============================= -->
-                            <div *ngIf="pasoActual === 1" class="fade-in">
-                                <div class="alert alert-primary bg-primary-subtle border-0 small mb-4">
-                                    <i class="bi bi-info-circle-fill me-2"></i>Resalta texto en el visor y presiona <strong>Asignar</strong> en el campo correspondiente.
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold small text-secondary">Número de Orden (OC) <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-hash"></i></span>
-                                        <input type="text" class="form-control border-start-0 fw-bold"
-                                            name="numero_oc" [(ngModel)]="cabeceraOrden.numero_oc"
-                                            placeholder="Ej. OC-2024-001">
-                                        <button class="btn btn-primary px-3" type="button"
-                                            (click)="asignarSeleccion('numero_oc')" title="Asignar seleccion">
-                                            Asignar</button>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3 position-relative">
-                                    <label class="form-label fw-bold small text-secondary">Nombre del Cliente <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-building"></i></span>
-                                        <input type="text" class="form-control border-start-0" name="cliente_nombre"
-                                            [(ngModel)]="cabeceraOrden.cliente_nombre"
-                                            placeholder="Busca o asigna un cliente..."
-                                            (input)="buscarClienteManual($any($event.target).value, 'NOMBRE')">
-                                        <button class="btn btn-primary px-3" type="button"
-                                            (click)="asignarSeleccion('cliente_nombre')" title="Asignar seleccion">
-                                            Asignar</button>
-                                    </div>
-
-                                    <!-- Lista de Autocompletado Manual (Nombre) -->
-                                    <div class="autocomplete-dropdown dropdown-width-wide"
-                                        *ngIf="clientesEncontrados.length > 0 && buscandoPor === 'NOMBRE'">
-                                        <div class="autocomplete-item"
-                                            *ngFor="let cli of clientesEncontrados"
-                                            (click)="seleccionarClienteOption(cli)">
-                                            <span class="item-title">{{ cli.customerName }}</span>
-                                            <span class="item-subtitle">
-                                                <i class="bi bi-card-text"></i> NIT: {{ cli.customerId }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3 position-relative">
-                                    <label class="form-label fw-bold small text-secondary">NIT / Identificación</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-card-text"></i></span>
-                                        <input type="text" class="form-control border-start-0" name="nit"
-                                            [(ngModel)]="cabeceraOrden.nit" placeholder="Identificación del cliente"
-                                            (input)="buscarClienteManual($any($event.target).value, 'NIT')">
-                                        <button class="btn btn-outline-primary px-3" type="button"
-                                            (click)="asignarSeleccion('nit')">
-                                            <i class="bi bi-cursor"></i></button>
-                                    </div>
-
-                                    <!-- Lista de Autocompletado Manual (NIT) -->
-                                    <div class="autocomplete-dropdown dropdown-width-standard"
-                                        *ngIf="clientesEncontrados.length > 0 && buscandoPor === 'NIT'">
-                                        <div class="autocomplete-item"
-                                            *ngFor="let cli of clientesEncontrados"
-                                            (click)="seleccionarClienteOption(cli)">
-                                            <span class="item-title">{{ cli.customerName }}</span>
-                                            <span class="item-subtitle">
-                                                <i class="bi bi-card-text"></i> NIT: {{ cli.customerId }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row g-3 mb-4">
-                                    <div class="col-6">
-                                        <label class="form-label fw-bold small text-secondary">Fecha Solicitud</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" name="fecha_solicitud"
-                                                [(ngModel)]="cabeceraOrden.fecha_solicitud">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                (click)="asignarSeleccion('fecha_solicitud')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-bold small text-secondary">Fecha Entrega</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" name="fecha_entrega"
-                                                [(ngModel)]="cabeceraOrden.fecha_entrega">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                (click)="asignarSeleccion('fecha_entrega')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="d-grid">
-                                    <button type="button"
-                                        class="btn btn-primary py-2 fw-bold d-flex justify-content-center align-items-center rounded-3 shadow-sm"
-                                        (click)="siguientePaso()">
-                                        Siguiente: Detalle de Ítems <i class="bi bi-arrow-right ms-2"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- ============================= -->
-                            <!-- PASO 2: CUERPO (ÍTEMS)        -->
-                            <!-- ============================= -->
-                            <div *ngIf="pasoActual === 2" class="fade-in">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h6 class="fw-bold mb-0" [ngClass]="editIndex !== null ? 'text-warning' : 'text-dark'">
-                                        <i class="bi me-2" [ngClass]="editIndex !== null ? 'bi-pencil-square' : 'bi-plus-circle'"></i>
-                                        {{ editIndex !== null ? 'Editando Ítem #' + (editIndex + 1) : 'Agregar Nuevo Ítem' }}
-                                    </h6>
-                                    <button class="btn btn-sm btn-link text-decoration-none text-muted" (click)="pasoAnterior()">
-                                        <i class="bi bi-arrow-left"></i> Volver a Cabecera
-                                    </button>
-                                </div>
-
-                                <div class="row g-3 mb-3">
-                                    <div class="col-6 position-relative">
-                                        <label class="form-label fw-bold small text-secondary">Cód. CFIP (Opcional)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control" name="item_cfip"
-                                                [(ngModel)]="itemTemporal.item_cfip" placeholder="DB-XXXX"
-                                                (input)="buscarItemsCFIP($any($event.target).value)"
-                                                (focus)="buscarItemsCFIP(itemTemporal.item_cfip)">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                (click)="asignarSeleccion('item_cfip')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-
-                                            <!-- Lista de Autocompletado Ítems Siesa -->
-                                            <div class="autocomplete-dropdown dropdown-width-wide"
-                                                *ngIf="buscandoPor === 'ITEM_CFIP' && (itemsSiesaEncontrados.length > 0 || !busquedaProfundaItem)">
-                                                
-                                                <!-- Botón de Búsqueda Profunda -->
-                                                <button type="button" class="deep-search-btn"
-                                                    *ngIf="!busquedaProfundaItem"
-                                                    (click)="buscarItemsCFIP(itemTemporal.item_cfip, true)">
-                                                    <i class="bi bi-search me-2"></i> 
-                                                    <span>No está en los últimos 200. <strong>Búsqueda profunda</strong></span>
-                                                </button>
-
-                                                <!-- Resultados -->
-                                                <div class="autocomplete-item"
-                                                    *ngFor="let item of itemsSiesaEncontrados"
-                                                    (click)="seleccionarItemSiesa(item)">
-                                                    <div class="d-flex justify-content-between align-items-start">
-                                                        <span class="item-title text-primary">{{ item.f120_id || item.referencia }}</span>
-                                                        <span class="meta-badge">{{ item.talla || item.id_talla }}</span>
-                                                    </div>
-                                                    <span class="item-subtitle text-truncate" style="max-width: 400px;">
-                                                        {{ item.f120_descripcion || item.descripcion }}
-                                                    </span>
-                                                    <div class="item-meta">
-                                                        <span class="meta-badge bg-primary-subtle text-primary">Pedidos: {{ item.veces_pedido || 0 }}</span>
-                                                        <span class="meta-badge bg-success-subtle text-success">Ult. PV: {{ item.ultima_pv || 'N/A' }}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="p-3 text-center text-muted small" *ngIf="itemsSiesaEncontrados.length === 0 && busquedaProfundaItem">
-                                                    <i class="bi bi-exclamation-circle me-1"></i> No se encontraron resultados incluso en búsqueda profunda.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-bold small text-secondary">Cód. Cliente</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control" name="item_cliente"
-                                                [(ngModel)]="itemTemporal.item_cliente" placeholder="Referencia OC">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                (click)="asignarSeleccion('item_cliente')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold small text-secondary">Descripción de Prenda <span class="text-danger">*</span></label>
-                                    <div class="input-group input-group-sm">
-                                        <input type="text" class="form-control" name="descripcion"
-                                            [(ngModel)]="itemTemporal.descripcion" placeholder="Ej. Camiseta Polo Azul">
-                                        <button class="btn btn-outline-primary" type="button"
-                                            (click)="asignarSeleccion('descripcion')">Asignar</button>
-                                    </div>
-                                </div>
-
-                                <div class="row g-3 mb-3">
-                                    <div class="col-4">
-                                        <label class="form-label fw-bold small text-secondary">Talla</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control" name="talla"
-                                                [(ngModel)]="itemTemporal.talla" placeholder="S, M, L...">
-                                            <button class="btn btn-outline-primary px-1" type="button"
-                                                (click)="asignarSeleccion('talla')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-                                    </div>
-                                    <div class="col-8">
-                                        <label class="form-label fw-bold small text-secondary">Cantidad <span class="text-danger">*</span></label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" step="0.01" class="form-control"
-                                                name="cantidad" [(ngModel)]="itemTemporal.cantidad">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                (click)="asignarSeleccion('cantidad')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row g-3 mb-4 align-items-end">
-                                    <div class="col-7">
-                                        <label class="form-label fw-bold small text-secondary">Precio Unitario ($)</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light">$</span>
-                                            <input type="number" step="0.01" class="form-control fw-bold text-primary"
-                                                name="precio_unitario" [(ngModel)]="itemTemporal.precio_unitario">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                (click)="asignarSeleccion('precio_unitario')"><i class="bi bi-cursor"></i></button>
-                                        </div>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="p-2 bg-dark rounded-3 text-end">
-                                            <small class="text-secondary d-block" style="font-size: 0.6rem; text-transform: uppercase;">Total Línea</small>
-                                            <span class="text-white fw-bold" style="font-size: 0.9rem;">
-                                                ${{ precioTotalCalculado | number:'1.2-2' }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="d-grid gap-2">
-                                    <button type="button"
-                                        [ngClass]="editIndex !== null ? 'btn btn-warning' : 'btn btn-success'"
-                                        class="py-2 fw-bold rounded-3 shadow-sm"
-                                        (click)="agregarItem()">
-                                        <i class="bi me-2" [ngClass]="editIndex !== null ? 'bi-check-circle' : 'bi-plus-circle'"></i>
-                                        {{ editIndex !== null ? 'Guardar Cambios' : 'Añadir ítem a la Lista' }}
-                                    </button>
-                                    <button *ngIf="editIndex !== null" type="button"
-                                        class="btn btn-outline-secondary border-0 btn-sm"
-                                        (click)="cancelarEdicion()">
-                                        Cancelar Edición
-                                    </button>
-                                </div>
-                            </div>
-
-                        </form>
+                    <!-- Footer: Guardar -->
+                    <div class="card-footer bg-white border-top py-3 px-3 d-flex justify-content-between align-items-center"
+                        *ngIf="itemsProcesados.length > 0">
+                        <small class="text-muted" style="font-size: 0.7rem;">
+                            <i class="bi bi-info-circle me-1"></i>Al guardar, se crea la OC en el sistema y se aprenden los mapeos del cliente.
+                        </small>
+                        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" (click)="guardarOrden()"
+                            [disabled]="savingOrder">
+                            <span *ngIf="!savingOrder">
+                                <i class="bi bi-cloud-check me-2"></i>Guardar OC
+                            </span>
+                            <span *ngIf="savingOrder">
+                                <span class="spinner-border spinner-border-sm me-2"></span>Procesando...
+                            </span>
+                        </button>
                     </div>
                 </div>
             </div>
 
         </div>
+    </div>
 
-        <!-- Items de la Orden Procesados -->
-        <div class="card shadow-sm border-0 rounded-3 mt-4 overflow-hidden" *ngIf="itemsProcesados.length > 0">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="section-title mb-1">
-                        <i class="bi bi-list-check text-primary"></i> 4. Resumen de la Orden
-                    </h2>
-                    <p class="text-muted mb-0 small">
-                        OC: <span class="fw-bold text-primary">#{{cabeceraOrden.numero_oc}}</span> | 
-                        Cliente: <span class="fw-bold">{{cabeceraOrden.cliente_nombre || 'N/A'}}</span>
-                    </p>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL DETALLE COMPLETO DEL ÍTEM / PRENDA (DISEÑO PREMIUM) -->
+<!-- ======================================================== -->
+<div class="modal fade" [class.show]="mostrarModalDetalle" [style.display]="mostrarModalDetalle ? 'block' : 'none'" tabindex="-1" style="background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1060;">
+    <div class="modal-dialog modal-xl modal-dialog-centered my-3" style="max-height: 92vh;">
+        <div class="modal-content shadow-2xl border-0 rounded-4 overflow-hidden d-flex flex-column" style="max-height: 92vh;" *ngIf="itemSeleccionadoDetalle">
+            
+            <!-- Modal Header -->
+            <div class="modal-header border-0 py-3 px-4 text-white flex-shrink-0" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-white/20 p-2 d-flex align-items-center justify-content-center text-white" style="width: 40px; height: 40px;">
+                        <i class="bi bi-box-seam fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0 text-white" style="letter-spacing: -0.3px;">
+                            Detalle de la Prenda e Ítem Siesa
+                        </h5>
+                        <p class="text-white-50 mb-0 small font-medium">Edita la información capturada o vincula con la referencia exacta del catálogo</p>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
-                        {{ itemsProcesados.length }} ítems detectados
-                    </span>
-                </div>
+                <button type="button" class="btn-close btn-close-white shadow-none" (click)="cerrarModalDetalle()"></button>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr class="small text-uppercase text-muted fw-bold">
-                                <th class="ps-4 py-3">#</th>
-                                <th>Cód. CFIP</th>
-                                <th>Cód. Cliente</th>
-                                <th>Descripción</th>
-                                <th>Talla</th>
-                                <th class="text-end">Cant.</th>
-                                <th class="text-end">Prc. Unit.</th>
-                                <th class="text-end fw-bold text-dark pe-4">Total</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="border-top-0">
-                            <tr *ngFor="let item of itemsProcesados; let i = index" class="border-bottom">
-                                <td class="ps-4 py-3 text-muted small fw-bold">{{ i + 1 }}</td>
-                                <td><span class="badge bg-primary-subtle text-primary border-primary-subtle px-2">{{ item.item_cfip || '--' }}</span></td>
-                                <td class="text-secondary small font-monospace">{{ item.item_cliente || '--' }}</td>
-                                <td class="fw-medium text-dark">{{ item.descripcion }}</td>
-                                <td><span class="badge bg-light text-dark border px-2">{{ item.talla || '--' }}</span></td>
-                                <td class="text-end fw-bold">{{ item.cantidad | number:'1.0-2' }}</td>
-                                <td class="text-end text-muted">${{ item.precio_unitario | number:'1.2-2' }}</td>
-                                <td class="text-end fw-bold text-success pe-4">${{ item.precio_total | number:'1.2-2' }}</td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-warning border-0" (click)="editarItem(i)" title="Editar">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger border-0" (click)="eliminarItem(i)" title="Eliminar">
-                                            <i class="bi bi-trash-fill"></i>
-                                        </button>
+
+            <!-- Modal Body (Scrollable adaptado a pantalla) -->
+            <div class="modal-body p-3.5 bg-light-subtle overflow-y-auto flex-grow-1" style="font-size: 0.88rem;">
+                
+                <div class="row g-3 mb-3">
+                    
+                    <!-- Tarjeta 1: Información Capturada / Cliente (EDITABLE) -->
+                    <div class="col-lg-6">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                            <div class="card-header bg-white border-bottom border-light-subtle py-2.5 px-3.5 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge px-2.5 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.68rem; background-color: #e0e7ff; color: #4338ca;">
+                                        <i class="bi bi-pencil-square me-1"></i>Prenda Capturada
+                                    </span>
+                                    <span class="text-muted small fw-semibold">Datos del Cliente</span>
+                                </div>
+                                <button class="btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-sm d-flex align-items-center gap-1" style="font-size: 0.76rem;" (click)="guardarEdicionDetalleModal()">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span>Guardar Cambios</span>
+                                </button>
+                            </div>
+                            <div class="card-body p-3 bg-white">
+                                <div class="mb-2.5">
+                                    <label class="form-label text-secondary small fw-bold text-uppercase tracking-wider mb-1" style="font-size: 0.7rem;">
+                                        Ref. Cliente / Código:
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-hash"></i></span>
+                                        <input type="text" class="form-control form-control-sm font-monospace fw-bold border-start-0 text-dark"
+                                            [(ngModel)]="itemSeleccionadoDetalle.item_cliente" placeholder="Ej. 1720031">
                                     </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <!-- FOOTER DE TOTALES -->
-                        <tfoot class="bg-light">
-                            <tr>
-                                <td colspan="6" class="ps-4 py-4">
-                                    <div class="alert alert-warning border-0 small mb-0 d-inline-block py-2">
-                                        <i class="bi bi-info-circle me-2"></i>Revisa que los totales coincidan con el documento original.
-                                    </div>
-                                </td>
-                                <td colspan="2" class="text-end pe-4 py-4">
-                                    <div class="d-flex flex-column gap-1">
-                                        <div class="d-flex justify-content-between gap-5">
-                                            <span class="text-muted small">Subtotal:</span>
-                                            <span class="fw-bold text-dark">${{ totalOrden | number:'1.2-2' }}</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between gap-5">
-                                            <span class="text-muted small">IVA (19%):</span>
-                                            <span class="fw-bold text-dark">${{ totalOrden * 0.19 | number:'1.2-2' }}</span>
-                                        </div>
-                                        <hr class="my-1">
-                                        <div class="d-flex justify-content-between gap-5 align-items-center">
-                                            <span class="text-dark fw-bold">TOTAL:</span>
-                                            <span class="fs-4 fw-bold text-success">${{ totalOrden * 1.19 | number:'1.2-2' }}</span>
+                                </div>
+                                <div class="mb-2.5">
+                                    <label class="form-label text-secondary small fw-bold text-uppercase tracking-wider mb-1" style="font-size: 0.7rem;">
+                                        Descripción Cliente / Prenda:
+                                    </label>
+                                    <textarea class="form-control form-control-sm fw-semibold text-dark" rows="2"
+                                        [(ngModel)]="itemSeleccionadoDetalle.descripcion_cliente" placeholder="Nombre o descripción del producto capturado"></textarea>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label text-secondary small fw-bold text-uppercase tracking-wider mb-1" style="font-size: 0.7rem;">
+                                            Cantidad:
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-123"></i></span>
+                                            <input type="number" class="form-control form-control-sm font-monospace fw-bold text-dark border-start-0"
+                                                [(ngModel)]="itemSeleccionadoDetalle.cantidad">
                                         </div>
                                     </div>
-                                </td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                                    <div class="col-6">
+                                        <label class="form-label text-secondary small fw-bold text-uppercase tracking-wider mb-1" style="font-size: 0.7rem;">
+                                            Precio Unitario ($):
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light border-end-0 text-primary fw-bold">$</span>
+                                            <input type="number" class="form-control form-control-sm font-monospace fw-bold text-primary border-start-0"
+                                                [(ngModel)]="itemSeleccionadoDetalle.precio_unitario">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta 2: Ítem Vinculado en Siesa -->
+                    <div class="col-lg-6">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                            <div class="card-header bg-white border-bottom border-light-subtle py-2.5 px-3.5 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge px-2.5 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.68rem; background-color: #dbeafe; color: #1e40af;">
+                                        <i class="bi bi-cpu me-1"></i>Vínculo Sistema
+                                    </span>
+                                    <span class="text-muted small fw-semibold">Catálogo Siesa</span>
+                                </div>
+                                <span *ngIf="itemSeleccionadoDetalle.rowid_siesa" class="badge font-monospace px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.72rem; background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Vinculado
+                                </span>
+                                <span *ngIf="!itemSeleccionadoDetalle.rowid_siesa" class="badge font-monospace px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.72rem; background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Sin Vincular
+                                </span>
+                            </div>
+                            
+                            <div class="card-body p-3 bg-white d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <div class="p-2 rounded-3 bg-light border text-center">
+                                                <span class="text-secondary d-block small font-semibold mb-0.5" style="font-size: 0.68rem;">ID ÍTEM SIESA</span>
+                                                <span class="badge font-monospace fs-6 px-2.5 py-1 shadow-xs" style="background-color: #4f46e5; color: #ffffff;">
+                                                    {{ itemSeleccionadoDetalle.codigo_item || (itemSeleccionadoDetalle.rowid_siesa ? itemSeleccionadoDetalle.item_cfip : 'Sin asignar') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded-3 bg-light border text-center">
+                                                <span class="text-secondary d-block small font-semibold mb-0.5" style="font-size: 0.68rem;">REFERENCIA SIESA</span>
+                                                <span class="badge bg-white text-primary border border-primary-subtle font-monospace fs-6 px-2.5 py-1 shadow-xs">
+                                                    {{ itemSeleccionadoDetalle.referencia_cfip || (itemSeleccionadoDetalle.rowid_siesa ? itemSeleccionadoDetalle.item_cfip : 'Sin asignar') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2 p-2 bg-light rounded-3 border">
+                                        <span class="text-secondary d-block small font-semibold mb-0.5" style="font-size: 0.68rem;">DESCRIPCIÓN SISTEMA (SIESA):</span>
+                                        <span class="fw-bold text-dark fs-6" [class.text-muted]="!itemSeleccionadoDetalle.descripcion_cfip">
+                                            {{ itemSeleccionadoDetalle.descripcion_cfip || 'Sin vincular ítem de Siesa' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Buscador de Tallas de Siesa -->
+                                <div class="p-2.5 rounded-3 border bg-slate-50 position-relative" style="background-color: #f8fafc;">
+                                    <div class="d-flex align-items-center justify-content-between mb-1.5 pb-1 border-bottom">
+                                        <span class="text-slate-700 fw-bold small">
+                                            <i class="bi bi-tag-fill text-info me-1.5"></i>Talla Asignada:
+                                        </span>
+                                        <span *ngIf="itemSeleccionadoDetalle.talla" class="badge bg-info text-white font-monospace px-2.5 py-1 shadow-xs" style="font-size: 0.8rem;">
+                                            {{ itemSeleccionadoDetalle.talla }}
+                                        </span>
+                                        <span *ngIf="!itemSeleccionadoDetalle.talla" class="badge bg-secondary-subtle text-secondary font-monospace px-2 py-0.5" style="font-size: 0.75rem;">
+                                            Sin asignar
+                                        </span>
+                                    </div>
+
+                                    <!-- Input de búsqueda de talla -->
+                                    <div *ngIf="extensionesItemDetalle && extensionesItemDetalle.length > 0" class="position-relative">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white border-info text-info"><i class="bi bi-search"></i></span>
+                                            <input type="text" class="form-control border-info font-monospace fw-bold"
+                                                [(ngModel)]="busquedaTallaModal"
+                                                (focus)="tallaDropdownOpen[itemSeleccionadoDetalle.index] = true"
+                                                placeholder="Buscar talla Siesa... ({{ extensionesItemDetalle.length }} disponibles)"
+                                                autocomplete="off">
+                                            <button *ngIf="busquedaTallaModal" class="btn btn-outline-secondary btn-sm" type="button"
+                                                (click)="busquedaTallaModal = ''; tallaDropdownOpen[itemSeleccionadoDetalle.index] = true">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Dropdown de resultados -->
+                                        <div *ngIf="tallaDropdownOpen[itemSeleccionadoDetalle.index] && filtrarExtensionesModal().length > 0"
+                                            class="position-absolute w-100 bg-white border border-info rounded-3 shadow-lg mt-1"
+                                            style="z-index: 1070; max-height: 180px; overflow-y: auto;">
+                                            <div *ngFor="let ext of filtrarExtensionesModal(); let i = index"
+                                                class="d-flex align-items-center justify-content-between px-3 py-2 cursor-pointer"
+                                                [class.bg-info]="itemSeleccionadoDetalle.talla === ext.talla"
+                                                [class.text-white]="itemSeleccionadoDetalle.talla === ext.talla"
+                                                [class.border-bottom]="i < filtrarExtensionesModal().length - 1"
+                                                style="cursor: pointer; transition: background 0.15s;"
+                                                (mouseenter)="$event.target.classList.add('bg-light')"
+                                                (mouseleave)="$event.target.classList.remove('bg-light')"
+                                                (click)="seleccionarTallaModal(ext); tallaDropdownOpen[itemSeleccionadoDetalle.index] = false; busquedaTallaModal = '';">
+                                                <span class="font-monospace fw-bold" style="font-size: 0.88rem;">{{ ext.talla }}</span>
+                                                <span *ngIf="ext.color" class="text-muted small opacity-75">{{ ext.color }}</span>
+                                                <i *ngIf="itemSeleccionadoDetalle.talla === ext.talla" class="bi bi-check-circle-fill text-white ms-2"></i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sin resultados de búsqueda -->
+                                        <div *ngIf="tallaDropdownOpen[itemSeleccionadoDetalle.index] && busquedaTallaModal && filtrarExtensionesModal().length === 0"
+                                            class="position-absolute w-100 bg-white border border-warning rounded-3 shadow mt-1 px-3 py-2 text-muted small"
+                                            style="z-index: 1070;">
+                                            <i class="bi bi-exclamation-circle text-warning me-1"></i>No se encontró talla "{{ busquedaTallaModal }}"
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="!extensionesItemDetalle || extensionesItemDetalle.length === 0" class="text-muted small py-0.5" style="font-size: 0.75rem;">
+                                        <i class="bi bi-info-circle me-1 text-info"></i>Vincula un ítem de Siesa para cargar sus tallas disponibles.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Buscador Dinámico de Ítems en Siesa -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-header bg-white border-bottom border-light-subtle py-2.5 px-3.5 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="w-7 h-7 rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center font-bold">
+                                <i class="bi bi-search text-sm"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 fs-6">Buscar Coincidencia en Catálogo Siesa</h6>
+                                <p class="text-muted small mb-0 font-medium" style="font-size: 0.75rem;">Encuentra ítems por ID, Referencia o Descripción general</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Marcador / Switch Toggle Estilizado Dinámico -->
+                        <label class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill cursor-pointer select-none mb-0 shadow-xs"
+                            [style.background-color]="soloPvSiesaModal ? '#d1fae5' : '#f1f5f9'"
+                            [style.border]="soloPvSiesaModal ? '1.5px solid #10b981' : '1.5px solid #cbd5e1'"
+                            [style.color]="soloPvSiesaModal ? '#065f46' : '#475569'"
+                            style="cursor: pointer; transition: all 0.2s ease-in-out;">
+                            <input class="form-check-input mt-0 cursor-pointer" type="checkbox" id="checkSoloPv" style="width: 1.15em; height: 1.15em; cursor: pointer;"
+                                [(ngModel)]="soloPvSiesaModal" (change)="ejecutarBusquedaSiesaModal()">
+                            <i class="bi" [ngClass]="soloPvSiesaModal ? 'bi-check-circle-fill text-emerald-600 fs-6' : 'bi-dash-circle text-slate-400 fs-6'"></i>
+                            <span class="small fw-bold" style="font-size: 0.78rem;">
+                                Solo PVs de Razón Social
+                                <span class="badge ms-1 rounded-pill uppercase"
+                                    [style.background-color]="soloPvSiesaModal ? '#10b981' : '#94a3b8'"
+                                    style="color: #ffffff; font-size: 0.65rem; padding: 0.2em 0.5em;">
+                                    {{ soloPvSiesaModal ? 'ACTIVO' : 'DESACTIVADO' }}
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="card-body p-3 bg-white">
+                        <!-- Barra de Búsqueda Integrada -->
+                        <div class="input-group mb-2.5 shadow-xs rounded-3 overflow-hidden border">
+                            <span class="input-group-text bg-white border-0 text-muted px-3"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control font-monospace fw-semibold border-0 text-dark shadow-none"
+                                [(ngModel)]="busquedaSiesaModal"
+                                (keyup.enter)="ejecutarBusquedaSiesaModal()"
+                                placeholder="Escribe ID ítem, referencia o palabra clave (ej. 28970, 21301060086, BLUSA)...">
+                            <button *ngIf="busquedaSiesaModal" (click)="busquedaSiesaModal = ''" class="btn btn-white border-0 text-muted px-2" type="button">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
+                            <button class="btn px-4 fw-bold text-white d-flex align-items-center gap-2 border-0" type="button" (click)="ejecutarBusquedaSiesaModal()" style="background-color: #4f46e5;">
+                                <span *ngIf="buscandoSiesaModal" class="spinner-border spinner-border-sm"></span>
+                                <i *ngIf="!buscandoSiesaModal" class="bi bi-search me-1"></i>
+                                <span>Buscar en Siesa</span>
+                            </button>
+                        </div>
+
+                        <!-- Tabla de Resultados de Búsqueda con scroll delgado -->
+                        <div *ngIf="resultadosSiesaModal.length > 0" class="table-responsive border rounded-3 shadow-xs" style="max-height: 230px; overflow-y: auto; scrollbar-width: thin;">
+                            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem; min-width: 750px;">
+                                <thead class="bg-light text-secondary uppercase tracking-wider sticky-top shadow-xs" style="font-size: 0.68rem; font-weight: 700; background-color: #f8fafc;">
+                                    <tr>
+                                        <th class="py-2 px-3 text-nowrap" style="width: 100px;">ID ÍTEM</th>
+                                        <th class="py-2 px-3 text-nowrap" style="width: 140px;">REFERENCIA</th>
+                                        <th class="py-2 px-3">DESCRIPCIÓN EN SIESA</th>
+                                        <th class="py-2 px-3 text-nowrap" style="width: 180px;">ORIGEN / FUENTE</th>
+                                        <th class="py-2 px-3 text-nowrap text-center" style="width: 100px;">COINCIDENCIA</th>
+                                        <th class="py-2 px-3 text-center text-nowrap" style="width: 110px;">ACCIÓN</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-light">
+                                    <tr *ngFor="let sug of resultadosSiesaModal"
+                                        [class.table-active]="sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa">
+                                        <td class="fw-bold text-primary font-monospace text-nowrap px-3">{{ sug.codigo_item }}</td>
+                                        <td class="font-monospace fw-semibold text-secondary text-nowrap px-3">{{ sug.referencia }}</td>
+                                        <td class="fw-semibold text-dark px-3">{{ sug.descripcion }}</td>
+                                        <td class="text-nowrap px-3">
+                                            <span class="badge px-2.5 py-1 rounded-pill font-medium" 
+                                                [style.background-color]="sug.es_pv ? '#d1fae5' : '#f1f5f9'"
+                                                [style.color]="sug.es_pv ? '#065f46' : '#334155'"
+                                                [style.border]="sug.es_pv ? '1px solid #a7f3d0' : '1px solid #cbd5e1'">
+                                                <i class="bi me-1" [ngClass]="sug.es_pv ? 'bi-check-circle-fill text-emerald-600' : 'bi-box-seam'"></i>
+                                                {{ sug.fuente }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center text-nowrap px-3">
+                                            <span class="badge px-2.5 py-1 rounded-pill fw-bold"
+                                                [style.background-color]="sug.coincidencia >= 90 ? '#e0e7ff' : '#f3f4f6'"
+                                                [style.color]="sug.coincidencia >= 90 ? '#4338ca' : '#4b5563'">
+                                                {{ sug.coincidencia }}%
+                                            </span>
+                                        </td>
+                                        <td class="text-center py-2 text-nowrap px-3">
+                                            <button class="btn btn-sm py-1 px-3 rounded-pill fw-bold transition-all"
+                                                [style.background-color]="sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa ? '#10b981' : 'transparent'"
+                                                [style.border]="sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa ? '1px solid #10b981' : '1px solid #4f46e5'"
+                                                [style.color]="sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa ? '#ffffff' : '#4f46e5'"
+                                                style="font-size: 0.75rem;"
+                                                (click)="vincularSugerenciaModal(sug)"
+                                                [disabled]="sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa">
+                                                <i class="bi me-1" [ngClass]="sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa ? 'bi-check-lg' : 'bi-link-45deg'"></i>
+                                                {{ sug.rowid_siesa === itemSeleccionadoDetalle.rowid_siesa ? 'Vinculado' : 'Vincular' }}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sin resultados de la búsqueda -->
+                        <div *ngIf="busquedaSiesaModal && !buscandoSiesaModal && resultadosSiesaModal.length === 0"
+                            class="p-3 bg-slate-50 rounded-3 text-center border border-slate-200" style="background-color: #f8fafc;">
+                            <i class="bi bi-info-circle text-amber-500 fs-5 d-block mb-1"></i>
+                            <span class="fw-bold text-dark d-block">No se encontraron ítems en Siesa para "{{ busquedaSiesaModal }}"</span>
+                            <span class="text-muted small">Intenta buscar por código (ej. 28970), referencia exacta o desactiva "Solo PVs de Razón Social".</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
-            <div class="card-footer bg-white py-4 px-4 border-top-0 d-flex justify-content-between align-items-center">
-                <div class="text-muted small">
-                    <i class="bi bi-info-circle me-1"></i>Al guardar, se creará una nueva Orden de Compra en el sistema.
-                </div>
-                <button class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold" (click)="guardarOrden()" [disabled]="savingOrder">
-                    <span *ngIf="!savingOrder">
-                        <i class="bi bi-cloud-check me-2"></i>Guardar y Finalizar
-                    </span>
-                    <span *ngIf="savingOrder">
-                        <span class="spinner-border spinner-border-sm me-2"></span>Procesando...
-                    </span>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-white border-top border-light-subtle py-2.5 px-4 flex-shrink-0 flex justify-content-end">
+                <button type="button" class="btn btn-slate btn-sm rounded-pill px-4 fw-bold border text-secondary" (click)="cerrarModalDetalle()">
+                    Cerrar
                 </button>
             </div>
         </div>
-
-    </div> <!-- Cierre de fade-in principal -->
-</div> <!-- Cierre de container-fluid -->
+    </div>
+</div>

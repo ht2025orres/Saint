@@ -84,9 +84,11 @@ mostrandoEvidencias = false;
         // La respuesta del backend tiene la forma { success: true, data: [...] }
         const datos = res.data || res;
         
-        // Calcular el estado para cada inconsistencia y guardar en array principal
+        // Calcular el estado y separar NIT/Nombre para cada inconsistencia
         this.inconsistencias = Array.isArray(datos) ? datos.map((inco: any) => ({
           ...inco,
+          nit_cliente: this.extraerNit(inco.Cliente),
+          nombre_cliente: this.extraerNombreCliente(inco.Cliente),
           estado: this.determinarEstado(inco)
         })) : [];
 
@@ -97,6 +99,30 @@ mostrandoEvidencias = false;
         console.error('Error al cargar inconsistencias:', err);
       }
     });
+  }
+
+  extraerNit(clienteStr: string | null | undefined): string {
+    if (!clienteStr) return 'N/A';
+    const str = clienteStr.trim();
+    const match = str.match(/^(?:NIT\s*[:#\.]?\s*)?([\d\.\-]{7,17})(?:\s*[\-\|:]\s*|\s+|$)/i);
+    if (match) {
+      const nitMatch = match[1].trim();
+      const digits = nitMatch.replace(/\D/g, '');
+      if (digits.length >= 7) {
+        return nitMatch.replace(/^[\-\s]+|[\-\s]+$/g, '');
+      }
+    }
+    return 'N/A';
+  }
+
+  extraerNombreCliente(clienteStr: string | null | undefined): string {
+    if (!clienteStr) return 'N/A';
+    const str = clienteStr.trim();
+    const match = str.match(/^(?:NIT\s*[:#\.]?\s*)?[\d\.\-]{7,17}\s*[\-\|:]?\s*(.*)/i);
+    if (match && match[1] && match[1].trim().length > 0) {
+      return match[1].trim();
+    }
+    return str;
   }
 
   /**
@@ -110,6 +136,8 @@ mostrandoEvidencias = false;
       // Filtro de búsqueda de texto
       const coincideBusqueda = !texto ||
         item.Cliente?.toLowerCase().includes(texto) ||
+        item.nit_cliente?.toLowerCase().includes(texto) ||
+        item.nombre_cliente?.toLowerCase().includes(texto) ||
         item.item?.toLowerCase().includes(texto) ||
         item.descripcion_inconsistencia?.toLowerCase().includes(texto) ||
         item.id_inconsistencia?.toString().includes(texto) ||
@@ -157,6 +185,51 @@ mostrandoEvidencias = false;
     this.cargarInconsistencias();
   }
 
+  parseNumero(val: any): number | null {
+    if (val === null || val === undefined || val === '') return null;
+
+    if (typeof val === 'number') {
+      return isNaN(val) ? null : val;
+    }
+
+    let str = String(val).trim();
+    if (!str) return null;
+
+    if (str.includes('.') && str.includes(',')) {
+      const lastDot = str.lastIndexOf('.');
+      const lastComma = str.lastIndexOf(',');
+      if (lastComma > lastDot) {
+        str = str.replace(/\./g, '').replace(',', '.');
+      } else {
+        str = str.replace(/,/g, '');
+      }
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+
+    str = str.replace(/[^0-9.-]/g, '');
+
+    const parsed = parseFloat(str);
+    return isNaN(parsed) ? null : parsed;
+  }
+
+  formatUnidadMedida(val: any): string {
+    if (!val) return 'N/A';
+    const u = String(val).trim().toLowerCase();
+    const mapa: { [key: string]: string } = {
+      'unidades': 'UDS',
+      'metros': 'MTS',
+      'centimetros': 'CMS',
+      'mts': 'MTS',
+      'mt': 'MTS',
+      'und': 'UDS',
+      'uds': 'UDS',
+      'cms': 'CMS',
+      'cm': 'CMS'
+    };
+    return mapa[u] || u.toUpperCase();
+  }
+
   exportarExcel(): void {
     if (!this.inconsistenciasFiltradas || this.inconsistenciasFiltradas.length === 0) {
       Swal.fire('Atención', 'No hay datos filtrados para exportar', 'warning');
@@ -167,16 +240,20 @@ mostrandoEvidencias = false;
       return {
         'Fecha': inco.fecha_inconsistencia ? new Date(inco.fecha_inconsistencia).toLocaleDateString('es-ES') : '',
         'ID Inconsistencia': inco.id_inconsistencia,
-        'Cliente': inco.Cliente || 'N/A',
+        'NIT Cliente': inco.nit_cliente || this.extraerNit(inco.Cliente),
+        'Cliente': inco.nombre_cliente || this.extraerNombreCliente(inco.Cliente),
         'Solicitante': inco.solicitante || 'N/A',
         'Departamento': inco.departamento || 'N/A',
         'Tipo de Inconsistencia': this.tipos_inco[inco.tipo_inconsistencia] || inco.tipo_inconsistencia || 'N/A',
-        'Cant. Solicitada OP': inco.cantidad_solicitada_op,
-        'Cant. Inconsistencia': inco.cantidad_inconsistencia,
+        'Cant. Solicitada OP': this.parseNumero(inco.cantidad_solicitada_op),
+        'Cant. Inconsistencia': this.parseNumero(inco.cantidad_inconsistencia),
+        'Unidad de Medida': this.formatUnidadMedida(inco.unidad_medida),
         'Item': inco.item || 'N/A',
-        'Orden/Pedido': `${inco.tipo_de_orden || ''} ${inco.estado_orden || ''}`.trim(),
-        'Precio Unitario': inco.precio_unitario,
-        'Precio Total': inco.precio_total_inconsistencia,
+        'Tipo Orden': this.extraerTipoOrden(inco.tipo_de_orden),
+        'Número Orden/Pedido': this.extraerNumeroOrden(inco.tipo_de_orden),
+        'Estado Orden': this.formatEstadoOrden(inco.estado_orden),
+        'Precio Unitario': this.parseNumero(inco.precio_unitario),
+        'Precio Total': this.parseNumero(inco.precio_total_inconsistencia),
         'Estado': this.getEstadoLabel(inco.estado),
         'Descripción': inco.descripcion_inconsistencia || '',
         'Acción Sugerida': inco.accion_inconsistencia || ''
@@ -184,6 +261,32 @@ mostrandoEvidencias = false;
     });
 
     const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(data);
+
+    // Formatear las celdas numéricas para que Excel (en español) aplique miles (.) y decimales (,)
+    const numCols = ['Cant. Solicitada OP', 'Cant. Inconsistencia', 'Precio Unitario', 'Precio Total'];
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+
+    const headerMap: { [key: number]: string } = {};
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cell = worksheet[XLSX.utils.encode_cell({ r: 0, c: C })];
+      if (cell && cell.v) {
+        headerMap[C] = String(cell.v);
+      }
+    }
+
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const colName = headerMap[C];
+        if (numCols.includes(colName)) {
+          const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+          const cell = worksheet[cellRef];
+          if (cell && cell.t === 'n') {
+            cell.z = '#,##0.00';
+          }
+        }
+      }
+    }
+
     const workbook: XLSX.WorkBook = {
       Sheets: { 'Histórico Inconsistencias': worksheet },
       SheetNames: ['Histórico Inconsistencias']
@@ -331,5 +434,48 @@ mostrandoEvidencias = false;
       'anulado': 'badge bg-danger'
     };
     return clases[estado] || 'badge bg-secondary';
+  }
+
+  /**
+   * Extrae el tipo de orden (OP, OPM, PV, etc.) del campo tipo_de_orden
+   * Ejemplo: "OP 12345" → "OP", "OPM-678 Abierta" → "OPM"
+   */
+  extraerTipoOrden(tipoDeOrden: string | null): string {
+    if (!tipoDeOrden) return 'N/A';
+    const texto = tipoDeOrden.trim().toUpperCase();
+    // Buscar prefijo de tipo conocido
+    const match = texto.match(/^(OPM|OP|PV|PD|OC|RM|NC|FC|FV|REM)/);
+    if (match) return match[1];
+    // Si no coincide con un patrón conocido, tomar la primera palabra
+    const primeraPalabra = texto.split(/[\s\-]+/)[0];
+    return primeraPalabra || 'N/A';
+  }
+
+  /**
+   * Extrae el número de la orden/pedido del campo tipo_de_orden
+   * Ejemplo: "OP 12345" → "12345", "OPM-678" → "678"
+   */
+  extraerNumeroOrden(tipoDeOrden: string | null): string {
+    if (!tipoDeOrden) return 'N/A';
+    const texto = tipoDeOrden.trim();
+    // Remover el prefijo de tipo y extraer el resto (número y posible texto)
+    const sinTipo = texto.replace(/^(OPM|OP|PV|PD|OC|RM|NC|FC|FV|REM)[\s\-]*/i, '').trim();
+    // Remover estado si está pegado al final (Abierta, Cerrada, etc.)
+    const sinEstado = sinTipo.replace(/\s*(abierta|cerrada|anulada|terminada)\s*$/i, '').trim();
+    return sinEstado || texto;
+  }
+
+  /**
+   * Formatea el estado de la orden a texto legible
+   * Ejemplo: "1" → "Abierta", "0" → "Cerrada", "Abierta" → "Abierta"
+   */
+  formatEstadoOrden(estadoOrden: any): string {
+    if (estadoOrden === null || estadoOrden === undefined || estadoOrden === '') return 'N/A';
+    const val = String(estadoOrden).trim().toLowerCase();
+    if (val === '1' || val === 'abierta' || val === 'activa' || val === 'true') return 'Abierta';
+    if (val === '0' || val === 'cerrada' || val === 'inactiva' || val === 'false') return 'Cerrada';
+    if (val === 'anulada') return 'Anulada';
+    // Si ya es un texto legible, capitalizar
+    return val.charAt(0).toUpperCase() + val.slice(1);
   }
 }

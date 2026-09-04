@@ -8,6 +8,7 @@ import { ModalManageUserComponent } from './modals/modal-manage-user/modal-manag
 import { ModalStructureComponent } from './modals/modal-structure/modal-structure.component';
 import { ModalMaintenanceComponent } from './modals/modal-maintenance/modal-maintenance.component';
 import { ModalAuditComponent } from './modals/modal-audit/modal-audit.component';
+import { ModalBulkCargoComponent } from './modals/modal-bulk-cargo/modal-bulk-cargo.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { ModalAuditComponent } from './modals/modal-audit/modal-audit.component'
     ModalManageUserComponent,
     ModalStructureComponent,
     ModalMaintenanceComponent,
-    ModalAuditComponent
+    ModalAuditComponent,
+    ModalBulkCargoComponent
   ],
   imports: [
     CommonModule,

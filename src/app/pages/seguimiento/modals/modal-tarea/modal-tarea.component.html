@@ -1,18 +1,18 @@
 <!-- MODAL TAREA — Crear / Editar -->
 <div
   *ngIf="show"
-  class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+  class="fixed inset-0 z-[2000] flex items-center justify-center p-3 md:p-6 backdrop-blur-sm overflow-hidden"
   style="background: rgba(15,23,42,0.65);"
   (dblclick)="cerrar()"
 >
   <div
-    class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200"
+    class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200"
     (click)="$event.stopPropagation()"
     (dblclick)="$event.stopPropagation()"
   >
 
     <!-- Header Premium -->
-    <div class="relative px-8 py-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+    <div class="relative px-8 py-5 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex-shrink-0">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-inner"
@@ -23,7 +23,7 @@
           <div>
             <h2 class="font-black text-gray-900 text-xl tracking-tight">{{ titulo }}</h2>
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-              {{ esEdicion ? 'Modificar detalles de la tarea existente' : 'Registrar una nueva tarea de seguimiento' }}
+              {{ esEdicion ? 'Modificar detalles de la tarea existente' : 'Registrar una nueva tarea' }}
             </p>
           </div>
         </div>
@@ -35,7 +35,7 @@
     </div>
 
     <!-- Body Scrollable -->
-    <div [formGroup]="form" class="px-8 py-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+    <div [formGroup]="form" class="px-8 py-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
 
       <!-- Alerta Proyecto Completado -->
       <div *ngIf="proyecto?.estado === 'completado'" 
@@ -81,8 +81,8 @@
             </div>
           </div>
 
-          <!-- Actividad -->
-          <div *ngIf="actividades.length > 0">
+          <!-- Actividad (Solo si no es seguimiento y existen actividades) -->
+          <div *ngIf="!esSeguimiento && actividades.length > 0">
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">Actividad Relacionada</label>
             <div class="relative">
               <select formControlName="actividad_id" class="w-full pl-4 pr-10 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl text-sm font-bold text-gray-700 focus:bg-white focus:border-blue-100 transition-all appearance-none outline-none">
@@ -172,15 +172,18 @@
               <!-- Dropdown resultados -->
               <div *ngIf="showRespDropdown && usuariosFiltrados.length"
                 class="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl
-                       shadow-2xl border border-gray-100 z-50 py-2 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2">
+                       shadow-2xl border border-gray-100 z-[2100] py-2 max-h-48 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2">
                 <div *ngFor="let u of usuariosFiltrados"
                   (mousedown)="agregarResponsable(u)"
                   class="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 cursor-pointer transition-colors group">
                   <div class="w-7 h-7 rounded-xl bg-gray-100 text-gray-500 group-hover:bg-blue-500 group-hover:text-white
-                              flex items-center justify-center text-[10px] font-black transition-all">
-                    {{ u.nombre.charAt(0).toUpperCase() }}
+                              flex items-center justify-center text-[10px] font-black transition-all flex-shrink-0">
+                    {{ state.getInicialesCorta(u.id) }}
                   </div>
-                  <span class="text-xs font-bold text-gray-700 group-hover:text-blue-700">{{ u.nombre }}</span>
+                  <div class="min-w-0 flex-1">
+                    <span class="text-xs font-bold text-gray-700 group-hover:text-blue-700 block truncate">{{ u.nombre }}</span>
+                    <span *ngIf="u.proceso_nombre" class="text-[8px] text-gray-400 font-bold uppercase tracking-tight block truncate">{{ u.proceso_nombre }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -278,7 +281,7 @@
     </div>
 
     <!-- Footer Premium -->
-    <div class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-3">
+    <div class="px-8 py-5 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
       <button type="button" (click)="cerrar()" 
         class="px-6 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:bg-gray-100 rounded-2xl transition-all">
         Cancelar

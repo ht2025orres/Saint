@@ -132,8 +132,8 @@
                      class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
                      [class.border-rose-400]="inconsistenciaForm.get('nombre_item')?.invalid && inconsistenciaForm.get('nombre_item')?.touched">
               <datalist id="items-disponibles">
-                <option *ngFor="let mat of itemsDisponibles" [value]="mat.id_material">
-                  {{ mat.id_material }} - {{ mat.descripcion_material }}{{ mat.color_material ? ' | ' + mat.color_material : '' }}{{ mat.talla_material ? ' | ' + mat.talla_material : '' }}
+                <option *ngFor="let mat of itemsDisponibles" [value]="mat.codigo_completo || mat.id_material || mat.f120_id">
+                  {{ mat.codigo_completo || mat.id_material || mat.f120_id }} - {{ mat.descripcion_material || mat.descripcion }}{{ mat.color_material || mat.color ? ' | ' + (mat.color_material || mat.color) : '' }}{{ mat.talla_material || mat.talla ? ' | ' + (mat.talla_material || mat.talla) : '' }}
                 </option>
               </datalist>
             </div>

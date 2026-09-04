@@ -1,0 +1,168 @@
+<div class="p-6 bg-slate-50 min-h-screen">
+  <!-- ENCABEZADO -->
+  <div class="mb-6 flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full uppercase tracking-wider">Producción</span>
+        <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Gestión de Muestras y Confección</h1>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">Control independiente del desarrollo de muestras físicas, patrones y prototipos para producción.</p>
+    </div>
+    <div>
+      <button (click)="loadMuestras()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold border border-slate-300 rounded-xl shadow-xs text-xs flex items-center gap-2 transition-all">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- TARJETAS DE MÉTRICAS / KPIS -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold">
+        <i class="bi bi-scissors"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Requeridas</span>
+        <h3 class="text-2xl font-black text-slate-800">{{ stats.total }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sin Iniciar</span>
+        <h3 class="text-2xl font-black text-slate-800">{{ stats.sinIniciar }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">
+        <i class="bi bi-box-seam animate-bounce-slow"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">En Desarrollo</span>
+        <h3 class="text-2xl font-black text-slate-800">{{ stats.enProceso }}</h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Completadas</span>
+        <h3 class="text-2xl font-black text-slate-800">{{ stats.completados }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS Y BÚSQUEDA -->
+  <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mb-6 flex flex-wrap gap-4 items-center justify-between">
+    <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+      <div class="relative flex-1">
+        <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+        <input type="text" [(ngModel)]="muestraSearch" (input)="applyFilters()" placeholder="Buscar por código de solicitud o cliente..." 
+               class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-bold text-slate-500">Estado:</span>
+      <select [(ngModel)]="muestraEstadoFilter" (change)="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <option value="">Todos los Estados</option>
+        <option value="PENDIENTE">Sin Iniciar (Pendiente)</option>
+        <option value="EN_PROCESO">En Desarrollo</option>
+        <option value="COMPLETADO">Completada</option>
+        <option value="RECHAZADO">Rechazada</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABLA DE MUESTRAS -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div *ngIf="isLoading" class="p-12 text-center">
+      <div class="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+      <p class="text-xs font-bold text-slate-500">Cargando solicitudes de muestra...</p>
+    </div>
+
+    <div *ngIf="!isLoading && pagedMuestras.length === 0" class="p-12 text-center">
+      <i class="bi bi-scissors text-4xl text-slate-300 mb-2 block"></i>
+      <h3 class="text-sm font-bold text-slate-700">No se encontraron muestras</h3>
+      <p class="text-xs text-slate-400 mt-1">No hay solicitudes que requieran muestra física con los filtros aplicados.</p>
+    </div>
+
+    <div *ngIf="!isLoading && pagedMuestras.length > 0" class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+          <tr>
+            <th class="py-3 px-4">Solicitud</th>
+            <th class="py-3 px-4">Cliente</th>
+            <th class="py-3 px-4">Ítems a Muestrear</th>
+            <th class="py-3 px-4">Fecha Entrega Compromiso</th>
+            <th class="py-3 px-4">Inicio / Fin Confección</th>
+            <th class="py-3 px-4">Estado Muestra</th>
+            <th class="py-3 px-4 text-right">Acción Rápida</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-slate-700">
+          <tr *ngFor="let sol of pagedMuestras" class="hover:bg-slate-50/80 transition-colors">
+            <td class="py-3 px-4 font-bold text-purple-700 hover:underline cursor-pointer" (click)="verDetalle(sol)">
+              {{ sol.codigo }}
+            </td>
+            <td class="py-3 px-4">
+              <span class="font-bold text-slate-800 block">{{ sol.cliente_nombre }}</span>
+              <span class="text-[10px] text-slate-400" *ngIf="sol.cliente_nit">NIT: {{ sol.cliente_nit }}</span>
+            </td>
+            <td class="py-3 px-4 font-semibold text-slate-600">
+              {{ sol.items_count || sol.items?.length || 0 }} ítems
+            </td>
+            <td class="py-3 px-4">
+              <span *ngIf="sol.fecha_entrega_muestra" class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium text-[11px]">
+                📅 {{ sol.fecha_entrega_muestra | date:'dd/MM/yyyy' }}
+              </span>
+              <span *ngIf="!sol.fecha_entrega_muestra" class="text-slate-400 italic">No fijada</span>
+            </td>
+            <td class="py-3 px-4 text-[11px]">
+              <div *ngIf="sol.fecha_inicio_muestra" class="text-slate-600">
+                <i class="bi bi-play-circle text-indigo-500"></i> {{ sol.fecha_inicio_muestra | date:'short' }}
+              </div>
+              <div *ngIf="sol.fecha_fin_muestra" class="text-emerald-600 font-bold">
+                <i class="bi bi-check-circle text-emerald-500"></i> {{ sol.fecha_fin_muestra | date:'short' }}
+              </div>
+              <span *ngIf="!sol.fecha_inicio_muestra" class="text-slate-400 italic">Sin registros</span>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 shadow-xs"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-800': !sol.estado_muestra || sol.estado_muestra === 'PENDIENTE',
+                      'bg-indigo-100 text-indigo-800': sol.estado_muestra === 'EN_PROCESO',
+                      'bg-emerald-100 text-emerald-800': sol.estado_muestra === 'COMPLETADO',
+                      'bg-rose-100 text-rose-800': sol.estado_muestra === 'RECHAZADO'
+                    }">
+                {{ sol.estado_muestra || 'PENDIENTE' }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button *ngIf="sol.estado_muestra === 'EN_PROCESO'" (click)="cambiarEstado(sol, 'COMPLETADO')"
+                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] transition-all flex items-center gap-1 shadow-xs">
+                  <i class="bi bi-check-lg"></i> Finalizar
+                </button>
+                <button (click)="verDetalle(sol)" class="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 rounded-lg font-bold text-[11px] transition-all">
+                  Ver Detalle
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINADOR -->
+    <div class="p-4 border-t border-slate-100">
+      <app-shared-paginator [instanceId]="paginatorId"></app-shared-paginator>
+    </div>
+  </div>
+</div>

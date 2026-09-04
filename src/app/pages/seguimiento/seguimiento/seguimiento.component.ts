@@ -7,7 +7,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { UserService }  from 'src/app/services/user.service';
 import { SeguimientoStateService, Toast } from './../seguimiento-state.service';
 
-export type SeguimientoVista = 'proyectos' | 'seguimientos' | 'tareas' | 'informes';
+export type SeguimientoVista = 'proyectos' | 'tareas' | 'informes' | 'estadisticas';
 
 interface NavTab {
   id:    SeguimientoVista;
@@ -33,8 +33,8 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
   readonly tabs: NavTab[] = [
     { id: 'proyectos',    label: 'Proyectos',      icon: 'bi-kanban'             },
     { id: 'tareas',       label: 'Tareas',         icon: 'bi-check2-square'      },
-    { id: 'seguimientos', label: 'Seguimientos',   icon: 'bi-calendar3'          },
-    { id: 'informes',     label: 'Hallazgos',     icon: 'bi-file-earmark-text'  },
+    { id: 'informes',     label: 'Hallazgos',      icon: 'bi-file-earmark-text'  },
+    { id: 'estadisticas', label: 'Estadísticas',   icon: 'bi-bar-chart-line-fill'},
   ];
 
   private _subs = new Subscription();
@@ -76,6 +76,8 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  private _lastLoadedUid = 0;
+
   // ── Lifecycle ────────────────────────────────────────────────────
   ngOnInit(): void {
     // Cargar preferencia de vista persistida
@@ -83,6 +85,14 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     this.vistaAdminActiva = saved ? JSON.parse(saved) === true : false;
 
     this._cargarUsuarios();
+
+    // Re-cargar si el usuario de authService cambia/se resuelve
+    this._subs.add(
+      this.authService.user$.subscribe(() => {
+        this._cargarUsuarios();
+      })
+    );
+
     this._subs.add(
       this.state.toasts$.subscribe(ts => {
         this.toasts = ts;
@@ -118,15 +128,20 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
 
   // ── Usuarios (carga única, compartida con sub-componentes) ──────
   private _cargarUsuarios(): void {
-    if (this.state.usuariosCache.length) return;
+    const uid = this.usuarioId;
+    if (!uid) return;
+    if (this.state.usuariosCache.length && this._lastLoadedUid === uid) return;
+    this._lastLoadedUid = uid;
 
-    // 1. Usuarios del proceso (para selectores/botones)
-    this.userService.getAllBasic(true).subscribe({
+    // 1. Usuarios del proceso del gestor (para selectores/botones/modales)
+    this.userService.getAllBasic(true, uid).subscribe({
       next: (us: any[]) => {
         this.state.setUsuariosCache(
           us.map(u => ({
             id: u.id,
             nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+            proceso_nombre: u.proceso_nombre ?? null,
+            procesos: u.procesos ?? [],
             roles: []
           })),
         );
@@ -136,7 +151,7 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
     });
 
     // 2. TODOS los usuarios (solo para resolución de nombres/iniciales)
-    this.userService.getAllBasic().subscribe({
+    this.userService.getAllBasic(false).subscribe({
       next: (us: any[]) => {
         this.state.setTodosNombresMap(
           us.map(u => ({

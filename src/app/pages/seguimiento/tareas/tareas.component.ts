@@ -87,7 +87,7 @@ export class TareasComponent implements OnInit, OnDestroy {
   showFiltroOrigenes = false;
 
   modoListaDirecta = false;
-  filtroOrigenesSelec: string[] = ['seguimiento', 'proyecto', 'informe', 'glpi', 'compromiso'];
+  filtroOrigenesSelec: string[] = ['seguimiento', 'proyecto', 'informe', 'glpi'];
 
   // Tareas originales (sin filtrar)
   tareasSegRaw: SeguimientoTarea[] = [];
@@ -114,6 +114,8 @@ export class TareasComponent implements OnInit, OnDestroy {
   showModalDia = false;
   diaSeleccionado: CalendarioDia | null = null;
 
+  showModalReunion = false;
+
   showModalTarea = false;
   esAdminParaModal = false;
   tareaParaEditar: Tarea | null = null;
@@ -124,9 +126,7 @@ export class TareasComponent implements OnInit, OnDestroy {
   informeTareaParaEditar: InformeTarea | null = null;
   savingInformeTarea = false;
 
-  showModalCompromiso = false;
-  compromisoParaEditar: Compromiso | null = null;
-  savingCompromiso = false;
+
 
   actividadesProyecto: Actividad[] = [];
 
@@ -258,14 +258,15 @@ export class TareasComponent implements OnInit, OnDestroy {
         if (seg) {
           this.seguimientoActual = seg;
           this.anioActual = seg.anio;
-          // Cargamos el mes automáticamente según solicitud
           this.seleccionarMes(this.mesActual);
         } else {
+          this.seguimientoActual = null;
           this.loading = false;
           this._cdr.markForCheck();
         }
       },
       error: () => {
+        this.seguimientoActual = null;
         this.loading = false;
         this._cdr.markForCheck();
       }
@@ -292,7 +293,7 @@ export class TareasComponent implements OnInit, OnDestroy {
     // Cargar vista mes y tareas consolidadas en paralelo
     forkJoin({
       vistaMes: this._proyectoService.getVistaMes(seguimientoId, mes, anio, this.usuarioId, this.vistaMode),
-      consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['proyecto', 'glpi', 'compromiso'], this.vistaMode),
+      consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['seguimiento', 'proyecto', 'glpi'], this.vistaMode),
       informes: this._proyectoService.getMisInformeTareas(this.usuarioId),
       proyectos: this._proyectoService.getProyectos(this.usuarioId)
     }).subscribe({
@@ -570,8 +571,8 @@ export class TareasComponent implements OnInit, OnDestroy {
       if (!resumenMap[uid]) {
         resumenMap[uid] = {
           uid,
-          iniciales: this.state.getInicialesResponsable(uid),
-          nombre: this.state.nombreUsuario(uid),
+          iniciales: this.state.getInicialesCorta(uid),
+          nombre: this.state.getNombreCorto(uid),
           total: 0,
           completadas: 0,
           semaforo: 'gris',
@@ -741,54 +742,82 @@ export class TareasComponent implements OnInit, OnDestroy {
       this.showModalTarea = true;
     } else if (origen === 'glpi') {
       this.abrirDetalleGlpi(t);
-    } else if (origen === 'compromiso') {
-      this.compromisoParaEditar = t;
-      this.showModalCompromiso = true;
+
     }
     this._cdr.markForCheck();
   }
 
   abrirDetalleGlpi(t: any): void {
-    // Formatear fecha para evitar desfases (manejo de T y zona horaria)
-    let fechaFmt = 'No definida';
-    if (t.fecha_limite_entrega) {
-      const d = new Date(t.fecha_limite_entrega.replace(' ', 'T'));
-      fechaFmt = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
+    const fmt = (str: string | undefined) => {
+      if (!str) return 'No definida';
+      const d = new Date(str.replace(' ', 'T'));
+      return isNaN(d.getTime()) ? 'No definida' : d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    const fechaCreaFmt = fmt(t.fecha_creacion);
+    const fechaLimiteFmt = fmt(t.fecha_limite_entrega);
+    const fechaSolucionFmt = fmt(t.fecha_completado);
+    const tiempoRespFmt = t.tiempo_respuesta_horas ? `${t.tiempo_respuesta_horas} horas` : 'En proceso / En curso';
+    const estadoGlpiFmt = t.glpi_estado_nombre || t.estado;
+    const solicitanteFmt = t.solicitante_nombre || t.usuario_nombre || 'Desconocido';
+    const asignadoFmt = t.asignado_nombre || 'Sin asignar';
 
     Swal.fire({
       title: `<span class="text-orange-600 font-black">Ticket GLPI #${t.id}</span>`,
       html: `
         <div class="text-left space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Solicitante</h4>
-              <p class="text-xs font-bold text-gray-800 truncate">${t.usuario_nombre || t.solicitante || 'Desconocido'}</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><i class="bi bi-person-fill mr-1"></i> Solicitante</h4>
+              <p class="text-xs font-bold text-gray-800 truncate">${solicitanteFmt}</p>
             </div>
-            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fecha Límite</h4>
-              <p class="text-xs font-bold text-gray-800">${fechaFmt}</p>
+            <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><i class="bi bi-person-badge-fill mr-1"></i> Asignado (TI)</h4>
+              <p class="text-xs font-bold text-blue-700 truncate">${asignadoFmt}</p>
             </div>
           </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Creación</h4>
+              <p class="text-[11px] font-bold text-gray-700">${fechaCreaFmt}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Límite SLA</h4>
+              <p class="text-[11px] font-bold text-gray-700">${fechaLimiteFmt}</p>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Solución</h4>
+              <p class="text-[11px] font-bold text-emerald-700">${fechaSolucionFmt}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-orange-50 p-3 rounded-2xl border border-orange-100">
+              <h4 class="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">Estado GLPI</h4>
+              <p class="text-xs font-black text-orange-700">${estadoGlpiFmt}</p>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-2xl border border-blue-100">
+              <h4 class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Tiempo de Respuesta</h4>
+              <p class="text-xs font-black text-blue-700">${tiempoRespFmt}</p>
+            </div>
+          </div>
+
           <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Título</h4>
+            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Asunto / Título</h4>
             <p class="text-sm font-bold text-gray-800">${t.titulo}</p>
           </div>
+
           <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
             <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Descripción</h4>
-            <p class="text-[11px] text-gray-600 leading-relaxed">${t.descripcion || 'Sin descripción detallada'}</p>
-          </div>
-          <div class="flex items-center justify-center pt-2">
-            <span class="px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-orange-100 text-orange-700">
-              Estado: ${t.estado}
-            </span>
+            <p class="text-[11px] text-gray-600 leading-relaxed max-h-36 overflow-y-auto">${t.descripcion || 'Sin descripción detallada'}</p>
           </div>
         </div>
       `,
       showCloseButton: true,
       showConfirmButton: false,
-      width: '600px',
-      padding: '2.5rem',
+      width: '640px',
+      padding: '2rem',
       background: '#fff',
       customClass: {
         container: 'backdrop-blur-sm',
@@ -817,6 +846,47 @@ export class TareasComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     // Simulación de visualización de evidencia (podría abrir un carrusel o galería)
     this.state.showToast('Visualización rápida de evidencias en desarrollo', 'info');
+  }
+
+  abrirModalReunion(): void {
+    this.showModalReunion = true;
+    this._cdr.markForCheck();
+  }
+
+  verDetalleReunionRapido(t: any, event: MouseEvent): void {
+    event.stopPropagation();
+    let fmtFecha = 'Sin fecha registrada';
+    if (t.reunion_fecha) {
+      const fStr = String(t.reunion_fecha).replace(' ', 'T');
+      const d = new Date(fStr);
+      if (!isNaN(d.getTime())) {
+        fmtFecha = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } else {
+        fmtFecha = t.reunion_fecha;
+      }
+    }
+
+    Swal.fire({
+      title: `<span class="text-indigo-600 font-black">Minuta de Reunión</span>`,
+      html: `
+        <div class="text-left space-y-4">
+          <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100">
+            <h4 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1"><i class="bi bi-calendar-event mr-1"></i> Asunto / Fecha</h4>
+            <p class="text-xs font-bold text-indigo-900">${t.reunion_titulo || 'Reunión / Minuta del Día'}</p>
+            <p class="text-[10px] font-medium text-indigo-600 mt-0.5">${fmtFecha}</p>
+          </div>
+
+          <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><i class="bi bi-card-text mr-1"></i> Minuta / Acuerdos Trancados</h4>
+            <p class="text-xs text-gray-700 leading-relaxed max-h-48 overflow-y-auto font-medium whitespace-pre-wrap">${t.reunion_descripcion || 'No se registraron notas adicionales para esta reunión.'}</p>
+          </div>
+        </div>
+      `,
+      showCloseButton: true,
+      showConfirmButton: false,
+      width: '540px',
+      customClass: { popup: 'rounded-[2.5rem]' }
+    });
   }
 
   crearNuevaTareaSeguimiento(): void {
@@ -865,46 +935,16 @@ export class TareasComponent implements OnInit, OnDestroy {
     });
   }
 
-  reabrirTareaRapido(t: any, origen: string, event: MouseEvent): void {
-    event.stopPropagation();
-    
-    Swal.fire({
-      title: '¿Reabrir tarea?',
-      text: `Vas a marcar como pendiente: ${t.titulo}`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, reabrir',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#3b82f6',
-    }).then(result => {
-      if (result.value) {
-        let obs$: Observable<any>;
-        if (origen === 'compromiso') {
-          obs$ = this._proyectoService.reabrirCompromiso(t.id, this.usuarioId);
-        } else {
-          return;
-        }
-
-        obs$.subscribe({
-          next: () => {
-            this.state.showToast('Tarea reabierta con éxito');
-            if (this.seguimientoActual) {
-              this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
-            }
-          },
-          error: () => this.state.showToast('Error al reabrir la tarea', 'error')
-        });
-      }
-    });
-  }
-
   onGuardarTarea(form: TareaForm): void {
     this.savingTarea = true;
     this._cdr.markForCheck();
 
-    const body = { 
+    const targetUserId = form.responsables?.length ? form.responsables[0] : ((form as any).usuario_id || this.usuarioId);
+    const body: any = { 
       ...form, 
-      usuario_id: this.usuarioId,
+      usuario_id: targetUserId,
+      creador_id: this.usuarioId,
+      creado_por: this.usuarioId,
       titulo_reapertura:      form.titulo_reapertura,
       descripcion_reapertura: form.descripcion_reapertura
     };
@@ -912,23 +952,30 @@ export class TareasComponent implements OnInit, OnDestroy {
     let obs$: Observable<any>;
     if (this.tareaParaEditar) {
       // EDICIÓN
-      const isSeguimiento = this.tareaParaEditar.origen === 'seguimiento';
-      obs$ = isSeguimiento 
-        ? this._proyectoService.actualizarSeguimientoTarea(this.tareaParaEditar.id, body as any)
-        : this._proyectoService.actualizarTarea(this.tareaParaEditar.id, body as any);
+      if (this.tareaParaEditar.origen === 'seguimiento') {
+        obs$ = this._proyectoService.actualizarSeguimientoTarea(this.tareaParaEditar.id, body);
+      } else {
+        obs$ = this._proyectoService.actualizarTarea(this.tareaParaEditar.id, body);
+      }
     } else {
-      // CREACIÓN (Siempre Seguimiento en esta vista)
-      obs$ = this._proyectoService.crearSeguimientoTarea({
-        ...body,
-        seguimiento_id: this.seguimientoActual?.id
-      });
+      // CREACIÓN
+      if (form.proyecto_id || this.proyectoSeleccionado) {
+        obs$ = this._proyectoService.crearTarea(body);
+      } else {
+        // Tarea del mes (seguimiento mensual)
+        obs$ = this._proyectoService.crearSeguimientoTarea({
+          ...body,
+          seguimiento_id: this.seguimientoActual?.id,
+          fecha_limite_entrega: form.fecha_limite_entrega || undefined
+        });
+      }
     }
 
     obs$.subscribe({
       next: () => {
         this.savingTarea = false;
         this.showModalTarea = false;
-        this.state.showToast(this.tareaParaEditar ? 'Tarea actualizada' : 'Tarea creada');
+        this.state.showToast(this.tareaParaEditar ? 'Tarea actualizada' : 'Tarea del mes creada');
         if (this.seguimientoActual) {
           this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
         }
@@ -964,34 +1011,7 @@ export class TareasComponent implements OnInit, OnDestroy {
     });
   }
 
-  onGuardarCompromiso(form: any): void {
-    if (!this.compromisoParaEditar) return;
-    this.savingCompromiso = true;
-    this._cdr.markForCheck();
 
-    const body = { 
-      ...form, 
-      usuario_id: this.usuarioId,
-      anio: this.anioActual,
-      mes: this.mesActual
-    };
-    
-    this._proyectoService.actualizarCompromiso(this.compromisoParaEditar.id, body).subscribe({
-      next: () => {
-        this.savingCompromiso = false;
-        this.showModalCompromiso = false;
-        this.state.showToast('Compromiso actualizado');
-        if (this.seguimientoActual) {
-          this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
-        }
-      },
-      error: () => {
-        this.savingCompromiso = false;
-        this.state.showToast('Error al actualizar compromiso', 'error');
-        this._cdr.markForCheck();
-      }
-    });
-  }
 
   private _getTareasDelDia(fecha: Date) {
     const format = (d: Date) => {

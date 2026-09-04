@@ -69,6 +69,60 @@ function formatearFecha(fecha: string): string {
   });
 }
 
+/**
+ * Formatea la información del ítem uniendo el código/referencia completa (incluyendo extensión de color)
+ * y su descripción en el formato solicitado: "16937-008-4-9999 – CIERRE AUTOMÁTICO FI GRIS 06 NA"
+ *
+ * Maneja los siguientes patrones de datos legacy:
+ *   A) nombre_item ya tiene extensión (ej: "16937-008-4-9999") → Usar directamente
+ *   B) nombre_item es solo ID base (ej: "16737"), item tiene desc → "16737 – CIERRE AUT..."
+ *   C) item contiene código embebido (ej: "0016290 - 541-2 - 9999  CIERRE...") → Extraer y formatear
+ *   D) nombre_item vacío, item tiene todo → Mostrar item tal cual
+ */
+function formatItemCompleto(inco: any): string {
+  const itemDesc = (inco.item || '').trim();
+  const nombreItem = (inco.nombre_item || '').trim();
+
+  // Si nombre_item ya tiene extensión (contiene guión), usarlo como referencia
+  if (nombreItem && nombreItem !== 'N/A' && nombreItem.includes('-')) {
+    // nombre_item ya es referencia completa (ej: "16937-008-4-9999")
+    if (!itemDesc || itemDesc === 'N/A') {
+      return nombreItem;
+    }
+    return `${nombreItem} – ${itemDesc}`;
+  }
+
+  // Si nombre_item es solo un ID base (sin guiones), intentar extraer código del campo item
+  if (nombreItem && nombreItem !== 'N/A') {
+    // Verificar si el campo item tiene el código embebido tipo "0016290 - 541-2 - 9999  DESCRIPCION"
+    const matchEmbebido = itemDesc.match(/^0*(\d+)\s*-\s*(\d+(?:-\d+)?)\s*-\s*(\d+)\s+(.*)/);
+    if (matchEmbebido) {
+      const codigoCompleto = `${matchEmbebido[1]}-${matchEmbebido[2]}-${matchEmbebido[3]}`;
+      const descripcion = matchEmbebido[4].trim();
+      return `${codigoCompleto} – ${descripcion}`;
+    }
+
+    // Si no hay código embebido, usar nombre_item base + descripción
+    if (!itemDesc || itemDesc === 'N/A') {
+      return nombreItem;
+    }
+    return `${nombreItem} – ${itemDesc}`;
+  }
+
+  // Sin nombre_item: intentar extraer código del campo item directamente
+  if (itemDesc) {
+    const matchEmbebido = itemDesc.match(/^0*(\d+)\s*-\s*(\d+(?:-\d+)?)\s*-\s*(\d+)\s+(.*)/);
+    if (matchEmbebido) {
+      const codigoCompleto = `${matchEmbebido[1]}-${matchEmbebido[2]}-${matchEmbebido[3]}`;
+      const descripcion = matchEmbebido[4].trim();
+      return `${codigoCompleto} – ${descripcion}`;
+    }
+    return itemDesc;
+  }
+
+  return 'N/A';
+}
+
 // ─── SECCIONES HTML REUTILIZABLES ──────────────────────────────────────────
 
 /**
@@ -336,8 +390,7 @@ export function getDetallesHtml(
                   <td style="padding:8px;">${inconsistencia.cantidad_solicitada_op || '0'}</td>
                   <td style="padding:8px; color:#d32f2f; font-weight:bold;">${inconsistencia.cantidad_inconsistencia || '0'}</td>
                   <td style="padding:8px;">
-                    <strong style="color:#1e293b;">${escapeHtml(inconsistencia.item || 'N/A')}</strong>
-                    ${inconsistencia.nombre_item ? `<br><span style="font-size:10px; color:#64748b;">${escapeHtml(inconsistencia.nombre_item)}</span>` : ''}
+                    <strong style="color:#1e293b;">${escapeHtml(formatItemCompleto(inconsistencia))}</strong>
                   </td>
                   <td style="padding:8px;">${escapeHtml(inconsistencia.tipo_de_orden || 'N/A')} <br> <span style="font-size:10px; color:#666;">${inconsistencia.estado_orden || ''}</span></td>
                 </tr>

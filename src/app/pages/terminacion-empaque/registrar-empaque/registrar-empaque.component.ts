@@ -100,15 +100,15 @@ export class RegistrarEmpaqueComponent implements OnInit {
     
     // Usando la nueva función para API Laravel
     this.terminacionEmpaqueService.obtenerPVsAsignadas(empacadorId).subscribe({
-      next: (res: any[]) => {
-        console.log(res[empacadorId])
-        const listaLimpia: PVAsignada[] = res[empacadorId]['pvs'].map(pv => ({
+      next: (res: any) => {
+        const empData = res ? (res[empacadorId] || res[String(empacadorId)]) : null;
+        const pvsArray = (empData && Array.isArray(empData.pvs)) ? empData.pvs : [];
+        const listaLimpia: PVAsignada[] = pvsArray.map((pv: any) => ({
           ...pv,
           pv_codigo: pv.codigo?.replace(',', ''),
           empacado: Number(pv.empacado),
           teorico: Number(pv.teorico),
-        }))
-        // .filter(pv => pv.empacado < pv.teorico); // Solo las que aún tienen unidades pendientes
+        }));
 
         this.pvs = listaLimpia;
 

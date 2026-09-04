@@ -193,7 +193,8 @@ export class ProyectosComponent implements OnInit, OnDestroy {
 
     const ahora = new Date();
     const sorted = [...tareas].sort((a, b) => this._prioridadTarea(a, ahora) - this._prioridadTarea(b, ahora));
-    this.tareasPlanasFiltradas = sorted;
+    this.tareasPlanasFiltradas = [...sorted];
+    this.cdr.markForCheck();
     this.cdr.detectChanges();
   }
 
@@ -442,13 +443,15 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     this.showDetalle   = true;
     this.loadingDetalle = true;
     this.detalle        = null;
+    this.tareasPlanasFiltradas = [];
     this.cdr.markForCheck();
 
     this.proyServ.getDetalleCompleto(p.id, this.usuarioId).subscribe({
       next: (res: any) => {
         this.detalle = { ...res.data };
-        this.actualizarTareasPlanas();
+        this.actualizarTareasPlanas(res.data);
         this.loadingDetalle = false;
+        this.cdr.markForCheck();
         this.cdr.detectChanges();
       },
       error: () => {

@@ -270,7 +270,10 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     const base = this.validaciones || [];
 
     // --- 1. Filtrar validaciones para la vista de listado regular ---
-    let filtrados = base.filter(v => this.normalizeModo(v.tipo_conteo) === modo);
+    let filtrados = base;
+    if (modo !== 'justificar') {
+      filtrados = base.filter(v => this.normalizeModo(v.tipo_conteo) === modo);
+    }
 
     if (this.filtroBodega) {
       filtrados = filtrados.filter(v => v.codigo_bodega === this.filtroBodega);
@@ -328,7 +331,10 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     const gruposContadores: { [key: string]: any } = {};
     const gruposZonas: { [key: string]: any } = {};
 
-    let validacionesBaseMenu = base.filter(v => this.normalizeModo(v.tipo_conteo) === modo);
+    let validacionesBaseMenu = base;
+    if (modo !== 'justificar') {
+      validacionesBaseMenu = base.filter(v => this.normalizeModo(v.tipo_conteo) === modo);
+    }
     if (this.filtroBodega) {
       validacionesBaseMenu = validacionesBaseMenu.filter(v => v.codigo_bodega === this.filtroBodega);
     }
@@ -362,10 +368,65 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     this.zonasAgrupadas = Object.values(gruposZonas);
 
     // --- 3. Agrupación para Justificación ---
-    const mapa = new Map<string, any>();
-    let baseJustificacion = base;
+    this.agruparParaJustificacion(preservePage);
+  }
 
-    if (this.filtroBodega) {
+  normalizarConteo(conteo: number | null, siesa: number): number | null {
+    if (conteo === null || conteo === undefined || isNaN(conteo)) return null;
+    if (siesa <= 0 || conteo === 0) return conteo;
+
+    const factores = [1, 10, 100, 1000, 10000, 0.1, 0.01, 0.001];
+    let mejorValor = conteo;
+    let menorDiff = Math.abs(conteo - siesa);
+
+    for (const f of factores) {
+      const candidato = conteo / f;
+      const diff = Math.abs(candidato - siesa);
+      if (Math.abs(candidato - siesa) < 0.0001) {
+        return candidato;
+      }
+      if (diff < menorDiff) {
+        menorDiff = diff;
+        mejorValor = candidato;
+      }
+    }
+
+    return mejorValor;
+  }
+
+  obtenerConteoMasCercano(conteo: number | null, reconteo1: number | null, reconteo2: number | null, siesa: number): number {
+    const conteosDisponibles: number[] = [];
+
+    const c1 = this.normalizarConteo(conteo, siesa);
+    const r1 = this.normalizarConteo(reconteo1, siesa);
+    const r2 = this.normalizarConteo(reconteo2, siesa);
+
+    if (c1 !== null) conteosDisponibles.push(c1);
+    if (r1 !== null) conteosDisponibles.push(r1);
+    if (r2 !== null) conteosDisponibles.push(r2);
+
+    if (conteosDisponibles.length === 0) return 0;
+
+    let mejorConteo = conteosDisponibles[0];
+    let menorDiferencia = Math.abs(mejorConteo - siesa);
+
+    for (let i = 1; i < conteosDisponibles.length; i++) {
+      const val = conteosDisponibles[i];
+      const diff = Math.abs(val - siesa);
+      if (diff < menorDiferencia) {
+        menorDiferencia = diff;
+        mejorConteo = val;
+      }
+    }
+
+    return mejorConteo;
+  }
+
+  agruparParaJustificacion(preservePage = false) {
+    const mapa = new Map<string, any>();
+    let baseJustificacion = [...(this.validaciones || [])];
+
+    if (this.filtroBodega && this.filtroBodega !== 'TODOS') {
       baseJustificacion = baseJustificacion.filter(v => v.codigo_bodega === this.filtroBodega);
     }
 
@@ -440,12 +501,19 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     });
 
     let itemsList = Array.from(mapa.values()).map(item => {
-      const valorFinalConteo = item.reconteo2 !== null ? item.reconteo2 : (item.reconteo1 !== null ? item.reconteo1 : (item.conteo !== null ? item.conteo : 0));
+      const c1Norm = this.normalizarConteo(item.conteo, item.cantidad_siesa);
+      const r1Norm = this.normalizarConteo(item.reconteo1, item.cantidad_siesa);
+      const r2Norm = this.normalizarConteo(item.reconteo2, item.cantidad_siesa);
+
+      const valorFinalConteo = this.obtenerConteoMasCercano(c1Norm, r1Norm, r2Norm, item.cantidad_siesa);
       const diferencia = valorFinalConteo - item.cantidad_siesa;
       const diferencia_valor = Math.abs(diferencia * item.costo_unitario);
 
       return {
         ...item,
+        conteo: c1Norm,
+        reconteo1: r1Norm,
+        reconteo2: r2Norm,
         valor_final: valorFinalConteo,
         diferencia: diferencia,
         diferencia_valor: diferencia_valor
@@ -717,25 +785,77 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     let dataToExport: any[] = [];
 
     if (this.modoActual === 'justificar') {
-      dataToExport = this.itemsAgrupadosJustificacion.map(i => ({
-        'Bodega': i.codigo_bodega,
-        'Zona': i.zona,
-        'ID Ítem': i.id_item,
-        'Referencia': i.referencia,
-        'Descripción': i.descripcion,
-        'Talla': i.id_talla || 'N/A',
-        'Color': i.id_color || 'N/A',
-        'Val. Unitario': i.costo_unitario,
-        'Stock Siesa': i.cantidad_siesa,
-        '1° Conteo': i.conteo !== null ? i.conteo : '',
-        '1° Reconteo': i.reconteo1 !== null ? i.reconteo1 : '',
-        '2° Reconteo': i.reconteo2 !== null ? i.reconteo2 : '',
-        'Conteo Final': i.valor_final,
-        'Diferencia': i.diferencia,
-        'Dif. Valor ($)': i.diferencia_valor,
-        'Comentarios Conteo': i.comentarios.join(' | '),
-        'Justificación': i.justificacion
-      }));
+      // Consolidar ítems que aparecen en múltiples zonas en una sola fila
+      const mapaConsolidado = new Map<string, any>();
+
+      for (const i of this.itemsAgrupadosJustificacion) {
+        const key = `${i.id_item}|${i.referencia}|${i.id_talla ?? ''}|${i.id_color ?? ''}`;
+
+        if (!mapaConsolidado.has(key)) {
+          mapaConsolidado.set(key, {
+            ...i,
+            zonas: new Set<string>()
+          });
+        }
+
+        const consolidado = mapaConsolidado.get(key)!;
+
+        // Agregar zona
+        if (i.zona) consolidado.zonas.add(i.zona);
+
+        // Priorizar el registro que tenga conteo
+        const tieneConteoActual = i.conteo !== null || i.reconteo1 !== null || i.reconteo2 !== null;
+        const tieneConteoConsolidado = consolidado.conteo !== null || consolidado.reconteo1 !== null || consolidado.reconteo2 !== null;
+
+        if (tieneConteoActual && !tieneConteoConsolidado) {
+          consolidado.conteo = i.conteo;
+          consolidado.reconteo1 = i.reconteo1;
+          consolidado.reconteo2 = i.reconteo2;
+          consolidado.valor_final = i.valor_final;
+          consolidado.diferencia = i.diferencia;
+          consolidado.diferencia_valor = i.diferencia_valor;
+          consolidado.cantidad_siesa = i.cantidad_siesa;
+          consolidado.costo_unitario = i.costo_unitario;
+        }
+
+        // Acumular comentarios y justificación
+        if (i.comentarios?.length) {
+          consolidado.comentarios = [...new Set([...consolidado.comentarios, ...i.comentarios])];
+        }
+        if (i.justificacion && !consolidado.justificacion) {
+          consolidado.justificacion = i.justificacion;
+        }
+      }
+
+      dataToExport = Array.from(mapaConsolidado.values()).map(i => {
+        const c1Norm = this.normalizarConteo(i.conteo, i.cantidad_siesa);
+        const r1Norm = this.normalizarConteo(i.reconteo1, i.cantidad_siesa);
+        const r2Norm = this.normalizarConteo(i.reconteo2, i.cantidad_siesa);
+
+        const valorFinal = this.obtenerConteoMasCercano(c1Norm, r1Norm, r2Norm, i.cantidad_siesa);
+        const diferencia = valorFinal - i.cantidad_siesa;
+        const diferenciaValor = Math.abs(diferencia * i.costo_unitario);
+
+        return {
+          'Bodega': i.codigo_bodega,
+          'Zona(s)': Array.from(i.zonas).join(' | '),
+          'ID Ítem': i.id_item,
+          'Referencia': i.referencia,
+          'Descripción': i.descripcion,
+          'Talla': i.id_talla || 'N/A',
+          'Color': i.id_color || 'N/A',
+          'Val. Unitario': i.costo_unitario,
+          'Stock Siesa': i.cantidad_siesa,
+          '1° Conteo': c1Norm !== null ? c1Norm : '',
+          '1° Reconteo': r1Norm !== null ? r1Norm : '',
+          '2° Reconteo': r2Norm !== null ? r2Norm : '',
+          'Conteo Final': valorFinal,
+          'Diferencia': diferencia,
+          'Dif. Valor ($)': diferenciaValor,
+          'Comentarios Conteo': i.comentarios.join(' | '),
+          'Justificación': i.justificacion
+        };
+      });
     } else {
       dataToExport = this.validacionesFiltradas.map(v => {
         const comentariosHistorial = (v.historial || [])

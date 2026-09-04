@@ -4,8 +4,14 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ComercialService, ClienteSiesa, Solicitud } from '../../../services/comercial.service';
 import { OrdenCompraService } from '../../../services/orden-compra.service';
 import { PaginationService, PaginationState } from '../../../shared/pagination/pagination.service';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
+
+interface ClienteConPendientes extends ClienteSiesa {
+  solicitudes_pendientes: number;
+  oc_pendientes: number;
+  en_costeo: number;
+}
 
 @Component({
   selector: 'app-cliente-list',
@@ -15,15 +21,15 @@ import Swal from 'sweetalert2';
 export class ClienteListComponent implements OnInit, OnDestroy {
   // Tabs: clientes | solicitudes | ordenes
   viewMode: 'clientes' | 'solicitudes' | 'ordenes' = 'clientes';
-  displayMode: 'cards' | 'list' = 'cards';
+  showAllClientes = false;
 
   // Clientes
   clientes: ClienteSiesa[] = [];
-  filteredClientes: ClienteSiesa[] = [];
-  pagedClientes: ClienteSiesa[] = [];
+  clientesConPendientes: ClienteConPendientes[] = [];
+  filteredClientes: ClienteConPendientes[] = [];
+  pagedClientes: ClienteConPendientes[] = [];
   searchTerm = '';
   isLoading = false;
-  letterFilter = '';
 
   // Solicitudes
   solicitudes: Solicitud[] = [];
@@ -31,7 +37,20 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   pagedSolicitudes: Solicitud[] = [];
   solicitudSearch = '';
   solicitudEstadoFilter = '';
+  solicitudTipoFilter: '' | 'costeo' | 'muestra' = '';
   isLoadingSolicitudes = false;
+
+  // Dedicated Costeos View
+  filteredCosteos: Solicitud[] = [];
+  pagedCosteos: Solicitud[] = [];
+  costeoSearch = '';
+  costeoEstadoFilter = '';
+
+  // Dedicated Muestras View
+  filteredMuestras: Solicitud[] = [];
+  pagedMuestras: Solicitud[] = [];
+  muestraSearch = '';
+  muestraEstadoFilter = '';
 
   // Órdenes de Compra
   ordenes: any[] = [];
@@ -42,9 +61,17 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   isLoadingOrdenes = false;
   estadisticasOC: any = null;
 
+  // KPI computed
+  totalSolicitudesPendientes = 0;
+  totalOCPendientes = 0;
+  costeoStats = { total: 0, sinIniciar: 0, enProceso: 0, completados: 0 };
+  muestraStats = { total: 0, sinIniciar: 0, enProceso: 0, completados: 0 };
+
   // Pagination
   readonly clientesPaginatorId = 'comerciales-clientes';
   readonly solicitudesPaginatorId = 'comerciales-solicitudes-list';
+  readonly costeosPaginatorId = 'comerciales-costeos-list';
+  readonly muestrasPaginatorId = 'comerciales-muestras-list';
   readonly ordenesPaginatorId = 'comerciales-ordenes-list';
   private paginationSubs: Subscription[] = [];
 
@@ -64,7 +91,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
       this.viewMode = 'solicitudes';
       this.loadSolicitudes();
     } else {
-      this.loadClientes();
+      this.loadAllData();
     }
   }
 
@@ -89,16 +116,140 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.paginationSubs.forEach(s => s.unsubscribe());
     this.paginationService.destroyPaginator(this.clientesPaginatorId);
     this.paginationService.destroyPaginator(this.solicitudesPaginatorId);
+    this.paginationService.destroyPaginator(this.costeosPaginatorId);
+    this.paginationService.destroyPaginator(this.muestrasPaginatorId);
     this.paginationService.destroyPaginator(this.ordenesPaginatorId);
-    // No removemos Tailwind ya que otros componentes lo usan
+  }
+
+  // ==================== LOAD ALL DATA ====================
+  loadAllData(): void {
+    this.isLoading = true;
+    forkJoin({
+      solicitudes: this.comercialService.listarSolicitudes(),
+      ordenes: this.ordenCompraService.obtenerOrdenes()
+    }).subscribe({
+      next: (results) => {
+        this.solicitudes = results.solicitudes.data || [];
+        this.ordenes = results.ordenes.data || [];
+        this.buildClientesConPendientes();
+        this.computeKPIs();
+        this.applyClienteFilters();
+        this.applySolicitudFilters();
+        this.applyCosteoFilters();
+        this.applyMuestraFilters();
+        this.applyOrdenFilters();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+        Swal.fire('Error', 'No se pudieron cargar los datos', 'error');
+      }
+    });
+    this.ordenCompraService.obtenerEstadisticas().subscribe({
+      next: (res) => { this.estadisticasOC = res.data; },
+      error: () => {}
+    });
+  }
+
+  private buildClientesConPendientes(): void {
+    const clienteMap = new Map<string, ClienteConPendientes>();
+
+    // Count pending solicitudes per client
+    const pendientesEstados = ['BORRADOR', 'ENVIADO'];
+    for (const sol of this.solicitudes) {
+      if (pendientesEstados.includes(sol.estado || '') || sol.estado_costeo === 'EN_PROCESO' || sol.estado_muestra === 'EN_PROCESO') {
+        const key = sol.cliente_nombre || 'Sin nombre';
+        if (!clienteMap.has(key)) {
+          clienteMap.set(key, {
+            id: sol.cliente_id,
+            nit: sol.cliente_nit || '',
+            razon_social: sol.cliente_nombre,
+            solicitudes_pendientes: 0,
+            oc_pendientes: 0,
+            en_costeo: 0,
+          });
+        }
+        const c = clienteMap.get(key)!;
+        c.solicitudes_pendientes++;
+        if (sol.estado_costeo === 'EN_PROCESO') {
+          c.en_costeo++;
+        }
+      }
+    }
+
+    // Count pending OC per client
+    for (const oc of this.ordenes) {
+      if (oc.estado === 'PENDIENTE') {
+        const key = oc.cliente || 'Sin nombre';
+        if (!clienteMap.has(key)) {
+          clienteMap.set(key, {
+            id: 0,
+            nit: '',
+            razon_social: oc.cliente,
+            solicitudes_pendientes: 0,
+            oc_pendientes: 0,
+            en_costeo: 0,
+          });
+        }
+        clienteMap.get(key)!.oc_pendientes++;
+      }
+    }
+
+    this.clientesConPendientes = Array.from(clienteMap.values())
+      .sort((a, b) => (b.solicitudes_pendientes + b.oc_pendientes) - (a.solicitudes_pendientes + a.oc_pendientes));
+  }
+
+  private computeKPIs(): void {
+    const costeoSols = this.solicitudes.filter(s => !!s.requiere_costeo);
+    this.costeoStats = {
+      total: costeoSols.length,
+      sinIniciar: costeoSols.filter(s => !s.estado_costeo || s.estado_costeo === 'PENDIENTE').length,
+      enProceso: costeoSols.filter(s => s.estado_costeo === 'EN_PROCESO').length,
+      completados: costeoSols.filter(s => s.estado_costeo === 'COMPLETADO').length,
+    };
+
+    const muestraSols = this.solicitudes.filter(s => !!s.requiere_muestra);
+    this.muestraStats = {
+      total: muestraSols.length,
+      sinIniciar: muestraSols.filter(s => !s.estado_muestra || s.estado_muestra === 'PENDIENTE').length,
+      enProceso: muestraSols.filter(s => s.estado_muestra === 'EN_PROCESO').length,
+      completados: muestraSols.filter(s => s.estado_muestra === 'COMPLETADO').length,
+    };
+
+    this.totalSolicitudesPendientes = this.solicitudes.filter(s => ['BORRADOR', 'ENVIADO'].includes(s.estado || '')).length;
+    this.totalOCPendientes = this.ordenes.filter(o => o.estado === 'PENDIENTE').length;
   }
 
   // ==================== TABS ====================
   switchView(mode: 'clientes' | 'solicitudes' | 'ordenes'): void {
     this.viewMode = mode;
-    if (mode === 'solicitudes' && this.solicitudes.length === 0) this.loadSolicitudes();
-    if (mode === 'ordenes' && this.ordenes.length === 0) this.loadOrdenes();
-    if (mode === 'clientes' && this.clientes.length === 0) this.loadClientes();
+    if (mode === 'solicitudes') {
+      if (this.solicitudes.length === 0) {
+        this.loadSolicitudes();
+      } else {
+        this.applySolicitudFilters();
+      }
+    }
+    if (mode === 'ordenes') {
+      if (this.ordenes.length === 0) {
+        this.loadOrdenes();
+      } else {
+        this.applyOrdenFilters();
+      }
+    }
+    if (mode === 'clientes' && this.clientesConPendientes.length === 0) this.loadAllData();
+  }
+
+  filterByTipo(tipo: '' | 'costeo' | 'muestra'): void {
+    if (tipo === 'costeo') {
+      this.router.navigate(['/costeos']);
+    } else if (tipo === 'muestra') {
+      this.router.navigate(['/muestras']);
+    } else {
+      this.solicitudTipoFilter = '';
+      this.viewMode = 'solicitudes';
+      this.applySolicitudFilters();
+    }
   }
 
   // ==================== CLIENTES ====================
@@ -107,6 +258,14 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.comercialService.listarClientes().subscribe({
       next: (res) => {
         this.clientes = res.data || [];
+        if (this.showAllClientes) {
+          this.clientesConPendientes = this.clientes.map(c => ({
+            ...c,
+            solicitudes_pendientes: 0,
+            oc_pendientes: 0,
+            en_costeo: 0,
+          }));
+        }
         this.applyClienteFilters();
         this.isLoading = false;
       },
@@ -117,33 +276,14 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     });
   }
 
-  searchClientes(): void {
-    if (this.searchTerm.length >= 2) {
-      this.isLoading = true;
-      this.comercialService.buscarClientes(this.searchTerm).subscribe({
-        next: (res) => {
-          this.clientes = res.data || [];
-          this.applyClienteFilters();
-          this.isLoading = false;
-        },
-        error: () => { this.isLoading = false; }
-      });
-    } else if (this.searchTerm.length === 0) {
-      this.loadClientes();
-    }
-  }
-
   applyClienteFilters(): void {
-    let result = [...this.clientes];
+    let result = [...this.clientesConPendientes];
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       result = result.filter(c =>
         c.razon_social.toLowerCase().includes(term) ||
         c.nit?.toLowerCase().includes(term)
       );
-    }
-    if (this.letterFilter) {
-      result = result.filter(c => c.razon_social.toUpperCase().startsWith(this.letterFilter));
     }
     this.filteredClientes = result;
     this.initClientesPaginator();
@@ -158,19 +298,10 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.paginationSubs.push(sub);
   }
 
-  setLetterFilter(letter: string): void {
-    this.letterFilter = this.letterFilter === letter ? '' : letter;
-    this.applyClienteFilters();
-  }
-
-  goToCliente(cliente: ClienteSiesa): void {
+  goToCliente(cliente: ClienteConPendientes, targetTab: 'items' | 'solicitudes' | 'ordenes' = 'items'): void {
     this.router.navigate(['/comerciales/cliente', cliente.id], {
-      queryParams: { nombre: cliente.razon_social, nit: cliente.nit }
+      queryParams: { nombre: cliente.razon_social, nit: cliente.nit, tab: targetTab }
     });
-  }
-
-  get alphabet(): string[] {
-    return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   }
 
   // ==================== SOLICITUDES ====================
@@ -179,7 +310,10 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.comercialService.listarSolicitudes().subscribe({
       next: (res) => {
         this.solicitudes = res.data || [];
+        this.computeKPIs();
         this.applySolicitudFilters();
+        this.applyCosteoFilters();
+        this.applyMuestraFilters();
         this.isLoadingSolicitudes = false;
       },
       error: () => {
@@ -201,6 +335,11 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     if (this.solicitudEstadoFilter) {
       result = result.filter(c => c.estado === this.solicitudEstadoFilter);
     }
+    if (this.solicitudTipoFilter === 'costeo') {
+      result = result.filter(c => c.requiere_costeo);
+    } else if (this.solicitudTipoFilter === 'muestra') {
+      result = result.filter(c => c.requiere_muestra);
+    }
     this.filteredSolicitudes = result;
     this.initSolicitudesPaginator();
   }
@@ -212,6 +351,108 @@ export class ClienteListComponent implements OnInit, OnDestroy {
         this.pagedSolicitudes = state.currentData;
       });
     this.paginationSubs.push(sub);
+  }
+
+  cambiarEstadoGlobal(sol: Solicitud, nuevoEstado: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!sol.id) return;
+    this.comercialService.cambiarEstado(sol.id, nuevoEstado).subscribe({
+      next: () => {
+        sol.estado = nuevoEstado;
+        this.computeKPIs();
+        this.applySolicitudFilters();
+        Swal.fire({ title: 'Solicitud enviada', text: `La solicitud ${sol.codigo} pasó a estado ${nuevoEstado}`, icon: 'success', timer: 1500, showConfirmButton: false });
+      },
+      error: () => Swal.fire('Error', 'No se pudo cambiar el estado de la solicitud', 'error')
+    });
+  }
+
+  // ==================== DEDICATED COSTEOS VIEW ====================
+  applyCosteoFilters(): void {
+    let result = this.solicitudes.filter(s => !!s.requiere_costeo);
+    if (this.costeoSearch.trim()) {
+      const term = this.costeoSearch.toLowerCase();
+      result = result.filter(s =>
+        s.codigo?.toLowerCase().includes(term) ||
+        s.cliente_nombre?.toLowerCase().includes(term)
+      );
+    }
+    if (this.costeoEstadoFilter) {
+      result = result.filter(s => (s.estado_costeo || 'PENDIENTE') === this.costeoEstadoFilter);
+    }
+    this.filteredCosteos = result;
+    this.initCosteosPaginator();
+  }
+
+  private initCosteosPaginator(): void {
+    const sub = this.paginationService
+      .initializePaginator(this.costeosPaginatorId, this.filteredCosteos, 10)
+      .subscribe((state: PaginationState) => {
+        this.pagedCosteos = state.currentData;
+      });
+    this.paginationSubs.push(sub);
+  }
+
+  cambiarEstadoCosteoRapido(sol: Solicitud, nuevoEstado: string): void {
+    if (!sol.id) return;
+    this.comercialService.cambiarEstadoCosteo(sol.id, nuevoEstado).subscribe({
+      next: (res) => {
+        sol.estado_costeo = nuevoEstado as any;
+        if (res.data) {
+          sol.fecha_inicio_costeo = res.data.fecha_inicio_costeo;
+          sol.fecha_fin_costeo = res.data.fecha_fin_costeo;
+        }
+        this.computeKPIs();
+        this.applyCosteoFilters();
+        this.applySolicitudFilters();
+        Swal.fire({ title: 'Costeo actualizado', icon: 'success', timer: 1200, showConfirmButton: false });
+      },
+      error: () => Swal.fire('Error', 'No se pudo actualizar el estado de costeo', 'error')
+    });
+  }
+
+  // ==================== DEDICATED MUESTRAS VIEW ====================
+  applyMuestraFilters(): void {
+    let result = this.solicitudes.filter(s => !!s.requiere_muestra);
+    if (this.muestraSearch.trim()) {
+      const term = this.muestraSearch.toLowerCase();
+      result = result.filter(s =>
+        s.codigo?.toLowerCase().includes(term) ||
+        s.cliente_nombre?.toLowerCase().includes(term)
+      );
+    }
+    if (this.muestraEstadoFilter) {
+      result = result.filter(s => (s.estado_muestra || 'PENDIENTE') === this.muestraEstadoFilter);
+    }
+    this.filteredMuestras = result;
+    this.initMuestrasPaginator();
+  }
+
+  private initMuestrasPaginator(): void {
+    const sub = this.paginationService
+      .initializePaginator(this.muestrasPaginatorId, this.filteredMuestras, 10)
+      .subscribe((state: PaginationState) => {
+        this.pagedMuestras = state.currentData;
+      });
+    this.paginationSubs.push(sub);
+  }
+
+  cambiarEstadoMuestraRapido(sol: Solicitud, nuevoEstado: string): void {
+    if (!sol.id) return;
+    this.comercialService.cambiarEstadoMuestra(sol.id, nuevoEstado).subscribe({
+      next: (res) => {
+        sol.estado_muestra = nuevoEstado as any;
+        if (res.data) {
+          sol.fecha_inicio_muestra = res.data.fecha_inicio_muestra;
+          sol.fecha_fin_muestra = res.data.fecha_fin_muestra;
+        }
+        this.computeKPIs();
+        this.applyMuestraFilters();
+        this.applySolicitudFilters();
+        Swal.fire({ title: 'Muestra actualizada', icon: 'success', timer: 1200, showConfirmButton: false });
+      },
+      error: () => Swal.fire('Error', 'No se pudo actualizar el estado de muestra', 'error')
+    });
   }
 
   goToSolicitud(solicitud: Solicitud): void {
@@ -275,17 +516,17 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   // ==================== HELPERS ====================
   getEstadoBadgeClass(estado: string): string {
     const map: Record<string, string> = {
-      'BORRADOR': 'bg-gray-100 text-gray-700',
-      'ENVIADO': 'bg-blue-100 text-blue-700',
-      'EN_COSTEO': 'bg-yellow-100 text-yellow-800',
-      'COSTEADO': 'bg-purple-100 text-purple-700',
-      'APROBADO': 'bg-green-100 text-green-700',
-      'RECHAZADO': 'bg-red-100 text-red-700',
-      'PENDIENTE': 'bg-yellow-100 text-yellow-800',
-      'PROCESADA': 'bg-green-100 text-green-700',
-      'RECHAZADA': 'bg-red-100 text-red-700',
+      'BORRADOR': 'bg-slate-100 text-slate-600',
+      'ENVIADO': 'bg-blue-50 text-blue-700 border border-blue-100',
+      'EN_COSTEO': 'bg-amber-50 text-amber-700 border border-amber-100',
+      'COSTEADO': 'bg-violet-50 text-violet-700 border border-violet-100',
+      'APROBADO': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+      'RECHAZADO': 'bg-rose-50 text-rose-700 border border-rose-100',
+      'PENDIENTE': 'bg-amber-50 text-amber-700 border border-amber-100',
+      'PROCESADA': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+      'RECHAZADA': 'bg-rose-50 text-rose-700 border border-rose-100',
     };
-    return map[estado] || 'bg-gray-100 text-gray-700';
+    return map[estado] || 'bg-slate-100 text-slate-600';
   }
 
   getEstadoLabel(estado: string): string {
@@ -295,5 +536,27 @@ export class ClienteListComponent implements OnInit, OnDestroy {
       'PENDIENTE': 'Pendiente', 'PROCESADA': 'Procesada', 'RECHAZADA': 'Rechazada',
     };
     return map[estado] || estado;
+  }
+
+  getProcesoBadgeClass(estado: string | undefined): string {
+    const map: Record<string, string> = {
+      'PENDIENTE': 'bg-amber-50 text-amber-700 border border-amber-200',
+      'EN_PROCESO': 'bg-blue-50 text-blue-700 border border-blue-200',
+      'COMPLETADO': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      'RECHAZADO': 'bg-rose-50 text-rose-700 border border-rose-200',
+      'NO_REQUERIDO': 'bg-slate-50 text-slate-400 border border-slate-200',
+    };
+    return map[estado || 'PENDIENTE'] || 'bg-slate-100 text-slate-600';
+  }
+
+  getProcesoLabel(estado: string | undefined): string {
+    const map: Record<string, string> = {
+      'PENDIENTE': 'Sin Iniciar',
+      'EN_PROCESO': 'En Proceso',
+      'COMPLETADO': 'Completado',
+      'RECHAZADO': 'Rechazado',
+      'NO_REQUERIDO': 'No Requerido',
+    };
+    return map[estado || 'PENDIENTE'] || (estado || 'Sin Iniciar');
   }
 }

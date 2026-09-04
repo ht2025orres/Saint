@@ -44,6 +44,33 @@ export class SharedPaginatorComponent implements OnInit, OnDestroy {
     this.paginationService.changePage(this.instanceId, page);
   }
 
+  goToFirstPage(): void {
+    if (this.paginationState?.paginator && this.paginationState.paginator.number > 0) {
+      this.changePage(0);
+    }
+  }
+
+  goToLastPage(): void {
+    if (this.paginationState?.paginator && this.paginationState.paginator.number < this.paginationState.paginator.totalPages - 1) {
+      this.changePage(this.paginationState.paginator.totalPages - 1);
+    }
+  }
+
+  onPageInputSubmit(event: any): void {
+    const rawVal = event.target ? event.target.value : event;
+    const pageNum = parseInt(rawVal, 10);
+    if (this.paginationState?.paginator) {
+      const totalPages = this.paginationState.paginator.totalPages;
+      if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+        this.changePage(pageNum - 1);
+      } else {
+        if (event.target) {
+          event.target.value = this.paginationState.paginator.number + 1;
+        }
+      }
+    }
+  }
+
   onPageSizeChange(newSize: number): void {
     console.log('Cambiando tamaño de página:', newSize);
     this.paginationService.changePageSize(this.instanceId, newSize);
