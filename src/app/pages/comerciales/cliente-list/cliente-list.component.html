@@ -67,18 +67,18 @@
     <div class="flex items-center gap-1 mb-5">
       <div class="flex bg-white p-1 rounded-xl border border-slate-100 shadow-sm">
         <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
-                [ngClass]="viewMode === 'clientes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
-                (click)="switchView('clientes')">
-          <i class="bi bi-people mr-1.5"></i> Clientes con Pendientes
-          <span *ngIf="clientesConPendientes.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
-                [ngClass]="viewMode === 'clientes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'">{{ clientesConPendientes.length }}</span>
-        </button>
-        <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
                 [ngClass]="viewMode === 'solicitudes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
                 (click)="switchView('solicitudes')">
           <i class="bi bi-file-earmark-text mr-1.5"></i> Solicitudes
           <span *ngIf="solicitudes.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
                 [ngClass]="viewMode === 'solicitudes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'">{{ solicitudes.length }}</span>
+        </button>
+        <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
+                [ngClass]="viewMode === 'clientes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
+                (click)="switchView('clientes')">
+          <i class="bi bi-people mr-1.5"></i> Clientes con Pendientes
+          <span *ngIf="clientesConPendientes.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
+                [ngClass]="viewMode === 'clientes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'">{{ clientesConPendientes.length }}</span>
         </button>
         <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
                 [ngClass]="viewMode === 'ordenes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
@@ -258,6 +258,12 @@
                       (click)="cambiarEstadoGlobal(sol, 'ENVIADO', $event)"
                       class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-extrabold transition-all shadow-xs flex items-center gap-1">
                 <i class="bi bi-send-fill"></i> Enviar Solicitud
+              </button>
+              <button *ngIf="puedeVolverABorrador(sol)"
+                      (click)="cambiarEstadoGlobal(sol, 'BORRADOR', $event)"
+                      title="Devolver a borrador si aún no se ha iniciado el costeo ni la muestra"
+                      class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-extrabold transition-all shadow-xs flex items-center gap-1">
+                <i class="bi bi-arrow-counterclockwise"></i> Volver a Borrador
               </button>
               <span class="text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-wider" [ngClass]="getEstadoBadgeClass(sol.estado || '')">
                 {{ getEstadoLabel(sol.estado || '') }}

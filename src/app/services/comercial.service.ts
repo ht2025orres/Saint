@@ -212,9 +212,10 @@ export class ComercialService {
 
   // ==================== VERSIONES ====================
 
-  crearVersion(solicitudId: number, notas?: string): Observable<any> {
+  crearVersion(solicitudId: number, data: any): Observable<any> {
+    const payload = typeof data === 'string' ? { notas: data } : (data || {});
     return this.http.post<any>(`${this.api}/comerciales/solicitudes/${solicitudId}/versiones`, {
-      notas,
+      ...payload,
       usuario_id: this.uid()
     });
   }

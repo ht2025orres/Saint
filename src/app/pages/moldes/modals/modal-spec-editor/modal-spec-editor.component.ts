@@ -12,6 +12,7 @@ interface MaterialException {
 interface SpecComponent {
   name: string;
   material_exception?: MaterialException | null;
+  client_material_exception?: MaterialException | null;
 }
 
 @Component({
@@ -22,14 +23,33 @@ interface SpecComponent {
 export class ModalSpecEditorComponent {
   @Input() component: SpecComponent | null = null;
   @Input() mode: 'ficha' | 'opm' = 'ficha';
+  @Input() context: 'comercial' | 'muestras' | 'molde' = 'comercial';
   @Input() clientSpec: string = '';
   @Input() technicalSpec: string = '';
+  @Input() itemData: any = null;
+  @Input() solicitudData: any = null;
 
   @Output() save = new EventEmitter<{ clientSpec: string; technicalSpec: string }>();
   @Output() cancel = new EventEmitter<void>();
   @Output() removeException = new EventEmitter<void>();
   @Output() addExceptionSiesa = new EventEmitter<void>();
   @Output() addExceptionManual = new EventEmitter<void>();
+  @Output() removeClientException = new EventEmitter<void>();
+  @Output() addClientExceptionSiesa = new EventEmitter<void>();
+  @Output() addClientExceptionManual = new EventEmitter<void>();
+
+  isManualTextActive = false;
+
+  onSelectManualMode(): void {
+    this.isManualTextActive = true;
+    if (!this.clientSpec) {
+      this.clientSpec = '';
+    }
+  }
+
+  onClientSpecTextChange(text: string): void {
+    this.clientSpec = text;
+  }
 
   onSave(): void {
     this.save.emit({
@@ -52,5 +72,17 @@ export class ModalSpecEditorComponent {
 
   onAddExceptionManual(): void {
     this.addExceptionManual.emit();
+  }
+
+  onRemoveClientException(): void {
+    this.removeClientException.emit();
+  }
+
+  onAddClientExceptionSiesa(): void {
+    this.addClientExceptionSiesa.emit();
+  }
+
+  onAddClientExceptionManual(): void {
+    this.addClientExceptionManual.emit();
   }
 }

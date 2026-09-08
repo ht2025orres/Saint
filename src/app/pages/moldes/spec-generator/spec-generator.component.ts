@@ -1,7 +1,7 @@
 import { Component, OnInit, OnChanges, SimpleChanges, ViewChild, ElementRef, HostListener, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
 
@@ -31,6 +31,7 @@ export interface ComponentItem {
   client_spec: string;
   technical_spec: string;
   material_exception: OpmMaterial | null;
+  client_material_exception?: OpmMaterial | null;
   is_from_mold: boolean;
   is_expanded?: boolean; // Propiedad para controlar la expansión del texto
 }
@@ -47,9 +48,13 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   // Embedded mode (for use inside Solicitud form)
   @Input() embedded = false;
+  @Input() context: 'comercial' | 'muestras' | 'molde' = 'comercial';
+  @Input() itemIndex?: number;
   @Input() externalMoldId: number | null = null;
   @Input() technicalSpecId: number | null = null;
   @Input() initialComponents: ComponentItem[] | null = null;
+  @Input() itemData: any = null;
+  @Input() solicitudData: any = null;
   @Output() onSpecSaved = new EventEmitter<number>();
   @Output() onComponentsChange = new EventEmitter<ComponentItem[]>();
 
@@ -58,6 +63,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   mode: 'opm' | 'ficha' = 'opm';
   opmReference = '';
   generalDescription = '';
+  clientGeneralDescription = '';
   activeView: 'front' | 'back' = 'front';
   activeTab: 'molde' | 'formulario' | 'texto' = 'molde';
 
@@ -97,6 +103,41 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   // Inline editing / adding
   inlineAdding = false;
+  hoveredComponent: ComponentItem | null = null;
+  pinnedComponent: ComponentItem | null = null;
+
+  onPartHover(part: ComponentItem): void {
+    this.hoveredComponent = part;
+  }
+
+  onPartLeave(): void {
+    this.hoveredComponent = null;
+  }
+
+  togglePinPart(part: ComponentItem, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.pinnedComponent === part) {
+      this.pinnedComponent = null;
+    } else {
+      this.pinnedComponent = part;
+      this.hoveredComponent = null;
+    }
+  }
+
+  clearPinnedPart(): void {
+    this.pinnedComponent = null;
+  }
+
+  get activeOpmPopoverPart(): ComponentItem | null {
+    return this.pinnedComponent || this.hoveredComponent;
+  }
+
+  isPartActive(part: ComponentItem): boolean {
+    return (this.hoveredComponent === part) || (this.pinnedComponent === part);
+  }
+
   inlineAddingType: 'general' | 'component' = 'general';
   inlineEditingIndex: number | null = null;
   inlineEditName = '';
@@ -255,6 +296,78 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   get canCreateFicha(): boolean { return this.authService.hasAnyPermission([1, 48]); }
   get canEditFicha(): boolean { return this.authService.hasAnyPermission([1, 49]); }
 
+  initializeComponentsFromInput(): void {
+    this.clientGeneralDescription = 
+      this.itemData?.technical_spec?.description || 
+      this.itemData?.technical_spec?.general_description || 
+      this.itemData?.draftGeneralDescription || 
+      this.itemData?.descripcion_general || 
+      this.itemData?.especificaciones || 
+      this.solicitudData?.observaciones || 
+      '';
+
+    if (this.context === 'comercial') {
+      if (!this.generalDescription) {
+        this.generalDescription = this.clientGeneralDescription;
+      }
+    } else {
+      if (this.itemData?.technical_spec?.technical_description) {
+        this.generalDescription = this.itemData.technical_spec.technical_description;
+      }
+    }
+
+    if (this.initialComponents && this.initialComponents.length > 0) {
+      this.components = this.initialComponents.map((c: any) => {
+        let clientMat = c.client_material_exception || c.material_exception || null;
+        const clientText = c.client_spec || c.spec_content || '';
+        const techText = c.technical_spec || '';
+        let techMat = c.technical_material_exception || (c.client_material_exception ? c.material_exception : null);
+
+        if (!clientMat && !techMat && (c.inventory_reference || c.inventory_description)) {
+          let parsedColor = '';
+          let parsedDesc = c.inventory_description || '';
+          const matchColor = parsedDesc.match(/\(([^)]+)\)$/);
+          if (matchColor) {
+            parsedColor = matchColor[1];
+          }
+
+          const mat: OpmMaterial = {
+            id_item: c.inventory_reference || '',
+            referencia: c.inventory_reference || '',
+            descripcion: parsedDesc,
+            id_color: '',
+            color: parsedColor,
+            costo_unitario: 0,
+            existencias: 0,
+            is_fabric: false,
+            assignment_source: c.inventory_reference ? 'siesa' : 'manual',
+          };
+          clientMat = mat;
+          techMat = mat;
+        }
+
+        if (!clientMat && techMat) clientMat = techMat;
+        if (!techMat && clientMat) techMat = clientMat;
+
+        return {
+          mold_part_id: c.mold_part_id || c.id || null,
+          name: c.name || c.garment_component?.display_name || 'Componente',
+          item_type: c.item_type || 'parte',
+          view: c.view || 'front',
+          position_x: c.position_x,
+          position_y: c.position_y,
+          is_mandatory: c.is_mandatory ?? true,
+          client_spec: clientText,
+          technical_spec: techText,
+          client_material_exception: clientMat,
+          material_exception: techMat,
+          is_from_mold: c.is_from_mold ?? true,
+          is_expanded: false,
+        };
+      });
+    }
+  }
+
   ngOnInit(): void {
     if (this.embedded) {
       // In embedded mode, moldId comes from @Input
@@ -264,8 +377,8 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
         
         // Si hay componentes iniciales (del borrador), usarlos. Si no, cargar del molde.
         if (this.initialComponents && this.initialComponents.length > 0) {
-          this.components = JSON.parse(JSON.stringify(this.initialComponents));
-          this.loadMoldMinimal(); // Solo cargar info del molde, no los componentes
+          this.initializeComponentsFromInput();
+          this.loadMoldMinimal(); // Cargar info del molde y ficha si existe
         } else {
           this.loadMold();
         }
@@ -291,8 +404,35 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     this.moldService.getMold(this.moldId).subscribe({
       next: (res: any) => {
         this.mold = res.data;
-        this.loading = false;
-        this.buildTextContent();
+        if (this.technicalSpecId) {
+          this.moldService.getTechnicalSpec(this.technicalSpecId).subscribe({
+            next: (specRes: any) => {
+              if (specRes && specRes.data) {
+                const spec = specRes.data;
+                this.opmReference = spec.reference || '';
+                this.clientGeneralDescription = spec.description || spec.general_description || this.clientGeneralDescription || '';
+                if (this.context === 'comercial') {
+                  this.generalDescription = spec.description || spec.general_description || this.clientGeneralDescription;
+                } else {
+                  this.generalDescription = spec.technical_description || '';
+                }
+                if (spec.parts && spec.parts.length > 0) {
+                  this.initialComponents = spec.parts;
+                  this.initializeComponentsFromInput();
+                }
+              }
+              this.buildTextContent();
+              this.loading = false;
+            },
+            error: () => {
+              this.buildTextContent();
+              this.loading = false;
+            }
+          });
+        } else {
+          this.buildTextContent();
+          this.loading = false;
+        }
       },
       error: () => this.loading = false
     });
@@ -300,14 +440,28 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (this.embedded) {
-      const moldChanged = changes['externalMoldId'] && !changes['externalMoldId'].firstChange;
-      const specChanged = changes['technicalSpecId'] && !changes['technicalSpecId'].firstChange;
+      const moldChanged = changes['externalMoldId'];
+      const specChanged = changes['technicalSpecId'];
+      const initCompChanged = changes['initialComponents'];
+
+      if (specChanged && changes['technicalSpecId'].currentValue) {
+        this.technicalSpecId = changes['technicalSpecId'].currentValue;
+      }
+
+      if (initCompChanged && this.initialComponents && this.initialComponents.length > 0) {
+        this.initializeComponentsFromInput();
+      }
 
       if (moldChanged || specChanged) {
-        const newMoldId = changes['externalMoldId'] ? changes['externalMoldId'].currentValue : this.externalMoldId;
+        const newMoldId = this.externalMoldId;
         if (newMoldId) {
           this.moldId = newMoldId;
-          this.loadMold();
+          if (this.initialComponents && this.initialComponents.length > 0) {
+            this.initializeComponentsFromInput();
+            this.loadMoldMinimal();
+          } else {
+            this.loadMold();
+          }
         } else {
           this.mold = null;
           this.components = [];
@@ -351,9 +505,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   getSpecCount(): number {
-    return this.mode === 'opm'
-      ? this.components.filter(c => c.client_spec.trim()).length
-      : this.components.filter(c => c.technical_spec.trim()).length;
+    return this.components.filter(c => this.isComponentComplete(c)).length;
   }
 
   getRealComponentIndex(part: ComponentItem): number {
@@ -361,11 +513,12 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   isComponentComplete(part: ComponentItem): boolean {
-    if (this.mode === 'opm') {
-      return !!(part.client_spec && part.client_spec.trim().length > 0);
-    } else {
-      return !!(part.technical_spec && part.technical_spec.trim().length > 0);
-    }
+    const hasSpec = !!(part.client_spec && part.client_spec.trim().length > 0) || 
+                    !!(part.technical_spec && part.technical_spec.trim().length > 0);
+    const hasMaterial = !!part.material_exception || 
+                        (!!(part as any).inventory_reference && (part as any).inventory_reference.trim().length > 0) ||
+                        (!!(part as any).inventory_description && (part as any).inventory_description.trim().length > 0);
+    return hasSpec || hasMaterial;
   }
 
   // ==================== Load ====================
@@ -378,17 +531,25 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
         const parts = this.mold.parts || [];
 
         // Si tenemos un technicalSpecId guardado previamente, cargamos sus especificaciones existentes
-        if (this.technicalSpecId && (!this.initialComponents || this.initialComponents.length === 0)) {
+        if (this.technicalSpecId) {
           this.moldService.getTechnicalSpec(this.technicalSpecId).subscribe({
             next: (specRes: any) => {
               if (specRes && specRes.data) {
                 const spec = specRes.data;
                 this.opmReference = spec.reference || '';
+                this.clientGeneralDescription = spec.description || spec.general_description || this.clientGeneralDescription || '';
+                if (this.context === 'comercial') {
+                  this.generalDescription = spec.description || spec.general_description || this.clientGeneralDescription;
+                } else {
+                  this.generalDescription = spec.technical_description || '';
+                }
                 if (spec.parts && spec.parts.length > 0) {
                   this.components = spec.parts.map((p: any) => {
-                    let mat: OpmMaterial | null = null;
-                    if (p.inventory_reference || p.inventory_description) {
-                      mat = {
+                    let clientMat: OpmMaterial | null = p.client_material_exception || null;
+                    let techMat: OpmMaterial | null = p.material_exception || null;
+
+                    if (!clientMat && !techMat && (p.inventory_reference || p.inventory_description)) {
+                      const mat: OpmMaterial = {
                         id_item: p.inventory_reference || '',
                         referencia: p.inventory_reference || '',
                         descripcion: p.inventory_description || '',
@@ -399,7 +560,10 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
                         is_fabric: false,
                         assignment_source: 'siesa',
                       };
+                      clientMat = mat;
+                      techMat = mat;
                     }
+
                     return {
                       mold_part_id: p.mold_part_id || null,
                       name: p.name || 'Componente',
@@ -410,7 +574,8 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
                       is_mandatory: true,
                       client_spec: p.client_spec || '',
                       technical_spec: p.technical_spec || '',
-                      material_exception: mat,
+                      client_material_exception: clientMat,
+                      material_exception: techMat,
                       is_from_mold: !!p.mold_part_id,
                       is_expanded: false,
                     };
@@ -546,13 +711,15 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     }
   }
 
-  // ==================== Spec Editor (primary) ====================
+  // Spec Editor (primary)
+  targetMaterialType: 'client' | 'technical' = 'technical';
 
   openSpecEditor(realIndex: number): void {
     this.specEditorIndex = realIndex;
     this.specEditorComponent = this.components[realIndex];
     this.specEditorClientSpec = this.specEditorComponent.client_spec || '';
     this.specEditorTechnicalSpec = this.specEditorComponent.technical_spec || '';
+    this.targetMaterialType = this.context === 'comercial' ? 'client' : 'technical';
     this.showSpecEditor = true;
   }
 
@@ -570,11 +737,13 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     this.showSpecEditor = false;
     this.specEditorIndex = null;
     this.specEditorComponent = null;
+    this.targetMaterialType = 'technical';
   }
 
   // Exception from within spec editor
   specAddExceptionSiesa(): void {
     if (this.specEditorIndex === null) return;
+    this.targetMaterialType = 'technical';
     this.inventoryFromSpecEditor = true;
     this.showSpecEditor = false;
     this.openSiesaForComponent(this.specEditorIndex);
@@ -582,12 +751,32 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   specAddExceptionManual(): void {
     if (this.specEditorIndex === null) return;
+    this.targetMaterialType = 'technical';
     this.openManualForComponent(this.specEditorIndex);
   }
 
   specRemoveException(): void {
     if (this.specEditorIndex === null) return;
     this.components[this.specEditorIndex].material_exception = null;
+  }
+
+  specAddClientExceptionSiesa(): void {
+    if (this.specEditorIndex === null) return;
+    this.targetMaterialType = 'client';
+    this.inventoryFromSpecEditor = true;
+    this.showSpecEditor = false;
+    this.openSiesaForComponent(this.specEditorIndex);
+  }
+
+  specAddClientExceptionManual(): void {
+    if (this.specEditorIndex === null) return;
+    this.targetMaterialType = 'client';
+    this.openManualForComponent(this.specEditorIndex);
+  }
+
+  specRemoveClientException(): void {
+    if (this.specEditorIndex === null) return;
+    this.components[this.specEditorIndex].client_material_exception = null;
   }
 
   // ==================== Canvas Interaction ====================
@@ -667,6 +856,9 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   openSiesaForComponent(i: number): void {
     this.selectedPartIndex = i;
+    if (!this.inventoryFromSpecEditor) {
+      this.targetMaterialType = this.context === 'comercial' ? 'client' : 'technical';
+    }
     this.inventoryFilterType = this.components[i].item_type === 'tela' ? 'tela' : 'insumo';
     this.showInventoryModal = true;
   }
@@ -693,7 +885,11 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       is_fabric: (item.referencia || refCode).startsWith('1110'),
       assignment_source: 'siesa',
     };
-    this.components[this.selectedPartIndex].material_exception = mat;
+    if (this.targetMaterialType === 'client') {
+      this.components[this.selectedPartIndex].client_material_exception = mat;
+    } else {
+      this.components[this.selectedPartIndex].material_exception = mat;
+    }
     
     const wasFromSpec = this.inventoryFromSpecEditor;
     this.closeModal();
@@ -703,6 +899,16 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     }
     this.buildTextContent();
     this.notifyChanges();
+  }
+
+  getMaterialDisplayName(mat: any): string {
+    if (!mat) return '';
+    const desc = (mat.descripcion || mat.inventory_description || '').trim();
+    const color = (mat.color || '').trim();
+    if (color && !desc.toLowerCase().includes(color.toLowerCase())) {
+      return `${desc} (${color})`;
+    }
+    return desc;
   }
 
   closeModal(): void {
@@ -715,8 +921,14 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   openManualForComponent(i: number): void {
     this.manualModalIndex = i;
-    this.manualText = this.components[i].material_exception?.descripcion || '';
-    this.manualColor = this.components[i].material_exception?.color || '';
+    if (!this.inventoryFromSpecEditor) {
+      this.targetMaterialType = this.context === 'comercial' ? 'client' : 'technical';
+    }
+    const mat = this.targetMaterialType === 'client' 
+      ? this.components[i].client_material_exception 
+      : this.components[i].material_exception;
+    this.manualText = mat?.descripcion || '';
+    this.manualColor = mat?.color || '';
     this.showManualModal = true;
   }
 
@@ -728,7 +940,11 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       costo_unitario: 0, existencias: 0, is_fabric: false,
       assignment_source: 'manual',
     };
-    this.components[this.manualModalIndex].material_exception = mat;
+    if (this.targetMaterialType === 'client') {
+      this.components[this.manualModalIndex].client_material_exception = mat;
+    } else {
+      this.components[this.manualModalIndex].material_exception = mat;
+    }
     this.closeManualModal();
     this.buildTextContent();
     this.notifyChanges();
@@ -742,7 +958,11 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   onClearMaterialException(i: number): void {
-    this.components[i].material_exception = null;
+    if (this.context === 'comercial') {
+      this.components[i].client_material_exception = null;
+    } else {
+      this.components[i].material_exception = null;
+    }
     this.buildTextContent();
     this.notifyChanges();
   }
@@ -870,7 +1090,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   // Public method for parent to call (returns Observable with spec ID)
   saveSpec(): Observable<number | null> {
-    if (!this.mold || this.components.length === 0) {
+    if (!this.moldId) {
       return of(null);
     }
 
@@ -882,31 +1102,51 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     const payload = {
       mold_id: this.moldId,
       reference: this.opmReference || null,
+      description: this.context === 'comercial' ? (this.generalDescription || this.clientGeneralDescription || null) : (this.clientGeneralDescription || null),
+      technical_description: this.context !== 'comercial' ? (this.generalDescription || null) : null,
       user_created: userName || null,
-      parts: this.components.map(c => {
+      parts: (this.components || []).map(c => {
+        const mat = this.context === 'muestras' 
+          ? (c.material_exception || c.client_material_exception) 
+          : (c.client_material_exception || c.material_exception);
         let invRef = null;
         let invDesc = null;
-        if (c.material_exception) {
-          const mat = c.material_exception;
+        if (mat) {
           const idItem = mat.id_item || mat.referencia || '';
           const idColor = mat.id_color || '';
           const idTalla = mat.id_talla || mat.talla || '';
           const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
           invRef = codeParts.length > 0 ? codeParts.join('-') : mat.referencia;
-          invDesc = mat.color ? `${mat.descripcion} (${mat.color})` : mat.descripcion;
+          const descStr = (mat.descripcion || '').trim();
+          const colorStr = (mat.color || '').trim();
+          if (colorStr && !descStr.toLowerCase().includes(colorStr.toLowerCase())) {
+            invDesc = `${descStr} (${colorStr})`;
+          } else {
+            invDesc = descStr;
+          }
+        } else {
+          invRef = (c as any).inventory_reference || null;
+          invDesc = (c as any).inventory_description || null;
         }
+
+        let clientSpecText = c.client_spec || null;
+        if (!clientSpecText && c.client_material_exception?.assignment_source === 'manual') {
+          clientSpecText = c.client_material_exception.descripcion;
+        }
+
         return {
-          mold_part_id: c.mold_part_id,
-          name: c.name,
-          item_type: c.item_type,
-          view: c.view,
-          position_x: c.position_x,
-          position_y: c.position_y,
+          mold_part_id: c.mold_part_id || null,
+          name: c.name || 'Componente',
+          item_type: c.item_type || 'parte',
+          view: c.view || 'front',
+          position_x: c.position_x ?? null,
+          position_y: c.position_y ?? null,
           inventory_reference: invRef,
           inventory_description: invDesc,
-          client_spec: c.client_spec || null,
+          client_spec: clientSpecText,
           technical_spec: c.technical_spec || null,
           material_exception: c.material_exception,
+          client_material_exception: c.client_material_exception,
           is_from_mold: c.is_from_mold,
         };
       }),
@@ -927,15 +1167,19 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
         }
         this.successMessage = `${this.modeLabel} guardada exitosamente`;
       }),
-      map((res: any) => res.data?.id || null)
+      map((res: any) => res.data?.id || null),
+      catchError((err) => {
+        console.error('Error al guardar especificación OPM en backend:', err);
+        this.saving = false;
+        return of(this.technicalSpecId || null);
+      })
     );
   }
 
-  // Standalone save (used by /moldes route footer button)
   save(): void {
     this.saveSpec().subscribe({
       next: (specId) => {
-        if (this.embedded && specId) {
+        if (specId) {
           this.onSpecSaved.emit(specId);
         }
       },

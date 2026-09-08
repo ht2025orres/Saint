@@ -66,9 +66,9 @@ export class CosteosListComponent implements OnInit, OnDestroy {
 
   loadCosteos(): void {
     this.isLoading = true;
-    this.comercialService.listarSolicitudes({ requiere_costeo: 1 }).subscribe({
+    this.comercialService.listarSolicitudes({ requiere_costeo: 1, excluir_borrador: 1 }).subscribe({
       next: (res) => {
-        this.solicitudes = res.data || [];
+        this.solicitudes = (res.data || []).filter((s: Solicitud) => s.estado !== 'BORRADOR');
         this.computeKPIs();
         this.applyFilters();
         this.isLoading = false;
@@ -81,7 +81,7 @@ export class CosteosListComponent implements OnInit, OnDestroy {
   }
 
   computeKPIs(): void {
-    const costeoSols = this.solicitudes.filter(s => !!s.requiere_costeo);
+    const costeoSols = this.solicitudes.filter(s => !!s.requiere_costeo && s.estado !== 'BORRADOR');
     this.stats = {
       total: costeoSols.length,
       sinIniciar: costeoSols.filter(s => !s.estado_costeo || s.estado_costeo === 'PENDIENTE').length,
@@ -91,7 +91,7 @@ export class CosteosListComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    let result = this.solicitudes.filter(s => !!s.requiere_costeo);
+    let result = this.solicitudes.filter(s => !!s.requiere_costeo && s.estado !== 'BORRADOR');
     if (this.costeoSearch.trim()) {
       const term = this.costeoSearch.toLowerCase();
       result = result.filter(s =>

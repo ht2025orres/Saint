@@ -19,8 +19,8 @@ interface ClienteConPendientes extends ClienteSiesa {
   styleUrls: ['./cliente-list.component.css']
 })
 export class ClienteListComponent implements OnInit, OnDestroy {
-  // Tabs: clientes | solicitudes | ordenes
-  viewMode: 'clientes' | 'solicitudes' | 'ordenes' = 'clientes';
+  // Tabs: solicitudes | clientes | ordenes
+  viewMode: 'solicitudes' | 'clientes' | 'ordenes' = 'solicitudes';
   showAllClientes = false;
 
   // Clientes
@@ -298,7 +298,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.paginationSubs.push(sub);
   }
 
-  goToCliente(cliente: ClienteConPendientes, targetTab: 'items' | 'solicitudes' | 'ordenes' = 'items'): void {
+  goToCliente(cliente: ClienteConPendientes, targetTab: 'solicitudes' | 'items' | 'ordenes' = 'solicitudes'): void {
     this.router.navigate(['/comerciales/cliente', cliente.id], {
       queryParams: { nombre: cliente.razon_social, nit: cliente.nit, tab: targetTab }
     });
@@ -353,17 +353,34 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.paginationSubs.push(sub);
   }
 
+  puedeVolverABorrador(sol: any): boolean {
+    if (!sol || sol.estado === 'BORRADOR') return false;
+    const costeoIniciado = !!sol.fecha_inicio_costeo || ['EN_PROCESO', 'COMPLETADO'].includes(sol.estado_costeo);
+    const muestraIniciada = !!sol.fecha_inicio_muestra || ['EN_PROCESO', 'COMPLETADO'].includes(sol.estado_muestra);
+    return !costeoIniciado && !muestraIniciada;
+  }
+
   cambiarEstadoGlobal(sol: Solicitud, nuevoEstado: string, event?: Event): void {
     if (event) event.stopPropagation();
     if (!sol.id) return;
     this.comercialService.cambiarEstado(sol.id, nuevoEstado).subscribe({
       next: () => {
         sol.estado = nuevoEstado;
+        if (nuevoEstado === 'BORRADOR') {
+          if (sol.requiere_costeo) sol.estado_costeo = 'PENDIENTE';
+          if (sol.requiere_muestra) sol.estado_muestra = 'PENDIENTE';
+        }
         this.computeKPIs();
         this.applySolicitudFilters();
-        Swal.fire({ title: 'Solicitud enviada', text: `La solicitud ${sol.codigo} pasó a estado ${nuevoEstado}`, icon: 'success', timer: 1500, showConfirmButton: false });
+        const textMsg = nuevoEstado === 'BORRADOR'
+          ? `La solicitud ${sol.codigo} regresó a estado BORRADOR`
+          : `La solicitud ${sol.codigo} pasó a estado ${nuevoEstado}`;
+        Swal.fire({ title: 'Estado Actualizado', text: textMsg, icon: 'success', timer: 1500, showConfirmButton: false });
       },
-      error: () => Swal.fire('Error', 'No se pudo cambiar el estado de la solicitud', 'error')
+      error: (err) => {
+        const errorMsg = err.error?.message || 'No se pudo cambiar el estado de la solicitud';
+        Swal.fire('Atención', errorMsg, 'error');
+      }
     });
   }
 

@@ -35,7 +35,7 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   pagedOrdenes: any[] = [];
   isLoadingOrdenes = false;
 
-  activeTab: 'items' | 'solicitudes' | 'ordenes' = 'items';
+  activeTab: 'solicitudes' | 'items' | 'ordenes' = 'solicitudes';
 
   // Pagination
   readonly itemsPaginatorId = 'comerciales-items';
@@ -59,8 +59,10 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     this.clienteNit = this.route.snapshot.queryParamMap.get('nit') || '';
 
     const initialTab = this.route.snapshot.queryParamMap.get('tab');
-    if (initialTab === 'solicitudes' || initialTab === 'ordenes') {
+    if (initialTab === 'items' || initialTab === 'solicitudes' || initialTab === 'ordenes') {
       this.activeTab = initialTab;
+    } else {
+      this.activeTab = 'solicitudes';
     }
 
     this.loadItems();

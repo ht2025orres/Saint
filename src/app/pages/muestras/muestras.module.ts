@@ -7,6 +7,8 @@ import { MuestrasListComponent } from './muestras-list/muestras-list.component';
 import { MuestrasDetailComponent } from './muestras-detail/muestras-detail.component';
 import { SharedModule } from '../../shared/shared.module';
 
+import { MoldesModule } from '../moldes/moldes.module';
+
 @NgModule({
   declarations: [
     MuestrasListComponent,
@@ -17,7 +19,8 @@ import { SharedModule } from '../../shared/shared.module';
     FormsModule,
     ReactiveFormsModule,
     MuestrasRoutingModule,
-    SharedModule
+    SharedModule,
+    MoldesModule
   ]
 })
 export class MuestrasModule { }

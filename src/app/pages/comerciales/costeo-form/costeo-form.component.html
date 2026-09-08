@@ -317,7 +317,7 @@
           </div>
 
           <!-- Cuerpo Expandible del Ítem con Pestañas Internas (Tallas vs Molde OPM) -->
-          <div *ngIf="item.isExpanded" class="item-body">
+          <div [hidden]="!item.isExpanded" class="item-body">
             
             <!-- Pestañas Internas por Ítem -->
             <div class="item-tabs">
@@ -337,7 +337,7 @@
             </div>
 
             <!-- CONTENIDO PESTAÑA 1: TALLAS & MUESTRAS -->
-            <div *ngIf="!item.activeTab || item.activeTab === 'tallas'" class="tab-content">
+            <div [hidden]="item.activeTab === 'molde'" class="tab-content">
               <div class="item-form-grid">
                 <div class="form-group">
                   <label>Ref. Cliente / Código</label>
@@ -432,7 +432,7 @@
             </div>
 
             <!-- CONTENIDO PESTAÑA 2: MOLDE & FICHA OPM -->
-            <div *ngIf="item.activeTab === 'molde'" class="tab-content">
+            <div [hidden]="item.activeTab !== 'molde'" class="tab-content">
               <div class="mold-config-container">
                 <p class="tab-desc">Selecciona la categoría y el molde para asociar la especificación técnica de producción (OPM).</p>
                 
@@ -488,9 +488,12 @@
                 <div *ngIf="item.moldId" class="spec-generator-wrapper mt-3">
                   <app-spec-generator
                     [embedded]="true"
+                    [context]="'comercial'"
+                    [itemIndex]="i"
                     [externalMoldId]="item.moldId"
                     [technicalSpecId]="item.technicalSpecId"
                     [initialComponents]="item.draftComponents"
+                    [itemData]="item"
                     (onComponentsChange)="onItemComponentsChange(i, $event)"
                     (onSpecSaved)="onItemSpecSaved(i, $event)">
                   </app-spec-generator>

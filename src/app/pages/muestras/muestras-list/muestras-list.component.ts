@@ -66,9 +66,9 @@ export class MuestrasListComponent implements OnInit, OnDestroy {
 
   loadMuestras(): void {
     this.isLoading = true;
-    this.comercialService.listarSolicitudes({ requiere_muestra: 1 }).subscribe({
+    this.comercialService.listarSolicitudes({ requiere_muestra: 1, excluir_borrador: 1 }).subscribe({
       next: (res) => {
-        this.solicitudes = res.data || [];
+        this.solicitudes = (res.data || []).filter((s: Solicitud) => s.estado !== 'BORRADOR');
         this.computeKPIs();
         this.applyFilters();
         this.isLoading = false;
@@ -81,7 +81,7 @@ export class MuestrasListComponent implements OnInit, OnDestroy {
   }
 
   computeKPIs(): void {
-    const muestraSols = this.solicitudes.filter(s => !!s.requiere_muestra);
+    const muestraSols = this.solicitudes.filter(s => !!s.requiere_muestra && s.estado !== 'BORRADOR');
     this.stats = {
       total: muestraSols.length,
       sinIniciar: muestraSols.filter(s => !s.estado_muestra || s.estado_muestra === 'PENDIENTE').length,
@@ -91,7 +91,7 @@ export class MuestrasListComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    let result = this.solicitudes.filter(s => !!s.requiere_muestra);
+    let result = this.solicitudes.filter(s => !!s.requiere_muestra && s.estado !== 'BORRADOR');
     if (this.muestraSearch.trim()) {
       const term = this.muestraSearch.toLowerCase();
       result = result.filter(s =>

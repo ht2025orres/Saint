@@ -15,13 +15,79 @@ export class CosteosDetailComponent implements OnInit {
   isLoading = false;
   activeTab: 'versiones' | 'items' = 'versiones';
   selectedOpmItem: any = null;
+  hoveredOpmPart: any = null;
+  pinnedOpmPart: any = null;
+  opmActiveView: 'front' | 'back' = 'front';
 
   openOpmModal(item: any): void {
     this.selectedOpmItem = item;
+    this.hoveredOpmPart = null;
+    this.pinnedOpmPart = null;
+    this.opmActiveView = 'front';
   }
 
   closeOpmModal(): void {
     this.selectedOpmItem = null;
+    this.hoveredOpmPart = null;
+    this.pinnedOpmPart = null;
+  }
+
+  // ==================== OPM MODAL HELPERS ====================
+  private getAllParts(): any[] {
+    if (!this.selectedOpmItem) return [];
+    return this.selectedOpmItem.technical_spec?.parts || this.selectedOpmItem.mold?.parts || [];
+  }
+
+  getGeneralParts(): any[] {
+    return this.getAllParts().filter(p => p.position_x === null || p.position_x === undefined);
+  }
+
+  getPositionedParts(): any[] {
+    return this.getAllParts().filter(p => p.position_x !== null && p.position_x !== undefined);
+  }
+
+  toggleOpmView(view: 'front' | 'back'): void {
+    this.opmActiveView = view;
+  }
+
+  getActiveOpmImage(): string {
+    if (!this.selectedOpmItem?.mold) return '';
+    if (this.opmActiveView === 'back' && this.selectedOpmItem.mold.back_image_signed_url) {
+      return this.selectedOpmItem.mold.back_image_signed_url;
+    }
+    return this.selectedOpmItem.mold.image_signed_url || this.selectedOpmItem.mold.back_image_signed_url || '';
+  }
+
+  onPartHover(part: any): void {
+    this.hoveredOpmPart = part;
+  }
+
+  onPartLeave(): void {
+    this.hoveredOpmPart = null;
+  }
+
+  togglePinPart(part: any, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.pinnedOpmPart === part) {
+      this.pinnedOpmPart = null;
+    } else {
+      this.pinnedOpmPart = part;
+      this.hoveredOpmPart = null;
+    }
+  }
+
+  clearPinnedPart(): void {
+    this.pinnedOpmPart = null;
+  }
+
+  get activeOpmPopoverPart(): any {
+    return this.pinnedOpmPart || this.hoveredOpmPart;
+  }
+
+  isPartActive(part: any): boolean {
+    return (this.hoveredOpmPart === part) || (this.pinnedOpmPart === part);
   }
 
   constructor(
@@ -89,26 +155,69 @@ export class CosteosDetailComponent implements OnInit {
     });
   }
 
-  crearVersion(): void {
-    Swal.fire({
-      title: 'Nueva Versión de Costeo',
-      input: 'textarea',
-      inputLabel: 'Notas de la versión (opcional)',
-      inputPlaceholder: 'Ingresa detalles del cálculo de costos, telas o proveedores...',
-      showCancelButton: true,
-      confirmButtonText: 'Crear versión',
-      cancelButtonText: 'Cancelar'
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.comercialService.crearVersion(this.solicitudId, result.value).subscribe({
-          next: () => {
-            this.loadSolicitud();
-            Swal.fire({ title: 'Versión creada exitosamente', icon: 'success', timer: 1500, showConfirmButton: false });
-          },
-          error: () => Swal.fire('Error', 'No se pudo crear la versión', 'error')
-        });
-      }
+  // Modal Nueva Versión de Cotización (Calculadora de Costos)
+  showVersionModal = false;
+  newVersionData = {
+    precio_tela: 0,
+    promedio_trazo: 0,
+    costo_mano_obra: 0,
+    costo_insumos: 0,
+    margen_ganancia: 25,
+    notas: ''
+  };
+
+  openVersionModal(): void {
+    this.newVersionData = {
+      precio_tela: 0,
+      promedio_trazo: 0,
+      costo_mano_obra: 0,
+      costo_insumos: 0,
+      margen_ganancia: 25,
+      notas: ''
+    };
+    this.showVersionModal = true;
+  }
+
+  closeVersionModal(): void {
+    this.showVersionModal = false;
+  }
+
+  get calculoCostoTela(): number {
+    return (this.newVersionData.precio_tela || 0) * (this.newVersionData.promedio_trazo || 0);
+  }
+
+  get calculoCostoTotalUnitario(): number {
+    return this.calculoCostoTela + (this.newVersionData.costo_mano_obra || 0) + (this.newVersionData.costo_insumos || 0);
+  }
+
+  get calculoPrecioVenta(): number {
+    const costo = this.calculoCostoTotalUnitario;
+    const margen = (this.newVersionData.margen_ganancia || 0) / 100;
+    if (margen >= 1) return costo;
+    return costo / (1 - margen);
+  }
+
+  guardarVersionCotizacion(): void {
+    const payload = {
+      precio_tela: this.newVersionData.precio_tela,
+      promedio_trazo: this.newVersionData.promedio_trazo,
+      costo_total_unitario: Math.round(this.calculoCostoTotalUnitario * 100) / 100,
+      precio_venta_unitario: Math.round(this.calculoPrecioVenta * 100) / 100,
+      notas: this.newVersionData.notas ? `[MO: $${this.newVersionData.costo_mano_obra} | Insumos: $${this.newVersionData.costo_insumos} | Margen: ${this.newVersionData.margen_ganancia}%] ${this.newVersionData.notas}` : `[MO: $${this.newVersionData.costo_mano_obra} | Insumos: $${this.newVersionData.costo_insumos} | Margen: ${this.newVersionData.margen_ganancia}%]`
+    };
+
+    this.comercialService.crearVersion(this.solicitudId, payload).subscribe({
+      next: () => {
+        this.closeVersionModal();
+        this.loadSolicitud();
+        Swal.fire({ title: 'Versión de Cotización Creada', icon: 'success', timer: 1500, showConfirmButton: false });
+      },
+      error: () => Swal.fire('Error', 'No se pudo guardar la versión de cotización', 'error')
     });
+  }
+
+  crearVersion(): void {
+    this.openVersionModal();
   }
 
   getTotalUnidades(): number {
@@ -119,5 +228,64 @@ export class CosteosDetailComponent implements OnInit {
       }
       return acc + (item.cantidad_muestra || 0);
     }, 0);
+  }
+
+  getOpmState(item: any): 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETO' {
+    if (!item) return 'PENDIENTE';
+    const spec = item.technical_spec;
+    if (spec?.status === 'COMPLETADO' || spec?.status === 'PUBLICADO' || spec?.status === 'APROBADO') {
+      return 'COMPLETO';
+    }
+    if (spec?.status === 'EN_PROCESO') {
+      return 'EN_PROCESO';
+    }
+
+    const parts = spec?.parts || item.mold?.parts || [];
+    if (!parts || parts.length === 0) return 'PENDIENTE';
+
+    let filledCount = 0;
+    for (const p of parts) {
+      if (!!p.technical_spec || !!p.inventory_reference || !!p.inventory_description) {
+        filledCount++;
+      }
+    }
+
+    if (filledCount >= parts.length) {
+      return 'COMPLETO';
+    } else if (filledCount > 0) {
+      return 'EN_PROCESO';
+    }
+
+    return 'PENDIENTE';
+  }
+
+  esOpmTecnicaCompleta(item: any): boolean {
+    return this.getOpmState(item) === 'COMPLETO';
+  }
+
+  getSolicitudObservaciones(): string {
+    return this.costeo?.observaciones || '';
+  }
+
+  getOpmBadgeInfo(item: any): { label: string; bgClass: string; icon: string } {
+    const state = this.getOpmState(item);
+    if (state === 'COMPLETO') {
+      return {
+        label: 'ESPECIFICACIÓN TÉCNICA COMPLETA',
+        bgClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        icon: 'bi-patch-check-fill'
+      };
+    } else if (state === 'EN_PROCESO') {
+      return {
+        label: 'ESPECIFICACIÓN TÉCNICA EN PROCESO',
+        bgClass: 'bg-sky-100 text-sky-800 border-sky-300',
+        icon: 'bi-hourglass-split'
+      };
+    }
+    return {
+      label: 'OPM BÁSICA (COMERCIAL) · PENDIENTE',
+      bgClass: 'bg-amber-100 text-amber-800 border-amber-300',
+      icon: 'bi-clock-history'
+    };
   }
 }

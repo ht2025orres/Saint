@@ -180,6 +180,22 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.comercialService.detalleSolicitud(this.solicitudId).subscribe({
       next: (res) => {
         const s = res.data;
+
+        // Guard: prevent editing if solicitud is not in BORRADOR
+        if (this.isEditMode && s.estado && s.estado !== 'BORRADOR') {
+          Swal.fire({
+            title: 'No se puede editar',
+            text: 'Esta solicitud ya fue enviada y no se puede editar directamente. Para editarla, primero cámbiala a estado Borrador desde la vista de detalle.',
+            icon: 'warning',
+            confirmButtonText: 'Ir al detalle',
+            confirmButtonColor: '#2563EB',
+          }).then(() => {
+            this.router.navigate(['/comerciales/solicitud', this.solicitudId]);
+          });
+          this.isLoading = false;
+          return;
+        }
+
         this.clienteId = s.cliente_id;
         this.clienteNombre = s.cliente_nombre;
         this.clienteNit = s.cliente_nit || '';
@@ -195,27 +211,36 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         this.entregasAnual = s.entregas_anual || 1;
         this.imagenReferenciaUrl = s.imagen_referencia_url || '';
 
-        this.items = (s.items || []).map((it: any) => ({
-          descripcion: it.descripcion,
-          item_cliente: it.item_cliente || '',
-          siesa_item_rowid: it.siesa_item_rowid,
-          siesa_item_ext_rowid: it.siesa_item_ext_rowid,
-          siesa_referencia: it.siesa_referencia || '',
-          cantidad_muestra: it.cantidad_muestra || 0,
-          tallas: (it.tallas || []).map((t: any) => ({ talla: this.cleanTalla(t.talla), cantidad: t.cantidad })),
-          isNew: !it.siesa_item_rowid,
-          isExpanded: false,
-          ref_siesa_item_rowid: it.ref_siesa_item_rowid || null,
-          ref_siesa_referencia: it.ref_siesa_referencia || '',
-          ref_siesa_descripcion: it.ref_siesa_descripcion || '',
-          categoryId: null,
-          categoryName: '',
-          moldId: it.mold_id || null,
-          moldName: '',
-          technicalSpecId: it.technical_spec_id || null,
-          specExpanded: false,
-          availableMolds: [],
-        }));
+        this.items = (s.items || []).map((it: any) => {
+          const moldObj = it.mold || it.technical_spec?.mold || null;
+          const moldId = it.mold_id || moldObj?.id || null;
+          const specId = it.technical_spec_id || it.technical_spec?.id || null;
+          const categoryId = moldObj?.mold_category_id || moldObj?.id_product_category || moldObj?.category_id || null;
+          const categoryName = moldObj?.category?.name || '';
+          const moldName = moldObj?.name || '';
+
+          return {
+            descripcion: it.descripcion,
+            item_cliente: it.item_cliente || '',
+            siesa_item_rowid: it.siesa_item_rowid,
+            siesa_item_ext_rowid: it.siesa_item_ext_rowid,
+            siesa_referencia: it.siesa_referencia || '',
+            cantidad_muestra: it.cantidad_muestra || 0,
+            tallas: (it.tallas || []).map((t: any) => ({ talla: this.cleanTalla(t.talla), cantidad: t.cantidad })),
+            isNew: !it.siesa_item_rowid,
+            isExpanded: false,
+            ref_siesa_item_rowid: it.ref_siesa_item_rowid || null,
+            ref_siesa_referencia: it.ref_siesa_referencia || '',
+            ref_siesa_descripcion: it.ref_siesa_descripcion || '',
+            categoryId: categoryId,
+            categoryName: categoryName,
+            moldId: moldId,
+            moldName: moldName,
+            technicalSpecId: specId,
+            specExpanded: false,
+            availableMolds: [],
+          };
+        });
 
         this.isLoading = false;
         this.restoreMoldInfoForItems();
@@ -240,22 +265,24 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
   restoreMoldInfoForItems(): void {
     if (!this.items || this.items.length === 0) return;
     this.items.forEach((item, index) => {
-      if (item.moldId && !item.categoryName) {
-        this.moldService.getMold(item.moldId).subscribe({
-          next: (res: any) => {
-            if (res.data) {
-              const mold = res.data;
-              item.moldName = mold.name;
-              item.categoryId = mold.id_product_category || mold.category_id || null;
-              if (item.categoryId) {
-                const cat = this.categories.find(c => c.id === item.categoryId);
-                item.categoryName = cat?.name || mold.category?.name || '';
-                this.loadMoldsForItem(index);
+      if (item.moldId) {
+        if (!item.categoryId) {
+          this.moldService.getMold(item.moldId).subscribe({
+            next: (res: any) => {
+              if (res.data) {
+                const mold = res.data;
+                item.moldName = mold.name;
+                item.categoryId = mold.mold_category_id || mold.id_product_category || mold.category_id || null;
+                if (item.categoryId) {
+                  this.loadMoldsForItem(index);
+                }
               }
-            }
-          },
-          error: () => {}
-        });
+            },
+            error: () => {}
+          });
+        } else {
+          this.loadMoldsForItem(index);
+        }
       }
     });
   }
@@ -585,94 +612,98 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         const item = this.items[i];
         if (!item.moldId) continue;
 
-        // Intentar encontrar el componente activo para este ítem
-        const gen = generators.find(g => 
-          g.externalMoldId === item.moldId || 
-          (item.technicalSpecId && g.technicalSpecId === item.technicalSpecId)
-        );
+        let specSavedId: number | null = null;
+
+        // 1. Buscar generador OPM montado para el ítem i (por itemIndex explícito)
+        const gen = generators.find(g => g.itemIndex === i) || 
+          (item.technicalSpecId ? generators.find(g => g.technicalSpecId === item.technicalSpecId) : null);
 
         if (gen) {
-          // Invocar guardado directo desde la instancia activa del componente
           try {
-            const specId = await gen.saveSpec().toPromise();
-            if (specId) {
-              item.technicalSpecId = specId;
-              item.draftComponents = undefined;
-            }
+            specSavedId = await gen.saveSpec().toPromise();
           } catch (genErr) {
             console.error(`Error guardando desde componente OPM del ítem ${i + 1}:`, genErr);
           }
-        } else if (!item.technicalSpecId || (item.draftComponents && item.draftComponents.length > 0)) {
-          // Fallback si no está el componente montado en el DOM
-          let componentsToSave = item.draftComponents;
+        }
 
-          if (!componentsToSave || componentsToSave.length === 0) {
-            try {
-              const moldRes: any = await this.moldService.getMold(item.moldId).toPromise();
-              const moldParts = moldRes.data?.parts || [];
-              componentsToSave = moldParts.map((p: any) => ({
-                mold_part_id: p.id,
-                name: p.garment_component?.display_name || p.name || 'Componente',
-                item_type: p.item_type || 'parte',
-                view: p.view || 'front',
-                position_x: p.position_x,
-                position_y: p.position_y,
-                client_spec: '',
-                technical_spec: '',
-                material_exception: null,
-              }));
-            } catch (err) {
-              console.warn('No se pudieron obtener partes base del molde:', err);
-              componentsToSave = [];
-            }
-          }
+        // 2. Fallback si gen no existía o no devolvió un specSavedId válido
+        if (!specSavedId) {
+          if (item.technicalSpecId) {
+            // Si el ítem ya tiene una ficha OPM vinculada, mantenemos la ficha existente
+            specSavedId = item.technicalSpecId;
+          } else {
+            let componentsToSave = item.draftComponents;
 
-          const specPayload = {
-            mold_id: item.moldId,
-            user_created: userName || null,
-            parts: (componentsToSave || []).map((c: any) => {
-              let invRef = null;
-              let invDesc = null;
-              if (c.material_exception) {
-                const mat = c.material_exception;
-                const idItem = mat.id_item || mat.referencia || '';
-                const idColor = mat.id_color || '';
-                const idTalla = mat.id_talla || mat.talla || '';
-                const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
-                invRef = codeParts.length > 0 ? codeParts.join('-') : mat.referencia;
-                invDesc = mat.color ? `${mat.descripcion} (${mat.color})` : mat.descripcion;
-              } else {
-                invRef = c.inventory_reference || null;
-                invDesc = c.inventory_description || null;
+            if (!componentsToSave || componentsToSave.length === 0) {
+              try {
+                const moldRes: any = await this.moldService.getMold(item.moldId).toPromise();
+                const moldParts = moldRes.data?.parts || [];
+                componentsToSave = moldParts.map((p: any) => ({
+                  mold_part_id: p.id,
+                  name: p.garment_component?.display_name || p.name || 'Componente',
+                  item_type: p.item_type || 'parte',
+                  view: p.view || 'front',
+                  position_x: p.position_x,
+                  position_y: p.position_y,
+                  client_spec: '',
+                  technical_spec: '',
+                  material_exception: null,
+                }));
+              } catch (err) {
+                console.warn('No se pudieron obtener partes base del molde:', err);
+                componentsToSave = [];
               }
-
-              return {
-                mold_part_id: c.mold_part_id || null,
-                name: c.name || 'Componente',
-                item_type: c.item_type || 'parte',
-                view: c.view || 'front',
-                position_x: c.position_x ?? null,
-                position_y: c.position_y ?? null,
-                inventory_reference: invRef,
-                inventory_description: invDesc,
-                client_spec: c.client_spec || null,
-                technical_spec: c.technical_spec || null,
-              };
-            })
-          };
-
-          try {
-            const specRes: any = item.technicalSpecId
-              ? await this.moldService.updateTechnicalSpec(item.technicalSpecId, specPayload).toPromise()
-              : await this.moldService.createTechnicalSpec(specPayload).toPromise();
-
-            if (specRes && specRes.data?.id) {
-              item.technicalSpecId = specRes.data.id;
-              item.draftComponents = undefined;
             }
-          } catch (specErr) {
-            console.error(`Error guardando OPM para el ítem ${i + 1}:`, specErr);
+
+            const specPayload = {
+              mold_id: item.moldId,
+              user_created: userName || null,
+              parts: (componentsToSave || []).map((c: any) => {
+                let invRef = null;
+                let invDesc = null;
+                if (c.client_material_exception || c.material_exception) {
+                  const mat = c.client_material_exception || c.material_exception;
+                  const idItem = mat.id_item || mat.referencia || '';
+                  const idColor = mat.id_color || '';
+                  const idTalla = mat.id_talla || mat.talla || '';
+                  const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
+                  invRef = codeParts.length > 0 ? codeParts.join('-') : mat.referencia;
+                  invDesc = mat.color ? `${mat.descripcion} (${mat.color})` : mat.descripcion;
+                } else {
+                  invRef = c.inventory_reference || null;
+                  invDesc = c.inventory_description || null;
+                }
+
+                return {
+                  mold_part_id: c.mold_part_id || null,
+                  name: c.name || 'Componente',
+                  item_type: c.item_type || 'parte',
+                  view: c.view || 'front',
+                  position_x: c.position_x ?? null,
+                  position_y: c.position_y ?? null,
+                  inventory_reference: invRef,
+                  inventory_description: invDesc,
+                  client_spec: c.client_spec || null,
+                  technical_spec: c.technical_spec || null,
+                };
+              })
+            };
+
+            try {
+              const specRes: any = await this.moldService.createTechnicalSpec(specPayload).toPromise();
+
+              if (specRes && specRes.data?.id) {
+                specSavedId = specRes.data.id;
+              }
+            } catch (specErr) {
+              console.error(`Error guardando OPM para el ítem ${i + 1}:`, specErr);
+            }
           }
+        }
+
+        if (specSavedId) {
+          item.technicalSpecId = specSavedId;
+          item.draftComponents = undefined;
         }
       }
 
