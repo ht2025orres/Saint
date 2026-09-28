@@ -1,0 +1,188 @@
+<div class="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+  <!-- Datos Básicos -->
+  <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="space-y-4">
+      <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest"><i class="bi bi-info-circle text-indigo-600"></i> Datos Básicos</h3>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre del Molde *</label>
+        <input type="text" [ngModel]="moldName" (ngModelChange)="moldNameChange.emit($event)" [disabled]="isReadOnly" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 transition-all" />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Descripción General</label>
+        <textarea [ngModel]="moldDescription" (ngModelChange)="moldDescriptionChange.emit($event)" [disabled]="isReadOnly" rows="2" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-indigo-500 transition-all resize-none"></textarea>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+          <i class="bi bi-folder2"></i> Categoría Padre (Agrupación)
+        </label>
+        <select [ngModel]="mold_category_id" (ngModelChange)="moldCategoryIdChange.emit($event)" [disabled]="isReadOnly"
+                class="w-full px-4 py-2.5 bg-indigo-50/50 border border-indigo-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all">
+          <option [ngValue]="null">Sin categoría padre</option>
+          <option *ngFor="let mc of moldCategories" [ngValue]="mc.id">{{ mc.name }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest"><i class="bi bi-bar-chart-steps text-indigo-600"></i> Resumen Estructural</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center">
+          <span class="block text-2xl font-black text-indigo-600">{{ consolidatedMaterials.length }}</span>
+          <span class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Materiales (Auto)</span>
+        </div>
+        <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100 text-center">
+          <span class="block text-2xl font-black text-amber-600">{{ structuralParts.length }}</span>
+          <span class="text-[9px] font-black text-amber-400 uppercase tracking-widest">Partes Prenda</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN UNIFICADA: POSIBLES MATERIALES (CONSOLIDADOS DESDE PARTES) -->
+  <div class="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-visible relative">
+    
+    <!-- 1. Cabecera -->
+    <div class="p-4 sm:p-5 flex flex-col gap-3 bg-white rounded-t-3xl border-b border-slate-100">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <i class="bi bi-boxes text-sm"></i>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">
+              Posibles Materiales e Insumos
+            </h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
+              {{ consolidatedMaterials.length }} {{ consolidatedMaterials.length === 1 ? 'Material' : 'Materiales' }}
+            </span>
+          </div>
+        </div>
+        
+        <!-- Botón Catálogo Maestro -->
+        <div class="flex items-center gap-2 shrink-0" *ngIf="!isReadOnly">
+          <button type="button" (click)="showMaterialsManager = true"
+                  class="px-3 py-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Administrar el catálogo maestro de materiales e insumos">
+            <i class="bi bi-gear text-xs text-indigo-500"></i>
+            <span>Catálogo Maestro</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros: Tipo + Desplegable por Parte -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <!-- Tabs de Tipo -->
+        <div class="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg text-[10px] font-bold shrink-0">
+          <button type="button" (click)="materialTypeTab = 'all'"
+                  class="px-3 py-1 rounded-md transition cursor-pointer text-center"
+                  [ngClass]="materialTypeTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+            Todos ({{ consolidatedMaterials.length }})
+          </button>
+          <button type="button" (click)="materialTypeTab = 'tela'"
+                  class="px-3 py-1 rounded-md transition cursor-pointer text-center"
+                  [ngClass]="materialTypeTab === 'tela' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+            Telas ({{ telasConsolidadasCount }})
+          </button>
+          <button type="button" (click)="materialTypeTab = 'insumo'"
+                  class="px-3 py-1 rounded-md transition cursor-pointer text-center"
+                  [ngClass]="materialTypeTab === 'insumo' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+            Insumos ({{ insumosConsolidadosCount }})
+          </button>
+        </div>
+
+        <!-- Desplegable Personalizado por Parte -->
+        <div class="relative flex items-center gap-2" *ngIf="uniqueSourceParts.length > 1">
+          <div class="relative min-w-[200px] sm:min-w-[240px]">
+            <i class="bi bi-puzzle absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-xs pointer-events-none"></i>
+            <select [(ngModel)]="materialPartFilter"
+                    class="w-full pl-8 pr-8 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-indigo-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition cursor-pointer appearance-none shadow-2xs">
+              <option value="">Todas las partes ({{ uniqueSourceParts.length }})</option>
+              <option *ngFor="let partName of uniqueSourceParts" [value]="partName">
+                {{ partName }}
+              </option>
+            </select>
+            <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none"></i>
+          </div>
+
+          <!-- Botón Limpiar Filtro si está activo -->
+          <button *ngIf="materialPartFilter" 
+                  type="button" 
+                  (click)="materialPartFilter = ''"
+                  class="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                  title="Mostrar todas las partes">
+            <i class="bi bi-x-circle-fill text-sm"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Listado de Materiales (Cards) -->
+    <div class="p-3 sm:p-4 space-y-2.5" *ngIf="filteredConsolidatedMaterials.length > 0">
+      <div *ngFor="let mat of filteredConsolidatedMaterials"
+           class="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-100 hover:border-indigo-200/80 hover:bg-slate-50/70 transition-all bg-white shadow-2xs group">
+        
+        <!-- Material Icon + Name + Badges -->
+        <div class="flex items-center gap-3 min-w-0 md:w-64 shrink-0">
+          <span class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-2xs"
+                [ngClass]="mat.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+            <i class="bi" [ngClass]="mat.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill'"></i>
+          </span>
+          <div class="min-w-0">
+            <p class="font-black text-slate-800 text-xs truncate">{{ mat.name }}</p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span [ngClass]="mat.type === 'tela' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-100'" 
+                    class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border">
+                {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
+              </span>
+              <span class="text-[9px] text-slate-400 font-bold">
+                {{ mat.partsCount }} {{ mat.partsCount === 1 ? 'parte' : 'partes' }} ({{ mat.variantsCount }} var.)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Partes agrupadas de forma compacta y limpia -->
+        <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1 justify-start md:justify-end">
+          <div *ngFor="let p of mat.parts" 
+               class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/80 hover:bg-indigo-50 border border-slate-200/70 hover:border-indigo-200 text-slate-700 hover:text-indigo-900 transition-all text-xs font-semibold cursor-default shadow-2xs"
+               [title]="p.partName + ' (' + p.variantsCount + ' variantes):\n• ' + p.variants.join('\n• ')">
+            <i class="bi bi-puzzle text-[10px] text-indigo-500"></i>
+            <span class="font-bold text-[10px] text-slate-800">{{ p.partName }}</span>
+            <span class="px-1.5 py-0.2 rounded-md text-[9px] font-black bg-white text-indigo-700 border border-slate-200/80 shadow-2xs">
+              {{ p.variantsCount }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredConsolidatedMaterials.length === 0" class="py-10 text-center px-6">
+      <div *ngIf="consolidatedMaterials.length === 0">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50/70 text-indigo-500 mx-auto flex items-center justify-center mb-3">
+          <i class="bi bi-boxes text-xl"></i>
+        </div>
+        <p class="text-xs font-bold text-slate-700">Sin materiales consolidados</p>
+        <p class="text-[11px] text-slate-400 mt-1 max-w-md mx-auto">
+          Al vincular partes con variantes al molde, los materiales e insumos requeridos se recopilarán automáticamente aquí.
+        </p>
+      </div>
+      <div *ngIf="consolidatedMaterials.length > 0">
+        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2">
+          <i class="bi bi-funnel text-lg"></i>
+        </div>
+        <p class="text-xs font-bold text-slate-600">Ningún material coincide con este filtro</p>
+        <button type="button" (click)="materialPartFilter = ''; materialTypeTab = 'all'"
+                class="mt-2 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer transition">
+          <i class="bi bi-arrow-counterclockwise"></i> Limpiar filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal CRUD: Gestión de Catálogo Maestro de Materiales e Insumos -->
+  <app-modal-gestion-materiales
+    [isOpen]="showMaterialsManager"
+    (close)="showMaterialsManager = false"
+    (catalogUpdated)="onMasterCatalogUpdated($event)">
+  </app-modal-gestion-materiales>
+</div>

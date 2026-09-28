@@ -31,10 +31,19 @@ export class ViewTechnicalSheetComponent implements OnInit {
   loading = false;
   
   // Pestañas y Ficha Técnica de Bordado
-  activeTab: 'specifications' | 'embroidery' = 'specifications';
+  activeTab: 'specifications' | 'embroidery' | 'reports' = 'specifications';
   embroiderySafeUrl: SafeResourceUrl | null = null;
   hasEmbroideryFile: boolean = false;
   isEmbroideryPdf: boolean = false;
+  reportsList: any[] = [];
+  loadingReports: boolean = false;
+
+  // Modal de evidencia flotante
+  showEvidenceModal: boolean = false;
+  selectedEvidenceUrl: SafeResourceUrl | null = null;
+  selectedEvidenceRawUrl: string = '';
+  selectedEvidenceTitle: string = '';
+  isEvidencePdf: boolean = false;
 
   @Input() technicalDataSheet!: TechnicalDataSheet;
   @ViewChild('mainImage') mainImageEl!: ElementRef;
@@ -154,16 +163,21 @@ export class ViewTechnicalSheetComponent implements OnInit {
   loadChip(id: any) {
     const categories$ = this.productCategoryService.getAll();
     const sheet$ = this.technicalSheetService.getById(id);
+    const reports$ = this.technicalSheetService.getReportesByFichaId(id);
 
-    forkJoin([categories$, sheet$]).subscribe({
-      next: ([categories, sheet]) => {
+    this.loadingReports = true;
+    forkJoin([categories$, sheet$, reports$]).subscribe({
+      next: ([categories, sheet, reportsResp]) => {
         this.productCategories = categories;
         this.technicalDataSheetCurrent = sheet;
+        this.reportsList = (reportsResp && reportsResp.data) ? reportsResp.data : [];
+        this.loadingReports = false;
         console.log(this.technicalDataSheetCurrent);
         this.loadProductImages();
         this.prepareEmbroideryUrl();
       },
       error: (error) => {
+        this.loadingReports = false;
         Swal.fire('Error de carga', 'La información necesaria no se ha cargado correctamente', 'error');
       }
     });
@@ -187,11 +201,30 @@ export class ViewTechnicalSheetComponent implements OnInit {
     }
   }
 
-  setActiveTab(tab: 'specifications' | 'embroidery'): void {
+  setActiveTab(tab: 'specifications' | 'embroidery' | 'reports'): void {
     if (tab === 'embroidery' && !this.hasEmbroideryFile) {
       return;
     }
     this.activeTab = tab;
+  }
+
+  openEvidenceModal(url: string, title: string): void {
+    this.selectedEvidenceRawUrl = url;
+    this.selectedEvidenceTitle = title;
+    const lower = url.toLowerCase();
+    this.isEvidencePdf = lower.includes('.pdf');
+    const urlToSanitize = this.isEvidencePdf
+      ? (url.includes('#') ? url : url + '#toolbar=1&navpanes=0&scrollbar=1')
+      : url;
+    this.selectedEvidenceUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlToSanitize);
+    this.showEvidenceModal = true;
+  }
+
+  closeEvidenceModal(): void {
+    this.showEvidenceModal = false;
+    this.selectedEvidenceUrl = null;
+    this.selectedEvidenceRawUrl = '';
+    this.selectedEvidenceTitle = '';
   }
 
   getCategoryDescription(id: any): string {

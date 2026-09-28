@@ -39,4 +39,9 @@ export class AuthorizationManagerFacade {
   bulkAssignByCargo(payload: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/bulk-assign-by-cargo`, payload);
   }
+
+  /** Replicar permisos/perfiles de un usuario a otro */
+  replicateUserPermissions(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/replicate-permissions`, payload);
+  }
 }

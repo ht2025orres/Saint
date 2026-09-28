@@ -33,6 +33,15 @@
                 </span>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" [class.active]="activeTab === 'reports'" (click)="setActiveTab('reports')" role="tab" style="cursor: pointer;">
+                <span class="font-weight-bold">
+                    <i class="fa fa-exclamation-triangle mr-2"></i>Reportes a la Ficha
+                    <span class="badge badge-info ml-2" *ngIf="reportsList && reportsList.length > 0">{{reportsList.length}}</span>
+                    <span class="badge badge-secondary ml-2" *ngIf="!reportsList || reportsList.length === 0">0</span>
+                </span>
+            </a>
+        </li>
     </ul>
 
     <!-- Pestaña 1: Especificaciones y Detalles -->
@@ -661,5 +670,189 @@
         </div>
     </div>
     <!-- Fin Pestaña 2: Ficha Técnica de Bordado -->
+
+    <!-- Pestaña 3: Reportes a la Ficha -->
+    <div *ngIf="activeTab === 'reports'">
+        <div class="card shadow-sm border-0 rounded-lg">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <div>
+                        <h4 class="card-title font-weight-bold mb-1 text-dark">
+                            <i class="fa fa-exclamation-triangle text-warning mr-2"></i>REPORTES ASOCIADOS A LA FICHA
+                        </h4>
+                        <p class="text-muted mb-0 small" *ngIf="technicalDataSheetCurrent">
+                            Historial de reportes vinculados por código de ítem base 
+                            <span class="badge badge-secondary ml-1">{{technicalDataSheetCurrent.id_item}}</span>
+                        </p>
+                    </div>
+                    <div class="mt-2 mt-sm-0">
+                        <span class="badge badge-pill badge-primary px-3 py-2 font-14">
+                            Total: {{reportsList.length}} reportes
+                        </span>
+                    </div>
+                </div>
+
+                <hr class="mt-2 mb-4">
+
+                <!-- Loading spinner -->
+                <div *ngIf="loadingReports" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Cargando reportes...</span>
+                    </div>
+                    <p class="text-muted mt-2">Cargando reportes vinculados...</p>
+                </div>
+
+                <!-- Empty state -->
+                <div *ngIf="!loadingReports && reportsList.length === 0" class="text-center py-5 bg-light rounded">
+                    <div class="mb-3">
+                        <i class="fa fa-check-circle-o text-success" style="font-size: 3.5rem; opacity: 0.6;"></i>
+                    </div>
+                    <h5 class="text-muted font-weight-bold">Sin reportes registrados</h5>
+                    <p class="text-muted small mb-0">No se encontraron reportes ni novedades vinculadas a esta ficha técnica.</p>
+                </div>
+
+                <!-- Reports List -->
+                <div *ngIf="!loadingReports && reportsList.length > 0" class="reports-container">
+                    <div *ngFor="let rep of reportsList" class="card border mb-4 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                        <!-- Header del reporte -->
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap py-3 px-4">
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                                <span class="badge badge-dark font-weight-bold mr-2 px-2 py-1" style="font-size: 13px;">
+                                    #{{rep.id}}
+                                </span>
+                                <span class="font-weight-bold text-dark mr-3" style="font-size: 15px;">
+                                    {{rep.tipo_reporte || 'Reporte de Ficha'}}
+                                </span>
+                                <!-- Estado badge -->
+                                <span class="badge mr-2 px-2 py-1"
+                                      [ngClass]="{
+                                          'badge-success': rep.estado === 'RESUELTO' || rep.estado === 'FINALIZADO',
+                                          'badge-warning text-dark': rep.estado === 'PENDIENTE' || rep.estado === 'EN PROCESO',
+                                          'badge-danger': rep.estado === 'RECHAZADO' || rep.estado === 'CANCELADO',
+                                          'badge-info': rep.estado !== 'RESUELTO' && rep.estado !== 'FINALIZADO' && rep.estado !== 'PENDIENTE' && rep.estado !== 'EN PROCESO' && rep.estado !== 'RECHAZADO' && rep.estado !== 'CANCELADO'
+                                      }">
+                                    <i class="fa fa-circle mr-1" style="font-size: 8px;"></i>{{rep.estado || 'REGISTRADO'}}
+                                </span>
+                                <!-- Prioridad badge -->
+                                <span *ngIf="rep.prioridad" class="badge border px-2 py-1 text-uppercase" style="font-size: 11px; background-color: #e9ecef; color: #495057; border-color: #ced4da !important;">
+                                    <i class="fa fa-flag mr-1"></i>Prioridad: {{rep.prioridad}}
+                                </span>
+                            </div>
+
+                            <div class="text-muted small mt-1 mt-sm-0">
+                                <i class="fa fa-calendar mr-1"></i>
+                                {{rep.fecha_creacion | date:'dd/MM/yyyy HH:mm'}}
+                            </div>
+                        </div>
+
+                        <!-- Body del reporte -->
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <!-- Columna de detalles generales -->
+                                <div class="col-md-4 border-right">
+                                    <h6 class="font-weight-bold text-primary mb-3">
+                                        <i class="fa fa-info-circle mr-1"></i> Información General
+                                    </h6>
+                                    <ul class="list-unstyled mb-0 text-muted small">
+                                        <li class="mb-2" *ngIf="rep.creador_nombre">
+                                            <strong class="text-dark">Reportado por:</strong> {{rep.creador_nombre}}
+                                        </li>
+                                        <li class="mb-2" *ngIf="rep.cliente">
+                                            <strong class="text-dark">Cliente:</strong> {{rep.cliente}}
+                                        </li>
+                                        <li class="mb-2" *ngIf="rep.op_reporte">
+                                            <strong class="text-dark">OP:</strong> {{rep.op_reporte}}
+                                        </li>
+                                        <li class="mb-2" *ngIf="rep.item">
+                                            <strong class="text-dark">Ítem Reporte:</strong> <span class="badge badge-light border text-dark">{{rep.item}}</span>
+                                        </li>
+                                        <li class="mb-2" *ngIf="rep.prenda">
+                                            <strong class="text-dark">Prenda:</strong> {{rep.prenda}}
+                                        </li>
+                                        <li class="mb-2" *ngIf="rep.origen">
+                                            <strong class="text-dark">Origen:</strong> {{rep.origen}}
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Columna de Observación y Respuesta -->
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <h6 class="font-weight-bold text-dark mb-2">
+                                            <i class="fa fa-comment-o text-warning mr-1"></i> Observación / Novedad:
+                                        </h6>
+                                        <div class="p-3 bg-light rounded text-dark" style="white-space: pre-wrap; min-height: 50px; font-size: 14px;">
+                                            {{rep.observacion || 'Sin observaciones registradas.'}}
+                                        </div>
+                                    </div>
+
+                                    <!-- Evidencia del reporte -->
+                                    <div *ngIf="rep.evidencia_url || rep.evidencia" class="mb-3">
+                                        <h6 class="font-weight-bold text-dark mb-2" style="font-size: 13px;">
+                                            <i class="fa fa-paperclip text-info mr-1"></i> Evidencia del Reporte:
+                                        </h6>
+                                        <button type="button" class="btn btn-sm btn-outline-info btn-rounded" (click)="openEvidenceModal(rep.evidencia_url || rep.evidencia, 'Evidencia del Reporte #' + rep.id)">
+                                            <i class="fa fa-search-plus mr-1"></i> Ver Evidencia Adjunta
+                                        </button>
+                                    </div>
+
+                                    <!-- Respuesta / Solución si existe -->
+                                    <div *ngIf="rep.respuesta || rep.fecha_respuesta" class="mt-4 pt-3 border-top">
+                                        <h6 class="font-weight-bold text-success mb-2">
+                                            <i class="fa fa-check-circle text-success mr-1"></i> Solución / Respuesta:
+                                            <small *ngIf="rep.fecha_respuesta" class="text-muted font-weight-normal ml-2">
+                                                ({{rep.fecha_respuesta | date:'dd/MM/yyyy HH:mm'}})
+                                            </small>
+                                        </h6>
+                                        <div class="p-3 rounded border border-success text-dark" style="white-space: pre-wrap; font-size: 14px; background-color: #f4fcf6 !important;">
+                                            {{rep.respuesta || 'Sin detalle de respuesta.'}}
+                                        </div>
+
+                                        <!-- Evidencia de respuesta -->
+                                        <div *ngIf="rep.evidencia_respuesta_url || rep.evidencia_respuesta" class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-success btn-rounded" (click)="openEvidenceModal(rep.evidencia_respuesta_url || rep.evidencia_respuesta, 'Evidencia de Solución - Reporte #' + rep.id)">
+                                                <i class="fa fa-search-plus mr-1"></i> Ver Evidencia de Solución
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- Fin Pestaña 3: Reportes a la Ficha -->
+
+    <!-- Modal flotante para evidencias -->
+    <div class="evidence-modal-overlay" *ngIf="showEvidenceModal" (click)="closeEvidenceModal()">
+        <div class="evidence-modal-container" (click)="$event.stopPropagation()">
+            <div class="evidence-modal-header">
+                <div class="d-flex align-items-center">
+                    <i class="fa fa-image text-info mr-2" style="font-size: 18px;"></i>
+                    <h5 class="mb-0 font-weight-bold text-dark">{{selectedEvidenceTitle}}</h5>
+                </div>
+                <div class="d-flex align-items-center" style="gap: 8px;">
+                    <a [href]="selectedEvidenceRawUrl" target="_blank" class="btn btn-sm btn-outline-secondary btn-rounded" title="Abrir en nueva pestaña">
+                        <i class="fa fa-external-link mr-1"></i> Abrir en pestaña
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-rounded" (click)="closeEvidenceModal()" title="Cerrar">
+                        <i class="fa fa-times mr-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+            <div class="evidence-modal-body">
+                <!-- Si es PDF -->
+                <iframe *ngIf="isEvidencePdf && selectedEvidenceUrl" [src]="selectedEvidenceUrl" class="evidence-iframe"></iframe>
+                <!-- Si es imagen -->
+                <div *ngIf="!isEvidencePdf && selectedEvidenceRawUrl" class="evidence-image-wrapper">
+                    <img [src]="selectedEvidenceRawUrl" alt="Evidencia" class="evidence-image">
+                </div>
+            </div>
+        </div>
+    </div>
 
 </section>

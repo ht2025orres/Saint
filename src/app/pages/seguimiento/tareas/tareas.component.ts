@@ -184,7 +184,7 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   get usuariosFiltrados(): any[] {
     const search = this.filtroPersonasBusqueda.toLowerCase().trim();
-    return this.state.usuariosCache.filter(u => {
+    return this.state.usuariosResponsables.filter(u => {
       // Filtrar por búsqueda de nombre
       if (!search) return true;
       return u.nombre.toLowerCase().includes(search);
@@ -896,42 +896,154 @@ export class TareasComponent implements OnInit, OnDestroy {
     this._cdr.markForCheck();
   }
 
-  completarTareaRapido(t: any, origen: string, event: MouseEvent): void {
-    event.stopPropagation();
-    
-    Swal.fire({
-      title: '¿Completar tarea?',
-      text: `Vas a marcar como completada: ${t.titulo}`,
-      icon: 'question',
+  async promptCompletarTarea(tituloTarea: string): Promise<{ notas: string; archivo: File | null } | null> {
+    let archivoSeleccionado: File | null = null;
+
+    const res = await Swal.fire({
+      title: '',
+      html: `
+        <div class="p-2 text-left font-sans">
+          <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-emerald-200 flex-shrink-0">
+              <i class="bi bi-check-circle-fill text-2xl"></i>
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-base font-black text-slate-800 tracking-tight">Finalizar y Completar Tarea</h3>
+              <p class="text-xs font-semibold text-slate-400 truncate max-w-[320px]">${tituloTarea}</p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i class="bi bi-journal-text text-emerald-500"></i>
+              Nota o Comentario de Cumplimiento
+            </label>
+            <textarea id="swal-comp-notas-t" rows="3"
+              class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 transition-all outline-none resize-none shadow-xs"
+              placeholder="Describe brevemente el resultado, observaciones o entregables de esta tarea..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i class="bi bi-paperclip text-emerald-500"></i>
+              Evidencia Adjunta <span class="text-[9px] font-normal text-slate-400 normal-case">(Opcional)</span>
+            </label>
+            <div class="relative">
+              <input type="file" id="swal-comp-file-t" class="hidden" />
+              <button type="button" id="swal-comp-file-btn-t"
+                class="w-full flex items-center justify-between px-4 py-3 bg-emerald-50/60 hover:bg-emerald-100/70 border-2 border-dashed border-emerald-200 rounded-2xl transition-all cursor-pointer group">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <i class="bi bi-cloud-arrow-up-fill text-sm"></i>
+                  </div>
+                  <span id="swal-comp-file-label-t" class="text-xs font-bold text-emerald-800 truncate">Seleccionar archivo de evidencia...</span>
+                </div>
+                <span class="text-[10px] font-black text-emerald-600 bg-white px-2 py-1 rounded-lg border border-emerald-100 shadow-2xs">Examinar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `,
       showCancelButton: true,
-      confirmButtonText: 'Sí, completar',
+      showDenyButton: false,
+      confirmButtonText: '<i class="bi bi-check2-circle mr-1"></i> Completar Tarea',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#10b981',
-    }).then(result => {
-      if (result.value) {
-        let obs$: Observable<any>;
-        if (origen === 'seguimiento') {
-          obs$ = this._proyectoService.completarSeguimientoTarea(t.id, this.usuarioId);
-        } else if (origen === 'proyecto') {
-          obs$ = this._proyectoService.completarTarea(t.id, this.usuarioId);
-        } else if (origen === 'informe') {
-          obs$ = this._proyectoService.completarInformeTarea(t.id, this.usuarioId);
-        } else if (origen === 'compromiso') {
-          obs$ = this._proyectoService.completarCompromiso(t.id, this.usuarioId);
-        } else {
-          return;
-        }
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-[2rem] p-6 border border-slate-100 shadow-2xl',
+        confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5 shadow-md',
+        cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+      },
+      didOpen: () => {
+        const fileInput = document.getElementById('swal-comp-file-t') as HTMLInputElement;
+        const fileBtn   = document.getElementById('swal-comp-file-btn-t');
+        const fileLabel = document.getElementById('swal-comp-file-label-t');
 
-        obs$.subscribe({
-          next: () => {
-            this.state.showToast('Tarea completada con éxito');
-            if (this.seguimientoActual) {
-              this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
-            }
-          },
-          error: () => this.state.showToast('Error al completar la tarea', 'error')
+        fileBtn?.addEventListener('click', () => fileInput?.click());
+        fileInput?.addEventListener('change', () => {
+          if (fileInput.files && fileInput.files[0]) {
+            archivoSeleccionado = fileInput.files[0];
+            if (fileLabel) fileLabel.innerText = `📄 ${archivoSeleccionado.name}`;
+          }
         });
+      },
+      preConfirm: () => {
+        const notas = (document.getElementById('swal-comp-notas-t') as HTMLTextAreaElement)?.value || '';
+        return { notas, archivo: archivoSeleccionado };
       }
+    });
+
+    if (!res.isConfirmed || !res.value) {
+      return null;
+    }
+
+    const { notas, archivo } = res.value;
+
+    // Si no hay notas ni archivo, pedir confirmación
+    if (!notas.trim() && !archivo) {
+      const confirm = await Swal.fire({
+        title: '',
+        html: `
+          <div class="p-2 text-center font-sans">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-amber-200">
+              <i class="bi bi-exclamation-triangle-fill text-3xl"></i>
+            </div>
+            <h3 class="text-base font-black text-slate-800 tracking-tight mb-1">¿Completar sin evidencia?</h3>
+            <p class="text-xs font-medium text-slate-500 leading-relaxed">No agregaste notas ni adjuntaste archivos.<br>¿Deseas completar la tarea de todas formas?</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-check-lg mr-1"></i> Sí, completar',
+        cancelButtonText: 'Volver',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#94a3b8',
+        customClass: {
+          popup: 'rounded-[2rem] p-6 border border-slate-100 shadow-2xl',
+          confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5 shadow-md',
+          cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+        },
+      });
+
+      if (!confirm.isConfirmed) return null;
+    }
+
+    return { notas, archivo };
+  }
+
+  async completarTareaRapido(t: any, origen: string, event: MouseEvent): Promise<void> {
+    event.stopPropagation();
+    
+    const res = await this.promptCompletarTarea(t.titulo);
+    if (!res) return; // Cancelado
+
+    const formData = new FormData();
+    if (res.notas) formData.append('notas', res.notas);
+    if (res.archivo) formData.append('archivo', res.archivo);
+
+    let obs$: Observable<any>;
+    if (origen === 'seguimiento') {
+      obs$ = this._proyectoService.completarSeguimientoTarea(t.id, this.usuarioId, formData);
+    } else if (origen === 'proyecto') {
+      obs$ = this._proyectoService.completarTarea(t.id, this.usuarioId, formData);
+    } else if (origen === 'informe') {
+      obs$ = this._proyectoService.completarInformeTarea(t.id, this.usuarioId, formData);
+    } else if (origen === 'compromiso') {
+      obs$ = this._proyectoService.completarCompromiso(t.id, this.usuarioId, formData);
+    } else {
+      return;
+    }
+
+    obs$.subscribe({
+      next: () => {
+        this.state.showToast('Tarea completada con éxito');
+        if (this.mostrandoMes && this.seguimientoActual) {
+          this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+        } else {
+          this.cargarDatos();
+        }
+      },
+      error: () => this.state.showToast('Error al completar la tarea', 'error')
     });
   }
 
@@ -1011,6 +1123,57 @@ export class TareasComponent implements OnInit, OnDestroy {
     });
   }
 
+  eliminarTareaDesdeModal(tarea: any): void {
+    if (!tarea) return;
+
+    Swal.fire({
+      title: '¿Eliminar tarea?',
+      text: `¿Estás seguro de que deseas eliminar la tarea "${tarea.titulo}"? Esta acción se registrará en el sistema.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-[2rem] p-6 border border-slate-100 shadow-2xl',
+        confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5 shadow-md',
+        cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+      },
+    }).then(result => {
+      if (result.isConfirmed) {
+        let obs$: Observable<any>;
+        const origen = tarea.origen || 'seguimiento';
+
+        if (origen === 'seguimiento') {
+          obs$ = this._proyectoService.eliminarSeguimientoTarea(tarea.id, this.usuarioId);
+        } else if (origen === 'proyecto') {
+          obs$ = this._proyectoService.eliminarTarea(tarea.id, this.usuarioId);
+        } else if (origen === 'informe') {
+          obs$ = this._proyectoService.eliminarInformeTarea(tarea.id, this.usuarioId);
+        } else if (origen === 'compromiso') {
+          obs$ = this._proyectoService.eliminarCompromiso(tarea.id, this.usuarioId);
+        } else {
+          return;
+        }
+
+        obs$.subscribe({
+          next: () => {
+            this.showModalTarea = false;
+            this.state.showToast('Tarea eliminada correctamente');
+            if (this.mostrandoMes && this.seguimientoActual) {
+              this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+            } else {
+              this.cargarDatos();
+            }
+          },
+          error: (err) => {
+            this.state.showToast(err?.error?.message || 'Error al eliminar la tarea', 'error');
+          }
+        });
+      }
+    });
+  }
 
 
   private _getTareasDelDia(fecha: Date) {

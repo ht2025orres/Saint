@@ -5,6 +5,7 @@ import { SolicitudComercialService } from '../../../services/solicitud-comercial
 import * as pdfjsLib from 'pdfjs-dist';
 import { ComercialService } from '../../../services/comercial.service';
 import { OrdenCompraService } from '../../../services/orden-compra.service';
+import { MoldService } from '../../../services/mold.service';
 import Swal from 'sweetalert2';
 
 type CampoEstructura = 'numero_oc' | 'cliente_nombre' | 'nit' | 'fecha_solicitud' | 'fecha_entrega' | 'cantidad' | 'descripcion' | 'precio_unitario' | 'item_cfip' | 'item_cliente' | 'talla';
@@ -48,6 +49,13 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
   tallaDropdownOpen: { [index: number]: boolean } = {};
   busquedaTallaModal: string = '';
 
+  // --- CONFIGURADOR VISUAL DE MOLDES & OPM ---
+  mostrarModalMolde: boolean = false;
+  mostrarModalConfiguradorPrenda: boolean = false;
+  itemSeleccionadoParaConfigurar: any = null;
+  moldIdSeleccionado: number | null = null;
+  technicalSpecIdSeleccionado: number | null = null;
+
   // --- ESTADOS UI ---
   loading = false;
   savingOrder = false;
@@ -84,6 +92,9 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
   originalFile: File | null = null; // Archivo original para renderizado custom
   viewMode: 'EXTRACTO' | 'ORIGINAL' = 'EXTRACTO'; // Modo de visualización
 
+  private readonly STORAGE_KEY = 'saint_captura_orden_draft';
+  private autoSaveInterval: any;
+
   constructor(
     private service: SolicitudComercialService,
     private comercialService: ComercialService,
@@ -99,9 +110,14 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
     if (params.get('cliente')) this.cabeceraOrden.cliente_nombre = params.get('cliente')!;
     if (params.get('nit')) this.cabeceraOrden.nit = params.get('nit')!;
     if (params.get('clienteId')) this.clienteSiesaId = Number(params.get('clienteId'));
+
+    this.restoreFromLocalStorage();
+    this.startAutoSave();
   }
 
   ngOnDestroy(): void {
+    this.saveToLocalStorage();
+    if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
     if (this.originalFileUrl) {
       // Liberar memoria del objeto URL
       URL.revokeObjectURL((this.originalFileUrl as any).changingThisBreaksApplicationSecurity);
@@ -1414,6 +1430,7 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
             }
 
             this.savingOrder = false;
+            this.clearLocalStorage();
             Swal.fire({
               title: '¡Orden Guardada!',
               html: `<p>OC <strong>${this.cabeceraOrden.numero_oc}</strong> registrada con ${this.itemsProcesados.length} ítems.</p>`,
@@ -1442,5 +1459,149 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
         Swal.fire('Error', err.error?.message || 'No se pudo crear la orden', 'error');
       }
     });
+  }
+
+  // ==========================================
+  // CONFIGURADOR VISUAL DE MOLDES (COMERCIAL)
+  // ==========================================
+
+  abrirSelectorMoldeParaItem(item: any): void {
+    this.itemSeleccionadoParaConfigurar = item;
+    this.mostrarModalMolde = true;
+  }
+
+  onMoldeSeleccionado(mold: any): void {
+    if (this.itemSeleccionadoParaConfigurar && mold) {
+      this.itemSeleccionadoParaConfigurar.mold_id = mold.id;
+      this.itemSeleccionadoParaConfigurar.mold_nombre = mold.name;
+      this.moldIdSeleccionado = mold.id;
+      this.technicalSpecIdSeleccionado = this.itemSeleccionadoParaConfigurar.technical_spec_id || null;
+      this.mostrarModalMolde = false;
+      this.mostrarModalConfiguradorPrenda = true;
+      this.cdr.detectChanges();
+    }
+  }
+
+  abrirConfiguradorVisual(item: any): void {
+    this.itemSeleccionadoParaConfigurar = item;
+    this.moldIdSeleccionado = item.mold_id || null;
+    this.technicalSpecIdSeleccionado = item.technical_spec_id || null;
+    
+    if (!this.moldIdSeleccionado) {
+      this.mostrarModalMolde = true;
+    } else {
+      this.mostrarModalConfiguradorPrenda = true;
+    }
+    this.cdr.detectChanges();
+  }
+
+  cerrarConfiguradorPrenda(): void {
+    this.mostrarModalConfiguradorPrenda = false;
+    this.cdr.detectChanges();
+  }
+
+  onItemComponentsChange(components: any[]): void {
+    if (this.itemSeleccionadoParaConfigurar) {
+      this.itemSeleccionadoParaConfigurar.draftComponents = components;
+      this.saveToLocalStorage();
+    }
+  }
+
+  onSpecSavedParaItem(specId: number): void {
+    if (this.itemSeleccionadoParaConfigurar) {
+      this.itemSeleccionadoParaConfigurar.technical_spec_id = specId;
+      this.itemSeleccionadoParaConfigurar.draftComponents = undefined;
+      this.mostrarMensaje('Prenda personalizada exitosamente.');
+    }
+    this.saveToLocalStorage();
+    this.mostrarModalConfiguradorPrenda = false;
+    this.cdr.detectChanges();
+  }
+
+  // ==========================================
+  // PERSISTENCIA LOCAL STORAGE (AUTO-GUARDADO)
+  // ==========================================
+
+  private startAutoSave(): void {
+    this.autoSaveInterval = setInterval(() => {
+      this.saveToLocalStorage();
+    }, 12000);
+    window.addEventListener('beforeunload', () => this.saveToLocalStorage());
+  }
+
+  private saveToLocalStorage(): void {
+    if (this.itemsProcesados.length === 0 && !this.cabeceraOrden.numero_oc && !this.cabeceraOrden.cliente_nombre) {
+      return;
+    }
+
+    try {
+      const draft = {
+        timestamp: Date.now(),
+        cabeceraOrden: this.cabeceraOrden,
+        itemsProcesados: this.itemsProcesados,
+        tipoSolicitud: this.tipoSolicitud,
+        pasoActual: this.pasoActual,
+        clienteSiesaId: this.clienteSiesaId,
+        nombreArchivo: this.nombreArchivo
+      };
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(draft));
+    } catch (e) {
+      console.warn('Error guardando borrador en localStorage', e);
+    }
+  }
+
+  private restoreFromLocalStorage(): void {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (!raw) return;
+
+      const draft = JSON.parse(raw);
+      const age = Date.now() - (draft.timestamp || 0);
+      if (age > 72 * 60 * 60 * 1000) {
+        this.clearLocalStorage();
+        return;
+      }
+
+      const hasData = (draft.itemsProcesados && draft.itemsProcesados.length > 0) ||
+                      (draft.cabeceraOrden && (draft.cabeceraOrden.numero_oc || draft.cabeceraOrden.cliente_nombre));
+      if (!hasData) {
+        this.clearLocalStorage();
+        return;
+      }
+
+      const clientDesc = draft.cabeceraOrden?.cliente_nombre || 'sin cliente';
+      const ocDesc = draft.cabeceraOrden?.numero_oc ? ` (OC: ${draft.cabeceraOrden.numero_oc})` : '';
+
+      Swal.fire({
+        title: 'Borrador recuperado',
+        text: `Se encontró una captura pendiente para "${clientDesc}"${ocDesc}. ¿Deseas restaurar la información?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, restaurar',
+        cancelButtonText: 'Descartar',
+        confirmButtonColor: '#4f46e5',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (draft.cabeceraOrden) this.cabeceraOrden = { ...this.cabeceraOrden, ...draft.cabeceraOrden };
+          if (draft.itemsProcesados) this.itemsProcesados = draft.itemsProcesados;
+          if (draft.tipoSolicitud) this.tipoSolicitud = draft.tipoSolicitud;
+          if (draft.pasoActual) this.pasoActual = draft.pasoActual;
+          if (draft.clienteSiesaId) this.clienteSiesaId = draft.clienteSiesaId;
+          if (draft.nombreArchivo) this.nombreArchivo = draft.nombreArchivo;
+          this.cdr.detectChanges();
+        } else {
+          this.clearLocalStorage();
+        }
+      });
+    } catch (e) {
+      console.warn('Error restaurando borrador', e);
+      this.clearLocalStorage();
+    }
+  }
+
+  private clearLocalStorage(): void {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+    } catch (e) {}
   }
 }

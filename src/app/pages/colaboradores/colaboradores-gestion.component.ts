@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import Swal from 'sweetalert2';
 
 export interface Colaborador {
   id: number;
@@ -88,21 +89,65 @@ export class ColaboradoresGestionComponent implements OnInit {
     this.loadColaboradores(1);
   }
 
-  syncSiesa(): void {
-    if (confirm('¿Desea ejecutar la sincronización de colaboradores desde Siesa Nómina Web?')) {
-      this.syncing = true;
-      this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/sync`, {}).subscribe({
-        next: (res) => {
-          alert(`Sincronización completada:\n- Leídos: ${res.summary.siesa_activos_leidos}\n- Nuevos: ${res.summary.nuevos_creados}\n- Inactivados por retiro: ${res.summary.inactivados_retiros}`);
-          this.syncing = false;
-          this.loadColaboradores(1);
-        },
-        error: (err) => {
-          alert('Error durante la sincronización: ' + (err.error?.message || err.message));
-          this.syncing = false;
+  // Modal Vista Previa Sincronización Siesa
+  mostrarModalSiesaPreview = false;
+  cargandoSiesaPreview = false;
+  ejecutandoSiesaSync = false;
+  siesaPreviewSummary: any = null;
+  activeSiesaTab: 'nuevos' | 'actualizados' | 'inactivados' = 'nuevos';
+
+  abrirPreviewSiesa(): void {
+    this.mostrarModalSiesaPreview = true;
+    this.cargandoSiesaPreview = true;
+    this.siesaPreviewSummary = null;
+    this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/sync`, { dry_run: true }).subscribe({
+      next: (res: any) => {
+        this.cargandoSiesaPreview = false;
+        this.siesaPreviewSummary = res.summary || res;
+        const det = this.siesaPreviewSummary?.detalles || {};
+        if (det.nuevos && det.nuevos.length > 0) {
+          this.activeSiesaTab = 'nuevos';
+        } else if (det.actualizados && det.actualizados.length > 0) {
+          this.activeSiesaTab = 'actualizados';
+        } else if (det.inactivados && det.inactivados.length > 0) {
+          this.activeSiesaTab = 'inactivados';
+        } else {
+          this.activeSiesaTab = 'nuevos';
         }
-      });
-    }
+      },
+      error: (err: any) => {
+        this.cargandoSiesaPreview = false;
+        console.error('Error cargando preview Siesa:', err);
+        alert('Error de Conexión Siesa: ' + (err?.error?.message || 'Ocurrió un problema al consultar Siesa Nómina Web.'));
+        this.mostrarModalSiesaPreview = false;
+      }
+    });
+  }
+
+  cerrarPreviewSiesa(): void {
+    this.mostrarModalSiesaPreview = false;
+    this.siesaPreviewSummary = null;
+  }
+
+  confirmarYEjecutarSiesaSync(): void {
+    this.ejecutandoSiesaSync = true;
+    this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/sync`, { dry_run: false }).subscribe({
+      next: (res: any) => {
+        alert(res.message || 'Sincronización de colaboradores ejecutada con éxito desde Siesa Nómina Web.');
+        this.ejecutandoSiesaSync = false;
+        this.cerrarPreviewSiesa();
+        this.loadColaboradores(1);
+      },
+      error: (err: any) => {
+        console.error('Error al aplicar sincronización Siesa', err);
+        alert('Error de Sincronización: ' + (err?.error?.message || 'Ocurrió un error al aplicar los cambios.'));
+        this.ejecutandoSiesaSync = false;
+      }
+    });
+  }
+
+  syncSiesa(): void {
+    this.abrirPreviewSiesa();
   }
 
   openEditModal(colaborador: Colaborador): void {
@@ -161,20 +206,60 @@ export class ColaboradoresGestionComponent implements OnInit {
     });
   }
 
-  ejecutarAccionGlpi(accion: 'create' | 'enable' | 'disable'): void {
+  ejecutarAccionGlpi(accion: 'create' | 'enable' | 'disable', customUsername?: string): void {
     if (!this.selectedColaborador) return;
     this.platformActionLoading = true;
 
-    this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/${this.selectedColaborador.id}/manage-glpi`, { action: accion }).subscribe({
+    const payload: any = { action: accion };
+    if (customUsername) {
+      payload.custom_username = customUsername;
+    }
+
+    this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/${this.selectedColaborador.id}/manage-glpi`, payload).subscribe({
       next: (res) => {
-        alert(res.message || 'Acción en GLPI ejecutada con éxito');
+        Swal.fire('Éxito', res.message || 'Acción en GLPI ejecutada con éxito', 'success');
         this.platformActionLoading = false;
         this.cargarEstadoPlataformas(this.selectedColaborador!.id);
         this.loadColaboradores(this.pagination.current_page);
       },
       error: (err) => {
-        alert('Error en GLPI: ' + (err.error?.message || err.message));
         this.platformActionLoading = false;
+        if (err.status === 409 && err.error?.conflict) {
+          const suggested = (err.error.existing_username || '') + '2';
+          Swal.fire({
+            title: 'Nomenclatura Duplicada en GLPI',
+            html: `
+              <div class="text-left text-xs text-slate-700 flex flex-col gap-2">
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 font-medium">
+                  <i class="bi bi-exclamation-triangle-fill text-amber-600 me-1"></i>
+                  ${err.error.message}
+                </div>
+                <p class="font-bold text-slate-800 mt-1">Escribe el nuevo nombre de usuario que deseas asignarle en GLPI:</p>
+              </div>
+            `,
+            input: 'text',
+            inputValue: suggested,
+            showCancelButton: true,
+            confirmButtonText: 'Crear con este usuario',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+              confirmButton: 'bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-emerald-700',
+              cancelButton: 'bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-300'
+            },
+            inputValidator: (value) => {
+              if (!value || !value.trim()) {
+                return 'Debes ingresar un nombre de usuario válido';
+              }
+              return null;
+            }
+          }).then((result) => {
+            if (result.isConfirmed && result.value) {
+              this.ejecutarAccionGlpi('create', result.value.trim());
+            }
+          });
+        } else {
+          Swal.fire('Error en GLPI', err.error?.message || err.message, 'error');
+        }
       }
     });
   }

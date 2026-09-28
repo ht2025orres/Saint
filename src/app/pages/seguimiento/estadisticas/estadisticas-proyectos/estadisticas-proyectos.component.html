@@ -1,0 +1,573 @@
+<div class="space-y-6">
+
+  <!-- ── BARRA SUPERIOR DE FILTROS EN DESPLEGABLES ───────────────────────── -->
+  <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col xl:flex-row items-center justify-between gap-4">
+
+    <!-- Título e Identificación Corporativa -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-lg shadow-md shadow-indigo-200 flex-shrink-0">
+        <i class="bi bi-bar-chart-line-fill"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          Informe de Crecimiento y Avance de Proyectos
+        </h2>
+        <p class="text-xs text-slate-500">
+          Crecimiento (fecha de creación) vs. Avance (fecha de completado) &bull; {{ nombreMes(mesActual) }} {{ anioActual }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Controles de Filtros en Desplegables -->
+    <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
+
+      <!-- Desplegable 1: Mes -->
+      <div class="flex items-center gap-1.5">
+        <label class="text-xs font-semibold text-slate-500">Mes:</label>
+        <select
+          [(ngModel)]="mesActual"
+          (change)="onFiltroFechaChange()"
+          class="px-3 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none transition-all cursor-pointer">
+          <option *ngFor="let m of meses" [value]="m.id">{{ m.nombre }}</option>
+        </select>
+      </div>
+
+      <!-- Desplegable 2: Año -->
+      <div class="flex items-center gap-1.5">
+        <label class="text-xs font-semibold text-slate-500">Año:</label>
+        <select
+          [(ngModel)]="anioActual"
+          (change)="onFiltroFechaChange()"
+          class="px-3 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none transition-all cursor-pointer">
+          <option *ngFor="let a of anios" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+
+      <!-- Desplegable 3: Enfoque (3 OPCIONES EXACTAS LIMPIAS) -->
+      <div class="flex items-center gap-1.5">
+        <label class="text-xs font-semibold text-slate-500">Enfoque:</label>
+        <select
+          [(ngModel)]="filtroEnfoque"
+          class="px-3 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none transition-all cursor-pointer">
+          <option value="todos">Todos los Proyectos</option>
+          <option value="crecimiento">Con Crecimiento</option>
+          <option value="avance">Con Avance</option>
+        </select>
+      </div>
+
+      <!-- Desplegable 4: Estado -->
+      <div class="flex items-center gap-1.5">
+        <label class="text-xs font-semibold text-slate-500">Estado:</label>
+        <select
+          [(ngModel)]="estadoFiltro"
+          class="px-3 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none transition-all cursor-pointer">
+          <option value="todos">Todos los Estados</option>
+          <option value="en_ejecucion">En Ejecución</option>
+          <option value="completado">Completados</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="pausado">Pausados</option>
+        </select>
+      </div>
+
+      <!-- Selector de Vista (Tarjetas / Tabla) -->
+      <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <button
+          (click)="viewMode = 'grid'"
+          [ngClass]="viewMode === 'grid' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+          class="px-2.5 py-1 text-xs font-semibold rounded-lg transition-all"
+          title="Vista de Tarjetas">
+          <i class="bi bi-grid-fill"></i>
+        </button>
+        <button
+          (click)="viewMode = 'table'"
+          [ngClass]="viewMode === 'table' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+          class="px-2.5 py-1 text-xs font-semibold rounded-lg transition-all"
+          title="Vista de Tabla">
+          <i class="bi bi-table"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── BANNER DE KPIS RESUMEN CORPORATIVO ─────────────────────────────── -->
+  <div *ngIf="dataEstadisticas?.meta" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- KPI 1: Proyectos Impactados -->
+    <div class="bg-gradient-to-br from-indigo-50 to-white p-5 rounded-2xl border border-indigo-100 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Proyectos Impactados</span>
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm shadow-md shadow-indigo-200">
+          <i class="bi bi-diagram-3-fill"></i>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-black text-slate-900">
+            {{ dataEstadisticas?.meta?.proyectos_impactados || 0 }}
+          </span>
+          <span class="text-sm font-bold text-slate-500">
+            de {{ dataEstadisticas?.meta?.total_proyectos || 0 }} Totales
+          </span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2 mt-2 overflow-hidden">
+          <div class="bg-indigo-600 h-full rounded-full transition-all duration-500"
+               [style.width.%]="dataEstadisticas?.meta?.porcentaje_proyectos_impactados || 0"></div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-slate-500 mt-1">
+          <span>Cobertura de Impacto:</span>
+          <span class="font-bold text-indigo-700">{{ dataEstadisticas?.meta?.porcentaje_proyectos_impactados }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 2: Crecimiento (Fecha de Creación) -->
+    <div class="bg-gradient-to-br from-emerald-50 to-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-800">Crecimiento (Creadas)</span>
+        <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-md shadow-emerald-200">
+          <i class="bi bi-plus-circle-fill"></i>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-black text-slate-900">
+            +{{ dataEstadisticas?.meta?.total_tareas_creadas_mes || 0 }}
+          </span>
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+            +{{ dataEstadisticas?.meta?.promedio_crecimiento_mes }}% prom.
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2">
+          <i class="bi bi-calendar-event text-emerald-600 mr-1"></i>Por fecha de creación en el mes
+        </p>
+      </div>
+    </div>
+
+    <!-- KPI 3: Avance (Fecha de Completado) -->
+    <div class="bg-gradient-to-br from-purple-50 to-white p-5 rounded-2xl border border-purple-100 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-purple-800">Avance (Completadas)</span>
+        <div class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-sm shadow-md shadow-purple-200">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-black text-slate-900">
+            {{ dataEstadisticas?.meta?.total_tareas_completadas_mes || 0 }}
+          </span>
+          <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200">
+            {{ dataEstadisticas?.meta?.promedio_avance_mes }}% prom.
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2">
+          <i class="bi bi-calendar-check text-purple-600 mr-1"></i>Por fecha de completado en el mes
+        </p>
+      </div>
+    </div>
+
+    <!-- KPI 4: Ratio de Velocidad -->
+    <div class="bg-gradient-to-br from-blue-50 to-white p-5 rounded-2xl border border-blue-100 shadow-sm flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-blue-800">Velocidad del Mes</span>
+        <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm shadow-md shadow-blue-200">
+          <i class="bi bi-speedometer2"></i>
+        </div>
+      </div>
+      <div class="mt-2">
+        <div class="text-lg font-extrabold text-slate-900">
+          <span class="text-emerald-600">+{{ dataEstadisticas?.meta?.promedio_crecimiento_mes }}%</span> Crec. /
+          <span class="text-purple-600">{{ dataEstadisticas?.meta?.promedio_avance_mes }}%</span> Avance
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2">
+          Creación vs. Cierre de entregables
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── GRÁFICA / CUADRO RESUMEN EJECUTIVO DE DESEMPEÑO (VISUAL CHART) ────── -->
+  <div *ngIf="!loading && proyectosImpactadosGrafico.length > 0"
+       class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-4">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="bi bi-bar-chart-fill text-indigo-600"></i>
+          Gráfica Comparativa de Crecimiento vs. Avance por Proyecto
+        </h3>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Resumen visual corporativo de proyectos con actividad registrada en {{ nombreMes(mesActual) }} {{ anioActual }}.
+        </p>
+      </div>
+
+      <!-- Leyenda del Gráfico -->
+      <div class="flex items-center gap-4 text-xs font-semibold">
+        <span class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>
+          <span class="text-slate-700">Crecimiento (+Creadas)</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-sm bg-purple-600 inline-block"></span>
+          <span class="text-slate-700">Avance (Completadas)</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Barras Visuales Comparativas por Proyecto -->
+    <div class="space-y-4 pt-2">
+      <div *ngFor="let p of proyectosImpactadosGrafico"
+           class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 hover:border-indigo-200 transition-all space-y-2">
+
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-slate-900">{{ p.titulo }}</span>
+            <span *ngFor="let tag of p.etiquetas" class="px-1.5 py-0.5 text-[8px] font-extrabold uppercase rounded border" [ngClass]="tag.clase">
+              {{ tag.texto }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-slate-500">Progreso Total: <strong>{{ p.progreso_global }}%</strong></span>
+            <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full border" [ngClass]="getEstadoBadgeClass(p.estado)">
+              {{ p.estado }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Barra Comparativa 1: Crecimiento -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="text-slate-600 font-medium">Crecimiento (+{{ p.tareas_creadas_mes }} tareas creadas)</span>
+            <span class="font-bold text-emerald-700">+{{ p.porcentaje_crecimiento_mes }}%</span>
+          </div>
+          <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                 [style.width.%]="(p.tareas_creadas_mes / maxTareasGrafico) * 100">
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra Comparativa 2: Avance -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="text-slate-600 font-medium">Avance ({{ p.tareas_completadas_mes }} tareas completadas)</span>
+            <span class="font-bold text-purple-700">{{ p.porcentaje_avance_mes }}%</span>
+          </div>
+          <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+            <div class="bg-purple-600 h-full rounded-full transition-all duration-500"
+                 [style.width.%]="(p.tareas_completadas_mes / maxTareasGrafico) * 100">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BUSCADOR DE PROYECTOS ────────────────────────────────────────────── -->
+  <div class="flex justify-between items-center gap-4 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm">
+    <div class="relative w-full max-w-sm">
+      <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        placeholder="Buscar proyecto por nombre..."
+        class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:outline-none transition-all">
+    </div>
+    <span class="text-xs text-slate-500 font-semibold hidden sm:inline">
+      Mostrando {{ proyectosFiltrados.length }} de {{ dataEstadisticas?.meta?.total_proyectos || 0 }} proyectos
+    </span>
+  </div>
+
+  <!-- ── LOADING SPINNER ────────────────────────────────────────────────── -->
+  <div *ngIf="loading" class="bg-white rounded-2xl p-12 border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+    <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+    <span class="text-xs font-semibold text-slate-500 mt-3">Cargando indicadores de crecimiento y avance...</span>
+  </div>
+
+  <!-- ── VISTA VACÍA SI NO HAY DATOS ────────────────────────────────────── -->
+  <div *ngIf="!loading && proyectosFiltrados.length === 0" class="bg-white rounded-2xl p-12 border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
+    <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center text-2xl mb-3">
+      <i class="bi bi-folder-x"></i>
+    </div>
+    <h3 class="text-base font-bold text-slate-800">No se encontraron proyectos</h3>
+    <p class="text-xs text-slate-500 max-w-sm mt-1">
+      No hay proyectos que coincidan con la búsqueda o con el filtro seleccionado para {{ nombreMes(mesActual) }}.
+    </p>
+  </div>
+
+  <!-- ── VISTA DE TARJETAS (GRID) ───────────────────────────────────────── -->
+  <div *ngIf="!loading && viewMode === 'grid' && proyectosFiltrados.length > 0"
+       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+    <div *ngFor="let p of proyectosFiltrados"
+         class="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all p-5 flex flex-col justify-between">
+
+      <!-- Header de Tarjeta -->
+      <div>
+        <div *ngIf="p.etiquetas && p.etiquetas.length > 0" class="flex flex-wrap gap-1 mb-2">
+          <span *ngFor="let tag of p.etiquetas" class="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded border" [ngClass]="tag.clase">
+            {{ tag.texto }}
+          </span>
+        </div>
+
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <h3 class="text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+            {{ p.titulo }}
+          </h3>
+          <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full border flex-shrink-0" [ngClass]="getEstadoBadgeClass(p.estado)">
+            {{ p.estado }}
+          </span>
+        </div>
+
+        <p *ngIf="p.descripcion" class="text-xs text-slate-500 line-clamp-2 mb-4">
+          {{ p.descripcion }}
+        </p>
+      </div>
+
+      <!-- Métricas -->
+      <div class="space-y-3 pt-3 border-t border-slate-100">
+
+        <!-- Crecimiento -->
+        <div (click)="abrirModalDetalle(p, 'creadas')"
+             class="bg-slate-50 rounded-xl p-3 border border-slate-100 hover:bg-emerald-50/80 hover:border-emerald-200 transition-all cursor-pointer group">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-semibold text-slate-700 flex items-center gap-1.5 group-hover:text-emerald-800">
+              <i class="bi bi-graph-up text-emerald-600"></i>
+              Crecimiento del Mes
+            </span>
+            <span class="px-2 py-0.5 text-xs font-extrabold rounded-md border" [ngClass]="getBadgeCrecimientoClass(p.porcentaje_crecimiento_mes)">
+              +{{ p.porcentaje_crecimiento_mes }}%
+            </span>
+          </div>
+          <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
+            <div class="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                 [style.width.%]="p.porcentaje_crecimiento_mes > 100 ? 100 : p.porcentaje_crecimiento_mes">
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-500">
+            <span>Creadas: <strong>{{ p.tareas_creadas_mes }}</strong></span>
+            <span class="text-emerald-700 font-bold underline text-[10px]">Ver detalle &rarr;</span>
+          </div>
+        </div>
+
+        <!-- Avance -->
+        <div (click)="abrirModalDetalle(p, 'completadas')"
+             class="bg-slate-50 rounded-xl p-3 border border-slate-100 hover:bg-purple-50/80 hover:border-purple-200 transition-all cursor-pointer group">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-semibold text-slate-700 flex items-center gap-1.5 group-hover:text-purple-800">
+              <i class="bi bi-check2-circle text-purple-600"></i>
+              Avance del Mes
+            </span>
+            <span class="px-2 py-0.5 text-xs font-extrabold rounded-md border" [ngClass]="getBadgeAvanceClass(p.porcentaje_avance_mes)">
+              {{ p.porcentaje_avance_mes }}%
+            </span>
+          </div>
+          <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
+            <div class="h-full bg-purple-600 rounded-full transition-all duration-500"
+                 [style.width.%]="p.porcentaje_avance_mes > 100 ? 100 : p.porcentaje_avance_mes">
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-500">
+            <span>Completadas: <strong>{{ p.tareas_completadas_mes }}</strong></span>
+            <span class="text-purple-700 font-bold underline text-[10px]">Ver detalle &rarr;</span>
+          </div>
+        </div>
+
+        <!-- Progreso Total -->
+        <div class="flex items-center justify-between text-xs text-slate-600 pt-1">
+          <span class="font-medium">Progreso Total:</span>
+          <div class="flex items-center gap-2">
+            <div class="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <div class="h-full bg-indigo-600 rounded-full" [style.width.%]="p.progreso_global"></div>
+            </div>
+            <span class="font-extrabold text-xs text-slate-800">{{ p.progreso_global }}%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── VISTA DE TABLA (TABLE) ─────────────────────────────────────────── -->
+  <div *ngIf="!loading && viewMode === 'table' && proyectosFiltrados.length > 0"
+       class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-bold text-[10px] tracking-wider">
+          <tr>
+            <th class="p-3.5">Proyecto</th>
+            <th class="p-3.5">Estado</th>
+            <th class="p-3.5 text-center">Tareas Totales</th>
+            <th class="p-3.5 text-center">Crecimiento (+Creadas)</th>
+            <th class="p-3.5 text-center">Avance (Completadas)</th>
+            <th class="p-3.5 text-center">Progreso Global</th>
+            <th class="p-3.5 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
+          <tr *ngFor="let p of proyectosFiltrados" class="hover:bg-slate-50/80 transition-all">
+            <td class="p-3.5">
+              <div class="font-bold text-sm text-slate-900">{{ p.titulo }}</div>
+              <div *ngIf="p.etiquetas && p.etiquetas.length > 0" class="flex flex-wrap gap-1 mt-1">
+                <span *ngFor="let tag of p.etiquetas" class="px-1.5 py-0.5 text-[8px] font-bold uppercase rounded border" [ngClass]="tag.clase">
+                  {{ tag.texto }}
+                </span>
+              </div>
+            </td>
+            <td class="p-3.5">
+              <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full border" [ngClass]="getEstadoBadgeClass(p.estado)">
+                {{ p.estado }}
+              </span>
+            </td>
+            <td class="p-3.5 text-center font-bold text-slate-600">
+              {{ p.total_tareas }}
+            </td>
+            <td class="p-3.5 text-center cursor-pointer" (click)="abrirModalDetalle(p, 'creadas')">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border" [ngClass]="getBadgeCrecimientoClass(p.porcentaje_crecimiento_mes)">
+                <i class="bi bi-graph-up text-emerald-600"></i>
+                <span class="font-extrabold">+{{ p.tareas_creadas_mes }}</span>
+                <span class="text-[10px]">({{ p.porcentaje_crecimiento_mes }}%)</span>
+              </div>
+            </td>
+            <td class="p-3.5 text-center cursor-pointer" (click)="abrirModalDetalle(p, 'completadas')">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border" [ngClass]="getBadgeAvanceClass(p.porcentaje_avance_mes)">
+                <i class="bi bi-check2-circle text-purple-600"></i>
+                <span class="font-extrabold">{{ p.tareas_completadas_mes }}</span>
+                <span class="text-[10px]">({{ p.porcentaje_avance_mes }}%)</span>
+              </div>
+            </td>
+            <td class="p-3.5 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <div class="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-indigo-600 rounded-full" [style.width.%]="p.progreso_global"></div>
+                </div>
+                <span class="font-bold text-xs">{{ p.progreso_global }}%</span>
+              </div>
+            </td>
+            <td class="p-3.5 text-right">
+              <button
+                (click)="abrirModalDetalle(p, 'creadas')"
+                class="px-2.5 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-all">
+                Detalles
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── MODAL DE DETALLE DE TARJETAS ──────────────────────────────────── -->
+  <div *ngIf="showModalDetalle && proyectoSeleccionadoModal"
+       class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full border border-slate-200 shadow-2xl overflow-hidden">
+
+      <div class="p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-start justify-between">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-300">Desglose de Tarjetas del Mes</span>
+          <h3 class="text-base font-bold leading-tight mt-0.5 text-white">
+            {{ proyectoSeleccionadoModal.titulo }}
+          </h3>
+          <span class="text-xs text-slate-300 mt-1 block">
+            {{ nombreMes(mesActual) }} {{ anioActual }}
+          </span>
+        </div>
+        <button
+          (click)="cerrarModalDetalle()"
+          class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all">
+          <i class="bi bi-x-lg text-xs"></i>
+        </button>
+      </div>
+
+      <div class="flex border-b border-slate-200 bg-slate-50 px-5 pt-3 gap-2">
+        <button
+          (click)="tabModalDetalle = 'creadas'"
+          [ngClass]="tabModalDetalle === 'creadas'
+            ? 'bg-white text-emerald-700 border-emerald-500 font-bold border-b-2 shadow-sm'
+            : 'text-slate-600 hover:text-slate-900 font-medium'"
+          class="px-4 py-2 text-xs rounded-t-xl transition-all flex items-center gap-2">
+          <i class="bi bi-plus-circle-fill text-emerald-600"></i>
+          <span>Creadas este Mes ({{ proyectoSeleccionadoModal.tareas_creadas_mes }})</span>
+        </button>
+
+        <button
+          (click)="tabModalDetalle = 'completadas'"
+          [ngClass]="tabModalDetalle === 'completadas'
+            ? 'bg-white text-purple-700 border-purple-500 font-bold border-b-2 shadow-sm'
+            : 'text-slate-600 hover:text-slate-900 font-medium'"
+          class="px-4 py-2 text-xs rounded-t-xl transition-all flex items-center gap-2">
+          <i class="bi bi-check-circle-fill text-purple-600"></i>
+          <span>Completadas este Mes ({{ proyectoSeleccionadoModal.tareas_completadas_mes }})</span>
+        </button>
+      </div>
+
+      <!-- Tab Creadas -->
+      <div *ngIf="tabModalDetalle === 'creadas'" class="p-5 max-h-[60vh] overflow-y-auto space-y-3">
+        <div *ngIf="!proyectoSeleccionadoModal.tareas_creadas_lista || proyectoSeleccionadoModal.tareas_creadas_lista.length === 0"
+             class="text-center py-8 text-slate-500 text-xs font-semibold">
+          No se crearon tarjetas nuevas en {{ nombreMes(mesActual) }} para este proyecto.
+        </div>
+        <div *ngFor="let t of proyectoSeleccionadoModal.tareas_creadas_lista"
+             class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 hover:border-emerald-300 transition-all text-xs">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-bold text-slate-900 text-xs">{{ t.titulo }}</span>
+            <span class="px-2 py-0.5 text-[9px] font-bold uppercase rounded-md bg-emerald-100 text-emerald-800">
+              {{ t.estado }}
+            </span>
+          </div>
+          <p *ngIf="t.descripcion" class="text-slate-500 text-[11px] mt-1 line-clamp-2">{{ t.descripcion }}</p>
+          <div class="flex flex-wrap items-center gap-3 mt-2.5 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500">
+            <span *ngIf="t.actividad_titulo" class="font-semibold text-slate-700">
+              <i class="bi bi-folder2 text-indigo-500 mr-1"></i>Actividad: {{ t.actividad_titulo }}
+            </span>
+            <span>
+              <i class="bi bi-calendar-event text-emerald-600 mr-1"></i>Creada: <strong>{{ t.created_at || 'N/A' }}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Completadas -->
+      <div *ngIf="tabModalDetalle === 'completadas'" class="p-5 max-h-[60vh] overflow-y-auto space-y-3">
+        <div *ngIf="!proyectoSeleccionadoModal.tareas_completadas_lista || proyectoSeleccionadoModal.tareas_completadas_lista.length === 0"
+             class="text-center py-8 text-slate-500 text-xs font-semibold">
+          No se completaron tarjetas en {{ nombreMes(mesActual) }} para este proyecto.
+        </div>
+        <div *ngFor="let t of proyectoSeleccionadoModal.tareas_completadas_lista"
+             class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 hover:border-purple-300 transition-all text-xs">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-bold text-slate-900 text-xs">{{ t.titulo }}</span>
+            <span class="px-2 py-0.5 text-[9px] font-bold uppercase rounded-md bg-purple-100 text-purple-800">
+              {{ t.estado }}
+            </span>
+          </div>
+          <p *ngIf="t.descripcion" class="text-slate-500 text-[11px] mt-1 line-clamp-2">{{ t.descripcion }}</p>
+          <div class="flex flex-wrap items-center gap-3 mt-2.5 pt-2 border-t border-slate-200/60 text-[10px] text-slate-500">
+            <span *ngIf="t.actividad_titulo" class="font-semibold text-slate-700">
+              <i class="bi bi-folder2 text-indigo-500 mr-1"></i>Actividad: {{ t.actividad_titulo }}
+            </span>
+            <span>
+              <i class="bi bi-calendar-check text-purple-600 mr-1"></i>Finalizada: <strong>{{ t.fecha_completado || t.created_at || 'N/A' }}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-100 border-t border-slate-200 flex justify-end">
+        <button
+          (click)="cerrarModalDetalle()"
+          class="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-xl transition-all">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

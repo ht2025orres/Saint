@@ -8,6 +8,9 @@ import Swal from 'sweetalert2';
 import { HTML_HEAD, HTML_FOOTER } from './print-technical-sheet-template';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import moment from 'moment';
 
 interface LoadingProgress {
     current: number;
@@ -447,6 +450,156 @@ cerrarPdf(): void {
         this.currentSearchTerm = '';
         this.paginator.number = 0;
         this.updateLocalPagination();
+    }
+
+    /**
+     * Descarga todas las fichas técnicas actualmente filtradas en formato Excel (.xlsx)
+     * Incluye toda la información detallada, especificaciones técnicas y estado de carga de figurines/imágenes.
+     */
+    exportarListadoExcel(): void {
+        if (!this.filteredTechnicalDataSheet || this.filteredTechnicalDataSheet.length === 0) {
+            Swal.fire('Sin datos', 'No hay fichas técnicas en el listado filtrado para descargar.', 'info');
+            return;
+        }
+
+        const isImgLoaded = (val: any): string => {
+            if (!val) return 'NO CARGADO';
+            const s = String(val).trim().toLowerCase();
+            return (s === '' || s === 'null' || s === 'undefined' || s === 'false') ? 'NO CARGADO' : 'CARGADO';
+        };
+
+        const datosExportar = this.filteredTechnicalDataSheet.map((ficha: any) => {
+            const imgCount = [
+                ficha.product_image_1,
+                ficha.product_image_2,
+                ficha.characteristic_image_1,
+                ficha.characteristic_image_2,
+                ficha.characteristic_image_3,
+                ficha.characteristic_image_4,
+                ficha.logo_technical_data_sheet
+            ].filter(img => isImgLoaded(img) === 'CARGADO').length;
+
+            return {
+                // --- 1. IDENTIFICACIÓN Y GENERALES ---
+                'Código Ficha': ficha.id || '',
+                'Código Ítem CFIP': ficha.id_item || '',
+                'Código Ítem Cliente': ficha.id_item_customer || '',
+                'Tipo de Ficha': ficha.technical_data_sheet_type || '',
+                'Descripción del Ítem': ficha.item_description || '',
+                'Cliente / Empresa': ficha.company_name || '',
+                'ID Cliente': ficha.id_company || '',
+                'Estado': ficha.status || this.statusSearch || '',
+                'Versión': ficha.version || '',
+                'Género': ficha.gender || '',
+                'Fecha Creación': ficha.date_creation ? moment(ficha.date_creation).format('YYYY-MM-DD HH:mm') : '',
+                'Fecha Modificación': ficha.last_update ? moment(ficha.last_update).format('YYYY-MM-DD HH:mm') : '',
+                'Creado Por': ficha.user_created || '',
+                'Validado Por': ficha.user_validation || '',
+                'Aprobado Por': ficha.user_approved || '',
+
+                // --- 2. FIGURINES E IMÁGENES (ESTADO) ---
+                'Figurín Delantero': isImgLoaded(ficha.product_image_1),
+                'Figurín Trasero': isImgLoaded(ficha.product_image_2),
+                'Imagen Detalle 1': isImgLoaded(ficha.characteristic_image_1),
+                'Imagen Detalle 2': isImgLoaded(ficha.characteristic_image_2),
+                'Imagen Detalle 3': isImgLoaded(ficha.characteristic_image_3),
+                'Imagen Detalle 4': isImgLoaded(ficha.characteristic_image_4),
+                'Ficha Bordado / Logo': isImgLoaded(ficha.logo_technical_data_sheet),
+                'Total Imágenes Cargadas': `${imgCount} de 7`,
+
+                // --- 3. TELAS Y MATERIALES ---
+                'Tela Principal': ficha.main_fabric || '',
+                'Tela Contraste': ficha.contrast_fabric || '',
+                'Composición': ficha.composition || '',
+                'Forro': ficha.lining || '',
+                'Lista de Materiales (BOM)': ficha.bill_materials || '',
+
+                // --- 4. ESPECIFICACIONES TÉCNICAS Y CONFECCIÓN ---
+                'Cuello': ficha.shirt_collar || '',
+                'Mangas': ficha.sleeves || '',
+                'Puños': ficha.cuffs || '',
+                'Bolsillos': ficha.pockets || '',
+                'Carteras / Pechera': ficha.purses || '',
+                'Ajuste del Frente': ficha.front_adjustment || '',
+                'Pretina / Cintura': ficha.waistband || '',
+                'Cotilla (Rib)': ficha.rib || ficha.busybody || '',
+                'Bota': ficha.boot || '',
+                'Entrepierna': ficha.crotch || '',
+                'Espalda': ficha.back || '',
+                'Hombros': ficha.shoulders || '',
+                'Unión de Hombros': ficha.shoulder_union || '',
+                'Unión de Mangas': ficha.sleeve_connection || '',
+                'Cerrado de Costados': ficha.closed_sides || '',
+                'Dobladillo': ficha.hem || '',
+                'Capucha': ficha.hood || '',
+                'Escote': ficha.neckline || '',
+                'Pinzas': ficha.darts || '',
+                'Aberturas': ficha.opening || '',
+                'Tiras': ficha.straps || '',
+                'Cortes': ficha.cuts || '',
+                'Tiros': ficha.side_pulls || '',
+
+                // --- 5. INSUMOS, BORDADOS Y APLIQUES ---
+                'Botón': ficha.button || '',
+                'Ojal': ficha.buttonhole || '',
+                'Cierre / Cremallera': ficha.zipper || '',
+                'Presillas': ficha.loops || '',
+                'Pasadores': ficha.pins || '',
+                'Pespuntes': ficha.stitching || '',
+                'Puntadas': ficha.stitches || '',
+                'Reflectivo': ficha.reflective || '',
+                'Bordado': ficha.embroidery || '',
+                'Estampado': ficha.stamped || '',
+                'Figurado': ficha.figured || '',
+                'Descripción Logo': ficha.logo_description || '',
+
+                // --- 6. ACABADOS Y OBSERVACIONES ---
+                'Prelavado': ficha.prewash || '',
+                'Planchado': ficha.ironing || '',
+                'Terminado': ficha.finished || '',
+                'Empaque': ficha.packaging || '',
+                'Puntos Críticos': ficha.critical_points || '',
+                'Tabla de Medidas': ficha.measurement_table || '',
+                'Requisitos Cliente': ficha.customer_description || '',
+                'Observaciones': ficha.observations || '',
+                'Adicionales': ficha.additional || '',
+                'Comentarios Edición': ficha.edit_comments || '',
+                'Comentarios Calidad (QA)': ficha.qa_comments || ''
+            };
+        });
+
+        const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(datosExportar);
+
+        // Auto-ajustar anchos de columnas dinámicamente
+        const colKeys = Object.keys(datosExportar[0]);
+        worksheet['!cols'] = colKeys.map(key => {
+            const maxValLength = Math.max(
+                key.length,
+                ...datosExportar.slice(0, 50).map(row => (row[key as keyof typeof row] || '').toString().length)
+            );
+            return { wch: Math.min(Math.max(maxValLength + 3, 14), 55) };
+        });
+
+        const workbook: XLSX.WorkBook = {
+            Sheets: { 'Fichas Técnicas Detalladas': worksheet },
+            SheetNames: ['Fichas Técnicas Detalladas']
+        };
+
+        const now = moment().format('YYYY-MM-DD_HH-mm');
+        const estadoLimpio = this.statusSearch ? this.statusSearch.trim().replace(/\s+/g, '_') : 'TODAS';
+        const fileName = `Fichas_Tecnicas_Detalladas_${estadoLimpio}_${now}.xlsx`;
+
+        const excelBuffer: any = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const data: Blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+        saveAs(data, fileName);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Descarga Detallada Completada',
+            html: `Se exportaron <b>${datosExportar.length}</b> fichas técnicas con toda su información técnica y estado de imágenes/figurines.`,
+            timer: 2500,
+            showConfirmButton: false
+        });
     }
 
     // ===== MÉTODOS EXISTENTES (sin cambios) =====

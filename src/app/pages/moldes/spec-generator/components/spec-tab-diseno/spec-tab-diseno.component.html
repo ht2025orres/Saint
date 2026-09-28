@@ -1,0 +1,1116 @@
+<div class="flex flex-row gap-4 h-full min-w-0 w-full">
+
+  <!-- LEFT: Side Panel (Status & Quick List) -->
+  <div class="w-[320px] lg:w-[360px] shrink-0 space-y-4">
+    <!-- Info General -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+      <div class="flex flex-col gap-0.5" *ngIf="mold || itemData?.descripcion">
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Molde / Prenda</span>
+        <span class="text-xs font-bold text-slate-800 truncate">{{ itemData?.descripcion || mold?.name }}</span>
+      </div>
+      <!-- Descripción General Solicitud Comercial -->
+      <div *ngIf="clientGeneralDescription || solicitudData?.observaciones"
+        class="p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl space-y-1 text-xs">
+        <span class="text-[9px] font-black text-amber-800 uppercase tracking-wider block"><i
+            class="bi bi-person-badge"></i> Desc. Solicitud (Cliente)</span>
+        <p class="text-[11px] text-amber-950 font-medium leading-tight mb-0" *ngIf="clientGeneralDescription">{{
+          clientGeneralDescription }}</p>
+        <p class="text-[10px] text-amber-900 italic mb-0" *ngIf="solicitudData?.observaciones"><strong
+            class="font-bold not-italic">Obs:</strong> {{ solicitudData.observaciones }}</p>
+      </div>
+
+      <!-- Descripción General del Ítem (Comercial vs Técnica) -->
+      <div class="flex flex-col gap-1" *ngIf="context === 'comercial'">
+        <label class="text-[9px] font-black text-amber-900 uppercase tracking-widest flex items-center gap-1">
+          <i class="bi bi-file-earmark-text text-amber-600"></i> Descripción General de la Prenda
+        </label>
+        <textarea [ngModel]="generalDescription" (ngModelChange)="onDescChange($event)" rows="2"
+          placeholder="Observaciones o notas generales de la prenda entregadas por el cliente..."
+          class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-amber-500 transition-all resize-none shadow-2xs leading-relaxed"></textarea>
+      </div>
+      <div class="flex flex-col gap-1" *ngIf="context !== 'comercial'">
+        <label class="text-[9px] font-black text-indigo-900 uppercase tracking-widest flex items-center gap-1">
+          <i class="bi bi-gear-wide-connected text-indigo-600"></i> Descripción General Técnica
+        </label>
+        <textarea [ngModel]="generalDescription" (ngModelChange)="onDescChange($event)" rows="2"
+          placeholder="Instrucciones técnicas de confección o producción..."
+          class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-indigo-500 transition-all resize-none shadow-2xs leading-relaxed"></textarea>
+      </div>
+      <div class="flex p-1 bg-slate-100 rounded-xl" *ngIf="hasBackView">
+        <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
+          [ngClass]="activeView === 'front' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
+          (click)="activeView !== 'front' && toggleView.emit()">FRENTE</button>
+        <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
+          [ngClass]="activeView === 'back' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
+          (click)="activeView !== 'back' && toggleView.emit()">ESPALDA</button>
+      </div>
+    </div>
+
+    <!-- ══════════ PANEL DE CONFIGURACIÓN RÁPIDA A 1 CLIC ══════════ -->
+
+    <!-- ══════════ ESTRUCTURA ANATÓMICA: ZONAS Y PARTES DEL MOLDE ══════════ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-visible flex flex-col space-y-3 p-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-indigo-500/50 shadow-sm animate-pulse"></span>
+          <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Zonas del Molde</h3>
+        </div>
+        <span
+          class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border bg-slate-50 text-slate-600 border-slate-200">
+          {{ getZonesWithParts().length }} ZONAS
+        </span>
+      </div>
+
+      <!-- Tarjetas por Zona -->
+      <div class="space-y-2.5 overflow-visible">
+        <div *ngFor="let zp of getZonesWithParts(); trackBy: trackByZoneKey"
+          class="border rounded-xl transition-all shadow-xs overflow-visible" [ngClass]="selectedZone === zp.zone 
+               ? 'border-indigo-400 bg-indigo-50/20 ring-2 ring-indigo-500/20' 
+               : (isZoneConfigured(zp.zone) ? 'border-emerald-200/90 bg-emerald-50/10' : 'border-slate-200 bg-white')">
+
+          <!-- Cabecera de la Zona (Click en cualquier parte para colapsar/expandir en la barra) -->
+          <div
+            class="p-2.5 flex items-center justify-between gap-2 cursor-pointer select-none rounded-t-xl hover:bg-slate-50/80 transition"
+            (click)="toggleSidebarZone(zp.zone, $event)">
+            <div class="flex items-center gap-2 min-w-0">
+              <span
+                class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-xs"
+                [style.backgroundColor]="zp.zone.color || getZoneColor(zp.zone.zone_type)">
+                <i class="bi" [ngClass]="getZoneIcon(zp.zone.zone_type)"></i>
+              </span>
+              <div class="min-w-0">
+                <h4 class="text-xs font-black text-slate-800 truncate uppercase">{{ zp.zone.name }}</h4>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{{
+                  getZoneLabel(zp.zone.zone_type) }}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="text-[9px] px-2 py-0.5 rounded-full border" [ngClass]="getZoneStatusBadge(zp).class">
+                {{ getZoneStatusBadge(zp).label }}
+              </span>
+              <span
+                class="w-5 h-5 rounded flex items-center justify-center text-slate-400 transition pointer-events-none">
+                <i class="bi text-xs"
+                  [ngClass]="isSidebarZoneExpanded(zp.zone) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </span>
+            </div>
+          </div>
+
+          <!-- Contenido de la Zona (cuando está expandida) -->
+          <div class="p-2.5 pt-0 space-y-2 border-t border-slate-100 overflow-visible"
+            *ngIf="isSidebarZoneExpanded(zp.zone)">
+
+            <!-- 1. PARTES YA ACTIVAS / CONFIGURADAS EN ESTA ZONA -->
+            <div *ngFor="let part of getConfiguredPartsForZone(zp); trackBy: trackByPart"
+              class="p-2 bg-emerald-50/40 rounded-xl border border-emerald-200/80 relative dropdown-part-wrapper space-y-1.5"
+              [ngClass]="openDropdownPart === part ? 'z-[120] ring-2 ring-emerald-500/30' : 'z-10'">
+
+              <!-- Cabecera de la Parte Configurada -->
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <i class="bi text-xs text-emerald-700" [ngClass]="part.icon || 'bi-puzzle-fill'"></i>
+                  <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
+                  <span *ngIf="!part.is_mandatory"
+                    class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-purple-100 text-purple-700 shrink-0">
+                    Opcional
+                  </span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" (click)="unselectVariant(part, $event)"
+                    class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    title="Quitar / Desactivar">
+                    <i class="bi bi-x-lg text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Selector de Variante Activa -->
+              <div class="relative" *ngIf="part.types && part.types.length > 0">
+                <button type="button" (click)="togglePartDropdown(part, $event)"
+                  class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 bg-white border border-emerald-300 rounded-lg text-left text-[11px] font-bold transition shadow-2xs cursor-pointer select-none ring-1 ring-emerald-500/10 hover:border-emerald-500">
+                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                    <i class="bi bi-check-circle-fill text-xs text-emerald-600 shrink-0"></i>
+                    <span class="truncate text-emerald-950 font-black">
+                      {{ part.selected_type_name || 'Configurada' }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <span class="text-[9px] font-bold text-slate-400 hover:text-indigo-600">Cambiar</span>
+                    <i class="bi bi-chevron-down text-[10px] text-slate-400 transition-transform duration-200"
+                      [ngClass]="openDropdownPart === part ? 'rotate-180' : ''"></i>
+                  </div>
+                </button>
+
+                <!-- Menú Flotante de Variantes -->
+                <div *ngIf="openDropdownPart === part"
+                  class="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 z-[150] p-1.5 space-y-1 animate-in fade-in zoom-in-95 max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-black/5">
+
+                  <button type="button" (click)="unselectVariant(part, $event)"
+                    class="w-full flex items-center justify-between p-1.5 rounded-lg text-left transition cursor-pointer text-[10px] hover:bg-rose-50 text-slate-600 font-medium hover:text-rose-700">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <i class="bi bi-trash text-slate-400 text-xs"></i>
+                      <span>Quitar / Desactivar parte</span>
+                    </div>
+                  </button>
+
+                  <div class="border-t border-slate-100 my-1"></div>
+
+                  <button *ngFor="let v of part.types" type="button" (click)="selectVariant(part, v, $event)"
+                    class="w-full flex items-center justify-between p-2 rounded-lg text-left transition cursor-pointer text-[11px]"
+                    [ngClass]="isVariantSelected(part, v) 
+                            ? 'bg-emerald-50 text-emerald-950 font-black border border-emerald-200' 
+                            : 'hover:bg-slate-50 text-slate-700 font-semibold'">
+
+                    <div class="flex flex-col min-w-0 flex-1 mr-1">
+                      <span class="truncate">{{ v.name }}</span>
+                      <span class="text-[9px] text-slate-400 font-normal truncate" *ngIf="v.technical_description">
+                        {{ v.technical_description }}
+                      </span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <i *ngIf="isVariantSelected(part, v)"
+                        class="bi bi-check-lg text-emerald-600 text-sm font-black"></i>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Botón / Input de Nota o Excepción de Variante -->
+              <div class="pt-0.5">
+                <div *ngIf="!isExceptionInputVisible(part) && !part.exception_comment" class="flex justify-end">
+                  <button type="button" (click)="toggleExceptionInput(part, $event)"
+                    class="inline-flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-emerald-700 transition cursor-pointer">
+                    <i class="bi bi-chat-left-dots text-[9px]"></i>
+                    <span>+ Nota / Excepción</span>
+                  </button>
+                </div>
+
+                <div *ngIf="isExceptionInputVisible(part) || part.exception_comment"
+                  class="flex items-center gap-1 bg-white p-1 rounded-lg border border-emerald-300 shadow-2xs">
+                  <i class="bi bi-chat-left-quote text-[10px] text-emerald-600 ml-1 shrink-0"></i>
+                  <input type="text" [ngModel]="part.exception_comment"
+                    (ngModelChange)="onExceptionCommentInput(part, $event)"
+                    placeholder="Nota (ej: 2cm más larga, sin ojal...)"
+                    class="w-full bg-transparent border-none text-[10px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none py-0.5 px-1" />
+                  <button type="button" (click)="clearExceptionComment(part, $event)"
+                    class="w-4 h-4 rounded flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition shrink-0 cursor-pointer"
+                    title="Eliminar excepción">
+                    <i class="bi bi-x text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. SI HAY UNA PARTE EN PROCESO DE CONFIGURACIÓN DIRECTA -->
+            <div *ngIf="activeConfigPart && !activeConfigPart.selected_type_id && zp.parts.includes(activeConfigPart)"
+              class="p-2 bg-indigo-50/50 rounded-xl border border-indigo-200 relative dropdown-part-wrapper space-y-1.5 z-[120] ring-2 ring-indigo-500/20">
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <i class="bi text-xs text-indigo-600" [ngClass]="activeConfigPart.icon || 'bi-puzzle-fill'"></i>
+                  <span class="text-[11px] font-black text-indigo-950 truncate capitalize">{{ activeConfigPart.name
+                    }}</span>
+                </div>
+                <button type="button" (click)="activeConfigPart = null; openDropdownPart = null"
+                  class="text-slate-400 hover:text-slate-600 text-xs">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+
+              <!-- Lista de Variantes Inmediata -->
+              <div
+                class="bg-white rounded-lg border border-slate-200 p-1 space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider px-1.5 pt-0.5">Selecciona
+                  variante:</p>
+                <button *ngFor="let v of activeConfigPart.types" type="button"
+                  (click)="selectVariant(activeConfigPart, v, $event); activeConfigPart = null"
+                  class="w-full flex items-center justify-between p-1.5 rounded-lg text-left transition cursor-pointer hover:bg-emerald-50 hover:text-emerald-950 text-slate-700 text-[11px] font-semibold">
+                  <div class="flex flex-col min-w-0 flex-1 mr-1">
+                    <span class="truncate font-bold">{{ v.name }}</span>
+                    <span class="text-[9px] text-slate-400 truncate" *ngIf="v.technical_description">{{
+                      v.technical_description }}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. BARRA DE ACCIONES COMPACTA PARA LA ZONA (Agregar Parte Base u Opcional) -->
+            <div class="flex items-center gap-2 pt-1">
+
+              <!-- Botón Parte Base (si hay partes base sin configurar) -->
+              <div
+                *ngIf="getUnconfiguredPartsForZone(zp).length > 0 && (!activeConfigPart || activeConfigPart.selected_type_id || !zp.parts.includes(activeConfigPart))"
+                class="relative flex-1">
+
+                <button type="button" (click)="toggleAddPartDropdown(zp.zone, $event)"
+                  class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl border border-dashed border-slate-200 hover:border-indigo-300 bg-slate-50/70 hover:bg-indigo-50/30 text-slate-700 hover:text-indigo-800 text-[11px] font-bold transition cursor-pointer select-none">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <i class="bi bi-plus-circle text-indigo-500 text-xs"></i>
+                    <span class="truncate">
+                      {{ getConfiguredPartsForZone(zp).length === 0 ? 'Parte Base (' +
+                      getUnconfiguredPartsForZone(zp).length + ')' : '+ Parte (' +
+                      getUnconfiguredPartsForZone(zp).length + ')' }}
+                    </span>
+                  </div>
+                  <i class="bi bi-chevron-down text-[9px] text-slate-400 transition-transform duration-200"
+                    [ngClass]="isAddPartDropdownOpen(zp.zone) ? 'rotate-180' : ''"></i>
+                </button>
+              </div>
+
+              <!-- Botón Aplique / Opcional -->
+              <div class="relative flex-1">
+                <button type="button" (click)="toggleAddOptionalDropdown(zp.zone, $event)"
+                  class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl border border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/50 hover:bg-purple-100/60 text-purple-900 text-[11px] font-bold transition cursor-pointer select-none">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <i class="bi bi-stars text-purple-600 text-xs"></i>
+                    <span class="truncate">+ Opcional</span>
+                  </div>
+                  <i class="bi bi-chevron-down text-[9px] text-purple-400 transition-transform duration-200"
+                    [ngClass]="openAddOptionalZoneKey === getZoneKey(zp.zone) ? 'rotate-180' : ''"></i>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Panel con las Partes Base -->
+            <div *ngIf="isAddPartDropdownOpen(zp.zone)"
+              class="bg-white rounded-xl shadow-md border border-indigo-200 p-2 space-y-1 animate-in fade-in ring-1 ring-black/5">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-1 mb-1">
+                <p class="text-[9px] font-black text-indigo-900 uppercase tracking-wider px-1 mb-0">Selecciona parte
+                  base:</p>
+                <button type="button" (click)="toggleAddPartDropdown(zp.zone, $event)"
+                  class="text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+              <div class="max-h-56 overflow-y-auto custom-scrollbar space-y-1">
+                <button *ngFor="let part of getUnconfiguredPartsForZone(zp); trackBy: trackByPart" type="button"
+                  (click)="openPartForConfig(part, $event)"
+                  class="w-full flex items-center justify-between p-2 rounded-lg text-left transition cursor-pointer hover:bg-indigo-50/80 hover:text-indigo-900 text-slate-700 text-xs font-semibold group">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <i class="bi text-slate-400 group-hover:text-indigo-600"
+                      [ngClass]="part.icon || 'bi-puzzle-fill'"></i>
+                    <span class="truncate font-bold">{{ part.name }}</span>
+                  </div>
+                  <span class="text-[9px] text-slate-400 group-hover:text-indigo-600 shrink-0">
+                    {{ part.types?.length || 0 }} var. <i class="bi bi-chevron-right text-[8px]"></i>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel de Opcionales: PASO 1 (4 Apliques) o PASO 2 (Variantes del Aplique) -->
+            <div *ngIf="openAddOptionalZoneKey === getZoneKey(zp.zone)"
+              class="bg-purple-50/50 rounded-xl shadow-md border border-purple-200 p-2 space-y-2 animate-in fade-in flex flex-col w-full ring-1 ring-purple-300/30">
+
+              <!-- PASO 1: Elegir entre los 4 Apliques -->
+              <ng-container *ngIf="!selectedOptionalGarmentPart">
+                <div class="flex items-center justify-between border-b border-purple-200/60 pb-1.5">
+                  <span class="text-[10px] font-black uppercase text-purple-900 flex items-center gap-1">
+                    <i class="bi bi-gem text-purple-600"></i> Apliques Opcionales
+                  </span>
+                  <button type="button" (click)="openAddOptionalZoneKey = null"
+                    class="text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+
+                <!-- Lista de los 4 Apliques -->
+                <div class="space-y-1 max-h-56 overflow-y-auto custom-scrollbar">
+                  <button *ngFor="let opt of getAvailableOptionalPartsForZone(zp.zone)" type="button"
+                    (click)="drilldownToOptionalPart(opt, $event)"
+                    class="w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer bg-white hover:bg-purple-100/70 text-slate-700 hover:text-purple-950 text-xs font-semibold group border border-purple-100 shadow-2xs">
+                    <div class="flex items-center gap-2 min-w-0 flex-1 mr-1">
+                      <span
+                        class="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 group-hover:bg-purple-600 group-hover:text-white transition">
+                        <i class="bi" [ngClass]="opt.icon || 'bi-gem'"></i>
+                      </span>
+                      <div class="min-w-0">
+                        <p class="truncate font-bold text-[11px] text-slate-800 group-hover:text-purple-950 mb-0">{{
+                          opt.name }}</p>
+                        <p class="text-[9px] text-slate-400 truncate mb-0" *ngIf="opt.types && opt.types.length > 0">
+                          {{ opt.types.length }} {{ opt.types.length === 1 ? 'variante' : 'variantes' }}
+                        </p>
+                      </div>
+                    </div>
+                    <i
+                      class="bi bi-chevron-right text-[10px] text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-transform shrink-0"></i>
+                  </button>
+                </div>
+              </ng-container>
+
+              <!-- PASO 2: Elegir Variante del Aplique Seleccionado -->
+              <ng-container *ngIf="selectedOptionalGarmentPart">
+                <div class="flex items-center justify-between border-b border-purple-200/60 pb-1.5">
+                  <button type="button" (click)="backToOptionalList($event)"
+                    class="inline-flex items-center gap-1 text-[10px] font-black text-purple-700 hover:text-purple-900 transition cursor-pointer">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Volver</span>
+                  </button>
+                  <span class="text-[10px] font-black text-slate-800 uppercase truncate max-w-[140px]">
+                    {{ selectedOptionalGarmentPart.name }}
+                  </span>
+                  <button type="button" (click)="openAddOptionalZoneKey = null; selectedOptionalGarmentPart = null"
+                    class="text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider px-1 mb-0">Selecciona la
+                  variante:</p>
+
+                <div class="space-y-1 max-h-56 overflow-y-auto custom-scrollbar">
+                  <button *ngFor="let v of selectedOptionalGarmentPart.types" type="button"
+                    (click)="selectOptionalPartVariantForZone(zp.zone, selectedOptionalGarmentPart, v, $event)"
+                    class="w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-950 text-xs font-semibold group border border-slate-100 shadow-2xs">
+                    <div class="flex flex-col min-w-0 flex-1 mr-2">
+                      <span class="font-bold text-[11px] text-slate-800 group-hover:text-emerald-950">{{ v.name
+                        }}</span>
+                      <span class="text-[9px] text-slate-400 truncate" *ngIf="v.technical_description">{{
+                        v.technical_description }}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <span *ngIf="v.total_time"
+                        class="text-[8px] font-bold text-slate-400 bg-slate-100 px-1 py-0.5 rounded">
+                        {{ v.total_time }}m
+                      </span>
+                      <span
+                        class="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition">
+                        + Agregar
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </ng-container>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN B: APLIQUES Y OPCIONALES TRANSVERSALES -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100/80 overflow-visible flex flex-col"
+      *ngIf="filteredOptionalParts.length > 0">
+      <div
+        class="p-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-purple-50/80 via-white to-slate-50 rounded-t-2xl">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-purple-500/50 shadow-sm"></span>
+          <h3 class="text-xs font-black text-purple-950 uppercase tracking-wider">Apliques y Opcionales ({{
+            filteredOptionalParts.length }})</h3>
+        </div>
+      </div>
+
+      <div class="p-2.5 space-y-2.5 overflow-visible">
+        <div *ngFor="let part of filteredOptionalParts"
+          class="p-2 rounded-xl border transition-all shadow-2xs relative dropdown-part-wrapper space-y-1.5" [ngClass]="[
+               'bg-purple-50/40 border-purple-200/80',
+               openDropdownPart === part ? 'z-[100] ring-2 ring-purple-500/30' : 'z-10'
+             ]">
+
+          <!-- Cabecera de la Parte Opcional -->
+          <div class="flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <i class="bi text-xs text-purple-700" [ngClass]="part.icon || 'bi-sliders'"></i>
+              <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" (click)="unselectVariant(part, $event)"
+                class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                title="Quitar / Desactivar">
+                <i class="bi bi-x-lg text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector de Variante Activa -->
+          <div class="relative" *ngIf="part.types && part.types.length > 0">
+            <button type="button" (click)="togglePartDropdown(part, $event)"
+              class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 bg-white border border-purple-300 rounded-lg text-left text-[11px] font-bold transition shadow-2xs cursor-pointer select-none ring-1 ring-purple-500/10 hover:border-purple-500">
+              <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                <i class="bi text-xs shrink-0"
+                  [ngClass]="part.selected_type_id ? 'bi-check-circle-fill text-purple-600' : 'bi-circle text-slate-300'"></i>
+                <span class="truncate"
+                  [ngClass]="part.selected_type_id ? 'text-purple-950 font-black' : 'text-slate-500'">
+                  {{ part.selected_type_name || '-- Seleccionar variante --' }}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <span class="text-[9px] font-bold text-slate-400 hover:text-purple-600">Cambiar</span>
+                <i class="bi bi-chevron-down text-[10px] text-slate-400 transition-transform duration-200"
+                  [ngClass]="openDropdownPart === part ? 'rotate-180' : ''"></i>
+              </div>
+            </button>
+
+            <!-- Menú Flotante de Variantes -->
+            <div *ngIf="openDropdownPart === part"
+              class="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 z-[150] p-1.5 space-y-1 animate-in fade-in zoom-in-95 max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-black/5">
+
+              <button type="button" (click)="unselectVariant(part, $event)"
+                class="w-full flex items-center justify-between p-1.5 rounded-lg text-left transition cursor-pointer text-[10px] hover:bg-rose-50 text-slate-600 font-medium hover:text-rose-700">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <i class="bi bi-trash text-slate-400 text-xs"></i>
+                  <span>Quitar / Desactivar parte</span>
+                </div>
+              </button>
+
+              <div class="border-t border-slate-100 my-1"></div>
+
+              <button *ngFor="let v of part.types" type="button" (click)="selectVariant(part, v, $event)"
+                class="w-full flex items-center justify-between p-2 rounded-lg text-left transition cursor-pointer text-[11px]"
+                [ngClass]="isVariantSelected(part, v) 
+                        ? 'bg-purple-50 text-purple-950 font-black border border-purple-200' 
+                        : 'hover:bg-slate-50 text-slate-700 font-semibold'">
+
+                <div class="flex flex-col min-w-0 flex-1 mr-1">
+                  <span class="truncate">{{ v.name }}</span>
+                  <span class="text-[9px] text-slate-400 font-normal truncate" *ngIf="v.technical_description">
+                    {{ v.technical_description }}
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <i *ngIf="isVariantSelected(part, v)" class="bi bi-check-lg text-purple-600 text-sm font-black"></i>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón / Input de Nota o Excepción (discreto, igual que en zonas) -->
+          <div class="pt-0.5">
+            <div *ngIf="!isExceptionInputVisible(part) && !part.exception_comment" class="flex justify-end">
+              <button type="button" (click)="toggleExceptionInput(part, $event)"
+                class="inline-flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-purple-700 transition cursor-pointer">
+                <i class="bi bi-chat-left-dots text-[9px]"></i>
+                <span>+ Nota / Excepción</span>
+              </button>
+            </div>
+
+            <div *ngIf="isExceptionInputVisible(part) || part.exception_comment"
+              class="flex items-center gap-1 bg-white p-1 rounded-lg border border-purple-300 shadow-2xs">
+              <i class="bi bi-chat-left-quote text-[10px] text-purple-600 ml-1 shrink-0"></i>
+              <input type="text" [ngModel]="part.exception_comment"
+                (ngModelChange)="onExceptionCommentInput(part, $event)"
+                placeholder="Nota (ej: ubicación especial, medida...)"
+                class="w-full bg-transparent border-none text-[10px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none py-0.5 px-1" />
+              <button type="button" (click)="clearExceptionComment(part, $event)"
+                class="w-4 h-4 rounded flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition shrink-0 cursor-pointer"
+                title="Eliminar excepción">
+                <i class="bi bi-x text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN C: MATERIALES E INSUMOS REQUERIDOS (DESDE PARTES CONFIGURADAS) -->
+    <div
+      class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col max-h-[520px] transition-all">
+      <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          <h3 class="text-[10px] font-black text-slate-800 uppercase tracking-wider">
+            Materiales Requeridos ({{ consolidatedMaterials.length }})
+          </h3>
+        </div>
+        <button
+          class="px-2 py-0.5 flex items-center gap-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all text-[10px] font-bold shadow-xs cursor-pointer"
+          (click)="showMaterialPicker = !showMaterialPicker" title="Agregar material adicional">
+          <i class="bi" [ngClass]="showMaterialPicker ? 'bi-x-lg' : 'bi-plus'"></i>
+          <span>{{ showMaterialPicker ? 'Cerrar' : 'Agregar' }}</span>
+        </button>
+      </div>
+
+      <!-- Panel Desplegable: Agregar Material Adicional desde Catálogo o Manual -->
+      <div *ngIf="showMaterialPicker"
+        class="p-2.5 bg-indigo-50/60 border-b border-indigo-100 space-y-2 max-h-[360px] overflow-y-auto custom-scrollbar">
+        <!-- SECCIÓN 1: Agregar Material Manual / Libre (Siempre al frente) -->
+        <div class="p-2 bg-white rounded-xl border border-indigo-200/90 shadow-2xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] font-black text-indigo-950 uppercase tracking-wider flex items-center gap-1">
+              <i class="bi bi-pencil-square text-indigo-600"></i>
+              Material Manual / Libre
+            </span>
+          </div>
+          <div class="flex items-center gap-1">
+            <input type="text" [(ngModel)]="manualCustomName" (keyup.enter)="addCustomMaterial()"
+              placeholder="Ej: Velcro 2.5cm, Botón..."
+              class="flex-1 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-semibold focus:border-indigo-400 focus:bg-white focus:outline-none min-w-0" />
+            <select [(ngModel)]="extraMaterialType"
+              class="bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-[9px] font-bold outline-none text-slate-700 shrink-0">
+              <option value="tela">TELA</option>
+              <option value="insumo">INSUMO</option>
+            </select>
+            <button type="button" (click)="addCustomMaterial()"
+              [disabled]="!manualCustomName?.trim() && !materialPickerSearch?.trim()"
+              class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-[10px] font-black transition cursor-pointer shrink-0 shadow-2xs">
+              + Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: Catálogo de Materiales Predefinidos -->
+        <div class="space-y-1.5 pt-1 border-t border-indigo-100/70">
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
+              <i class="bi bi-box-seam text-indigo-600"></i>
+              O seleccionar de catálogo
+            </span>
+            <span class="text-[9px] text-slate-400 font-semibold">{{ filteredPickerMaterials.length }}
+              disponibles</span>
+          </div>
+
+          <!-- Buscador -->
+          <div class="relative">
+            <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" [(ngModel)]="materialPickerSearch" placeholder="Filtrar catálogo..."
+              class="w-full pl-7 pr-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:border-indigo-400 focus:outline-none transition shadow-2xs" />
+          </div>
+
+          <!-- Tabs de Tipo -->
+          <div
+            class="flex items-center gap-0.5 p-0.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold shadow-2xs">
+            <button type="button" (click)="materialPickerTab = 'all'"
+              class="flex-1 py-0.5 rounded transition cursor-pointer text-center"
+              [ngClass]="materialPickerTab === 'all' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Todos
+            </button>
+            <button type="button" (click)="materialPickerTab = 'tela'"
+              class="flex-1 py-0.5 rounded transition cursor-pointer text-center"
+              [ngClass]="materialPickerTab === 'tela' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Telas
+            </button>
+            <button type="button" (click)="materialPickerTab = 'insumo'"
+              class="flex-1 py-0.5 rounded transition cursor-pointer text-center"
+              [ngClass]="materialPickerTab === 'insumo' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Insumos
+            </button>
+          </div>
+
+          <!-- Grid de Materiales del Catálogo Maestro -->
+          <div class="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto custom-scrollbar p-0.5">
+            <button *ngFor="let preset of filteredPickerMaterials" type="button" (click)="addPresetMaterial(preset)"
+              class="flex items-center gap-2 p-1.5 bg-white hover:bg-indigo-100/70 border border-slate-200/80 hover:border-indigo-300 rounded-lg text-left transition cursor-pointer shadow-2xs group">
+              <span class="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"
+                [ngClass]="preset.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+                <i class="bi"
+                  [ngClass]="preset.icon || (preset.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill')"></i>
+              </span>
+              <div class="min-w-0 flex-1">
+                <span
+                  class="text-[11px] font-bold text-slate-800 group-hover:text-indigo-900 truncate block leading-tight">{{
+                  preset.name }}</span>
+                <span class="text-[7px] font-black uppercase tracking-wider"
+                  [ngClass]="preset.type === 'tela' ? 'text-indigo-600' : 'text-amber-700'">
+                  {{ preset.type === 'tela' ? 'Tela' : 'Insumo' }}
+                </span>
+              </div>
+              <i class="bi bi-plus text-slate-400 group-hover:text-indigo-600 text-sm"></i>
+            </button>
+            <div *ngIf="filteredPickerMaterials.length === 0"
+              class="py-2 text-center text-[10px] text-slate-400 font-medium">
+              No se encontraron materiales en catálogo
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-2.5 space-y-2 custom-scrollbar">
+        <!-- Tarjetas de Materiales Consolidados -->
+        <div *ngFor="let mat of consolidatedMaterials; trackBy: trackByMaterialName"
+          class="bg-white rounded-xl border border-slate-200/80 p-2.5 hover:border-indigo-300 hover:shadow-2xs transition-all space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0 shadow-2xs"
+                [ngClass]="mat.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+                <i class="bi" [ngClass]="mat.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill'"></i>
+              </span>
+              <div class="min-w-0">
+                <span class="font-bold text-slate-800 text-xs block truncate">{{ mat.name }}</span>
+                <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border"
+                  [ngClass]="mat.type === 'tela' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-100'">
+                  {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
+                </span>
+              </div>
+            </div>
+            <!-- Count + tooltip icon -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="text-[9px] text-slate-400 font-bold">
+                {{ mat.sourceParts.length }} {{ mat.sourceParts.length === 1 ? 'parte' : 'partes' }}
+              </span>
+              <span class="relative cursor-help" [title]="'Usado en:\n• ' + mat.sourceParts.join('\n• ')">
+                <i class="bi bi-info-circle text-[10px] text-slate-400 hover:text-indigo-600 transition"></i>
+              </span>
+            </div>
+          </div>
+
+          <!-- SIESA/Manual actions -->
+          <div class="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
+            <ng-container *ngIf="mat.siesaRef">
+              <div class="flex items-center justify-between gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-100 rounded-lg w-full">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="text-[8px] font-black text-emerald-600 uppercase shrink-0 px-1 py-0.2 bg-emerald-100/60 rounded">{{ mat.siesaRef.assignment_source || 'SIESA' }}</span>
+                  <span class="text-[10px] font-bold text-slate-700 truncate" [title]="mat.siesaRef.descripcion">{{ mat.siesaRef.descripcion }}</span>
+                </div>
+                <button type="button" (click)="clearMaterialSiesa(mat)"
+                  class="w-4 h-4 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all cursor-pointer shrink-0"
+                  title="Desvincular material">
+                  <i class="bi bi-x text-[8px]"></i>
+                </button>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="!mat.siesaRef">
+              <span class="text-[9px] text-slate-400 font-medium italic">Sin vincular</span>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" (click)="linkSiesaToMaterial(mat)"
+                  class="px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-[8px] font-black hover:bg-indigo-600 hover:text-white transition-all cursor-pointer"
+                  title="Buscar en SIESA">
+                  SIESA
+                </button>
+                <button type="button" (click)="linkManualToMaterial(mat)"
+                  class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black hover:bg-slate-100 transition-all cursor-pointer"
+                  title="Asignar manual">
+                  MANUAL
+                </button>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Empty State cuando no hay materiales seleccionados -->
+        <div *ngIf="consolidatedMaterials.length === 0" class="py-6 text-center px-4">
+          <i class="bi bi-boxes text-slate-300 text-xl block mb-1"></i>
+          <p class="text-[11px] font-bold text-slate-500">Sin materiales requeridos</p>
+          <p class="text-[9px] text-slate-400 mt-0.5">
+            Configura partes o variantes en las zonas para recopilar telas e insumos automáticamente.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Canvas (Main Area) -->
+  <div
+    class="flex-1 min-w-0 bg-white rounded-3xl shadow-sm border border-slate-100 relative overflow-visible flex flex-col min-h-[500px]">
+    <div class="flex-1 relative flex items-center justify-center p-8 sm:p-12 bg-[#fcfcfd] rounded-3xl overflow-visible"
+      (click)="clearPinnedPart.emit()">
+      <div class="relative inline-block max-w-full max-h-[600px]" *ngIf="activeImage" #imageCanvas
+        (click)="canvasClick.emit($event)">
+        <img #moldImage [src]="activeImage"
+          class="block max-w-full max-h-[600px] object-contain drop-shadow-2xl cursor-pointer select-none pointer-events-none" />
+
+        <!-- ══════════ CAPA SVG: ZONAS ANATÓMICAS INTERACTIVAS (z-10) ══════════ -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible" viewBox="0 0 100 100"
+          preserveAspectRatio="none">
+          <ng-container *ngFor="let zone of sortedActiveZones">
+            <!-- Polígono (Forma Libre) - Trazo fino, esquinas suaves y redondeadas (linejoin/linecap round) -->
+            <polygon *ngIf="zone.path_data && getPolygonPoints(zone.path_data)"
+              [attr.points]="getPolygonPoints(zone.path_data)"
+              [attr.fill]="selectedZone === zone ? 'rgba(99, 102, 241, 0.14)' : 'transparent'"
+              [attr.stroke]="selectedZone === zone ? '#6366f1' : 'transparent'"
+              [attr.stroke-width]="selectedZone === zone ? '0.6' : '0'" stroke-linejoin="round" stroke-linecap="round"
+              class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-indigo-500/10 hover:stroke-indigo-400/60"
+              (click)="zoneClick.emit(zone); $event.stopPropagation()" />
+
+            <!-- Rectángulo Fallback con bordes redondeados -->
+            <rect *ngIf="!zone.path_data || !getPolygonPoints(zone.path_data)" [attr.x]="zone.position_x"
+              [attr.y]="zone.position_y" [attr.width]="zone.width" [attr.height]="zone.height" rx="2.5" ry="2.5"
+              [attr.fill]="selectedZone === zone ? 'rgba(99, 102, 241, 0.14)' : 'transparent'"
+              [attr.stroke]="selectedZone === zone ? '#6366f1' : 'transparent'"
+              [attr.stroke-width]="selectedZone === zone ? '0.6' : '0'" stroke-linejoin="round" stroke-linecap="round"
+              class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-indigo-500/10 hover:stroke-indigo-400/60"
+              (click)="zoneClick.emit(zone); $event.stopPropagation()" />
+          </ng-container>
+        </svg>
+
+        <!-- ══════════ PUNTOS DE INTERÉS / HOTSPOTS INTERACTIVOS (z-20) ══════════ -->
+        <ng-container *ngFor="let zone of activeZones">
+          <div
+            class="zone-hotspot-pin absolute z-20 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 cursor-pointer group/pin"
+            [style.left.%]="getZoneCenter(zone).x" [style.top.%]="getZoneCenter(zone).y"
+            (click)="zoneClick.emit(zone); $event.stopPropagation()">
+
+            <!-- Hotspot Badge -->
+            <div
+              class="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-lg border backdrop-blur-md transition-all group-hover/pin:scale-110"
+              [ngClass]="selectedZone === zone 
+                   ? 'bg-indigo-600 text-white border-indigo-400 ring-4 ring-indigo-500/30 shadow-indigo-500/40 scale-105' 
+                   : (isZoneConfigured(zone) 
+                       ? 'bg-slate-900/80 text-white border-white/20 hover:bg-slate-900 shadow-slate-900/30' 
+                       : 'bg-amber-500 text-slate-950 border-amber-300 ring-2 ring-amber-400/40 animate-pulse')">
+
+              <i class="bi text-xs" [ngClass]="getZoneIcon(zone.zone_type)"></i>
+              <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[110px]">{{ zone.name }}</span>
+
+              <!-- Check o Alerta según estado -->
+              <span class="w-2 h-2 rounded-full shadow-2xs"
+                [ngClass]="isZoneConfigured(zone) ? 'bg-emerald-400 shadow-emerald-400/80' : 'bg-amber-200'"></span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- ══════════ POPOVER / MODAL INTERACTIVO FLOTANTE DE ZONA ACTIVA (z-30) ══════════ -->
+        <div *ngIf="selectedZone"
+          class="zone-popover-container absolute z-30 -translate-x-1/2 -translate-y-1/2 w-96 sm:w-[460px] max-w-[95vw] max-h-[85vh] overflow-y-auto custom-scrollbar bg-white/98 backdrop-blur-lg rounded-3xl shadow-2xl border border-indigo-200/90 p-4 space-y-3.5 animate-in fade-in zoom-in-95 pointer-events-auto ring-1 ring-black/5"
+          [style.left.%]="getZonePopoverLeft(selectedZone)" [style.top.%]="getZonePopoverTop(selectedZone)"
+          (click)="$event.stopPropagation()">
+
+          <!-- VISTA 1: LISTADO DE PARTES DE LA ZONA (Cuando no hay drill-down) -->
+          <ng-container *ngIf="!activeDrilldownPart">
+            <!-- Encabezado de la Zona -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span
+                  class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-black shadow-md shrink-0"
+                  [style.backgroundColor]="selectedZone.color || getZoneColor(selectedZone.zone_type)">
+                  <i class="bi" [ngClass]="getZoneIcon(selectedZone.zone_type)"></i>
+                </span>
+                <div class="min-w-0">
+                  <h4 class="text-sm font-black text-slate-900 truncate uppercase">{{ selectedZone.name }}</h4>
+                  <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{{
+                    getZoneLabel(selectedZone.zone_type) }}</p>
+                </div>
+              </div>
+              <button type="button" (click)="clearSelectedZone.emit()"
+                class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition cursor-pointer"
+                title="Cerrar opciones">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Partes en esta zona ({{ getPartsForZone(selectedZone).length }})
+              </p>
+              <span class="text-[10px] font-bold text-indigo-600">Toca para configurar</span>
+            </div>
+
+            <!-- Lista de Partes (Solo esta lista tiene scroll si hay muchas partes) -->
+            <div class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-0.5">
+              <div *ngFor="let part of getPartsForZone(selectedZone)" (click)="drilldownToPart(part, $event)"
+                class="p-3 rounded-2xl border transition-all cursor-pointer hover:border-indigo-400 hover:shadow-md group/part relative bg-white"
+                [ngClass]="part.selected_type_id 
+                     ? 'border-emerald-300 bg-emerald-50/30' 
+                     : 'border-slate-200 hover:bg-indigo-50/10'">
+
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span
+                      class="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black shrink-0 transition-all"
+                      [ngClass]="part.selected_type_id 
+                            ? 'bg-emerald-600 text-white shadow-emerald-500/30 shadow-md' 
+                            : 'bg-slate-100 text-slate-600 group-hover/part:bg-indigo-600 group-hover/part:text-white'">
+                      <i class="bi" [ngClass]="part.icon || 'bi-puzzle-fill'"></i>
+                    </span>
+                    <div class="min-w-0">
+                      <h5
+                        class="text-xs font-black text-slate-900 group-hover/part:text-indigo-600 transition capitalize truncate">
+                        {{ part.name }}
+                      </h5>
+                      <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="text-[10px] font-bold truncate max-w-[200px]"
+                          [ngClass]="part.selected_type_id ? 'text-emerald-800' : 'text-slate-400 italic'">
+                          {{ part.selected_type_name || 'Sin variante seleccionada' }}
+                        </span>
+                        <span
+                          class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold shrink-0"
+                          *ngIf="part.total_time">
+                          {{ part.total_time | number:'1.1-2' }}m
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex items-center gap-1 text-xs font-black text-indigo-600 group-hover/part:translate-x-0.5 transition-transform shrink-0">
+                    <span>{{ part.selected_type_id ? 'Cambiar' : 'Elegir' }}</span>
+                    <i class="bi bi-chevron-right text-[11px]"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="getPartsForZone(selectedZone).length === 0" class="text-center py-4 text-xs text-slate-400">
+                No hay partes vinculadas a esta zona
+              </div>
+            </div>
+
+            <!-- Botón Agregar Opcional a esta zona -->
+            <div class="pt-2 border-t border-slate-100 relative">
+              <button type="button" (click)="toggleAddOptionalDropdown(selectedZone, $event)"
+                class="w-full flex items-center justify-between p-2.5 rounded-2xl bg-purple-50/80 hover:bg-purple-100 border border-dashed border-purple-300 text-purple-900 text-xs font-bold transition cursor-pointer shadow-2xs">
+                <div class="flex items-center gap-2">
+                  <i class="bi bi-stars text-purple-600"></i>
+                  <span>+ Agregar Opcional a esta zona</span>
+                </div>
+                <i class="bi bi-chevron-down text-purple-400 text-xs"
+                  [ngClass]="openAddOptionalZoneKey === getZoneKey(selectedZone) ? 'rotate-180' : ''"></i>
+              </button>
+
+              <!-- Panel Desplegable Integrado Dentro del Popover -->
+              <div *ngIf="openAddOptionalZoneKey === getZoneKey(selectedZone)"
+                class="mt-2 p-2.5 bg-purple-50/50 rounded-2xl border border-purple-200 space-y-2 animate-in fade-in max-h-64 overflow-y-auto custom-scrollbar ring-1 ring-purple-300/30">
+
+                <!-- PASO 1: Elegir entre los 4 Apliques -->
+                <ng-container *ngIf="!selectedOptionalGarmentPart">
+                  <p
+                    class="text-[10px] font-black text-purple-900 uppercase tracking-wider px-1 mb-0 flex items-center gap-1">
+                    <i class="bi bi-gem text-purple-600"></i> Apliques Opcionales
+                  </p>
+                  <div class="space-y-1">
+                    <button *ngFor="let opt of getAvailableOptionalPartsForZone(selectedZone)" type="button"
+                      (click)="drilldownToOptionalPart(opt, $event)"
+                      class="w-full flex items-center justify-between p-2 rounded-xl text-left transition bg-white hover:bg-purple-100/80 text-xs font-semibold text-slate-800 group border border-purple-100 shadow-2xs cursor-pointer">
+                      <div class="flex items-center gap-2 min-w-0 flex-1 mr-1">
+                        <span
+                          class="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs shrink-0 group-hover:bg-purple-600 group-hover:text-white transition">
+                          <i class="bi" [ngClass]="opt.icon || 'bi-gem'"></i>
+                        </span>
+                        <div class="min-w-0">
+                          <p class="font-bold text-[11px] text-slate-800 group-hover:text-purple-950 truncate mb-0">{{
+                            opt.name }}</p>
+                          <p class="text-[9px] text-slate-400 truncate mb-0" *ngIf="opt.types && opt.types.length > 0">
+                            {{ opt.types.length }} variantes</p>
+                        </div>
+                      </div>
+                      <i
+                        class="bi bi-chevron-right text-[10px] text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-transform shrink-0"></i>
+                    </button>
+                  </div>
+                </ng-container>
+
+                <!-- PASO 2: Elegir Variante del Aplique -->
+                <ng-container *ngIf="selectedOptionalGarmentPart">
+                  <div class="flex items-center justify-between border-b border-purple-200/60 pb-1.5">
+                    <button type="button" (click)="backToOptionalList($event)"
+                      class="inline-flex items-center gap-1 text-[10px] font-black text-purple-700 hover:text-purple-900 transition cursor-pointer">
+                      <i class="bi bi-arrow-left"></i>
+                      <span>Volver a apliques</span>
+                    </button>
+                    <span class="text-[10px] font-black text-slate-800 uppercase truncate max-w-[150px]">
+                      {{ selectedOptionalGarmentPart.name }}
+                    </span>
+                  </div>
+
+                  <div class="space-y-1">
+                    <button *ngFor="let v of selectedOptionalGarmentPart.types" type="button"
+                      (click)="selectOptionalPartVariantForZone(selectedZone, selectedOptionalGarmentPart, v, $event)"
+                      class="w-full flex items-center justify-between p-2 rounded-xl text-left transition bg-white hover:bg-emerald-50 text-xs font-semibold text-slate-800 group border border-slate-100 shadow-2xs cursor-pointer">
+                      <div class="flex flex-col min-w-0 flex-1 mr-2">
+                        <span class="font-bold text-[11px] text-slate-800 group-hover:text-emerald-950">{{ v.name
+                          }}</span>
+                        <span class="text-[9px] text-slate-400 truncate" *ngIf="v.technical_description">{{
+                          v.technical_description }}</span>
+                      </div>
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span *ngIf="v.total_time"
+                          class="text-[8px] font-bold text-slate-400 bg-slate-100 px-1 py-0.5 rounded">
+                          {{ v.total_time }}m
+                        </span>
+                        <span
+                          class="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition">
+                          + Agregar
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                </ng-container>
+
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- VISTA 2: SELECCIÓN DE VARIANTES DE LA PARTE SELECCIONADA -->
+          <ng-container *ngIf="activeDrilldownPart">
+            <!-- Header con botón Volver -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <button type="button" (click)="backToZoneParts($event)"
+                class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition cursor-pointer">
+                <i class="bi bi-arrow-left"></i>
+                <span>Volver a partes</span>
+              </button>
+
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-xs font-black text-slate-900 uppercase truncate max-w-[180px]">
+                  {{ activeDrilldownPart.name }}
+                </span>
+              </div>
+
+              <button type="button" (click)="clearSelectedZone.emit()"
+                class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition cursor-pointer"
+                title="Cerrar">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Variantes constructivas disponibles ({{ activeDrilldownPart.types?.length || 0 }}):
+            </p>
+
+            <!-- Lista de Variantes Grandes y Cómodas -->
+            <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-0.5">
+              <!-- Opción: Sin variante -->
+              <button type="button" (click)="unselectVariant(activeDrilldownPart, $event)"
+                class="w-full flex items-center justify-between p-3 rounded-2xl text-left transition cursor-pointer border"
+                [ngClass]="!activeDrilldownPart.selected_type_id 
+                        ? 'bg-slate-100 text-slate-900 border-slate-300 font-black shadow-xs' 
+                        : 'bg-white hover:bg-slate-50 text-slate-500 border-slate-200'">
+                <div class="flex items-center gap-2">
+                  <i class="bi bi-slash-circle text-base text-slate-400"></i>
+                  <span class="text-xs font-bold">Sin variante / No aplica a este diseño</span>
+                </div>
+                <i *ngIf="!activeDrilldownPart.selected_type_id"
+                  class="bi bi-check-circle-fill text-slate-700 text-base"></i>
+              </button>
+
+              <!-- Opciones de variantes del catálogo -->
+              <button *ngFor="let v of activeDrilldownPart.types" type="button"
+                (click)="selectVariant(activeDrilldownPart, v, $event)"
+                class="w-full flex items-start justify-between p-3 rounded-2xl text-left transition cursor-pointer border"
+                [ngClass]="isVariantSelected(activeDrilldownPart, v)
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black ring-2 ring-emerald-500/30'
+                        : 'bg-white hover:bg-emerald-50/40 text-slate-800 border-slate-200 hover:border-emerald-300 font-semibold'">
+
+                <div class="flex flex-col min-w-0 flex-1 mr-2">
+                  <span class="text-xs sm:text-sm font-black leading-snug">{{ v.name }}</span>
+                  <span class="text-[11px] mt-1 font-normal leading-relaxed line-clamp-2"
+                    [ngClass]="isVariantSelected(activeDrilldownPart, v) ? 'text-emerald-100' : 'text-slate-500'"
+                    *ngIf="v.technical_description">
+                    {{ v.technical_description }}
+                  </span>
+                </div>
+
+                <div class="flex flex-col items-end gap-1.5 shrink-0 mt-0.5">
+                  <i *ngIf="isVariantSelected(activeDrilldownPart, v)"
+                    class="bi bi-check-circle-fill text-base text-white"></i>
+                </div>
+              </button>
+
+              <div *ngIf="!activeDrilldownPart.types || activeDrilldownPart.types.length === 0"
+                class="text-center py-6 text-xs text-slate-400">
+                Esta parte no tiene variantes registradas en el catálogo maestro.
+              </div>
+            </div>
+
+            <!-- Observación / Excepción de Confección en Popover -->
+            <div class="mt-3 p-2.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5"
+              *ngIf="activeDrilldownPart.selected_type_id || activeDrilldownPart.selected_type_name">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <i class="bi bi-chat-left-text text-indigo-500"></i> Excepción o nota técnica (opcional):
+                </span>
+                <button *ngIf="activeDrilldownPart.exception_comment" type="button"
+                  (click)="clearExceptionComment(activeDrilldownPart, $event)"
+                  class="text-[9px] font-bold text-rose-500 hover:underline cursor-pointer">
+                  Quitar nota
+                </button>
+              </div>
+              <input type="text" [ngModel]="activeDrilldownPart.exception_comment"
+                (ngModelChange)="onExceptionCommentInput(activeDrilldownPart, $event)"
+                placeholder="Ej: Manga 2cm más corta, sin bolsillo, etc."
+                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:border-indigo-400 focus:outline-none shadow-2xs" />
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- Popover Flotante para Agregar con Sugerencias por Zona -->
+        <div
+          class="fixed z-[1100] w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 animate-in zoom-in-95"
+          *ngIf="showAddModal" [style.left.px]="popoverPosition?.x" [style.top.px]="popoverPosition?.y"
+          (click)="$event.stopPropagation()">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <i class="bi bi-plus-circle-fill text-indigo-600 text-xs"></i>
+                <span class="text-[10px] font-black text-slate-700 uppercase tracking-wider">Agregar Componente</span>
+              </div>
+              <button (click)="$event.stopPropagation(); closeAddModal.emit()"
+                class="text-slate-400 hover:text-rose-500"><i class="bi bi-x-lg text-xs"></i></button>
+            </div>
+
+            <!-- Badge de Zona Anatómica Detectada -->
+            <div *ngIf="detectedZone" class="p-2 rounded-xl border flex items-center justify-between gap-2"
+              [style.backgroundColor]="(detectedZone.color || '#6366f1') + '15'"
+              [style.borderColor]="(detectedZone.color || '#6366f1') + '40'">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs"
+                  [style.backgroundColor]="detectedZone.color || '#6366f1'"></span>
+                <div class="min-w-0">
+                  <p class="text-[10px] font-black text-slate-800 truncate">Zona: {{ detectedZone.name }}</p>
+                  <p class="text-[8px] font-semibold text-slate-500 uppercase">{{ detectedZone.zone_type }}</p>
+                </div>
+              </div>
+              <span class="text-[8px] font-bold text-indigo-700 bg-white/90 px-1.5 py-0.5 rounded shadow-2xs shrink-0">
+                Detectada
+              </span>
+            </div>
+
+            <!-- Lista de Partes Sugeridas para esta Zona -->
+            <div *ngIf="detectedZone && zoneSuggestedParts.length > 0" class="space-y-1">
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Sugerencias para esta zona:</p>
+              <div class="max-h-36 overflow-y-auto space-y-1 custom-scrollbar pr-1">
+                <button *ngFor="let sp of zoneSuggestedParts" type="button" (click)="selectZoneSuggestedPart.emit(sp)"
+                  class="w-full text-left p-1.5 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/60 transition-all flex items-center justify-between gap-1 group">
+                  <div class="min-w-0 flex items-center gap-1.5">
+                    <span
+                      class="w-5 h-5 rounded-lg bg-indigo-50 group-hover:bg-indigo-600 group-hover:text-white text-indigo-600 flex items-center justify-center text-[10px] shrink-0 transition-colors">
+                      <i class="bi bi-layers"></i>
+                    </span>
+                    <div class="min-w-0">
+                      <p
+                        class="text-[11px] font-bold text-slate-800 group-hover:text-indigo-900 truncate leading-tight">
+                        {{ sp.name }}</p>
+                      <p class="text-[8px] text-slate-400 font-medium truncate" *ngIf="sp.types?.length">
+                        {{ sp.types.length }} variante(s)
+                      </p>
+                    </div>
+                  </div>
+                  <i class="bi bi-plus text-xs text-slate-400 group-hover:text-indigo-600 shrink-0"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Búsqueda o creación manual -->
+            <div class="border-t border-slate-100 pt-2 space-y-2">
+              <div class="relative">
+                <input type="text" [ngModel]="addSearchQuery" (ngModelChange)="onAddQueryChange($event)"
+                  (focus)="showAddSuggestionsChange.emit(true)" placeholder="O escribir nombre personalizado..."
+                  class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all"
+                  (keyup.enter)="confirmAdd.emit()" />
+
+                <!-- Sugerencias Popover -->
+                <div
+                  class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-[1200]"
+                  *ngIf="showAddSuggestions && filteredAddSuggestions.length > 0">
+                  <div class="max-h-32 overflow-y-auto custom-scrollbar">
+                    <div *ngFor="let s of filteredAddSuggestions" (click)="selectAddSuggestion.emit(s)"
+                      class="px-3 py-2 text-[10px] font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer border-b border-slate-50 last:border-0 transition-all">
+                      {{ s.display_name || s.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex gap-1">
+                <select [ngModel]="addItemType" (ngModelChange)="onAddTypeChange($event)"
+                  class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none">
+                  <option value="parte">PARTE</option>
+                  <option value="insumo">INSUMO</option>
+                  <option value="tela">TELA</option>
+                </select>
+                <button
+                  class="flex-[2] py-1.5 rounded-lg bg-indigo-600 text-white text-[10px] font-black hover:bg-indigo-700 transition-all"
+                  (click)="confirmAdd.emit()" [disabled]="!addSearchQuery.trim()">AGREGAR</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pending-dot-mini" *ngIf="dynamicPinPosition" [style.left.%]="dynamicPinPosition.x"
+          [style.top.%]="dynamicPinPosition.y"></div>
+      </div>
+    </div>
+  </div>
+</div>

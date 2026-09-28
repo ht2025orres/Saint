@@ -8,6 +8,12 @@ export interface UsuarioCache {
   proceso_nombre?: string | null;
   procesos?: string[];
   roles?: Role[];
+  iniciales?: string;
+  color?: string;
+  permiso_seguimiento_id?: number;
+  cargo_id?: number;
+  cargo_nombre?: string;
+  es_miembro?: boolean;
 }
 export interface Toast { id: number; message: string; type: 'success' | 'error' | 'info' | 'warning'; }
 export type Semaforo = 'rojo' | 'amarillo' | 'verde' | 'gris' | 'azul' | 'rojo_tarde';
@@ -28,20 +34,19 @@ export class SeguimientoStateService {
   get usuariosCache(): UsuarioCache[] { return this._usuariosCache$.value; }
 
   /**
-   * Retorna solo los usuarios que tienen el rol de "Administrador del sistema"
-   * Se hace una búsqueda flexible por si el nombre del rol tiene prefijos (ej: "-")
+   * Retorna los usuarios que tienen permiso de miembro o administrador
    */
   get usuariosAdministradores(): UsuarioCache[] {
-    // Si la carga inicial de usuarios ya se filtra por permiso 1 (administradores),
-    // entonces esta lista ya contiene solo a esos usuarios.
-    // El filtro adicional por nombre de rol ya no es necesario o podría ser redundante.
-    // Devolvemos directamente el caché para que coincida con la definición de "responsables" del usuario.
-    return this._usuariosCache$.value;
+    const list = this._usuariosCache$.value.filter(u => u.es_miembro !== false);
+    return list.length > 0 ? list : this._usuariosCache$.value;
   }
 
-  // Nuevo getter para la lista de responsables, que ahora son los usuarios con permiso 1
+  /**
+   * Retorna la lista de responsables filtrando solo a usuarios con permiso de miembro
+   */
   get usuariosResponsables(): UsuarioCache[] {
-    return this._usuariosCache$.value;
+    const list = this._usuariosCache$.value.filter(u => u.es_miembro !== false);
+    return list.length > 0 ? list : this._usuariosCache$.value;
   }
 
   setUsuariosCache(usuarios: UsuarioCache[]): void {

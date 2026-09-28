@@ -1,36 +1,61 @@
 <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in" 
      (click)="onCancel()">
-  <div class="w-full max-w-[400px] bg-white rounded-[32px] p-8 shadow-2xl animate-in zoom-in-95" (click)="$event.stopPropagation()">
-    <h3 class="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-3">
-      <i class="bi" [ngClass]="type === 'general' ? 'bi-box-seam' : 'bi-pin-angle'"></i>
-      {{ type === 'general' ? 'Nuevo Elemento General' : 'Nuevo Componente de Diseño' }}
+  <div class="w-full max-w-[440px] bg-white rounded-[32px] p-8 shadow-2xl animate-in zoom-in-95" (click)="$event.stopPropagation()">
+    <h3 class="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-3">
+      <i class="bi" [ngClass]="type === 'general' ? 'bi-box-seam text-amber-500' : 'bi-pin-angle text-indigo-600'"></i>
+      {{ type === 'general' ? 'Nuevo Elemento General' : 'Ubicar Pin / Parte en Imagen' }}
     </h3>
+    <p class="text-xs text-slate-500 mb-6">Selecciona una parte del catálogo o ingresa un nombre personalizado.</p>
+
+    <!-- Rapid Catalog Selection Pills -->
+    <div class="mb-5" *ngIf="garmentPartsCatalog.length > 0">
+      <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Partes Frecuentes del Catálogo</label>
+      <div class="flex flex-wrap gap-1.5">
+        <button 
+          *ngFor="let catPart of garmentPartsCatalog"
+          type="button"
+          (click)="selectCatalogPart(catPart)"
+          [class.bg-indigo-600]="selectedGarmentPart?.id === catPart.id"
+          [class.text-white]="selectedGarmentPart?.id === catPart.id"
+          [class.bg-slate-100]="selectedGarmentPart?.id !== catPart.id"
+          [class.text-slate-700]="selectedGarmentPart?.id !== catPart.id"
+          class="px-2.5 py-1.5 rounded-xl text-xs font-semibold hover:bg-indigo-500 hover:text-white transition flex items-center gap-1.5 border border-slate-200/60"
+        >
+          <i class="bi {{ catPart.icon || 'bi-puzzle' }}"></i>
+          <span>{{ catPart.name }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="space-y-6">
       <div class="flex flex-col gap-2 relative">
-        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre del Componente</label>
+        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre o Búsqueda</label>
         <div class="relative">
           <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
           <input type="text" [(ngModel)]="searchQuery" (focus)="showSuggestions = true"
-                 placeholder="Ej: Hilo, Cremallera..." 
+                 placeholder="Ej: Bolsillo, Cuello, Reflectivo..." 
                  class="w-full pl-10 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold focus:bg-white focus:border-indigo-500 outline-none transition-all" 
                  (keyup.enter)="onConfirm()" />
         </div>
 
-        <!-- Sugerencias Personalizadas -->
+        <!-- Sugerencias Personalizadas / Catálogo -->
         <div class="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[1100] animate-in slide-in-from-top-2" 
-             *ngIf="showSuggestions && filteredSuggestions.length > 0">
+             *ngIf="showSuggestions && filteredCatalogParts.length > 0">
           <div class="p-2 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-            <span class="text-[8px] font-black text-slate-400 uppercase px-2">Sugerencias de Componentes</span>
+            <span class="text-[8px] font-black text-slate-400 uppercase px-2">Catálogo Master de Partes</span>
             <button (click)="showSuggestions = false"><i class="bi bi-x text-slate-400"></i></button>
           </div>
           <div class="max-h-48 overflow-y-auto custom-scrollbar">
-            <div *ngFor="let s of filteredSuggestions" (click)="selectSuggestion(s)"
+            <div *ngFor="let s of filteredCatalogParts" (click)="selectCatalogPart(s)"
                  class="px-4 py-3 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer border-b border-slate-50 last:border-0 transition-all flex items-center justify-between">
-              <div class="flex flex-col">
-                <span class="block">{{ s.display_name || s.name }}</span>
-                <span class="text-[8px] text-slate-400 uppercase tracking-tighter">{{ s.item_type || 'parte' }}</span>
+              <div class="flex items-center gap-2">
+                <i class="bi {{ s.icon || 'bi-puzzle' }} text-indigo-500"></i>
+                <div class="flex flex-col">
+                  <span class="block">{{ s.name }}</span>
+                  <span class="text-[9px] text-slate-400 font-normal" *ngIf="s.types">{{ s.types.length }} variantes disponibles</span>
+                </div>
               </div>
-              <i class="bi bi-plus-circle text-indigo-300"></i>
+              <i class="bi bi-plus-circle text-indigo-400"></i>
             </div>
           </div>
         </div>
@@ -61,8 +86,8 @@
       </div>
 
       <div class="flex gap-3 pt-2">
-        <button class="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 transition-all" (click)="onCancel()">Cancelar</button>
-        <button class="flex-1 py-4 rounded-2xl bg-indigo-600 text-white font-bold shadow-lg transition-all" (click)="onConfirm()" [disabled]="!searchQuery.trim()">Crear</button>
+        <button class="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 transition-all text-xs" (click)="onCancel()">Cancelar</button>
+        <button class="flex-1 py-3.5 rounded-2xl bg-indigo-600 text-white font-bold shadow-lg transition-all text-xs hover:bg-indigo-700" (click)="onConfirm()" [disabled]="!searchQuery.trim()">Asignar Parte</button>
       </div>
     </div>
   </div>

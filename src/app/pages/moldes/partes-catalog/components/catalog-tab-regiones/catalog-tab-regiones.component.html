@@ -1,0 +1,264 @@
+<div class="max-w-7xl mx-auto space-y-6 animate-in fade-in pb-8">
+
+  <!-- ════════════════════ SECCIÓN: PARTES GENERALES & APLIQUES TRANSVERSALES ════════════════════ -->
+  <div class="bg-white rounded-2xl border border-amber-200/90 shadow-2xs p-4 sm:p-5 space-y-4">
+    
+    <!-- Encabezado de la Sección General -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-amber-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-lg shrink-0 border border-amber-200">
+          <i class="bi bi-gem"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm sm:text-base font-black text-slate-900">Partes Generales & Apliques Opcionales</h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+              {{ getGeneralParts().length }} {{ getGeneralParts().length === 1 ? 'Elemento' : 'Elementos' }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">
+            Elementos transversales (braguetas, reflectivos, bordados, marquillas, vivos) aplicables a cualquier prenda.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-end sm:self-center">
+        <button (click)="viewRegionCatalog.emit('general')" 
+                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer" 
+                title="Ver catálogo completo en modal">
+          <i class="bi bi-grid-3x3-gap-fill text-xs text-amber-600"></i>
+          <span>Catálogo</span>
+        </button>
+        <button (click)="createPartForRegion.emit('general')" 
+                class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+          <i class="bi bi-plus-lg text-xs"></i>
+          <span>Nuevo Aplique</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid de Partes Generales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      
+      <div *ngFor="let part of getGeneralParts()" 
+           class="bg-slate-50/70 hover:bg-white rounded-xl border border-slate-200 hover:border-amber-300 p-3.5 shadow-2xs hover:shadow-xs transition-all space-y-2.5 group">
+        
+        <!-- Fila Principal de la Parte General -->
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-amber-100/80 text-amber-700 flex items-center justify-center text-sm font-black shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+              <i class="bi" [ngClass]="part.icon || 'bi-gem'"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-xs font-black text-slate-900 truncate">{{ part.name }}</span>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white text-slate-500 border border-slate-200">
+                  {{ part.code || 'GEN' }}
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-500 truncate" *ngIf="part.description">{{ part.description }}</p>
+            </div>
+          </div>
+
+          <!-- Botones de Acción Rápida -->
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" 
+                    (click)="toggleExpandPart(part)"
+                    class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition cursor-pointer" 
+                    [title]="isPartExpanded(part) ? 'Ocultar Variantes' : 'Ver Variantes en Línea'">
+              <i class="bi text-xs" [ngClass]="isPartExpanded(part) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+            <button type="button" 
+                    (click)="editPart.emit(part)"
+                    class="p-1.5 text-slate-400 hover:text-amber-700 hover:bg-white rounded-lg transition cursor-pointer" 
+                    title="Editar Parte y Variantes">
+              <i class="bi bi-pencil text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Badges de Métricas de la Parte -->
+        <div class="flex items-center justify-between text-[10px] pt-2 border-t border-slate-200/60">
+          <span class="font-bold text-slate-500">
+            {{ part.types?.length || 0 }} {{ (part.types?.length === 1) ? 'variante' : 'variantes' }}
+          </span>
+          <span class="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+            ⏱ {{ calculatePartTotalTime(part) | number:'1.2-2' }} min SAM
+          </span>
+        </div>
+
+        <!-- Desglose en Línea de Variantes (Expandible) -->
+        <div *ngIf="isPartExpanded(part)" class="mt-2 pt-2 border-t border-dashed border-amber-200 space-y-1.5 bg-amber-50/50 p-2.5 rounded-lg animate-in fade-in">
+          <div class="text-[9px] font-black uppercase text-amber-900 tracking-wider">Variantes Disponibles:</div>
+          <div *ngFor="let v of part.types; let vi = index" class="p-1.5 bg-white rounded-md border border-amber-100 flex items-center justify-between gap-1 text-[10px]">
+            <div class="flex items-center gap-1.5 min-w-0 flex-1">
+              <span class="w-4 h-4 rounded bg-amber-500 text-white flex items-center justify-center text-[8px] font-black shrink-0">{{ vi + 1 }}</span>
+              <span class="font-bold text-slate-800 truncate">{{ v.name }}</span>
+              <span *ngIf="v.is_active === false" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded shrink-0" [title]="v.disabled_reason || 'Inactiva'">Inactiva</span>
+              <!-- Materiales resumidos -->
+              <span *ngIf="v.materials && v.materials.length > 0" class="text-[8px] text-amber-800 bg-amber-100/70 px-1.5 py-0.2 rounded font-bold shrink-0 hidden sm:inline">
+                {{ v.materials.join(', ') }}
+              </span>
+            </div>
+            <span class="font-mono text-slate-500 shrink-0 text-[9px]">{{ v.operations?.length || 0 }} ops • {{ calculateTypeTotalTime(v) }}m</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Placeholder si no hay partes generales -->
+      <div *ngIf="getGeneralParts().length === 0" class="col-span-full py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <i class="bi bi-gem text-2xl text-amber-400"></i>
+        <p class="text-xs font-bold text-slate-600 mt-1">No hay partes generales registradas</p>
+        <p class="text-[11px] text-slate-400 mb-3">Crea apliques como braguetas, bordados, reflectivos de seguridad, logos o marquillas.</p>
+        <button (click)="createPartForRegion.emit('general')" class="px-3.5 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-black hover:bg-amber-700 transition cursor-pointer">
+          + Registrar Primera Parte General
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ════════════════════ SECCIÓN: REGIONES ANATÓMICAS ESTRUCTURALES ════════════════════ -->
+  <div class="space-y-3.5">
+    
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm sm:text-base font-black text-slate-900">Regiones Anatómicas Estructurales</h3>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600 border border-slate-200">
+          {{ getStructuralRegions().length }} Zonas Base
+        </span>
+      </div>
+      <button (click)="createRegion.emit()" 
+              class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+        <i class="bi bi-plus-lg text-xs text-indigo-600"></i>
+        <span>Nueva Región</span>
+      </button>
+    </div>
+
+    <!-- Grid de Regiones Anatómicas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div *ngFor="let reg of getStructuralRegions()" 
+           class="bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:shadow-md transition-all p-4 flex flex-col justify-between group">
+        
+        <div>
+          <!-- Header de Región -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-base shadow-2xs shrink-0" [style.backgroundColor]="reg.color">
+                <i class="bi" [ngClass]="reg.icon || 'bi-bounding-box-circles'"></i>
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-sm font-black text-slate-900 leading-tight truncate">{{ reg.label }}</h4>
+                <span class="text-[10px] font-mono text-slate-400 font-bold">ID: {{ reg.value }}</span>
+              </div>
+            </div>
+
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black shrink-0" [style.backgroundColor]="reg.color + '18'" [style.color]="reg.color">
+              {{ getPartsForRegion(reg.value).length }} {{ getPartsForRegion(reg.value).length === 1 ? 'Parte' : 'Partes' }}
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-500 font-medium mb-3 line-clamp-2 leading-relaxed">{{ reg.description }}</p>
+
+          <!-- ─── Lista Enriquecida de Partes dentro de la Región ─── -->
+          <div class="space-y-2 mb-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">Partes Asignadas:</span>
+              <span class="text-[10px] font-bold text-indigo-600" *ngIf="getPartsForRegion(reg.value).length > 0">
+                {{ getPartsForRegion(reg.value).length }} reg.
+              </span>
+            </div>
+
+            <!-- Lista Interactiva de Partes de la Región -->
+            <div class="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1" *ngIf="getPartsForRegion(reg.value).length > 0">
+              
+              <div *ngFor="let p of getPartsForRegion(reg.value)"
+                   class="bg-slate-50 hover:bg-indigo-50/40 rounded-xl p-2.5 border border-slate-200/80 hover:border-indigo-200 transition-all space-y-1.5">
+                
+                <!-- Fila de la Parte -->
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <i class="bi text-xs text-slate-600 shrink-0" [ngClass]="p.icon || 'bi-puzzle'"></i>
+                    <span class="text-xs font-bold text-slate-900 truncate">{{ p.name }}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[8px] font-mono font-bold bg-white text-slate-500 border border-slate-200">
+                      {{ p.code || 'PARTE' }}
+                    </span>
+                  </div>
+
+                  <!-- Acciones de la Parte -->
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" 
+                            (click)="toggleExpandPart(p)"
+                            class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition cursor-pointer"
+                            [title]="isPartExpanded(p) ? 'Ocultar Variantes' : 'Ver Variantes en Línea'">
+                      <i class="bi text-[11px]" [ngClass]="isPartExpanded(p) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+                    <button type="button" 
+                            (click)="editPart.emit(p)"
+                            class="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition cursor-pointer"
+                            title="Editar Parte y Variantes">
+                      <i class="bi bi-pencil text-[11px]"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Métricas de la Parte: Variantes y Tiempo -->
+                <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
+                  <span>{{ p.types?.length || 0 }} {{ (p.types?.length === 1) ? 'variante' : 'variantes' }}</span>
+                  <span class="font-mono font-bold text-indigo-700">⏱ {{ calculatePartTotalTime(p) | number:'1.2-2' }} min SAM</span>
+                </div>
+
+                <!-- Desglose en Línea de Variantes (Expandible) -->
+                <div *ngIf="isPartExpanded(p)" class="pt-2 border-t border-dashed border-indigo-200 space-y-1 bg-white p-2 rounded-lg animate-in fade-in">
+                  <div class="text-[9px] font-black uppercase text-indigo-900 tracking-wider">Variantes de {{ p.name }}:</div>
+                  <div *ngFor="let v of p.types; let vi = index" class="p-1.5 bg-slate-50 rounded border border-slate-100 flex items-center justify-between gap-1 text-[10px]">
+                    <div class="flex items-center gap-1 min-w-0">
+                      <span class="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center text-[8px] font-black shrink-0">{{ vi + 1 }}</span>
+                      <span class="font-bold text-slate-800 truncate">{{ v.name }}</span>
+                      <span *ngIf="v.is_active === false" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded" [title]="v.disabled_reason || 'Inactiva'">Inactiva</span>
+                    </div>
+                    <span class="font-mono text-slate-500 shrink-0">{{ v.operations?.length || 0 }} ops • {{ calculateTypeTotalTime(v) }}m</span>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Estado Vacío en la Región -->
+            <div *ngIf="getPartsForRegion(reg.value).length === 0" 
+                 class="py-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <p class="text-[11px] text-slate-400 font-medium">Sin partes asignadas a esta región</p>
+              <button (click)="createPartForRegion.emit(reg.value)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 mt-1 cursor-pointer">
+                + Crear primera parte
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones de Región en el Footer -->
+        <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 mt-2">
+          <button (click)="createPartForRegion.emit(reg.value)" class="text-xs font-black text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer">
+            <i class="bi bi-plus-circle text-xs"></i>
+            <span>+ Agregar Parte</span>
+          </button>
+          
+          <div class="flex items-center gap-1">
+            <button (click)="viewRegionCatalog.emit(reg)" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-black transition flex items-center gap-1 cursor-pointer" title="Ver Catálogo Completo de la Región en Modal">
+              <i class="bi bi-grid-3x3-gap-fill text-[11px]"></i>
+              <span>Catálogo</span>
+            </button>
+            <button (click)="editRegion.emit(reg)" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer" title="Editar Información de la Región">
+              <i class="bi bi-pencil text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,227 @@
+<div class="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+  
+  <!-- Banner de Resumen de Tiempo Total (SAM) -->
+  <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 text-white shadow-xl flex flex-wrap items-center justify-between gap-4">
+    <div class="space-y-1">
+      <span class="px-2.5 py-1 bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] font-black uppercase rounded-lg tracking-wider">
+        Módulos de Tiempos Estándar (SAM)
+      </span>
+      <h2 class="text-xl font-black flex items-center gap-2">
+        <i class="bi bi-clock-history text-amber-400"></i>
+        Desglose Operativo y Tiempos por Parte
+      </h2>
+      <p class="text-xs text-indigo-200 font-medium">
+        Configura los tipos de partes, especificaciones técnicas predefinidas, máquinas requeridas y tiempos de confección en minutos.
+      </p>
+    </div>
+    <div class="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20 text-center min-w-[200px]">
+      <span class="text-[10px] font-black uppercase text-indigo-200 tracking-widest block">Tiempo Estándar Total (SAM)</span>
+      <span class="text-3xl font-black text-amber-400 font-mono">{{ totalGarmentStandardTime | number:'1.2-2' }}</span>
+      <span class="text-xs font-bold text-white ml-1">min.</span>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 1: Operaciones Globales de Confección/Ensamble -->
+  <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+          <i class="bi bi-gear-wide-connected text-indigo-600"></i> Operaciones Globales de Ensamble y Confección
+        </h3>
+        <p class="text-xs text-slate-400 font-medium">Operaciones generales de la prenda (ej: armado final, presillado, empaque, control de calidad).</p>
+      </div>
+      <button type="button" (click)="addGlobalOp.emit()" *ngIf="!isReadOnly"
+              class="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+        <i class="bi bi-plus-circle-fill"></i>
+        <span>Agregar Operación Global</span>
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase text-[10px] font-black">
+            <th class="px-4 py-3">Nombre de la Operación</th>
+            <th class="px-4 py-3">Maquinaria Asignada</th>
+            <th class="px-4 py-3 w-36">Tiempo (Minutos)</th>
+            <th class="px-4 py-3 w-16" *ngIf="!isReadOnly"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let gOp of globalOperations; let i = index" class="hover:bg-slate-50/50 transition-colors">
+            <td class="px-4 py-2.5">
+              <input type="text" [(ngModel)]="gOp.operation_name" [disabled]="isReadOnly"
+                     placeholder="Ej: Ensamble pechera o presillado final"
+                     class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-indigo-500" />
+            </td>
+            <td class="px-4 py-2.5">
+              <select [(ngModel)]="gOp.machine_name" [disabled]="isReadOnly"
+                      class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-indigo-500">
+                <option *ngFor="let m of machinesList" [value]="m.name">{{ m.name }} ({{ m.code }})</option>
+              </select>
+            </td>
+            <td class="px-4 py-2.5">
+              <div class="flex items-center gap-1">
+                <input type="number" step="0.1" min="0" [(ngModel)]="gOp.execution_time" [disabled]="isReadOnly"
+                       class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold outline-none focus:bg-white focus:border-indigo-500" />
+                <span class="text-[10px] font-bold text-slate-400">min</span>
+              </div>
+            </td>
+            <td class="px-4 py-2.5 text-center" *ngIf="!isReadOnly">
+              <button type="button" (click)="removeGlobalOp.emit(i)" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!globalOperations || globalOperations.length === 0">
+            <td colspan="4" class="px-4 py-6 text-center text-slate-400 text-xs italic">
+              No se han agregado operaciones globales de ensamble aún.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 2: Partes de la Prenda, Variantes Técnicas y Operaciones -->
+  <div class="space-y-6">
+    <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+      <i class="bi bi-layers-half text-amber-500"></i> Desglose de Partes y Variantes Técnicas
+    </h3>
+
+    <div *ngFor="let part of structuralParts" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+      <!-- Encabezado de Parte -->
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 font-black flex items-center justify-center text-sm shadow-xs">
+            <i class="bi bi-puzzle-fill"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-extrabold text-slate-800 capitalize">{{ part.name }}</h4>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              {{ part.types?.length || 0 }} Variante(s) configurada(s)
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black cursor-pointer transition-all border shadow-2xs select-none"
+                 [ngClass]="part.is_mandatory ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-purple-50 text-purple-700 border-purple-200'"
+                 title="Define si la parte es obligatoria (estructural) u opcional (personalizable por el comercial)">
+            <input type="checkbox" [(ngModel)]="part.is_mandatory" [disabled]="isReadOnly" class="accent-emerald-600 rounded" />
+            <i class="bi" [ngClass]="part.is_mandatory ? 'bi-shield-check' : 'bi-sliders'"></i>
+            <span>{{ part.is_mandatory ? 'Obligatoria' : 'Opcional' }}</span>
+          </label>
+
+          <button type="button" (click)="addType.emit(part)" *ngIf="!isReadOnly"
+                  class="px-3.5 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer">
+            <i class="bi bi-plus-lg"></i>
+            <span>Agregar Tipo / Variante</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de Variantes (Tipos) de esta Parte -->
+      <div class="space-y-4 pl-2">
+        <div *ngFor="let type of part.types; let tIndex = index" class="bg-slate-50/70 border border-slate-200/70 rounded-2xl p-4 space-y-3">
+          <!-- Título de Variante & Descripción Técnica Predefinida -->
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-3 items-start">
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Nombre de Tipo / Variante</label>
+              <div class="flex items-center gap-2">
+                <input type="text" [(ngModel)]="type.name" [disabled]="isReadOnly"
+                       placeholder="Ej: Bolsillo Parche Con Tapa"
+                       class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-indigo-500" />
+                <label class="flex items-center gap-1 cursor-pointer shrink-0" title="Marcar como opción por defecto">
+                  <input type="radio" [name]="'default_type_' + part.name" [checked]="type.is_default" (change)="setDefault.emit({ part: part, type: type })" [disabled]="isReadOnly" class="accent-indigo-600" />
+                  <span class="text-[10px] font-black text-indigo-600 uppercase">Defecto</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Especificación Técnica Predefinida</label>
+              <textarea [(ngModel)]="type.technical_description" [disabled]="isReadOnly" rows="2"
+                        placeholder="Especificaciones técnicas que se cargarán automáticamente en la Muestra / Cotización..."
+                        class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-indigo-500 resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center gap-3 pt-4">
+              <div class="text-right">
+                <span class="text-[9px] font-black text-slate-400 uppercase block">Tiempo Subtotal</span>
+                <span class="text-sm font-black text-indigo-600 font-mono">{{ recalculateTypeTotalTime(type) | number:'1.2-2' }} min</span>
+              </div>
+              <button type="button" (click)="removeType.emit({ part: part, index: tIndex })" *ngIf="!isReadOnly && part.types.length > 1"
+                      class="text-rose-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all cursor-pointer" title="Eliminar esta variante">
+                <i class="bi bi-trash text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabla de Operaciones de Confección para este Tipo -->
+          <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <i class="bi bi-tools text-indigo-500"></i> Operaciones de Maquinaria
+              </span>
+              <button type="button" (click)="addOpToType.emit(type)" *ngIf="!isReadOnly"
+                      class="text-[10px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer">
+                <i class="bi bi-plus-circle"></i> + Operación
+              </button>
+            </div>
+
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="text-[9px] font-black text-slate-400 uppercase border-b border-slate-100">
+                  <th class="py-1.5 px-2">Operación</th>
+                  <th class="py-1.5 px-2">Máquina</th>
+                  <th class="py-1.5 px-2 w-28">Tiempo (Min)</th>
+                  <th class="py-1.5 px-2 w-10" *ngIf="!isReadOnly"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50">
+                <tr *ngFor="let op of type.operations; let opIdx = index">
+                  <td class="py-1.5 px-2">
+                    <input type="text" [(ngModel)]="op.operation_name" [disabled]="isReadOnly"
+                           placeholder="Ej: Pegar tapa de bolsillo"
+                           class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-bold outline-none focus:bg-white focus:border-indigo-500" />
+                  </td>
+                  <td class="py-1.5 px-2">
+                    <select [(ngModel)]="op.machine_name" [disabled]="isReadOnly"
+                            class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-bold outline-none focus:bg-white focus:border-indigo-500">
+                      <option *ngFor="let m of machinesList" [value]="m.name">{{ m.name }}</option>
+                    </select>
+                  </td>
+                  <td class="py-1.5 px-2">
+                    <input type="number" step="0.1" min="0" [(ngModel)]="op.execution_time" (ngModelChange)="recalculateTypeTotalTime(type)" [disabled]="isReadOnly"
+                           class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-mono font-bold outline-none focus:bg-white focus:border-indigo-500" />
+                  </td>
+                  <td class="py-1.5 px-2 text-center" *ngIf="!isReadOnly">
+                    <button type="button" (click)="removeOpFromType.emit({ type: type, index: opIdx })" class="text-rose-400 hover:text-rose-600 cursor-pointer">
+                      <i class="bi bi-x-lg text-xs"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!type.operations || type.operations.length === 0">
+                  <td colspan="4" class="py-3 text-center text-slate-400 text-[11px] italic">
+                    Sin operaciones especificadas. Haz clic en "+ Operación" para añadir máquinas y tiempos.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div *ngIf="!part.types || part.types.length === 0" class="text-center py-4 text-slate-400 text-xs italic">
+          No hay variantes para esta parte.
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="structuralParts.length === 0" class="bg-white rounded-3xl p-8 text-center border border-slate-100">
+      <i class="bi bi-layers text-slate-300 text-3xl mb-2 block"></i>
+      <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">No hay partes de prenda registradas</p>
+      <p class="text-[11px] text-slate-400 mt-1">Primero define las partes de la prenda en la pestaña "Diseño" o "Estructura".</p>
+    </div>
+  </div>
+</div>

@@ -21,7 +21,7 @@ export const environment = {
 
     // --- CONFIGURACIÓN DE BUCKET S3 ---
     // S3_FOLDER: 'produccion', // Descomentar para usar carpeta de producción
-    S3_FOLDER: 'pruebas',    // Por defecto en local usamos carpeta de pruebas
+    S3_FOLDER: 'pruebas',    // Por defecto  en local usamos carpeta de pruebas
 };
 
 /*

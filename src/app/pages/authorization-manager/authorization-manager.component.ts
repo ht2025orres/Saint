@@ -453,9 +453,9 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
   // CENTRO DE CONTROL UNIFICADO
   // -----------------------
   centroControlVisible = false;
-  centroControlTab: 'google' | 'siesa' | 'departamentos' | 'cargo' = 'google';
+  centroControlTab: 'google' | 'siesa' | 'departamentos' | 'replicar' | 'cargo' = 'google';
 
-  abrirCentroControl(tab: 'google' | 'siesa' | 'departamentos' | 'cargo' = 'google'): void {
+  abrirCentroControl(tab: 'google' | 'siesa' | 'departamentos' | 'replicar' | 'cargo' = 'google'): void {
     this.centroControlVisible = true;
     this.centroControlTab = tab;
     if (tab === 'google') {
@@ -471,189 +471,194 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
   }
 
   // -----------------------
-  // OTRAS ACCIONES DIRECTAS
+  // GOOGLE WORKSPACE MANAGEMENT
   // -----------------------
-  sincronizandoSiesa = false;
-  // Modal de Verificación y Activación de Usuarios Saint en Google Workspace
-  mostrarModalGoogleSaint = false;
   cargandoGoogleSaint = false;
   procesandoGoogleSaint = false;
   scopeErrorGoogle = false;
-  scopeErrorMessageGoogle = '';
   saintUsersGoogle: any[] = [];
   selectedSaintUserIds: number[] = [];
   filtroGoogleSaint = '';
 
-  abrirModalGoogleSaint(): void {
-    this.mostrarModalGoogleSaint = true;
-    this.cargarEstadoGoogleUsuariosSaint();
-  }
-
-  cerrarModalGoogleSaint(): void {
-    this.mostrarModalGoogleSaint = false;
-    this.saintUsersGoogle = [];
-    this.selectedSaintUserIds = [];
-    this.scopeErrorGoogle = false;
+  get saintUsersGoogleFiltrados(): any[] {
+    if (!this.filtroGoogleSaint) return this.saintUsersGoogle;
+    const txt = this.filtroGoogleSaint.toLowerCase().trim();
+    return this.saintUsersGoogle.filter(u =>
+      (u.nombre_completo || '').toLowerCase().includes(txt) ||
+      (u.correo_corporativo || '').toLowerCase().includes(txt) ||
+      (u.cargo || '').toLowerCase().includes(txt)
+    );
   }
 
   cargarEstadoGoogleUsuariosSaint(): void {
     this.cargandoGoogleSaint = true;
-    this.scopeErrorGoogle = false;
-    this.scopeErrorMessageGoogle = '';
     this.http.get<any>(`${environment.URL_API_LARAVEL}/google/saint-users-status`).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.cargandoGoogleSaint = false;
         if (res.success) {
           this.saintUsersGoogle = res.data || [];
           this.scopeErrorGoogle = !!res.scope_error;
-          this.scopeErrorMessageGoogle = res.error_message || '';
-          // Pre-seleccionar por defecto todos los usuarios de la lista
-          this.selectedSaintUserIds = this.saintUsersGoogle.map(u => u.id);
+          // Preseleccionar usuarios que no existen o están suspendidos en Google
+          this.selectedSaintUserIds = this.saintUsersGoogle
+            .filter(u => !u.google_exists || u.google_suspended)
+            .map(u => Number(u.id));
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         this.cargandoGoogleSaint = false;
-        console.error('Error al cargar estado Google de usuarios Saint:', err);
-        Swal.fire('Error', 'No fue posible consultar el estado en Google Workspace.', 'error');
+        console.error('Error cargando estado Google Workspace:', err);
       }
-    });
-  }
-
-  vincularGoogleAdmin(): void {
-    this.http.get<any>(`${environment.URL_API_LARAVEL}/google/auth-url`).subscribe({
-      next: (res) => {
-        if (res.auth_url) {
-          window.open(res.auth_url, '_blank');
-        } else {
-          Swal.fire('Error', 'No fue posible obtener la URL de autorización.', 'error');
-        }
-      },
-      error: (err) => {
-        console.error('Error al obtener auth URL:', err);
-        Swal.fire('Error', 'No fue posible conectar con Google OAuth.', 'error');
-      }
-    });
-  }
-
-  get saintUsersGoogleFiltrados(): any[] {
-    if (!this.filtroGoogleSaint) return this.saintUsersGoogle;
-    const words = this.filtroGoogleSaint.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    return this.saintUsersGoogle.filter(u => {
-      const targetText = `${u.nombre_completo || ''} ${u.correo_corporativo || ''} ${u.cargo || ''}`.toLowerCase();
-      return words.every(word => targetText.includes(word));
     });
   }
 
   isSaintUserSelected(id: number): boolean {
-    return this.selectedSaintUserIds.includes(id);
+    return this.selectedSaintUserIds.includes(Number(id));
   }
 
   toggleSelectSaintUser(id: number): void {
-    const idx = this.selectedSaintUserIds.indexOf(id);
+    const uid = Number(id);
+    const idx = this.selectedSaintUserIds.indexOf(uid);
     if (idx > -1) {
       this.selectedSaintUserIds.splice(idx, 1);
     } else {
-      this.selectedSaintUserIds.push(id);
+      this.selectedSaintUserIds.push(uid);
     }
   }
 
   isAllSaintUsersSelected(): boolean {
     const list = this.saintUsersGoogleFiltrados;
-    return list.length > 0 && list.every(u => this.isSaintUserSelected(u.id));
+    if (!list || list.length === 0) return false;
+    return list.every(u => this.selectedSaintUserIds.includes(Number(u.id)));
   }
 
   toggleSelectAllSaintUsers(event: any): void {
-    const checked = event.target.checked;
+    const checked = event?.target?.checked;
     const list = this.saintUsersGoogleFiltrados;
     if (checked) {
       list.forEach(u => {
-        if (!this.isSaintUserSelected(u.id)) {
-          this.selectedSaintUserIds.push(u.id);
+        const uid = Number(u.id);
+        if (!this.selectedSaintUserIds.includes(uid)) {
+          this.selectedSaintUserIds.push(uid);
         }
       });
     } else {
-      const filteredIds = list.map(u => u.id);
-      this.selectedSaintUserIds = this.selectedSaintUserIds.filter(id => !filteredIds.includes(id));
+      const listIds = list.map(u => Number(u.id));
+      this.selectedSaintUserIds = this.selectedSaintUserIds.filter(id => !listIds.includes(id));
     }
+  }
+
+  vincularGoogleAdmin(): void {
+    this.http.get<any>(`${environment.URL_API_LARAVEL}/google/auth-url`).subscribe({
+      next: (res: any) => {
+        if (res.success && res.auth_url) {
+          window.location.href = res.auth_url;
+        } else {
+          Swal.fire('Error', res.message || 'No se pudo obtener la URL de autenticación.', 'error');
+        }
+      },
+      error: (err: any) => {
+        console.error(err);
+        Swal.fire('Error', 'No se pudo conectar con el servidor de autenticación Google.', 'error');
+      }
+    });
   }
 
   ejecutarActivacionSeleccionadosGoogle(): void {
-    if (this.selectedSaintUserIds.length === 0) {
-      Swal.fire('Atención', 'Por favor selecciona al menos un usuario para activar.', 'warning');
-      return;
-    }
+    if (this.selectedSaintUserIds.length === 0) return;
 
-    const userIdsToSync = [...this.selectedSaintUserIds];
-
-    Swal.fire({
-      title: `¿Activar ${userIdsToSync.length} usuario(s) en Google Workspace?`,
-      text: 'Se verificarán, crearán o reactivarán sus cuentas corporativas en Google Workspace.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, activar seleccionados',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#e11d48'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.procesandoGoogleSaint = true;
-        this.http.post<any>(`${environment.URL_API_LARAVEL}/google/sync-selected-saint-users`, { user_ids: userIdsToSync })
-          .pipe(finalize(() => this.procesandoGoogleSaint = false))
-          .subscribe({
-            next: (res) => {
-              Swal.fire({
-                title: 'Activación Completada ✅',
-                html: `<div class="text-xs text-left p-3 bg-slate-50 rounded-lg space-y-1">
-                        <p class="font-bold text-slate-800">${res.message}</p>
-                        <ul class="list-disc pl-4 text-slate-600">
-                          <li>Creadas: ${res.data?.created || 0}</li>
-                          <li>Reactivadas: ${res.data?.reactivated || 0}</li>
-                          <li>Ya activas: ${res.data?.already_active || 0}</li>
-                        </ul>
-                       </div>`,
-                icon: 'success'
-              });
-              this.cargarEstadoGoogleUsuariosSaint();
-              this.loadAll();
-            },
-            error: (err) => {
-              console.error('Error al activar seleccionados en Google Workspace:', err);
-              Swal.fire('Error', err?.error?.message || 'Ocurrió un problema al procesar los usuarios seleccionados.', 'error');
-            }
-          });
+    this.procesandoGoogleSaint = true;
+    this.http.post<any>(`${environment.URL_API_LARAVEL}/google/sync-selected-saint-users`, {
+      user_ids: this.selectedSaintUserIds
+    }).subscribe({
+      next: (res: any) => {
+        this.procesandoGoogleSaint = false;
+        if (res.success) {
+          Swal.fire('Google Workspace ✅', res.message || 'Usuarios sincronizados y activados correctamente en Google Workspace.', 'success');
+          this.cargarEstadoGoogleUsuariosSaint();
+          this.loadAll();
+        } else {
+          Swal.fire('Error', res.message || 'No se pudo completar la sincronización con Google Workspace.', 'error');
+        }
+      },
+      error: (err: any) => {
+        this.procesandoGoogleSaint = false;
+        console.error('Error activando usuarios en Google Workspace:', err);
+        Swal.fire('Error', err?.error?.message || 'Ocurrió un error al procesar las cuentas de Google Workspace.', 'error');
       }
     });
   }
 
-  ejecutarSincronizacionSiesa(): void {
-    Swal.fire({
-      title: 'Sincronizar con Siesa Nómina Web',
-      text: '¿Deseas ejecutar la sincronización manual de colaboradores y actualizar las plataformas?',
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, sincronizar ahora',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#f59e0b'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.sincronizandoSiesa = true;
-        this.facade.syncSiesa(false)
-          .pipe(finalize(() => this.sincronizandoSiesa = false))
-          .subscribe({
-            next: (res: any) => {
-              Swal.fire({
-                title: 'Sincronización Completada ✅',
-                html: `<p class="text-sm font-medium text-slate-700">${res.message || 'Colaboradores sincronizados con éxito desde Siesa Nómina Web.'}</p>`,
-                icon: 'success'
-              });
-              this.loadAll();
-            },
-            error: (err) => {
-              console.error('Error al sincronizar con Siesa', err);
-              Swal.fire('Error de Sincronización', err?.error?.message || 'Ocurrió un problema al conectar con Siesa Nómina Web.', 'error');
-            }
-          });
+  // -----------------------
+  // OTRAS ACCIONES DIRECTAS
+  // -----------------------
+  sincronizandoSiesa = false;
+  // Modal de Vista Previa Sincronización Siesa
+  mostrarModalSiesaPreview = false;
+  cargandoSiesaPreview = false;
+  ejecutandoSiesaSync = false;
+  siesaPreviewSummary: any = null;
+  activeSiesaTab: 'nuevos' | 'actualizados' | 'inactivados' = 'nuevos';
+
+  setActiveSiesaTab(tab: 'nuevos' | 'actualizados' | 'inactivados'): void {
+    this.activeSiesaTab = tab;
+  }
+
+  abrirPreviewSiesa(): void {
+    this.mostrarModalSiesaPreview = true;
+    this.cargandoSiesaPreview = true;
+    this.siesaPreviewSummary = null;
+    this.facade.syncSiesa(true).subscribe({
+      next: (res: any) => {
+        this.cargandoSiesaPreview = false;
+        this.siesaPreviewSummary = res.summary || res;
+        const det = this.siesaPreviewSummary?.detalles || {};
+        if (det.nuevos && det.nuevos.length > 0) {
+          this.activeSiesaTab = 'nuevos';
+        } else if (det.actualizados && det.actualizados.length > 0) {
+          this.activeSiesaTab = 'actualizados';
+        } else if (det.inactivados && det.inactivados.length > 0) {
+          this.activeSiesaTab = 'inactivados';
+        } else {
+          this.activeSiesaTab = 'nuevos';
+        }
+      },
+      error: (err: any) => {
+        this.cargandoSiesaPreview = false;
+        console.error('Error cargando preview Siesa:', err);
+        Swal.fire('Error de Conexión Siesa', err?.error?.message || 'Ocurrió un problema al consultar Siesa Nómina Web.', 'error');
+        this.mostrarModalSiesaPreview = false;
       }
     });
+  }
+
+  cerrarPreviewSiesa(): void {
+    this.mostrarModalSiesaPreview = false;
+    this.siesaPreviewSummary = null;
+  }
+
+  confirmarYEjecutarSiesaSync(): void {
+    this.ejecutandoSiesaSync = true;
+    this.facade.syncSiesa(false)
+      .pipe(finalize(() => this.ejecutandoSiesaSync = false))
+      .subscribe({
+        next: (res: any) => {
+          Swal.fire({
+            title: 'Sincronización Aplicada ✅',
+            html: `<p class="text-sm font-medium text-slate-700">${res.message || 'Colaboradores sincronizados y actualizados exitosamente.'}</p>`,
+            icon: 'success'
+          });
+          this.cerrarPreviewSiesa();
+          this.loadAll();
+        },
+        error: (err: any) => {
+          console.error('Error al aplicar sincronización Siesa', err);
+          Swal.fire('Error de Sincronización', err?.error?.message || 'Ocurrió un error al aplicar los cambios.', 'error');
+        }
+      });
+  }
+
+  ejecutarSincronizacionSiesa(): void {
+    this.abrirPreviewSiesa();
   }
 
   impersonateUser(user: any) {
@@ -865,6 +870,22 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
     this.busquedaMatriz = '';
   }
 
+  clearBusquedaLider(): void {
+    this.busquedaLider = '';
+  }
+
+  clearBusquedaMatriz(): void {
+    this.busquedaMatriz = '';
+  }
+
+  clearBusquedaSourceUser(): void {
+    this.busquedaSourceUser = '';
+  }
+
+  clearBusquedaTargetUser(): void {
+    this.busquedaTargetUser = '';
+  }
+
   guardarEdicionProceso(): void {
     if (!this.procesoEnEdicion) return;
 
@@ -988,5 +1009,289 @@ export class AuthorizationManagerComponent implements OnInit, OnDestroy {
       p.lider_nombre?.toLowerCase().includes(txt) ||
       p.matriz_nombre?.toLowerCase().includes(txt)
     );
+  }
+
+  // -----------------------
+  // REPLICACIÓN DE PERMISOS
+  // -----------------------
+  sourceUserIdReplicate: number | null = null;
+  targetUserIdReplicate: number | null = null;
+  busquedaSourceUser = '';
+  busquedaTargetUser = '';
+  mostrarDropdownSourceUser = false;
+  mostrarDropdownTargetUser = false;
+
+  replicateMode: 'add' | 'replace' = 'add';
+  replicateCopyDepartamentos = false;
+  selectedPerfilIdsToReplicate: number[] = [];
+  selectedPermissionIdsToReplicate: number[] = [];
+  filtroReplicacionPermisos = '';
+  procesandoReplicacion = false;
+
+  setReplicateMode(mode: 'add' | 'replace'): void {
+    this.replicateMode = mode;
+  }
+
+  toggleReplicateCopyDepartamentos(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.replicateCopyDepartamentos = !this.replicateCopyDepartamentos;
+  }
+
+  desmarcarTodosReplicacion(): void {
+    this.selectedPerfilIdsToReplicate = [];
+    this.selectedPermissionIdsToReplicate = [];
+    this.replicateCopyDepartamentos = false;
+  }
+
+  get sourceUserReplicate(): any {
+    if (!this.sourceUserIdReplicate) return null;
+    return this.users.find(u => Number(u.id) === Number(this.sourceUserIdReplicate)) || null;
+  }
+
+  get targetUserReplicate(): any {
+    if (!this.targetUserIdReplicate) return null;
+    return this.users.find(u => Number(u.id) === Number(this.targetUserIdReplicate)) || null;
+  }
+
+  get sourceUserSearchFiltered(): any[] {
+    const txt = (this.busquedaSourceUser || '').toLowerCase().trim();
+    if (!txt) return this.users.slice(0, 15);
+    const words = txt.split(/\s+/).filter(Boolean);
+    return this.users.filter(u => {
+      const full = `${u.firstName || u.name || ''} ${u.lastName || ''} ${u.email || ''} ${u.correo_corporativo || ''} ${u.cargo || ''} ${u.cedula || ''}`.toLowerCase();
+      return words.every(w => full.includes(w));
+    }).slice(0, 30);
+  }
+
+  get targetUserSearchFiltered(): any[] {
+    const txt = (this.busquedaTargetUser || '').toLowerCase().trim();
+    const available = this.users.filter(u => Number(u.id) !== Number(this.sourceUserIdReplicate));
+    if (!txt) return available.slice(0, 15);
+    const words = txt.split(/\s+/).filter(Boolean);
+    return available.filter(u => {
+      const full = `${u.firstName || u.name || ''} ${u.lastName || ''} ${u.email || ''} ${u.correo_corporativo || ''} ${u.cargo || ''} ${u.cedula || ''}`.toLowerCase();
+      return words.every(w => full.includes(w));
+    }).slice(0, 30);
+  }
+
+  seleccionarSourceUser(user: any | null): void {
+    this.sourceUserIdReplicate = user ? Number(user.id) : null;
+    this.mostrarDropdownSourceUser = false;
+    this.busquedaSourceUser = '';
+    
+    if (user) {
+      this.seleccionarTodosPermisosOrigen();
+    } else {
+      this.selectedPerfilIdsToReplicate = [];
+      this.selectedPermissionIdsToReplicate = [];
+    }
+  }
+
+  seleccionarTargetUser(user: any | null): void {
+    this.targetUserIdReplicate = user ? Number(user.id) : null;
+    this.mostrarDropdownTargetUser = false;
+    this.busquedaTargetUser = '';
+  }
+
+  seleccionarTodosPermisosOrigen(): void {
+    const src = this.sourceUserReplicate;
+    if (!src) return;
+
+    // Perfiles
+    this.selectedPerfilIdsToReplicate = (src.perfiles || []).map((p: any) => Number(p.id));
+
+    // Permisos (donde tenga ALLOW directo o heredado)
+    const allowedPermIds: number[] = [];
+    (this.permissions || []).forEach(p => {
+      const st = this.getUserPermissionStatus(src, p.id);
+      if (st.type === 'ALLOW') {
+        allowedPermIds.push(Number(p.id));
+      }
+    });
+    this.selectedPermissionIdsToReplicate = allowedPermIds;
+  }
+
+  togglePerfilToReplicate(perfilId: number): void {
+    const pid = Number(perfilId);
+    const idx = this.selectedPerfilIdsToReplicate.indexOf(pid);
+    if (idx > -1) {
+      this.selectedPerfilIdsToReplicate.splice(idx, 1);
+    } else {
+      this.selectedPerfilIdsToReplicate.push(pid);
+    }
+  }
+
+  isPerfilSelectedToReplicate(perfilId: number): boolean {
+    return this.selectedPerfilIdsToReplicate.includes(Number(perfilId));
+  }
+
+  togglePermissionToReplicate(permissionId: number): void {
+    const pid = Number(permissionId);
+    const idx = this.selectedPermissionIdsToReplicate.indexOf(pid);
+    if (idx > -1) {
+      this.selectedPermissionIdsToReplicate.splice(idx, 1);
+    } else {
+      this.selectedPermissionIdsToReplicate.push(pid);
+    }
+  }
+
+  isPermissionSelectedToReplicate(permissionId: number): boolean {
+    return this.selectedPermissionIdsToReplicate.includes(Number(permissionId));
+  }
+
+  toggleAllPermissionsInModuleToReplicate(moduleId: number, selectAll: boolean): void {
+    const mPerms = (this.permissions || []).filter(p => Number(p.module_id) === Number(moduleId));
+    mPerms.forEach(p => {
+      const pid = Number(p.id);
+      const idx = this.selectedPermissionIdsToReplicate.indexOf(pid);
+      if (selectAll) {
+        if (idx === -1) this.selectedPermissionIdsToReplicate.push(pid);
+      } else {
+        if (idx > -1) this.selectedPermissionIdsToReplicate.splice(idx, 1);
+      }
+    });
+  }
+
+  isAllPermissionsInModuleSelectedToReplicate(moduleId: number): boolean {
+    const mPerms = (this.permissions || []).filter(p => Number(p.module_id) === Number(moduleId));
+    if (mPerms.length === 0) return false;
+    return mPerms.every(p => this.selectedPermissionIdsToReplicate.includes(Number(p.id)));
+  }
+
+  onToggleModulePermissions(moduleId: number, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.toggleAllPermissionsInModuleToReplicate(moduleId, target ? target.checked : false);
+  }
+
+  getPermissionStatusLabel(user: any, permissionId: number, prefix: string): string {
+    const st = this.getUserPermissionStatus(user, permissionId);
+    let text = `${prefix}: ${st.type}`;
+    if (st.isDirect) {
+      text += ' (Dir)';
+    } else if (st.profileName) {
+      text += ` (${st.profileName})`;
+    }
+    return text;
+  }
+
+  getUserPermissionStatus(user: any, permissionId: number): { type: 'ALLOW' | 'DENY' | 'NONE', isDirect: boolean, profileName?: string } {
+    if (!user) return { type: 'NONE', isDirect: false };
+
+    const pId = Number(permissionId);
+
+    // 1. Direct
+    const direct = user.directPermissions?.find((dp: any) => Number(dp.permission_id) === pId);
+    if (direct) {
+      return { type: direct.allow, isDirect: true };
+    }
+
+    // 2. Inherited
+    if (user.perfiles && user.perfiles.length > 0) {
+      for (const profRef of user.perfiles) {
+        const fullProf = (this.profiles || []).find((p: any) => Number(p.id) === Number(profRef.id));
+        if (fullProf && fullProf.perfilPermissions) {
+          const pp = fullProf.perfilPermissions.find((x: any) => Number(x.permission_id) === pId);
+          if (pp && pp.allow === 'ALLOW') {
+            return { type: 'ALLOW', isDirect: false, profileName: fullProf.name };
+          }
+          if (pp && pp.allow === 'DENY') {
+            return { type: 'DENY', isDirect: false, profileName: fullProf.name };
+          }
+        }
+      }
+    }
+
+    return { type: 'NONE', isDirect: false };
+  }
+
+  userHasProfile(user: any, profileId: number): boolean {
+    if (!user || !user.perfiles || !Array.isArray(user.perfiles)) return false;
+    return user.perfiles.some((p: any) => Number(p.id) === Number(profileId));
+  }
+
+  get modulesForReplication(): any[] {
+    const term = (this.filtroReplicacionPermisos || '').toLowerCase().trim();
+    return (this.modules || []).map(m => {
+      const perms = (this.permissions || []).filter(p => Number(p.module_id) === Number(m.id) && (!term || (p.name || '').toLowerCase().includes(term) || (p.description || '').toLowerCase().includes(term)));
+      return {
+        ...m,
+        permissions: perms
+      };
+    }).filter(m => m.permissions.length > 0);
+  }
+
+  ejecutarReplicacionPermisos(): void {
+    const src = this.sourceUserReplicate;
+    const tgt = this.targetUserReplicate;
+
+    if (!src || !tgt) {
+      Swal.fire('Atención', 'Debes seleccionar el usuario origen (copiar de) y el usuario destino (copiar a).', 'warning');
+      return;
+    }
+
+    if (src.id === tgt.id) {
+      Swal.fire('Atención', 'El usuario origen y destino deben ser diferentes.', 'warning');
+      return;
+    }
+
+    if (this.selectedPerfilIdsToReplicate.length === 0 && this.selectedPermissionIdsToReplicate.length === 0 && !this.replicateCopyDepartamentos) {
+      Swal.fire('Atención', 'Debes seleccionar al menos un perfil, permiso o la opción de departamentos para replicar.', 'warning');
+      return;
+    }
+
+    const modeText = this.replicateMode === 'replace' ? 'sobrescribir todos los permisos del usuario destino' : 'fusionar los permisos seleccionados';
+    const srcName = `${src.firstName || src.name} ${src.lastName || ''}`.trim();
+    const tgtName = `${tgt.firstName || tgt.name} ${tgt.lastName || ''}`.trim();
+
+    Swal.fire({
+      title: '¿Confirmar replicación?',
+      html: `<div class="text-left text-xs space-y-2">
+        <p>Se van a replicar los permisos de <strong>${srcName}</strong> a <strong>${tgtName}</strong>.</p>
+        <p class="text-slate-500 font-semibold">Modo: <code>${modeText}</code>.</p>
+        <ul class="list-disc pl-4 text-slate-600">
+          <li><strong>Perfiles seleccionados:</strong> ${this.selectedPerfilIdsToReplicate.length}</li>
+          <li><strong>Permisos directos seleccionados:</strong> ${this.selectedPermissionIdsToReplicate.length}</li>
+          <li><strong>Copiar departamentos:</strong> ${this.replicateCopyDepartamentos ? 'Sí' : 'No'}</li>
+        </ul>
+      </div>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, replicar permisos',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d97706'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.procesandoReplicacion = true;
+        
+        const payload = {
+          source_user_id: src.id,
+          target_user_id: tgt.id,
+          mode: this.replicateMode,
+          perfil_ids: this.selectedPerfilIdsToReplicate,
+          permissions: this.selectedPermissionIdsToReplicate.map(pid => ({ permission_id: pid, allow: 'ALLOW' })),
+          copy_departamentos: this.replicateCopyDepartamentos
+        };
+
+        this.facade.replicateUserPermissions(payload).subscribe({
+          next: (res: any) => {
+            this.procesandoReplicacion = false;
+            if (res.success) {
+              Swal.fire('Replicación Exitosa ✅', res.message || 'Permisos replicados correctamente.', 'success');
+              this.loadAll();
+            } else {
+              Swal.fire('Error', res.message || 'No se pudo replicar los permisos.', 'error');
+            }
+          },
+          error: (err: any) => {
+            this.procesandoReplicacion = false;
+            console.error('Error al replicar permisos:', err);
+            Swal.fire('Error', err?.error?.message || 'Ocurrió un error al replicar los permisos.', 'error');
+          }
+        });
+      }
+    });
   }
 }

@@ -1,0 +1,757 @@
+<div class="fixed inset-0 z-[1350] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 md:p-4 animate-in fade-in"
+     *ngIf="isOpen">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-4xl w-full flex flex-col max-h-[92vh] overflow-hidden animate-in zoom-in-95">
+    
+    <!-- Modal Header -->
+    <div class="p-4 md:p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/70">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-lg text-white shadow-sm transition-all"
+             [style.backgroundColor]="getSelectedRegion()?.color || '#6366f1'">
+          <i class="bi" [ngClass]="partForm.icon || 'bi-puzzle'"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-black text-slate-900">
+              {{ isEditing ? 'Editar Parte del Catálogo' : 'Crear Nueva Parte Global' }}
+            </h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-2xs"
+                  [style.backgroundColor]="getSelectedRegion()?.color || '#6366f1'">
+              {{ getSelectedRegion()?.label?.split('/')[0]?.trim() || 'General' }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium mt-0.5">Estructura anatómica, variantes técnicas y operaciones SAM vinculadas a biblioteca.</p>
+        </div>
+      </div>
+      <button (click)="closeModal.emit()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div #modalBody class="flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-6 space-y-5 custom-scrollbar">
+      
+      <!-- Bloque 1: Datos Básicos e Identificación de la Parte -->
+      <div class="bg-slate-50/50 p-4 rounded-2xl border border-slate-200/80 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i class="bi bi-info-circle text-indigo-600"></i> 1. Identificación y Clasificación Anatómica
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          
+          <!-- Nombre de la Parte -->
+          <div class="space-y-1">
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-700">Nombre de la Parte *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="partForm.name" 
+              (input)="onNameInput()"
+              placeholder="Ej. Manga Camisera, Cuello Nerú..." 
+              class="w-full px-3.5 py-2 text-xs font-bold bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-2xs"
+            />
+          </div>
+
+          <!-- Selector Personalizado de Región Anatómica -->
+          <div class="space-y-1 relative">
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-700">Región Anatómica *</label>
+            
+            <button type="button" 
+                    (click)="showZonePicker = !showZonePicker; showIconPicker = false"
+                    class="w-full px-3 py-2 text-xs font-bold bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-all shadow-2xs cursor-pointer">
+              <div class="flex items-center gap-2 truncate">
+                <span class="w-5 h-5 rounded-lg flex items-center justify-center text-white text-[10px] shrink-0 shadow-2xs"
+                      [style.backgroundColor]="getSelectedRegion()?.color || '#6366f1'">
+                  <i class="bi" [ngClass]="getSelectedRegion()?.icon || 'bi-bounding-box-circles'"></i>
+                </span>
+                <span class="truncate text-slate-800 font-extrabold">{{ getSelectedRegion()?.label || 'Seleccionar Región' }}</span>
+              </div>
+              <i class="bi bi-chevron-down text-slate-400 text-xs shrink-0 transition-transform" [class.rotate-180]="showZonePicker"></i>
+            </button>
+
+            <!-- Backdrop para cerrar al hacer clic afuera -->
+            <div *ngIf="showZonePicker" class="fixed inset-0 z-[1360]" (click)="showZonePicker = false"></div>
+
+            <!-- Desplegable Flotante de Regiones -->
+            <div *ngIf="showZonePicker" 
+                 class="absolute left-0 right-0 top-full mt-1.5 z-[1370] bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 space-y-1 max-h-60 overflow-y-auto custom-scrollbar animate-in zoom-in-95">
+              <div class="text-[9px] font-black uppercase text-slate-400 px-2 py-1">Selecciona la Zona Anatómica:</div>
+              <button type="button" 
+                      *ngFor="let r of regions" 
+                      (click)="selectZone.emit(r.value); showZonePicker = false"
+                      class="w-full p-2 rounded-xl flex items-center gap-2.5 transition text-left text-xs font-bold hover:bg-indigo-50 cursor-pointer"
+                      [ngClass]="partForm.zone === r.value ? 'bg-indigo-50/80 text-indigo-900 border border-indigo-200' : 'text-slate-700'">
+                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs shrink-0 shadow-2xs"
+                      [style.backgroundColor]="r.color">
+                  <i class="bi" [ngClass]="r.icon || 'bi-bounding-box-circles'"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="font-extrabold truncate">{{ r.label }}</div>
+                  <div class="text-[10px] text-slate-400 font-normal truncate" *ngIf="r.description">{{ r.description }}</div>
+                </div>
+                <i class="bi bi-check-lg text-indigo-600 font-black text-sm shrink-0" *ngIf="partForm.zone === r.value"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector Personalizado de Icono Visual -->
+          <div class="space-y-1 relative">
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-700">Icono Visual</label>
+            
+            <button type="button" 
+                    (click)="showIconPicker = !showIconPicker; showZonePicker = false"
+                    class="w-full px-3 py-2 text-xs font-bold bg-white border border-slate-200 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-all shadow-2xs cursor-pointer">
+              <span class="flex items-center gap-2 truncate">
+                <i class="bi text-indigo-600 text-sm shrink-0" [ngClass]="partForm.icon || 'bi-puzzle'"></i>
+                <span class="truncate text-slate-800">{{ partForm.icon || 'Seleccionar icono' }}</span>
+              </span>
+              <i class="bi bi-chevron-down text-slate-400 text-xs shrink-0 transition-transform" [class.rotate-180]="showIconPicker"></i>
+            </button>
+
+            <!-- Backdrop para cerrar al hacer clic afuera -->
+            <div *ngIf="showIconPicker" class="fixed inset-0 z-[1360]" (click)="showIconPicker = false"></div>
+
+            <!-- Dropdown Flotante de Iconos Ampliado -->
+            <div *ngIf="showIconPicker" 
+                 class="absolute right-0 sm:left-auto md:right-0 top-full mt-1.5 z-[1370] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3.5 animate-in zoom-in-95 w-80 sm:w-84 max-w-[calc(100vw-3rem)]">
+              
+              <!-- Input de Búsqueda -->
+              <div class="relative mb-2.5">
+                <i class="bi bi-search absolute left-2.5 top-2 text-slate-400 text-xs"></i>
+                <input 
+                  type="text" 
+                  [(ngModel)]="iconSearchTerm" 
+                  placeholder="Buscar icono por nombre o función..." 
+                  class="w-full pl-8 pr-7 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition" 
+                />
+                <button *ngIf="iconSearchTerm" 
+                        type="button" 
+                        (click)="iconSearchTerm = ''" 
+                        class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <i class="bi bi-x-circle-fill text-xs"></i>
+                </button>
+              </div>
+              
+              <!-- Categoría de Iconos (Desplegable) -->
+              <div class="mb-2">
+                <select 
+                  [(ngModel)]="selectedIconCategory"
+                  class="w-full px-2.5 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none transition cursor-pointer appearance-auto">
+                  <option *ngFor="let cat of iconCategories" [value]="cat">{{ cat }}</option>
+                </select>
+              </div>
+
+              <!-- Grid de Iconos -->
+              <div class="grid grid-cols-7 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                <button type="button" 
+                        *ngFor="let ic of filteredIcons" 
+                        (click)="onSelectIcon(ic.name)"
+                        class="w-9 h-9 rounded-xl hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 flex items-center justify-center text-base transition border border-transparent hover:border-indigo-200 cursor-pointer"
+                        [ngClass]="partForm.icon === ic.name ? 'bg-indigo-100 text-indigo-700 border-indigo-300 font-black shadow-2xs' : ''"
+                        [title]="ic.label + ' (' + ic.name + ')'">
+                  <i class="bi" [ngClass]="ic.name"></i>
+                </button>
+              </div>
+
+              <!-- Estado Vacío -->
+              <div *ngIf="filteredIcons.length === 0" class="py-4 text-center text-slate-400 text-xs">
+                <i class="bi bi-search text-base mb-1 block"></i>
+                No se encontraron iconos para "{{ iconSearchTerm }}"
+              </div>
+
+              <!-- Footer del Dropdown -->
+              <div class="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                <span>{{ filteredIcons.length }} iconos disponibles</span>
+                <span class="font-mono text-indigo-600 font-bold">{{ partForm.icon || 'Ninguno' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Código Autogenerado del Sistema -->
+          <div class="space-y-1">
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              Código del Sistema
+              <span class="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md normal-case tracking-normal">
+                <i class="bi bi-lightning-charge-fill text-amber-500"></i> Auto
+              </span>
+            </label>
+            <input 
+              type="text" 
+              [value]="partForm.code" 
+              readonly
+              placeholder="Se genera al escribir el nombre..." 
+              class="w-full px-3.5 py-2 text-xs font-mono font-bold bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed shadow-2xs"
+            />
+          </div>
+
+          <!-- Descripción Amplia de la Parte -->
+          <div class="md:col-span-2 space-y-1">
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-700">Descripción Básica de la Parte</label>
+            <textarea 
+              [(ngModel)]="partForm.description" 
+              rows="2" 
+              placeholder="Descripción general anatómica y funcional de esta parte..." 
+              class="w-full px-3.5 py-2 text-xs font-medium bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none shadow-2xs leading-relaxed"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bloque 2: Gestión de Variantes Técnicas -->
+      <div class="pt-2 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-1.5">
+              <i class="bi bi-sliders text-indigo-600"></i> Variantes de la Parte ({{ partForm.types?.length || 0 }})
+            </h4>
+            <p class="text-xs text-slate-400 font-medium">Cada variante define una opción de diseño con sus operaciones de confección y tiempo SAM específico.</p>
+          </div>
+          <button type="button" (click)="onAddVariant()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-plus-lg"></i> Añadir Variante
+          </button>
+        </div>
+
+        <!-- Lista de Variantes -->
+        <div class="space-y-4">
+          <div *ngFor="let t of partForm.types; let ti = index" 
+               class="variant-container p-4 bg-slate-50/90 rounded-2xl border border-slate-200/90 hover:border-indigo-200 transition-all space-y-3 shadow-2xs">
+            
+            <!-- Cabecera de la Variante -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div class="flex items-center gap-2 flex-1">
+                <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-2xs">
+                  {{ ti + 1 }}
+                </span>
+                <input 
+                  type="text" 
+                  [(ngModel)]="t.name" 
+                  placeholder="Nombre de la Variante (ej. Manga Larga con Puño)..." 
+                  class="variant-name-input flex-1 px-3 py-1.5 text-xs font-black bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                />
+              </div>
+
+              <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <!-- Botón de Estado / Inhabilitar Variante -->
+                <button type="button" 
+                        (click)="toggleVariantActive(t)"
+                        class="px-2.5 py-1.5 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        [ngClass]="t.is_active !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'"
+                        [title]="t.is_active !== false ? 'Variante disponible. Clic para inhabilitar' : 'Variante no disponible. Clic para reactivar'">
+                  <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="t.is_active !== false ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                  <span>{{ t.is_active !== false ? 'Disponible' : 'Inhabilitada' }}</span>
+                </button>
+
+                <!-- Botón Colapsar / Extender Operaciones -->
+                <button type="button" 
+                        (click)="toggleVariant(t, ti)"
+                        class="px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+                  <span class="text-indigo-600 font-mono">{{ t.operations?.length || 0 }} ops • {{ calculateTypeTotalTime(t) | number:'1.2-2' }}m</span>
+                  <i class="bi text-xs" [ngClass]="isModalVariantExpanded(t, ti) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </button>
+
+                <!-- Botón Eliminar Variante -->
+                <button type="button" (click)="removeType.emit(ti)" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer" title="Eliminar Variante">
+                  <i class="bi bi-trash text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Banner de Inhabilitación si está inactiva -->
+            <div *ngIf="t.is_active === false" class="bg-rose-50/90 border border-rose-200 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs animate-in fade-in">
+              <div class="flex items-center gap-2 min-w-0">
+                <i class="bi bi-exclamation-triangle-fill text-rose-600 text-xs shrink-0"></i>
+                <span class="text-[11px] text-rose-800 font-medium truncate">
+                  <strong>Motivo:</strong> {{ t.disabled_reason || 'No disponible temporalmente' }}
+                </span>
+              </div>
+              <button type="button" (click)="openEditDisableReason(t)" class="text-[10px] font-bold text-rose-700 hover:text-rose-900 underline shrink-0 cursor-pointer">
+                Cambiar motivo
+              </button>
+            </div>
+
+            <!-- Fila de Descripciones en Tarjetas Interactivas con Espacio Dedicado -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              
+              <!-- Tarjeta 1: Descripción Básica -->
+              <div (click)="openBasicDescModal(t)" 
+                   class="bg-white hover:bg-indigo-50/30 p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer group space-y-1 shadow-2xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                    <i class="bi bi-file-earmark-text text-indigo-500"></i> Descripción Básica
+                  </span>
+                  <span class="text-[10px] font-bold text-indigo-600 flex items-center gap-0.5">
+                    <i class="bi bi-arrows-angle-expand text-[9px]"></i> Redactar
+                  </span>
+                </div>
+                <p class="text-xs text-slate-700 font-medium line-clamp-2 leading-relaxed" *ngIf="t.description">
+                  {{ t.description }}
+                </p>
+                <p class="text-xs text-slate-400 italic" *ngIf="!t.description">
+                  Clic para redactar explicación comercial/funcional...
+                </p>
+              </div>
+
+              <!-- Tarjeta 2: Descripción Técnica Determinista (Ficha / OPM) -->
+              <div (click)="openTechDescModal(t)" 
+                   class="bg-white hover:bg-purple-50/30 p-2.5 rounded-xl border border-slate-200 hover:border-purple-300 transition-all cursor-pointer group space-y-1 shadow-2xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                    <i class="bi bi-card-checklist text-purple-500"></i> Ficha / OPM (Técnica)
+                  </span>
+                  <span class="text-[10px] font-bold text-purple-600 flex items-center gap-0.5">
+                    <i class="bi bi-arrows-angle-expand text-[9px]"></i> Redactar
+                  </span>
+                </div>
+                <p class="text-xs text-slate-700 font-medium line-clamp-2 leading-relaxed" *ngIf="t.technical_description">
+                  {{ t.technical_description }}
+                </p>
+                <p class="text-xs text-slate-400 italic" *ngIf="!t.technical_description">
+                  Clic para redactar o autogenerar desde operaciones SAM...
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Materiales e Insumos Requeridos por la Variante -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 p-3.5 space-y-2.5 shadow-2xs">
+              
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs shrink-0">
+                    <i class="bi bi-boxes"></i>
+                  </span>
+                  <div>
+                    <h5 class="text-xs font-black text-slate-800 uppercase tracking-tight flex items-center gap-1.5">
+                      Materiales e Insumos Requeridos
+                      <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black"
+                            [ngClass]="t.materials?.length ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-400'">
+                        {{ t.materials?.length || 0 }}
+                      </span>
+                    </h5>
+                    <p class="text-[10px] text-slate-400 font-medium">Telas y avíos que esta variante específica necesita</p>
+                  </div>
+                </div>
+
+                <!-- Botón Abrir Selector / Añadir Material -->
+                <div class="relative variant-material-picker-container self-start sm:self-auto">
+                  <button type="button" 
+                          (click)="toggleMaterialPicker(ti, $event)"
+                          class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          [ngClass]="{'ring-2 ring-indigo-500/30': activePickerVariantIndex === ti}">
+                    <i class="bi bi-plus-circle-fill text-indigo-600"></i>
+                    <span>+ Asignar Material</span>
+                    <i class="bi bi-chevron-down text-[9px] transition-transform" [ngClass]="{'rotate-180': activePickerVariantIndex === ti}"></i>
+                  </button>
+
+                  <!-- Popover Dropdown de Selección de Materiales -->
+                  <div *ngIf="activePickerVariantIndex === ti"
+                       (click)="$event.stopPropagation()"
+                       class="absolute right-0 top-full mt-2 w-80 sm:w-88 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    
+                    <!-- Buscador -->
+                    <div class="relative mb-2">
+                      <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                      <input type="text"
+                             [(ngModel)]="materialPickerSearch"
+                             (keyup.enter)="createAndAssignNewMaterial(t)"
+                             placeholder="Buscar o escribir nuevo insumo..."
+                             class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:border-indigo-400 focus:outline-none transition" />
+                    </div>
+
+                    <!-- Tabs de Filtro: Todos, Telas, Insumos -->
+                    <div class="flex items-center gap-1 p-0.5 bg-slate-100 rounded-lg mb-2 text-[10px] font-bold">
+                      <button type="button" (click)="materialPickerTab = 'all'"
+                              class="flex-1 py-1 rounded-md transition cursor-pointer text-center"
+                              [ngClass]="materialPickerTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+                        Todos ({{ masterMaterials.length }})
+                      </button>
+                      <button type="button" (click)="materialPickerTab = 'tela'"
+                              class="flex-1 py-1 rounded-md transition cursor-pointer text-center"
+                              [ngClass]="materialPickerTab === 'tela' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+                        Telas ({{ telasCount }})
+                      </button>
+                      <button type="button" (click)="materialPickerTab = 'insumo'"
+                              class="flex-1 py-1 rounded-md transition cursor-pointer text-center"
+                              [ngClass]="materialPickerTab === 'insumo' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+                        Insumos ({{ insumosCount }})
+                      </button>
+                    </div>
+
+                    <!-- Lista de Materiales Maestros con Checkbox -->
+                    <div class="max-h-52 overflow-y-auto divide-y divide-slate-100 pr-1 space-y-0.5">
+                      <div *ngFor="let item of filteredMasterMaterials"
+                           (click)="toggleVariantMaterial(t, item.name)"
+                           class="p-2 rounded-xl flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition select-none group"
+                           [ngClass]="{'bg-indigo-50/70': hasMaterial(t, item.name)}">
+                        
+                        <div class="flex items-center gap-2 min-w-0">
+                          <i class="bi text-base transition-transform group-hover:scale-110 shrink-0"
+                             [ngClass]="hasMaterial(t, item.name) ? 'bi-check-circle-fill text-indigo-600' : 'bi-circle text-slate-300'"></i>
+                          
+                          <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0"
+                                [ngClass]="item.type === 'tela' ? 'bg-indigo-100/70 text-indigo-700' : 'bg-amber-100/70 text-amber-700'">
+                            <i class="bi" [ngClass]="item.icon || (item.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam')"></i>
+                          </span>
+
+                          <div class="min-w-0">
+                            <p class="text-xs font-bold text-slate-800 truncate leading-tight">{{ item.name }}</p>
+                            <p class="text-[9px] text-slate-400 truncate mt-0.5" *ngIf="item.description">{{ item.description }}</p>
+                          </div>
+                        </div>
+
+                        <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shrink-0"
+                              [ngClass]="item.type === 'tela' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/60' : 'bg-amber-50 text-amber-700 border border-amber-200/60'">
+                          {{ item.type === 'tela' ? 'Tela' : 'Insumo' }}
+                        </span>
+                      </div>
+
+                      <!-- Si escribió un nuevo material que no existe -->
+                      <div *ngIf="materialPickerSearch.trim() && !hasMaterialInMaster(materialPickerSearch)" class="p-2 text-center">
+                        <button type="button" 
+                                (click)="createAndAssignNewMaterial(t)"
+                                class="w-full py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
+                          <i class="bi bi-plus-lg"></i>
+                          <span>Crear y asignar "{{ materialPickerSearch.trim() }}"</span>
+                        </button>
+                      </div>
+
+                      <div *ngIf="filteredMasterMaterials.length === 0 && !materialPickerSearch.trim()" class="py-6 text-center text-slate-400 text-xs font-medium">
+                        No hay materiales en este filtro
+                      </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <button type="button" (click)="showMasterMaterialsManager = true; closeMaterialPicker()"
+                              class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer">
+                        <i class="bi bi-gear-wide-connected"></i>
+                        <span>Catálogo Maestro</span>
+                      </button>
+                      <button type="button" (click)="closeMaterialPicker()"
+                              class="text-slate-400 hover:text-slate-600 font-semibold cursor-pointer">
+                        Listo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lista de Materiales Asignados a esta Variante (Tags Limpios) -->
+              <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                <span *ngFor="let mat of t.materials"
+                      class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-800 rounded-xl text-xs font-bold transition shadow-2xs group">
+                  <i class="bi text-indigo-600 text-xs" [ngClass]="isTela(mat) ? 'bi-droplet-fill' : 'bi-box-seam-fill'"></i>
+                  <span>{{ mat }}</span>
+                  <button type="button" 
+                          (click)="removeVariantMaterial(t, mat, $event)"
+                          class="w-4 h-4 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          title="Quitar de esta variante">
+                    <i class="bi bi-x text-sm"></i>
+                  </button>
+                </span>
+
+                <span *ngIf="!t.materials || t.materials.length === 0" class="text-xs text-slate-400 italic py-1">
+                  Sin materiales asignados a esta variante. Haz clic en "+ Asignar Material" para seleccionar telas, botones, velcro, etc.
+                </span>
+              </div>
+
+            </div>
+
+            <!-- Tabla Desplegable de Operaciones de Confección -->
+            <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-2.5" *ngIf="isModalVariantExpanded(t, ti)">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                  <i class="bi bi-tools text-indigo-500"></i> Operaciones de Maquinaria y Tiempos SAM
+                </span>
+                <button type="button" 
+                        (click)="onAddOperation(t, ti)"
+                        class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-black transition flex items-center gap-1 cursor-pointer">
+                  <i class="bi bi-plus-lg"></i> + Operación
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="text-[9px] font-black text-slate-400 uppercase border-b border-slate-100">
+                      <th class="py-1 px-2 w-8">#</th>
+                      <th class="py-1 px-2">Operación de Confección</th>
+                      <th class="py-1 px-2 w-48">Maquinaria</th>
+                      <th class="py-1 px-2 w-28">Tiempo (Min)</th>
+                      <th class="py-1 px-2 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50">
+                    <tr *ngFor="let op of t.operations; let oi = index" class="hover:bg-slate-50/50">
+                      <td class="py-1.5 px-2 text-[10px] font-mono font-bold text-slate-400">{{ oi + 1 }}</td>
+                      <td class="py-1.5 px-2 relative">
+                        <input 
+                          type="text" 
+                          [(ngModel)]="op.operation_name" 
+                          (focus)="activeOpSuggestionIndex = { typeIdx: ti, opIdx: oi }"
+                          placeholder="Nombre de la operación..."
+                          class="op-name-input w-full px-2 py-1 text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <!-- Sugerencias Autocompletado -->
+                        <div *ngIf="activeOpSuggestionIndex?.typeIdx === ti && activeOpSuggestionIndex?.opIdx === oi && getFilteredOpSuggestions(op.operation_name).length > 0"
+                             class="absolute left-2 right-2 top-full mt-1 z-[1380] bg-white rounded-xl shadow-xl border border-slate-200 p-1 space-y-0.5">
+                          <button 
+                            *ngFor="let sug of getFilteredOpSuggestions(op.operation_name)"
+                            type="button"
+                            (click)="selectOperationSuggestion.emit({ op: sug, type: t, opIdx: oi }); activeOpSuggestionIndex = null"
+                            class="w-full text-left px-2 py-1 text-xs hover:bg-indigo-50 rounded-lg flex items-center justify-between cursor-pointer">
+                            <span class="font-bold text-slate-800">{{ sug.operation_name }}</span>
+                            <span class="text-[10px] font-mono text-indigo-600 bg-indigo-50 px-1 rounded">[{{ sug.machine_name }}] {{ sug.execution_time }}m</span>
+                          </button>
+                        </div>
+                      </td>
+                      <td class="py-1.5 px-2">
+                        <select [(ngModel)]="op.machine_name" class="w-full px-2 py-1 text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg focus:bg-white">
+                          <option *ngFor="let m of machines" [value]="m.name">{{ m.name }}</option>
+                        </select>
+                      </td>
+                      <td class="py-1.5 px-2">
+                        <div class="flex items-center gap-1">
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0"
+                            [(ngModel)]="op.execution_time" 
+                            class="w-full px-2 py-1 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-lg focus:bg-white"
+                          />
+                          <span class="text-[10px] text-slate-400 font-bold">m</span>
+                        </div>
+                      </td>
+                      <td class="py-1.5 px-2 text-center">
+                        <button type="button" (click)="removeOperationFromVariant.emit({ type: t, index: oi })" class="text-slate-300 hover:text-rose-600 p-1 cursor-pointer">
+                          <i class="bi bi-x-lg text-xs"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!t.operations || t.operations.length === 0">
+                      <td colspan="5" class="py-3 text-center text-slate-400 text-[11px] italic">
+                        Sin operaciones. Haz clic en "+ Operación" para añadir tiempos de confección.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <div *ngIf="!partForm.types || partForm.types.length === 0" class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 text-xs">
+            No hay variantes registradas. Haz clic en "Añadir Variante" para crear opciones de confección.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="p-4 md:p-5 border-t border-slate-100 flex items-center justify-between bg-slate-50/80">
+      <button type="button" (click)="closeModal.emit()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer">
+        Cancelar
+      </button>
+      <button type="button" 
+              (click)="savePart.emit()" 
+              [disabled]="isSaving || !partForm.name || !partForm.zone"
+              class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition flex items-center gap-2 cursor-pointer">
+        <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" *ngIf="isSaving"></span>
+        <i class="bi bi-check2-circle text-sm" *ngIf="!isSaving"></i>
+        <span>{{ isSaving ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Parte Maestra') }}</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════ SUBMODAL 1: EDITAR DESCRIPCIÓN BÁSICA ════════════════════ -->
+<div *ngIf="isBasicDescModalOpen" class="fixed inset-0 z-[1450] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+  <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Header Submodal -->
+    <div class="p-4 bg-indigo-50/80 border-b border-indigo-100 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-sm font-black shrink-0">
+          <i class="bi bi-file-earmark-text"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Descripción Básica de la Variante</h3>
+          <p class="text-[11px] text-slate-500 font-medium">Variante: <strong>{{ selectedVariantForModal?.name || 'Variante' }}</strong></p>
+        </div>
+      </div>
+      <button (click)="closeBasicDescModal()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white transition cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Body Submodal -->
+    <div class="p-4 space-y-3 overflow-y-auto">
+      <p class="text-xs text-slate-600 font-medium">
+        Redacta una explicación clara sobre los atributos visuales, funcionales y de uso de esta variante (ej. tipo de puño, silueta, ajuste, detalles estéticos).
+      </p>
+
+      <textarea 
+        [(ngModel)]="tempText" 
+        rows="6" 
+        placeholder="Escribe la descripción básica y funcional de esta variante..."
+        class="w-full p-3.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition leading-relaxed shadow-inner"
+        autofocus></textarea>
+
+      <div class="flex items-center justify-between text-[11px] text-slate-400">
+        <span>Caracteres: {{ tempText.length }}</span>
+        <span>Recomendado: 50 - 300 caracteres</span>
+      </div>
+    </div>
+
+    <!-- Footer Submodal -->
+    <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+      <button (click)="closeBasicDescModal()" class="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer">
+        Cancelar
+      </button>
+      <button (click)="saveBasicDesc()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer">
+        Guardar Descripción
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════ SUBMODAL 2: EDITAR DESCRIPCIÓN TÉCNICA (FICHA / OPM) ════════════════════ -->
+<div *ngIf="isTechDescModalOpen" class="fixed inset-0 z-[1450] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+  <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Header Submodal -->
+    <div class="p-4 bg-purple-50/80 border-b border-purple-100 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center text-sm font-black shrink-0">
+          <i class="bi bi-card-checklist"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-black text-slate-900">Descripción Técnica Determinista</h3>
+            <span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-800">Ficha / OPM</span>
+          </div>
+          <p class="text-[11px] text-slate-500 font-medium">Variante: <strong>{{ selectedVariantForModal?.name || 'Variante' }}</strong></p>
+        </div>
+      </div>
+      <button (click)="closeTechDescModal()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white transition cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Body Submodal -->
+    <div class="p-4 space-y-3 overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <p class="text-xs text-slate-600 font-medium">
+          Texto determinista que se incluirá de forma automática en la ficha técnica u orden de producción (OPM).
+        </p>
+        <button type="button" 
+                (click)="regenerateTechDescInModal()" 
+                class="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg text-[10px] font-black transition flex items-center gap-1 shrink-0 cursor-pointer"
+                title="Autogenerar a partir de la lista de operaciones">
+          <i class="bi bi-magic"></i> Autogenerar de SAM
+        </button>
+      </div>
+
+      <textarea 
+        [(ngModel)]="tempText" 
+        rows="6" 
+        placeholder="Texto técnico determinista de costura y confección..."
+        class="w-full p-3.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition leading-relaxed shadow-inner"
+        autofocus></textarea>
+
+      <!-- Vista previa Ficha Técnica -->
+      <div class="p-3 bg-purple-50/50 rounded-xl border border-purple-100 space-y-1">
+        <span class="text-[9px] font-black uppercase tracking-wider text-purple-800">Vista Previa en Ficha / OPM:</span>
+        <p class="text-xs font-semibold text-slate-800 italic leading-relaxed">
+          "{{ tempText || 'Sin descripción técnica configurada' }}"
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer Submodal -->
+    <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+      <button (click)="closeTechDescModal()" class="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer">
+        Cancelar
+      </button>
+      <button (click)="saveTechDesc()" class="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer">
+        Guardar en Ficha
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════ SUBMODAL 3: INHABILITAR VARIANTE CON MOTIVO ════════════════════ -->
+<div *ngIf="isDisableReasonModalOpen" class="fixed inset-0 z-[1450] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+  <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Header Submodal -->
+    <div class="p-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center text-sm font-black shrink-0">
+          <i class="bi bi-slash-circle"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Inhabilitar Variante</h3>
+          <p class="text-[11px] text-slate-500 font-medium">Variante: <strong>{{ selectedVariantForModal?.name || 'Variante' }}</strong></p>
+        </div>
+      </div>
+      <button (click)="closeDisableReasonModal()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white transition cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Body Submodal -->
+    <div class="p-4 space-y-3.5 overflow-y-auto">
+      <p class="text-xs text-slate-600 font-medium">
+        Indica el motivo por el cual esta variante no está disponible actualmente en cotizaciones u OPM:
+      </p>
+
+      <!-- Motivos Rápidos -->
+      <div class="space-y-1.5">
+        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Motivos Frecuentes:</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button 
+            *ngFor="let reason of quickDisableReasons" 
+            type="button" 
+            (click)="selectQuickReason(reason)"
+            class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer"
+            [ngClass]="tempDisableReason === reason ? 'bg-rose-600 text-white font-black' : 'bg-slate-100 hover:bg-rose-100 text-slate-700'">
+            {{ reason }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Textarea personalizado -->
+      <div class="space-y-1">
+        <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500">Detalle del Motivo:</label>
+        <textarea 
+          [(ngModel)]="tempDisableReason" 
+          rows="3" 
+          placeholder="Escribe el motivo detallado..."
+          class="w-full p-2.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition leading-relaxed"></textarea>
+      </div>
+    </div>
+
+    <!-- Footer Submodal -->
+    <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+      <button (click)="closeDisableReasonModal()" class="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer">
+        Cancelar
+      </button>
+      <button (click)="confirmDisableVariant()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer">
+        Confirmar Inhabilitación
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de Gestión / CRUD del Catálogo Maestro de Materiales -->
+<app-modal-gestion-materiales
+  [isOpen]="showMasterMaterialsManager"
+  (close)="showMasterMaterialsManager = false; refreshMasterMaterials()"
+  (catalogUpdated)="onMasterCatalogUpdated($event)">
+</app-modal-gestion-materiales>

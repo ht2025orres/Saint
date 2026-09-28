@@ -31,7 +31,7 @@ export class UserService {
   getAllBasic(sameProcess?: boolean, usuarioId?: number): Observable<any[]> {
     let params: any = {};
     if (sameProcess) params.same_process = 'true';
-    if (usuarioId)   params.usuario_id = String(usuarioId);
+    if (usuarioId) params.usuario_id = String(usuarioId);
     return this.http.get<any[]>(`${this.apiLaravelUrl}/users/basic`, { params });
   }
 
@@ -64,5 +64,19 @@ export class UserService {
 
   getAuditLogs(params: any): Observable<any> {
     return this.http.get(`${this.apiLaravelUrl}/audit/permissions`, { params });
+  }
+
+  uploadFirma(userId: number, signatureData: string | File): Observable<any> {
+    if (signatureData instanceof File) {
+      const formData = new FormData();
+      formData.append('firma', signatureData);
+      return this.http.post(`${this.apiLaravelUrl}/users/${userId}/firma`, formData);
+    } else {
+      return this.http.post(`${this.apiLaravelUrl}/users/${userId}/firma`, { firma_base64: signatureData });
+    }
+  }
+
+  deleteFirma(userId: number): Observable<any> {
+    return this.http.delete(`${this.apiLaravelUrl}/users/${userId}/firma`);
   }
 }

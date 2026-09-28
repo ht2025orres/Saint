@@ -19,15 +19,40 @@ export class ModalPermisosProyectoComponent implements OnChanges {
   loading = false;
   saving = false;
   usuarioSeleccionadoId: number | null = null;
+  busquedaUser = '';
+  showDropdown = false;
 
   constructor(
     private proyServ: ProyectoService,
     public state: SeguimientoStateService
   ) {}
 
+  get usuariosFiltrados(): any[] {
+    const asignadosIds = new Set(this.asignaciones.map(a => Number(a.usuario_id)));
+    const q = this.busquedaUser.toLowerCase().trim();
+    const lista = (this.usuarios && this.usuarios.length > 0)
+      ? this.usuarios
+      : this.state.usuariosResponsables;
+
+    return lista.filter(u =>
+      u.es_miembro !== false &&
+      !asignadosIds.has(Number(u.id)) &&
+      (!q || u.nombre.toLowerCase().includes(q) || (u.proceso_nombre && u.proceso_nombre.toLowerCase().includes(q)))
+    ).slice(0, 10);
+  }
+
+  seleccionarUsuario(u: any): void {
+    this.usuarioSeleccionadoId = u.id;
+    this.busquedaUser = `${u.nombre}${u.proceso_nombre ? ' [' + u.proceso_nombre + ']' : ''}`;
+    this.showDropdown = false;
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['show']?.currentValue === true && this.proyectoId && this.usuarioId) {
       this.cargarPermisos();
+      this.busquedaUser = '';
+      this.usuarioSeleccionadoId = null;
+      this.showDropdown = false;
     }
   }
 
@@ -55,7 +80,10 @@ export class ModalPermisosProyectoComponent implements OnChanges {
       return;
     }
 
-    const user = this.usuarios.find(u => u.id === Number(this.usuarioSeleccionadoId));
+    const user = (this.usuarios && this.usuarios.length > 0)
+      ? this.usuarios.find(u => u.id === Number(this.usuarioSeleccionadoId))
+      : this.state.usuariosResponsables.find(u => u.id === Number(this.usuarioSeleccionadoId));
+
     this.asignaciones.push({
       usuario_id: Number(this.usuarioSeleccionadoId),
       nombre: user?.nombre || 'Usuario',
@@ -69,6 +97,7 @@ export class ModalPermisosProyectoComponent implements OnChanges {
       puede_gestionar_permisos: true
     });
     this.usuarioSeleccionadoId = null;
+    this.busquedaUser = '';
   }
 
   quitarUsuario(index: number): void {

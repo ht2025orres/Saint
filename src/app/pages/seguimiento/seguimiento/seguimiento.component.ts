@@ -142,7 +142,8 @@ export class SeguimientoComponent implements OnInit, OnDestroy {
             nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
             proceso_nombre: u.proceso_nombre ?? null,
             procesos: u.procesos ?? [],
-            roles: []
+            roles: [],
+            es_miembro: u.es_miembro
           })),
         );
         this.cdr.markForCheck();

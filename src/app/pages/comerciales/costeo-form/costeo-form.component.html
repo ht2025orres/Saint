@@ -7,26 +7,30 @@
         <div class="header-title-group">
           <h1 class="page-title">{{ isEditMode ? 'Editar Solicitud de Pedido' : 'Nueva Solicitud de Pedido' }}</h1>
           <span class="draft-auto-saved" title="Los cambios se guardan automáticamente en tu navegador">
-            <i class="bi bi-cloud-check-fill"></i> Borrador Guardado
+            <i class="bi bi-cloud-check"></i> Borrador Guardado
           </span>
         </div>
         <p class="page-subtitle" *ngIf="clienteNombre">
           <i class="bi bi-building"></i> {{ clienteNombre }}
-          <span *ngIf="clienteNit"> · NIT: {{ clienteNit }}</span>
+          <span *ngIf="clienteNit" class="subtitle-nit">NIT: {{ clienteNit }}</span>
         </p>
       </div>
       <div class="header-stats">
         <div class="stat-pill">
-          <i class="bi bi-box-seam"></i> <strong>{{ items.length }}</strong> ítems
+          <i class="bi bi-box-seam"></i>
+          <span><strong>{{ items.length }}</strong> {{ items.length === 1 ? 'ítem' : 'ítems' }}</span>
         </div>
         <div class="stat-pill">
-          <i class="bi bi-stack"></i> <strong>{{ totalUnidades | number }}</strong> uds.
+          <i class="bi bi-stack"></i>
+          <span><strong>{{ totalUnidades | number }}</strong> uds.</span>
         </div>
-        <div *ngIf="requiereMuestra" class="stat-pill stat-warning">
-          <i class="bi bi-scissors"></i> <strong>{{ totalMuestras | number }}</strong> muestras
+        <div *ngIf="requiereMuestra" class="stat-pill stat-samples">
+          <i class="bi bi-scissors"></i>
+          <span><strong>{{ totalMuestras | number }}</strong> muestras</span>
         </div>
-        <div *ngIf="cantidadAnual > 0" class="stat-pill stat-success">
-          <i class="bi bi-graph-up-arrow"></i> <strong>{{ cantidadAnual | number }}</strong> proy. anual
+        <div *ngIf="cantidadAnual > 0" class="stat-pill stat-annual">
+          <i class="bi bi-graph-up"></i>
+          <span><strong>{{ cantidadAnual | number }}</strong> proy. anual</span>
         </div>
       </div>
     </div>
@@ -45,7 +49,10 @@
           <span class="section-label">{{ sec.label }}</span>
           <span class="section-desc-nav">{{ sec.desc }}</span>
         </div>
-        <i *ngIf="i < activeSection" class="bi bi-check-circle-fill section-check"></i>
+        <div class="section-step-indicator">
+          <i *ngIf="i < activeSection" class="bi bi-check-circle-fill section-check"></i>
+          <span *ngIf="i === activeSection" class="section-dot-active"></span>
+        </div>
       </button>
     </div>
   </div>
@@ -109,44 +116,45 @@
       </div>
 
       <div class="toggles-grid">
-        <div class="toggle-card" [class.toggle-card-active]="requiereCosteo" (click)="requiereCosteo = !requiereCosteo">
-          <div class="toggle-card-icon">
-            <i class="bi bi-calculator"></i>
+        <div class="toggle-card" [class.toggle-card-active]="requiereCosteo">
+          <div class="toggle-card-main" (click)="requiereCosteo = !requiereCosteo">
+            <div class="toggle-card-icon">
+              <i class="bi bi-calculator"></i>
+            </div>
+            <div class="toggle-card-text">
+              <span class="toggle-title">Requiere Costeo</span>
+              <span class="toggle-sub">Genera cotización y cálculo comercial</span>
+            </div>
+            <div class="toggle-switch" [class.active]="requiereCosteo">
+              <div class="toggle-knob"></div>
+            </div>
           </div>
-          <div class="toggle-card-text">
-            <span class="toggle-title">Requiere Costeo</span>
-            <span class="toggle-sub">Genera cotización y cálculo comercial</span>
-          </div>
-          <div class="toggle-switch" [class.active]="requiereCosteo">
-            <div class="toggle-knob"></div>
-          </div>
-        </div>
-
-        <div class="toggle-card" [class.toggle-card-active]="requiereMuestra" (click)="requiereMuestra = !requiereMuestra">
-          <div class="toggle-card-icon">
-            <i class="bi bi-scissors"></i>
-          </div>
-          <div class="toggle-card-text">
-            <span class="toggle-title">Requiere Muestra Física</span>
-            <span class="toggle-sub">Solicita confección y despacho de muestras</span>
-          </div>
-          <div class="toggle-switch" [class.active]="requiereMuestra">
-            <div class="toggle-knob"></div>
+          <div class="toggle-card-body" *ngIf="requiereCosteo" (click)="$event.stopPropagation()">
+            <label class="toggle-date-label">
+              <i class="bi bi-calendar-event"></i> Fecha entrega cotización
+            </label>
+            <input type="date" class="form-input toggle-date-input" [(ngModel)]="fechaEntregaCotizacion" />
           </div>
         </div>
-      </div>
 
-      <!-- Fechas de Entrega segun Requerimientos -->
-      <div *ngIf="requiereCosteo || requiereMuestra" class="dates-container mt-3">
-        <div class="form-grid">
-          <div class="form-group" *ngIf="requiereCosteo">
-            <label><i class="bi bi-calendar-event"></i> Fecha entrega cotización</label>
-            <input type="date" class="form-input" [(ngModel)]="fechaEntregaCotizacion" />
+        <div class="toggle-card" [class.toggle-card-active]="requiereMuestra">
+          <div class="toggle-card-main" (click)="requiereMuestra = !requiereMuestra">
+            <div class="toggle-card-icon">
+              <i class="bi bi-scissors"></i>
+            </div>
+            <div class="toggle-card-text">
+              <span class="toggle-title">Requiere Muestra Física</span>
+              <span class="toggle-sub">Solicita confección y despacho de muestras</span>
+            </div>
+            <div class="toggle-switch" [class.active]="requiereMuestra">
+              <div class="toggle-knob"></div>
+            </div>
           </div>
-
-          <div class="form-group" *ngIf="requiereMuestra">
-            <label><i class="bi bi-calendar-check"></i> Fecha entrega muestra</label>
-            <input type="date" class="form-input" [(ngModel)]="fechaEntregaMuestra" />
+          <div class="toggle-card-body" *ngIf="requiereMuestra" (click)="$event.stopPropagation()">
+            <label class="toggle-date-label">
+              <i class="bi bi-calendar-check"></i> Fecha entrega muestra
+            </label>
+            <input type="date" class="form-input toggle-date-input" [(ngModel)]="fechaEntregaMuestra" />
           </div>
         </div>
       </div>
@@ -210,6 +218,19 @@
         <span class="calc-formula">({{ cantidadPorEntrega | number }} uds. × {{ entregasAnual }} entregas)</span>
       </div>
 
+      <!-- Alerta de Discrepancia de Unidades (Sección 0) -->
+      <div *ngIf="hasTotalDiscrepancy" class="discrepancy-banner warning">
+        <div class="discrepancy-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div class="discrepancy-info">
+          <span class="discrepancy-title">Discrepancia con el desglose de tallas</span>
+          <span class="discrepancy-text">
+            La cantidad por entrega es <strong>{{ cantidadPorEntrega | number }} uds.</strong>, pero las tallas suman <strong>{{ totalUnidades | number }} uds.</strong>
+            <span *ngIf="totalDiscrepancy > 0"> (Faltan {{ totalDiscrepancy | number }} uds. por asignar)</span>
+            <span *ngIf="totalDiscrepancy < 0"> (Exceso de {{ -totalDiscrepancy | number }} uds.)</span>
+          </span>
+        </div>
+      </div>
+
       <!-- Observaciones Generales -->
       <div class="form-group mt-3">
         <label><i class="bi bi-chat-left-text"></i> Observaciones o Notas Adicionales</label>
@@ -228,26 +249,53 @@
 
   <!-- ==================== FASE 2: ÍTEMS, TALLAS & MOLDES (OPM) ==================== -->
   <div *ngIf="activeSection === 1" class="form-section">
-    <div class="section-card shadow-sm">
+    <div class="section-card">
       <div class="section-header-row">
         <div>
           <h2 class="section-title"><i class="bi bi-box-seam"></i> Ítems de la Solicitud</h2>
-          <p class="section-desc">Agrega las prendas, configura sus tallas y vincula su ficha de molde OPM directamente.</p>
+          <p class="section-desc">Configura prendas, distribución de tallas y ficha técnica de molde (OPM).</p>
         </div>
         <div class="item-actions">
-          <button class="btn-add-item btn-primary-gradient" (click)="showItemSearch = true">
-            <i class="bi bi-search"></i> Buscar Catálogo / Histórico Siesa
+          <button class="btn-action-primary" (click)="showItemSearch = true">
+            <i class="bi bi-search"></i> Catálogo / Histórico Siesa
           </button>
-          <button class="btn-add-item btn-add-new" (click)="showNewItemForm = !showNewItemForm">
-            <i class="bi bi-plus-circle"></i> + Ítem Nuevo
+          <button class="btn-action-secondary" (click)="showNewItemForm = !showNewItemForm">
+            <i class="bi bi-plus-lg"></i> Ítem Nuevo
           </button>
+        </div>
+      </div>
+
+      <!-- Banner de Resumen de Unidades y Discrepancia (Sección 1) -->
+      <div *ngIf="cantidadPorEntrega > 0 || totalUnidades > 0" class="units-summary-bar" 
+           [class.has-warning]="hasTotalDiscrepancy" 
+           [class.is-matched]="!hasTotalDiscrepancy && cantidadPorEntrega > 0 && totalUnidades === cantidadPorEntrega">
+        <div class="units-summary-content">
+          <div class="units-stat">
+            <span class="units-label">Objetivo de entrega:</span>
+            <span class="units-value">{{ cantidadPorEntrega | number }} uds.</span>
+          </div>
+          <div class="units-arrow"><i class="bi bi-arrow-right"></i></div>
+          <div class="units-stat">
+            <span class="units-label">Total en tallas:</span>
+            <span class="units-value" [class.text-danger]="hasTotalDiscrepancy" [class.text-success]="!hasTotalDiscrepancy && cantidadPorEntrega > 0 && totalUnidades === cantidadPorEntrega">
+              {{ totalUnidades | number }} uds.
+            </span>
+          </div>
+        </div>
+        <div class="units-status-badge warning-badge" *ngIf="hasTotalDiscrepancy">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span *ngIf="totalDiscrepancy > 0">Faltan {{ totalDiscrepancy | number }} uds.</span>
+          <span *ngIf="totalDiscrepancy < 0">Exceso de {{ -totalDiscrepancy | number }} uds.</span>
+        </div>
+        <div class="units-status-badge matched-badge" *ngIf="!hasTotalDiscrepancy && cantidadPorEntrega > 0 && totalUnidades === cantidadPorEntrega">
+          <i class="bi bi-check2"></i> Cantidades cuadradas
         </div>
       </div>
 
       <!-- Formulario para Ítem Nuevo -->
       <div *ngIf="showNewItemForm" class="new-item-form-card">
         <div class="new-item-header">
-          <i class="bi bi-plus-square-fill"></i>
+          <i class="bi bi-plus-circle"></i>
           <span>Agregar Ítem Nuevo (Sin catálogo previo)</span>
         </div>
         <div class="new-item-grid">
@@ -262,7 +310,7 @@
         </div>
         <div class="new-item-actions">
           <button class="btn-confirm-item" (click)="addNewItem()" [disabled]="!newItemDesc.trim()">
-            <i class="bi bi-check-circle-fill"></i> Agregar ítem a la lista
+            <i class="bi bi-check-lg"></i> Agregar ítem a la lista
           </button>
           <button class="btn-cancel-item" (click)="showNewItemForm = false">Cancelar</button>
         </div>
@@ -278,31 +326,31 @@
               <span class="item-index">{{ i + 1 }}</span>
               <div class="item-info">
                 <div class="item-title-row">
-                  <span class="item-desc">{{ item.descripcion }}</span>
+                  <span class="item-desc" [title]="item.descripcion">{{ item.descripcion }}</span>
                 </div>
                 <div class="item-meta-badges">
                   <!-- Badge Siesa / Nuevo -->
                   <span *ngIf="item.siesa_referencia" class="badge-tag tag-siesa">
-                    <i class="bi bi-link-45deg"></i> Siesa: {{ item.siesa_referencia }}
+                    <i class="bi bi-upc"></i> Siesa: {{ item.siesa_referencia }}
                   </span>
                   <span *ngIf="item.isNew" class="badge-tag tag-new">
-                    <i class="bi bi-star-fill"></i> Ítem Nuevo
+                    <i class="bi bi-sparkles"></i> Nuevo
                   </span>
                   <span *ngIf="item.ref_siesa_referencia" class="badge-tag tag-ref">
-                    <i class="bi bi-arrow-return-right"></i> Ref: {{ item.ref_siesa_referencia }}
+                    <i class="bi bi-link-45deg"></i> Base: {{ item.ref_siesa_referencia }}
                   </span>
 
                   <!-- Badge Tallas -->
                   <span class="badge-tag tag-tallas" [class.tag-has-tallas]="item.tallas.length > 0">
-                    <i class="bi bi-grid-3x3"></i> {{ item.tallas.length }} talla(s)
+                    <i class="bi bi-grid-1x2"></i> {{ item.tallas.length }} {{ item.tallas.length === 1 ? 'talla' : 'tallas' }} · {{ getItemTotal(item) | number }} uds.
                   </span>
 
                   <!-- Badge Molde OPM -->
                   <span class="badge-tag tag-mold" [class.tag-has-mold]="item.moldId">
-                    <i class="bi bi-palette"></i> {{ item.moldName ? item.moldName : 'Sin Molde' }}
+                    <i class="bi bi-bounding-box"></i> {{ item.moldName ? item.moldName : 'Sin Molde' }}
                   </span>
                   <span *ngIf="item.technicalSpecId" class="badge-tag tag-opm-ok">
-                    <i class="bi bi-check-circle-fill"></i> OPM Ok
+                    <i class="bi bi-check2"></i> OPM Ok
                   </span>
                 </div>
               </div>
@@ -319,169 +367,243 @@
           <!-- Cuerpo Expandible del Ítem con Pestañas Internas (Tallas vs Molde OPM) -->
           <div [hidden]="!item.isExpanded" class="item-body">
             
-            <!-- Pestañas Internas por Ítem -->
-            <div class="item-tabs">
-              <button class="item-tab-btn" 
-                      [class.active]="!item.activeTab || item.activeTab === 'tallas'"
-                      (click)="item.activeTab = 'tallas'">
-                <i class="bi bi-rulers"></i> Tallas & Cantidades
-                <span class="tab-badge" *ngIf="item.tallas.length">{{ item.tallas.length }}</span>
-              </button>
+            <!-- Segmented Control de Pestañas Internas por Ítem -->
+            <div class="item-tabs-wrapper">
+              <div class="item-tabs-nav">
+                <button class="item-tab-btn" 
+                        [class.active]="!item.activeTab || item.activeTab === 'tallas'"
+                        (click)="item.activeTab = 'tallas'">
+                  <i class="bi bi-rulers"></i> Tallas & Cantidades
+                  <span class="tab-badge" *ngIf="item.tallas.length">{{ item.tallas.length }}</span>
+                </button>
 
-              <button class="item-tab-btn" 
-                      [class.active]="item.activeTab === 'molde'"
-                      (click)="item.activeTab = 'molde'">
-                <i class="bi bi-diagram-3"></i> Molde & Ficha OPM
-                <span class="tab-badge-opm" *ngIf="item.technicalSpecId"><i class="bi bi-check-lg"></i></span>
-              </button>
+                <button class="item-tab-btn" 
+                        [class.active]="item.activeTab === 'molde'"
+                        (click)="item.activeTab = 'molde'">
+                  <i class="bi bi-bounding-box"></i> Molde & Ficha OPM
+                  <span class="tab-badge-opm" *ngIf="item.technicalSpecId"><i class="bi bi-check-lg"></i></span>
+                </button>
+              </div>
             </div>
 
             <!-- CONTENIDO PESTAÑA 1: TALLAS & MUESTRAS -->
             <div [hidden]="item.activeTab === 'molde'" class="tab-content">
-              <div class="item-form-grid">
-                <div class="form-group">
-                  <label>Ref. Cliente / Código</label>
-                  <input class="form-input form-input-sm" [(ngModel)]="item.item_cliente" placeholder="Referencia del cliente" />
-                </div>
-                <div class="form-group" *ngIf="requiereMuestra">
-                  <label>Cant. Muestras Físicas</label>
-                  <input type="number" class="form-input form-input-sm" [(ngModel)]="item.cantidad_muestra" min="0" />
-                </div>
-              </div>
-
-              <!-- Ítem de Referencia Siesa (Solo si es ítem nuevo) -->
-              <div *ngIf="item.isNew" class="ref-item-section mt-2">
-                <div class="ref-item-header">
-                  <span class="ref-item-title"><i class="bi bi-link-45deg"></i> Vinculación de Ítem de Referencia Siesa</span>
-                  <span class="ref-item-hint">Sugerir ficha previa de Siesa como base de costeo</span>
+              
+              <!-- Fila Superior: Referencia Cliente, Muestras Físicas y Base Siesa -->
+              <div class="item-meta-controls-row">
+                <!-- Ref Cliente -->
+                <div class="meta-field-group">
+                  <label class="meta-field-label">
+                    <i class="bi bi-tag"></i> Ref. Cliente / Código Interno
+                  </label>
+                  <input class="form-input form-input-sm meta-input" 
+                         [(ngModel)]="item.item_cliente" 
+                         placeholder="Ej: REF-CLIENTE-2025" />
                 </div>
 
-                <div *ngIf="item.ref_siesa_item_rowid" class="ref-item-selected">
-                  <div class="ref-item-info">
-                    <span class="ref-badge-link"><i class="bi bi-box-seam"></i> {{ item.ref_siesa_referencia }}</span>
-                    <span class="ref-item-desc">{{ item.ref_siesa_descripcion }}</span>
+                <!-- Muestras de Aprobación (Solo si requiereMuestra es true en datos generales) -->
+                <div class="meta-field-group sample-group" *ngIf="requiereMuestra">
+                  <div class="meta-label-wrapper">
+                    <label class="meta-field-label">
+                      <i class="bi bi-scissors"></i> Muestras Previas
+                    </label>
+                    <span class="sample-note">Para aprobación</span>
                   </div>
-                  <button class="btn-icon btn-clear-ref" (click)="clearRefItem(item)" title="Quitar referencia">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
+                  <div class="sample-input-box">
+                    <input type="number" class="form-input form-input-sm sample-input" 
+                           [(ngModel)]="item.cantidad_muestra" min="0" placeholder="0" />
+                    <span class="sample-unit">uds</span>
+                  </div>
                 </div>
 
-                <div *ngIf="!item.ref_siesa_item_rowid">
-                  <div *ngIf="refSearchingIndex !== i" class="ref-item-empty">
-                    <button class="btn-search-ref" (click)="openRefSearch(i)">
-                      <i class="bi bi-search"></i> Vincular ítem similar de Siesa
+                <!-- Vinculación de Ítem de Referencia Siesa (Solo si es ítem nuevo) -->
+                <div *ngIf="item.isNew" class="meta-field-group ref-siesa-group">
+                  <label class="meta-field-label">
+                    <i class="bi bi-link-45deg"></i> Base de Costeo (Catálogo Siesa)
+                  </label>
+
+                  <div *ngIf="item.ref_siesa_item_rowid" class="ref-siesa-badge-card">
+                    <div class="ref-siesa-badge-info">
+                      <span class="ref-siesa-code">{{ item.ref_siesa_referencia }}</span>
+                      <span class="ref-siesa-desc">{{ item.ref_siesa_descripcion }}</span>
+                    </div>
+                    <button class="btn-icon btn-clear-ref" (click)="clearRefItem(item)" title="Quitar vinculación">
+                      <i class="bi bi-x-circle-fill"></i>
                     </button>
                   </div>
 
-                  <div *ngIf="refSearchingIndex === i" class="ref-search-box">
-                    <div class="ref-search-input-group">
-                      <i class="bi bi-search"></i>
-                      <input type="text"
-                             class="form-input form-input-sm"
-                             placeholder="Buscar por referencia o descripción..."
-                             [(ngModel)]="refSearchQuery"
-                             (input)="searchRefItems()"
-                             autofocus />
-                      <button class="btn-icon btn-cancel-ref" (click)="closeRefSearch()"><i class="bi bi-x"></i></button>
-                    </div>
+                  <div *ngIf="!item.ref_siesa_item_rowid" class="ref-siesa-picker-wrapper">
+                    <button *ngIf="refSearchingIndex !== i" class="btn-open-ref-picker" (click)="openRefSearch(i)">
+                      <i class="bi bi-search"></i> Vincular ítem similar de Siesa
+                    </button>
 
-                    <div *ngIf="isSearchingRef" class="ref-search-loading">
-                      <i class="bi bi-hourglass-split"></i> Buscando en catálogo Siesa...
-                    </div>
+                    <div *ngIf="refSearchingIndex === i" class="ref-search-inline-box">
+                      <div class="ref-search-input-group">
+                        <i class="bi bi-search"></i>
+                        <input type="text"
+                               class="form-input form-input-sm"
+                               placeholder="Buscar referencia o nombre..."
+                               [(ngModel)]="refSearchQuery"
+                               (input)="searchRefItems()"
+                               autofocus />
+                        <button class="btn-icon btn-cancel-ref" (click)="closeRefSearch()"><i class="bi bi-x-lg"></i></button>
+                      </div>
 
-                    <div *ngIf="refSearchResults.length > 0" class="ref-search-results">
-                      <div *ngFor="let ref of refSearchResults" class="ref-result-item" (click)="selectRefItem(ref)">
-                        <span class="ref-result-code">{{ ref.f120_referencia || ref.f120_id }}</span>
-                        <span class="ref-result-desc">{{ ref.f120_descripcion || ref.f120_descripcion_corta }}</span>
+                      <div *ngIf="isSearchingRef" class="ref-search-loading">
+                        <i class="bi bi-hourglass-split"></i> Buscando en catálogo Siesa...
+                      </div>
+
+                      <div *ngIf="refSearchResults.length > 0" class="ref-search-results">
+                        <div *ngFor="let ref of refSearchResults" class="ref-result-item" (click)="selectRefItem(ref)">
+                          <span class="ref-result-code">{{ ref.f120_referencia || ref.f120_id }}</span>
+                          <span class="ref-result-desc">{{ ref.f120_descripcion || ref.f120_descripcion_corta }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Desglose por Tallas -->
-              <div class="tallas-section mt-3">
+              <!-- Desglose por Tallas (Matriz Sobria y Rápida) -->
+              <div class="tallas-section">
                 <div class="tallas-header">
-                  <span class="tallas-title"><i class="bi bi-rulers"></i> Desglose por Tallas</span>
-                  <button class="btn-add-talla" (click)="addTalla(item)">
-                    <i class="bi bi-plus-circle-fill"></i> + Agregar Talla
-                  </button>
-                </div>
+                  <div class="tallas-header-left">
+                    <span class="tallas-title">Distribución por Tallas</span>
+                    <span class="tallas-live-counter" *ngIf="getItemTotal(item) > 0">
+                      {{ getItemTotal(item) | number }} uds. totales
+                    </span>
+                  </div>
 
-                <div *ngIf="item.tallas.length > 0" class="tallas-grid-cards">
-                  <div *ngFor="let t of item.tallas; let ti = index" class="talla-card-item">
-                    <input class="form-input form-input-sm talla-name" 
-                           [(ngModel)]="t.talla" 
-                           (blur)="t.talla = cleanTalla(t.talla)"
-                           placeholder="Talla (S, M, 32...)" 
-                           [disabled]="!!t.siesa_item_ext_rowid" />
-                    <div class="talla-qty-input-group">
-                      <span class="qty-label">Cant.</span>
-                      <input type="number" class="form-input form-input-sm talla-qty" [(ngModel)]="t.cantidad" min="0" placeholder="0" />
-                    </div>
-                    <button class="btn-icon btn-delete-sm" (click)="removeTalla(item, ti)" title="Eliminar talla">
-                      <i class="bi bi-x-circle"></i>
+                  <div class="tallas-header-actions">
+                    <button type="button" class="btn-add-talla" (click)="addTalla(item)">
+                      <i class="bi bi-plus-lg"></i> Agregar Talla
                     </button>
                   </div>
                 </div>
 
-                <p *ngIf="item.tallas.length === 0" class="tallas-empty">
-                  Sin tallas configuradas. Haz clic en <strong>+ Agregar Talla</strong> para especificar unidades por talla.
-                </p>
+                <!-- Matriz de Tallas en Fila -->
+                <div *ngIf="item.tallas.length > 0" class="tallas-matrix-container">
+                  <div class="tallas-matrix-grid">
+                    <div *ngFor="let t of item.tallas; let ti = index" class="talla-matrix-cell">
+                      <!-- Cabecera de la celda de talla (Nombre de talla + botón borrar) -->
+                      <div class="talla-matrix-head">
+                        <!-- Selector de talla para ítems libres/nuevos -->
+                        <select *ngIf="!t.siesa_item_ext_rowid" class="talla-matrix-select" [(ngModel)]="t.talla">
+                          <option value="" disabled>Talla...</option>
+                          <optgroup label="Letras">
+                            <option *ngFor="let tl of tallasLetra" [value]="tl">{{ tl }}</option>
+                          </optgroup>
+                          <optgroup label="Numéricas">
+                            <option *ngFor="let tn of tallasNumericas" [value]="tn">{{ tn }}</option>
+                          </optgroup>
+                          <option *ngIf="t.talla && !tallasLetra.includes(t.talla) && !tallasNumericas.includes(t.talla)" [value]="t.talla">
+                            {{ t.talla }}
+                          </option>
+                        </select>
+
+                        <!-- Badge fijo si viene de extensión Siesa -->
+                        <span *ngIf="t.siesa_item_ext_rowid" class="talla-matrix-siesa-label" title="Talla vinculada a Siesa">
+                          {{ t.talla }}
+                        </span>
+
+                        <button type="button" class="talla-matrix-remove" (click)="removeTalla(item, ti)" title="Eliminar talla">
+                          <i class="bi bi-x"></i>
+                        </button>
+                      </div>
+
+                      <!-- Input de cantidad -->
+                      <div class="talla-matrix-body">
+                        <input type="number" 
+                               class="talla-matrix-qty-input" 
+                               [(ngModel)]="t.cantidad" 
+                               min="0" 
+                               placeholder="0" />
+                        <span class="talla-matrix-unit">uds</span>
+                      </div>
+                    </div>
+
+                    <!-- Botón rápido + para añadir otra celda al final -->
+                    <button type="button" 
+                            class="talla-matrix-add-tile" 
+                            (click)="addTalla(item)" 
+                            title="Agregar otra talla a la matriz">
+                      <i class="bi bi-plus-lg"></i>
+                      <span>Talla</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div *ngIf="item.tallas.length === 0" class="tallas-empty-hero">
+                  <p class="empty-hero-title">Sin tallas configuradas</p>
+                  <p class="empty-hero-desc">Haz clic en <strong>+ Agregar Talla</strong> para ingresar las cantidades.</p>
+                </div>
               </div>
             </div>
 
             <!-- CONTENIDO PESTAÑA 2: MOLDE & FICHA OPM -->
             <div [hidden]="item.activeTab !== 'molde'" class="tab-content">
               <div class="mold-config-container">
-                <p class="tab-desc">Selecciona la categoría y el molde para asociar la especificación técnica de producción (OPM).</p>
                 
-                <div class="mold-selectors-row">
-                  <div class="mold-selector-group">
-                    <label class="form-label"><i class="bi bi-tags"></i> Categoría de Garment/Prenda</label>
-                    <select class="form-control"
-                            [ngModel]="item.categoryId"
-                            (ngModelChange)="onCategoryChange(i, $event)">
-                      <option [ngValue]="null" disabled>Seleccionar categoría...</option>
-                      <option *ngFor="let cat of categories" [ngValue]="cat.id">
-                        {{ cat.name }} ({{ cat.molds_count || 0 }} moldes)
-                      </option>
-                    </select>
+                <!-- Selector Visual Unificado de Molde (Trigger Card) -->
+                <div class="mold-selector-header-box">
+                  <!-- Si NO tiene molde seleccionado -->
+                  <div *ngIf="!item.moldId" class="empty-mold-picker-card" (click)="openMoldSelector(i)">
+                    <div class="empty-picker-icon">
+                      <i class="bi bi-bounding-box-circles"></i>
+                    </div>
+                    <div class="empty-picker-text">
+                      <span class="empty-picker-title">Seleccionar Molde Base (OPM)</span>
+                      <span class="empty-picker-sub">Explora el catálogo visual por categoría y selecciona el figurín base</span>
+                    </div>
+                    <button type="button" class="btn-picker-trigger">
+                      <i class="bi bi-grid-3x3-gap-fill"></i> Explorar Moldes
+                    </button>
                   </div>
 
-                  <div class="mold-selector-group">
-                    <label class="form-label"><i class="bi bi-palette"></i> Molde Base Siesa/OPM</label>
-                    <select class="form-control"
-                            [ngModel]="item.moldId"
-                            (ngModelChange)="selectMoldForItem(i, $event)"
-                            [disabled]="!item.categoryId || item.availableMolds.length === 0">
-                      <option [ngValue]="null" disabled>
-                        {{ !item.categoryId ? 'Primero selecciona categoría' : (item.availableMolds.length === 0 ? 'Sin moldes en esta categoría' : 'Seleccionar molde...') }}
-                      </option>
-                      <option *ngFor="let m of item.availableMolds" [ngValue]="m.id">
-                        {{ m.name }}
-                      </option>
-                    </select>
+                  <!-- Si YA tiene molde seleccionado -->
+                  <div *ngIf="item.moldId" class="selected-mold-compact-card">
+                    <div class="selected-mold-info">
+                      <div class="mold-avatar">
+                        <i class="bi bi-palette"></i>
+                      </div>
+                      <div class="selected-mold-meta">
+                        <div class="selected-mold-category">
+                          <span class="cat-pill"><i class="bi bi-tag"></i> {{ item.categoryName || 'Prenda' }}</span>
+                          <span *ngIf="item.technicalSpecId" class="spec-id-pill">
+                            <i class="bi bi-check-circle-fill"></i> OPM ID: {{ item.technicalSpecId }}
+                          </span>
+                        </div>
+                        <h4 class="selected-mold-name">{{ item.moldName }}</h4>
+                      </div>
+                    </div>
+                    <div class="selected-mold-actions">
+                      <button type="button" class="btn-change-mold" (click)="openMoldSelector(i)">
+                        <i class="bi bi-arrow-repeat"></i> Cambiar Molde
+                      </button>
+                      <button type="button" class="btn-clear-mold" (click)="clearMoldForItem(i)" title="Quitar molde">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <!-- Copiar Configuración de otro ítem -->
                 <div *ngIf="getItemsWithMold().length > 0" class="copy-spec-row">
-                  <span class="copy-label"><i class="bi bi-clipboard-check"></i> Copiar molde desde otro ítem:</span>
+                  <span class="copy-label"><i class="bi bi-clipboard-check"></i> Copiar molde desde:</span>
                   <div class="copy-buttons-list">
                     <button *ngFor="let src of getItemsWithMold()"
                             class="btn-copy-spec"
                             [disabled]="src.index === i"
                             (click)="copySpecFromItem(src.index, i)">
-                      <i class="bi bi-copy"></i> {{ src.item.descripcion | slice:0:22 }}{{ src.item.descripcion.length > 22 ? '...' : '' }}
+                      <i class="bi bi-copy"></i> {{ src.item.descripcion | slice:0:24 }}{{ src.item.descripcion.length > 24 ? '...' : '' }}
                     </button>
                   </div>
                 </div>
 
                 <!-- Indicador de OPM guardada -->
-                <div *ngIf="item.technicalSpecId" class="spec-saved-badge">
+                <div *ngIf="item.technicalSpecId" class="spec-saved-badge mt-2">
                   <i class="bi bi-check-circle-fill"></i>
-                  <span>Especificación OPM Vinculada Exitosamente (Ficha ID: {{ item.technicalSpecId }})</span>
+                  <span>Especificación OPM Vinculada Exitosamente · Ficha ID: {{ item.technicalSpecId }}</span>
                 </div>
 
                 <!-- Generador Integrado de OPM -->
@@ -511,11 +633,11 @@
         <h3>No hay ítems agregados a esta solicitud</h3>
         <p>Busca referencias en el catálogo de Siesa o agrega un ítem nuevo personalizado.</p>
         <div class="empty-actions">
-          <button class="btn-add-item btn-primary-gradient" (click)="showItemSearch = true">
+          <button class="btn-action-primary" (click)="showItemSearch = true">
             <i class="bi bi-search"></i> Buscar en Siesa
           </button>
-          <button class="btn-add-item btn-add-new" (click)="showNewItemForm = true">
-            <i class="bi bi-plus-circle"></i> Crear Ítem Nuevo
+          <button class="btn-action-secondary" (click)="showNewItemForm = true">
+            <i class="bi bi-plus-lg"></i> Crear Ítem Nuevo
           </button>
         </div>
       </div>
@@ -531,6 +653,108 @@
         <i class="bi" [ngClass]="isSaving ? 'bi-hourglass-split' : 'bi-check-circle-fill'"></i>
         {{ isSaving ? 'Guardando Solicitud...' : (isEditMode ? 'Guardar Cambios de Solicitud' : 'Finalizar y Crear Solicitud') }}
       </button>
+    </div>
+  </div>
+
+  <!-- Modal Selector Visual de Moldes -->
+  <div *ngIf="showMoldSelectorModal" class="modal-backdrop-custom" (click)="closeMoldSelector()">
+    <div class="mold-modal-container" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="mold-modal-header">
+        <div class="mold-modal-title-group">
+          <div class="modal-icon-badge"><i class="bi bi-grid-3x3-gap"></i></div>
+          <div>
+            <h3 class="mold-modal-title">Seleccionar Molde Base</h3>
+            <p class="mold-modal-sub" *ngIf="moldSelectorItemIndex !== null">
+              Para: <strong>{{ items[moldSelectorItemIndex].descripcion }}</strong>
+            </p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="closeMoldSelector()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="mold-modal-body">
+        <!-- Filter Bar: Search + Category Pills -->
+        <div class="modal-filter-bar">
+          <div class="modal-search-box">
+            <i class="bi bi-search"></i>
+            <input type="text"
+                   class="modal-search-input"
+                   placeholder="Buscar molde por nombre o palabra clave..."
+                   [(ngModel)]="moldSearchQuery"
+                   autofocus />
+            <button *ngIf="moldSearchQuery" class="btn-clear-search" (click)="moldSearchQuery = ''"><i class="bi bi-x-circle-fill"></i></button>
+          </div>
+
+          <div class="modal-category-pills">
+            <button type="button"
+                    class="modal-cat-pill"
+                    [class.active]="selectedModalCategoryId === null"
+                    (click)="selectedModalCategoryId = null">
+              <span>Todos</span>
+              <span class="cat-pill-count">{{ allMolds.length }}</span>
+            </button>
+            <button *ngFor="let cat of categories"
+                    type="button"
+                    class="modal-cat-pill"
+                    [class.active]="selectedModalCategoryId === cat.id"
+                    (click)="selectedModalCategoryId = cat.id">
+              <span>{{ cat.name }}</span>
+              <span class="cat-pill-count">{{ getCategoryMoldCount(cat.id) }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Molds Cards Container -->
+        <div class="mold-cards-grid-container">
+          <!-- Loading State -->
+          <div *ngIf="isLoadingMolds" class="mold-modal-loading">
+            <div class="spinner-sm"></div>
+            <span>Cargando catálogo de moldes...</span>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="!isLoadingMolds && filteredModalMolds.length === 0" class="mold-modal-empty">
+            <i class="bi bi-bounding-box-circles"></i>
+            <p class="empty-title">No se encontraron moldes</p>
+            <p class="empty-sub">Prueba seleccionando otra categoría o cambiando el término de búsqueda.</p>
+          </div>
+
+          <!-- Grid of Molds -->
+          <div *ngIf="!isLoadingMolds && filteredModalMolds.length > 0" class="modal-molds-grid">
+            <div *ngFor="let m of filteredModalMolds" 
+                 class="modal-mold-card"
+                 [class.selected]="moldSelectorItemIndex !== null && items[moldSelectorItemIndex]?.moldId === m.id"
+                 (click)="selectMoldFromModal(m)">
+              
+              <div class="modal-mold-img-wrapper">
+                <img *ngIf="getMoldPreviewImage(m)" [src]="getMoldPreviewImage(m)" [alt]="m.name" class="modal-mold-img" />
+                <div *ngIf="!getMoldPreviewImage(m)" class="modal-mold-placeholder">
+                  <i class="bi bi-palette2"></i>
+                </div>
+                <span class="mold-parts-tag" *ngIf="m.parts?.length">
+                  <i class="bi bi-puzzle"></i> {{ m.parts.length }} partes
+                </span>
+                <span class="mold-selected-check" *ngIf="moldSelectorItemIndex !== null && items[moldSelectorItemIndex]?.moldId === m.id">
+                  <i class="bi bi-check-circle-fill"></i> Seleccionado
+                </span>
+              </div>
+
+              <div class="modal-mold-info">
+                <div class="modal-mold-category-tag">{{ m.category?.name || 'Prenda' }}</div>
+                <h4 class="modal-mold-title">{{ m.name }}</h4>
+                <p class="modal-mold-desc" *ngIf="m.description">{{ m.description }}</p>
+                <div class="modal-mold-footer">
+                  <span class="btn-select-mold-pill">
+                    <i class="bi bi-check2"></i> Seleccionar
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

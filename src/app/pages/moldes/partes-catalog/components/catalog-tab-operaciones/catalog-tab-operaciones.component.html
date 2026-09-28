@@ -1,0 +1,249 @@
+<div class="max-w-7xl mx-auto space-y-4 animate-in fade-in">
+  
+  <!-- Encabezado Limpio del Centro de Ingeniería -->
+  <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-black shadow-2xs shrink-0">
+        <i class="bi bi-gear-wide-connected"></i>
+      </span>
+      <div>
+        <h3 class="text-base font-black text-slate-900 leading-none">Centro de Ingeniería SAM & Maquinaria</h3>
+        <p class="text-xs text-slate-400 font-medium mt-1">Parque de maquinaria, biblioteca de operaciones estandarizadas y trazabilidad de tiempos de confección.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 font-mono shadow-2xs">
+        {{ machines.length }} Máquinas • {{ sharedOperationsLibrary.length }} Operaciones SAM
+      </span>
+    </div>
+  </div>
+
+  <!-- Layout Dividido: Parque de Maquinaria + Tabla Maestra de Operaciones con Paginación -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+    
+    <!-- Panel Lateral Izquierdo: Parque de Maquinaria (4 cols) -->
+    <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-gear-fill text-indigo-600"></i>
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-800">Parque de Maquinaria ({{ filteredMachines.length }})</h4>
+        </div>
+        <button (click)="createMachine.emit()" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1">
+          <i class="bi bi-plus-lg"></i> Máquina
+        </button>
+      </div>
+
+      <!-- Barra de Búsqueda de Maquinaria -->
+      <div class="relative">
+        <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+        <input 
+          type="text" 
+          [ngModel]="machineSearchTerm" 
+          (ngModelChange)="machineSearchTermChange.emit($event)"
+          placeholder="Buscar máquina por nombre o código..." 
+          class="w-full pl-8 pr-3 py-2 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+        />
+      </div>
+
+      <!-- Botón para ver/limpiar filtro de todas las máquinas -->
+      <button *ngIf="opSelectedMachine !== 'Todas'"
+              (click)="opSelectedMachineChange.emit('Todas'); onOpFilterChange()"
+              class="w-full py-1.5 px-2.5 bg-indigo-100/80 hover:bg-indigo-200/80 text-indigo-900 rounded-xl text-xs font-extrabold transition flex items-center justify-between cursor-pointer">
+        <span class="flex items-center gap-1.5 truncate">
+          <i class="bi bi-funnel-fill text-indigo-600"></i> Filtrando por: {{ opSelectedMachine }}
+        </span>
+        <span class="text-[10px] text-indigo-700 underline font-black shrink-0">Ver Todas</span>
+      </button>
+
+      <!-- Lista Interactiva de Tarjetas de Maquinaria -->
+      <div class="space-y-2 max-h-[580px] overflow-y-auto custom-scrollbar pr-1">
+        <div *ngFor="let m of filteredMachines" 
+             (click)="opSelectedMachineChange.emit(opSelectedMachine === m.name ? 'Todas' : m.name); onOpFilterChange()"
+             class="p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2"
+             [ngClass]="opSelectedMachine === m.name ? 'bg-indigo-50/90 border-indigo-300 ring-2 ring-indigo-500/20 shadow-2xs' : 'bg-slate-50/60 border-slate-200/80 hover:bg-slate-100/80'">
+          
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-indigo-600 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs"
+                    [ngClass]="opSelectedMachine === m.name ? 'bg-indigo-600 text-white border-transparent' : ''">
+                <i class="bi bi-gear-fill"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="text-xs font-black text-slate-900 truncate">{{ m.name }}</div>
+                <span class="text-[10px] font-mono text-slate-400 font-bold" *ngIf="m.code">{{ m.code }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1 shrink-0" (click)="$event.stopPropagation()">
+              <button (click)="editMachine.emit(m)" class="p-1 text-slate-400 hover:text-indigo-600 rounded transition cursor-pointer" title="Editar">
+                <i class="bi bi-pencil text-xs"></i>
+              </button>
+              <button (click)="deleteMachine.emit(m)" class="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer" title="Eliminar">
+                <i class="bi bi-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[10px] pt-1 border-t border-slate-200/60">
+            <span class="text-slate-400 font-medium truncate">{{ m.description || 'Sin descripción' }}</span>
+            <span class="px-1.5 py-0.2 rounded font-bold shrink-0"
+                  [ngClass]="m.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'">
+              {{ m.is_active ? 'Activa' : 'Inactiva' }}
+            </span>
+          </div>
+
+        </div>
+
+        <div *ngIf="filteredMachines.length === 0" class="py-8 text-center text-slate-400 text-xs">
+          No hay máquinas registradas con ese término.
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Derecho: Biblioteca Maestra de Operaciones SAM con Paginación (8 cols) -->
+    <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
+      
+      <!-- Cabecera y Filtros de Operaciones -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-stopwatch text-indigo-600"></i>
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-800">
+            Biblioteca de Operaciones SAM ({{ filteredSharedOperations.length }})
+          </h4>
+        </div>
+
+        <button (click)="createOp.emit()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer self-start sm:self-auto">
+          <i class="bi bi-plus-lg"></i> Nueva Operación SAM
+        </button>
+      </div>
+
+      <!-- Filtros Dinámicos: Búsqueda + Selector de Categoría -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <!-- Input de Búsqueda de Operación -->
+        <div class="relative">
+          <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+          <input 
+            type="text" 
+            [ngModel]="opSearchTerm" 
+            (ngModelChange)="opSearchTermChange.emit($event); onOpFilterChange()"
+            placeholder="Buscar por operación o proceso..." 
+            class="w-full pl-8 pr-3 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+          />
+        </div>
+
+        <!-- Selector de Categoría -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-black uppercase text-slate-400 shrink-0">Categoría:</span>
+          <select [ngModel]="opSelectedCategory" 
+                  (ngModelChange)="opSelectedCategoryChange.emit($event); onOpFilterChange()"
+                  class="flex-1 px-2.5 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer">
+            <option value="Todas">Todas las categorías</option>
+            <option *ngFor="let cat of categoriesList" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabla de Operaciones SAM con Altura Estable -->
+      <div class="overflow-x-auto min-h-[380px]">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+              <th class="py-2.5 px-3">Operación de Confección</th>
+              <th class="py-2.5 px-3">Categoría</th>
+              <th class="py-2.5 px-3">Maquinaria</th>
+              <th class="py-2.5 px-3 text-right">Tiempo SAM</th>
+              <th class="py-2.5 px-3 text-right"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let op of paginatedSharedOperations; let i = index" class="hover:bg-indigo-50/40 transition">
+              <td class="py-2.5 px-3 font-bold text-slate-800">
+                {{ op.operation_name }}
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600">
+                  {{ op.category || 'General' }}
+                </span>
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md text-[10px]">
+                  {{ op.machine_name }}
+                </span>
+              </td>
+              <td class="py-2.5 px-3 text-right font-mono font-black text-slate-900">
+                {{ op.execution_time }} min
+              </td>
+              <td class="py-2.5 px-3 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button (click)="editOp.emit({ op: op, index: (opPageSize === -1 ? i : (opCurrentPage - 1) * opPageSize + i) })" 
+                          class="p-1 text-slate-400 hover:text-indigo-600 rounded transition cursor-pointer" title="Editar">
+                    <i class="bi bi-pencil text-xs"></i>
+                  </button>
+                  <button (click)="deleteOp.emit(opPageSize === -1 ? i : (opCurrentPage - 1) * opPageSize + i)" 
+                          class="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer" title="Eliminar">
+                    <i class="bi bi-trash text-xs"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredSharedOperations.length === 0">
+              <td colspan="5" class="py-12 text-center text-slate-400 text-xs italic">
+                No hay operaciones que coincidan con los filtros activos.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Barra de Paginación de Operaciones -->
+      <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+        <div class="text-[11px] text-slate-500 font-medium">
+          Mostrando 
+          <span class="font-bold text-slate-800">
+            {{ opPageSize === -1 ? (filteredSharedOperations.length ? 1 : 0) : ((opCurrentPage - 1) * opPageSize + 1) }}
+          </span> 
+          a 
+          <span class="font-bold text-slate-800">
+            {{ opPageSize === -1 ? filteredSharedOperations.length : (opCurrentPage * opPageSize > filteredSharedOperations.length ? filteredSharedOperations.length : opCurrentPage * opPageSize) }}
+          </span> 
+          de 
+          <span class="font-bold text-slate-800">{{ filteredSharedOperations.length }}</span> operaciones
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Selector de Cantidad por Página -->
+          <select [ngModel]="opPageSize" 
+                  (ngModelChange)="opPageSizeChange.emit($event); onOpFilterChange()"
+                  class="px-2 py-1 text-[11px] font-bold bg-white border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+            <option [ngValue]="10">10 por pág.</option>
+            <option [ngValue]="25">25 por pág.</option>
+            <option [ngValue]="50">50 por pág.</option>
+            <option [ngValue]="-1">Ver Todas</option>
+          </select>
+
+          <!-- Botones Paginador -->
+          <div *ngIf="opPageSize !== -1 && opTotalPages > 1" class="flex items-center gap-1">
+            <button (click)="setOpPage(opCurrentPage - 1)" 
+                    [disabled]="opCurrentPage === 1"
+                    class="px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition cursor-pointer text-xs font-bold">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+
+            <span class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold text-[11px] font-mono">
+              {{ opCurrentPage }} / {{ opTotalPages }}
+            </span>
+
+            <button (click)="setOpPage(opCurrentPage + 1)" 
+                    [disabled]="opCurrentPage === opTotalPages"
+                    class="px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition cursor-pointer text-xs font-bold">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

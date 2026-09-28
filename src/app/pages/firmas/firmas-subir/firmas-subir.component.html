@@ -88,7 +88,7 @@
               
               <div class="flex items-center gap-2">
                 <select [(ngModel)]="etiquetaId" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-blue-500">
-                  <option [ngValue]="null">(Sin etiqueta / General)</option>
+                  <option [ngValue]="null">-- Seleccionar etiqueta --</option>
                   <option *ngFor="let etiq of etiquetasList" [value]="etiq.id">
                     🏷️ {{ etiq.nombre }}
                   </option>
@@ -153,96 +153,174 @@
 
               <!-- DROPDOWN DE RESULTADOS DE BÚSQUEDA -->
               <div *ngIf="mostrarDropdownColab && colaboradoresFiltrados.length > 0" 
-                   class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto">
-                <button *ngFor="let c of colaboradoresFiltrados" (click)="agregarColaborador(c)" type="button" 
-                        class="w-full text-left px-4 py-2.5 text-xs hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-b-0 flex items-center justify-between">
-                  <div>
-                    <div class="font-bold text-slate-800">{{ c.firstName || c.name }} {{ c.lastName || '' }}</div>
-                    <div class="text-[10px] text-slate-400">{{ c.cargo || 'Sin cargo' }} &bull; {{ c.correo_corporativo || c.correo_personal || 'Sin correo' }}</div>
+                   data-firmante-sidebar="true"
+                   class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                <div *ngFor="let c of colaboradoresFiltrados" 
+                     class="w-full text-left px-3.5 py-2.5 text-xs hover:bg-slate-50 transition-colors flex items-center justify-between gap-2">
+                  <div class="grow min-w-0">
+                    <div class="font-bold text-slate-800 truncate">{{ c.firstName || c.name }} {{ c.lastName || '' }}</div>
+                    <div class="text-[10px] text-slate-400 truncate">{{ c.cargo || 'Sin cargo' }}</div>
+                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      <span *ngIf="c.correo_corporativo" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[9px] font-medium border border-blue-200/60 truncate max-w-[200px]" [title]="c.correo_corporativo">
+                        <i class="bi bi-building text-[8px]"></i> Corp: {{ c.correo_corporativo }}
+                      </span>
+                      <span *ngIf="c.correo_personal" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-medium border border-purple-200/60 truncate max-w-[200px]" [title]="c.correo_personal">
+                        <i class="bi bi-person text-[8px]"></i> Pers: {{ c.correo_personal }}
+                      </span>
+                      <span *ngIf="!c.correo_corporativo && !c.correo_personal" class="text-[9px] text-amber-500 font-bold">
+                        Sin correo
+                      </span>
+                    </div>
                   </div>
-                  <span class="text-blue-600 font-bold text-xs">+ Agregar</span>
-                </button>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button *ngIf="c.correo_corporativo" (click)="agregarColaborador(c, 'corporativo')" type="button" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all" title="Agregar con Correo Corporativo">
+                      + Corp
+                    </button>
+                    <button *ngIf="c.correo_personal" (click)="agregarColaborador(c, 'personal')" type="button" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all" title="Agregar con Correo Personal">
+                      + Pers
+                    </button>
+                    <button *ngIf="!c.correo_corporativo && !c.correo_personal" (click)="agregarColaborador(c)" type="button" class="px-2 py-1 bg-slate-600 hover:bg-slate-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all">
+                      + Agregar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- LISTA DE FIRMANTES AGREGADOS -->
-            <div *ngIf="firmantes.length > 0" class="flex flex-col gap-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
-              <div *ngFor="let f of firmantes; let i = index" 
-                   (click)="selectActiveFirmante(i)"
-                   class="p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 relative"
+            <!-- LISTA DE FIRMANTES AGREGADOS (AGRUPADOS POR PERSONA) -->
+            <div *ngIf="firmantes.length > 0" class="flex flex-col gap-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+              <div *ngFor="let g of groupedFirmantes; trackBy: trackByGroupKey" 
+                   class="p-3.5 rounded-xl border transition-all flex flex-col gap-2 relative"
                    [ngClass]="{
-                     'bg-amber-50/90 border-amber-400 ring-2 ring-amber-300': !f.isCreator && (!f.colaborador_id || f.colaborador_id === 0),
-                     'bg-purple-50/80 border-purple-400 shadow-sm ring-1 ring-purple-300': activeFirmanteIndex === i && (f.isCreator || f.colaborador_id > 0),
-                     'bg-slate-50 border-slate-200 hover:border-slate-300': activeFirmanteIndex !== i && (f.isCreator || f.colaborador_id > 0)
+                     'bg-amber-50/90 border-amber-400 ring-2 ring-amber-300': !g.isCreator && (!g.colaborador_id || g.colaborador_id === 0),
+                     'bg-slate-50 border-slate-200 hover:border-slate-300': g.isCreator || g.colaborador_id > 0
                    }">
                 
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center shadow-xs"
+                <!-- ENCABEZADO FIRMANTE -->
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-2 grow overflow-hidden">
+                    <span class="w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center shrink-0 shadow-xs"
                           [ngClass]="{
-                            'bg-amber-500': !f.isCreator && (!f.colaborador_id || f.colaborador_id === 0),
-                            'bg-purple-600': activeFirmanteIndex === i,
-                            'bg-blue-600': activeFirmanteIndex !== i && (f.isCreator || f.colaborador_id > 0)
+                            'bg-amber-500': !g.isCreator && (!g.colaborador_id || g.colaborador_id === 0),
+                            'bg-purple-600': g.isCreator,
+                            'bg-blue-600': !g.isCreator && g.colaborador_id > 0
                           }">
-                      {{ i + 1 }}
+                      {{ g.boxes.length }}
                     </span>
-                    <div>
-                      <span class="font-bold text-xs block" [ngClass]="!f.isCreator && (!f.colaborador_id || f.colaborador_id === 0) ? 'text-amber-900' : 'text-slate-800'">
-                        {{ f.nombre }}
+                    <div class="truncate grow">
+                      <span class="font-bold text-xs block text-slate-800 truncate" [title]="g.nombre">
+                        {{ g.nombre }}
                       </span>
-                      <span class="text-[10px] block" [ngClass]="!f.isCreator && (!f.colaborador_id || f.colaborador_id === 0) ? 'text-amber-700 font-bold' : 'text-slate-400'">
-                        {{ f.cargo }}
+                      <span class="text-[10px] block text-slate-400 truncate" [title]="g.cargo">
+                        {{ g.cargo }}
                       </span>
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-1.5">
-                    <button *ngIf="!f.isCreator && (!f.colaborador_id || f.colaborador_id === 0)"
-                            (click)="openAssignPopoverForBox(i, $event)" type="button"
+                  <div class="flex items-center gap-1 shrink-0">
+                    <!-- Botón Asignar Colaborador (si la caja aún está vacía) -->
+                    <button *ngIf="!g.isCreator && (!g.colaborador_id || g.colaborador_id === 0)"
+                            (click)="openAssignPopoverForBox(g.boxes[0].index, $event)" type="button"
                             class="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white rounded text-[10px] font-bold shadow-xs animate-pulse">
                       <i class="bi bi-person-plus-fill me-1"></i> Asignar
                     </button>
-                    <button (click)="removerFirmante(i); $event.stopPropagation()" type="button" class="text-slate-400 hover:text-rose-600 text-xs p-1">
+
+                    <!-- Toggle expandir/colapsar -->
+                    <button (click)="toggleGrupoExpanded(g.key, $event)" type="button"
+                            class="text-slate-400 hover:text-slate-700 text-xs p-1"
+                            [title]="g.expanded ? 'Colapsar recuadros' : 'Desplegar recuadros'">
+                      <i class="bi" [ngClass]="g.expanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+
+                    <!-- Eliminar todo el grupo de recuadros -->
+                    <button (click)="removerGrupoFirmante(g, $event)" type="button" 
+                            class="text-slate-400 hover:text-rose-600 text-xs p-1"
+                            title="Eliminar firmante y sus recuadros">
                       <i class="bi bi-trash3"></i>
                     </button>
                   </div>
                 </div>
 
-                <!-- OPCIONES DE CORREO -->
-                <div class="grid grid-cols-2 gap-2 text-[10px]">
-                  <label class="flex items-center gap-1.5 cursor-pointer p-1.5 rounded border"
-                         [ngClass]="f.tipo_correo === 'corporativo' ? 'bg-blue-100/80 border-blue-400 text-blue-900 font-bold' : 'bg-white border-slate-200 text-slate-600'">
-                    <input type="radio" [name]="'correo_type_' + i" value="corporativo" [(ngModel)]="f.tipo_correo" class="text-blue-600">
-                    <div class="truncate">
-                      <span class="block text-[9px] uppercase tracking-wider text-slate-500">Correo Corp</span>
-                      <span class="truncate block">{{ f.correo_corporativo || 'Sin correo corp' }}</span>
-                    </div>
-                  </label>
+                <!-- OPCIONES DE CORREO (SELECCIÓN CORPORATIVO / PERSONAL Y VISUALIZACIÓN CLARA) -->
+                <div *ngIf="g.isCreator || g.colaborador_id > 0" class="flex flex-col gap-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <!-- Pill: Corporativo -->
+                    <button *ngIf="g.correo_corporativo" type="button"
+                            (click)="updateGrupoTipoCorreo(g, 'corporativo', $event)"
+                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all border flex items-center gap-1"
+                            [ngClass]="g.tipo_correo === 'corporativo' 
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                              : 'bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600'">
+                      <i class="bi bi-building text-[9px]"></i> Corporativo
+                    </button>
 
-                  <label class="flex items-center gap-1.5 cursor-pointer p-1.5 rounded border"
-                         [ngClass]="f.tipo_correo === 'personal' ? 'bg-purple-100/80 border-purple-400 text-purple-900 font-bold' : 'bg-white border-slate-200 text-slate-600'">
-                    <input type="radio" [name]="'correo_type_' + i" value="personal" [(ngModel)]="f.tipo_correo" class="text-purple-600">
-                    <div class="truncate">
-                      <span class="block text-[9px] uppercase tracking-wider text-slate-500">Correo Pers</span>
-                      <span class="truncate block">{{ f.correo_personal || 'Sin correo pers' }}</span>
-                    </div>
-                  </label>
+                    <!-- Pill: Personal -->
+                    <button *ngIf="g.correo_personal" type="button"
+                            (click)="updateGrupoTipoCorreo(g, 'personal', $event)"
+                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all border flex items-center gap-1"
+                            [ngClass]="g.tipo_correo === 'personal' 
+                              ? 'bg-purple-600 text-white border-purple-600 shadow-sm' 
+                              : 'bg-white text-slate-500 border-slate-200 hover:border-purple-300 hover:text-purple-600'">
+                      <i class="bi bi-person text-[9px]"></i> Personal
+                    </button>
+
+                    <!-- Si no tiene correo -->
+                    <span *ngIf="!g.correo_corporativo && !g.correo_personal" class="text-[10px] text-amber-600 font-bold flex items-center gap-1">
+                      <i class="bi bi-exclamation-triangle-fill"></i> Sin correo registrado
+                    </span>
+                  </div>
+
+                  <!-- Correo seleccionado visible de forma permanente -->
+                  <div *ngIf="getActiveEmail(g)" 
+                       class="text-[10px] text-slate-600 flex items-center gap-1.5 bg-slate-100/90 px-2 py-0.5 rounded-lg border border-slate-200/80 truncate mt-0.5" 
+                       [title]="'Correo destino para la firma: ' + getActiveEmail(g)">
+                    <i class="bi bi-envelope-check-fill text-blue-600 shrink-0 text-[11px]"></i>
+                    <span class="truncate font-mono font-medium">{{ getActiveEmail(g) }}</span>
+                  </div>
                 </div>
 
                 <!-- TIPO DE FIRMA REQUERIDA (DIGITAL / PULSO / AMBAS) -->
-                <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/50 mt-1">
+                <div *ngIf="g.isCreator || g.colaborador_id > 0" class="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/50">
                   <span class="text-[10px] text-slate-500 font-medium">Método de firma:</span>
-                  <select [(ngModel)]="f.tipo_firma_requerida" class="bg-white border border-slate-200 rounded px-2 py-0.5 text-[10px] font-bold text-slate-700 outline-none">
+                  <select [ngModel]="g.tipo_firma_requerida" (ngModelChange)="updateGrupoTipoFirma(g, $event)" class="bg-white border border-slate-200 rounded px-2 py-0.5 text-[10px] font-bold text-slate-700 outline-none">
                     <option value="AMBAS">Firma Digital + Pulso (Ambas)</option>
                     <option value="PULSO">Firma a Pulso (Canvas)</option>
                     <option value="DIGITAL">Firma Digital Autoverificada</option>
                   </select>
                 </div>
 
-                <!-- UBICACIÓN ASIGNADA EN PDF -->
-                <div class="text-[10px] text-slate-500 flex items-center justify-between bg-white px-2 py-1 rounded border border-slate-200">
-                  <span><i class="bi bi-geo-alt-fill text-blue-500"></i> Pág {{ f.pagina }} (X: {{ f.posicion_x }}mm, Y: {{ f.posicion_y }}mm)</span>
-                  <span class="font-semibold text-slate-700">{{ f.ancho }}x{{ f.alto }}mm</span>
+                <!-- DESPLEGABLE DE RECUADROS Y PÁGINAS -->
+                <div *ngIf="g.expanded" class="flex flex-col gap-1.5 pt-1.5 border-t border-slate-200/60 mt-0.5">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[10px] font-bold text-slate-600 flex items-center gap-1">
+                      <i class="bi bi-layers-fill text-blue-500"></i> Recuadros ({{ g.boxes.length }}):
+                    </span>
+                    <button (click)="duplicarFirmanteEnGrupo(g, $event)" 
+                            type="button" 
+                            [title]="'Agregar recuadro para ' + g.nombre + ' en la pág. ' + pagina"
+                            class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[10px] font-bold border border-blue-200 flex items-center gap-1 transition-all">
+                      <i class="bi bi-plus-circle-fill"></i> + Pág {{ pagina }}
+                    </button>
+                  </div>
+
+                  <!-- BADGES DE PÁGINAS -->
+                  <div class="flex flex-wrap gap-1.5 mt-0.5">
+                    <div *ngFor="let box of g.boxes; trackBy: trackByBoxIndex"
+                         (click)="selectActiveFirmante(box.index); $event.stopPropagation()"
+                         class="group/box cursor-pointer px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1.5 border transition-all"
+                         [ngClass]="activeFirmanteIndex === box.index 
+                           ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-300' 
+                           : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400 hover:text-blue-700'">
+                      <span><i class="bi bi-geo-alt-fill text-[9px]"></i> Pág {{ box.pagina }}</span>
+                      <!-- Botón X para borrar solo este recuadro individual -->
+                      <button (click)="removerRecuadroIndividual(box.index, $event)"
+                              type="button"
+                              title="Eliminar solo esta firma en pág. {{ box.pagina }}"
+                              class="opacity-70 group-hover/box:opacity-100 hover:text-rose-500 rounded p-0.5 flex items-center justify-center transition-colors">
+                        <i class="bi bi-x-lg text-[9px]"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -258,11 +336,61 @@
             </label>
 
             <div *ngIf="firmarAhoraCreador" class="flex flex-col gap-3 pt-2 border-t border-slate-100">
-              <p class="text-[11px] text-slate-500">Dibuja tu trazo de firma a continuación (opcional):</p>
-              <div class="relative">
+              <!-- SELECTOR DE MÉTODO DE FIRMA PARA EL CREADOR -->
+              <div>
+                <span class="block text-[11px] font-bold text-slate-600 mb-1.5">Método de Firma del Creador</span>
+                <div class="grid grid-cols-3 gap-2">
+                  <button type="button"
+                          (click)="onCreatorTipoFirmaChange('AMBAS')"
+                          class="px-2 py-2 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center justify-center gap-0.5"
+                          [ngClass]="creadorTipoFirma === 'AMBAS' 
+                            ? 'bg-purple-50 text-purple-700 border-purple-300 ring-2 ring-purple-200 shadow-xs' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'">
+                    <i class="bi bi-patch-check-fill text-purple-600 text-sm"></i>
+                    <span>Ambas</span>
+                    <span class="text-[8px] font-normal text-slate-400">Digital + Pulso</span>
+                  </button>
+
+                  <button type="button"
+                          (click)="onCreatorTipoFirmaChange('DIGITAL')"
+                          class="px-2 py-2 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center justify-center gap-0.5"
+                          [ngClass]="creadorTipoFirma === 'DIGITAL' 
+                            ? 'bg-blue-50 text-blue-700 border-blue-300 ring-2 ring-blue-200 shadow-xs' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'">
+                    <i class="bi bi-shield-lock-fill text-blue-600 text-sm"></i>
+                    <span>Autoverificada</span>
+                    <span class="text-[8px] font-normal text-slate-400">Solo Digital</span>
+                  </button>
+
+                  <button type="button"
+                          (click)="onCreatorTipoFirmaChange('PULSO')"
+                          class="px-2 py-2 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center justify-center gap-0.5"
+                          [ngClass]="creadorTipoFirma === 'PULSO' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-2 ring-emerald-200 shadow-xs' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'">
+                    <i class="bi bi-pencil-fill text-emerald-600 text-sm"></i>
+                    <span>A Pulso</span>
+                    <span class="text-[8px] font-normal text-slate-400">Trazo manual</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- MENSAJE INFORMATIVO PARA FIRMA DIGITAL PURA -->
+              <div *ngIf="creadorTipoFirma === 'DIGITAL'" class="p-3 bg-blue-50/80 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-800">
+                <i class="bi bi-info-circle-fill text-blue-600 text-sm mt-0.5 shrink-0"></i>
+                <div>
+                  <p class="font-bold text-xs text-blue-900">Firma Digital Autoverificada Saint</p>
+                  <p class="text-[10px] text-blue-700 mt-0.5 leading-snug">Se estampará automáticamente el sello de seguridad oficial Saint, código QR de verificación, fecha, hora e IP en el recuadro asignado.</p>
+                </div>
+              </div>
+
+              <!-- CANVAS DE DIBUJO A PULSO (CUANDO APLICA) -->
+              <div *ngIf="creadorTipoFirma === 'PULSO' || creadorTipoFirma === 'AMBAS'" class="relative">
                 <div class="flex items-center justify-between text-[10px] mb-1">
-                  <span class="font-bold text-slate-600">Trazo a Pulso</span>
-                  <button type="button" (click)="clearCreatorSignature()" class="text-rose-600 font-bold hover:underline">Limpiar Firma</button>
+                  <span class="font-bold text-slate-600">Dibuja tu trazo a pulso (opcional):</span>
+                  <button type="button" (click)="clearCreatorSignature()" class="text-rose-600 font-bold hover:underline flex items-center gap-1">
+                    <i class="bi bi-eraser-fill"></i> Limpiar Firma
+                  </button>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-300 shadow-inner p-1 flex justify-center">
                   <canvas #creatorSignatureCanvas class="w-full h-32 cursor-crosshair"></canvas>
@@ -338,6 +466,7 @@
               <!-- RECUADROS VISUALES ARRASTRABLES PARA TODOS LOS FIRMANTES EN LA PÁGINA -->
               <ng-container *ngFor="let f of firmantes; let i = index">
                 <div *ngIf="f.pagina === pagina"
+                     data-signature-box="true"
                      (mousedown)="onBoxMouseDown($event, i)"
                      (click)="selectActiveFirmante(i); $event.stopPropagation()"
                      class="absolute border-2 transition-all flex flex-col items-center justify-center cursor-move shadow-md rounded-lg group select-none"
@@ -363,10 +492,30 @@
 
                   <!-- BOTÓN SOBREESCRITURA Y CONFIGURACIÓN RÁPIDA (SOLO EN EL SELECCIONADO) -->
                   <button *ngIf="activeFirmanteIndex === i" (click)="openAssignPopoverForBox(i, $event)" type="button"
-                          class="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-purple-700 hover:bg-purple-900 text-white flex items-center justify-center text-[10px] shadow-md transition-transform transform hover:scale-110 z-40"
+                          class="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-purple-700 hover:bg-purple-900 text-white flex items-center justify-center text-[10px] shadow-md transition-transform transform hover:scale-110 z-50"
                           title="Cambiar firmante o tipo de firma">
                     <i class="bi bi-gear-fill"></i>
                   </button>
+
+                  <!-- PUNTOS Y BORDES DE REDIMENSIONAMIENTO (SOLO EN EL SELECCIONADO) -->
+                  <ng-container *ngIf="activeFirmanteIndex === i">
+                    <!-- Esquinas -->
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'nw')" class="absolute w-3 h-3 bg-white border-2 border-purple-700 rounded-full shadow-md z-40 -top-1.5 -left-1.5 cursor-nwse-resize hover:scale-125 transition-transform" title="Redimensionar"></div>
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'ne')" class="absolute w-3 h-3 bg-white border-2 border-purple-700 rounded-full shadow-md z-40 -top-1.5 -right-1.5 cursor-nesw-resize hover:scale-125 transition-transform" title="Redimensionar"></div>
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'sw')" class="absolute w-3 h-3 bg-white border-2 border-purple-700 rounded-full shadow-md z-40 -bottom-1.5 -left-1.5 cursor-nesw-resize hover:scale-125 transition-transform" title="Redimensionar"></div>
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'se')" class="absolute w-3 h-3 bg-white border-2 border-purple-700 rounded-full shadow-md z-40 -bottom-1.5 -right-1.5 cursor-nwse-resize hover:scale-125 transition-transform" title="Redimensionar"></div>
+                    
+                    <!-- Bordes centrales -->
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'n')" class="absolute w-3 h-2 bg-white border-2 border-purple-700 rounded-sm shadow-md z-40 -top-1 left-1/2 -translate-x-1/2 cursor-ns-resize hover:scale-125 transition-transform" title="Ajustar alto"></div>
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 's')" class="absolute w-3 h-2 bg-white border-2 border-purple-700 rounded-sm shadow-md z-40 -bottom-1 left-1/2 -translate-x-1/2 cursor-ns-resize hover:scale-125 transition-transform" title="Ajustar alto"></div>
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'w')" class="absolute w-2 h-3 bg-white border-2 border-purple-700 rounded-sm shadow-md z-40 -left-1 top-1/2 -translate-y-1/2 cursor-ew-resize hover:scale-125 transition-transform" title="Ajustar ancho"></div>
+                    <div (mousedown)="onResizeHandleMouseDown($event, i, 'e')" class="absolute w-2 h-3 bg-white border-2 border-purple-700 rounded-sm shadow-md z-40 -right-1 top-1/2 -translate-y-1/2 cursor-ew-resize hover:scale-125 transition-transform" title="Ajustar ancho"></div>
+
+                    <!-- Badge de dimensiones -->
+                    <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-purple-900 bg-purple-100 px-1.5 py-0.5 rounded-full border border-purple-300 shadow-sm whitespace-nowrap pointer-events-none z-30">
+                      {{ f.ancho }} × {{ f.alto }} mm
+                    </span>
+                  </ng-container>
                 </div>
               </ng-container>
 
@@ -423,14 +572,14 @@
 </app-modal-gestion-etiquetas>
 
 <!-- MODAL POP-OVER DE ASIGNACIÓN RÁPIDA DE FIRMANTE A CUALQUIER RECUADRO -->
-<div *ngIf="showAssignPopover" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-  <div class="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+<div *ngIf="showAssignPopover" class="modal-assign-popover fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" (click)="showAssignPopover = false">
+  <div class="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150" (click)="$event.stopPropagation()">
     <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
       <div>
         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
           <i class="bi bi-person-badge-fill text-purple-600"></i> Asignar Colaborador al Recuadro
         </h3>
-        <p class="text-[11px] text-slate-500">Selecciona el colaborador que debe firmar en este recuadro.</p>
+        <p class="text-[11px] text-slate-500">Selecciona el colaborador y el correo para la firma.</p>
       </div>
       <button (click)="showAssignPopover = false" type="button" class="text-slate-400 hover:text-slate-600 text-lg">
         <i class="bi bi-x-lg"></i>
@@ -448,36 +597,78 @@
       </div>
     </div>
 
-    <!-- LISTA DE COLABORADORES PARA ASIGNAR CON UN CLIC -->
-    <div class="max-h-56 overflow-y-auto mb-4 border border-slate-100 rounded-xl divide-y divide-slate-100">
-      <button *ngFor="let c of popoverColaboradoresFiltrados" (click)="asignarColaboradorABox(c)" type="button"
-              class="w-full text-left p-2.5 hover:bg-purple-50 transition-colors flex items-center justify-between text-xs">
-        <div>
-          <div class="font-bold text-slate-800">{{ c.firstName || c.name }} {{ c.lastName || '' }}</div>
-          <div class="text-[10px] text-slate-400">{{ c.cargo || 'Sin cargo' }} &bull; {{ c.email || 'Sin correo' }}</div>
+    <!-- LISTA DE COLABORADORES CON SUS CORREOS DISPONIBLES (CORP Y PERSONAL) -->
+    <div class="max-h-60 overflow-y-auto mb-4 border border-slate-100 rounded-xl divide-y divide-slate-100">
+      <div *ngFor="let c of popoverColaboradoresFiltrados"
+           class="w-full text-left p-2.5 hover:bg-purple-50/60 transition-colors flex items-center justify-between gap-2 text-xs">
+        <div class="grow min-w-0">
+          <div class="font-bold text-slate-800 truncate">{{ c.firstName || c.name }} {{ c.lastName || '' }}</div>
+          <div class="text-[10px] text-slate-400 truncate">{{ c.cargo || 'Sin cargo' }}</div>
+          <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+            <span *ngIf="c.correo_corporativo" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[9px] font-medium border border-blue-200/60 truncate max-w-[190px]" [title]="c.correo_corporativo">
+              <i class="bi bi-building text-[8px]"></i> Corp: {{ c.correo_corporativo }}
+            </span>
+            <span *ngIf="c.correo_personal" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-medium border border-purple-200/60 truncate max-w-[190px]" [title]="c.correo_personal">
+              <i class="bi bi-person text-[8px]"></i> Pers: {{ c.correo_personal }}
+            </span>
+            <span *ngIf="!c.correo_corporativo && !c.correo_personal" class="text-[9px] text-amber-500 font-bold">
+              Sin correo
+            </span>
+          </div>
         </div>
-        <span class="text-purple-600 font-bold text-[11px] bg-purple-100 px-2 py-0.5 rounded-full">+ Asignar</span>
-      </button>
+        <div class="flex items-center gap-1 shrink-0">
+          <button *ngIf="c.correo_corporativo" (click)="asignarColaboradorABox(c, 'corporativo')" type="button" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all" title="Asignar con Correo Corporativo">
+            Corp
+          </button>
+          <button *ngIf="c.correo_personal" (click)="asignarColaboradorABox(c, 'personal')" type="button" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all" title="Asignar con Correo Personal">
+            Pers
+          </button>
+          <button *ngIf="!c.correo_corporativo && !c.correo_personal" (click)="asignarColaboradorABox(c)" type="button" class="px-2 py-1 bg-slate-600 hover:bg-slate-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all">
+            Asignar
+          </button>
+        </div>
+      </div>
 
       <div *ngIf="popoverColaboradoresFiltrados.length === 0" class="p-4 text-center text-xs text-slate-400">
         No se encontraron colaboradores con esa búsqueda.
       </div>
     </div>
 
-    <!-- CONFIGURACIÓN DE TIPO DE FIRMA Y ELIMINAR -->
-    <div *ngIf="popoverFirmanteIndex >= 0 && firmantes[popoverFirmanteIndex]" class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
-      <div>
-        <span class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Tipo de Firma</span>
-        <select [(ngModel)]="firmantes[popoverFirmanteIndex].tipo_firma_requerida" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-purple-500">
-          <option value="AMBAS">Digital + Pulso (Recomendado)</option>
-          <option value="DIGITAL">Solo Firma Digital</option>
-          <option value="PULSO">Solo Firma a Pulso</option>
-        </select>
+    <!-- CONFIGURACIÓN DE CORREO, TIPO DE FIRMA Y ELIMINAR -->
+    <div *ngIf="popoverFirmanteIndex >= 0 && firmantes[popoverFirmanteIndex]" class="pt-3 border-t border-slate-100 flex flex-col gap-3">
+      <!-- Selector de correo si el firmante actual tiene ambos disponibles -->
+      <div *ngIf="firmantes[popoverFirmanteIndex].correo_corporativo || firmantes[popoverFirmanteIndex].correo_personal" class="flex items-center justify-between gap-2 flex-wrap bg-slate-50 p-2 rounded-xl border border-slate-200/60">
+        <span class="text-[10px] font-bold text-slate-600">Correo Notificación:</span>
+        <div class="flex items-center gap-1">
+          <button *ngIf="firmantes[popoverFirmanteIndex].correo_corporativo" type="button"
+                  (click)="updatePopoverTipoCorreo('corporativo')"
+                  class="px-2 py-1 rounded text-[10px] font-bold border transition-all"
+                  [ngClass]="firmantes[popoverFirmanteIndex].tipo_correo === 'corporativo' ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-blue-50'">
+            <i class="bi bi-building text-[8px] me-1"></i> Corp
+          </button>
+          <button *ngIf="firmantes[popoverFirmanteIndex].correo_personal" type="button"
+                  (click)="updatePopoverTipoCorreo('personal')"
+                  class="px-2 py-1 rounded text-[10px] font-bold border transition-all"
+                  [ngClass]="firmantes[popoverFirmanteIndex].tipo_correo === 'personal' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white text-slate-600 border-slate-200 hover:bg-purple-50'">
+            <i class="bi bi-person text-[8px] me-1"></i> Personal
+          </button>
+        </div>
       </div>
 
-      <button (click)="removerFirmante(popoverFirmanteIndex); showAssignPopover = false" type="button" class="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200">
-        <i class="bi bi-trash3 me-1"></i> Eliminar Recuadro
-      </button>
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+          <span class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Tipo de Firma</span>
+          <select [(ngModel)]="firmantes[popoverFirmanteIndex].tipo_firma_requerida" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-purple-500">
+            <option value="AMBAS">Digital + Pulso (Recomendado)</option>
+            <option value="DIGITAL">Solo Firma Digital</option>
+            <option value="PULSO">Solo Firma a Pulso</option>
+          </select>
+        </div>
+
+        <button (click)="removerFirmante(popoverFirmanteIndex); showAssignPopover = false" type="button" class="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 self-end">
+          <i class="bi bi-trash3 me-1"></i> Eliminar Recuadro
+        </button>
+      </div>
     </div>
   </div>
 </div>

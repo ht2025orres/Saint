@@ -60,8 +60,22 @@ export class DocumentoFirmaService {
   constructor(private http: HttpClient) {}
 
   /** Listar documentos de firma creados */
-  getDocumentos(page: number = 1, search: string = '', estado: string = '', etiquetaId: string = '', papelera: boolean = false, perPage: number = 500): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/documento-firmas?page=${page}&per_page=${perPage}&search=${search}&estado=${estado}&etiqueta_id=${etiquetaId}&papelera=${papelera ? 1 : 0}`);
+  getDocumentos(
+    page: number = 1,
+    search: string = '',
+    estado: string = '',
+    etiquetaId: string = '',
+    papelera: boolean = false,
+    perPage: number = 500,
+    anio: string = '',
+    mes: string = '',
+    proceso: string = ''
+  ): Observable<any> {
+    let url = `${this.baseUrl}/documento-firmas?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}&estado=${encodeURIComponent(estado)}&etiqueta_id=${encodeURIComponent(etiquetaId)}&papelera=${papelera ? 1 : 0}`;
+    if (anio) url += `&anio=${encodeURIComponent(anio)}`;
+    if (mes) url += `&mes=${encodeURIComponent(mes)}`;
+    if (proceso) url += `&proceso=${encodeURIComponent(proceso)}`;
+    return this.http.get<any>(url);
   }
 
   /** Mover uno o varios documentos a la Papelera con motivo */
@@ -87,6 +101,13 @@ export class DocumentoFirmaService {
   /** Actualizar metadatos de un documento (cambiar etiqueta, título, etc) */
   updateDocumento(id: number, payload: any): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/documento-firmas/${id}`, payload);
+  }
+
+  /** Reemplazar archivo PDF de un documento existente */
+  reemplazarPdf(id: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('documento', file);
+    return this.http.post<any>(`${this.baseUrl}/documento-firmas/${id}/reemplazar-pdf`, formData);
   }
 
   /** Listar etiquetas por proceso */
@@ -166,8 +187,8 @@ export class DocumentoFirmaService {
     return this.http.get<any>(`${this.baseUrl}/public/firmar-documento/${token}`);
   }
 
-  /** RUTA PÚBLICA: Procesar firma por Token */
-  signByToken(token: string, payload: { metodo_firma_usado?: string; firma_pulso_base64?: string; rechazar?: boolean; motivo_rechazo?: string }): Observable<any> {
+  /** RUTA PÚBLICA: Procesar firma por Token (individual o masiva) */
+  signByToken(token: string, payload: { metodo_firma_usado?: string; firma_pulso_base64?: string; rechazar?: boolean; motivo_rechazo?: string; firmar_todas?: boolean; destinatario_ids?: number[] }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/public/firmar-documento/${token}`, payload);
   }
 }

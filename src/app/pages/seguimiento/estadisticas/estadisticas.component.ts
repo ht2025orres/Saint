@@ -70,6 +70,8 @@ export class EstadisticasComponent implements OnInit, OnChanges {
 
   dataEstadisticas: EstadisticasData | null = null;
 
+  subTab: 'equipo' | 'proyectos' = 'equipo';
+
   showModalDetalleTareas = false;
   miembroSeleccionadoParaModal: MiembroEstadistica | null = null;
 
@@ -92,6 +94,11 @@ export class EstadisticasComponent implements OnInit, OnChanges {
     if (changes['vistaMode'] && !changes['vistaMode'].firstChange) {
       this.cargarEstadisticas();
     }
+  }
+
+  setSubTab(tab: 'equipo' | 'proyectos'): void {
+    this.subTab = tab;
+    this._cdr.markForCheck();
   }
 
   cargarEstadisticas(): void {

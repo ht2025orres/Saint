@@ -1,0 +1,57 @@
+name: Build and Deploy to AWS & cPanel
+
+on:
+  push:
+    branches: [ main, staging, aws ]
+  workflow_dispatch:
+
+jobs:
+  build-aws-pruebas:
+    name: Build AWS Pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Build for AWS (Pruebas)
+        run: npm run build:aws
+
+      - name: Upload AWS Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-aws-pruebas
+          path: dist/saint-app/
+
+  build-cpanel-produccion:
+    name: Build cPanel Producción
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Build for cPanel (Producción)
+        run: npm run build:prod
+
+      - name: Upload cPanel Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-cpanel-produccion
+          path: dist/saint-app/

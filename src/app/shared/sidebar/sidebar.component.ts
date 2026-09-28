@@ -357,6 +357,12 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         permissions: [1]
       },
       {
+        label: 'Abastecimiento y Materiales',
+        icon: 'bi bi-box-seam',
+        link: '/abastecimiento',
+        permissions: [1]
+      },
+      {
         label: 'Tiempos Ítems',
         icon: 'bi bi-clock-history',
         link: '/tiempos-items',
@@ -382,6 +388,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         submenu: [
           { label: 'Ver Moldes', link: '/moldes', permissions: [1, 40] },
           { label: 'Crear Molde', link: '/moldes/admin', permissions: [1, 41] },
+          { label: 'Catálogo de Partes y Operaciones', link: '/moldes/partes', permissions: [1, 40, 41] },
           { label: 'Generar OPM', link: '/moldes/opm-generator', permissions: [1, 46] },
         ]
       },

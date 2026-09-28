@@ -16,6 +16,7 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
   loading: boolean = true;
   submitting: boolean = false;
   errorMessage: string = '';
+  errorData: any = null;
   docData: any = null;
 
   // PDF Preview
@@ -40,7 +41,7 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
   constructor(
     private route: ActivatedRoute,
     private docFirmaService: DocumentoFirmaService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.token = this.route.snapshot.paramMap.get('token') || '';
@@ -60,6 +61,9 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
   }
 
   get isSignaturePage(): boolean {
+    if (this.recuadrosAsignados.length) {
+      return this.recuadrosAsignados.some(r => r.pagina === this.pagina);
+    }
     return this.pagina === (this.docData?.destinatario?.pagina || 1);
   }
 
@@ -67,29 +71,112 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
     return this.docData?.destinatario?.pagina || 1;
   }
 
+  // Múltiples recuadros de firma asignados al firmante
+  firmarTodasLasPaginas: boolean = true;
+
+  // Estado de selección del checklist por recuadro ID
+  recuadroSelections: { [id: number]: boolean } = {};
+
+  initRecuadroSelections(): void {
+    this.recuadroSelections = {};
+    const pend = this.recuadrosPendientes;
+    for (const r of pend) {
+      if (r.id) {
+        this.recuadroSelections[r.id] = true;
+      }
+    }
+  }
+
+  isRecuadroSelected(id: number): boolean {
+    if (!id) return true;
+    return this.recuadroSelections[id] !== false;
+  }
+
+  toggleRecuadroSelection(id: number): void {
+    if (!id) return;
+    this.recuadroSelections[id] = !this.isRecuadroSelected(id);
+    this.firmarTodasLasPaginas = (this.selectedRecuadroIds.length === this.recuadrosPendientes.length);
+  }
+
+  seleccionarTodosRecuadros(): void {
+    for (const r of this.recuadrosPendientes) {
+      if (r.id) this.recuadroSelections[r.id] = true;
+    }
+    this.firmarTodasLasPaginas = true;
+  }
+
+  deseleccionarTodosRecuadros(): void {
+    for (const r of this.recuadrosPendientes) {
+      if (r.id) this.recuadroSelections[r.id] = false;
+    }
+    this.firmarTodasLasPaginas = false;
+  }
+
+  get selectedRecuadroIds(): number[] {
+    return this.recuadrosPendientes
+      .filter(r => r.id && this.recuadroSelections[r.id] !== false)
+      .map(r => r.id);
+  }
+
+  get recuadrosAsignados(): any[] {
+    const list = this.docData?.destinatario?.recuadros_asignados;
+    if (Array.isArray(list) && list.length > 0) {
+      return list;
+    }
+    if (this.docData?.destinatario) {
+      return [this.docData.destinatario];
+    }
+    return [];
+  }
+
+  get totalRecuadros(): number {
+    return this.recuadrosAsignados.length || 1;
+  }
+
+  get recuadrosPendientes(): any[] {
+    if (!this.recuadrosAsignados.length) {
+      return this.docData?.destinatario?.estado === 'FIRMADO' ? [] : [this.docData?.destinatario];
+    }
+    return this.recuadrosAsignados.filter(r => r.estado !== 'FIRMADO');
+  }
+
+  get recuadrosFirmadosCount(): number {
+    return this.totalRecuadros - this.recuadrosPendientes.length;
+  }
+
+  get recuadrosEnPaginaActual(): any[] {
+    if (!this.recuadrosAsignados.length) {
+      return this.isSignaturePage ? [this.docData?.destinatario] : [];
+    }
+    return this.recuadrosAsignados.filter(r => Number(r.pagina || 1) === Number(this.pagina));
+  }
+
+  goToPage(num: number): void {
+    if (num >= 1 && num <= this.totalPages) {
+      this.pagina = num;
+      this.renderPage(this.pagina);
+    }
+  }
+
   // Conversión exacta: mm a PDF points (72 / 25.4 = 2.834645) por zoom
-  private get mmToPoints(): number {
+  get mmToPoints(): number {
     return 72 / 25.4;
   }
 
-  get markerLeft(): number {
-    const mmX = this.docData?.destinatario?.posicion_x || 0;
-    return mmX * this.mmToPoints * this.zoom;
+  getBoxLeft(box: any): number {
+    return (box.posicion_x || 0) * this.mmToPoints * this.zoom;
   }
 
-  get markerTop(): number {
-    const mmY = this.docData?.destinatario?.posicion_y || 0;
-    return mmY * this.mmToPoints * this.zoom;
+  getBoxTop(box: any): number {
+    return (box.posicion_y || 0) * this.mmToPoints * this.zoom;
   }
 
-  get markerWidth(): number {
-    const mmW = this.docData?.destinatario?.ancho || 40;
-    return Math.max(mmW * this.mmToPoints * this.zoom, 60);
+  getBoxWidth(box: any): number {
+    return Math.max((box.ancho || 40) * this.mmToPoints * this.zoom, 60);
   }
 
-  get markerHeight(): number {
-    const mmH = this.docData?.destinatario?.alto || 15;
-    return Math.max(mmH * this.mmToPoints * this.zoom, 25);
+  getBoxHeight(box: any): number {
+    return Math.max((box.alto || 15) * this.mmToPoints * this.zoom, 25);
   }
 
   goToSignaturePage(): void {
@@ -135,12 +222,60 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
       maxWidth: 3.5,
       penColor: '#0f172a'
     });
+
+    if (this.firmaPrecargadaAplicada && this.docData?.destinatario?.firma_preloaded) {
+      this.cargarFirmaPrecargada();
+    }
+  }
+
+  // Firma Precargada desde Perfil (AWS S3)
+  firmaPrecargadaAplicada: boolean = false;
+
+  cargarFirmaPrecargada(): void {
+    if (!this.docData?.destinatario?.firma_preloaded) return;
+    const dataUri = this.docData.destinatario.firma_preloaded;
+    this.firmaPrecargadaAplicada = true;
+
+    const img = new Image();
+    img.onload = () => {
+      // 1. Generar base64 con fondo blanco en canvas fuera de pantalla para envío al backend
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = 600;
+      offCanvas.height = 300;
+      const offCtx = offCanvas.getContext('2d');
+      if (offCtx) {
+        offCtx.fillStyle = '#FFFFFF';
+        offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+        const scale = Math.min((offCanvas.width - 40) / img.width, (offCanvas.height - 40) / img.height);
+        const x = (offCanvas.width - img.width * scale) / 2;
+        const y = (offCanvas.height - img.height * scale) / 2;
+        offCtx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        this.signatureBase64 = offCanvas.toDataURL('image/png');
+      }
+
+      // 2. Renderizar visualmente en el canvas interactivo
+      if (this.signatureCanvasEl) {
+        const canvas = this.signatureCanvasEl.nativeElement;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const scaleVis = Math.min((canvas.width - 20) / img.width, (canvas.height - 20) / img.height);
+          const xVis = (canvas.width - img.width * scaleVis) / 2;
+          const yVis = (canvas.height - img.height * scaleVis) / 2;
+          ctx.drawImage(img, xVis, yVis, img.width * scaleVis, img.height * scaleVis);
+        }
+      }
+    };
+    img.src = dataUri;
   }
 
   clearSignature(): void {
     if (this.signaturePad) {
       this.signaturePad.clear();
       this.signatureBase64 = '';
+      this.firmaPrecargadaAplicada = false;
     }
   }
 
@@ -164,14 +299,15 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
     document.head.appendChild(script);
   }
 
-  loadDocumentData(): void {
+  loadDocumentData(forceReloadPdf: boolean = false): void {
     this.loading = true;
     this.docFirmaService.getByToken(this.token).subscribe({
       next: (res: any) => {
         this.docData = res.data;
         this.loading = false;
         this.pagina = this.docData.destinatario?.pagina || 1;
-        
+        this.initRecuadroSelections();
+
         const tipoReq = this.docData.destinatario?.tipo_firma_requerida;
         if (tipoReq === 'PULSO') {
           this.metodoFirmaSeleccionado = 'PULSO';
@@ -181,15 +317,22 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
           this.metodoFirmaSeleccionado = 'PULSO'; // Selección por defecto en modo libre
         }
 
+        if (forceReloadPdf) {
+          this.pdfDoc = null;
+          this.isRendering = false;
+        }
+
         setTimeout(() => {
           this.initSignaturePad();
-          if (this.docData.documento?.pdf_url && this.pdfLib && !this.pdfDoc) {
-            this.renderPdfFromUrl(this.docData.documento.pdf_url);
+          if (this.docData.documento?.pdf_url && this.pdfLib && (!this.pdfDoc || forceReloadPdf)) {
+            const cacheBuster = (this.docData.documento.pdf_url.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+            this.renderPdfFromUrl(this.docData.documento.pdf_url + cacheBuster);
           }
         }, 300);
       },
       error: (err: any) => {
         this.loading = false;
+        this.errorData = err.error || null;
         this.errorMessage = err.error?.message || 'No fue posible cargar el documento para firma.';
       }
     });
@@ -235,19 +378,23 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
 
     // Cancel any in-progress render
     if (this.currentRenderTask) {
-      try { this.currentRenderTask.cancel(); } catch (_) {}
+      try { this.currentRenderTask.cancel(); } catch (_) { }
       this.currentRenderTask = null;
     }
 
     const page = await this.pdfDoc.getPage(num);
     const viewport = page.getViewport({ scale: this.zoom });
-    
+
     const canvas = document.getElementById('public-pdf-canvas') as HTMLCanvasElement;
     if (!canvas) return;
 
     const context = canvas.getContext('2d');
-    canvas.height = viewport.height;
+    if (!context) return;
+
     canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
     const renderContext = {
       canvasContext: context,
@@ -353,7 +500,7 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
       const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
       const scale = currentDist / this.touchInitialDist;
       const calculatedZoom = Math.min(Math.max(this.touchInitialZoom * scale, 0.35), 3.0);
-      
+
       if (Math.abs(calculatedZoom - this.zoom) > 0.08) {
         this.zoom = Number(calculatedZoom.toFixed(2));
         this.renderPage(this.pagina);
@@ -379,40 +526,59 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
   }
 
   firmarDocumento(): void {
+    if (this.recuadrosPendientes.length > 0 && this.selectedRecuadroIds.length === 0) {
+      Swal.fire('Atención', 'Debes seleccionar al menos un recuadro de firma para estampar.', 'warning');
+      return;
+    }
+
     if (this.metodoFirmaSeleccionado === 'PULSO') {
-      if (!this.signaturePad || this.signaturePad.isEmpty()) {
-        Swal.fire('Firma Requerida', 'Por favor dibuja tu trazo de firma a pulso dentro del recuadro.', 'warning');
+      // Verificar si hay contenido: trazo manual O firma precargada aplicada
+      const tieneTrazo = this.signaturePad && !this.signaturePad.isEmpty();
+      const tienePrecargada = this.firmaPrecargadaAplicada && !!this.signatureBase64;
+
+      if (!tieneTrazo && !tienePrecargada) {
+        Swal.fire('Firma Requerida', 'Por favor dibuja tu trazo de firma a pulso dentro del recuadro o usa tu firma precargada.', 'warning');
         return;
       }
-      const originalCanvas = this.signatureCanvasEl.nativeElement;
-      const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width = originalCanvas.width;
-      tmpCanvas.height = originalCanvas.height;
-      const ctx = tmpCanvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
-        ctx.drawImage(originalCanvas, 0, 0);
-        this.signatureBase64 = tmpCanvas.toDataURL('image/png');
+
+      // Si el usuario dibujó un trazo manual en el canvas, re-exportamos del canvas visible sobre fondo blanco
+      if (tieneTrazo && this.signatureCanvasEl) {
+        const originalCanvas = this.signatureCanvasEl.nativeElement;
+        const tmpCanvas = document.createElement('canvas');
+        tmpCanvas.width = originalCanvas.width;
+        tmpCanvas.height = originalCanvas.height;
+        const ctx = tmpCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+          ctx.drawImage(originalCanvas, 0, 0);
+          this.signatureBase64 = tmpCanvas.toDataURL('image/png');
+        }
       }
     }
 
+    const count = this.selectedRecuadroIds.length;
     const textoMetodo = (this.metodoFirmaSeleccionado === 'PULSO') ? 'Firma a Pulso' : 'Firma Digital Autoverificada Saint';
+    const textoCantidad = (count > 1) ? `en los ${count} recuadros seleccionados` : 'en el recuadro seleccionado';
 
     Swal.fire({
       title: '¿Confirmar Firma Electrónica?',
-      text: `Estamparás tu ${textoMetodo} en este documento oficial de forma permanente.`,
+      text: `Estamparás tu ${textoMetodo} ${textoCantidad} de forma permanente.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#2563eb',
       cancelButtonColor: '#64748b',
-      confirmButtonText: 'Sí, Firmar Documento',
+      confirmButtonText: `Sí, Firmar (${count})`,
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
         this.procesarFirma();
       }
     });
+  }
+
+  irASaint(): void {
+    window.location.href = window.location.origin;
   }
 
   cerrarPestana(): void {
@@ -427,27 +593,51 @@ export class PublicFirmarDocumentoComponent implements OnInit, AfterViewInit {
   }
 
   private procesarFirma(): void {
+    const selectedIds = this.selectedRecuadroIds;
+    if (this.recuadrosPendientes.length > 0 && selectedIds.length === 0) {
+      Swal.fire('Atención', 'Debes seleccionar al menos un recuadro de firma.', 'warning');
+      return;
+    }
+
+    const firmarTodas = (selectedIds.length === this.recuadrosPendientes.length);
+
     this.submitting = true;
     this.docFirmaService.signByToken(this.token, {
       metodo_firma_usado: this.metodoFirmaSeleccionado,
-      firma_pulso_base64: (this.metodoFirmaSeleccionado === 'PULSO') ? this.signatureBase64 : undefined
+      firma_pulso_base64: (this.metodoFirmaSeleccionado === 'PULSO') ? this.signatureBase64 : undefined,
+      firmar_todas: firmarTodas,
+      destinatario_ids: firmarTodas ? undefined : selectedIds
     }).subscribe({
       next: (res: any) => {
         this.submitting = false;
+        this.mobileTab = 'DOCUMENTO';
+
+        // Recargar datos y renderizar PDF firmado inmediatamente sin refrescar la página
+        this.loadDocumentData(true);
+
+        const msgText = (selectedIds.length > 1)
+          ? `Se han estampado tus firmas en los ${selectedIds.length} recuadros seleccionados.`
+          : 'Tu firma ha sido estampada en el recuadro seleccionado.';
+
         Swal.fire({
           title: '¡Firma Registrada Exitosamente!',
-          text: 'El documento ha sido estampado y firmado digitalmente.',
+          text: msgText,
           icon: 'success',
           showCancelButton: true,
+          showDenyButton: true,
           confirmButtonColor: '#2563eb',
-          cancelButtonColor: '#475569',
-          confirmButtonText: 'Cerrar Pestaña',
+          denyButtonColor: '#059669',
+          cancelButtonColor: '#64748b',
+          confirmButtonText: '<i class="bi bi-house-door-fill"></i> Ir a Saint System',
+          denyButtonText: '<i class="bi bi-download"></i> Descargar Copia',
           cancelButtonText: 'Ver Documento'
         }).then((result) => {
           if (result.isConfirmed) {
-            this.cerrarPestana();
-          } else {
-            this.loadDocumentData();
+            this.irASaint();
+          } else if (result.isDenied) {
+            if (this.docData?.documento?.pdf_url) {
+              window.open(this.docData.documento.pdf_url, '_blank');
+            }
           }
         });
       },

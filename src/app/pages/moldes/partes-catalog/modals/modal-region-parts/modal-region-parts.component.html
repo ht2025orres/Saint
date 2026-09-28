@@ -1,0 +1,233 @@
+<div class="fixed inset-0 z-[1200] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 md:p-4 animate-in fade-in"
+     *ngIf="isOpen">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-5xl w-full flex flex-col max-h-[92vh] overflow-hidden animate-in zoom-in-95">
+    
+    <!-- ════════════════════ MODAL HEADER ════════════════════ -->
+    <div class="p-4 md:p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/80">
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl text-white shadow-sm transition-all shrink-0"
+             [style.backgroundColor]="region?.color || (isGeneral ? '#f59e0b' : '#6366f1')">
+          <i class="bi" [ngClass]="region?.icon || (isGeneral ? 'bi-gem' : 'bi-bounding-box-circles')"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-base md:text-lg font-black text-slate-900">
+              {{ isGeneral ? 'Catálogo de Partes Generales & Apliques' : 'Catálogo de Región: ' + (region?.label || 'Zona Anatómica') }}
+            </h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-2xs"
+                  [style.backgroundColor]="region?.color || (isGeneral ? '#f59e0b' : '#6366f1')">
+              {{ isGeneral ? 'Transversal / Opcional' : (region?.value || 'Estructural') }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium mt-0.5 line-clamp-1">
+            {{ region?.description || 'Partes maestras, variantes constructivas y operaciones SAM asociadas a esta zona.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button (click)="createPart.emit(region?.value || 'general')" 
+                class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+          <i class="bi bi-plus-lg"></i>
+          <span>+ Nueva Parte</span>
+        </button>
+        <button (click)="onClose()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-all cursor-pointer" title="Cerrar">
+          <i class="bi bi-x-lg text-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ════════════════════ BARRA DE FILTRO Y MÉTRICAS ════════════════════ -->
+    <div class="px-5 py-3 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+      
+      <!-- Buscador interno -->
+      <div class="relative w-full sm:w-80">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Buscar partes o variantes en esta región..." 
+          class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 font-medium transition-all shadow-2xs"
+        />
+        <button *ngIf="searchTerm" (click)="searchTerm = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+      </div>
+
+      <!-- Resumen de Métricas -->
+      <div class="flex items-center gap-2 flex-wrap text-xs font-bold shrink-0">
+        <span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">
+          📦 {{ filteredParts.length }} {{ filteredParts.length === 1 ? 'Parte' : 'Partes' }}
+        </span>
+        <span class="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700">
+          🧩 {{ totalVariantsCount }} Variantes
+        </span>
+        <span class="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 font-mono">
+          ⏱ {{ totalSamTime | number:'1.2-2' }} min SAM base
+        </span>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════ MODAL BODY: LISTADO DE PARTES ════════════════════ -->
+    <div class="flex-1 overflow-y-auto p-5 md:p-6 space-y-4 custom-scrollbar bg-slate-50/40">
+      
+      <!-- Grid de Partes de la Región -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngIf="filteredParts.length > 0">
+        
+        <div *ngFor="let p of filteredParts" 
+             class="bg-white rounded-2xl border border-slate-200/90 hover:border-indigo-300 p-4 shadow-2xs hover:shadow-md transition-all space-y-3 flex flex-col justify-between group">
+          
+          <div class="space-y-2.5">
+            <!-- Fila Superior: Icono, Nombre, Código y Acciones -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-base shadow-2xs shrink-0"
+                     [style.backgroundColor]="region?.color || '#6366f1'">
+                  <i class="bi" [ngClass]="p.icon || 'bi-puzzle'"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-sm font-black text-slate-900 truncate">{{ p.name }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-slate-100 text-slate-600 border border-slate-200">
+                      {{ p.code || 'PARTE' }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-400 font-medium line-clamp-1 mt-0.5" *ngIf="p.description">{{ p.description }}</p>
+                </div>
+              </div>
+
+              <!-- Botones de Acción de la Parte -->
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" 
+                        (click)="editPart.emit(p)" 
+                        class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition cursor-pointer"
+                        title="Editar Parte y Variantes">
+                  <i class="bi bi-pencil text-xs"></i>
+                </button>
+                <button type="button" 
+                        (click)="deletePart.emit(p)" 
+                        class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                        title="Eliminar Parte">
+                  <i class="bi bi-trash text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Métricas Rápidas de la Parte -->
+            <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+              <span class="font-bold text-slate-500">
+                {{ p.types?.length || 0 }} {{ (p.types?.length === 1) ? 'variante constructiva' : 'variantes constructivas' }}
+              </span>
+              <span class="font-mono font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                ⏱ {{ calculatePartTotalTime(p) | number:'1.2-2' }} min SAM
+              </span>
+            </div>
+
+            <!-- Botón Desplegar Variantes -->
+            <button type="button" 
+                    (click)="toggleExpandPart(p)"
+                    class="w-full py-1.5 px-3 bg-slate-50 hover:bg-indigo-50/60 rounded-xl text-xs font-bold text-slate-600 hover:text-indigo-700 transition flex items-center justify-between cursor-pointer">
+              <span class="flex items-center gap-1.5">
+                <i class="bi bi-sliders text-indigo-500"></i>
+                <span>Ver Variantes y Operaciones</span>
+              </span>
+              <i class="bi text-xs transition-transform" [ngClass]="isPartExpanded(p) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+
+            <!-- ─── Acordeón de Variantes en Línea ─── -->
+            <div *ngIf="isPartExpanded(p)" class="pt-2 space-y-2 border-t border-dashed border-slate-200 animate-in fade-in">
+              <div *ngFor="let v of p.types; let vi = index" 
+                   class="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-1.5">
+                
+                <!-- Encabezado de Variante -->
+                <div class="flex items-center justify-between gap-1 text-xs">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center text-[8px] font-black shrink-0">
+                      {{ vi + 1 }}
+                    </span>
+                    <span class="font-extrabold text-slate-900 truncate">{{ v.name }}</span>
+                    <span *ngIf="v.is_active === false" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded-full" [title]="v.disabled_reason || 'Inactiva'">
+                      Inactiva
+                    </span>
+                  </div>
+                  <span class="font-mono text-[11px] font-black text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                    {{ calculateTypeTotalTime(v) | number:'1.2-2' }}m
+                  </span>
+                </div>
+
+                <p class="text-[10px] text-slate-500 line-clamp-2" *ngIf="v.technical_description || v.description">
+                  {{ v.technical_description || v.description }}
+                </p>
+
+                <!-- Badges de Materiales Requeridos -->
+                <div class="flex flex-wrap items-center gap-1 pt-0.5" *ngIf="v.materials && v.materials.length > 0">
+                  <span class="text-[8px] font-black uppercase tracking-wider text-slate-400">Insumos:</span>
+                  <span *ngFor="let m of v.materials" 
+                        class="px-1.5 py-0.2 rounded text-[8px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                    {{ m }}
+                  </span>
+                </div>
+
+                <!-- Listado de Operaciones SAM de la Variante -->
+                <div *ngIf="v.operations && v.operations.length > 0" class="pt-1 border-t border-slate-200/50 space-y-1">
+                  <div class="text-[9px] font-black uppercase text-slate-400 tracking-wider">Operaciones SAM ({{ v.operations.length }}):</div>
+                  <div *ngFor="let op of v.operations" class="flex items-center justify-between text-[10px] text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-100">
+                    <span class="truncate font-medium">{{ op.operation_name }}</span>
+                    <span class="font-mono font-bold text-slate-500 shrink-0 ml-2">[{{ op.machine_name || 'PLANA' }}] {{ op.execution_time }}m</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Footer de Tarjeta -->
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[10px] text-slate-400 font-medium">Estado: <strong class="text-emerald-600">Activo</strong></span>
+            <button (click)="editPart.emit(p)" class="text-xs font-black text-indigo-600 hover:text-indigo-800 transition cursor-pointer">
+              Editar Completa →
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Estado Vacío -->
+      <div *ngIf="filteredParts.length === 0" class="py-12 text-center bg-white rounded-2xl border border-dashed border-slate-300 p-6 space-y-3">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mx-auto shadow-2xs">
+          <i class="bi bi-puzzle"></i>
+        </div>
+        <div>
+          <h4 class="text-sm font-black text-slate-900">No se encontraron partes en esta región</h4>
+          <p class="text-xs text-slate-500 font-medium mt-1">
+            {{ searchTerm ? 'No hay partes que coincidan con la búsqueda "' + searchTerm + '".' : 'Esta región aún no tiene partes registradas en el catálogo maestro.' }}
+          </p>
+        </div>
+        <button (click)="createPart.emit(region?.value || 'general')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition cursor-pointer">
+          + Registrar Primera Parte para {{ region?.label || 'esta Región' }}
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════ MODAL FOOTER ════════════════════ -->
+    <div class="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/80">
+      <span class="text-xs text-slate-400 font-medium">
+        Total: <strong class="text-slate-700">{{ parts.length }}</strong> partes registradas en {{ region?.label || 'General' }}
+      </span>
+      <div class="flex items-center gap-2">
+        <button (click)="onClose()" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition cursor-pointer">
+          Cerrar
+        </button>
+        <button (click)="createPart.emit(region?.value || 'general')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+          <i class="bi bi-plus-lg"></i>
+          <span>+ Agregar Parte a {{ region?.label?.split('/')[0]?.trim() || 'Región' }}</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

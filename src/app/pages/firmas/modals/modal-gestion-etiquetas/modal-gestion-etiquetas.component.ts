@@ -66,6 +66,10 @@ export class ModalGestionEtiquetasComponent implements OnInit, OnChanges {
     this.docFirmaService.getProcesos().subscribe({
       next: (res: any) => {
         this.procesos = res.data ?? [];
+        // Auto-asignar el proceso del usuario
+        if (this.procesos.length > 0 && !this.procesoId) {
+          this.procesoId = this.procesos[0].id;
+        }
       },
       error: (err: any) => console.error(err)
     });
@@ -87,8 +91,10 @@ export class ModalGestionEtiquetasComponent implements OnInit, OnChanges {
     }
 
     this.submitting = true;
+    // Siempre usar el proceso del usuario (el backend también lo fuerza)
+    const pid = this.procesos.length > 0 ? this.procesos[0].id : undefined;
     if (this.editingId) {
-      this.docFirmaService.actualizarEtiqueta(this.editingId, this.nombre, this.procesoId || undefined, this.color).subscribe({
+      this.docFirmaService.actualizarEtiqueta(this.editingId, this.nombre, pid, this.color).subscribe({
         next: (res: any) => {
           this.submitting = false;
           Swal.fire('Actualizado', 'Etiqueta actualizada con éxito.', 'success');
@@ -102,7 +108,7 @@ export class ModalGestionEtiquetasComponent implements OnInit, OnChanges {
         }
       });
     } else {
-      this.docFirmaService.crearEtiqueta(this.nombre, this.procesoId || undefined, this.color).subscribe({
+      this.docFirmaService.crearEtiqueta(this.nombre, pid, this.color).subscribe({
         next: (res: any) => {
           this.submitting = false;
           Swal.fire('Creada', 'Etiqueta creada con éxito.', 'success');
@@ -121,7 +127,6 @@ export class ModalGestionEtiquetasComponent implements OnInit, OnChanges {
   editar(etiq: DocumentoFirmaEtiqueta): void {
     this.editingId = etiq.id || null;
     this.nombre = etiq.nombre;
-    this.procesoId = etiq.proceso_id || null;
     this.color = etiq.color || '#2563eb';
   }
 
@@ -153,7 +158,7 @@ export class ModalGestionEtiquetasComponent implements OnInit, OnChanges {
   resetForm(): void {
     this.editingId = null;
     this.nombre = '';
-    this.procesoId = null;
+    this.procesoId = this.procesos.length > 0 ? this.procesos[0].id : null;
     this.color = '#2563eb';
   }
 }

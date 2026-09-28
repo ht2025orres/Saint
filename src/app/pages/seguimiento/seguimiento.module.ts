@@ -14,6 +14,7 @@ import { ProyectosComponent } from './proyectos/proyectos.component';
 import { TareasComponent } from './tareas/tareas.component';
 import { InformesComponent } from './informes/informes.component';
 import { EstadisticasComponent } from './estadisticas/estadisticas.component';
+import { EstadisticasProyectosComponent } from './estadisticas/estadisticas-proyectos/estadisticas-proyectos.component';
 
 // Componentes de Proyectos
 import { TareaItemComponent } from './proyectos/components/tarea-item.component';
@@ -47,6 +48,7 @@ import { ModalDetalleTareasEstadisticasComponent } from './estadisticas/modals/m
     TareasComponent,
     InformesComponent,
     EstadisticasComponent,
+    EstadisticasProyectosComponent,
 
     // ── Componentes de Proyectos ──────────────────────────────────
     TareaItemComponent,

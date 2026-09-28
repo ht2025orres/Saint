@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DocumentoFirmaService, DocumentoFirmaEtiqueta } from 'src/app/services/documento-firma.service';
 import { AuthService } from 'src/app/services/auth.service';
@@ -20,6 +20,27 @@ export interface FirmanteAsignado {
   ancho: number;
   alto: number;
   tipo_firma_requerida: 'DIGITAL' | 'PULSO' | 'AMBAS';
+}
+
+export interface GroupedFirmante {
+  key: string;
+  colaborador_id: number;
+  isCreator: boolean;
+  nombre: string;
+  cargo: string;
+  correo_corporativo: string;
+  correo_personal: string;
+  tipo_correo: 'corporativo' | 'personal';
+  tipo_firma_requerida: 'DIGITAL' | 'PULSO' | 'AMBAS';
+  expanded: boolean;
+  boxes: {
+    index: number;
+    pagina: number;
+    posicion_x: number;
+    posicion_y: number;
+    ancho: number;
+    alto: number;
+  }[];
 }
 
 export interface DocumentoTabState {
@@ -87,6 +108,7 @@ export class FirmasSubirComponent implements OnInit {
   popoverFirmanteIndex: number = -1;
   popoverSearch: string = '';
   popoverColaboradoresFiltrados: any[] = [];
+  grupoExpandedState: { [key: string]: boolean } = {};
 
   // Etiquetas / Categorías por Proceso
   etiquetasList: DocumentoFirmaEtiqueta[] = [];
@@ -265,6 +287,7 @@ export class FirmasSubirComponent implements OnInit {
     this.ghostW = t.ghostW;
     this.ghostH = t.ghostH;
     this.showGhost = t.showGhost;
+    this.updateGroupedFirmantes();
 
     const fileInput = document.getElementById('pdf-file-input-subir') as HTMLInputElement;
     if (fileInput) {
@@ -494,12 +517,19 @@ startxref
     this.http.get<any>(`${this.baseUrl}/colaboradores?per_page=all&estado=activo`).subscribe({
       next: (res) => {
         const raw = res.data || res || [];
-        this.colaboradoresList = raw.map((c: any) => ({
-          ...c,
-          firstName: c.nombres || c.firstName,
-          lastName: c.apellidos || c.lastName,
-          email: c.correo_corporativo || c.correo_personal || c.email
-        }));
+        this.colaboradoresList = raw.map((c: any) => {
+          const corp = (c.correo_corporativo || '').trim();
+          const pers = (c.correo_personal || '').trim();
+          const fallbackEmail = (c.email || '').trim();
+          return {
+            ...c,
+            firstName: c.nombres || c.firstName || '',
+            lastName: c.apellidos || c.lastName || '',
+            correo_corporativo: corp || (!pers ? fallbackEmail : ''),
+            correo_personal: pers,
+            email: corp || pers || fallbackEmail
+          };
+        });
       },
       error: (err) => console.error('Error cargando colaboradores:', err)
     });
@@ -522,37 +552,93 @@ startxref
     this.mostrarDropdownColab = true;
   }
 
-  agregarColaborador(colab: any): void {
-    if (this.firmantes.some(f => f.colaborador_id === colab.id)) {
-      Swal.fire('Atención', 'Este colaborador ya fue agregado a la lista de firmantes.', 'info');
-      this.mostrarDropdownColab = false;
-      this.colaboradorSearch = '';
-      return;
-    }
+  isCurrentUser(colab: any): boolean {
+    if (!colab || !this.authService.user) return false;
+    const user = this.authService.user;
+    if (colab.id && user.id && Number(colab.id) === Number(user.id)) return true;
 
-    const hasCorp = !!colab.correo_corporativo;
+    const userEmail = (user.email || (user as any).correo_corporativo || (user as any).correo_personal || '').toLowerCase().trim();
+    const colabCorp = (colab.correo_corporativo || '').toLowerCase().trim();
+    const colabPers = (colab.correo_personal || '').toLowerCase().trim();
+    const colabEmail = (colab.email || '').toLowerCase().trim();
+
+    if (userEmail && (userEmail === colabCorp || userEmail === colabPers || userEmail === colabEmail)) return true;
+    if (colab.cedula && (user as any).cedula && String(colab.cedula).trim() === String((user as any).cedula).trim()) return true;
+
+    return false;
+  }
+
+  agregarColaborador(colab: any, tipoForzado?: 'corporativo' | 'personal'): void {
+    const isMe = this.isCurrentUser(colab);
+    const hasCorp = !!(colab.correo_corporativo && colab.correo_corporativo.trim());
+    const hasPers = !!(colab.correo_personal && colab.correo_personal.trim());
+    const countExist = this.firmantes.filter(f => f.colaborador_id === colab.id).length;
+
+    const tipoFinal = tipoForzado || (hasCorp ? 'corporativo' : (hasPers ? 'personal' : 'corporativo'));
 
     const nuevo: FirmanteAsignado = {
-      isCreator: false,
+      isCreator: isMe,
       colaborador_id: colab.id,
-      nombre: `${colab.firstName || colab.name || ''} ${colab.lastName || ''}`.trim(),
-      cargo: colab.cargo || 'Colaborador',
+      nombre: isMe ? `${colab.firstName || colab.name || ''} ${colab.lastName || ''}`.trim() + ' (Creador)' : `${colab.firstName || colab.name || ''} ${colab.lastName || ''}`.trim(),
+      cargo: colab.cargo || (isMe ? 'Creador del Documento' : 'Colaborador'),
       correo_corporativo: colab.correo_corporativo || '',
       correo_personal: colab.correo_personal || '',
-      tipo_correo: hasCorp ? 'corporativo' : 'personal',
+      tipo_correo: tipoFinal,
       pagina: this.pagina,
-      posicion_x: 10 + (this.firmantes.length * 15),
-      posicion_y: 200,
+      posicion_x: Math.min(10 + (this.firmantes.length * 8), 180),
+      posicion_y: Math.min(180 + (countExist * 15), 230),
       ancho: 110,
       alto: 30,
-      tipo_firma_requerida: 'AMBAS'
+      tipo_firma_requerida: isMe ? this.creadorTipoFirma : 'AMBAS'
     };
+
+    if (isMe) {
+      this.firmarAhoraCreador = true;
+      this.creadorPagina = nuevo.pagina;
+      this.creadorX = nuevo.posicion_x;
+      this.creadorY = nuevo.posicion_y;
+      this.creadorAncho = nuevo.ancho;
+      this.creadorAlto = nuevo.alto;
+      if (this.creadorTipoFirma !== 'DIGITAL') {
+        setTimeout(() => {
+          if (this.creatorCanvasEl) {
+            const canvas = this.creatorCanvasEl.nativeElement;
+            canvas.width = 400;
+            canvas.height = 140;
+            this.creatorSignaturePad = new SignaturePad(canvas, { penColor: '#0f172a' });
+          }
+        }, 200);
+      }
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500,
+        icon: 'info',
+        title: 'Te has asignado como firmante (Creador)'
+      });
+    }
 
     this.firmantes.push(nuevo);
     this.activeFirmanteIndex = this.firmantes.length - 1;
     this.colaboradorSearch = '';
     this.mostrarDropdownColab = false;
     this.updateGhostSize();
+    this.updateGroupedFirmantes();
+  }
+
+  duplicarFirmanteEnPaginaActual(firmante: FirmanteAsignado): void {
+    const countExist = this.firmantes.filter(f => f.colaborador_id === firmante.colaborador_id).length;
+    const nuevo: FirmanteAsignado = {
+      ...firmante,
+      pagina: this.pagina,
+      posicion_x: Math.min(firmante.posicion_x + 10, 190),
+      posicion_y: Math.min(firmante.posicion_y + 10, 240),
+    };
+    this.firmantes.push(nuevo);
+    this.activeFirmanteIndex = this.firmantes.length - 1;
+    this.updateGhostSize();
+    this.updateGroupedFirmantes();
   }
 
   deselectFirmante(): void {
@@ -572,6 +658,7 @@ startxref
       this.activeFirmanteIndex--;
     }
     this.updateGhostSize();
+    this.updateGroupedFirmantes();
   }
 
   selectActiveFirmante(index: number): void {
@@ -581,10 +668,272 @@ startxref
     }
     this.activeFirmanteIndex = index;
     if (this.firmantes[index]) {
-      this.pagina = this.firmantes[index].pagina;
-      this.renderPage(this.pagina);
+      const pageTarget = this.firmantes[index].pagina;
+      if (pageTarget && pageTarget !== this.pagina) {
+        this.pagina = pageTarget;
+        this.renderPage(this.pagina);
+      }
     }
     this.updateGhostSize();
+  }
+
+  groupedFirmantes: GroupedFirmante[] = [];
+
+  updateGroupedFirmantes(): void {
+    const groupsMap = new Map<string, GroupedFirmante>();
+
+    this.firmantes.forEach((f, idx) => {
+      let key = 'UNASSIGNED_' + idx;
+      if (f.isCreator) {
+        key = 'CREATOR';
+      } else if (f.colaborador_id && f.colaborador_id > 0) {
+        key = `COLAB_${f.colaborador_id}_${f.nombre}`;
+      }
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          key,
+          colaborador_id: f.colaborador_id,
+          isCreator: !!f.isCreator,
+          nombre: f.nombre,
+          cargo: f.cargo || '',
+          correo_corporativo: f.correo_corporativo || '',
+          correo_personal: f.correo_personal || '',
+          tipo_correo: f.tipo_correo || 'corporativo',
+          tipo_firma_requerida: f.tipo_firma_requerida || 'AMBAS',
+          expanded: this.grupoExpandedState[key] !== false,
+          boxes: []
+        });
+      }
+
+      const group = groupsMap.get(key)!;
+      group.boxes.push({
+        index: idx,
+        pagina: f.pagina,
+        posicion_x: f.posicion_x,
+        posicion_y: f.posicion_y,
+        ancho: f.ancho,
+        alto: f.alto
+      });
+    });
+
+    this.groupedFirmantes = Array.from(groupsMap.values());
+  }
+
+  trackByGroupKey(index: number, item: GroupedFirmante): string {
+    return item.key;
+  }
+
+  trackByBoxIndex(index: number, item: any): number {
+    return item.index;
+  }
+
+  toggleGrupoExpanded(key: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    const currentState = this.grupoExpandedState[key] !== false;
+    this.grupoExpandedState[key] = !currentState;
+    this.updateGroupedFirmantes();
+  }
+
+  updateGrupoTipoCorreo(grupo: GroupedFirmante, tipo: 'corporativo' | 'personal', event?: Event): void {
+    if (event) event.stopPropagation();
+    grupo.tipo_correo = tipo;
+    grupo.boxes.forEach(box => {
+      if (this.firmantes[box.index]) {
+        this.firmantes[box.index].tipo_correo = tipo;
+      }
+    });
+    this.updateGroupedFirmantes();
+  }
+
+  updateGrupoTipoFirma(grupo: GroupedFirmante, tipo: 'AMBAS' | 'PULSO' | 'DIGITAL'): void {
+    grupo.tipo_firma_requerida = tipo;
+    grupo.boxes.forEach(box => {
+      if (this.firmantes[box.index]) {
+        this.firmantes[box.index].tipo_firma_requerida = tipo;
+      }
+    });
+    this.updateGroupedFirmantes();
+  }
+
+  removerRecuadroIndividual(index: number, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.removerFirmante(index);
+  }
+
+  removerGrupoFirmante(grupo: GroupedFirmante, event?: Event): void {
+    if (event) event.stopPropagation();
+    const paginasList = grupo.boxes.map(b => b.pagina).sort((a, b) => a - b).join(', ');
+    const cantidad = grupo.boxes.length;
+
+    Swal.fire({
+      title: '¿Eliminar recuadros de firma?',
+      html: `Se eliminarán <b>${cantidad}</b> recuadro(s) para <b>${grupo.nombre}</b> en la(s) página(s): <b>${paginasList}</b>.<br>¿Estás seguro de continuar?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar todos',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444'
+    }).then(result => {
+      if (result.isConfirmed) {
+        if (grupo.isCreator) {
+          this.firmarAhoraCreador = false;
+        }
+        const indicesToRemove = grupo.boxes.map(b => b.index).sort((a, b) => b - a);
+        indicesToRemove.forEach(idx => {
+          this.firmantes.splice(idx, 1);
+        });
+        this.deselectFirmante();
+        this.updateGhostSize();
+        this.updateGroupedFirmantes();
+      }
+    });
+  }
+
+  duplicarFirmanteEnGrupo(grupo: GroupedFirmante, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!grupo.boxes.length) return;
+    const baseFirmante = this.firmantes[grupo.boxes[0].index];
+    if (baseFirmante) {
+      this.duplicarFirmanteEnPaginaActual(baseFirmante);
+    }
+  }
+
+  getActiveEmail(f: FirmanteAsignado | GroupedFirmante): string {
+    if (!f) return '';
+    if (f.tipo_correo === 'personal') {
+      return f.correo_personal || f.correo_corporativo || 'Sin correo registrado';
+    }
+    return f.correo_corporativo || f.correo_personal || 'Sin correo registrado';
+  }
+
+  openAssignPopoverForBox(index: number, event: MouseEvent): void {
+    event.stopPropagation();
+    this.popoverFirmanteIndex = index;
+    this.popoverSearch = '';
+    this.popoverColaboradoresFiltrados = [...this.colaboradoresList].slice(0, 10);
+    this.showAssignPopover = true;
+  }
+
+  onPopoverSearch(): void {
+    const term = this.popoverSearch.toLowerCase().trim();
+    if (!term) {
+      this.popoverColaboradoresFiltrados = [...this.colaboradoresList].slice(0, 10);
+      return;
+    }
+    this.popoverColaboradoresFiltrados = this.colaboradoresList.filter(c =>
+      (c.firstName || c.name || '').toLowerCase().includes(term) ||
+      (c.lastName || '').toLowerCase().includes(term) ||
+      (c.cedula || '').includes(term) ||
+      (c.cargo || '').toLowerCase().includes(term)
+    ).slice(0, 10);
+  }
+
+  asignarColaboradorABox(colab: any, tipoForzado?: 'corporativo' | 'personal'): void {
+    if (this.popoverFirmanteIndex < 0 || this.popoverFirmanteIndex >= this.firmantes.length) return;
+    const isMe = this.isCurrentUser(colab);
+    const hasCorp = !!(colab.correo_corporativo && colab.correo_corporativo.trim());
+    const hasPers = !!(colab.correo_personal && colab.correo_personal.trim());
+
+    const target = this.firmantes[this.popoverFirmanteIndex];
+    target.colaborador_id = colab.id;
+    target.nombre = isMe 
+      ? `${colab.firstName || colab.name || ''} ${colab.lastName || ''}`.trim() + ' (Creador)'
+      : `${colab.firstName || colab.name || ''} ${colab.lastName || ''}`.trim();
+    target.cargo = colab.cargo || (isMe ? 'Creador del Documento' : 'Colaborador');
+    target.correo_corporativo = colab.correo_corporativo || '';
+    target.correo_personal = colab.correo_personal || '';
+    target.tipo_correo = tipoForzado || (hasCorp ? 'corporativo' : (hasPers ? 'personal' : 'corporativo'));
+    target.isCreator = isMe;
+
+    if (isMe) {
+      target.tipo_firma_requerida = this.creadorTipoFirma;
+      this.firmarAhoraCreador = true;
+      this.creadorPagina = target.pagina;
+      this.creadorX = target.posicion_x;
+      this.creadorY = target.posicion_y;
+      this.creadorAncho = target.ancho;
+      this.creadorAlto = target.alto;
+      if (this.creadorTipoFirma !== 'DIGITAL') {
+        setTimeout(() => {
+          if (this.creatorCanvasEl) {
+            const canvas = this.creatorCanvasEl.nativeElement;
+            canvas.width = 400;
+            canvas.height = 140;
+            this.creatorSignaturePad = new SignaturePad(canvas, { penColor: '#0f172a' });
+          }
+        }, 200);
+      }
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3500,
+        icon: 'info',
+        title: 'Te has asignado como firmante (Creador)'
+      });
+    }
+
+    this.showAssignPopover = false;
+    this.updateGroupedFirmantes();
+  }
+
+  updatePopoverTipoCorreo(tipo: 'corporativo' | 'personal'): void {
+    if (this.popoverFirmanteIndex >= 0 && this.firmantes[this.popoverFirmanteIndex]) {
+      this.firmantes[this.popoverFirmanteIndex].tipo_correo = tipo;
+      this.updateGroupedFirmantes();
+    }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) {
+      return;
+    }
+
+    if (this.showAssignPopover) {
+      if (event.key === 'Escape') {
+        this.showAssignPopover = false;
+      }
+      return;
+    }
+
+    if (event.key === 'Delete' || event.key === 'Backspace' || event.code === 'Delete' || event.code === 'Backspace') {
+      if (this.activeFirmanteIndex >= 0 && this.activeFirmanteIndex < this.firmantes.length) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.removerFirmante(this.activeFirmanteIndex);
+      }
+    }
+
+    if (event.key === 'Escape' || event.code === 'Escape') {
+      if (this.activeFirmanteIndex !== -1) {
+        this.deselectFirmante();
+      }
+    }
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  onDocumentPointerDown(event: PointerEvent): void {
+    if (this.activeFirmanteIndex === -1) return;
+    if (this.showAssignPopover) return;
+    if (this.isMovingBox || this.isResizingBox || this.isDragging) return;
+
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    if (
+      target.closest('#pdf-canvas-subir') ||
+      target.closest('[data-signature-box]') ||
+      target.closest('[data-firmante-sidebar]') ||
+      target.closest('.swal2-container') ||
+      target.closest('.modal-assign-popover')
+    ) {
+      return;
+    }
+
+    this.deselectFirmante();
   }
 
   toggleCreatorSignature(): void {
@@ -629,6 +978,27 @@ startxref
       }
     }
     this.updateGhostSize();
+    this.updateGroupedFirmantes();
+  }
+
+  onCreatorTipoFirmaChange(tipo: 'DIGITAL' | 'PULSO' | 'AMBAS'): void {
+    this.creadorTipoFirma = tipo;
+    const creator = this.firmantes.find(f => f.isCreator);
+    if (creator) {
+      creator.tipo_firma_requerida = tipo;
+    }
+    this.updateGroupedFirmantes();
+
+    if (tipo !== 'DIGITAL') {
+      setTimeout(() => {
+        if (this.creatorCanvasEl) {
+          const canvas = this.creatorCanvasEl.nativeElement;
+          canvas.width = 400;
+          canvas.height = 140;
+          this.creatorSignaturePad = new SignaturePad(canvas, { penColor: '#0f172a' });
+        }
+      }, 100);
+    }
   }
 
   clearCreatorSignature(): void {
@@ -674,30 +1044,57 @@ startxref
     reader.readAsArrayBuffer(this.archivo);
   }
 
+  private currentRenderTask: any = null;
+
   private async renderPage(num: number): Promise<void> {
     if (!this.pdfDoc) return;
 
-    const page = await this.pdfDoc.getPage(num);
-    const viewportUnscaled = page.getViewport({ scale: 1.0 });
-    this.pdfViewportWidth = viewportUnscaled.width;
-    this.pdfViewportHeight = viewportUnscaled.height;
+    if (this.currentRenderTask) {
+      try {
+        await this.currentRenderTask.cancel();
+      } catch (_) {}
+      this.currentRenderTask = null;
+    }
 
-    const viewport = page.getViewport({ scale: this.zoom });
-    
-    const canvas = document.getElementById('pdf-canvas-subir') as HTMLCanvasElement;
-    if (!canvas) return;
-    
-    const context = canvas.getContext('2d');
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
+    try {
+      const page = await this.pdfDoc.getPage(num);
+      const viewportUnscaled = page.getViewport({ scale: 1.0 });
+      this.pdfViewportWidth = viewportUnscaled.width;
+      this.pdfViewportHeight = viewportUnscaled.height;
 
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport
-    };
+      const viewport = page.getViewport({ scale: this.zoom });
+      
+      const canvas = document.getElementById('pdf-canvas-subir') as HTMLCanvasElement;
+      if (!canvas) return;
+      
+      const context = canvas.getContext('2d');
+      if (!context) return;
 
-    await page.render(renderContext).promise;
-    this.updateGhostSize();
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      context.save();
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+
+      this.currentRenderTask = page.render(renderContext);
+      try {
+        await this.currentRenderTask.promise;
+      } finally {
+        this.currentRenderTask = null;
+        context.restore();
+      }
+
+      this.updateGhostSize();
+    } catch (err: any) {
+      if (err?.name !== 'RenderingCancelledException') {
+        console.error('Error renderizando página PDF:', err);
+      }
+    }
   }
 
   getFirmanteBoxStyle(f: FirmanteAsignado): any {
@@ -786,13 +1183,47 @@ startxref
     this.renderPage(newPage);
   }
 
-  // Variables de Arrastre y Dibujo Ultra-Fluido 60FPS (Sin promesas ni tirones)
+  // Variables de Redimensionamiento y Arrastre Ultra-Fluido 60FPS
   dragStartMouseX: number = 0;
   dragStartMouseY: number = 0;
   boxStartPosMmX: number = 0;
   boxStartPosMmY: number = 0;
+  boxStartWidthMm: number = 110;
+  boxStartHeightMm: number = 30;
   pxToMmScaleX: number = 0.264;
   pxToMmScaleY: number = 0.264;
+
+  isResizingBox: boolean = false;
+  resizingBoxIndex: number = -1;
+  resizeHandle: 'nw' | 'ne' | 'se' | 'sw' | 'n' | 's' | 'e' | 'w' = 'se';
+  wasBoxSelectedOnMouseDown: boolean = false;
+
+  onResizeHandleMouseDown(event: MouseEvent, index: number, handle: 'nw' | 'ne' | 'se' | 'sw' | 'n' | 's' | 'e' | 'w'): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    this.selectActiveFirmante(index);
+    this.isResizingBox = true;
+    this.resizingBoxIndex = index;
+    this.resizeHandle = handle;
+    this.dragStartMouseX = event.clientX;
+    this.dragStartMouseY = event.clientY;
+
+    const f = this.firmantes[index];
+    if (f) {
+      this.boxStartPosMmX = f.posicion_x || 10;
+      this.boxStartPosMmY = f.posicion_y || 200;
+      this.boxStartWidthMm = f.ancho || 110;
+      this.boxStartHeightMm = f.alto || 30;
+    }
+
+    const canvas = document.getElementById('pdf-canvas-subir') as HTMLCanvasElement;
+    if (canvas && this.pdfViewportWidth && this.pdfViewportHeight) {
+      const mmPerPoint = 25.4 / 72;
+      this.pxToMmScaleX = (this.pdfViewportWidth / canvas.width) * mmPerPoint;
+      this.pxToMmScaleY = (this.pdfViewportHeight / canvas.height) * mmPerPoint;
+    }
+  }
 
   onBoxMouseDown(event: MouseEvent, index: number): void {
     event.stopPropagation();
@@ -823,6 +1254,8 @@ startxref
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
 
+    this.wasBoxSelectedOnMouseDown = (this.activeFirmanteIndex !== -1);
+
     this.isDragging = true;
     this.dragStartX = event.clientX - rect.left;
     this.dragStartY = event.clientY - rect.top;
@@ -841,7 +1274,76 @@ startxref
   }
 
   onMouseMove(event: MouseEvent): void {
-    // 1. SI ESTÁ MOVIENDO UN RECUADRO EXISTENTE (Totalmente síncrono a 60FPS)
+    // 1. REDIMENSIONAR UN RECUADRO EXISTENTE (RESIZE)
+    if (this.isResizingBox && this.resizingBoxIndex >= 0) {
+      const deltaX = (event.clientX - this.dragStartMouseX) * this.pxToMmScaleX;
+      const deltaY = (event.clientY - this.dragStartMouseY) * this.pxToMmScaleY;
+
+      const f = this.firmantes[this.resizingBoxIndex];
+      if (f) {
+        let newX = this.boxStartPosMmX;
+        let newY = this.boxStartPosMmY;
+        let newW = this.boxStartWidthMm;
+        let newH = this.boxStartHeightMm;
+
+        const minW = 20; // 20mm ancho mínimo
+        const minH = 8;  // 8mm alto mínimo
+
+        switch (this.resizeHandle) {
+          case 'se':
+            newW = Math.max(minW, Math.round(this.boxStartWidthMm + deltaX));
+            newH = Math.max(minH, Math.round(this.boxStartHeightMm + deltaY));
+            break;
+          case 'e':
+            newW = Math.max(minW, Math.round(this.boxStartWidthMm + deltaX));
+            break;
+          case 's':
+            newH = Math.max(minH, Math.round(this.boxStartHeightMm + deltaY));
+            break;
+          case 'sw':
+            newW = Math.max(minW, Math.round(this.boxStartWidthMm - deltaX));
+            newX = Math.max(0, Math.round(this.boxStartPosMmX + deltaX));
+            newH = Math.max(minH, Math.round(this.boxStartHeightMm + deltaY));
+            break;
+          case 'nw':
+            newW = Math.max(minW, Math.round(this.boxStartWidthMm - deltaX));
+            newX = Math.max(0, Math.round(this.boxStartPosMmX + deltaX));
+            newH = Math.max(minH, Math.round(this.boxStartHeightMm - deltaY));
+            newY = Math.max(0, Math.round(this.boxStartPosMmY + deltaY));
+            break;
+          case 'ne':
+            newW = Math.max(minW, Math.round(this.boxStartWidthMm + deltaX));
+            newH = Math.max(minH, Math.round(this.boxStartHeightMm - deltaY));
+            newY = Math.max(0, Math.round(this.boxStartPosMmY + deltaY));
+            break;
+          case 'w':
+            newW = Math.max(minW, Math.round(this.boxStartWidthMm - deltaX));
+            newX = Math.max(0, Math.round(this.boxStartPosMmX + deltaX));
+            break;
+          case 'n':
+            newH = Math.max(minH, Math.round(this.boxStartHeightMm - deltaY));
+            newY = Math.max(0, Math.round(this.boxStartPosMmY + deltaY));
+            break;
+        }
+
+        f.pagina = this.pagina;
+        f.posicion_x = newX;
+        f.posicion_y = newY;
+        f.ancho = newW;
+        f.alto = newH;
+
+        if (f.isCreator) {
+          this.creadorPagina = this.pagina;
+          this.creadorX = newX;
+          this.creadorY = newY;
+          this.creadorAncho = newW;
+          this.creadorAlto = newH;
+        }
+      }
+      return;
+    }
+
+    // 2. MOVER UN RECUADRO EXISTENTE
     if (this.isMovingBox && this.movingBoxIndex >= 0) {
       const deltaX = event.clientX - this.dragStartMouseX;
       const deltaY = event.clientY - this.dragStartMouseY;
@@ -863,7 +1365,7 @@ startxref
       return;
     }
 
-    // 2. SI ESTÁ DIBUJANDO UN RECUADRO NUEVO
+    // 3. DIBUJAR UN RECUADRO NUEVO SOBRE CANVA
     if (!this.isDragging) return;
 
     const canvas = document.getElementById('pdf-canvas-subir') as HTMLCanvasElement;
@@ -879,9 +1381,17 @@ startxref
   }
 
   onMouseUp(event: MouseEvent): void {
+    if (this.isResizingBox) {
+      this.isResizingBox = false;
+      this.resizingBoxIndex = -1;
+      this.updateGroupedFirmantes();
+      return;
+    }
+
     if (this.isMovingBox) {
       this.isMovingBox = false;
       this.movingBoxIndex = -1;
+      this.updateGroupedFirmantes();
       return;
     }
 
@@ -895,8 +1405,9 @@ startxref
     if (this.ghostW < 10 || this.ghostH < 10) {
       this.showGhost = false;
 
-      // Si había algún recuadro de firma seleccionado, un clic fuera lo deselecciona
-      if (this.activeFirmanteIndex !== -1) {
+      // Si había algún recuadro de firma seleccionado antes de presionar el mouse,
+      // un clic en espacio libre deselecciona el recuadro activo
+      if (this.wasBoxSelectedOnMouseDown && this.activeFirmanteIndex !== -1) {
         this.deselectFirmante();
         return;
       }
@@ -909,19 +1420,30 @@ startxref
       const posX = Math.max(0, Math.round(clickX * this.pxToMmScaleX));
       const posY = Math.max(0, Math.round(clickY * this.pxToMmScaleY));
 
-      this.colocarOActualizarRecuadro(posX, posY, 110, 30);
+      const currentActive = (this.activeFirmanteIndex >= 0) ? this.firmantes[this.activeFirmanteIndex] : null;
+      const defaultW = currentActive ? currentActive.ancho : 110;
+      const defaultH = currentActive ? currentActive.alto : 30;
+
+      this.colocarOActualizarRecuadro(posX, posY, defaultW, defaultH);
       return;
     }
 
-    // Si fue un trazado dinámico con el mouse (drag to draw)
+    // Si fue un trazado dinámico con el mouse (drag to draw / move)
     const posX = Math.max(0, Math.round(this.ghostX * this.pxToMmScaleX));
     const posY = Math.max(0, Math.round(this.ghostY * this.pxToMmScaleY));
     const ancho = Math.max(20, Math.round(this.ghostW * this.pxToMmScaleX));
     const alto = Math.max(8, Math.round(this.ghostH * this.pxToMmScaleY));
 
-    // Al arrastrar para dibujar un recuadro nuevo, nos aseguramos de crear uno nuevo
-    this.activeFirmanteIndex = -1;
-    this.colocarOActualizarRecuadro(posX, posY, ancho, alto);
+    if (this.wasBoxSelectedOnMouseDown && this.activeFirmanteIndex !== -1) {
+      // Si había un recuadro seleccionado y se arrastró sobre espacio libre,
+      // se MUEVE y REDIMENSIONA el recuadro seleccionado a ese lugar en vez de crear otro
+      this.colocarOActualizarRecuadro(posX, posY, ancho, alto);
+    } else {
+      // Si no había ningún recuadro seleccionado, se crea uno nuevo
+      this.activeFirmanteIndex = -1;
+      this.colocarOActualizarRecuadro(posX, posY, ancho, alto);
+    }
+
     this.showGhost = false;
     this.ghostW = 0;
     this.ghostH = 0;
@@ -962,6 +1484,7 @@ startxref
         this.creadorAlto = alto;
       }
     }
+    this.updateGroupedFirmantes();
   }
 
   updateGhostSize(): void {
@@ -984,54 +1507,6 @@ startxref
       this.ghostW = (current.ancho * mmToPoints) / scaleX;
       this.ghostH = (current.alto * mmToPoints) / scaleY;
       this.showGhost = (current.pagina === this.pagina);
-    });
-  }
-
-  openAssignPopoverForBox(index: number, event: MouseEvent): void {
-    event.stopPropagation();
-    this.selectActiveFirmante(index);
-    this.popoverFirmanteIndex = index;
-    this.popoverSearch = '';
-    this.popoverColaboradoresFiltrados = this.colaboradoresList.slice(0, 8);
-    this.showAssignPopover = true;
-  }
-
-  onPopoverSearch(): void {
-    const term = this.popoverSearch.toLowerCase().trim();
-    if (!term) {
-      this.popoverColaboradoresFiltrados = this.colaboradoresList.slice(0, 8);
-      return;
-    }
-
-    this.popoverColaboradoresFiltrados = this.colaboradoresList.filter(c => 
-      (c.firstName || c.name || '').toLowerCase().includes(term) ||
-      (c.lastName || '').toLowerCase().includes(term) ||
-      (c.cedula || '').includes(term) ||
-      (c.cargo || '').toLowerCase().includes(term)
-    ).slice(0, 8);
-  }
-
-  asignarColaboradorABox(colab: any): void {
-    if (this.popoverFirmanteIndex < 0 || !this.firmantes[this.popoverFirmanteIndex]) return;
-
-    const target = this.firmantes[this.popoverFirmanteIndex];
-    const hasCorp = !!colab.correo_corporativo;
-
-    target.colaborador_id = colab.id;
-    target.nombre = `${colab.firstName || colab.name || ''} ${colab.lastName || ''}`.trim();
-    target.cargo = colab.cargo || 'Colaborador';
-    target.correo_corporativo = colab.correo_corporativo || '';
-    target.correo_personal = colab.correo_personal || '';
-    target.tipo_correo = hasCorp ? 'corporativo' : 'personal';
-
-    this.showAssignPopover = false;
-    this.popoverSearch = '';
-    Swal.fire({
-      title: '¡Firmante Asignado!',
-      text: `Se asignó a "${target.nombre}" al recuadro de firma.`,
-      icon: 'success',
-      timer: 1500,
-      showConfirmButton: false
     });
   }
 
@@ -1063,7 +1538,22 @@ startxref
       return;
     }
 
-    if (this.firmarAhoraCreador && this.creatorSignaturePad && !this.creatorSignaturePad.isEmpty()) {
+    // VALIDACIÓN: Si firma como creador y escogió método a pulso, verificar que haya dibujado su firma
+    if (this.firmarAhoraCreador && this.creadorTipoFirma !== 'DIGITAL') {
+      const isPadEmpty = !this.creatorSignaturePad || this.creatorSignaturePad.isEmpty();
+      if (isPadEmpty && !this.creatorSignatureBase64) {
+        Swal.fire({
+          title: 'Firma de Creador Pendiente',
+          html: `Has indicado que firmarás el documento como creador con el método <b>${this.creadorTipoFirma === 'AMBAS' ? 'Digital + Pulso' : 'A Pulso'}</b>.<br><br>Por favor dibuja tu firma en el recuadro inferior, o cambia el método a <b>Firma Digital Autoverificada</b>.`,
+          icon: 'warning',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+    }
+
+    if (this.firmarAhoraCreador && this.creatorSignaturePad && !this.creatorSignaturePad.isEmpty() && this.creadorTipoFirma !== 'DIGITAL') {
       const canvas = this.creatorCanvasEl.nativeElement;
       const tmp = document.createElement('canvas');
       tmp.width = canvas.width;
@@ -1075,6 +1565,8 @@ startxref
         ctx.drawImage(canvas, 0, 0);
         this.creatorSignatureBase64 = tmp.toDataURL('image/png');
       }
+    } else if (this.creadorTipoFirma === 'DIGITAL') {
+      this.creatorSignatureBase64 = '';
     }
 
     this.loading = true;
@@ -1156,7 +1648,7 @@ startxref
       return;
     }
 
-    // Verificar que NINGUNA pestaña contenga recuadros sin asignar
+    // Verificar que NINGUNA pestaña contenga recuadros sin asignar o firmas pendientes
     for (let tIdx = 0; tIdx < this.tabs.length; tIdx++) {
       const tab = this.tabs[tIdx];
       const sinCreador = tab.firmantes.filter(f => !f.isCreator);
@@ -1170,6 +1662,21 @@ startxref
           confirmButtonColor: '#f59e0b'
         });
         return;
+      }
+
+      if (tab.firmarAhoraCreador && tab.creadorTipoFirma !== 'DIGITAL') {
+        const isCurrentActive = this.activeTabIndex === tIdx;
+        const hasPad = isCurrentActive && this.creatorSignaturePad && !this.creatorSignaturePad.isEmpty();
+        if (!hasPad && !tab.creatorSignatureBase64) {
+          this.seleccionarTab(tIdx);
+          Swal.fire({
+            title: 'Firma de Creador Pendiente',
+            html: `En la pestaña <b>"${tab.tituloTab}"</b> indicaste que firmarás como creador a pulso.<br><br>Por favor dibuja tu trazo de firma o cambia al método <b>Firma Digital Autoverificada</b> antes de enviar.`,
+            icon: 'warning',
+            confirmButtonColor: '#f59e0b'
+          });
+          return;
+        }
       }
     }
 

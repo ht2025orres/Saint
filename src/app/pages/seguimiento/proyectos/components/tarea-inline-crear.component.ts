@@ -51,7 +51,7 @@ export class TareaInlineCrearComponent {
     if (this.saving) return;
 
     // Si el click es fuera de este componente de creación
-    if (!this.el.nativeElement.contains(target)) {
+    if (target.isConnected && !this.el.nativeElement.contains(target)) {
       if (this.inlineTaskForm.titulo?.trim()) {
         this.guardarTareaInline();
       } else {

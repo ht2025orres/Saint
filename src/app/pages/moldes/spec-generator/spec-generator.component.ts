@@ -1,51 +1,19 @@
-import { Component, OnInit, OnChanges, SimpleChanges, ViewChild, ElementRef, HostListener, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, OnDestroy, SimpleChanges, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
+import { ComponentItem, OpmMaterial, ZONE_TYPE_OPTIONS } from './spec-generator.models';
 
-
-export interface OpmMaterial {
-  id_item: string;
-  referencia: string;
-  descripcion: string;
-  id_color: string;
-  color: string;
-  id_talla?: string;
-  talla?: string;
-  costo_unitario: number;
-  existencias: number;
-  is_fabric: boolean;
-  assignment_source: 'siesa' | 'manual';
-}
-
-export interface ComponentItem {
-  mold_part_id: number | null;
-  name: string;
-  item_type: 'tela' | 'insumo' | 'parte';
-  view: 'front' | 'back';
-  position_x: number | null;
-  position_y: number | null;
-  is_mandatory: boolean;
-  client_spec: string;
-  technical_spec: string;
-  material_exception: OpmMaterial | null;
-  client_material_exception?: OpmMaterial | null;
-  is_from_mold: boolean;
-  is_expanded?: boolean; // Propiedad para controlar la expansión del texto
-}
+export { ComponentItem, OpmMaterial };
 
 @Component({
   selector: 'app-spec-generator',
   templateUrl: './spec-generator.component.html',
   styleUrls: ['./spec-generator.component.css']
 })
-export class SpecGeneratorComponent implements OnInit, OnChanges {
-  @ViewChild('imageCanvas') imageCanvas!: ElementRef<HTMLDivElement>;
-  @ViewChild('moldImage') moldImage!: ElementRef<HTMLImageElement>;
-  @ViewChild('textEditor') textEditor!: ElementRef<HTMLTextAreaElement>;
-
+export class SpecGeneratorComponent implements OnInit, OnChanges, OnDestroy {
   // Embedded mode (for use inside Solicitud form)
   @Input() embedded = false;
   @Input() context: 'comercial' | 'muestras' | 'molde' = 'comercial';
@@ -65,7 +33,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   generalDescription = '';
   clientGeneralDescription = '';
   activeView: 'front' | 'back' = 'front';
-  activeTab: 'molde' | 'formulario' | 'texto' = 'molde';
+  activeTab: 'molde' | 'formulario' = 'molde';
 
   // Data
   components: ComponentItem[] = [];
@@ -73,71 +41,22 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   selectedPartIndex: number | null = null;
   selectedPartType: 'general' | 'component' | null = null;
 
-  // Dynamic pin
+  // Zonas Anatómicas y Catálogo
+  globalGarmentParts: any[] = [];
+  detectedZone: any = null;
+  zoneSuggestedParts: any[] = [];
+  selectedZone: any = null;
+  zoneTypeOptions = ZONE_TYPE_OPTIONS;
+
+  // Dynamic Pin / Popover
   dynamicPinPosition: { x: number; y: number } | null = null;
-
-  // Inventory modal
-  showInventoryModal = false;
-  inventoryFromSpecEditor = false;
-  inventoryFilterType: 'todos' | 'tela' | 'insumo' = 'todos';
-
-  // Spec Editor Modal
-  showSpecEditor = false;
-  specEditorIndex: number | null = null;
-  specEditorComponent: ComponentItem | null = null;
-  specEditorClientSpec = '';
-  specEditorTechnicalSpec = '';
-
-  // Manual modal
-  showManualModal = false;
-  manualModalIndex: number | null = null;
-  manualText = '';
-  manualColor = '';
-
-  // Add item modal
   showAddModal = false;
   addModalType: 'general' | 'component' = 'general';
   editingPart: any = null;
-  pendingPin: { x: number | null; y: number | null } | null = null;
   popoverPosition: { x: number; y: number } | null = null;
 
   // Inline editing / adding
   inlineAdding = false;
-  hoveredComponent: ComponentItem | null = null;
-  pinnedComponent: ComponentItem | null = null;
-
-  onPartHover(part: ComponentItem): void {
-    this.hoveredComponent = part;
-  }
-
-  onPartLeave(): void {
-    this.hoveredComponent = null;
-  }
-
-  togglePinPart(part: ComponentItem, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    if (this.pinnedComponent === part) {
-      this.pinnedComponent = null;
-    } else {
-      this.pinnedComponent = part;
-      this.hoveredComponent = null;
-    }
-  }
-
-  clearPinnedPart(): void {
-    this.pinnedComponent = null;
-  }
-
-  get activeOpmPopoverPart(): ComponentItem | null {
-    return this.pinnedComponent || this.hoveredComponent;
-  }
-
-  isPartActive(part: ComponentItem): boolean {
-    return (this.hoveredComponent === part) || (this.pinnedComponent === part);
-  }
-
   inlineAddingType: 'general' | 'component' = 'general';
   inlineEditingIndex: number | null = null;
   inlineEditName = '';
@@ -146,11 +65,1092 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   addItemType: 'tela' | 'insumo' | 'parte' = 'parte';
   showAddSuggestions = false;
 
+  // Spec Editor Modal
+  showSpecEditor = false;
+  specEditorIndex: number | null = null;
+  specEditorComponent: ComponentItem | null = null;
+  specEditorClientSpec = '';
+  specEditorTechnicalSpec = '';
+  targetMaterialType: 'client' | 'technical' = 'technical';
+
+  // Inventory Modal
+  showInventoryModal = false;
+  inventoryFromSpecEditor = false;
+  inventoryFilterType: 'todos' | 'tela' | 'insumo' = 'todos';
+  allInventory: any[] = [];
+  inventoryLoaded = false;
+
+  // Manual Modal
+  showManualModal = false;
+  manualModalIndex: number | null = null;
+  manualText = '';
+  manualColor = '';
+
+  // Text View
+  showSuggestions = false;
+  suggestionType: 'component' | 'siesa' = 'component';
+  suggestionQuery = '';
+  textContent = '';
+
+  // States
+  loading = false;
+  saving = false;
+  errorMessage = '';
+  successMessage = '';
+  private autoSaveInterval: any;
+
+  constructor(
+    private moldService: MoldService,
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  // ==================== COMPUTED ====================
+
+  get modeLabel(): string { return this.mode === 'ficha' ? 'Ficha Técnica' : 'OPM'; }
+  get hasBackView(): boolean { 
+    return !!this.mold?.back_image_signed_url || !!this.getFallbackBackImage(); 
+  }
+  get activeImage(): string {
+    if (!this.mold) return '';
+    if (this.activeView === 'back') {
+      return this.mold.back_image_signed_url || this.mold.back_image_url || this.getFallbackBackImage() || this.mold.image_signed_url || this.mold.image_url || '';
+    }
+    return this.mold.image_signed_url || this.mold.image_url || this.getFallbackFrontImage() || '';
+  }
+
+  getFallbackFrontImage(): string | null {
+    if (!this.mold) return null;
+    const name = (this.mold.name || '').toLowerCase();
+    if (name.includes('camisa')) return 'assets/garments/camisa_front.png';
+    if (name.includes('chaqueta')) return 'assets/garments/chaqueta_front.png';
+    if (name.includes('pantalon') || name.includes('pantalón')) return 'assets/garments/pantalon_front.png';
+    if (name.includes('overol')) return 'assets/garments/overol_front.png';
+    if (name.includes('polo')) return 'assets/garments/polo_front.png';
+    if (name.includes('buzo')) return 'assets/garments/buzo_front.png';
+    if (name.includes('camiseta')) return 'assets/garments/camiseta_front.png';
+    if (name.includes('chaleco')) return 'assets/garments/chaleco_front.png';
+    if (name.includes('delantal')) return 'assets/garments/delantal_front.png';
+    if (name.includes('gorra')) return 'assets/garments/gorra_front.png';
+    return null;
+  }
+
+  getFallbackBackImage(): string | null {
+    if (!this.mold) return null;
+    const name = (this.mold.name || '').toLowerCase();
+    if (name.includes('camisa')) return 'assets/garments/camisa_back.png';
+    if (name.includes('chaqueta')) return 'assets/garments/chaqueta_back.png';
+    if (name.includes('pantalon') || name.includes('pantalón')) return 'assets/garments/pantalon_back.png';
+    if (name.includes('overol')) return 'assets/garments/overol_back.png';
+    if (name.includes('polo')) return 'assets/garments/polo_back.png';
+    if (name.includes('buzo')) return 'assets/garments/buzo_back.png';
+    if (name.includes('camiseta')) return 'assets/garments/camiseta_back.png';
+    if (name.includes('chaleco')) return 'assets/garments/chaleco_back.png';
+    if (name.includes('delantal')) return 'assets/garments/delantal_back.png';
+    if (name.includes('gorra')) return 'assets/garments/gorra_back.png';
+    return null;
+  }
+
+  get positionedComponents(): ComponentItem[] {
+    return this.components.filter(c => c.position_x !== null && c.view === this.activeView);
+  }
+  get generalComponents(): ComponentItem[] {
+    return this.components.filter(c => c.position_x === null);
+  }
+  get materialComponents(): ComponentItem[] {
+    return this.components.filter(c => c.item_type === 'tela' || c.item_type === 'insumo');
+  }
+  get mandatoryParts(): ComponentItem[] {
+    return this.components.filter(c => c.item_type === 'parte' && c.is_mandatory !== false);
+  }
+  get filteredMandatoryParts(): ComponentItem[] {
+    return this.mandatoryParts;
+  }
+  get optionalParts(): ComponentItem[] {
+    return this.components.filter(c => c.item_type === 'parte' && c.is_mandatory === false);
+  }
+  get filteredOptionalParts(): ComponentItem[] {
+    return this.optionalParts;
+  }
+
+  /**
+   * Groups mandatory parts by garment_part_id (or by name if no garment_part_id).
+   * Returns an array of groups, each being an array of ComponentItems that share
+   * the same logical "garment part". This prevents counting e.g. two pocket variants
+   * as two separate mandatory items.
+   */
+  get uniqueMandatoryGroups(): ComponentItem[][] {
+    const groups = new Map<string, ComponentItem[]>();
+    for (const part of this.mandatoryParts) {
+      const key = part.garment_part_id
+        ? `gp_${part.garment_part_id}`
+        : `name_${part.name.toLowerCase().trim()}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(part);
+    }
+    return Array.from(groups.values());
+  }
+
+  get allMandatoryConfigured(): boolean {
+    const groups = this.uniqueMandatoryGroups;
+    if (groups.length === 0) return true;
+    // A group is configured if at least ONE of its parts is complete
+    return groups.every(group => group.some(p => this.isComponentComplete(p)));
+  }
+
+  get mandatoryConfiguredCount(): number {
+    return this.uniqueMandatoryGroups.filter(
+      group => group.some(p => this.isComponentComplete(p))
+    ).length;
+  }
+
+  get mandatoryTotalCount(): number {
+    return this.uniqueMandatoryGroups.length;
+  }
+
+  get uniqueLogicalZones(): any[] {
+    const zones = this.mold?.zones || [];
+    const seen = new Map<string, any>();
+    for (const z of zones) {
+      const key = (z.zone_type || z.name || `z_${z.id}`).toLowerCase().trim();
+      if (!seen.has(key)) {
+        seen.set(key, z);
+      }
+    }
+    return Array.from(seen.values());
+  }
+
+  get totalZonesCount(): number {
+    return this.uniqueLogicalZones.length;
+  }
+
+  get configuredLogicalZonesCount(): number {
+    const logicalZones = this.uniqueLogicalZones;
+    if (logicalZones.length === 0) return 0;
+    return logicalZones.filter(z => {
+      const zType = (z.zone_type || '').toLowerCase().trim();
+      const zName = (z.name || '').toLowerCase().trim();
+      const zoneId = Number(z.id);
+      return this.components.some(c => {
+        if (c.item_type !== 'parte' || !this.isComponentComplete(c)) return false;
+        if (c.mold_zone_id && Number(c.mold_zone_id) === zoneId) return true;
+        if (c._all_zone_ids?.some((zid: any) => Number(zid) === zoneId)) return true;
+        if (c.zone_name && zName && c.zone_name.toLowerCase().trim() === zName) return true;
+        const cZoneType = (c.zone_type || '').toLowerCase().trim();
+        if (zType && cZoneType && zType === cZoneType) return true;
+        const cName = (c.name || '').toLowerCase().trim();
+        return !!(zType && (cName.includes(zType) || zType.includes(cName)));
+      });
+    }).length;
+  }
+
+  get configuredPartsCount(): number {
+    return this.totalConfiguredPartsCount;
+  }
+
+  get totalConfiguredPartsCount(): number {
+    return this.components.filter(c => c.item_type === 'parte' && this.isComponentComplete(c)).length;
+  }
+
+  get activeZones(): any[] {
+    return (this.mold?.zones || []).filter((z: any) => (z.view || 'front') === this.activeView);
+  }
+  get sortedActiveZones(): any[] {
+    return [...this.activeZones].sort((a, b) => this.getZoneArea(b) - this.getZoneArea(a));
+  }
+
+  get draftStorageKey(): string {
+    const mId = this.moldId || this.externalMoldId || 'unknown';
+    const itemSuffix = this.itemIndex !== undefined 
+      ? `_item_${this.itemIndex}` 
+      : (this.itemData?.id ? `_item_${this.itemData.id}` : (this.itemData?.item_cfip ? `_item_${this.itemData.item_cfip}` : ''));
+    return `saint_spec_draft_${this.context}_mold_${mId}${itemSuffix}`;
+  }
+  get totalGarmentSamTime(): number {
+    let total = 0;
+    if (this.mold?.global_operations) {
+      total += this.mold.global_operations.reduce((acc: number, op: any) => acc + (parseFloat(op.execution_time) || 0), 0);
+    }
+    this.components.forEach(c => { if (c.total_time) total += parseFloat(c.total_time as any) || 0; });
+    return total;
+  }
+
+  get filteredAddSuggestions(): any[] {
+    const q = this.addSearchQuery.toLowerCase().trim();
+    if (!q) return this.availableComponents.slice(0, 50);
+    return this.availableComponents.filter(comp =>
+      (comp.display_name || '').toLowerCase().includes(q) || (comp.name || '').toLowerCase().includes(q)
+    ).slice(0, 50);
+  }
+
+  // Helpers Bound
+  getRealComponentIndexBound = (part: ComponentItem): number => this.components.indexOf(part);
+  getAssignedGeneralsBound = (): number => this.generalComponents.filter(g => g.material_exception !== null || g.client_material_exception !== null).length;
+  getSpecCountBound = (): number => this.components.filter(c => this.isComponentComplete(c)).length;
+
+  isComponentComplete(part: ComponentItem): boolean {
+    if (!part) return false;
+    const hasSpec = !!(part.client_spec?.trim()) || !!(part.technical_spec?.trim()) || !!(part.selected_type_name?.trim()) || !!part.selected_type_id;
+    const hasMat = !!part.material_exception || !!(part as any).inventory_reference || !!(part as any).inventory_description;
+    return hasSpec || hasMat;
+  }
+
+  getSpecCount(): number { return this.getSpecCountBound(); }
+  getAssignedGenerals(): number { return this.getAssignedGeneralsBound(); }
+
+  // ==================== LIFECYCLE ====================
+
+  ngOnInit(): void {
+    this.loadGarmentPartsCatalog();
+
+    if (this.embedded) {
+      this.mode = 'opm';
+      if (this.externalMoldId) {
+        this.moldId = this.externalMoldId;
+        this.initializeComponentsFromInput();
+        this.loadMold();
+      }
+    } else {
+      this.mode = this.route.snapshot.data['mode'] || 'opm';
+      const idParam = this.route.snapshot.paramMap.get('id');
+      if (idParam) {
+        this.moldId = parseInt(idParam, 10);
+        this.loadMold();
+      }
+    }
+
+    this.startAutoSave();
+  }
+
+  ngOnDestroy(): void {
+    this.saveDraft();
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.embedded) return;
+    if (changes['technicalSpecId']?.currentValue) {
+      this.technicalSpecId = changes['technicalSpecId'].currentValue;
+    }
+    if (changes['externalMoldId'] || changes['technicalSpecId']) {
+      if (this.externalMoldId) {
+        this.moldId = this.externalMoldId;
+        this.initializeComponentsFromInput();
+        this.loadMold();
+      } else {
+        this.mold = null;
+        this.components = [];
+      }
+    }
+  }
+
+  initializeComponentsFromInput(): void {
+    this.clientGeneralDescription =
+      this.itemData?.technical_spec?.description ||
+      this.itemData?.technical_spec?.general_description ||
+      this.itemData?.draftGeneralDescription ||
+      this.itemData?.descripcion_general ||
+      this.itemData?.especificaciones ||
+      this.solicitudData?.observaciones || '';
+
+    if (this.context === 'comercial') {
+      if (!this.generalDescription) this.generalDescription = this.clientGeneralDescription;
+    } else {
+      if (this.itemData?.technical_spec?.technical_description) {
+        this.generalDescription = this.itemData.technical_spec.technical_description;
+      }
+    }
+  }
+
+  public notifyChanges(): void {
+    this.saveDraft();
+    if (this.embedded) this.onComponentsChange.emit(this.components);
+  }
+
+  saveDraft(): void {
+    if (this.embedded) return; // In embedded mode, drafts are managed by parent form
+    if (!this.moldId && !this.externalMoldId) return;
+    if (!this.components || this.components.length === 0) return;
+    try {
+      const draft = {
+        timestamp: Date.now(),
+        moldId: this.moldId || this.externalMoldId,
+        technicalSpecId: this.technicalSpecId,
+        generalDescription: this.generalDescription,
+        clientGeneralDescription: this.clientGeneralDescription,
+        opmReference: this.opmReference,
+        activeView: this.activeView,
+        components: this.components
+      };
+      localStorage.setItem(this.draftStorageKey, JSON.stringify(draft));
+    } catch (e) {
+      console.warn('Error saving spec draft to localStorage', e);
+    }
+  }
+
+  getDraft(): any | null {
+    if (this.embedded) return null; // In embedded mode, always rely on parent form inputs
+    try {
+      const raw = localStorage.getItem(this.draftStorageKey);
+      if (!raw) return null;
+      const draft = JSON.parse(raw);
+      // Valid for 7 days
+      const age = Date.now() - (draft.timestamp || 0);
+      if (age > 7 * 24 * 60 * 60 * 1000) {
+        this.clearDraft();
+        return null;
+      }
+      return draft;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  clearDraft(): void {
+    try {
+      localStorage.removeItem(this.draftStorageKey);
+    } catch (e) {}
+  }
+
+  private startAutoSave(): void {
+    this.autoSaveInterval = setInterval(() => {
+      this.saveDraft();
+    }, 10000);
+    window.addEventListener('beforeunload', () => this.saveDraft());
+  }
+
+  // ==================== DATA LOADING ====================
+
+  loadGarmentPartsCatalog(): void {
+    this.moldService.getGarmentParts(undefined, true).subscribe({
+      next: (res: any) => this.globalGarmentParts = res.data || []
+    });
+  }
+
+  loadMold(): void {
+    this.loading = true;
+    this.moldService.getMold(this.moldId).subscribe({
+      next: (res: any) => {
+        this.mold = res.data;
+        if (this.mold?.zones) {
+          this.mold.zones = this.mold.zones.map((z: any) => {
+            let parsedPath = null;
+            if (Array.isArray(z.path_data)) {
+              parsedPath = z.path_data;
+            } else if (typeof z.path_data === 'string' && z.path_data.trim()) {
+              try {
+                let p = JSON.parse(z.path_data);
+                if (typeof p === 'string') p = JSON.parse(p);
+                if (Array.isArray(p)) parsedPath = p;
+              } catch (e) {
+                parsedPath = null;
+              }
+            }
+            return {
+              ...z,
+              path_data: parsedPath
+            };
+          });
+        }
+        const moldParts = this.mold.parts || [];
+        const draft = this.getDraft();
+
+        if (this.technicalSpecId) {
+          this.moldService.getTechnicalSpec(this.technicalSpecId).subscribe({
+            next: (specRes: any) => {
+              const spec = specRes?.data;
+              if (spec) {
+                this.opmReference = spec.reference || '';
+                this.clientGeneralDescription = spec.description || spec.general_description || '';
+                this.generalDescription = this.context === 'comercial' ? this.clientGeneralDescription : (spec.technical_description || spec.description || '');
+                const rawParts = spec.parts?.length ? spec.parts : (this.initialComponents?.length ? this.initialComponents : (draft?.components || []));
+                this.components = this.enrichAndConsolidateComponents(rawParts, moldParts);
+              } else {
+                const rawParts = this.initialComponents?.length ? this.initialComponents : (draft?.components || []);
+                this.components = this.enrichAndConsolidateComponents(rawParts, moldParts);
+              }
+              if (this.mold?.id_product_category) this.loadAvailableComponents(this.mold.id_product_category);
+              this.buildTextContent();
+              this.loading = false;
+              this.notifyChanges();
+            },
+            error: () => {
+              const rawParts = this.initialComponents?.length ? this.initialComponents : (draft?.components || []);
+              this.components = this.enrichAndConsolidateComponents(rawParts, moldParts);
+              if (this.mold?.id_product_category) this.loadAvailableComponents(this.mold.id_product_category);
+              this.buildTextContent();
+              this.loading = false;
+              this.notifyChanges();
+            }
+          });
+        } else {
+          const rawParts = (this.initialComponents && this.initialComponents.length > 0)
+            ? this.initialComponents
+            : (draft?.components && draft.components.length > 0 ? draft.components : []);
+
+          if (draft && (!this.initialComponents || this.initialComponents.length === 0)) {
+            if (draft.generalDescription && !this.generalDescription) {
+              this.generalDescription = draft.generalDescription;
+            }
+            if (draft.opmReference && !this.opmReference) {
+              this.opmReference = draft.opmReference;
+            }
+            if (draft.activeView) {
+              this.activeView = draft.activeView;
+            }
+          }
+
+          this.components = this.enrichAndConsolidateComponents(rawParts, moldParts);
+          if (this.mold?.id_product_category) this.loadAvailableComponents(this.mold.id_product_category);
+          this.buildTextContent();
+          this.loading = false;
+          this.notifyChanges();
+        }
+      },
+      error: () => {
+        this.errorMessage = 'Error al cargar el molde';
+        this.loading = false;
+      }
+    });
+  }
+
+  getCanonicalOptionalParts(): any[] {
+    const canonicalList = [
+      {
+        id: 9100,
+        code: 'BRG_FIG',
+        name: 'Bragueta y Figurado',
+        icon: 'bi-layout-sidebar',
+        description: 'Bragueta delantera con aletilla, aletillón, cremallera o botones.',
+        types: [
+          { id: 9101, name: 'Bragueta con Cremallera y Aletilla Sencilla', technical_description: 'Bragueta con cremallera de nylon / metálica y aletilla reforzada', total_time: 1.85, is_default: true },
+          { id: 9102, name: 'Bragueta con Botones y Aletillón Completo', technical_description: 'Bragueta tradicional con botones ocultos y aletillón protector', total_time: 2.20 }
+        ]
+      },
+      {
+        id: 9200,
+        code: 'REF_ALTA_VIS',
+        name: 'Cintas Reflectivas de Alta Visibilidad',
+        icon: 'bi-stars',
+        description: 'Cintas reflectivas de 2.5cm y 5cm de alta visibilidad en torso, espalda, mangas o botas.',
+        types: [
+          { id: 9201, name: 'Reflectivo Tipo Chaleco (Torso Delantero y Espalda 5cm)', technical_description: 'Cinta reflectiva de 5cm cosida horizontalmente en contorno de pecho y espalda', total_time: 1.25, is_default: true },
+          { id: 9202, name: 'Reflectivo Tipo Chaleco Doble (Doble Banda Torso)', technical_description: 'Dos bandas reflectivas horizontales paralelas en pecho y espalda', total_time: 1.90 },
+          { id: 9203, name: 'Reflectivo Tipo Chaleco y Mangas (Brazos y Torso)', technical_description: 'Bandas reflectivas completas en contorno de torso y en ambas mangas', total_time: 2.10 },
+          { id: 9204, name: 'Reflectivo en Botas (Contorno Piernas)', technical_description: 'Cintas reflectivas perimetrales de seguridad en la bota de ambas piernas', total_time: 1.00 }
+        ]
+      },
+      {
+        id: 9300,
+        code: 'LOG_BOR',
+        name: 'Logos, Bordados y Marquillas',
+        icon: 'bi-gem',
+        description: 'Bordados corporativos, termofijados, estampados y marquillas de identificación.',
+        types: [
+          { id: 9301, name: 'Bordado Pecho Izquierdo y Marquilla Cuello', technical_description: 'Logo corporativo bordado en delantero izquierdo y marquilla de talla/marca', total_time: 1.80, is_default: true },
+          { id: 9302, name: 'Estampado DTF / Vinilo Textil Espalda y Pecho', technical_description: 'Estampado termotransferible en delantero y espalda', total_time: 1.40 },
+          { id: 9303, name: 'Marquilla Tejida en Manga / Bota', technical_description: 'Marquilla corporativa sobrepuesta', total_time: 0.80 }
+        ]
+      },
+      {
+        id: 9400,
+        code: 'VIV_CON',
+        name: 'Vivos y Contrastes Decorativos',
+        icon: 'bi-palette',
+        description: 'Detalles en contraste de color en cuello, carteras, sangrías o costados.',
+        types: [
+          { id: 9401, name: 'Vivos en Contraste Cuello y Carteras', technical_description: 'Insertos de tela en color de contraste en solapa y carteras', total_time: 1.10, is_default: true },
+          { id: 9402, name: 'Sesgo Doble Doblado en Bordes y Puños', technical_description: 'Sesgo sobrepuesto decorativo en perfiles', total_time: 1.30 }
+        ]
+      }
+    ];
+
+    return canonicalList.map(canon => {
+      const dbMatch = (this.globalGarmentParts || []).find(gp =>
+        (gp.code && gp.code.toUpperCase() === canon.code) ||
+        (gp.name && gp.name.toLowerCase().trim() === canon.name.toLowerCase().trim())
+      );
+      if (dbMatch) {
+        return {
+          ...canon,
+          ...dbMatch,
+          types: (dbMatch.types && dbMatch.types.length > 0) ? dbMatch.types : canon.types
+        };
+      }
+      return canon;
+    });
+  }
+
+  private enrichAndConsolidateComponents(rawParts: any[], moldParts: any[]): ComponentItem[] {
+    let sourceParts: any[] = [];
+    if (rawParts && rawParts.length > 0) {
+      sourceParts = [...rawParts];
+      // Include any base mold parts that weren't in the saved parts list
+      if (moldParts && moldParts.length > 0) {
+        for (const mp of moldParts) {
+          if (mp.is_mandatory === false) continue;
+          const exists = sourceParts.some((rp: any) => {
+            const rpMoldPartId = rp.mold_part_id || (rp.is_from_mold ? rp.id : null);
+            if (rpMoldPartId && Number(rpMoldPartId) === Number(mp.id)) return true;
+            const rpGpId = rp.garment_part_id || rp.garment_part?.id;
+            if (rpGpId && mp.garment_part_id && Number(rpGpId) === Number(mp.garment_part_id)) return true;
+            const rpName = (rp.name || rp.garment_part?.name || '').toLowerCase().trim();
+            const mpName = (mp.name || mp.garment_part?.name || '').toLowerCase().trim();
+            return rpName && mpName && (rpName === mpName || rpName.includes(mpName) || mpName.includes(rpName));
+          });
+          if (!exists) {
+            sourceParts.push(mp);
+          }
+        }
+      }
+    } else {
+      sourceParts = [...(moldParts || [])];
+    }
+
+    const enrichedList: ComponentItem[] = sourceParts.map((raw: any): ComponentItem => {
+      const rawName = (raw.name || raw.garment_part?.name || '').toLowerCase().trim();
+      const rawGpId = raw.garment_part_id || raw.garment_part?.id;
+      const rawMoldPartId = raw.mold_part_id || (raw.is_from_mold ? raw.id : null);
+
+      const matchedMoldPart = moldParts.find((mp: any) => {
+        if (rawMoldPartId && Number(mp.id) === Number(rawMoldPartId)) return true;
+        if (rawGpId && Number(mp.garment_part_id) === Number(rawGpId)) return true;
+        const mpName = (mp.name || mp.garment_part?.name || '').toLowerCase().trim();
+        if (rawName && mpName && (rawName === mpName || rawName.includes(mpName) || mpName.includes(rawName))) return true;
+        return false;
+      }) || (raw.is_from_mold ? raw : null);
+
+      // Extract available types from mold part, garment part, or canonical optionals
+      const matchedOptional = !matchedMoldPart ? ((this.globalGarmentParts || []).find((gp: any) => (gp.name || '').toLowerCase().trim() === rawName) || this.getCanonicalOptionalParts().find((c: any) => c.name.toLowerCase().trim() === rawName)) : null;
+      const typesFromMp = matchedMoldPart?.types || matchedMoldPart?.garment_part?.types || matchedMoldPart?.garmentPart?.types || matchedOptional?.types || [];
+      const rawTypes = raw.types || [];
+      const allTypes = (typesFromMp.length > 0 ? typesFromMp : rawTypes).filter((t: any) => !t.is_disabled);
+
+      let selectedTypeId: number | null = null;
+      let selectedTypeName = '';
+      let technicalSpec = raw.technical_spec || '';
+      let clientSpec = raw.client_spec || '';
+      let totalTime = Number(raw.estimated_time) || 0;
+
+      const targetId = Number(raw.selected_type_id || raw.mold_part_type_id || 0);
+      const targetName = (raw.selected_type_name || raw.part_type?.name || raw.partType?.name || raw.inventory_description || '').toLowerCase().trim();
+      const targetTech = (raw.technical_spec || '').toLowerCase().trim();
+
+      // Find matched variant
+      let found = allTypes.find((t: any) => 
+        (targetId && Number(t.id) === targetId) ||
+        (targetName && (t.name || '').toLowerCase().trim() === targetName) ||
+        (targetTech && (t.technical_description || '').toLowerCase().trim() === targetTech) ||
+        (targetTech && (t.name || '').toLowerCase().trim() === targetTech)
+      );
+
+      if (!found && targetTech) {
+        found = allTypes.find((t: any) => 
+          (t.technical_description && targetTech.includes(t.technical_description.toLowerCase().trim())) ||
+          (t.name && targetTech.includes(t.name.toLowerCase().trim()))
+        );
+      }
+
+      if (found) {
+        selectedTypeId = found.id;
+        selectedTypeName = found.name;
+        technicalSpec = raw.technical_spec || found.technical_description || '';
+        totalTime = Number(raw.estimated_time) || Number(found.total_time) || 0;
+      } else if (raw.selected_type_name || raw.technical_spec || targetId) {
+        selectedTypeId = targetId || raw.selected_type_id || null;
+        selectedTypeName = raw.selected_type_name || raw.part_type?.name || raw.inventory_description || '';
+        technicalSpec = raw.technical_spec || '';
+        totalTime = Number(raw.estimated_time || raw.total_time) || 0;
+      }
+
+      let zoneObj = matchedMoldPart?.zone || raw.zone;
+      let zoneId = matchedMoldPart?.mold_zone_id || raw.mold_zone_id || null;
+      let zoneName = zoneObj?.name || matchedMoldPart?.zone_name || raw.zone_name || raw.inventory_reference || '';
+      let zoneType = zoneObj?.zone_type || matchedMoldPart?.zone_type || raw.zone_type || '';
+
+      if (this.mold?.zones?.length) {
+        const matchingZone = this.mold.zones.find((z: any) => {
+          const zName = (z.name || '').toLowerCase().trim();
+          const zType = (z.zone_type || '').toLowerCase().trim();
+          const targetZName = (zoneName || '').toLowerCase().trim();
+          if (zoneId && Number(z.id) === Number(zoneId)) return true;
+          if (targetZName && (zName === targetZName || targetZName.includes(zName) || zName.includes(targetZName))) return true;
+          if (targetZName && zType && (zType === targetZName || targetZName.includes(zType) || zType.includes(targetZName))) return true;
+          if (zName && (rawName.includes(zName) || zName.includes(rawName))) return true;
+          if (zType && (rawName.includes(zType) || zType.includes(rawName))) return true;
+          return false;
+        });
+        if (matchingZone) {
+          if (!zoneId) zoneId = matchingZone.id;
+          if (!zoneName) zoneName = matchingZone.name;
+          if (!zoneType) zoneType = matchingZone.zone_type;
+        }
+      }
+
+      return {
+        mold_part_id: matchedMoldPart?.id || rawMoldPartId || null,
+        mold_zone_id: zoneId,
+        zone_name: zoneName,
+        zone_type: zoneType,
+        garment_part_id: matchedMoldPart?.garment_part_id || rawGpId || null,
+        name: matchedMoldPart?.garment_part?.name || matchedMoldPart?.name || raw.name || 'Componente',
+        item_type: raw.item_type || matchedMoldPart?.item_type || 'parte',
+        view: raw.view || matchedMoldPart?.view || 'front',
+        position_x: raw.position_x ?? matchedMoldPart?.position_x ?? null,
+        position_y: raw.position_y ?? matchedMoldPart?.position_y ?? null,
+        width: raw.width ?? matchedMoldPart?.width ?? 22,
+        height: raw.height ?? matchedMoldPart?.height ?? 18,
+        is_mandatory: raw.is_mandatory !== undefined ? raw.is_mandatory : (matchedMoldPart ? matchedMoldPart.is_mandatory !== false : false),
+        client_spec: clientSpec,
+        technical_spec: technicalSpec,
+        material_exception: raw.material_exception || raw.technical_material_exception || null,
+        client_material_exception: raw.client_material_exception || null,
+        is_from_mold: raw.is_from_mold !== undefined ? raw.is_from_mold : !!matchedMoldPart,
+        is_expanded: false,
+        types: allTypes,
+        selected_type_id: selectedTypeId,
+        selected_type_name: selectedTypeName,
+        total_time: totalTime,
+        icon: matchedMoldPart?.icon || matchedMoldPart?.garment_part?.icon || matchedOptional?.icon || raw.icon || 'bi-layers',
+        exception_comment: raw.exception_comment || null
+      };
+    });
+
+    // Consolidate duplicate parts (e.g. left & right sleeve)
+    const consolidatedMap = new Map<string, ComponentItem>();
+    for (const comp of enrichedList) {
+      const cName = (comp.name || '').toLowerCase().trim();
+      const key = comp.mold_part_id
+        ? `mp_${comp.mold_part_id}`
+        : `${cName}__${comp.mold_zone_id || comp.zone_name || 'no-zone'}__${comp.garment_part_id || 'no-gp'}`;
+
+      if (consolidatedMap.has(key)) {
+        const existing = consolidatedMap.get(key)!;
+        if (!existing.exception_comment && comp.exception_comment) {
+          existing.exception_comment = comp.exception_comment;
+        }
+        if (!existing._all_zone_ids) {
+          existing._all_zone_ids = existing.mold_zone_id ? [existing.mold_zone_id] : [];
+        }
+        if (comp.mold_zone_id && !existing._all_zone_ids.includes(comp.mold_zone_id)) {
+          existing._all_zone_ids.push(comp.mold_zone_id);
+        }
+        if (!existing._all_part_ids) {
+          existing._all_part_ids = existing.mold_part_id ? [existing.mold_part_id] : [];
+        }
+        if (comp.mold_part_id && !existing._all_part_ids.includes(comp.mold_part_id)) {
+          existing._all_part_ids.push(comp.mold_part_id);
+        }
+        if ((!existing.types || existing.types.length === 0) && comp.types?.length) {
+          existing.types = comp.types;
+        }
+        if (!existing.selected_type_id && !existing.selected_type_name && (comp.selected_type_id || comp.selected_type_name)) {
+          existing.selected_type_id = comp.selected_type_id;
+          existing.selected_type_name = comp.selected_type_name;
+          existing.technical_spec = comp.technical_spec;
+          existing.total_time = comp.total_time;
+        }
+      } else {
+        // If this is an unconfigured no-zone orphan, check if a configured version already exists in map
+        const isConfigured = !!(comp.selected_type_id || comp.selected_type_name);
+        if (isConfigured) {
+          for (const [k, existing] of consolidatedMap.entries()) {
+            const isOrphan = !existing.is_mandatory && !existing.is_from_mold && !existing.mold_zone_id && !existing.zone_name && !existing.selected_type_id && !existing.selected_type_name;
+            if (isOrphan && (existing.name || '').toLowerCase().trim() === cName) {
+              consolidatedMap.delete(k);
+            }
+          }
+        } else {
+          const isOrphan = !comp.is_mandatory && !comp.is_from_mold && !comp.mold_zone_id && !comp.zone_name;
+          if (isOrphan) {
+            const hasConfigured = Array.from(consolidatedMap.values()).some(
+              existing => (existing.name || '').toLowerCase().trim() === cName && (existing.selected_type_id || existing.selected_type_name)
+            );
+            if (hasConfigured) continue;
+          }
+        }
+
+        comp._all_zone_ids = comp.mold_zone_id ? [comp.mold_zone_id] : [];
+        comp._all_part_ids = comp.mold_part_id ? [comp.mold_part_id] : [];
+        consolidatedMap.set(key, comp);
+      }
+    }
+
+    // Ensure all mandatory mold parts are present
+    for (const mp of moldParts) {
+      if (mp.is_mandatory === false) continue;
+      const mpId = Number(mp.id);
+      const mpGpId = mp.garment_part_id ? Number(mp.garment_part_id) : null;
+      const mpName = (mp.garment_part?.name || mp.name || '').toLowerCase().trim();
+
+      const alreadyExists = Array.from(consolidatedMap.values()).some(c => {
+        if (c.mold_part_id && Number(c.mold_part_id) === mpId) return true;
+        if (c._all_part_ids?.some((pid: any) => Number(pid) === mpId)) return true;
+        if (mpGpId && c.garment_part_id && Number(c.garment_part_id) === mpGpId) return true;
+        const cName = (c.name || '').toLowerCase().trim();
+        return cName && mpName && (cName === mpName || cName.includes(mpName) || mpName.includes(cName));
+      });
+
+      if (!alreadyExists) {
+        const types = (mp.types || mp.garment_part?.types || []).filter((t: any) => !t.is_disabled);
+        const newComp: ComponentItem = {
+          mold_part_id: mp.id,
+          mold_zone_id: mp.mold_zone_id || null,
+          _all_zone_ids: mp.mold_zone_id ? [mp.mold_zone_id] : [],
+          _all_part_ids: mp.id ? [mp.id] : [],
+          zone_name: mp.zone?.name || mp.zone_name || '',
+          zone_type: mp.zone?.zone_type || '',
+          garment_part_id: mp.garment_part_id || null,
+          name: mp.garment_part?.name || mp.name || 'Componente',
+          item_type: mp.item_type || 'parte',
+          view: mp.view || 'front',
+          position_x: mp.position_x,
+          position_y: mp.position_y,
+          width: mp.width || 22,
+          height: mp.height || 18,
+          is_mandatory: true,
+          client_spec: '',
+          technical_spec: '',
+          material_exception: null,
+          client_material_exception: null,
+          is_from_mold: true,
+          is_expanded: false,
+          types: types,
+          selected_type_id: null,
+          selected_type_name: '',
+          total_time: 0,
+          icon: mp.icon || mp.garment_part?.icon || 'bi-layers',
+          exception_comment: null
+        };
+        consolidatedMap.set(`mp_${mp.id}`, newComp);
+      }
+    }
+
+    // Link all matching zones from the mold (both front and back views) to each consolidated component
+    const moldZones = this.mold?.zones || [];
+    for (const comp of consolidatedMap.values()) {
+      if (!comp._all_zone_ids) {
+        comp._all_zone_ids = comp.mold_zone_id ? [comp.mold_zone_id] : [];
+      }
+      const cName = (comp.name || '').toLowerCase().trim();
+      const cZoneName = (comp.zone_name || '').toLowerCase().trim();
+      const cZoneType = (comp.zone_type || '').toLowerCase().trim();
+
+      for (const z of moldZones) {
+        if (!z.id) continue;
+        const zName = (z.name || '').toLowerCase().trim();
+        const zType = (z.zone_type || '').toLowerCase().trim();
+
+        const isDirectMatch = z.id === comp.mold_zone_id || comp._all_zone_ids.includes(z.id);
+        const isTypeMatch = !!(zType && cZoneType && zType === cZoneType);
+        const isZoneNameMatch = !!(zName && cZoneName && (zName === cZoneName || zName.includes(cZoneName) || cZoneName.includes(zName)));
+        const isPartNameMatch = !!(zType && (cName.includes(zType) || zType.includes(cName)));
+
+        if (isDirectMatch || isTypeMatch || isZoneNameMatch || isPartNameMatch) {
+          if (!comp._all_zone_ids.includes(z.id)) {
+            comp._all_zone_ids.push(z.id);
+          }
+        }
+      }
+    }
+
+    return Array.from(consolidatedMap.values());
+  }
+
+  loadAvailableComponents(categoryId: number): void {
+    this.moldService.getComponentsByCategory(categoryId).subscribe({
+      next: (res: any) => this.availableComponents = res.data || []
+    });
+  }
+
+  // ==================== ZONAS & VARIANTES ====================
+
+  getZoneArea(zone: any): number {
+    let pts = zone.path_data;
+    if (typeof pts === 'string') { try { pts = JSON.parse(pts); } catch { pts = null; } }
+    if (Array.isArray(pts) && pts.length >= 3) {
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const j = (i + 1) % pts.length;
+        area += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+      }
+      return Math.abs(area) / 2;
+    }
+    return (parseFloat(zone.width) || 20) * (parseFloat(zone.height) || 20);
+  }
+
+  isPartInSelectedZone(part: ComponentItem): boolean {
+    if (!this.selectedZone) return true;
+    const selZoneId = Number(this.selectedZone.id);
+    // Check direct mold_zone_id
+    if (part.mold_zone_id && Number(part.mold_zone_id) === selZoneId) return true;
+    // Check consolidated _all_zone_ids (multi-polygon siblings)
+    if (part._all_zone_ids?.length) {
+      if (part._all_zone_ids.some((zid: any) => Number(zid) === selZoneId)) return true;
+    }
+    // Match by zone name
+    const szName = (this.selectedZone.name || '').toLowerCase().trim();
+    const pzName = (part.zone_name || '').toLowerCase().trim();
+    if (szName && pzName && (szName === pzName || szName.includes(pzName) || pzName.includes(szName))) return true;
+    // Match by zone_type vs part zone_type
+    const zType = (this.selectedZone.zone_type || '').toLowerCase().trim();
+    const pZoneType = (part.zone_type || '').toLowerCase().trim();
+    if (zType && pZoneType && zType === pZoneType) return true;
+    // Match by zone_type vs part name
+    const pName = (part.name || '').toLowerCase().trim();
+    if (zType && (pName.includes(zType) || zType.includes(pName))) return true;
+    if (szName && (pName.includes(szName) || szName.includes(pName))) return true;
+    return false;
+  }
+
+  selectVariantForPart(part: ComponentItem, variant: any): void {
+    if (!variant) {
+      if (!part.is_mandatory && !part.is_from_mold) {
+        const idx = this.components.indexOf(part);
+        if (idx >= 0) {
+          this.components.splice(idx, 1);
+        }
+      } else {
+        part.selected_type_id = null;
+        part.selected_type_name = '';
+        part.technical_spec = '';
+        part.total_time = 0;
+        part.exception_comment = null;
+      }
+    } else {
+      part.selected_type_id = Number(variant.id);
+      part.selected_type_name = variant.name;
+      part.technical_spec = variant.technical_description || '';
+      part.total_time = Number(variant.total_time) || 0;
+    }
+    this.buildTextContent();
+    this.notifyChanges();
+  }
+
+  onAddOptionalPartToZone(event: { zone: any; garmentPart: any; variant?: any }): void {
+    const { zone, garmentPart, variant } = event;
+    const chosenVariant = variant || (garmentPart.types || []).find((t: any) => t.is_default) || (garmentPart.types || [])[0];
+    const newComp: ComponentItem = {
+      mold_part_id: null,
+      mold_zone_id: zone.id || null,
+      _all_zone_ids: zone.id ? [zone.id] : [],
+      zone_name: zone.name || '',
+      zone_type: zone.zone_type || '',
+      garment_part_id: garmentPart.id || null,
+      name: garmentPart.name,
+      item_type: garmentPart.item_type || 'parte',
+      view: this.activeView,
+      position_x: null,
+      position_y: null,
+      width: 22,
+      height: 18,
+      is_mandatory: false,
+      client_spec: '',
+      technical_spec: chosenVariant?.technical_description || '',
+      material_exception: null,
+      client_material_exception: null,
+      is_from_mold: false,
+      is_expanded: false,
+      types: garmentPart.types || [],
+      selected_type_id: chosenVariant?.id || null,
+      selected_type_name: chosenVariant?.name || '',
+      total_time: chosenVariant ? (Number(chosenVariant.total_time) || 0) : 0,
+      icon: garmentPart.icon || 'bi-sliders',
+      exception_comment: null
+    };
+    this.components.push(newComp);
+    this.buildTextContent();
+    this.notifyChanges();
+  }
+
+  updateComponentExceptionComment(part: ComponentItem, comment: string): void {
+    part.exception_comment = comment && comment.trim() ? comment.trim() : null;
+    this.saveDraft();
+  }
+
+  toggleOptionalPartInclusion(part: ComponentItem): void {
+    if (part.selected_type_id || part.technical_spec) {
+      part.selected_type_id = null;
+      part.selected_type_name = '';
+      part.technical_spec = '';
+      part.total_time = 0;
+      part.exception_comment = null;
+    } else {
+      const def = (part.types || []).find((t: any) => t.is_default) || (part.types || [])[0];
+      if (def) this.selectVariantForPart(part, def);
+      else part.selected_type_name = 'Incluido';
+    }
+    this.buildTextContent();
+    this.notifyChanges();
+  }
+
+  onVariantSelected(comp: ComponentItem): void {
+    if (!comp.types?.length) return;
+    const sel = comp.types.find((t: any) => Number(t.id) === Number(comp.selected_type_id));
+    if (sel) {
+      comp.selected_type_name = sel.name;
+      comp.technical_spec = sel.technical_description || '';
+      comp.total_time = Number(sel.total_time) || 0;
+      this.buildTextContent();
+      this.notifyChanges();
+    }
+  }
+
+  clearSelectedZone(): void { this.selectedZone = null; }
+  toggleView(): void {
+    if (this.hasBackView) this.activeView = this.activeView === 'front' ? 'back' : 'front';
+  }
+
+  // ==================== CANVAS & POPUP ====================
+
+  onCanvasClick(event: MouseEvent): void {
+    if (this.loading || !this.mold) return;
+    const imgEl = document.querySelector('img.cursor-crosshair') as HTMLImageElement;
+    if (!imgEl) return;
+    const rect = imgEl.getBoundingClientRect();
+    const x = Math.round(Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100)) * 100) / 100;
+    const y = Math.round(Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100)) * 100) / 100;
+    this.dynamicPinPosition = { x, y };
+
+    this.popoverPosition = {
+      x: Math.min(event.clientX, window.innerWidth - 300),
+      y: Math.min(event.clientY, window.innerHeight - 260)
+    };
+    this.openAddModal('component');
+  }
+
+  onZoneClick(zone: any): void {
+    this.selectedZone = (this.selectedZone === zone) ? null : zone;
+  }
+
+  startDragging(event: MouseEvent, index: number): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const imgEl = document.querySelector('img.cursor-crosshair') as HTMLImageElement;
+    if (!imgEl) return;
+
+    const onMove = (e: MouseEvent) => {
+      const rect = imgEl.getBoundingClientRect();
+      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+      this.components[index].position_x = Math.round(x * 100) / 100;
+      this.components[index].position_y = Math.round(y * 100) / 100;
+      this.notifyChanges();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
+  clearPinnedPart(): void { this.dynamicPinPosition = null; }
+
+  // ==================== ADD / INLINE EDIT ====================
+
+  openAddModal(type: 'general' | 'component'): void {
+    this.addModalType = type;
+    this.showAddModal = true;
+  }
+
+  confirmAdd(part?: { name: string; item_type: string }): void {
+    const finalName = part ? part.name : this.addSearchQuery.trim();
+    const finalType = (part ? part.item_type : this.addItemType) as any;
+    if (!finalName) return;
+
+    this.components.push({
+      mold_part_id: null,
+      name: finalName,
+      item_type: finalType,
+      view: this.activeView,
+      position_x: this.dynamicPinPosition?.x || null,
+      position_y: this.dynamicPinPosition?.y || null,
+      is_mandatory: false,
+      client_spec: '',
+      technical_spec: '',
+      material_exception: null,
+      is_from_mold: false,
+      is_expanded: false,
+    });
+
+    this.showAddModal = false;
+    this.dynamicPinPosition = null;
+    this.addSearchQuery = '';
+    this.buildTextContent();
+    this.notifyChanges();
+  }
+
+  addMaterialAsComponent(mat: { name: string; type: string }): void {
+    if (!mat?.name?.trim()) return;
+    const exists = this.components.some(c =>
+      c && (c.item_type === 'tela' || c.item_type === 'insumo') &&
+      (c.name || '').toLowerCase().trim() === mat.name.toLowerCase().trim()
+    );
+    if (!exists) {
+      this.components.push({
+        mold_part_id: null,
+        name: mat.name.trim(),
+        item_type: (mat.type === 'tela' ? 'tela' : 'insumo') as any,
+        view: this.activeView,
+        position_x: null,
+        position_y: null,
+        is_mandatory: false,
+        client_spec: '',
+        technical_spec: '',
+        material_exception: null,
+        is_from_mold: false,
+        is_expanded: false,
+      });
+      this.buildTextContent();
+      this.notifyChanges();
+    }
+  }
+
+  selectZoneSuggestedPart(part: any): void {
+    const def = (part.types || []).find((t: any) => t.is_default) || (part.types || [])[0];
+    this.components.push({
+      mold_part_id: null,
+      name: part.name,
+      item_type: 'parte',
+      view: this.activeView,
+      position_x: this.dynamicPinPosition?.x || null,
+      position_y: this.dynamicPinPosition?.y || null,
+      width: 22,
+      height: 18,
+      is_mandatory: false,
+      client_spec: '',
+      technical_spec: def?.technical_description || '',
+      material_exception: null,
+      is_from_mold: false,
+      is_expanded: false,
+      types: part.types || [],
+      selected_type_id: def?.id || null,
+      selected_type_name: def?.name || '',
+      total_time: def ? (Number(def.total_time) || 0) : 0,
+      icon: part.icon || 'bi-layers'
+    });
+    this.showAddModal = false;
+    this.dynamicPinPosition = null;
+    this.buildTextContent();
+    this.notifyChanges();
+  }
+
+  selectAddSuggestion(comp: any): void {
+    this.addSearchQuery = comp.display_name || comp.name;
+    this.addItemType = comp.item_type || 'parte';
+    this.showAddSuggestions = false;
+  }
+
   startInlineEdit(index: number): void {
-    const comp = this.components[index];
     this.inlineEditingIndex = index;
-    this.inlineEditName = comp.name;
-    this.inlineEditType = comp.item_type;
+    this.inlineEditName = this.components[index].name;
+    this.inlineEditType = this.components[index].item_type;
   }
 
   saveInlineEdit(): void {
@@ -163,15 +1163,12 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     }
   }
 
-  cancelInlineEdit(): void {
-    this.inlineEditingIndex = null;
-  }
+  cancelInlineEdit(): void { this.inlineEditingIndex = null; }
 
   startInlineAdd(type: 'general' | 'component'): void {
     this.inlineAdding = true;
     this.inlineAddingType = type;
     this.addSearchQuery = '';
-    this.addItemType = 'parte';
   }
 
   confirmInlineAdd(): void {
@@ -179,7 +1176,6 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       this.inlineAdding = false;
       return;
     }
-    
     this.components.push({
       mold_part_id: null,
       name: this.addSearchQuery.trim(),
@@ -194,525 +1190,22 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       is_from_mold: false,
       is_expanded: false,
     });
-
     this.inlineAdding = false;
     this.buildTextContent();
     this.notifyChanges();
   }
 
-  get filteredAddSuggestions(): any[] {
-    const q = this.addSearchQuery.toLowerCase().trim();
-    if (!q) return this.availableComponents.slice(0, 50);
-    return this.availableComponents.filter(comp => 
-      (comp.display_name || '').toLowerCase().includes(q) ||
-      (comp.name || '').toLowerCase().includes(q)
-    ).slice(0, 50);
-  }
-
-  selectAddSuggestion(comp: any): void {
-    this.addSearchQuery = comp.display_name || comp.name;
-    this.addItemType = comp.item_type || 'parte';
-    this.showAddSuggestions = false;
-  }
-
-  // Dragging
-  isDragging = false;
-  draggedComponentIndex: number | null = null;
-
-  // Text view suggestions
-  showSuggestions = false;
-  suggestionType: 'component' | 'siesa' = 'component';
-  suggestionQuery = '';
-  textContent = '';
-  allInventory: any[] = [];
-  inventoryLoaded = false;
-
-  loadInventory(): void {
-    this.moldService.searchInventory('', 'MP001').subscribe({
-      next: (res: any) => {
-        this.allInventory = res.data || [];
-        this.inventoryLoaded = true;
-      }
-    });
-  }
-
-  // States
-  loading = false;
-  saving = false;
-  errorMessage = '';
-  successMessage = '';
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    
-    // Si estamos editando inline
-    if (this.inlineEditingIndex !== null) {
-      const editingRow = document.querySelector('.inline-editing-row');
-      if (editingRow && !editingRow.contains(target)) {
-        const comp = this.components[this.inlineEditingIndex];
-        if (this.inlineEditName.trim() !== comp.name || this.inlineEditType !== comp.item_type) {
-          this.saveInlineEdit();
-        } else {
-          this.cancelInlineEdit();
-        }
-      }
-    }
-
-    // Si estamos agregando inline
-    if (this.inlineAdding) {
-      const addingRow = document.querySelector('.inline-adding-row');
-      if (addingRow && !addingRow.contains(target) && !target.closest('.bi-plus-circle')) {
-        if (this.addSearchQuery.trim()) {
-          this.confirmInlineAdd();
-        } else {
-          this.inlineAdding = false;
-        }
-      }
-    }
-
-    // Si el popover de agregar está abierto (solo para cerrar si se hace clic fuera del canvas y del popover)
-    if (this.showAddModal && this.activeTab === 'molde') {
-      const popover = document.querySelector('.fixed.z-\\[1100\]');
-      const canvas = this.imageCanvas?.nativeElement;
-      if (popover && !popover.contains(target) && canvas && !canvas.contains(target)) {
-        this.showAddModal = false;
-      }
-    }
-  }
-
-  constructor(
-    private moldService: MoldService,
-    private authService: AuthService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
-
-  // ==================== PERMISSIONS ====================
-  // 1 = Admin, 46 = Crear OPM, 47 = Editar OPM, 48 = Crear ficha, 49 = Editar ficha
-
-  get canCreateOpm(): boolean { return this.authService.hasAnyPermission([1, 46]); }
-  get canEditOpm(): boolean { return this.authService.hasAnyPermission([1, 47]); }
-  get canCreateFicha(): boolean { return this.authService.hasAnyPermission([1, 48]); }
-  get canEditFicha(): boolean { return this.authService.hasAnyPermission([1, 49]); }
-
-  initializeComponentsFromInput(): void {
-    this.clientGeneralDescription = 
-      this.itemData?.technical_spec?.description || 
-      this.itemData?.technical_spec?.general_description || 
-      this.itemData?.draftGeneralDescription || 
-      this.itemData?.descripcion_general || 
-      this.itemData?.especificaciones || 
-      this.solicitudData?.observaciones || 
-      '';
-
-    if (this.context === 'comercial') {
-      if (!this.generalDescription) {
-        this.generalDescription = this.clientGeneralDescription;
-      }
-    } else {
-      if (this.itemData?.technical_spec?.technical_description) {
-        this.generalDescription = this.itemData.technical_spec.technical_description;
-      }
-    }
-
-    if (this.initialComponents && this.initialComponents.length > 0) {
-      this.components = this.initialComponents.map((c: any) => {
-        let clientMat = c.client_material_exception || c.material_exception || null;
-        const clientText = c.client_spec || c.spec_content || '';
-        const techText = c.technical_spec || '';
-        let techMat = c.technical_material_exception || (c.client_material_exception ? c.material_exception : null);
-
-        if (!clientMat && !techMat && (c.inventory_reference || c.inventory_description)) {
-          let parsedColor = '';
-          let parsedDesc = c.inventory_description || '';
-          const matchColor = parsedDesc.match(/\(([^)]+)\)$/);
-          if (matchColor) {
-            parsedColor = matchColor[1];
-          }
-
-          const mat: OpmMaterial = {
-            id_item: c.inventory_reference || '',
-            referencia: c.inventory_reference || '',
-            descripcion: parsedDesc,
-            id_color: '',
-            color: parsedColor,
-            costo_unitario: 0,
-            existencias: 0,
-            is_fabric: false,
-            assignment_source: c.inventory_reference ? 'siesa' : 'manual',
-          };
-          clientMat = mat;
-          techMat = mat;
-        }
-
-        if (!clientMat && techMat) clientMat = techMat;
-        if (!techMat && clientMat) techMat = clientMat;
-
-        return {
-          mold_part_id: c.mold_part_id || c.id || null,
-          name: c.name || c.garment_component?.display_name || 'Componente',
-          item_type: c.item_type || 'parte',
-          view: c.view || 'front',
-          position_x: c.position_x,
-          position_y: c.position_y,
-          is_mandatory: c.is_mandatory ?? true,
-          client_spec: clientText,
-          technical_spec: techText,
-          client_material_exception: clientMat,
-          material_exception: techMat,
-          is_from_mold: c.is_from_mold ?? true,
-          is_expanded: false,
-        };
-      });
-    }
-  }
-
-  ngOnInit(): void {
-    if (this.embedded) {
-      // In embedded mode, moldId comes from @Input
-      this.mode = 'opm';
-      if (this.externalMoldId) {
-        this.moldId = this.externalMoldId;
-        
-        // Si hay componentes iniciales (del borrador), usarlos. Si no, cargar del molde.
-        if (this.initialComponents && this.initialComponents.length > 0) {
-          this.initializeComponentsFromInput();
-          this.loadMoldMinimal(); // Cargar info del molde y ficha si existe
-        } else {
-          this.loadMold();
-        }
-      }
-    } else {
-      this.mode = this.route.snapshot.data['mode'] || 'opm';
-      const idParam = this.route.snapshot.paramMap.get('id');
-      if (idParam) {
-        this.moldId = parseInt(idParam, 10);
-        this.loadMold();
-      }
-    }
-  }
-
-  public notifyChanges(): void {
-    if (this.embedded) {
-      this.onComponentsChange.emit(this.components);
-    }
-  }
-
-  loadMoldMinimal(): void {
-    this.loading = true;
-    this.moldService.getMold(this.moldId).subscribe({
-      next: (res: any) => {
-        this.mold = res.data;
-        if (this.technicalSpecId) {
-          this.moldService.getTechnicalSpec(this.technicalSpecId).subscribe({
-            next: (specRes: any) => {
-              if (specRes && specRes.data) {
-                const spec = specRes.data;
-                this.opmReference = spec.reference || '';
-                this.clientGeneralDescription = spec.description || spec.general_description || this.clientGeneralDescription || '';
-                if (this.context === 'comercial') {
-                  this.generalDescription = spec.description || spec.general_description || this.clientGeneralDescription;
-                } else {
-                  this.generalDescription = spec.technical_description || '';
-                }
-                if (spec.parts && spec.parts.length > 0) {
-                  this.initialComponents = spec.parts;
-                  this.initializeComponentsFromInput();
-                }
-              }
-              this.buildTextContent();
-              this.loading = false;
-            },
-            error: () => {
-              this.buildTextContent();
-              this.loading = false;
-            }
-          });
-        } else {
-          this.buildTextContent();
-          this.loading = false;
-        }
-      },
-      error: () => this.loading = false
-    });
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (this.embedded) {
-      const moldChanged = changes['externalMoldId'];
-      const specChanged = changes['technicalSpecId'];
-      const initCompChanged = changes['initialComponents'];
-
-      if (specChanged && changes['technicalSpecId'].currentValue) {
-        this.technicalSpecId = changes['technicalSpecId'].currentValue;
-      }
-
-      if (initCompChanged && this.initialComponents && this.initialComponents.length > 0) {
-        this.initializeComponentsFromInput();
-      }
-
-      if (moldChanged || specChanged) {
-        const newMoldId = this.externalMoldId;
-        if (newMoldId) {
-          this.moldId = newMoldId;
-          if (this.initialComponents && this.initialComponents.length > 0) {
-            this.initializeComponentsFromInput();
-            this.loadMoldMinimal();
-          } else {
-            this.loadMold();
-          }
-        } else {
-          this.mold = null;
-          this.components = [];
-        }
-      }
-    }
-  }
-
-  // ==================== Computed ====================
-
-  get modeLabel(): string {
-    return this.mode === 'ficha' ? 'Ficha Técnica' : 'OPM';
-  }
-
-  get hasBackView(): boolean {
-    return !!this.mold?.back_image_signed_url;
-  }
-
-  get activeImage(): string {
-    if (!this.mold) return '';
-    if (this.activeView === 'back' && this.mold.back_image_signed_url) {
-      return this.mold.back_image_signed_url;
-    }
-    return this.mold.image_signed_url || '';
-  }
-
-  get activeComponents(): ComponentItem[] {
-    return this.components.filter(c => c.view === this.activeView || c.position_x === null);
-  }
-
-  get positionedComponents(): ComponentItem[] {
-    return this.components.filter(c => c.position_x !== null && c.view === this.activeView);
-  }
-
-  get generalComponents(): ComponentItem[] {
-    return this.components.filter(c => c.position_x === null);
-  }
-
-  getAssignedGenerals(): number {
-    return this.generalComponents.filter(g => g.material_exception !== null).length;
-  }
-
-  getSpecCount(): number {
-    return this.components.filter(c => this.isComponentComplete(c)).length;
-  }
-
-  getRealComponentIndex(part: ComponentItem): number {
-    return this.components.indexOf(part);
-  }
-
-  isComponentComplete(part: ComponentItem): boolean {
-    const hasSpec = !!(part.client_spec && part.client_spec.trim().length > 0) || 
-                    !!(part.technical_spec && part.technical_spec.trim().length > 0);
-    const hasMaterial = !!part.material_exception || 
-                        (!!(part as any).inventory_reference && (part as any).inventory_reference.trim().length > 0) ||
-                        (!!(part as any).inventory_description && (part as any).inventory_description.trim().length > 0);
-    return hasSpec || hasMaterial;
-  }
-
-  // ==================== Load ====================
-
-  loadMold(): void {
-    this.loading = true;
-    this.moldService.getMold(this.moldId).subscribe({
-      next: (res: any) => {
-        this.mold = res.data;
-        const parts = this.mold.parts || [];
-
-        // Si tenemos un technicalSpecId guardado previamente, cargamos sus especificaciones existentes
-        if (this.technicalSpecId) {
-          this.moldService.getTechnicalSpec(this.technicalSpecId).subscribe({
-            next: (specRes: any) => {
-              if (specRes && specRes.data) {
-                const spec = specRes.data;
-                this.opmReference = spec.reference || '';
-                this.clientGeneralDescription = spec.description || spec.general_description || this.clientGeneralDescription || '';
-                if (this.context === 'comercial') {
-                  this.generalDescription = spec.description || spec.general_description || this.clientGeneralDescription;
-                } else {
-                  this.generalDescription = spec.technical_description || '';
-                }
-                if (spec.parts && spec.parts.length > 0) {
-                  this.components = spec.parts.map((p: any) => {
-                    let clientMat: OpmMaterial | null = p.client_material_exception || null;
-                    let techMat: OpmMaterial | null = p.material_exception || null;
-
-                    if (!clientMat && !techMat && (p.inventory_reference || p.inventory_description)) {
-                      const mat: OpmMaterial = {
-                        id_item: p.inventory_reference || '',
-                        referencia: p.inventory_reference || '',
-                        descripcion: p.inventory_description || '',
-                        id_color: '',
-                        color: '',
-                        costo_unitario: 0,
-                        existencias: 0,
-                        is_fabric: false,
-                        assignment_source: 'siesa',
-                      };
-                      clientMat = mat;
-                      techMat = mat;
-                    }
-
-                    return {
-                      mold_part_id: p.mold_part_id || null,
-                      name: p.name || 'Componente',
-                      item_type: p.item_type || 'parte',
-                      view: p.view || 'front',
-                      position_x: p.position_x,
-                      position_y: p.position_y,
-                      is_mandatory: true,
-                      client_spec: p.client_spec || '',
-                      technical_spec: p.technical_spec || '',
-                      client_material_exception: clientMat,
-                      material_exception: techMat,
-                      is_from_mold: !!p.mold_part_id,
-                      is_expanded: false,
-                    };
-                  });
-                }
-              }
-              if (this.mold?.id_product_category) {
-                this.loadAvailableComponents(this.mold.id_product_category);
-              }
-              this.buildTextContent();
-              this.loading = false;
-              this.notifyChanges();
-            },
-            error: () => {
-              this.loadDefaultMoldParts(parts);
-            }
-          });
-        } else {
-          this.loadDefaultMoldParts(parts);
-        }
-      },
-      error: () => {
-        this.errorMessage = 'Error al cargar el molde';
-        this.loading = false;
-      }
-    });
-  }
-
-  private loadDefaultMoldParts(parts: any[]): void {
-    if (!this.initialComponents || this.initialComponents.length === 0) {
-      this.components = parts.map((p: any) => ({
-        mold_part_id: p.id,
-        name: p.garment_component?.display_name || p.name || 'Componente',
-        item_type: p.item_type || 'parte',
-        view: p.view || 'front',
-        position_x: p.position_x,
-        position_y: p.position_y,
-        is_mandatory: true,
-        client_spec: '',
-        technical_spec: '',
-        material_exception: null,
-        is_from_mold: true,
-        is_expanded: false,
-      }));
-    }
-
-    if (this.mold?.id_product_category) {
-      this.loadAvailableComponents(this.mold.id_product_category);
-    }
-
-    this.buildTextContent();
-    this.loading = false;
-    this.notifyChanges();
-  }
-
-  loadAvailableComponents(categoryId: number): void {
-    this.moldService.getComponentsByCategory(categoryId).subscribe({
-      next: (res: any) => {
-        this.availableComponents = res.data;
-      },
-      error: (err) => {
-        console.error('Error loading components:', err);
-      }
-    });
-  }
-
-  toggleView(): void {
-    if (!this.hasBackView) return;
-    this.activeView = this.activeView === 'front' ? 'back' : 'front';
-  }
-
-  // ==================== Add Items ====================
-
-  openAddModal(type: 'general' | 'component'): void {
-    this.addModalType = type;
-    this.editingPart = {
-      name: '',
-      item_type: 'parte',
-      view: this.activeView,
-      position_x: type === 'component' ? (this.dynamicPinPosition?.x || null) : null,
-      position_y: type === 'component' ? (this.dynamicPinPosition?.y || null) : null,
-      is_mandatory: false
-    };
-    this.pendingPin = this.editingPart.position_x !== null ? { x: this.editingPart.position_x, y: this.editingPart.position_y } : null;
-    this.showAddModal = true;
-  }
-
-  confirmAdd(part?: { name: string, item_type: string }): void {
-    if (!this.editingPart && !this.addSearchQuery.trim()) return;
-
-    const finalName = part ? part.name : this.addSearchQuery.trim();
-    const finalType = part ? part.item_type : this.addItemType;
-
-    this.components.push({
-      mold_part_id: null,
-      name: finalName,
-      item_type: finalType as any,
-      view: this.editingPart?.view || this.activeView,
-      position_x: this.editingPart?.position_x || null,
-      position_y: this.editingPart?.position_y || null,
-      is_mandatory: false,
-      client_spec: '',
-      technical_spec: '',
-      material_exception: null,
-      is_from_mold: false,
-      is_expanded: false,
-    });
-
-    this.showAddModal = false;
-    this.editingPart = null;
-    this.pendingPin = null;
-    this.dynamicPinPosition = null;
-    this.addSearchQuery = '';
-    this.addItemType = 'parte';
-    this.buildTextContent();
-    this.notifyChanges();
-  }
-
-  cancelAdd(): void {
-    this.showAddModal = false;
-    this.editingPart = null;
-    this.pendingPin = null;
-    this.dynamicPinPosition = null;
-  }
-
   removeComponent(item: ComponentItem): void {
     if (item.is_from_mold) return;
-    const index = this.components.indexOf(item);
-    if (index >= 0) {
-      this.components.splice(index, 1);
+    const idx = this.components.indexOf(item);
+    if (idx >= 0) {
+      this.components.splice(idx, 1);
       this.buildTextContent();
       this.notifyChanges();
     }
   }
 
-  // Spec Editor (primary)
-  targetMaterialType: 'client' | 'technical' = 'technical';
+  // ==================== SPEC EDITOR & MATERIAL MODALS ====================
 
   openSpecEditor(realIndex: number): void {
     this.specEditorIndex = realIndex;
@@ -737,10 +1230,8 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     this.showSpecEditor = false;
     this.specEditorIndex = null;
     this.specEditorComponent = null;
-    this.targetMaterialType = 'technical';
   }
 
-  // Exception from within spec editor
   specAddExceptionSiesa(): void {
     if (this.specEditorIndex === null) return;
     this.targetMaterialType = 'technical';
@@ -756,8 +1247,7 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   specRemoveException(): void {
-    if (this.specEditorIndex === null) return;
-    this.components[this.specEditorIndex].material_exception = null;
+    if (this.specEditorIndex !== null) this.components[this.specEditorIndex].material_exception = null;
   }
 
   specAddClientExceptionSiesa(): void {
@@ -775,84 +1265,8 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   }
 
   specRemoveClientException(): void {
-    if (this.specEditorIndex === null) return;
-    this.components[this.specEditorIndex].client_material_exception = null;
+    if (this.specEditorIndex !== null) this.components[this.specEditorIndex].client_material_exception = null;
   }
-
-  // ==================== Canvas Interaction ====================
-
-  onCanvasClick(event: MouseEvent): void {
-    if (this.loading || !this.mold || this.isDragging) return;
-
-    const imgEl = this.moldImage?.nativeElement || this.imageCanvas?.nativeElement?.querySelector('img');
-    if (!imgEl) return;
-
-    const rect = imgEl.getBoundingClientRect();
-    
-    // Posición porcentual exacta respecto a la IMAGEN
-    const xPerc = ((event.clientX - rect.left) / rect.width) * 100;
-    const yPerc = ((event.clientY - rect.top) / rect.height) * 100;
-
-    if (xPerc < 0 || xPerc > 100 || yPerc < 0 || yPerc > 100) return;
-
-    this.dynamicPinPosition = { 
-      x: Math.round(xPerc * 100) / 100, 
-      y: Math.round(yPerc * 100) / 100 
-    };
-
-    // Posición para el Popover flotante
-    this.popoverPosition = {
-      x: Math.min(event.clientX, window.innerWidth - 280),
-      y: Math.min(event.clientY, window.innerHeight - 200)
-    };
-
-    this.openAddModal('component');
-  }
-
-  // ==================== Drag & Drop ====================
-
-  startDragging(event: MouseEvent, index: number): void {
-    event.stopPropagation();
-    event.preventDefault();
-
-    this.isDragging = true;
-    this.draggedComponentIndex = index;
-    
-    const imgEl = this.moldImage?.nativeElement || this.imageCanvas?.nativeElement?.querySelector('img');
-    
-    const onMouseMove = (e: MouseEvent) => {
-      if (!this.isDragging || this.draggedComponentIndex === null || !imgEl) return;
-      
-      const rect = imgEl.getBoundingClientRect();
-      
-      let x = ((e.clientX - rect.left) / rect.width) * 100;
-      let y = ((e.clientY - rect.top) / rect.height) * 100;
-
-      // Limitar estrictamente dentro de la imagen (0% a 100%)
-      x = Math.max(0, Math.min(100, x));
-      y = Math.max(0, Math.min(100, y));
-
-      this.components[this.draggedComponentIndex].position_x = Math.round(x * 100) / 100;
-      this.components[this.draggedComponentIndex].position_y = Math.round(y * 100) / 100;
-      this.notifyChanges();
-    };
-
-    const onMouseUp = () => {
-      setTimeout(() => {
-        this.isDragging = false;
-        this.draggedComponentIndex = null;
-      }, 50);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  }
-
-
-
-  // ==================== Inventory (Siesa) ====================
 
   openSiesaForComponent(i: number): void {
     this.selectedPartIndex = i;
@@ -865,24 +1279,17 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
 
   handleInventorySelect(item: any): void {
     if (this.selectedPartIndex === null) return;
-    const idItem = item.id_item || item.referencia || '';
-    const idColor = item.id_color || '';
-    const idTalla = item.id_talla || item.talla || '';
-
-    const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
-    const refCode = codeParts.length > 0 ? codeParts.join('-') : (item.referencia || '');
-
     const mat: OpmMaterial = {
-      id_item: idItem,
-      referencia: refCode,
+      id_item: item.id_item || item.referencia || '',
+      referencia: item.referencia || '',
       descripcion: item.descripcion || '',
-      id_color: idColor,
+      id_color: item.id_color || '',
       color: item.color || '',
-      id_talla: idTalla,
+      id_talla: item.id_talla || '',
       talla: item.talla || '',
       costo_unitario: item.costo_unitario || 0,
       existencias: item.existencias || 0,
-      is_fabric: (item.referencia || refCode).startsWith('1110'),
+      is_fabric: (item.referencia || '').startsWith('1110'),
       assignment_source: 'siesa',
     };
     if (this.targetMaterialType === 'client') {
@@ -890,25 +1297,11 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     } else {
       this.components[this.selectedPartIndex].material_exception = mat;
     }
-    
     const wasFromSpec = this.inventoryFromSpecEditor;
     this.closeModal();
-
-    if (wasFromSpec) {
-      this.showSpecEditor = true;
-    }
+    if (wasFromSpec) this.showSpecEditor = true;
     this.buildTextContent();
     this.notifyChanges();
-  }
-
-  getMaterialDisplayName(mat: any): string {
-    if (!mat) return '';
-    const desc = (mat.descripcion || mat.inventory_description || '').trim();
-    const color = (mat.color || '').trim();
-    if (color && !desc.toLowerCase().includes(color.toLowerCase())) {
-      return `${desc} (${color})`;
-    }
-    return desc;
   }
 
   closeModal(): void {
@@ -917,15 +1310,13 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     this.inventoryFromSpecEditor = false;
   }
 
-  // ==================== Manual ====================
-
   openManualForComponent(i: number): void {
     this.manualModalIndex = i;
     if (!this.inventoryFromSpecEditor) {
       this.targetMaterialType = this.context === 'comercial' ? 'client' : 'technical';
     }
-    const mat = this.targetMaterialType === 'client' 
-      ? this.components[i].client_material_exception 
+    const mat = this.targetMaterialType === 'client'
+      ? this.components[i].client_material_exception
       : this.components[i].material_exception;
     this.manualText = mat?.descripcion || '';
     this.manualColor = mat?.color || '';
@@ -936,9 +1327,8 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     if (this.manualModalIndex === null) return;
     const mat: OpmMaterial = {
       id_item: '', referencia: '', descripcion: data.text,
-      id_color: '', color: data.color,
-      costo_unitario: 0, existencias: 0, is_fabric: false,
-      assignment_source: 'manual',
+      id_color: '', color: data.color, costo_unitario: 0, existencias: 0,
+      is_fabric: false, assignment_source: 'manual',
     };
     if (this.targetMaterialType === 'client') {
       this.components[this.manualModalIndex].client_material_exception = mat;
@@ -953,40 +1343,19 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
   closeManualModal(): void {
     this.showManualModal = false;
     this.manualModalIndex = null;
-    this.manualText = '';
-    this.manualColor = '';
   }
 
   onClearMaterialException(i: number): void {
-    if (this.context === 'comercial') {
-      this.components[i].client_material_exception = null;
-    } else {
-      this.components[i].material_exception = null;
-    }
+    if (this.context === 'comercial') this.components[i].client_material_exception = null;
+    else this.components[i].material_exception = null;
     this.buildTextContent();
     this.notifyChanges();
   }
 
-  onOpenSiesaForItem(i: number): void {
-    if (this.components[i].item_type === 'parte') {
-      this.onOpenManualForItem(i);
-      return;
-    }
-    this.selectedPartIndex = i;
-    this.selectedPartType = 'component';
-    this.manualModalIndex = i;
-    this.inventoryFilterType = this.components[i].item_type === 'tela' ? 'tela' : 'insumo';
-    this.showInventoryModal = true;
-  }
-
-  onOpenManualForItem(i: number): void {
-    this.openManualForComponent(i);
-  }
-
-  // ==================== Text View ====================
+  // ==================== TEXT VIEW ====================
 
   buildTextContent(): void {
-    let lines: string[] = [];
+    const lines: string[] = [];
     lines.push('=== ELEMENTOS GENERALES ===');
     this.generalComponents.forEach(g => {
       lines.push(`${g.name}:`);
@@ -996,108 +1365,52 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     lines.push('=== COMPONENTES POSICIONADOS ===');
     this.positionedComponents.forEach(c => {
       lines.push(`${c.name}:`);
-      if (this.mode === 'opm') {
-        lines.push(`  Especificación: ${c.client_spec}`);
-      } else {
+      if (this.mode === 'opm') lines.push(`  Especificación: ${c.client_spec}`);
+      else {
         lines.push(`  Cliente: ${c.client_spec}`);
         lines.push(`  Técnica: ${c.technical_spec}`);
       }
-      if (c.material_exception) {
-        lines.push(`  Excepción: ${c.material_exception.descripcion}`);
-      }
+      if (c.exception_comment) lines.push(`  Nota/Excepción: ${c.exception_comment}`);
+      if (c.material_exception) lines.push(`  Excepción: ${c.material_exception.descripcion}`);
     });
     this.textContent = lines.join('\n');
   }
 
   onTextKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
-      const ta = this.textEditor?.nativeElement;
-      if (!ta) return;
-      const val = ta.value;
-      const pos = ta.selectionStart;
-      const before = val.substring(0, pos);
-      if (before.endsWith('\n')) {
-        this.suggestionType = 'component';
-        this.suggestionQuery = '';
-        this.showSuggestions = true;
-      }
+      this.suggestionType = 'component';
+      this.showSuggestions = true;
     }
   }
 
   onTextInput(): void {
-    const ta = this.textEditor?.nativeElement;
-    if (!ta) return;
-    const val = ta.value;
-    const pos = ta.selectionStart;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    const currentLine = val.substring(lineStart, pos);
-    const colonIdx = currentLine.indexOf(':');
-    if (colonIdx >= 0 && pos > lineStart + colonIdx) {
-      this.suggestionType = 'siesa';
-      this.suggestionQuery = currentLine.substring(colonIdx + 1).trim().toLowerCase();
-      this.showSuggestions = true;
-      if (!this.inventoryLoaded) this.loadInventory();
-    } else {
-      this.showSuggestions = false;
-    }
-  }
-
-  get textSuggestions(): any[] {
-    if (this.suggestionType === 'component') {
-      const suggestions = [
-        { type: 'tela', label: 'Tela (nueva)' },
-        { type: 'insumo', label: 'Insumo (nuevo)' },
-        { type: 'parte', label: 'Parte (nueva)' },
-      ];
-      return suggestions;
-    } else {
-      const q = this.suggestionQuery;
-      if (!q) return this.allInventory.slice(0, 50);
-      return this.allInventory.filter(i =>
-        (i.referencia || '').toLowerCase().includes(q)
-        || (i.descripcion || '').toLowerCase().includes(q)
-      ).slice(0, 50);
-    }
+    this.showSuggestions = false;
   }
 
   selectTextSuggestion(item: any): void {
-    const ta = this.textEditor?.nativeElement;
-    if (!ta) return;
-    if (this.suggestionType === 'component') {
-      let typeLabel = 'Nuevo Insumo';
-      if (item.type === 'tela') typeLabel = 'Nueva Tela';
-      if (item.type === 'parte') typeLabel = 'Nueva Parte';
-      const name = typeLabel;
-      const pos = ta.selectionStart;
-      const before = ta.value.substring(0, pos);
-      const after = ta.value.substring(pos);
-      ta.value = before + name + ':\n  ' + after;
-      this.textContent = ta.value;
-    } else {
-      const pos = ta.selectionStart;
-      const lineStart = ta.value.lastIndexOf('\n', pos - 1) + 1;
-      const colonPos = ta.value.indexOf(':', lineStart);
-      const before = ta.value.substring(0, colonPos + 1);
-      const lineEnd = ta.value.indexOf('\n', pos);
-      const after = lineEnd >= 0 ? ta.value.substring(lineEnd) : '';
-      ta.value = before + ' ' + item.descripcion + after;
-      this.textContent = ta.value;
-    }
+    this.textContent += `\n${item.label || item.descripcion}`;
     this.showSuggestions = false;
   }
 
   dismissSuggestions(): void { this.showSuggestions = false; }
 
-  // Public method for parent to call (returns Observable with spec ID)
-  saveSpec(): Observable<number | null> {
-    if (!this.moldId) {
-      return of(null);
-    }
+  // ==================== SAVE SPEC ====================
 
+  saveSpec(): Observable<number | null> {
+    if (!this.moldId) return of(null);
     this.saving = true;
-    this.errorMessage = '';
     const user = this.authService.user;
     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+
+    const configuredComponents = this.components.filter(c =>
+      !!c.selected_type_id ||
+      !!c.selected_type_name ||
+      (typeof c.technical_spec === 'string' && c.technical_spec.trim().length > 0) ||
+      (typeof c.client_spec === 'string' && c.client_spec.trim().length > 0) ||
+      (typeof c.exception_comment === 'string' && c.exception_comment.trim().length > 0) ||
+      !!c.material_exception ||
+      !!c.client_material_exception
+    );
 
     const payload = {
       mold_id: this.moldId,
@@ -1105,49 +1418,41 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
       description: this.context === 'comercial' ? (this.generalDescription || this.clientGeneralDescription || null) : (this.clientGeneralDescription || null),
       technical_description: this.context !== 'comercial' ? (this.generalDescription || null) : null,
       user_created: userName || null,
-      parts: (this.components || []).map(c => {
-        const mat = this.context === 'muestras' 
-          ? (c.material_exception || c.client_material_exception) 
-          : (c.client_material_exception || c.material_exception);
-        let invRef = null;
-        let invDesc = null;
+      parts: configuredComponents.map(c => {
+        let invRef = c.zone_name || null;
+        let invDesc = c.selected_type_name || null;
+        const mat = c.material_exception || c.client_material_exception;
         if (mat) {
           const idItem = mat.id_item || mat.referencia || '';
           const idColor = mat.id_color || '';
           const idTalla = mat.id_talla || mat.talla || '';
           const codeParts = [idItem, idColor, idTalla].filter(x => !!x);
-          invRef = codeParts.length > 0 ? codeParts.join('-') : mat.referencia;
-          const descStr = (mat.descripcion || '').trim();
-          const colorStr = (mat.color || '').trim();
-          if (colorStr && !descStr.toLowerCase().includes(colorStr.toLowerCase())) {
-            invDesc = `${descStr} (${colorStr})`;
-          } else {
-            invDesc = descStr;
-          }
-        } else {
-          invRef = (c as any).inventory_reference || null;
-          invDesc = (c as any).inventory_description || null;
-        }
-
-        let clientSpecText = c.client_spec || null;
-        if (!clientSpecText && c.client_material_exception?.assignment_source === 'manual') {
-          clientSpecText = c.client_material_exception.descripcion;
+          invRef = codeParts.length > 0 ? codeParts.join('-') : (mat.referencia || invRef);
+          invDesc = mat.color ? `${mat.descripcion} (${mat.color})` : (mat.descripcion || invDesc);
+        } else if ((c as any).inventory_reference || (c as any).inventory_description) {
+          invRef = (c as any).inventory_reference || invRef;
+          invDesc = (c as any).inventory_description || invDesc;
         }
 
         return {
           mold_part_id: c.mold_part_id || null,
+          mold_part_type_id: c.selected_type_id || (c as any).mold_part_type_id || null,
+          selected_type_name: c.selected_type_name || null,
           name: c.name || 'Componente',
+          zone_name: c.zone_name || null,
           item_type: c.item_type || 'parte',
           view: c.view || 'front',
           position_x: c.position_x ?? null,
           position_y: c.position_y ?? null,
-          inventory_reference: invRef,
-          inventory_description: invDesc,
-          client_spec: clientSpecText,
+          client_spec: c.client_spec || null,
           technical_spec: c.technical_spec || null,
+          estimated_time: c.total_time || (c as any).estimated_time || 0,
+          exception_comment: c.exception_comment || null,
           material_exception: c.material_exception,
           client_material_exception: c.client_material_exception,
           is_from_mold: c.is_from_mold,
+          inventory_reference: invRef,
+          inventory_description: invDesc,
         };
       }),
     };
@@ -1159,39 +1464,33 @@ export class SpecGeneratorComponent implements OnInit, OnChanges {
     return request$.pipe(
       tap((res: any) => {
         this.saving = false;
-        if (res.data?.id) {
-          this.technicalSpecId = res.data.id;
-          if (res.data.reference) {
-            this.opmReference = res.data.reference;
-          }
+        if (res && res.success !== false) {
+          if (res.data?.id) this.technicalSpecId = res.data.id;
+          this.clearDraft();
+          this.successMessage = `${this.modeLabel} guardada exitosamente`;
+        } else {
+          this.errorMessage = res?.message || 'Error al guardar la especificación';
         }
-        this.successMessage = `${this.modeLabel} guardada exitosamente`;
       }),
-      map((res: any) => res.data?.id || null),
+      map((res: any) => (res && res.success !== false ? (res.data?.id || this.technicalSpecId || null) : null)),
       catchError((err) => {
-        console.error('Error al guardar especificación OPM en backend:', err);
         this.saving = false;
-        return of(this.technicalSpecId || null);
+        this.errorMessage = err?.error?.message || err?.message || 'Error al guardar en el servidor';
+        return of(null);
       })
     );
   }
 
   save(): void {
     this.saveSpec().subscribe({
-      next: (specId) => {
+      next: (specId) => { 
         if (specId) {
+          this.clearDraft();
           this.onSpecSaved.emit(specId);
         }
       },
-      error: (err: any) => {
-        this.saving = false;
-        this.errorMessage = err.error?.error || 'Error al guardar';
-      }
+      error: () => this.saving = false
     });
-  }
-
-  get hasComponents(): boolean {
-    return this.components.length > 0;
   }
 
   goBack(): void { this.router.navigate(['/moldes']); }

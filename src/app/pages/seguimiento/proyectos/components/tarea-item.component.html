@@ -1,7 +1,9 @@
 <!-- FILA EDICIÓN INLINE -->
 <div *ngIf="!isDeleted && inlineEditId === tarea.id"
   data-inline-edit-row
-  class="bg-white rounded-2xl border-2 border-amber-400 shadow-xl p-3 animate-in zoom-in-95 duration-200">
+  class="bg-white rounded-2xl border-2 border-amber-400 shadow-xl p-3 space-y-2.5 animate-in zoom-in-95 duration-200">
+
+  <!-- Fila 1: Semáforo + Título + Estado + Fecha + Botones -->
   <div class="flex items-center gap-3">
     <div class="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0"
       [ngClass]="state.getSemaforoClass(tarea.semaforo)"></div>
@@ -13,9 +15,10 @@
              focus:border-amber-400 bg-transparent pb-1 min-w-0 transition-colors">
 
     <!-- Estado dropdown -->
-    <div class="relative" data-inline-edit-estado>
+    <div class="relative flex-shrink-0" data-inline-edit-estado>
+      <div *ngIf="showInlineEditEstado" class="fixed inset-0 z-40" (click)="showInlineEditEstado = false"></div>
       <button (click)="showInlineEditEstado = !showInlineEditEstado"
-        class="inline-flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border-2 shadow-sm transition-all"
+        class="inline-flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border-2 shadow-xs transition-all relative z-45"
         [ngClass]="state.getEstadoBadgeClass(inlineEditForm.estado)">
         <i [class]="'mdi ' + state.getEstadoIcon(inlineEditForm.estado)"></i>
         {{ state.getEstadoLabel(inlineEditForm.estado) }}
@@ -39,45 +42,14 @@
     </div>
 
     <!-- Fecha -->
-    <div class="relative">
+    <div class="relative flex-shrink-0">
       <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega"
         class="text-[10px] font-bold text-slate-600 border-2 border-slate-50 rounded-lg px-2 py-1.5 outline-none
-               focus:border-amber-400 bg-slate-50/50 focus:bg-white transition-all shadow-sm">
-    </div>
-
-    <!-- Asignado dropdown -->
-    <div class="relative" data-inline-edit-asignado>
-      <button (click)="showInlineEditAsignado = !showInlineEditAsignado"
-        class="h-8 px-2 min-w-[32px] flex items-center justify-center text-white rounded-lg shadow-md transition-all hover:scale-105 whitespace-nowrap"
-        [ngClass]="inlineEditForm.asignado_id ? state.getColorPorId(inlineEditForm.asignado_id) : 'bg-slate-300'"
-        [title]="inlineEditAsignadoNombre || 'Sin asignar'">
-        <span class="text-[10px] font-black">{{ inlineEditForm.asignado_id ? state.getInicialesResponsable(inlineEditForm.asignado_id) : '?' }}</span>
-      </button>
-      <div *ngIf="showInlineEditAsignado"
-        class="absolute top-full right-0 mt-2 w-56 bg-white border border-slate-100
-               rounded-xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-1" (click)="$event.stopPropagation()">
-        <div class="relative mb-2">
-          <i class="mdi mdi-magnify absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-          <input type="text" [(ngModel)]="inlineEditBusqResp" placeholder="Buscar..."
-            class="w-full text-[10px] pl-7 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg outline-none focus:border-amber-400">
-        </div>
-        <div class="max-h-40 overflow-y-auto custom-scrollbar">
-          <div *ngFor="let u of inlineEditUsuariosFiltrados"
-            (click)="inlineEditForm.asignado_id = u.id; showInlineEditAsignado = false"
-            class="flex items-center gap-2.5 px-2.5 py-2 text-[10px] font-bold text-slate-600 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
-            <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-black shadow-sm flex-shrink-0"
-              [ngClass]="state.getColorPorId(u.id)">{{ state.getInicialesCorta(u.id) }}</div>
-            <div class="min-w-0 flex-1">
-              <span class="truncate block font-bold text-slate-800 text-xs">{{ u.nombre }}</span>
-              <span *ngIf="u.proceso_nombre" class="text-[8px] text-slate-400 font-bold uppercase tracking-tight block truncate">{{ u.proceso_nombre }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+               focus:border-amber-400 bg-slate-50/50 focus:bg-white transition-all shadow-xs">
     </div>
 
     <!-- Guardar/Cerrar -->
-    <div class="flex items-center gap-0.5">
+    <div class="flex items-center gap-0.5 flex-shrink-0">
       <button (click)="guardarEdicionInline()"
         class="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
         title="Guardar (Enter)">
@@ -92,34 +64,100 @@
     </div>
   </div>
 
-  <!-- Descripción editable -->
-  <div class="flex items-center gap-2 mt-3 pl-5 border-t border-slate-50 pt-3">
-    <i class="mdi mdi-text-align-left text-slate-300 text-base"></i>
-    <input type="text" [(ngModel)]="inlineEditForm.descripcion"
-      (keydown)="onInlineEditKeydown($event)"
-      placeholder="Descripción (opcional)..."
-      class="flex-1 text-[10px] font-medium text-slate-500 outline-none bg-transparent border-b border-slate-100
-             focus:border-amber-400 placeholder-slate-300 pb-1 transition-colors">
+  <!-- Fila 2: Responsables + Descripción -->
+  <div class="flex items-start gap-3 pl-5 border-t border-slate-50 pt-2.5">
+
+    <!-- Responsables multi-select -->
+    <div class="relative flex-shrink-0" data-inline-edit-asignado>
+      <div *ngIf="showInlineEditAsignado" class="fixed inset-0 z-40" (click)="showInlineEditAsignado = false"></div>
+
+      <div class="flex items-center gap-1.5">
+        <i class="mdi mdi-account-group text-slate-400 text-sm flex-shrink-0"></i>
+
+        <!-- Chips de responsables -->
+        <div class="flex items-center gap-1 flex-wrap">
+          <div *ngFor="let r of inlineEditResponsablesInfoList"
+            class="h-6 pl-1.5 pr-0.5 flex items-center gap-0.5 rounded-md text-white text-[8px] font-black shadow-sm"
+            [ngClass]="state.getColorPorId(r.id)"
+            [title]="r.nombre">
+            {{ r.iniciales }}
+            <button type="button" 
+              (mousedown)="inlineEditQuitarResp(r.id, $event)"
+              (click)="$event.stopPropagation(); $event.preventDefault()"
+              class="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/40 transition-all text-[7px] leading-none cursor-pointer">
+              <i class="mdi mdi-close pointer-events-none"></i>
+            </button>
+          </div>
+
+          <!-- Botón '+' para agregar -->
+          <button (click)="showInlineEditAsignado = !showInlineEditAsignado"
+            class="h-6 w-6 flex items-center justify-center rounded-md border-2 border-dashed border-slate-200 text-slate-400 hover:border-amber-400 hover:text-amber-500 transition-all relative z-45"
+            title="Agregar responsable">
+            <i class="mdi mdi-plus text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dropdown de usuarios -->
+      <div *ngIf="showInlineEditAsignado"
+        class="absolute top-full left-0 mt-2 w-56 bg-white border border-slate-100
+               rounded-xl shadow-2xl z-50 p-2 animate-in fade-in slide-in-from-top-1" (click)="$event.stopPropagation()">
+        <div class="relative mb-2">
+          <i class="mdi mdi-magnify absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" [(ngModel)]="inlineEditBusqResp" placeholder="Buscar..."
+            class="w-full text-[10px] pl-7 pr-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg outline-none focus:border-amber-400">
+        </div>
+        <div class="max-h-40 overflow-y-auto custom-scrollbar">
+          <div *ngIf="inlineEditUsuariosFiltrados.length === 0" class="px-3 py-2 text-[10px] text-slate-400 text-center italic">
+            Sin resultados
+          </div>
+          <div *ngFor="let u of inlineEditUsuariosFiltrados"
+            (click)="inlineEditAgregarResp(u, $event)"
+            (mousedown)="$event.stopPropagation()"
+            class="flex items-center gap-2.5 px-2.5 py-2 text-[10px] font-bold text-slate-600 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-black shadow-xs flex-shrink-0"
+              [ngClass]="state.getColorPorId(u.id)">{{ state.getInicialesCorta(u.id) }}</div>
+            <div class="min-w-0 flex-1">
+              <span class="truncate block font-bold text-slate-800 text-[10px]">{{ u.nombre }}</span>
+              <span *ngIf="u.proceso_nombre" class="text-[8px] text-slate-400 font-bold uppercase tracking-tight block truncate">{{ u.proceso_nombre }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Separador vertical -->
+    <div class="w-px h-8 bg-slate-100 flex-shrink-0"></div>
+
+    <!-- Descripción editable -->
+    <div class="flex items-start gap-2 flex-1 min-w-0">
+      <i class="mdi mdi-text-align-left text-amber-500 text-base mt-1 flex-shrink-0"></i>
+      <textarea rows="2" [(ngModel)]="inlineEditForm.descripcion"
+        (keydown)="onInlineEditKeydown($event)"
+        placeholder="Escribe la descripción de la tarea (opcional)..."
+        class="flex-1 text-xs font-medium text-slate-700 outline-none bg-slate-50/70 border border-slate-100
+               focus:border-amber-400 focus:bg-white rounded-xl p-2.5 placeholder-slate-300 transition-all resize-y leading-relaxed"></textarea>
+    </div>
   </div>
 </div>
 
 <!-- FILA NORMAL -->
 <div *ngIf="!isDeleted && inlineEditId !== tarea.id"
-  class="group bg-white rounded-2xl border border-slate-100 p-2.5
+  class="group bg-white rounded-2xl border border-slate-100 p-3
          flex items-center justify-between hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300 cursor-pointer"
   (click)="activarEdicionInline()">
 
-  <div class="flex items-center gap-3 min-w-0 flex-1">
-    <div class="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0"
+  <div class="flex items-start gap-3 min-w-0 flex-1">
+    <div class="w-2.5 h-2.5 rounded-full shadow-xs flex-shrink-0 mt-1.5"
       [ngClass]="state.getSemaforoClass(tarea.semaforo)"></div>
     
-    <div class="min-w-0">
-      <div class="flex items-center gap-2 flex-wrap mb-0.5">
-        <span class="text-xs font-black text-slate-700 group-hover:text-blue-600 transition-colors"
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-2 flex-wrap mb-1">
+        <span class="text-xs font-black text-slate-800 group-hover:text-blue-600 transition-colors"
           [ngClass]="{'line-through text-slate-300': tarea.estado === 'completado'}">
           {{ tarea.titulo }}
         </span>
-        <span class="text-[8px] px-1.5 py-0.5 rounded-lg font-black uppercase tracking-widest shadow-sm"
+        <span class="text-[8px] px-1.5 py-0.5 rounded-lg font-black uppercase tracking-widest shadow-xs"
           [ngClass]="state.getEstadoBadgeClass(tarea.estado)">
           <i [class]="'mdi ' + state.getEstadoIcon(tarea.estado)"></i>
           {{ tarea.estado }}
@@ -138,20 +176,17 @@
           class="text-[7px] font-black text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-lg border border-emerald-100 uppercase tracking-widest hover:bg-emerald-100 transition-colors cursor-pointer">
           <i class="mdi mdi-attachment mr-1"></i>{{ tarea.evidencias_count }} Adjuntos
         </span>
-        <!-- <span *ngIf="tarea.fecha_limite_entrega" 
-          class="text-[7px] font-black text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-lg border border-blue-100 uppercase tracking-widest">
-          <i class="mdi mdi-calendar-clock mr-1"></i>{{ tarea.fecha_limite_entrega | date:'dd MMM' }}
-        </span> -->
-      </div>
-
-      <div class="flex items-center gap-4 text-[9px] font-bold text-slate-400">
-        <div *ngIf="tarea.descripcion" class="truncate max-w-[150px] text-slate-400/80">
-          {{ tarea.descripcion }}
-        </div>
-        <div *ngIf="tarea.fecha_limite_entrega" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100">
+        <div *ngIf="tarea.fecha_limite_entrega" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100 text-[9px] font-bold">
           <i class="mdi mdi-calendar-clock text-blue-500"></i>
           {{ tarea.fecha_limite_entrega | date:'dd MMM, HH:mm':'UTC' }}
         </div>
+      </div>
+
+      <!-- Descripción legibilidad mejorada -->
+      <div *ngIf="tarea.descripcion" 
+        class="text-xs font-medium text-slate-500 leading-relaxed mt-1 line-clamp-2 max-w-3xl pr-4"
+        [title]="tarea.descripcion">
+        {{ tarea.descripcion }}
       </div>
     </div>
   </div>

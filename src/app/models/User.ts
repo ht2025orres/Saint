@@ -16,4 +16,6 @@ export class User {
   id_lider: number;
   lider_nombre: string;
   nombre_completo: string;
+  firma_path?: string;
+  firma_url?: string;
 }

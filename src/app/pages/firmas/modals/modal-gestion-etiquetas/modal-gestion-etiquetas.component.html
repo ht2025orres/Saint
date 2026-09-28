@@ -8,8 +8,8 @@
           🏷️
         </div>
         <div>
-          <h3 class="text-base font-bold text-slate-800">Gestión de Etiquetas / Categorías por Proceso</h3>
-          <p class="text-xs text-slate-500">Crea y categoriza etiquetas vinculadas a áreas y procesos del sistema.</p>
+          <h3 class="text-base font-bold text-slate-800">Gestión de Etiquetas / Categorías</h3>
+          <p class="text-xs text-slate-500">Crea y categoriza etiquetas de tu proceso.</p>
         </div>
       </div>
       <button (click)="cerrar.emit()" type="button" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
@@ -33,13 +33,13 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Proceso / Área Asociada (Opcional)</label>
-          <select [(ngModel)]="procesoId" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 shadow-sm">
-            <option [ngValue]="null">-- General (Sin proceso específico) --</option>
-            <option *ngFor="let proc of procesos" [value]="proc.id">
-              🏢 {{ proc.nombre }}
-            </option>
-          </select>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Proceso / Área</label>
+          <div class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 flex items-center gap-2">
+            <span class="text-sm">🏢</span>
+            <span *ngIf="procesos.length > 0">{{ procesos[0].nombre }}</span>
+            <span *ngIf="procesos.length === 0" class="text-slate-400 italic">Sin proceso asignado</span>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">Las etiquetas se asocian automáticamente a tu proceso.</p>
         </div>
 
         <!-- PALETA DE COLORES -->
@@ -97,8 +97,8 @@
               <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-inner" [style.backgroundColor]="etiq.color || '#2563eb'"></span>
               <div class="truncate">
                 <span class="text-xs font-bold text-slate-800 block truncate">{{ etiq.nombre }}</span>
-                <span class="text-[10px] text-slate-400 block truncate">
-                  🏢 {{ etiq.proceso ? etiq.proceso.nombre : 'General / Sin Proceso' }}
+                <span *ngIf="etiq.proceso" class="text-[10px] text-slate-400 block truncate">
+                  🏢 {{ etiq.proceso.nombre }}
                 </span>
               </div>
             </div>

@@ -88,30 +88,47 @@
                     </span>
                 </div>
 
-                <div class="dataTables_length responsive-text" id="myTable_length">
-                    <label>Mostrar
-                        <select name="myTable_length" aria-controls="myTable" class=""
-                            (change)="listBySize(+$event.target.value)">
-                            <option value="10" [selected]="currentPageSize === 10">10</option>
-                            <option value="20" [selected]="currentPageSize === 20">20</option>
-                            <option value="30" [selected]="currentPageSize === 30">30</option>
-                            <option value="50" [selected]="currentPageSize === 50">50</option>
-                            <option value="100" [selected]="currentPageSize === 100">100</option>
-                        </select> entradas</label>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                    <div class="dataTables_length responsive-text mb-0" id="myTable_length">
+                        <label class="mb-0">Mostrar
+                            <select name="myTable_length" aria-controls="myTable" class=""
+                                (change)="listBySize(+$event.target.value)">
+                                <option value="10" [selected]="currentPageSize === 10">10</option>
+                                <option value="20" [selected]="currentPageSize === 20">20</option>
+                                <option value="30" [selected]="currentPageSize === 30">30</option>
+                                <option value="50" [selected]="currentPageSize === 50">50</option>
+                                <option value="100" [selected]="currentPageSize === 100">100</option>
+                            </select> entradas</label>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" 
+                                class="btn btn-success d-inline-flex align-items-center gap-1 sombra-buttoms py-1 px-3"
+                                style="font-weight: 600; font-size: 0.88rem;"
+                                (click)="exportarListadoExcel()"
+                                [disabled]="filteredTechnicalDataSheet.length === 0"
+                                title="Descargar todas las fichas filtradas en formato Excel">
+                            <i class="fa fa-file-excel-o"></i>
+                            <span>Descargar Listado ({{ filteredTechnicalDataSheet.length }})</span>
+                        </button>
+
+                        <div id="example23_filter" class="dataTables_filter mb-0">
+                            <label class="fw-bold responsive-text mb-0">Buscar:
+                                <input type="search" 
+                                       class="" 
+                                       placeholder="Buscar por código, descripción, cliente..." 
+                                       aria-controls="example23"
+                                       [value]="currentSearchTerm"
+                                       (keyup)="searchTechnicalDataSheet($event.target.value)" 
+                                       #txtWord>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="example23_filter" class="dataTables_filter mb-3">
-                    <label class="fw-bold responsive-text">Buscar:
-                        <input type="search" 
-                               class="" 
-                               placeholder="Buscar por código, descripción, cliente..." 
-                               aria-controls="example23"
-                               [value]="currentSearchTerm"
-                               (keyup)="searchTechnicalDataSheet($event.target.value)" 
-                               #txtWord>
-                    </label>
-                    <small class="text-muted d-block mt-1" *ngIf="currentSearchTerm">
-                        Mostrando resultados para: "{{currentSearchTerm}}"
+                <div class="mb-3" *ngIf="currentSearchTerm">
+                    <small class="text-muted">
+                        Mostrando <strong>{{ filteredTechnicalDataSheet.length }}</strong> resultados para: "{{currentSearchTerm}}"
                     </small>
                 </div>
 

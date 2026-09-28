@@ -610,6 +610,41 @@ export class ProyectosComponent implements OnInit, OnDestroy {
     });
   }
 
+  onEliminarTarea(tarea: any): void {
+    if (!tarea) return;
+
+    Swal.fire({
+      title: '¿Eliminar tarea?',
+      text: `¿Estás seguro de que deseas eliminar la tarea "${tarea.titulo}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-[2rem] p-6 border border-slate-100 shadow-2xl',
+        confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5 shadow-md',
+        cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+      },
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.proyServ.eliminarTarea(tarea.id, this.usuarioId).subscribe({
+          next: () => {
+            this.showModalTarea = false;
+            this.state.showToast('Tarea eliminada');
+            if (this.detalle) {
+              this._refreshDetalle();
+            }
+          },
+          error: (err) => {
+            this.state.showToast(err?.error?.message || 'Error al eliminar la tarea', 'error');
+          }
+        });
+      }
+    });
+  }
+
   // ════════════════════════════════════════════════════════════════
   // HELPERS PRIVADOS
   // ════════════════════════════════════════════════════════════════

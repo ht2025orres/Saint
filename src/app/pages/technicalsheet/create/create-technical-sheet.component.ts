@@ -510,13 +510,246 @@ export class CreateTechnicalSheetComponent implements OnInit {
         }
     }
 
+    /**
+     * Generar y concatenar automáticamente la descripción completa de la prenda
+     * a partir de todos los campos individuales y partes digitadas en el formulario.
+     */
+    generarDescripcionClienteAutomatica(): void {
+        const getVal = (name: string): string => {
+            const raw = this.formGr.get(name)?.value;
+            if (!raw || typeof raw !== 'string') return '';
+            const trimmed = raw.trim();
+            const upper = trimmed.toUpperCase();
+            if (['N/A', 'NA', 'NO APLICA', 'NONE', 'NINGUNO', 'NINGUNA', '-', '.'].includes(upper)) {
+                return '';
+            }
+            return trimmed;
+        };
+
+        const cleanSentence = (text: string): string => {
+            let res = text.trim();
+            // Remover guiones o asteriscos iniciales repetidos si ya vienen en el campo
+            while (res.startsWith('-') || res.startsWith('*') || res.startsWith('•')) {
+                res = res.substring(1).trim();
+            }
+            if (res && !res.endsWith('.') && !res.endsWith(':')) {
+                res += '.';
+            }
+            return res;
+        };
+
+        const itemDesc = getVal('item_description');
+        const gender = getVal('gender');
+        const mainFabric = getVal('main_fabric');
+        const composition = getVal('composition');
+        const contrastFabric = getVal('contrast_fabric');
+
+        const lines: string[] = [];
+
+        // 1. ENCABEZADO PRINCIPAL (Prenda, Género, Tela y Composición)
+        const headerParts: string[] = [];
+        if (itemDesc) {
+            headerParts.push(itemDesc.toUpperCase());
+        }
+        if (gender && (!itemDesc || !itemDesc.toUpperCase().includes(gender.toUpperCase()))) {
+            headerParts.push(gender.toUpperCase());
+        }
+        if (mainFabric) {
+            headerParts.push(`EN TELA ${mainFabric.toUpperCase()}`);
+        }
+        if (composition) {
+            headerParts.push(`- ${composition.toUpperCase()}`);
+        }
+        if (contrastFabric) {
+            headerParts.push(`(TELA CONTRASTE: ${contrastFabric.toUpperCase()})`);
+        }
+
+        if (headerParts.length > 0) {
+            let header = headerParts.join(' ');
+            if (!header.endsWith('.')) header += '.';
+            lines.push(`-${header}`);
+        }
+
+        // 2. ORDEN SECUENCIAL DE PARTES DE LA PRENDA
+        const specSequence: { key: string; label?: string }[] = [
+            // Estructura Superior / Cuello / Capucha
+            { key: 'shirt_collar' },
+            { key: 'neckline' },
+            { key: 'hood' },
+
+            // Hombros / Cortes / Espalda
+            { key: 'shoulders' },
+            { key: 'shoulder_union' },
+            { key: 'cuts' },
+            { key: 'back' },
+            { key: 'darts' },
+
+            // Frente / Cartera / Botonadura / Ajuste
+            { key: 'purses' },
+            { key: 'front_adjustment' },
+            { key: 'button' },
+            { key: 'buttonhole' },
+            { key: 'zipper' },
+            { key: 'figured' },
+
+            // Mangas / Puños
+            { key: 'sleeves' },
+            { key: 'sleeve_connection' },
+            { key: 'cuffs' },
+            { key: 'rib' },
+
+            // Parte Inferior / Pantalones / Cintura
+            { key: 'waistband' },
+            { key: 'pins' },
+            { key: 'loops' },
+            { key: 'crotch' },
+            { key: 'side_pulls' },
+
+            // Bolsillos
+            { key: 'pockets' },
+            { key: 'busybody' },
+
+            // Costados y Uniones
+            { key: 'closed_sides' },
+            { key: 'side_stand' },
+            { key: 'additional' },
+            { key: 'opening' },
+            { key: 'straps' },
+
+            // Terminaciones y Forro
+            { key: 'lining' },
+            { key: 'hem' },
+            { key: 'boot' },
+            { key: 'finished' },
+
+            // Personalizaciones / Aplicaciones
+            { key: 'embroidery' },
+            { key: 'stamped' },
+            { key: 'reflective' },
+            { key: 'prewash' },
+            { key: 'ironing' },
+            { key: 'packaging' }
+        ];
+
+        specSequence.forEach(item => {
+            const val = getVal(item.key);
+            if (val) {
+                lines.push(`-${cleanSentence(val)}`);
+            }
+        });
+
+        // 3. NOTA TÉCNICA FINAL (Puntadas / Puntos Críticos / Observaciones)
+        const stitches = getVal('stitches');
+        const stitching = getVal('stitching');
+        const critical = getVal('critical_points');
+        const obs = getVal('observations');
+
+        if (stitches || stitching) {
+            const stitchText = [stitches, stitching].filter(Boolean).join('. ');
+            lines.push(`\nNOTA: ${cleanSentence(stitchText)}`);
+        }
+        if (critical) {
+            lines.push(`PUNTOS CRÍTICOS: ${cleanSentence(critical)}`);
+        }
+        if (obs) {
+            lines.push(`OBSERVACIONES: ${cleanSentence(obs)}`);
+        }
+
+        if (lines.length === 0) {
+            Swal.fire({
+                title: 'Formulario sin datos suficientes',
+                text: 'Por favor ingresa información en los campos de la prenda o partes técnicas antes de auto-generar la descripción.',
+                icon: 'info',
+                confirmButtonColor: '#0284c7'
+            });
+            return;
+        }
+
+        const generatedText = lines.join('\n');
+        const currentDescription = this.formGr.get('customer_description')?.value?.trim() || '';
+
+        if (currentDescription && currentDescription.length > 5) {
+            Swal.fire({
+                title: '¿Reemplazar Descripción Existente?',
+                html: 'Ya existe texto en la <b>Descripción del Cliente</b>.<br>¿Deseas reemplazarlo con la descripción autogenerada o añadirla al final?',
+                icon: 'question',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: 'Reemplazar todo',
+                denyButtonText: 'Añadir al final',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#0284c7',
+                denyButtonColor: '#10b981',
+                cancelButtonColor: '#64748b'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    this.formGr.get('customer_description')?.setValue(generatedText);
+                    this.formGr.get('customer_description')?.markAsDirty();
+                    this.formGr.get('customer_description')?.markAsTouched();
+                    this.cdr.detectChanges();
+                } else if (result.isDenied) {
+                    const combined = `${currentDescription}\n\n${generatedText}`;
+                    this.formGr.get('customer_description')?.setValue(combined);
+                    this.formGr.get('customer_description')?.markAsDirty();
+                    this.formGr.get('customer_description')?.markAsTouched();
+                    this.cdr.detectChanges();
+                }
+            });
+        } else {
+            this.formGr.get('customer_description')?.setValue(generatedText);
+            this.formGr.get('customer_description')?.markAsDirty();
+            this.formGr.get('customer_description')?.markAsTouched();
+            this.cdr.detectChanges();
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                icon: 'success',
+                title: 'Descripción autogenerada con éxito'
+            });
+        }
+    }
+
+
+    // Drag and Drop state
+    isDraggingFile: { [key: string]: boolean } = {
+        product: false,
+        characteristic: false,
+        embroidery: false
+    };
+
+    onDragOver(event: DragEvent, type: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isDraggingFile[type] = true;
+    }
+
+    onDragLeave(event: DragEvent, type: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isDraggingFile[type] = false;
+    }
+
+    onDropFiles(event: DragEvent, imagesLimit: number, fileType: string, type: string): void {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isDraggingFile[type] = false;
+
+        const files = event.dataTransfer?.files || null;
+        this.processFiles(files, imagesLimit, fileType);
+    }
 
     // Images manager
     selectFiles(event: Event, imagesLimit: number, fileType: string): void {
-        this.progressInfos = [];
-
         const input = event.target as HTMLInputElement;
         const files = input.files;
+        this.processFiles(files, imagesLimit, fileType);
+    }
+
+    processFiles(files: FileList | null, imagesLimit: number, fileType: string): void {
+        this.progressInfos = [];
+
         if (!files || files.length === 0) {
             this.selectedFiles = undefined as unknown as FileList;
             return;
@@ -550,7 +783,9 @@ export class CreateTechnicalSheetComponent implements OnInit {
                     continue;
                 } else {
                     isImage = false;
-                    this.inputLoadImages.nativeElement.value = '';
+                    if (this.inputLoadImages) {
+                        this.inputLoadImages.nativeElement.value = '';
+                    }
                     Swal.fire('Error de formato', 'Solo puedes cargar los siguientes formatos de documentos (.jpg, .png, .gif, .pdf)', 'warning');
                     break;
                 }
@@ -564,8 +799,10 @@ export class CreateTechnicalSheetComponent implements OnInit {
             }
         } else {
             this.selectedFiles = undefined as unknown as FileList;
-            this.inputLoadImages.nativeElement.value = '';
-            Swal.fire('Error de carga', `Solo puedes cargar hasta ${imagesLimit} imagenes que no excedan 6MB cada una`, 'warning');
+            if (this.inputLoadImages) {
+                this.inputLoadImages.nativeElement.value = '';
+            }
+            Swal.fire('Error de carga', `Solo puedes cargar hasta ${imagesLimit} archivos que no excedan 6MB cada uno`, 'warning');
         }
     }
 

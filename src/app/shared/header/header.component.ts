@@ -159,6 +159,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
             subInterfaces: [
               { label: 'Librería de Moldes', link: '/moldes', permissions: [1, 40] },
               { label: 'Crear / Editar Molde', link: '/moldes/admin', permissions: [1, 41] },
+              { label: 'Catálogo de Partes y Operaciones', link: '/moldes/partes', permissions: [1, 40, 41] },
             ]
           },
           {

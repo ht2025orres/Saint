@@ -153,4 +153,8 @@ export class TechnicalSheetService {
     getDuplicateItems(): Observable<any> {
         return this.http.get(`${this.urlEndPoint}/duplicate-items`);
     }
+
+    getReportesByFichaId(id: number): Observable<any> {
+        return this.http.get(`${this.urlEndPoint}/${id}/reportes`);
+    }
 }

@@ -1,21 +1,32 @@
 <div class="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
-  
+
   <!-- HEADER NAVEGACIÓN CLARO Y ELEGANTE -->
-  <header class="bg-white/90 border-b border-slate-200 px-4 lg:px-8 py-3.5 backdrop-blur sticky top-0 z-50 flex items-center justify-between shadow-sm">
+  <header
+    class="bg-white/90 border-b border-slate-200 px-4 lg:px-8 py-3.5 backdrop-blur sticky top-0 z-50 flex items-center justify-between shadow-sm">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+      <div
+        class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
         <i class="bi bi-shield-check text-xl"></i>
       </div>
       <div>
-        <h1 class="text-xs lg:text-sm font-bold text-slate-900 uppercase tracking-wider">Portal de Firma Electrónica</h1>
+        <h1 class="text-xs lg:text-sm font-bold text-slate-900 uppercase tracking-wider">Portal de Firma Electrónica
+        </h1>
         <p class="text-[11px] text-slate-500">Saint System &bull; Verificación Criptográfica</p>
       </div>
     </div>
 
-    <!-- BADGE DE ESTADO Y BOTÓN CERRAR PESTAÑA -->
+    <!-- BADGE DE ESTADO Y BOTONES DE NAVEGACIÓN -->
     <div class="flex items-center gap-2">
-      <span *ngIf="docData?.destinatario" class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5"
-            [ngClass]="{
+      <button (click)="irASaint()" type="button"
+        class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm shadow-blue-500/20"
+        title="Ir a la página principal de Saint System">
+        <i class="bi bi-house-door-fill text-sm"></i>
+        <span>Ir a Saint</span>
+      </button>
+
+      <span *ngIf="docData?.destinatario"
+        class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5"
+        [ngClass]="{
               'bg-emerald-100 text-emerald-800 border border-emerald-300': docData.destinatario.estado === 'FIRMADO',
               'bg-amber-100 text-amber-800 border border-amber-300': docData.destinatario.estado === 'PENDIENTE',
               'bg-rose-100 text-rose-800 border border-rose-300': docData.destinatario.estado === 'RECHAZADO'
@@ -28,9 +39,9 @@
         <span>{{ docData.destinatario.estado }}</span>
       </span>
 
-      <button (click)="cerrarPestana()" type="button" 
-              class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5 shadow-sm"
-              title="Cerrar pestaña del navegador">
+      <button (click)="cerrarPestana()" type="button"
+        class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5 shadow-sm"
+        title="Cerrar pestaña del navegador">
         <i class="bi bi-x-circle text-slate-500"></i>
         <span class="hidden sm:inline">Cerrar Pestaña</span>
       </button>
@@ -43,29 +54,86 @@
     <p class="text-slate-600 text-sm font-medium">Cargando documento y parámetros de firma...</p>
   </div>
 
-  <!-- ERROR -->
-  <div *ngIf="!loading && errorMessage" class="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
-    <div class="w-16 h-16 bg-rose-100 border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 text-3xl mb-4 shadow-sm">
-      <i class="bi bi-exclamation-triangle"></i>
+  <!-- ERROR / DOCUMENTO ELIMINADO / DESHABILITADO -->
+  <div *ngIf="!loading && errorMessage"
+    class="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto w-full my-auto animate-in zoom-in-95 duration-200">
+    
+    <!-- TARJETA ESPECIAL SI EL DOCUMENTO FUE ELIMINADO / MOVIDO A LA PAPELERA -->
+    <div *ngIf="errorData?.eliminado || errorData?.razon; else defaultErrorCard"
+         class="w-full bg-white rounded-3xl border border-rose-200 shadow-2xl p-6 sm:p-8 flex flex-col items-center gap-4 relative overflow-hidden">
+      
+      <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600"></div>
+
+      <div class="w-16 h-16 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 text-3xl shadow-sm">
+        <i class="bi bi-trash3-fill"></i>
+      </div>
+
+      <div>
+        <span class="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full inline-block mb-1.5">
+          Documento Anulado / Movido a la Papelera
+        </span>
+        <h2 class="text-lg sm:text-xl font-black text-slate-900">
+          {{ errorData?.titulo || 'Solicitud de Firma Cancelada' }}
+        </h2>
+      </div>
+
+      <!-- RECUADRO DESTACADO CON LA RAZÓN DE ELIMINACIÓN -->
+      <div class="w-full bg-amber-50/80 border border-amber-300/80 rounded-2xl p-4 text-left flex flex-col gap-2 shadow-xs">
+        <div class="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
+          <span class="text-[11px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="bi bi-info-circle-fill text-amber-600 text-xs"></i> Motivo de Anulación
+          </span>
+          <span *ngIf="errorData?.solicitante" class="text-[10px] font-bold text-slate-600">
+            Por: <span class="text-slate-900 font-extrabold">{{ errorData.solicitante }}</span>
+          </span>
+        </div>
+        
+        <p class="text-xs text-amber-950 font-bold leading-relaxed italic bg-white/60 p-3 rounded-xl border border-amber-200/50">
+          "{{ errorData?.razon || errorMessage }}"
+        </p>
+
+        <span class="text-[10px] text-amber-800 font-medium">
+          ℹ️ Este documento fue movido a la papelera por quien solicitó la firma y ya no acepta firmas electrónicas.
+        </span>
+      </div>
+
+      <button (click)="irASaint()" type="button"
+        class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-1">
+        <i class="bi bi-house-door-fill"></i> Ir a Saint System
+      </button>
     </div>
-    <h2 class="text-lg font-bold text-slate-900 mb-2">Enlace No Disponible</h2>
-    <p class="text-xs text-slate-500 mb-6 leading-relaxed">{{ errorMessage }}</p>
+
+    <!-- TARJETA GENÉRICA DE ERROR -->
+    <ng-template #defaultErrorCard>
+      <div class="w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 flex flex-col items-center gap-4">
+        <div class="w-16 h-16 bg-rose-100 border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 text-3xl shadow-sm">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <h2 class="text-lg font-bold text-slate-900">Enlace No Disponible</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">{{ errorMessage }}</p>
+        <button (click)="irASaint()" type="button"
+          class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center gap-2">
+          <i class="bi bi-house-door-fill"></i> Ir a Saint System
+        </button>
+      </div>
+    </ng-template>
   </div>
 
   <!-- CONTENIDO PRINCIPAL DE FIRMA -->
-  <main *ngIf="!loading && !errorMessage && docData" class="flex-1 p-3 lg:p-6 max-w-7xl w-full mx-auto flex flex-col gap-4">
+  <main *ngIf="!loading && !errorMessage && docData"
+    class="flex-1 p-3 lg:p-6 max-w-7xl w-full mx-auto flex flex-col gap-4">
 
     <!-- SELECTOR DE PESTAÑAS PARA MÓVIL (< lg) -->
     <div class="lg:hidden grid grid-cols-2 gap-1.5 p-1 bg-slate-200/80 rounded-xl border border-slate-300 shadow-sm">
       <button (click)="setMobileTab('DOCUMENTO')" type="button"
-              class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
-              [ngClass]="mobileTab === 'DOCUMENTO' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'">
+        class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
+        [ngClass]="mobileTab === 'DOCUMENTO' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'">
         <i class="bi bi-file-earmark-pdf-fill"></i>
         <span>1. Ver Documento</span>
       </button>
       <button (click)="setMobileTab('FIRMAR')" type="button"
-              class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
-              [ngClass]="mobileTab === 'FIRMAR' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'">
+        class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
+        [ngClass]="mobileTab === 'FIRMAR' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-900'">
         <i class="bi bi-pen-fill"></i>
         <span>2. Firmar Aquí</span>
       </button>
@@ -73,16 +141,82 @@
 
     <!-- GRID LAYOUT (SIDE-BY-SIDE EN DESKTOP, PESTAÑAS/STACK EN MÓVIL) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      
+
       <!-- COLUMNA PANEL DE FIRMA E INFORMACIÓN (5 cols) -->
       <div class="lg:col-span-5 flex flex-col gap-4" [ngClass]="{'hidden lg:flex': mobileTab === 'DOCUMENTO'}">
-        
+
+        <!-- WIDGET/CHECKLIST DE MÚLTIPLES FIRMAS ASIGNADAS -->
+        <div *ngIf="totalRecuadros > 0" class="bg-white border border-blue-200/80 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="bi bi-ui-checks text-blue-600 text-sm"></i> Mis Recuadros de Firma ({{ recuadrosFirmadosCount }}/{{ totalRecuadros }})
+            </span>
+            <span class="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+              {{ recuadrosPendientes.length === 0 ? 'Completado' : recuadrosPendientes.length + ' pendientes' }}
+            </span>
+          </div>
+
+          <!-- BOTONES SELECCIÓN MASIVA (MARCAR / DESMARCAR TODOS) -->
+          <div *ngIf="recuadrosPendientes.length > 1" class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+            <span class="text-[11px] font-semibold text-slate-600">Seleccionar recuadros a firmar:</span>
+            <div class="flex items-center gap-2">
+              <button (click)="seleccionarTodosRecuadros()" type="button" class="text-[10px] text-blue-600 font-bold hover:underline">
+                Marcar Todos
+              </button>
+              <span class="text-slate-300">|</span>
+              <button (click)="deseleccionarTodosRecuadros()" type="button" class="text-[10px] text-slate-500 font-bold hover:underline">
+                Desmarcar Todos
+              </button>
+            </div>
+          </div>
+
+          <!-- LISTA DE CHECKBOXES POR RECUADRO -->
+          <div class="flex flex-col gap-2 max-h-52 overflow-y-auto custom-scrollbar">
+            <div *ngFor="let r of recuadrosAsignados; let idx = index" 
+                 class="p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs transition-all"
+                 [ngClass]="{
+                   'bg-emerald-50/60 border-emerald-200': r.estado === 'FIRMADO',
+                   'bg-blue-50/60 border-blue-200 shadow-2xs': r.estado !== 'FIRMADO' && isRecuadroSelected(r.id),
+                   'bg-slate-50 border-slate-200 opacity-60': r.estado !== 'FIRMADO' && !isRecuadroSelected(r.id)
+                 }">
+              
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <!-- Checkbox individual -->
+                <input *ngIf="r.estado !== 'FIRMADO'" 
+                       type="checkbox" 
+                       [checked]="isRecuadroSelected(r.id)"
+                       (change)="toggleRecuadroSelection(r.id)"
+                       class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
+                
+                <i *ngIf="r.estado === 'FIRMADO'" class="bi bi-check-circle-fill text-emerald-600 text-base"></i>
+
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-slate-800">Recuadro {{ idx + 1 }}</span>
+                    <button (click)="goToPage(r.pagina)" type="button" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-0.5">
+                      <i class="bi bi-geo-alt-fill text-amber-500"></i> Pág. {{ r.pagina }}
+                    </button>
+                  </div>
+                  <span class="text-[10px] text-slate-500 block truncate">Posición: X: {{ r.posicion_x }}mm, Y: {{ r.posicion_y }}mm</span>
+                </div>
+              </div>
+
+              <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase shrink-0"
+                    [ngClass]="r.estado === 'FIRMADO' ? 'bg-emerald-600 text-white' : (isRecuadroSelected(r.id) ? 'bg-blue-600 text-white' : 'bg-slate-400 text-white')">
+                {{ r.estado === 'FIRMADO' ? 'FIRMADO' : (isRecuadroSelected(r.id) ? 'SELECCIONADO' : 'OMITIDO') }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <!-- TARJETA DETALLES DEL DOCUMENTO -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-3">
           <div>
-            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest block mb-1">Documento Solicitado</span>
+            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest block mb-1">Documento
+              Solicitado</span>
             <h2 class="text-base font-bold text-slate-900 leading-tight">{{ docData.documento.titulo }}</h2>
-            <p *ngIf="docData.documento.descripcion" class="text-xs text-slate-500 italic mt-1">{{ docData.documento.descripcion }}</p>
+            <p *ngIf="docData.documento.descripcion" class="text-xs text-slate-500 italic mt-1">{{
+              docData.documento.descripcion }}</p>
           </div>
 
           <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
@@ -96,67 +230,102 @@
             </div>
             <div>
               <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Correo</span>
-              <span class="font-medium text-slate-600 truncate block">{{ docData.destinatario.email_destinatario }}</span>
+              <span class="font-medium text-slate-600 truncate block">{{ docData.destinatario.email_destinatario
+                }}</span>
             </div>
             <div>
-              <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Página de Firma</span>
-              <span class="font-bold text-blue-600 block">Página {{ docData.destinatario.pagina }}</span>
+              <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Recuadros Totales</span>
+              <span class="font-bold text-blue-600 block">{{ totalRecuadros }} {{ totalRecuadros === 1 ? 'recuadro' : 'recuadros' }}</span>
             </div>
           </div>
         </div>
 
         <!-- PANEL DE ACCIÓN DE FIRMA -->
-        <div *ngIf="docData.destinatario.estado === 'PENDIENTE'" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
-          
+        <div *ngIf="docData.destinatario.estado === 'PENDIENTE' || recuadrosPendientes.length > 0"
+          class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Método de Firma</span>
             <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-bold">
-              Página {{ docData.destinatario.pagina }}
+              Página {{ pagina }}
             </span>
           </div>
-          
+
           <!-- SELECTOR DE MÉTODO -->
           <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
             <!-- FIRMA A PULSO -->
-            <button (click)="selectMetodoFirma('PULSO')" 
-                    [disabled]="docData.destinatario.tipo_firma_requerida === 'DIGITAL'"
-                    type="button" 
-                    class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                    [ngClass]="metodoFirmaSeleccionado === 'PULSO' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800 disabled:opacity-40'">
+            <button (click)="selectMetodoFirma('PULSO')"
+              [disabled]="docData.destinatario.tipo_firma_requerida === 'DIGITAL'" type="button"
+              class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+              [ngClass]="metodoFirmaSeleccionado === 'PULSO' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800 disabled:opacity-40'">
               <i class="bi bi-pencil-fill"></i> Firma a Pulso
             </button>
 
             <!-- FIRMA DIGITAL -->
-            <button (click)="selectMetodoFirma('DIGITAL')" 
-                    [disabled]="docData.destinatario.tipo_firma_requerida === 'PULSO'"
-                    type="button" 
-                    class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                    [ngClass]="metodoFirmaSeleccionado === 'DIGITAL' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800 disabled:opacity-40'">
+            <button (click)="selectMetodoFirma('DIGITAL')"
+              [disabled]="docData.destinatario.tipo_firma_requerida === 'PULSO'" type="button"
+              class="py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+              [ngClass]="metodoFirmaSeleccionado === 'DIGITAL' ? 'bg-white text-blue-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800 disabled:opacity-40'">
               <i class="bi bi-shield-lock-fill"></i> Firma Digital Saint
             </button>
           </div>
 
-          <!-- MODO A: CANVAS TRAZO A PULSO (USA HIDDEN EN LUGAR DE NGIF PARA EVITAR BUG DE INSTANCIACIÓN) -->
-          <div [hidden]="metodoFirmaSeleccionado !== 'PULSO'" class="flex flex-col gap-2">
+          <!-- OPCIÓN DE FIRMA MASIVA VS INDIVIDUAL -->
+          <div *ngIf="totalRecuadros > 1" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+            <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+              <input type="checkbox" [(ngModel)]="firmarTodasLasPaginas" class="w-4 h-4 text-blue-600 rounded border-slate-300">
+              <span>Aplicar firma a mis {{ totalRecuadros }} recuadros requeridos</span>
+            </label>
+            <p class="text-[10px] text-slate-500 pl-6 leading-normal">
+              {{ firmarTodasLasPaginas ? 'Se estampará tu firma en todos tus recuadros asignados en el documento de una sola vez.' : 'Solo se estampará tu firma en el recuadro de la página actual.' }}
+            </p>
+          </div>
+
+          <!-- MODO A: CANVAS TRAZO A PULSO -->
+          <div [hidden]="metodoFirmaSeleccionado !== 'PULSO'" class="flex flex-col gap-2.5">
+
+            <!-- Banner de Firma Precargada desde Perfil (AWS S3) -->
+            <div *ngIf="docData.destinatario.firma_preloaded" class="p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                  <i class="bi bi-check-circle-fill text-blue-600 text-base"></i>
+                  <span>Tienes una firma precargada en tu perfil</span>
+                </div>
+                <span class="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">Firma Registrada</span>
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <button type="button" (click)="cargarFirmaPrecargada()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+                  <i class="bi bi-box-arrow-in-down-left"></i>
+                  <span>Usar mi firma pre-cargada</span>
+                </button>
+              </div>
+            </div>
+
             <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-700 font-bold">Dibuja tu trazo en el recuadro:</span>
-              <button (click)="clearSignature()" type="button" class="text-xs text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 font-bold">
+              <span class="text-xs text-slate-700 font-bold">Dibuja tu trazo en el recuadro o usa la precargada:</span>
+              <button (click)="clearSignature()" type="button"
+                class="text-xs text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 font-bold">
                 <i class="bi bi-eraser-fill"></i> Limpiar
               </button>
             </div>
 
-            <div class="bg-slate-50 rounded-xl p-1 border-2 border-dashed border-slate-300 shadow-inner flex items-center justify-center relative overflow-hidden">
+            <div
+              class="bg-slate-50 rounded-xl p-1 border-2 border-dashed border-slate-300 shadow-inner flex items-center justify-center relative overflow-hidden">
               <canvas #signatureCanvas class="w-full h-40 cursor-crosshair touch-none bg-white rounded-lg"></canvas>
-              <div *ngIf="signaturePad && signaturePad.isEmpty()" class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 text-xs font-medium italic">
+              <div *ngIf="signaturePad && signaturePad.isEmpty() && !firmaPrecargadaAplicada"
+                class="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-400 text-xs font-medium italic">
                 Firme aquí con el dedo o mouse...
               </div>
             </div>
           </div>
 
           <!-- MODO B: BANNER FIRMA DIGITAL -->
-          <div *ngIf="metodoFirmaSeleccionado === 'DIGITAL'" class="bg-blue-50/80 border border-blue-200 rounded-xl p-4 flex flex-col gap-3">
+          <div *ngIf="metodoFirmaSeleccionado === 'DIGITAL'"
+            class="bg-blue-50/80 border border-blue-200 rounded-xl p-4 flex flex-col gap-3">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-blue-500/20">
+              <div
+                class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-blue-500/20">
                 <i class="bi bi-patch-check-fill"></i>
               </div>
               <div>
@@ -165,28 +334,31 @@
               </div>
             </div>
             <p class="text-[11px] text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-blue-100">
-              Se creará e insertará automáticamente un sello con código QR criptográfico, hash SHA-256 de validez y firmante (<strong>{{ docData.destinatario.nombre_firmante }}</strong>) en la <strong>Página {{ docData.destinatario.pagina }}</strong>.
+              Se creará e insertará automáticamente un sello con código QR criptográfico, hash SHA-256 de validez y
+              firmante (<strong>{{ docData.destinatario.nombre_firmante }}</strong>).
             </p>
           </div>
 
           <!-- BOTONES ACCIÓN -->
           <div class="flex flex-col gap-2.5 pt-2 border-t border-slate-100">
-            <button (click)="firmarDocumento()" [disabled]="submitting" type="button" 
-                    class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
-              <span *ngIf="submitting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <button (click)="firmarDocumento()" [disabled]="submitting" type="button"
+              class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+              <span *ngIf="submitting"
+                class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               <i *ngIf="!submitting" class="bi bi-check2-square text-base"></i>
-              {{ metodoFirmaSeleccionado === 'PULSO' ? 'Firmar con Trazo a Pulso' : 'Estampar Firma Digital Autoverificada' }}
+              {{ selectedRecuadroIds.length > 0 ? ('Firmar ' + selectedRecuadroIds.length + ' Recuadro(s) Seleccionado(s)') : 'Selecciona al menos 1 recuadro para firmar' }}
             </button>
-            
-            <button (click)="showRechazoModal = true" [disabled]="submitting" type="button" 
-                    class="w-full py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 text-xs font-bold rounded-xl transition-all">
+
+            <button (click)="showRechazoModal = true" [disabled]="submitting" type="button"
+              class="w-full py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 text-xs font-bold rounded-xl transition-all">
               Rechazar este documento
             </button>
           </div>
         </div>
 
-        <!-- SI YA FUE FIRMADO -->
-        <div *ngIf="docData.destinatario.estado === 'FIRMADO'" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm flex flex-col items-center text-center gap-3">
+        <!-- SI YA FUE FIRMADO COMPLETO -->
+        <div *ngIf="docData.destinatario.estado === 'FIRMADO' && recuadrosPendientes.length === 0"
+          class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm flex flex-col items-center text-center gap-3">
           <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl">
             <i class="bi bi-check-circle-fill"></i>
           </div>
@@ -194,11 +366,18 @@
             <h3 class="text-sm font-bold text-slate-900 mb-1">¡Documento Firmado Exitosamente!</h3>
             <p class="text-xs text-emerald-700 font-medium">Completado el {{ docData.destinatario.firmado_at }}</p>
           </div>
+          <p class="text-xs text-slate-600">Todas tus firmas requeridas han sido estampadas en el documento.</p>
           <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
-            <a [href]="docData.documento.pdf_url" target="_blank" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2">
+            <button (click)="irASaint()" type="button"
+              class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2">
+              <i class="bi bi-house-door-fill"></i> Ir a Saint System
+            </button>
+            <a [href]="docData.documento.pdf_url" target="_blank"
+              class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2">
               <i class="bi bi-download"></i> Descargar Copia
             </a>
-            <button (click)="cerrarPestana()" type="button" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2">
+            <button (click)="cerrarPestana()" type="button"
+              class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2">
               <i class="bi bi-x-circle-fill"></i> Cerrar Pestaña
             </button>
           </div>
@@ -208,87 +387,88 @@
 
       <!-- COLUMNA VISOR PDF CON CONTROL DE NAVEGACIÓN Y POSICIÓN DE FIRMA (7 cols) -->
       <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col min-h-[550px]"
-           [ngClass]="{'hidden lg:flex': mobileTab === 'FIRMAR'}">
-        
+        [ngClass]="{'hidden lg:flex': mobileTab === 'FIRMAR'}">
+
         <!-- BARRA FLOTANTE DE CONTROL DE NAVEGACIÓN PDF -->
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 mb-3 flex flex-wrap items-center justify-between gap-2 shadow-inner sticky top-16 z-30">
-          
+        <div
+          class="bg-slate-50 border border-slate-200 rounded-xl p-2 mb-3 flex flex-wrap items-center justify-between gap-2 shadow-inner sticky top-16 z-30">
+
           <!-- BOTONES NAVEGACIÓN PÁGINAS -->
           <div class="flex items-center gap-1.5">
-            <button (click)="changePage(-1)" [disabled]="pagina <= 1" 
-                    type="button"
-                    class="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm">
+            <button (click)="changePage(-1)" [disabled]="pagina <= 1" type="button"
+              class="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm">
               <i class="bi bi-chevron-left"></i>
               <span class="hidden sm:inline">Anterior</span>
             </button>
 
-            <span class="text-xs font-bold text-slate-800 px-2 py-1 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <span
+              class="text-xs font-bold text-slate-800 px-2 py-1 bg-white rounded-lg border border-slate-200 shadow-sm">
               Pág {{ pagina }} / {{ totalPages }}
             </span>
 
-            <button (click)="changePage(1)" [disabled]="pagina >= totalPages" 
-                    type="button"
-                    class="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm">
+            <button (click)="changePage(1)" [disabled]="pagina >= totalPages" type="button"
+              class="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 disabled:opacity-40 text-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm">
               <span class="hidden sm:inline">Siguiente</span>
               <i class="bi bi-chevron-right"></i>
             </button>
           </div>
 
           <!-- BOTÓN SALTO A PÁGINA DE FIRMA -->
-          <button *ngIf="!isSignaturePage" (click)="goToSignaturePage()" type="button"
-                  class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5">
+          <button *ngIf="!isSignaturePage && recuadrosPendientes.length > 0" (click)="goToPage(recuadrosPendientes[0].pagina)" type="button"
+            class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5">
             <i class="bi bi-geo-alt-fill text-amber-600"></i>
-            <span>Ir a Firma (Pág {{ targetPageNumber }})</span>
+            <span>Ir a Firma Pendiente (Pág {{ recuadrosPendientes[0].pagina }})</span>
           </button>
 
           <!-- CONTROLES ZOOM Y AUTO-FIT -->
           <div class="flex items-center gap-1">
-            <button (click)="changeZoom(-0.15)" type="button" title="Reducir Zoom" class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-xs font-bold transition-colors shadow-sm">
+            <button (click)="changeZoom(-0.15)" type="button" title="Reducir Zoom"
+              class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-xs font-bold transition-colors shadow-sm">
               <i class="bi bi-zoom-out"></i>
             </button>
-            <button (click)="autoFitWidth()" type="button" title="Ajustar al Ancho" class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-[11px] font-bold transition-colors shadow-sm">
+            <button (click)="autoFitWidth()" type="button" title="Ajustar al Ancho"
+              class="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-[11px] font-bold transition-colors shadow-sm">
               {{ (zoom * 100) | number:'1.0-0' }}%
             </button>
-            <button (click)="changeZoom(0.15)" type="button" title="Aumentar Zoom" class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-xs font-bold transition-colors shadow-sm">
+            <button (click)="changeZoom(0.15)" type="button" title="Aumentar Zoom"
+              class="p-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-xs font-bold transition-colors shadow-sm">
               <i class="bi bi-zoom-in"></i>
             </button>
           </div>
         </div>
 
         <!-- AVISO INFORMATIVO DE PÁGINA DE FIRMA -->
-        <div *ngIf="isSignaturePage" class="bg-blue-50 border border-blue-200 rounded-xl p-2.5 mb-3 flex items-center gap-2 text-xs text-blue-800">
+        <div *ngIf="isSignaturePage"
+          class="bg-blue-50 border border-blue-200 rounded-xl p-2.5 mb-3 flex items-center gap-2 text-xs text-blue-800">
           <i class="bi bi-info-circle-fill text-blue-600 text-sm shrink-0"></i>
-          <span><strong>Ubicación Asignada:</strong> El recuadro punteado muestra exactamente dónde se colocará tu firma en el documento.</span>
+          <span><strong>Ubicación Asignada:</strong> El recuadro punteado muestra dónde se colocará tu firma en esta página.</span>
         </div>
 
-        <!-- CANVAS CONTENEDOR PDF CON ARRASTRE NATIVO (PAN & DRAG) Y RECUADRO DE POSICIÓN SOBREPUESTO -->
-        <div id="public-pdf-container" 
-             (mousedown)="onPanStart($event)"
-             (mousemove)="onPanMove($event)"
-             (mouseup)="onPanEnd()"
-             (mouseleave)="onPanEnd()"
-             (touchstart)="onTouchStart($event)"
-             (touchmove)="onTouchMove($event)"
-             (touchend)="onTouchEnd($event)"
-             (touchcancel)="onTouchEnd($event)"
-             class="flex-1 bg-slate-100/70 rounded-xl overflow-auto p-2 sm:p-4 flex justify-start items-start min-h-[450px] select-none touch-pan-x touch-pan-y"
-             [ngClass]="isPanning ? 'cursor-grabbing' : 'cursor-grab'">
+        <!-- CANVAS CONTENEDOR PDF CON ARRASTRE NATIVO (PAN & DRAG) Y RECUADROS SOBREPUESTOS -->
+        <div id="public-pdf-container" (mousedown)="onPanStart($event)" (mousemove)="onPanMove($event)"
+          (mouseup)="onPanEnd()" (mouseleave)="onPanEnd()" (touchstart)="onTouchStart($event)"
+          (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)"
+          class="flex-1 bg-slate-100/70 rounded-xl overflow-auto p-2 sm:p-4 flex justify-start items-start min-h-[450px] select-none touch-pan-x touch-pan-y"
+          [ngClass]="isPanning ? 'cursor-grabbing' : 'cursor-grab'">
           <div class="relative inline-block shadow-lg bg-white rounded-lg select-none m-auto">
-            
+
             <canvas id="public-pdf-canvas" class="rounded-lg block max-w-none transition-none"></canvas>
 
-            <!-- RECUADRO DE POSICIÓN DE FIRMA (EXACTAMENTE EN COORDENADAS CONVERTIDAS MM -> PTS) -->
-            <div *ngIf="isSignaturePage && docData?.destinatario" 
-                 class="absolute border-2 border-dashed border-blue-600 bg-blue-500/20 backdrop-blur-[1px] rounded-md shadow-md pointer-events-none z-20 flex flex-col items-center justify-center animate-pulse"
-                 [style.left.px]="markerLeft"
-                 [style.top.px]="markerTop"
-                 [style.width.px]="markerWidth"
-                 [style.height.px]="markerHeight">
-              <div class="bg-blue-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow truncate max-w-full flex items-center gap-1">
-                <i class="bi bi-geo-alt-fill text-amber-300"></i>
-                <span>Firma de {{ docData.destinatario.nombre_firmante }}</span>
+            <!-- RECUADROS DE FIRMA EN ESTA PÁGINA (PULSO O DIGITAL) -->
+            <ng-container *ngFor="let box of recuadrosEnPaginaActual">
+              <div class="absolute border-2 border-dashed rounded-md shadow-md pointer-events-none z-20 flex flex-col items-center justify-center animate-pulse"
+                   [ngClass]="box.estado === 'FIRMADO' ? 'border-emerald-600 bg-emerald-500/20' : 'border-blue-600 bg-blue-500/20 backdrop-blur-[1px]'"
+                   [style.left.px]="getBoxLeft(box)" 
+                   [style.top.px]="getBoxTop(box)" 
+                   [style.width.px]="getBoxWidth(box)"
+                   [style.height.px]="getBoxHeight(box)">
+                <div class="text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow truncate max-w-full flex items-center gap-1"
+                     [ngClass]="box.estado === 'FIRMADO' ? 'bg-emerald-600' : 'bg-blue-600'">
+                  <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill' : 'bi-geo-alt-fill text-amber-300'"></i>
+                  <span>{{ box.estado === 'FIRMADO' ? 'FIRMADO' : 'Firma de ' + docData.destinatario.nombre_firmante }}</span>
+                </div>
               </div>
-            </div>
+            </ng-container>
 
           </div>
         </div>
@@ -300,21 +480,22 @@
   </main>
 
   <!-- BARRA INFERIOR FIJA MÓVIL PARA FIRMAR RÁPIDAMENTE (< lg) -->
-  <div *ngIf="docData?.destinatario?.estado === 'PENDIENTE'" class="lg:hidden sticky bottom-0 z-40 bg-white/95 border-t border-slate-200 p-3 backdrop-blur flex items-center justify-between gap-3 shadow-lg">
+  <div *ngIf="docData?.destinatario?.estado === 'PENDIENTE'"
+    class="lg:hidden sticky bottom-0 z-40 bg-white/95 border-t border-slate-200 p-3 backdrop-blur flex items-center justify-between gap-3 shadow-lg">
     <div class="flex items-center gap-2 text-xs">
       <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping"></span>
       <span class="font-bold text-slate-800">Página {{ docData.destinatario.pagina }}</span>
     </div>
-    
+
     <div class="flex items-center gap-2">
       <button *ngIf="mobileTab === 'DOCUMENTO'" (click)="setMobileTab('FIRMAR')" type="button"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5">
+        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1.5">
         <i class="bi bi-pencil-square"></i>
         <span>Ir a Firmar Documento</span>
       </button>
-      
+
       <button *ngIf="mobileTab === 'FIRMAR'" (click)="setMobileTab('DOCUMENTO')" type="button"
-              class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5">
+        class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5">
         <i class="bi bi-file-earmark-text"></i>
         <span>Ver Documento</span>
       </button>
@@ -322,18 +503,23 @@
   </div>
 
   <!-- MODAL DE RECHAZO -->
-  <div *ngIf="showRechazoModal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div *ngIf="showRechazoModal"
+    class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
       <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
         <i class="bi bi-x-circle-fill text-rose-600"></i> Rechazar Documento
       </h3>
-      <p class="text-xs text-slate-500 leading-relaxed">Por favor indica el motivo por el cual rechazas firmar este documento:</p>
-      <textarea [(ngModel)]="motivoRechazo" rows="3" placeholder="Escribe la razón aquí..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"></textarea>
+      <p class="text-xs text-slate-500 leading-relaxed">Por favor indica el motivo por el cual rechazas firmar este
+        documento:</p>
+      <textarea [(ngModel)]="motivoRechazo" rows="3" placeholder="Escribe la razón aquí..."
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none focus:border-blue-500 font-medium"></textarea>
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-        <button (click)="showRechazoModal = false" type="button" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+        <button (click)="showRechazoModal = false" type="button"
+          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
           Cancelar
         </button>
-        <button (click)="rechazarDocumento()" type="button" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all shadow">
+        <button (click)="rechazarDocumento()" type="button"
+          class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all shadow">
           Confirmar Rechazo
         </button>
       </div>

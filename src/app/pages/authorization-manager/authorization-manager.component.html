@@ -679,7 +679,7 @@
             <input type="text" [(ngModel)]="busquedaLider" (focus)="mostrarDropdownLider = true"
               placeholder="Buscar por nombre, correo o usuario en Saint..."
               class="w-full pl-8 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-slate-800 shadow-sm">
-            <button *ngIf="busquedaLider" (click)="busquedaLider = ''" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
+            <button *ngIf="busquedaLider" (click)="clearBusquedaLider()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
               <i class="bi bi-x-lg"></i>
             </button>
           </div>
@@ -764,7 +764,7 @@
             <input type="text" [(ngModel)]="busquedaMatriz" (focus)="mostrarDropdownMatriz = true"
               placeholder="Buscar por nombre, correo o usuario en Saint..."
               class="w-full pl-8 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white font-medium text-slate-800 shadow-sm">
-            <button *ngIf="busquedaMatriz" (click)="busquedaMatriz = ''" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
+            <button *ngIf="busquedaMatriz" (click)="clearBusquedaMatriz()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
               <i class="bi bi-x-lg"></i>
             </button>
           </div>
@@ -876,6 +876,12 @@
         class="flex-1 min-w-[140px] px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
         [ngClass]="centroControlTab === 'departamentos' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-200/60'">
         <i class="bi bi-diagram-2-fill text-indigo-500"></i> Departamentos
+      </button>
+
+      <button (click)="abrirCentroControl('replicar')" 
+        class="flex-1 min-w-[140px] px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+        [ngClass]="centroControlTab === 'replicar' ? 'bg-white text-amber-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-slate-200/60'">
+        <i class="bi bi-copy text-amber-500"></i> Replicar Permisos
       </button>
 
       <button (click)="openBulkCargoModal(); cerrarCentroControl()" 
@@ -1126,6 +1132,405 @@
       </div>
     </div>
 
+    <!-- PESTAÑA 4: REPLICAR PERMISOS ENTRE USUARIOS -->
+    <div *ngIf="centroControlTab === 'replicar'" class="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50/50">
+      
+      <!-- Top Section: Seleccionadores de Usuarios (Origen -> Destino) -->
+      <div class="p-4 bg-white border-b border-slate-200 shrink-0">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          
+          <!-- Columna Usuario Origen (Copiar DE) -->
+          <div class="md:col-span-5 relative">
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span class="flex items-center gap-1.5 text-amber-700">
+                <i class="bi bi-box-arrow-right text-sm"></i>
+                1. Usuario Origen (Copiar de:)
+              </span>
+              <span *ngIf="sourceUserReplicate" class="text-[10px] text-slate-500 font-semibold">ID: {{ sourceUserReplicate.id }}</span>
+            </label>
+
+            <!-- Card de Usuario Origen Seleccionado -->
+            <div *ngIf="sourceUserReplicate; else buscarSourceInput" class="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-amber-600 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                  {{ (sourceUserReplicate.firstName || sourceUserReplicate.name)?.substring(0,2)?.toUpperCase() }}
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-900 line-clamp-1">
+                    {{ sourceUserReplicate.firstName || sourceUserReplicate.name }} {{ sourceUserReplicate.lastName || '' }}
+                  </span>
+                  <span class="text-[10px] text-slate-500 font-medium line-clamp-1">
+                    {{ sourceUserReplicate.email || sourceUserReplicate.correo_corporativo || 'Sin correo' }}
+                  </span>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
+                      {{ sourceUserReplicate.cargo || 'Sin cargo' }}
+                    </span>
+                    <span class="text-[9px] font-bold text-slate-600">
+                      {{ (sourceUserReplicate.perfiles || []).length }} perfil(es)
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" (click)="seleccionarSourceUser(null)" class="text-slate-400 hover:text-rose-600 p-1 transition-colors" title="Cambiar usuario origen">
+                <i class="bi bi-x-circle-fill text-lg"></i>
+              </button>
+            </div>
+
+            <!-- Input Búsqueda Origen -->
+            <ng-template #buscarSourceInput>
+              <div class="relative">
+                <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" [(ngModel)]="busquedaSourceUser" (focus)="mostrarDropdownSourceUser = true"
+                  placeholder="Buscar usuario origen por nombre, correo, cédula o cargo..."
+                  class="w-full pl-8 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none bg-white font-medium text-slate-800 shadow-2xs">
+                <button *ngIf="busquedaSourceUser" (click)="clearBusquedaSourceUser()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </ng-template>
+
+            <!-- Dropdown Resultados Origen -->
+            <div *ngIf="!sourceUserReplicate && (mostrarDropdownSourceUser || busquedaSourceUser)" 
+              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 flex flex-col">
+              <div class="overflow-y-auto p-1 divide-y divide-slate-100">
+                <button *ngFor="let u of sourceUserSearchFiltered" (click)="seleccionarSourceUser(u)"
+                  class="w-full text-left px-3 py-2 hover:bg-amber-50 rounded-lg flex items-center justify-between transition-colors">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center">
+                      {{ (u.firstName || u.name)?.substring(0,2)?.toUpperCase() }}
+                    </span>
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">{{ u.firstName || u.name }} {{ u.lastName }}</div>
+                      <div class="text-[10px] text-slate-400">{{ u.email || u.correo_corporativo }} • {{ u.cargo || 'Sin cargo' }}</div>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600">ID {{ u.id }}</span>
+                </button>
+                <div *ngIf="sourceUserSearchFiltered.length === 0" class="p-3 text-center text-xs text-slate-400">
+                  No se encontraron usuarios coincidentes
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Flecha Transición -->
+          <div class="md:col-span-2 flex flex-col items-center justify-center text-center">
+            <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold shadow-2xs">
+              <i class="bi bi-arrow-right text-lg"></i>
+            </div>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 mt-1">Replicar A</span>
+          </div>
+
+          <!-- Columna Usuario Destino (Copiar A) -->
+          <div class="md:col-span-5 relative">
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span class="flex items-center gap-1.5 text-blue-700">
+                <i class="bi bi-box-arrow-in-right text-sm"></i>
+                2. Usuario Destino (Copiar a:)
+              </span>
+              <span *ngIf="targetUserReplicate" class="text-[10px] text-slate-500 font-semibold">ID: {{ targetUserReplicate.id }}</span>
+            </label>
+
+            <!-- Card de Usuario Destino Seleccionado -->
+            <div *ngIf="targetUserReplicate; else buscarTargetInput" class="p-3 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-2xs">
+                  {{ (targetUserReplicate.firstName || targetUserReplicate.name)?.substring(0,2)?.toUpperCase() }}
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-900 line-clamp-1">
+                    {{ targetUserReplicate.firstName || targetUserReplicate.name }} {{ targetUserReplicate.lastName || '' }}
+                  </span>
+                  <span class="text-[10px] text-slate-500 font-medium line-clamp-1">
+                    {{ targetUserReplicate.email || targetUserReplicate.correo_corporativo || 'Sin correo' }}
+                  </span>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
+                      {{ targetUserReplicate.cargo || 'Sin cargo' }}
+                    </span>
+                    <span class="text-[9px] font-bold text-slate-600">
+                      {{ (targetUserReplicate.perfiles || []).length }} perfil(es)
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" (click)="seleccionarTargetUser(null)" class="text-slate-400 hover:text-rose-600 p-1 transition-colors" title="Cambiar usuario destino">
+                <i class="bi bi-x-circle-fill text-lg"></i>
+              </button>
+            </div>
+
+            <!-- Input Búsqueda Destino -->
+            <ng-template #buscarTargetInput>
+              <div class="relative">
+                <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" [(ngModel)]="busquedaTargetUser" (focus)="mostrarDropdownTargetUser = true"
+                  placeholder="Buscar usuario destino por nombre, correo, cédula o cargo..."
+                  class="w-full pl-8 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-slate-800 shadow-2xs">
+                <button *ngIf="busquedaTargetUser" (click)="clearBusquedaTargetUser()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </ng-template>
+
+            <!-- Dropdown Resultados Destino -->
+            <div *ngIf="!targetUserReplicate && (mostrarDropdownTargetUser || busquedaTargetUser)" 
+              class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden max-h-56 flex flex-col">
+              <div class="overflow-y-auto p-1 divide-y divide-slate-100">
+                <button *ngFor="let u of targetUserSearchFiltered" (click)="seleccionarTargetUser(u)"
+                  class="w-full text-left px-3 py-2 hover:bg-blue-50 rounded-lg flex items-center justify-between transition-colors">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center">
+                      {{ (u.firstName || u.name)?.substring(0,2)?.toUpperCase() }}
+                    </span>
+                    <div>
+                      <div class="text-xs font-bold text-slate-800">{{ u.firstName || u.name }} {{ u.lastName }}</div>
+                      <div class="text-[10px] text-slate-400">{{ u.email || u.correo_corporativo }} • {{ u.cargo || 'Sin cargo' }}</div>
+                    </div>
+                  </div>
+                  <span class="px-2 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600">ID {{ u.id }}</span>
+                </button>
+                <div *ngIf="targetUserSearchFiltered.length === 0" class="p-3 text-center text-xs text-slate-400">
+                  No se encontraron usuarios disponibles
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Option Controls Bar -->
+      <div class="px-4 py-3 bg-slate-100/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <!-- Modo de Replicación (Segmented Buttons) -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700 mr-1">Modo:</span>
+          
+          <button type="button" (click)="setReplicateMode('add')"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer"
+            [ngClass]="replicateMode === 'add' 
+              ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/20 font-extrabold' 
+              : 'bg-white text-slate-700 border-slate-300 hover:bg-amber-50 hover:text-amber-800'">
+            <i class="bi" [ngClass]="replicateMode === 'add' ? 'bi-check-circle-fill' : 'bi-plus-circle'"></i>
+            <span>Fusionar (Añadir a los existentes)</span>
+          </button>
+
+          <button type="button" (click)="setReplicateMode('replace')"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer"
+            [ngClass]="replicateMode === 'replace' 
+              ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20 font-extrabold' 
+              : 'bg-white text-slate-700 border-slate-300 hover:bg-rose-50 hover:text-rose-800'">
+            <i class="bi" [ngClass]="replicateMode === 'replace' ? 'bi-check-circle-fill' : 'bi-arrow-repeat'"></i>
+            <span>Reemplazar todo (Sobrescribir destino)</span>
+          </button>
+        </div>
+
+        <!-- Opción Copiar Departamentos y Botones Masivos -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" (click)="toggleReplicateCopyDepartamentos($event)"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border cursor-pointer select-none"
+            [ngClass]="replicateCopyDepartamentos 
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20 font-extrabold' 
+              : 'bg-white text-slate-700 border-slate-300 hover:bg-indigo-50 hover:text-indigo-800'">
+            <i class="bi text-sm" [ngClass]="replicateCopyDepartamentos ? 'bi-check-square-fill text-white' : 'bi-square text-slate-400'"></i>
+            <span>Copiar también Departamentos/Áreas</span>
+          </button>
+
+          <div class="h-5 w-px bg-slate-300 mx-1 hidden sm:block"></div>
+
+          <button type="button" (click)="seleccionarTodosPermisosOrigen()" [disabled]="!sourceUserReplicate"
+            class="px-3 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-2xs transition-colors disabled:opacity-50 flex items-center gap-1">
+            <i class="bi bi-check-all text-amber-600 text-sm"></i>
+            <span>Seleccionar de Origen</span>
+          </button>
+
+          <button type="button" (click)="desmarcarTodosReplicacion()"
+            class="px-3 py-1.5 bg-white hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-600 shadow-2xs transition-colors flex items-center gap-1">
+            <i class="bi bi-x-circle text-slate-400"></i>
+            <span>Desmarcar Todos</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Body: Comparación y Selección de Permisos -->
+      <div class="flex-1 p-4 overflow-y-auto min-h-0 space-y-6">
+        
+        <!-- Estado inicial cuando no hay usuarios seleccionados -->
+        <div *ngIf="!sourceUserReplicate" class="py-12 flex flex-col items-center justify-center text-center text-slate-400">
+          <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-2xl mb-3 border border-amber-200">
+            <i class="bi bi-person-lines-fill"></i>
+          </div>
+          <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-1">Selecciona el Usuario Origen</h4>
+          <p class="text-xs text-slate-400 max-w-sm">
+            Busca y elige el usuario del cual deseas tomar los perfiles y permisos para replicar.
+          </p>
+        </div>
+
+        <div *ngIf="sourceUserReplicate" class="space-y-6">
+          
+          <!-- SECCIÓN 1: PERFILES / ROLES -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+            <div class="px-4 py-3 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="bi bi-shield-lock-fill text-amber-600 text-sm"></i>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                  Perfiles / Roles a Replicar ({{ selectedPerfilIdsToReplicate.length }} seleccionados)
+                </h3>
+              </div>
+              <span class="text-[10px] text-slate-400 font-semibold">Selecciona los perfiles que se asignarán al destino</span>
+            </div>
+
+            <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div *ngFor="let prof of profiles" 
+                (click)="togglePerfilToReplicate(prof.id)"
+                class="p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-2"
+                [ngClass]="isPerfilSelectedToReplicate(prof.id) ? 'bg-amber-50/70 border-amber-300 shadow-2xs' : 'bg-white border-slate-200 hover:border-slate-300'">
+                <div class="flex items-start gap-2.5">
+                  <input type="checkbox" [checked]="isPerfilSelectedToReplicate(prof.id)" (click)="$event.stopPropagation(); togglePerfilToReplicate(prof.id)"
+                    class="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
+                  <div class="flex flex-col">
+                    <span class="text-xs font-bold text-slate-800">{{ prof.name }}</span>
+                    <span class="text-[10px] text-slate-400 line-clamp-1">{{ prof.description || 'Sin descripción' }}</span>
+                    
+                    <!-- Badges Origen vs Destino -->
+                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold"
+                        [ngClass]="userHasProfile(sourceUserReplicate, prof.id) ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-400'">
+                        Origen: {{ userHasProfile(sourceUserReplicate, prof.id) ? 'SI' : 'NO' }}
+                      </span>
+
+                      <span *ngIf="targetUserReplicate" class="px-1.5 py-0.5 rounded text-[9px] font-bold"
+                        [ngClass]="userHasProfile(targetUserReplicate, prof.id) ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-400'">
+                        Destino: {{ userHasProfile(targetUserReplicate, prof.id) ? 'SI' : 'NO' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: PERMISOS DIRECTOS POR MÓDULO -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+            
+            <!-- Header Sección Permisos con Filtro -->
+            <div class="p-4 bg-slate-100/80 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <i class="bi bi-key-fill text-amber-600 text-sm"></i>
+                <div>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                    Permisos por Módulo ({{ selectedPermissionIdsToReplicate.length }} seleccionados)
+                  </h3>
+                  <p class="text-[10px] text-slate-400 font-medium">Compara y marca qué permisos individuales otorgar al usuario destino</p>
+                </div>
+              </div>
+
+              <!-- Filtro de Búsqueda de Permisos -->
+              <div class="relative w-full sm:w-72">
+                <i class="bi bi-search text-slate-400 text-xs absolute left-3 top-2.5"></i>
+                <input type="search" [(ngModel)]="filtroReplicacionPermisos" placeholder="Filtrar permiso o módulo..."
+                  class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white font-medium text-slate-800">
+              </div>
+            </div>
+
+            <!-- Lista de Módulos y Permisos -->
+            <div class="p-4 space-y-4">
+              <div *ngFor="let mod of modulesForReplication" class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/30">
+                
+                <!-- Sub-header Módulo -->
+                <div class="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" [checked]="isAllPermissionsInModuleSelectedToReplicate(mod.id)"
+                      (change)="onToggleModulePermissions(mod.id, $event)"
+                      class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
+                    <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">{{ mod.name }}</span>
+                    <span class="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+                      {{ mod.permissions.length }} permisos
+                    </span>
+                  </div>
+                  
+                  <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider hidden sm:inline">
+                    Estado Origen vs Destino
+                  </span>
+                </div>
+
+                <!-- Filas de Permisos -->
+                <div class="divide-y divide-slate-100 bg-white">
+                  <div *ngFor="let perm of mod.permissions" 
+                    (click)="togglePermissionToReplicate(perm.id)"
+                    class="px-4 py-2.5 hover:bg-amber-50/50 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    [ngClass]="{'bg-amber-50/40': isPermissionSelectedToReplicate(perm.id)}">
+                    
+                    <div class="flex items-center gap-3">
+                      <input type="checkbox" [checked]="isPermissionSelectedToReplicate(perm.id)"
+                        (click)="$event.stopPropagation(); togglePermissionToReplicate(perm.id)"
+                        class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
+                      <div class="flex flex-col">
+                        <span class="text-xs font-bold text-slate-800">{{ perm.name }}</span>
+                        <span class="text-[10px] text-slate-400">{{ perm.description || 'Sin descripción' }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Columnas de Comparación de Estado -->
+                    <div class="flex items-center gap-2 text-[10px] font-bold self-end sm:self-center shrink-0">
+                      <!-- Status Usuario Origen -->
+                      <span class="px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
+                        [ngClass]="{
+                          'bg-emerald-100 text-emerald-800 border-emerald-300': getUserPermissionStatus(sourceUserReplicate, perm.id).type === 'ALLOW',
+                          'bg-rose-100 text-rose-800 border-rose-300': getUserPermissionStatus(sourceUserReplicate, perm.id).type === 'DENY',
+                          'bg-slate-100 text-slate-400 border-slate-200': getUserPermissionStatus(sourceUserReplicate, perm.id).type === 'NONE'
+                        }">
+                        <i class="bi text-[9px]" [ngClass]="getUserPermissionStatus(sourceUserReplicate, perm.id).type === 'ALLOW' ? 'bi-check-circle-fill' : (getUserPermissionStatus(sourceUserReplicate, perm.id).type === 'DENY' ? 'bi-x-circle-fill' : 'bi-dash-circle')"></i>
+                        <span>{{ getPermissionStatusLabel(sourceUserReplicate, perm.id, 'Orig') }}</span>
+                      </span>
+
+                      <!-- Status Usuario Destino -->
+                      <span class="px-2 py-0.5 rounded-full border inline-flex items-center gap-1"
+                        [ngClass]="{
+                          'bg-blue-100 text-blue-800 border-blue-300': getUserPermissionStatus(targetUserReplicate, perm.id).type === 'ALLOW',
+                          'bg-rose-100 text-rose-800 border-rose-300': getUserPermissionStatus(targetUserReplicate, perm.id).type === 'DENY',
+                          'bg-slate-100 text-slate-400 border-slate-200': getUserPermissionStatus(targetUserReplicate, perm.id).type === 'NONE'
+                        }">
+                        <i class="bi text-[9px]" [ngClass]="getUserPermissionStatus(targetUserReplicate, perm.id).type === 'ALLOW' ? 'bi-check-circle-fill' : (getUserPermissionStatus(targetUserReplicate, perm.id).type === 'DENY' ? 'bi-x-circle-fill' : 'bi-dash-circle')"></i>
+                        <span>{{ getPermissionStatusLabel(targetUserReplicate, perm.id, 'Dest') }}</span>
+                      </span>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer Bar: Botón de Ejecución -->
+      <div class="px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between shrink-0">
+        <span class="text-xs text-slate-600 font-medium">
+          <strong class="text-slate-900">{{ selectedPerfilIdsToReplicate.length }}</strong> perfil(es) y 
+          <strong class="text-slate-900">{{ selectedPermissionIdsToReplicate.length }}</strong> permiso(s) seleccionados para replicación.
+        </span>
+
+        <div class="flex items-center gap-2">
+          <button (click)="cerrarCentroControl()" type="button" 
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+            Cerrar
+          </button>
+
+          <button (click)="ejecutarReplicacionPermisos()" [disabled]="procesandoReplicacion || !sourceUserReplicate || !targetUserReplicate"
+            class="px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-700 shadow-md shadow-amber-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
+            <i class="bi" [ngClass]="procesandoReplicacion ? 'bi-arrow-repeat animate-spin' : 'bi-copy'"></i>
+            <span>{{ procesandoReplicacion ? 'Replicando Permisos...' : 'Ejecutar Replicación de Permisos' }}</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
@@ -1265,5 +1670,234 @@
         <span>Guardar Miembros</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL DE VERIFICACIÓN Y VISTA PREVIA DE SINCRONIZACIÓN SIESA NÓMINA WEB -->
+<div *ngIf="mostrarModalSiesaPreview" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-fadeIn">
+  <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Modal Header -->
+    <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+          <i class="bi bi-cloud-arrow-down-fill text-lg"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white uppercase tracking-tight flex items-center gap-2">
+            <span>Vista Previa de Sincronización Siesa Nómina</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">Modo Verificación</span>
+          </h2>
+          <p class="text-xs text-slate-400 font-medium">Revisa el informe de cambios antes de confirmar su aplicación en las bases de datos</p>
+        </div>
+      </div>
+      <button type="button" (click)="cerrarPreviewSiesa()" class="text-slate-400 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-slate-800">
+        <i class="bi bi-x-lg text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="cargandoSiesaPreview" class="flex flex-col items-center justify-center py-20 px-6 gap-3 text-slate-500">
+      <div class="relative flex items-center justify-center">
+        <div class="w-14 h-14 rounded-full border-4 border-amber-200 border-t-amber-600 animate-spin"></div>
+        <i class="bi bi-cloud-download text-amber-600 absolute text-lg"></i>
+      </div>
+      <div class="text-center">
+        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Escaneando Siesa Nómina Web...</h4>
+        <p class="text-xs text-slate-400 font-medium mt-0.5">Analizando contratos activos y comparando con los registros de Saint (sin modificar datos)</p>
+      </div>
+    </div>
+
+    <!-- Content when loaded -->
+    <div *ngIf="!cargandoSiesaPreview && siesaPreviewSummary" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+      
+      <!-- Metrics Cards Header -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 flex items-center gap-1">
+            <i class="bi bi-people-fill text-slate-500"></i> Leídos en Siesa
+          </div>
+          <div class="text-2xl font-black text-slate-800">{{ siesaPreviewSummary.siesa_activos_leidos }}</div>
+          <div class="text-[10px] text-slate-400 font-medium mt-0.5">Contratos activos analizados</div>
+        </div>
+
+        <div (click)="setActiveSiesaTab('nuevos')" class="p-4 rounded-2xl border transition-all cursor-pointer shadow-2xs"
+             [ngClass]="activeSiesaTab === 'nuevos' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20' : 'bg-slate-50 border-slate-200/80 hover:bg-emerald-50/40'">
+          <div class="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1">
+            <i class="bi bi-person-plus-fill"></i> Nuevos a Crear
+          </div>
+          <div class="text-2xl font-black text-emerald-700">{{ siesaPreviewSummary.nuevos_creados }}</div>
+          <div class="text-[10px] text-emerald-600/80 font-semibold mt-0.5">Nuevos colaboradores en Siesa</div>
+        </div>
+
+        <div (click)="setActiveSiesaTab('actualizados')" class="p-4 rounded-2xl border transition-all cursor-pointer shadow-2xs"
+             [ngClass]="activeSiesaTab === 'actualizados' ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20' : 'bg-slate-50 border-slate-200/80 hover:bg-blue-50/40'">
+          <div class="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 flex items-center gap-1">
+            <i class="bi bi-pencil-square"></i> A Actualizar
+          </div>
+          <div class="text-2xl font-black text-blue-700">{{ siesaPreviewSummary.actualizados }}</div>
+          <div class="text-[10px] text-blue-600/80 font-semibold mt-0.5">Cambios de cargo, datos o estado</div>
+        </div>
+
+        <div (click)="setActiveSiesaTab('inactivados')" class="p-4 rounded-2xl border transition-all cursor-pointer shadow-2xs"
+             [ngClass]="activeSiesaTab === 'inactivados' ? 'bg-rose-50/80 border-rose-300 ring-2 ring-rose-500/20' : 'bg-slate-50 border-slate-200/80 hover:bg-rose-50/40'">
+          <div class="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-1 flex items-center gap-1">
+            <i class="bi bi-person-x-fill"></i> Retiros / Inactivar
+          </div>
+          <div class="text-2xl font-black text-rose-700">{{ siesaPreviewSummary.inactivados_retiros }}</div>
+          <div class="text-[10px] text-rose-600/80 font-semibold mt-0.5">No figuran activos en Siesa</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex border-b border-slate-200 gap-2">
+        <button (click)="setActiveSiesaTab('nuevos')" 
+                class="py-2.5 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2"
+                [ngClass]="activeSiesaTab === 'nuevos' ? 'border-emerald-600 text-emerald-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          <i class="bi bi-person-plus-fill"></i>
+          <span>Nuevos a Crear</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800">{{ siesaPreviewSummary.detalles?.nuevos?.length || 0 }}</span>
+        </button>
+
+        <button (click)="setActiveSiesaTab('actualizados')" 
+                class="py-2.5 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2"
+                [ngClass]="activeSiesaTab === 'actualizados' ? 'border-blue-600 text-blue-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          <i class="bi bi-pencil-square"></i>
+          <span>Modificaciones / Cambios</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">{{ siesaPreviewSummary.detalles?.actualizados?.length || 0 }}</span>
+        </button>
+
+        <button (click)="setActiveSiesaTab('inactivados')" 
+                class="py-2.5 px-4 text-xs font-bold transition-all border-b-2 flex items-center gap-2"
+                [ngClass]="activeSiesaTab === 'inactivados' ? 'border-rose-600 text-rose-700 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-700'">
+          <i class="bi bi-person-x-fill"></i>
+          <span>Retiros a Inactivar</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800">{{ siesaPreviewSummary.detalles?.inactivados?.length || 0 }}</span>
+        </button>
+      </div>
+
+      <!-- Tab Content: NUEVOS -->
+      <div *ngIf="activeSiesaTab === 'nuevos'" class="flex flex-col gap-3">
+        <div *ngIf="!siesaPreviewSummary?.detalles?.nuevos?.length" class="py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <i class="bi bi-check-circle text-3xl text-emerald-500 block mb-2"></i>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-600">No se detectaron colaboradores nuevos</p>
+          <p class="text-[11px] text-slate-400">Todos los asalariados activos en Siesa ya están registrados en Saint.</p>
+        </div>
+
+        <div *ngIf="siesaPreviewSummary?.detalles?.nuevos?.length" class="overflow-x-auto border border-slate-200 rounded-2xl shadow-2xs">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-widest text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-3 pl-4">Cédula</th>
+                <th class="p-3">Nombre Completo</th>
+                <th class="p-3">Cargo</th>
+                <th class="p-3">Centro de Costo</th>
+                <th class="p-3">Fecha Ingreso</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium">
+              <tr *ngFor="let n of siesaPreviewSummary?.detalles?.nuevos || []" class="hover:bg-emerald-50/40 transition-colors">
+                <td class="p-3 pl-4 font-mono font-bold text-slate-700">{{ n.cedula }}</td>
+                <td class="p-3 font-bold text-slate-900">{{ n.nombre_completo }}</td>
+                <td class="p-3 font-semibold text-emerald-700 bg-emerald-50/50 rounded-lg">{{ n.cargo }}</td>
+                <td class="p-3 text-slate-600">{{ n.centro_costo }}</td>
+                <td class="p-3 text-slate-500 font-mono text-[11px]">{{ n.fecha_ingreso }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: ACTUALIZADOS -->
+      <div *ngIf="activeSiesaTab === 'actualizados'" class="flex flex-col gap-3">
+        <div *ngIf="!siesaPreviewSummary?.detalles?.actualizados?.length" class="py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <i class="bi bi-check-circle text-3xl text-blue-500 block mb-2"></i>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-600">No hay modificaciones pendientes</p>
+          <p class="text-[11px] text-slate-400">Los datos de todos los colaboradores coinciden exactamente con Siesa.</p>
+        </div>
+
+        <div *ngIf="siesaPreviewSummary?.detalles?.actualizados?.length" class="space-y-2">
+          <div *ngFor="let act of siesaPreviewSummary?.detalles?.actualizados || []" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs hover:border-blue-300 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-xs">{{ act.nombre_completo }}</span>
+                <span class="font-mono text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-bold">C.C. {{ act.cedula }}</span>
+              </div>
+            </div>
+
+            <!-- Badges de Cambios Específicos -->
+            <div class="flex flex-wrap gap-2">
+              <div *ngFor="let c of act.cambios" class="px-3 py-1.5 bg-blue-50/80 border border-blue-200/80 rounded-xl text-[11px] flex items-center gap-1.5">
+                <span class="font-bold text-blue-900 uppercase text-[9px] tracking-wider">{{ c.campo }}:</span>
+                <span class="text-slate-400 line-through text-[10px]">{{ c.anterior }}</span>
+                <i class="bi bi-arrow-right text-blue-600 text-[10px]"></i>
+                <span class="font-extrabold text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">{{ c.nuevo }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: INACTIVADOS -->
+      <div *ngIf="activeSiesaTab === 'inactivados'" class="flex flex-col gap-3">
+        <div *ngIf="!siesaPreviewSummary?.detalles?.inactivados?.length" class="py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <i class="bi bi-check-circle text-3xl text-emerald-500 block mb-2"></i>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-600">No se detectaron retiros ni inactivaciones</p>
+          <p class="text-[11px] text-slate-400">Todos los colaboradores activos en Saint continúan vigentes en Siesa.</p>
+        </div>
+
+        <div *ngIf="siesaPreviewSummary?.detalles?.inactivados?.length" class="space-y-3">
+          <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs font-medium">
+            <i class="bi bi-exclamation-triangle-fill text-rose-600 text-base shrink-0"></i>
+            <span><strong>Atención:</strong> Los siguientes colaboradores figuran como retirados en Siesa. Su estado pasará a <strong>INACTIVO</strong> en Saint y Conecta.</span>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-2xs">
+            <table class="w-full text-xs text-left border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-widest text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-3 pl-4">Cédula</th>
+                  <th class="p-3">Nombre Completo</th>
+                  <th class="p-3">Cargo</th>
+                  <th class="p-3">Correo</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium">
+                <tr *ngFor="let inact of siesaPreviewSummary?.detalles?.inactivados || []" class="hover:bg-rose-50/40 transition-colors">
+                  <td class="p-3 pl-4 font-mono font-bold text-rose-700">{{ inact.cedula }}</td>
+                  <td class="p-3 font-bold text-slate-900">{{ inact.nombre_completo }}</td>
+                  <td class="p-3 text-slate-600">{{ inact.cargo }}</td>
+                  <td class="p-3 text-slate-500 font-mono text-[11px]">{{ inact.correo_corporativo }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+      <div class="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+        <i class="bi bi-info-circle text-amber-600"></i>
+        <span>Los cambios solo se aplicarán al presionar el botón de confirmación.</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" (click)="cerrarPreviewSiesa()" [disabled]="ejecutandoSiesaSync"
+                class="px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors disabled:opacity-50">
+          Cancelar
+        </button>
+
+        <button type="button" (click)="confirmarYEjecutarSiesaSync()" [disabled]="ejecutandoSiesaSync"
+                class="px-5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-600 to-emerald-600 text-white hover:from-amber-700 hover:to-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
+          <i *ngIf="ejecutandoSiesaSync" class="bi bi-arrow-repeat animate-spin text-sm"></i>
+          <i *ngIf="!ejecutandoSiesaSync" class="bi bi-check-circle-fill text-sm"></i>
+          <span>Confirmar y Aplicar Cambios</span>
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>

@@ -1,24 +1,9 @@
-import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MoldService } from '../../../services/mold.service';
+import { MoldService, MoldZone } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
-import { CdkDragEnd } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
-import { getGarmentTemplate } from '../garment-templates';
-
-interface MoldPart {
-  id?: number;
-  name: string;
-  field_name?: string;
-  garment_component_id?: number;
-  position_x: number | null;
-  position_y: number | null;
-  item_type: string;
-  is_mandatory: boolean;
-  editing?: boolean;
-  view?: 'front' | 'back';
-  description?: string;
-}
+import { MoldPart, ZONE_TYPE_OPTIONS } from './moldes-admin.models';
 
 @Component({
   selector: 'app-moldes-admin',
@@ -40,260 +25,185 @@ export class MoldesAdminComponent implements OnInit {
   moldCategories: any[] = [];
   showCategoryManager = false;
 
-  // SVG Logic
-  viewBox: string = '0 0 200 200';
+  // Views & Images
+  viewBox = '0 0 200 200';
   currentTemplate: any = null;
-  customImageUrl: string = '';
-  backImageUrl: string = '';
+  customImageUrl = '';
+  backImageUrl = '';
   pendingImageFile: File | null = null;
   pendingBackImageFile: File | null = null;
+  activeTab: 'molde' | 'formulario' = 'molde';
   activeView: 'front' | 'back' = 'front';
-  activeTab: 'molde' | 'formulario' | 'texto' = 'molde';
+  imageLoadError = false;
+  isDraggingGarment = false;
 
-  // Parts / Pins
+  // Global Operations & Machines
+  globalOperations: any[] = [];
+  machinesList: any[] = [];
+
+  // Parts
   parts: MoldPart[] = [];
-  backParts: MoldPart[] = [];
   availableComponents: any[] = [];
-  selectedComponentId: number | null = null;
-  
-  isNewPart = false;
+  globalGarmentPartsCatalog: any[] = [];
 
-  // Pin pendiente para creación diferida
-  pendingPin: { x: number | null; y: number | null } | null = null;
-  
-  // Text view
-  textContent = '';
-  showTextSuggestions = false;
-  textSuggestionResults: any[] = [];
+  // Zonas Anatómicas
+  zones: MoldZone[] = [];
+  isDrawingZone = false;
+  drawingZonePoints: { x: number; y: number }[] = [];
+  drawingCurrentMousePos: { x: number; y: number } | null = null;
+  showZoneNameModal = false;
+  pendingZoneName = '';
+  pendingZoneType = 'cuello';
+  pendingZoneColor = '';
+  editingZoneIndex: number | null = null;
+  zoneTypeOptions = ZONE_TYPE_OPTIONS;
 
-  // Promote general to positioned
-  promotingPartIndex: number | null = null;
-  awaitingPosition = false;
+  // Zone Parts Drawer
+  selectedZoneForParts: MoldZone | null = null;
+  showZonePartsDrawer = false;
+  zoneCatalogParts: any[] = [];
+  loadingZoneCatalog = false;
 
-  // Edit modal state
-  showEditModal = false;
-  editingPart: MoldPart | null = null;
-  showInventorySearch = false;
-
-  // Add item modal
-  showAddModal = false;
-  addModalType: 'general' | 'component' = 'general';
-  addName = '';
-  addSearchQuery = '';
-  addItemType = 'parte';
-  showAddSuggestions = false;
-  popoverPosition: { x: number; y: number } | null = null;
-
-  // Inline editing
-  inlineAdding = false;
-  inlineAddingType: 'general' | 'component' = 'general';
+  // Tab Estructura State (Inline Edit / Add)
   inlineEditingPart: MoldPart | null = null;
   inlineEditName = '';
-  inlineEditType = 'parte';
+  inlineEditType: 'tela' | 'insumo' | 'parte' = 'parte';
+  inlineAdding = false;
+  inlineAddingType: 'material' | 'structural' = 'material';
+  addItemType: 'tela' | 'insumo' | 'parte' = 'parte';
+  addSearchQuery = '';
+  showAddSuggestions = false;
 
-  startInlineEdit(part: MoldPart): void {
-    this.inlineEditingPart = part;
-    this.inlineEditName = part.name;
-    this.inlineEditType = part.item_type;
-  }
+  // Modals & UI State
+  showEditModal = false;
+  showAddModal = false;
+  editingPart: MoldPart | null = null;
+  isNewPart = false;
+  pendingPin: { x: number | null; y: number | null } | null = null;
+  showInventorySearch = false;
+  inventorySearchFilterType: 'todos' | 'tela' | 'insumo' = 'todos';
+  awaitingPosition = false;
 
-  saveInlineEdit(): void {
-    if (this.inlineEditingPart && this.inlineEditName.trim()) {
-      this.inlineEditingPart.name = this.inlineEditName.trim();
-      this.inlineEditingPart.item_type = this.inlineEditType as any;
-      this.inlineEditingPart = null;
-      if (this.activeTab === 'texto') this.buildTextContent();
-      this.saveDraft();
-    }
-  }
 
-  cancelInlineEdit(): void {
-    this.inlineEditingPart = null;
-  }
 
-  startInlineAdd(type: 'general' | 'component', itemType: string = 'parte'): void {
-    this.inlineAdding = true;
-    this.inlineAddingType = type;
-    this.inlineEditName = '';
-    this.inlineEditType = itemType;
-  }
-
-  confirmInlineAdd(): void {
-    const finalName = this.inlineEditName.trim();
-    if (!finalName) {
-      this.inlineAdding = false;
-      return;
-    }
-
-    const comp = this.availableComponents.find(c =>
-      c.display_name.toLowerCase() === finalName.toLowerCase()
-    );
-    const newPart: MoldPart = {
-      name: finalName,
-      garment_component_id: comp?.id || undefined,
-      position_x: null,
-      position_y: null,
-      item_type: this.inlineEditType as any,
-      is_mandatory: true,
-      view: this.activeView
-    };
-
-    if (this.activeView === 'back') {
-      this.backParts.push(newPart);
-    } else {
-      this.parts.push(newPart);
-    }
-    
-    this.inlineAdding = false;
-    if (this.activeTab === 'texto') this.buildTextContent();
-    this.saveDraft();
-  }
-
-  // Text validation
-  textWarnings: string[] = [];
-
-  // States
-  saving = false;
+  // Feedback State
   loading = false;
-  showGeneralSelector = false;
+  saving = false;
   errorMessage = '';
   successMessage = '';
 
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    
-    // Si estamos editando inline
-    if (this.inlineEditingPart) {
-      const editingRow = document.querySelector('.inline-editing-row');
-      if (editingRow && !editingRow.contains(target)) {
-        if (this.inlineEditName.trim() !== this.inlineEditingPart.name || this.inlineEditType !== this.inlineEditingPart.item_type) {
-          this.saveInlineEdit();
-        } else {
-          this.cancelInlineEdit();
-        }
-      }
-    }
-
-    // Si estamos agregando inline
-    if (this.inlineAdding) {
-      const addingRow = document.querySelector('.inline-adding-row');
-      if (addingRow && !addingRow.contains(target) && !target.closest('.bi-plus-circle')) {
-        if (this.inlineEditName.trim()) {
-          this.confirmInlineAdd();
-        } else {
-          this.inlineAdding = false;
-        }
-      }
-    }
-  }
+  private readonly DRAFT_KEY = 'draft_mold_admin';
 
   constructor(
     private moldService: MoldService,
+    private authService: AuthService,
     private route: ActivatedRoute,
-    private router: Router,
-    public authService: AuthService
+    private router: Router
   ) {}
 
-  // ==================== PERMISSIONS ====================
-  // 1 = Admin del sistema (ve todo)
-  // 41 = Crear, 42 = Editar, 43 = Eliminar, 44 = Subir imagen, 45 = Categorías
+  get canCreate(): boolean { return this.authService.hasAnyPermission([1, 46]); }
+  get canEdit(): boolean { return this.authService.hasAnyPermission([1, 47]); }
+  get canUploadImage(): boolean { return this.authService.hasAnyPermission([1, 46, 47]); }
 
-  get canCreate(): boolean { return this.authService.hasAnyPermission([1, 41]); }
-  get canEdit(): boolean { return this.authService.hasAnyPermission([1, 42]); }
-  get canDelete(): boolean { return this.authService.hasAnyPermission([1, 43]); }
-  get canUploadImage(): boolean { return this.authService.hasAnyPermission([1, 44]); }
-  get canManageCategories(): boolean { return this.authService.hasAnyPermission([1, 45]); }
+  get hasBackView(): boolean {
+    return !!this.backImageUrl || !!this.getFallbackBackImage();
+  }
+
+  get activeImage(): string {
+    if (this.activeView === 'back') {
+      return this.backImageUrl || this.getFallbackBackImage() || this.customImageUrl || '';
+    }
+    return this.customImageUrl || '';
+  }
+
+  getFallbackBackImage(): string | null {
+    const name = (this.moldName || '').toLowerCase();
+    if (name.includes('camisa')) return 'assets/garments/camisa_back.png';
+    if (name.includes('chaqueta')) return 'assets/garments/chaqueta_back.png';
+    if (name.includes('pantalon') || name.includes('pantalón')) return 'assets/garments/pantalon_back.png';
+    if (name.includes('overol')) return 'assets/garments/overol_back.png';
+    if (name.includes('polo')) return 'assets/garments/polo_back.png';
+    if (name.includes('buzo')) return 'assets/garments/buzo_back.png';
+    if (name.includes('camiseta')) return 'assets/garments/camiseta_back.png';
+    if (name.includes('chaleco')) return 'assets/garments/chaleco_back.png';
+    if (name.includes('delantal')) return 'assets/garments/delantal_back.png';
+    if (name.includes('gorra')) return 'assets/garments/gorra_back.png';
+    return null;
+  }
+
+  toggleActiveView(): void {
+    if (this.hasBackView || this.activeView === 'back' || !this.isReadOnly) {
+      this.activeView = this.activeView === 'front' ? 'back' : 'front';
+    }
+  }
+
+  get activeParts(): MoldPart[] {
+    return this.parts;
+  }
+  set activeParts(val: MoldPart[]) {
+    this.parts = val;
+  }
+
+  get positionedParts(): MoldPart[] {
+    return this.parts.filter(p => p.position_x !== null);
+  }
+  get generalParts(): MoldPart[] {
+    return this.parts.filter(p => p.position_x === null);
+  }
+  get materialParts(): MoldPart[] {
+    return this.parts.filter(p => p.item_type === 'tela' || p.item_type === 'insumo');
+  }
+  get structuralParts(): MoldPart[] {
+    return this.parts.filter(p => p.item_type === 'parte');
+  }
+  get allCombinedParts(): MoldPart[] {
+    return this.parts;
+  }
+
+  get uniqueLogicalZonesCount(): number {
+    const seen = new Set<string>();
+    for (const z of this.zones) {
+      seen.add((z.zone_type || z.name || `z_${z.id}`).toLowerCase().trim());
+    }
+    return seen.size;
+  }
+
+  get activeZones(): MoldZone[] {
+    return this.zones.filter(z => (z.view || 'front') === this.activeView);
+  }
+  get sortedActiveZones(): MoldZone[] {
+    return [...this.activeZones].sort((a, b) => this.getZoneArea(b) - this.getZoneArea(a));
+  }
+
+  get filteredAddSuggestions(): any[] {
+    const q = this.addSearchQuery.toLowerCase().trim();
+    if (!q) return this.availableComponents.slice(0, 50);
+    return this.availableComponents.filter(c =>
+      (c.display_name || '').toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q)
+    ).slice(0, 50);
+  }
 
   ngOnInit(): void {
-    this.moldId = this.route.snapshot.params['id'] ? Number(this.route.snapshot.params['id']) : null;
-    this.isEditMode = !!this.moldId;
-    
-    // Read-only si el query param es 'view' O si no tiene permiso de edición
-    const isViewMode = this.route.snapshot.queryParams['mode'] === 'view';
-    this.isReadOnly = isViewMode || (this.isEditMode && !this.canEdit) || (!this.isEditMode && !this.canCreate);
-    
     this.loadMoldCategories();
+    this.loadMoldMachines();
+    this.loadGarmentPartsCatalog();
 
-    if (this.isEditMode && this.moldId) {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    const isViewRoute = this.route.snapshot.url.some(segment => segment.path === 'view');
+
+    if (idParam) {
+      this.moldId = parseInt(idParam, 10);
+      this.isEditMode = !isViewRoute;
+      this.isReadOnly = isViewRoute;
       this.loadMold();
     } else {
+      this.isEditMode = false;
+      this.isReadOnly = false;
       this.checkDraft();
     }
   }
 
-  switchToEditMode(): void {
-    this.isReadOnly = false;
-    if (this.moldId) {
-      this.router.navigate(['/moldes/admin', this.moldId]);
-    }
-  }
-
-  // ==================== DRAFT LOGIC ====================
-  private readonly DRAFT_KEY = 'draft_mold_admin';
-
-  saveDraft(): void {
-    if (this.isReadOnly) return;
-    
-    const draft = {
-      moldName: this.moldName,
-      moldDescription: this.moldDescription,
-      mold_category_id: this.mold_category_id,
-      parts: this.parts,
-      backParts: this.backParts,
-      customImageUrl: this.customImageUrl,
-      backImageUrl: this.backImageUrl,
-      timestamp: new Date().getTime()
-    };
-    localStorage.setItem(this.DRAFT_KEY, JSON.stringify(draft));
-  }
-
-  checkDraft(): void {
-    const saved = localStorage.getItem(this.DRAFT_KEY);
-    if (saved) {
-      const draft = JSON.parse(saved);
-      if (draft.moldName || draft.parts.length > 0 || draft.backParts.length > 0) {
-        Swal.fire({
-          title: '¿Restaurar borrador?',
-          text: `Tienes un trabajo pendiente del ${new Date(draft.timestamp).toLocaleString()}. ¿Deseas recuperarlo?`,
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, restaurar',
-          cancelButtonText: 'No, descartar',
-          confirmButtonColor: '#4f46e5'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            this.restoreDraft(draft);
-          } else {
-            this.clearDraft();
-          }
-        });
-      }
-    }
-  }
-
-  restoreDraft(draft: any): void {
-    this.moldName = draft.moldName || '';
-    this.moldDescription = draft.moldDescription || '';
-    this.mold_category_id = draft.mold_category_id || null;
-    this.parts = draft.parts || [];
-    this.backParts = draft.backParts || [];
-    this.customImageUrl = draft.customImageUrl || '';
-    this.backImageUrl = draft.backImageUrl || '';
-    
-    // Sincronizar la imagen actual del diseño
-    if (this.activeView === 'back' && this.backImageUrl) {
-      this.currentTemplate = { image: this.backImageUrl };
-    } else if (this.customImageUrl) {
-      this.currentTemplate = { image: this.customImageUrl };
-    }
-    
-    Swal.fire({ title: 'Borrador restaurado', icon: 'success', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-  }
-
-  clearDraft(): void {
-    localStorage.removeItem(this.DRAFT_KEY);
-  }
+  // ==================== DATA LOADING ====================
 
   loadMold(): void {
     this.moldService.getMold(this.moldId!).subscribe({
@@ -304,95 +214,468 @@ export class MoldesAdminComponent implements OnInit {
         this.mold_category_id = mold.mold_category_id || null;
         this.customImageUrl = mold.image_signed_url || '';
         this.backImageUrl = mold.back_image_signed_url || '';
+        this.globalOperations = mold.global_operations || mold.globalOperations || [];
         this.imageLoadError = false;
-        
-        const allParts = mold.parts || [];
-        this.parts = allParts.filter((p: any) => p.view !== 'back');
-        this.backParts = allParts.filter((p: any) => p.view === 'back');
 
-        // Load garment template from the mold image if available
-        if (this.customImageUrl || this.backImageUrl) {
-          this.currentTemplate = { image: this.customImageUrl || this.backImageUrl };
+        this.zones = (mold.zones || []).map((z: any) => {
+          let parsedPath = null;
+          if (Array.isArray(z.path_data)) {
+            parsedPath = z.path_data;
+          } else if (typeof z.path_data === 'string' && z.path_data.trim()) {
+            try {
+              let p = JSON.parse(z.path_data);
+              if (typeof p === 'string') p = JSON.parse(p);
+              if (Array.isArray(p)) parsedPath = p;
+            } catch (e) {
+              parsedPath = null;
+            }
+          }
+          if (parsedPath) {
+            parsedPath = parsedPath.map((pt: any) => ({
+              x: parseFloat(pt.x) || 0,
+              y: parseFloat(pt.y) || 0
+            }));
+          }
+
+          return {
+            id: z.id,
+            name: z.name,
+            zone_type: z.zone_type || 'general',
+            position_x: parseFloat(z.position_x) || 0,
+            position_y: parseFloat(z.position_y) || 0,
+            width: parseFloat(z.width) || 20,
+            height: parseFloat(z.height) || 20,
+            path_data: parsedPath,
+            view: (z.view || 'front') as 'front' | 'back',
+            color: z.color || this.getZoneColor(z.zone_type || 'general')
+          };
+        });
+
+        const allParts = mold.parts || [];
+        this.parts = allParts.map((p: any) => this.enrichPart(p));
+
+        if (this.customImageUrl) {
+          this.currentTemplate = { image: this.customImageUrl };
         }
       },
-      error: (err) => {
-        console.error('Error loading mold:', err);
-        Swal.fire('Error', 'No se pudo cargar la información del molde', 'error');
-      }
+      error: () => Swal.fire('Error', 'No se pudo cargar la información del molde', 'error')
     });
   }
 
   loadMoldCategories(): void {
-    this.moldService.getCategories().subscribe({
+    this.moldService.getCategories().subscribe({ next: (res: any) => this.moldCategories = res.data || [] });
+  }
+
+  loadMoldMachines(): void {
+    this.moldService.getMoldMachines().subscribe({ next: (res: any) => this.machinesList = res.data || [] });
+  }
+
+  loadGarmentPartsCatalog(): void {
+    this.moldService.getGarmentParts(undefined, true).subscribe({
       next: (res: any) => {
-        this.moldCategories = res.data || [];
-      },
-      error: () => {}
-    });
-  }
-
-  onCategoryChange(): void {
-    // Categories no longer control template — template comes from uploaded image
-    this.availableComponents = [];
-  }
-
-  generateAssembledGarment(description: string, categoryId: number): any {
-    return getGarmentTemplate(description, categoryId);
-  }
-
-  loadAvailableComponents(categoryId: number): void {
-    this.moldService.getComponentsByCategory(categoryId).subscribe({
-      next: (res) => {
-        this.availableComponents = res.data;
-      },
-      error: (err) => {
-        console.error('Error loading components:', err);
+        this.globalGarmentPartsCatalog = res.data || [];
+        if (this.parts && this.parts.length > 0) {
+          this.parts = this.parts.map((p: any) => this.enrichPart(p));
+        }
       }
     });
   }
 
-  imageLoadError = false;
+  enrichPart(p: any): MoldPart {
+    const rawTypes = (p.types && p.types.length > 0) ? p.types : (p.garmentPart?.types || p.garment_part?.types || []);
+    const masterGarmentPart = p.garmentPart || p.garment_part || this.globalGarmentPartsCatalog.find(
+      (gp: any) => (p.garment_part_id && Number(gp.id) === Number(p.garment_part_id)) || (gp.name && p.name && gp.name.trim().toLowerCase() === p.name.trim().toLowerCase())
+    );
+    const masterTypes = masterGarmentPart?.types || [];
 
-  onImageError(): void {
-    this.imageLoadError = true;
+    const matchedZone = this.zones?.find(z => (p.mold_zone_id && z.id === p.mold_zone_id) || (p.zone_name && z.name === p.zone_name));
+
+    return {
+      ...p,
+      zone_type: p.zone_type || matchedZone?.zone_type || '',
+      garment_part_id: p.garment_part_id || masterGarmentPart?.id || null,
+      width: p.width || 22,
+      height: p.height || 18,
+      types: rawTypes && rawTypes.length > 0 ? rawTypes.map((t: any) => {
+        const masterType = masterTypes.find((mt: any) =>
+          (t.garment_part_type_id && Number(mt.id) === Number(t.garment_part_type_id)) ||
+          (mt.name && t.name && mt.name.trim().toLowerCase() === t.name.trim().toLowerCase())
+        );
+
+        let materials = (t.materials && Array.isArray(t.materials) && t.materials.length > 0)
+          ? t.materials
+          : (masterType?.materials && Array.isArray(masterType.materials) && masterType.materials.length > 0 ? masterType.materials : ['Tela Principal', 'Hilo de Confección']);
+
+        materials = materials.map((m: string) => {
+          if (!m) return m;
+          if (m.toLowerCase() === 'tela') return 'Tela Principal';
+          if (m.toLowerCase() === 'hilo') return 'Hilo de Confección';
+          return m;
+        });
+
+        return {
+          ...t,
+          materials,
+          is_disabled: t.is_disabled === true || t.is_active === false,
+          is_active: t.is_disabled !== true && t.is_active !== false,
+          operations: (t.operations && t.operations.length > 0) ? t.operations : (masterType?.operations || [])
+        };
+      }) : [
+        { name: 'Estándar', technical_description: '', materials: ['Tela Principal', 'Hilo de Confección'], total_time: 0, is_default: true, operations: [] }
+      ]
+    };
+  }
+
+  // ==================== ZONAS & CANVAS ====================
+
+  getZoneColor(zoneType: string): string {
+    return this.zoneTypeOptions.find(z => z.value === zoneType)?.color || '#64748b';
+  }
+
+  getZoneLabel(zoneType: string): string {
+    return this.zoneTypeOptions.find(z => z.value === zoneType)?.label || zoneType;
+  }
+
+  getZoneArea(zone: MoldZone): number {
+    if (zone.path_data && zone.path_data.length >= 3) {
+      let area = 0;
+      const pts = zone.path_data;
+      for (let i = 0; i < pts.length; i++) {
+        const j = (i + 1) % pts.length;
+        area += pts[i].x * pts[j].y;
+        area -= pts[j].x * pts[i].y;
+      }
+      return Math.abs(area) / 2;
+    }
+    return (parseFloat(zone.width as any) || 20) * (parseFloat(zone.height as any) || 20);
+  }
+
+  getZoneCenter(zone: MoldZone): { x: number; y: number } {
+    if (zone.path_data && zone.path_data.length > 0) {
+      const sumX = zone.path_data.reduce((acc, p) => acc + (p.x || 0), 0);
+      const sumY = zone.path_data.reduce((acc, p) => acc + (p.y || 0), 0);
+      return {
+        x: Math.round((sumX / zone.path_data.length) * 100) / 100,
+        y: Math.round((sumY / zone.path_data.length) * 100) / 100
+      };
+    }
+    return {
+      x: Math.round(((parseFloat(zone.position_x as any) || 0) + ((parseFloat(zone.width as any) || 20) / 2)) * 100) / 100,
+      y: Math.round(((parseFloat(zone.position_y as any) || 0) + ((parseFloat(zone.height as any) || 20) / 2)) * 100) / 100
+    };
+  }
+
+  toggleZoneDrawMode(event?: MouseEvent): void {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+    this.isDrawingZone = !this.isDrawingZone;
+    this.editingZoneIndex = null;
+    this.drawingZonePoints = [];
+    this.drawingCurrentMousePos = null;
+  }
+
+  undoLastPoint(): void {
+    if (this.drawingZonePoints.length > 0) this.drawingZonePoints.pop();
+  }
+
+  startVertexEdit(zone: MoldZone): void {
+    if (this.isReadOnly) return;
+    this.editingZoneIndex = this.zones.indexOf(zone);
+    if (this.editingZoneIndex === -1) return;
+
+    this.isDrawingZone = true;
+    if (zone.path_data && Array.isArray(zone.path_data) && zone.path_data.length >= 3) {
+      this.drawingZonePoints = zone.path_data.map(p => ({ x: parseFloat((p as any).x) || 0, y: parseFloat((p as any).y) || 0 }));
+    } else {
+      const x = parseFloat(zone.position_x as any) || 20;
+      const y = parseFloat(zone.position_y as any) || 20;
+      const w = parseFloat(zone.width as any) || 20;
+      const h = parseFloat(zone.height as any) || 20;
+      this.drawingZonePoints = [
+        { x, y },
+        { x: x + w, y },
+        { x: x + w, y: y + h },
+        { x, y: y + h }
+      ];
+    }
+    this.drawingCurrentMousePos = null;
+  }
+
+  finishDrawingZone(): void {
+    if (this.drawingZonePoints.length < 3) {
+      Swal.fire('Zona incompleta', 'Debes marcar al menos 3 puntos para formar una zona', 'warning');
+      return;
+    }
+
+    // Actualización de puntos de una zona existente
+    if (this.editingZoneIndex !== null && this.editingZoneIndex >= 0 && this.editingZoneIndex < this.zones.length) {
+      const targetZone = this.zones[this.editingZoneIndex];
+      const xs = this.drawingZonePoints.map(p => p.x);
+      const ys = this.drawingZonePoints.map(p => p.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+
+      targetZone.path_data = this.drawingZonePoints.map(p => ({ x: p.x, y: p.y }));
+      targetZone.position_x = Math.round(minX * 100) / 100;
+      targetZone.position_y = Math.round(minY * 100) / 100;
+      targetZone.width = Math.round(Math.max(4, maxX - minX) * 100) / 100;
+      targetZone.height = Math.round(Math.max(4, maxY - minY) * 100) / 100;
+
+      this.isDrawingZone = false;
+      this.editingZoneIndex = null;
+      this.drawingZonePoints = [];
+      this.drawingCurrentMousePos = null;
+      this.saveDraft();
+
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+      });
+      Toast.fire({
+        icon: 'success',
+        title: `Puntos de "${targetZone.name}" actualizados`
+      });
+      return;
+    }
+
+    // Creación de nueva zona
+    this.editingZoneIndex = null;
+    this.pendingZoneName = '';
+    this.pendingZoneType = 'cuello';
+    this.pendingZoneColor = this.getZoneColor('cuello');
+    this.showZoneNameModal = true;
+  }
+
+  selectZoneTypeAndConfirm(type: string): void {
+    this.pendingZoneType = type;
+    this.pendingZoneColor = this.getZoneColor(type);
+    if (this.editingZoneIndex !== null) this.confirmZoneEdit();
+    else this.confirmZoneCreation();
+  }
+
+  confirmZoneCreation(): void {
+    if (this.drawingZonePoints.length < 3) return;
+    const xs = this.drawingZonePoints.map(p => p.x);
+    const ys = this.drawingZonePoints.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+
+    const newZone: MoldZone = {
+      name: this.getZoneLabel(this.pendingZoneType),
+      zone_type: this.pendingZoneType,
+      zone_nature: 'structural',
+      path_data: this.drawingZonePoints.map(p => ({ x: p.x, y: p.y })),
+      position_x: Math.round(minX * 100) / 100,
+      position_y: Math.round(minY * 100) / 100,
+      width: Math.round(Math.max(4, maxX - minX) * 100) / 100,
+      height: Math.round(Math.max(4, maxY - minY) * 100) / 100,
+      view: this.activeView,
+      color: this.pendingZoneColor || this.getZoneColor(this.pendingZoneType)
+    };
+
+    this.zones.push(newZone);
+    this.showZoneNameModal = false;
+    this.drawingZonePoints = [];
+    this.drawingCurrentMousePos = null;
+    this.isDrawingZone = false;
+    this.saveDraft();
+    this.openZonePartsDrawer(newZone);
+  }
+
+  cancelZoneCreation(): void {
+    this.showZoneNameModal = false;
+    this.editingZoneIndex = null;
+    this.drawingZonePoints = [];
+    this.drawingCurrentMousePos = null;
+    this.isDrawingZone = false;
+  }
+
+  startEditZone(zoneOrIndex: MoldZone | number): void {
+    const zone = typeof zoneOrIndex === 'number' ? this.activeZones[zoneOrIndex] : zoneOrIndex;
+    if (!zone) return;
+    this.editingZoneIndex = this.zones.indexOf(zone);
+    this.pendingZoneName = zone.name;
+    this.pendingZoneType = zone.zone_type || 'cuello';
+    this.pendingZoneColor = zone.color || this.getZoneColor(this.pendingZoneType);
+    this.showZoneNameModal = true;
+  }
+
+  confirmZoneEdit(): void {
+    if (this.editingZoneIndex === null || this.editingZoneIndex < 0) return;
+    const zone = this.zones[this.editingZoneIndex];
+    const oldName = zone.name;
+    zone.zone_type = this.pendingZoneType;
+    zone.name = this.getZoneLabel(this.pendingZoneType);
+    zone.color = this.pendingZoneColor || this.getZoneColor(this.pendingZoneType);
+
+    if (oldName && oldName !== zone.name) {
+      this.parts.forEach(p => {
+        if (p.zone_name === oldName || (zone.id && p.mold_zone_id === zone.id)) p.zone_name = zone.name;
+      });
+    }
+
+    this.editingZoneIndex = null;
+    this.showZoneNameModal = false;
+    this.saveDraft();
+  }
+
+  removeZone(index: number): void {
+    if (index >= 0 && index < this.zones.length) {
+      const target = this.zones[index];
+      this.zones.splice(index, 1);
+
+      // Only remove associated parts if no other zone of the same type/name remains
+      const hasSibling = this.zones.some(z =>
+        z !== target && (
+          (target.zone_type && z.zone_type === target.zone_type) ||
+          z.name === target.name
+        )
+      );
+
+      if (!hasSibling) {
+        this.parts = this.parts.filter(p => p.mold_zone_id !== target.id && p.zone_name !== target.name);
+      }
+
+      if (this.selectedZoneForParts === target) this.closeZonePartsDrawer();
+      this.saveDraft();
+    }
+  }
+
+  // ==================== DRAWER PARTES POR ZONA ====================
+
+  openZonePartsDrawer(zone: MoldZone): void {
+    this.selectedZoneForParts = zone;
+    this.showZonePartsDrawer = true;
+    const zoneType = zone.zone_type || 'general';
+    this.loadingZoneCatalog = true;
+
+    this.moldService.getGarmentPartsByZone(zoneType).subscribe({
+      next: (res: any) => {
+        this.zoneCatalogParts = res.data || [];
+        this.loadingZoneCatalog = false;
+      },
+      error: () => {
+        this.zoneCatalogParts = this.globalGarmentPartsCatalog.filter((p: any) => !p.zone || p.zone === zoneType || p.zone === 'general');
+        this.loadingZoneCatalog = false;
+      }
+    });
+  }
+
+  closeZonePartsDrawer(): void {
+    this.showZonePartsDrawer = false;
+    this.selectedZoneForParts = null;
+  }
+
+  toggleZonePart(garmentPart: any, zone?: MoldZone): void {
+    const targetZone = zone || this.selectedZoneForParts;
+    if (!targetZone || this.isReadOnly) return;
+
+    const partsList = this.parts;
+
+    const targetZName = (targetZone.name || '').toLowerCase().trim();
+    const targetZType = (targetZone.zone_type || '').toLowerCase().trim();
+
+    const existingIndex = partsList.findIndex(p => {
+      const matchZone = (p.mold_zone_id && targetZone.id && p.mold_zone_id === targetZone.id) ||
+        (p.zone_name && targetZName && p.zone_name.toLowerCase().trim() === targetZName) ||
+        (p.zone_type && targetZType && p.zone_type.toLowerCase().trim() === targetZType);
+      const matchPart = (p.garment_part_id && Number(p.garment_part_id) === Number(garmentPart.id)) ||
+        (p.name && garmentPart.name && p.name.toLowerCase() === garmentPart.name.toLowerCase());
+      return matchZone && matchPart;
+    });
+
+    if (existingIndex !== -1) {
+      partsList.splice(existingIndex, 1);
+    } else {
+      const center = this.getZoneCenter(targetZone);
+      const clonedTypes = (garmentPart.types || []).map((t: any) => ({
+        ...t,
+        is_disabled: false,
+        operations: (t.operations || []).map((op: any) => ({ ...op, execution_time: parseFloat(op.execution_time) || 0 }))
+      }));
+
+      const newMoldPart: MoldPart = {
+        name: garmentPart.name,
+        garment_part_id: garmentPart.id,
+        mold_zone_id: targetZone.id || null,
+        zone_name: targetZone.name,
+        zone_type: targetZone.zone_type,
+        item_type: 'parte',
+        is_mandatory: garmentPart.is_mandatory !== false,
+        view: targetZone.view || this.activeView || 'front',
+        position_x: center.x,
+        position_y: center.y,
+        width: 22,
+        height: 18,
+        icon: garmentPart.icon || 'bi-layers',
+        description: garmentPart.description || '',
+        types: clonedTypes
+      };
+      partsList.push(newMoldPart);
+    }
+    this.saveDraft();
+  }
+
+  setPartMandatory(part: MoldPart, isMandatory: boolean): void {
+    part.is_mandatory = isMandatory;
+    this.saveDraft();
+  }
+
+  togglePartVariant(part: MoldPart, typeId: any): void {
+    this.saveDraft();
+  }
+
+  // ==================== CANVAS & IMAGE EVENTS ====================
+
+  onZoneCanvasMouseMove(data: { x: number; y: number; event: MouseEvent }): void {
+    if (!this.isDrawingZone) return;
+    this.drawingCurrentMousePos = { x: data.x, y: data.y };
+  }
+
+  onZoneCanvasDblClick(data?: { x: number; y: number; event: MouseEvent }): void {
+    if (this.isDrawingZone && this.drawingZonePoints.length >= 3) {
+      this.finishDrawingZone();
+    }
+  }
+
+  onCanvasClick(data: { x: number; y: number; event: MouseEvent }): void {
+    if (!this.isDrawingZone || this.isReadOnly) return;
+    const coords = { x: data.x, y: data.y };
+    if (this.drawingZonePoints.length >= 3) {
+      const start = this.drawingZonePoints[0];
+      if (Math.hypot(coords.x - start.x, coords.y - start.y) < 5.0) {
+        this.finishDrawingZone();
+        return;
+      }
+    }
+    this.drawingZonePoints.push(coords);
+  }
+
+  onStartPointClick(event: MouseEvent, index: number): void {
+    if (index === 0 && this.drawingZonePoints.length >= 3) {
+      this.finishDrawingZone();
+    }
   }
 
   onCustomImageUpload(event: Event): void {
-    this.imageLoadError = false;
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        Swal.fire('Error', 'La imagen no puede superar los 5MB', 'error');
-        return;
-      }
-
-      // If mold already exists, upload directly to S3
-      if (this.moldId) {
-        this.moldService.uploadMoldImage(this.moldId, file, this.activeView).subscribe({
-          next: (res: any) => {
-            if (this.activeView === 'back') {
-              this.backImageUrl = res.data?.back_image_signed_url || '';
-            } else {
-              this.customImageUrl = res.data?.image_signed_url || '';
-            }
-            this.saveDraft();
-            Swal.fire({ title: 'Imagen subida', icon: 'success', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
-          },
-          error: () => Swal.fire('Error', 'No se pudo subir la imagen', 'error')
-        });
-      } else {
-        // For new molds, show preview and store file for upload after save
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      if (this.activeView === 'back') {
+        this.pendingBackImageFile = file;
         const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target?.result as string;
-          if (this.activeView === 'back') {
-            this.backImageUrl = dataUrl;
-            this.pendingBackImageFile = file;
-          } else {
-            this.customImageUrl = dataUrl;
-            this.pendingImageFile = file;
-          }
+        reader.onload = (e: any) => {
+          this.backImageUrl = e.target.result;
+          this.saveDraft();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.pendingImageFile = file;
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.customImageUrl = e.target.result;
+          this.currentTemplate = { image: e.target.result };
           this.saveDraft();
         };
         reader.readAsDataURL(file);
@@ -400,594 +683,363 @@ export class MoldesAdminComponent implements OnInit {
     }
   }
 
-  private applyInitialParts(): void {
-    if (this.currentTemplate && !this.isEditMode) {
-      this.parts = [];
-      this.backParts = [];
+  onGarmentDragOver(event: DragEvent): void {
+    if (!this.isReadOnly && this.canUploadImage) {
+      event.preventDefault();
+      this.isDraggingGarment = true;
+    }
+  }
+  onGarmentDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isDraggingGarment = false;
+  }
+  onGarmentDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDraggingGarment = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      const fakeEvent = { target: { files: [file] } } as any;
+      this.onCustomImageUpload(fakeEvent);
+    }
+  }
+  onImageError(): void { this.imageLoadError = true; }
+
+  // ==================== TAB ESTRUCTURA (INLINE EDIT & ADD) ====================
+
+  addGeneralComponent(type: 'tela' | 'insumo' | 'parte'): void {
+    this.activeParts.push({
+      name: `Nuevo ${type.toUpperCase()}`,
+      item_type: type,
+      view: 'front',
+      position_x: null,
+      position_y: null,
+      is_mandatory: true,
+      types: [{ name: 'Estándar', technical_description: '', total_time: 0, is_default: true, operations: [] }]
+    });
+    this.saveDraft();
+  }
+
+  startInlineEdit(part: MoldPart): void {
+    this.inlineEditingPart = part;
+    this.inlineEditName = part.name;
+    this.inlineEditType = (part.item_type || 'parte') as any;
+  }
+
+  saveInlineEdit(): void {
+    if (this.inlineEditingPart && this.inlineEditName.trim()) {
+      this.inlineEditingPart.name = this.inlineEditName.trim();
+      this.inlineEditingPart.item_type = this.inlineEditType;
+      this.inlineEditingPart = null;
+      this.saveDraft();
     }
   }
 
-  toggleView(): void {
-    this.activeView = this.activeView === 'front' ? 'back' : 'front';
-    this.pendingPin = null;
-    this.selectedComponentId = null;
+  cancelInlineEdit(): void { this.inlineEditingPart = null; }
+
+  startInlineAdd(location: 'general' | 'positioned', type: 'material' | 'structural'): void {
+    this.inlineAdding = true;
+    this.inlineAddingType = type;
+    this.addItemType = type === 'material' ? 'insumo' : 'parte';
+    this.addSearchQuery = '';
   }
 
-  get hasBackView(): boolean {
-    return !!this.backImageUrl;
-  }
-
-  get activeImage(): string {
-    if (this.activeView === 'back' && this.currentTemplate?.backImage) {
-      return this.currentTemplate.backImage;
+  confirmInlineAdd(): void {
+    if (!this.addSearchQuery.trim()) {
+      this.inlineAdding = false;
+      return;
     }
-    return this.currentTemplate?.image || '';
+    this.activeParts.push({
+      name: this.addSearchQuery.trim(),
+      item_type: this.addItemType,
+      view: 'front',
+      position_x: null,
+      position_y: null,
+      is_mandatory: false,
+      types: [{ name: 'Estándar', technical_description: '', total_time: 0, is_default: true, operations: [] }]
+    });
+    this.inlineAdding = false;
+    this.addSearchQuery = '';
+    this.saveDraft();
   }
 
-  get activeParts(): MoldPart[] {
-    return this.activeView === 'back' ? this.backParts : this.parts;
-  }
-
-  get positionedParts(): MoldPart[] {
-    return this.activeParts.filter(p => p.position_x !== null);
-  }
-
-  get generalParts(): MoldPart[] {
-    return this.activeParts.filter(p => p.position_x === null);
-  }
-
-  get allPartsList(): MoldPart[] {
-    return [...this.parts, ...this.backParts];
-  }
-
-  get filteredAddSuggestions(): any[] {
-    const q = this.addSearchQuery.toLowerCase().trim();
-    if (!q) return this.availableComponents.slice(0, 50);
-    return this.availableComponents.filter(c =>
-      (c.display_name || c.name || '').toLowerCase().includes(q)
-    ).slice(0, 50);
-  }
-
-  selectAddSuggestion(s: any): void {
-    this.addSearchQuery = s.display_name || s.name;
-    this.addItemType = s.item_type || 'parte';
+  selectAddSuggestion(comp: any): void {
+    this.addSearchQuery = comp.display_name || comp.name;
+    this.addItemType = comp.item_type || 'parte';
     this.showAddSuggestions = false;
-  }
-
-  get materialParts(): MoldPart[] {
-    return this.allPartsList.filter(p => p.item_type === 'tela' || p.item_type === 'insumo');
-  }
-
-  get structuralParts(): MoldPart[] {
-    return this.allPartsList.filter(p => p.item_type === 'parte');
   }
 
   startEditPart(part: MoldPart): void {
-    if (this.isReadOnly) return;
-    this.editingPart = { ...part };
+    this.editingPart = part;
+    this.isNewPart = false;
     this.showEditModal = true;
-    this.isNewPart = false;
-    this.pendingPin = part.position_x !== null ? { x: part.position_x, y: part.position_y } : null;
   }
 
-  savePart(updatedPart?: MoldPart): void {
-    const partToSave = updatedPart || this.editingPart;
-    if (!partToSave || !partToSave.name) {
-      Swal.fire('Error', 'El nombre del componente es obligatorio', 'error');
-      return;
-    }
-
-    if (this.isNewPart) {
-      this.activeParts.push({ ...partToSave });
-    } else {
-      const index = this.activeParts.findIndex(p => p.id === partToSave.id || p.name === partToSave.name);
-      if (index !== -1) {
-        this.activeParts[index] = { ...partToSave };
-      }
-    }
-    
-    this.cancelEdit();
-    if (this.activeTab === 'texto') this.buildTextContent();
-    this.saveDraft();
-  }
-
-  cancelEdit(): void {
+  savePart(): void {
     this.showEditModal = false;
-    this.editingPart = null;
-    this.isNewPart = false;
-    this.pendingPin = null;
-  }
-
-  onCanvasClick(event: MouseEvent): void {
-    if (this.isReadOnly || this.showEditModal || this.isDragging) return;
-
-    const imgEl = this.moldImage?.nativeElement || this.svgContainer?.nativeElement?.querySelector('img');
-    if (!imgEl) return;
-
-    const rect = imgEl.getBoundingClientRect();
-    
-    // Posición porcentual relativa a la IMAGEN
-    const xPerc = ((event.clientX - rect.left) / rect.width) * 100;
-    const yPerc = ((event.clientY - rect.top) / rect.height) * 100;
-
-    if (xPerc < 0 || xPerc > 100 || yPerc < 0 || yPerc > 100) return;
-
-    const roundedX = Math.round(xPerc * 100) / 100;
-    const roundedY = Math.round(yPerc * 100) / 100;
-
-    this.popoverPosition = {
-      x: Math.min(event.clientX, window.innerWidth - 280),
-      y: Math.min(event.clientY, window.innerHeight - 200)
-    };
-
-    if (this.awaitingPosition) {
-      const list = this.activeParts;
-      if (this.promotingPartIndex !== null) {
-        list[this.promotingPartIndex].position_x = roundedX;
-        list[this.promotingPartIndex].position_y = roundedY;
-      }
-      this.awaitingPosition = false;
-      this.promotingPartIndex = null;
-      return;
-    }
-
-    this.addPartAt(roundedX, roundedY);
-  }
-
-  addPartAt(x: number | null, y: number | null): void {
-    this.isNewPart = true;
-    this.pendingPin = { x, y };
-    this.editingPart = {
-      name: '',
-      item_type: 'parte',
-      view: this.activeView,
-      position_x: x,
-      position_y: y,
-      is_mandatory: true
-    };
-    this.showAddModal = true;
-  }
-
-  addGeneralComponent(type: string = 'parte'): void {
-    this.addItemType = type;
-    this.addSearchQuery = '';
-    this.showAddSuggestions = false;
-    this.showAddModal = true;
-  }
-
-  confirmAddModal(part?: any): void {
-    const finalName = part ? part.name : (this.addSearchQuery.trim() || this.addName.trim());
-    if (!finalName) return;
-
-    const finalType = part ? part.item_type : this.addItemType;
-
-    const comp = this.availableComponents.find(c =>
-      (c.display_name || c.name || '').toLowerCase() === finalName.toLowerCase()
-    );
-    const newPart: MoldPart = {
-      name: finalName,
-      garment_component_id: comp?.id || undefined,
-      position_x: this.pendingPin ? this.pendingPin.x : null,
-      position_y: this.pendingPin ? this.pendingPin.y : null,
-      item_type: finalType,
-      is_mandatory: true,
-      editing: false,
-      view: this.activeView,
-    };
-    this.activeParts.push(newPart);
-    this.pendingPin = null;
-    this.showAddModal = false;
-    if (this.activeTab === 'texto') this.buildTextContent();
     this.saveDraft();
   }
 
-  onDragEnd(event: CdkDragEnd, index: number, part: MoldPart): void {
-    if (this.isReadOnly) {
-      event.source.reset();
-      return;
-    }
-    const element = event.source.getRootElement();
-    const container = this.svgContainer.nativeElement;
-    const containerRect = container.getBoundingClientRect();
-    
-    const pinRect = element.getBoundingClientRect();
-    const pinX = pinRect.left + pinRect.width / 2;
-    const pinY = pinRect.top + pinRect.height / 2;
+  cancelEdit(): void { this.showEditModal = false; }
 
-    // Verificar si el pin se soltó fuera del canvas (zona general)
-    const isOutside = pinX < containerRect.left || 
-                      pinX > containerRect.right || 
-                      pinY < containerRect.top || 
-                      pinY > containerRect.bottom;
-
-    if (isOutside) {
-      // Convertir a general
-      part.position_x = null;
-      part.position_y = null;
-      Swal.fire({
-        title: 'Componente General',
-        text: `"${part.name}" ahora es un componente general`,
-        icon: 'info',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000
-      });
-    } else {
-      // Actualizar posición
-      const newX = ((pinX - containerRect.left) / containerRect.width) * 100;
-      const newY = ((pinY - containerRect.top) / containerRect.height) * 100;
-      
-      part.position_x = Math.max(0, Math.min(100, newX));
-      part.position_y = Math.max(0, Math.min(100, newY));
-    }
-    
-    this.saveDraft();
-    event.source.reset();
-  }
-
-  onGeneralDragEnd(event: CdkDragEnd, part: MoldPart): void {
-    if (this.isReadOnly) {
-      event.source.reset();
-      return;
-    }
-    
-    const element = event.source.getRootElement();
-    const container = this.svgContainer.nativeElement;
-    const containerRect = container.getBoundingClientRect();
-    
-    const dropRect = element.getBoundingClientRect();
-    const dropX = dropRect.left + dropRect.width / 2;
-    const dropY = dropRect.top + dropRect.height / 2;
-
-    // Verificar si se soltó dentro del canvas
-    const isInside = dropX >= containerRect.left && 
-                     dropX <= containerRect.right && 
-                     dropY >= containerRect.top && 
-                     dropY <= containerRect.bottom;
-
-    if (isInside) {
-      // Convertir a posicionado
-      const newX = ((dropX - containerRect.left) / containerRect.width) * 100;
-      const newY = ((dropY - containerRect.top) / containerRect.height) * 100;
-      
-      part.position_x = Math.round(newX * 100) / 100;
-      part.position_y = Math.round(newY * 100) / 100;
-      part.view = this.activeView;
-
-      Swal.fire({
-        title: 'Componente Posicionado',
-        text: `"${part.name}" ha sido posicionado en el diseño`,
-        icon: 'success',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000
-      });
-    }
-    
-    this.saveDraft();
-    event.source.reset();
-  }
-
-  confirmPin(): void {
-    // Esta función ya no se usa porque confirmAddModal maneja ambos casos
-  }
-
-  cancelPin(): void {
-    this.pendingPin = null;
-    this.selectedComponentId = null;
-    this.showGeneralSelector = false;
-  }
-
-  removePart(item: MoldPart): void {
-    if (this.isReadOnly) return;
-    const list = item.view === 'back' ? this.backParts : this.parts;
-    const index = list.indexOf(item);
-    if (index >= 0) {
-      list.splice(index, 1);
-      if (this.activeTab === 'texto') this.buildTextContent();
-      this.saveDraft();
-    }
-  }
-
-  // Dragging
-  isDragging = false;
-  draggedPartIndex: number | null = null;
-
-  startDragging(event: MouseEvent, index: number): void {
-    if (this.isReadOnly) return;
-    event.stopPropagation();
-    event.preventDefault();
-
-    this.isDragging = true;
-    this.draggedPartIndex = index;
-    
-    const imgEl = this.moldImage?.nativeElement || this.svgContainer?.nativeElement?.querySelector('img');
-    
-    const onMouseMove = (e: MouseEvent) => {
-      if (!this.isDragging || this.draggedPartIndex === null || !imgEl) return;
-      
-      const rect = imgEl.getBoundingClientRect();
-      
-      let x = ((e.clientX - rect.left) / rect.width) * 100;
-      let y = ((e.clientY - rect.top) / rect.height) * 100;
-
-      x = Math.max(0, Math.min(100, x));
-      y = Math.max(0, Math.min(100, y));
-
-      this.activeParts[this.draggedPartIndex].position_x = Math.round(x * 100) / 100;
-      this.activeParts[this.draggedPartIndex].position_y = Math.round(y * 100) / 100;
-    };
-
-    const onMouseUp = () => {
-      setTimeout(() => {
-        this.isDragging = false;
-        this.draggedPartIndex = null;
-      }, 50);
-      this.saveDraft();
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  }
-
-  // ==================== Promote General → Positioned ====================
-
-  startPromote(generalIndex: number): void {
-    const realIndex = this.positionedParts.length + generalIndex;
-    this.promotingPartIndex = realIndex;
-    this.awaitingPosition = true;
-  }
-
-  cancelPromote(): void {
-    this.awaitingPosition = false;
-    this.promotingPartIndex = null;
-  }
-
-  // ==================== Text View ====================
-
-  /** Normalize item_type to tela, insumo or parte */
-  private normalizeItemType(raw: string): 'tela' | 'insumo' | 'parte' {
-    const t = (raw || '').toLowerCase().trim();
-    if (t.includes('tela') || t.includes('te')) return 'tela';
-    if (t.includes('insumo') || t.includes('in')) return 'insumo';
-    if (t.includes('parte') || t.includes('pa')) return 'parte';
-    return 'parte'; // Default to part for structural consistency
-  }
-
-  buildTextContent(): void {
-    const lines: string[] = [];
-    const allParts = [...this.parts, ...this.backParts];
-    const generals = allParts.filter(p => p.position_x === null);
-    const positioned = allParts.filter(p => p.position_x !== null);
-
-    if (generals.length > 0 || positioned.length === 0) {
-      lines.push('--- GENERALES ---');
-      generals.forEach(g => lines.push(`${g.name} (${this.normalizeItemType(g.item_type)})`));
-      lines.push('');
-    }
-    if (positioned.length > 0) {
-      lines.push('--- COMPONENTES ---');
-      positioned.forEach(p => lines.push(`${p.name} (${this.normalizeItemType(p.item_type)}) [${p.view || 'front'}]`));
-    }
-    this.textContent = lines.join('\n');
-    this.validateText();
-  }
-
-  onTextInput(): void {
-    const lines = this.textContent.split('\n');
-    const lastLine = lines[lines.length - 1].trim();
-    if (!lastLine.startsWith('---')) {
-      if (!lastLine) {
-        this.textSuggestionResults = this.availableComponents.slice(0, 50);
-      } else if (!lastLine.includes('(')) {
-        this.textSuggestionResults = this.availableComponents.filter(c =>
-          (c.display_name || c.name || '').toLowerCase().includes(lastLine.toLowerCase())
-        ).slice(0, 50);
-      } else {
-        this.textSuggestionResults = [];
-      }
-      this.showTextSuggestions = this.textSuggestionResults.length > 0;
-    } else {
-      this.showTextSuggestions = false;
-    }
-    this.parseTextToParts();
-    this.validateText();
-  }
-
-  selectTextSuggestion(comp: any): void {
-    const lines = this.textContent.split('\n');
-    lines[lines.length - 1] = `${comp.display_name} (insumo)`;
-    this.textContent = lines.join('\n') + '\n';
-    this.showTextSuggestions = false;
-    this.parseTextToParts();
-    this.validateText();
-  }
-
-  dismissTextSuggestions(): void {
-    this.showTextSuggestions = false;
-  }
-
-  /** Parse text content back into parts arrays — accepts any (tipo) */
-  parseTextToParts(): void {
-    const lines = this.textContent.split('\n');
-    const newParts: MoldPart[] = [];
-    let section: 'none' | 'generales' | 'componentes' = 'none';
-
-    for (const raw of lines) {
-      const line = raw.trim();
-      if (!line) continue;
-      if (line === '--- GENERALES ---') { section = 'generales'; continue; }
-      if (line === '--- COMPONENTES ---') { section = 'componentes'; continue; }
-
-      // Accept any word(s) inside parentheses: "Nombre (tipo)" or "Nombre (tipo) [vista]"
-      const match = line.match(/^(.+?)\s*\(([^)]+)\)(?:\s*\[(front|back)\])?$/);
-      if (match) {
-        const name = match[1].trim();
-        if (!name) continue;
-        const rawType = match[2].trim();
-        const itemType = this.normalizeItemType(rawType);
-        const view = (match[3] as 'front' | 'back') || 'front';
-        const existing = [...this.parts, ...this.backParts].find(p => p.name === name);
-        newParts.push({
-          id: existing?.id,
-          name,
-          garment_component_id: existing?.garment_component_id,
-          position_x: section === 'componentes' ? (existing?.position_x ?? null) : null,
-          position_y: section === 'componentes' ? (existing?.position_y ?? null) : null,
-          item_type: itemType,
-          is_mandatory: existing?.is_mandatory ?? true,
-          editing: false,
-          view,
-        });
-      }
-    }
-
-    if (newParts.length > 0) {
-      this.parts = newParts.filter(p => p.view !== 'back');
-      this.backParts = newParts.filter(p => p.view === 'back');
-      this.saveDraft();
-    }
-  }
-
-  /** Validate text and generate warnings */
-  validateText(): void {
-    const warnings: string[] = [];
-    const lines = this.textContent.split('\n');
-    let lineNum = 0;
-    for (const raw of lines) {
-      lineNum++;
-      const line = raw.trim();
-      if (!line || line.startsWith('---')) continue;
-
-      // Check for parentheses with a type
-      const hasParens = /\([^)]+\)/.test(line);
-      if (!hasParens) {
-        warnings.push(`Línea ${lineNum}: Falta tipo — agrega (tela) o (insumo) después del nombre`);
-        continue;
-      }
-      const match = line.match(/^(.+?)\s*\(([^)]+)\)/);
-      if (match && !match[1].trim()) {
-        warnings.push(`Línea ${lineNum}: Falta el nombre del componente`);
-      }
-      const tipo = match ? match[2].trim().toLowerCase() : '';
-      if (tipo && tipo !== 'tela' && tipo !== 'insumo' && tipo !== 'parte') {
-        warnings.push(`Línea ${lineNum}: Tipo "${tipo}" no reconocido — usa (tela), (insumo) o (parte)`);
-      }
-    }
-    this.textWarnings = warnings;
-  }
-
-  // ==================== Save ====================
-
-  saveMold(): void {
-    if (!this.moldName.trim()) {
-      this.errorMessage = 'El nombre del molde es obligatorio';
-      return;
-    }
-
-    this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-    const allParts = [
-      ...this.parts.map(p => ({ ...p, view: 'front' as const })),
-      ...this.backParts.map(p => ({ ...p, view: 'back' as const })),
-    ];
-
-    const payload = {
-      name: this.moldName.trim(),
-      description: this.moldDescription.trim() || undefined,
-      mold_category_id: this.mold_category_id,
-      parts: allParts.map(p => ({
-        id: p.id,
-        name: p.name,
-        garment_component_id: p.garment_component_id,
-        position_x: p.position_x,
-        position_y: p.position_y,
-        item_type: p.item_type,
-        is_mandatory: p.is_mandatory,
-        view: p.view,
-        description: p.description,
-      }))
-    };
-
-    const action = this.isEditMode && this.moldId 
-      ? this.moldService.updateMold(this.moldId, payload)
-      : this.moldService.createMold(payload);
-
-    action.subscribe({
-      next: (res: any) => {
-        const savedMoldId = res.data?.id || this.moldId;
-
-        // Upload pending images for NEW molds
-        const uploads: any[] = [];
-        if (this.pendingImageFile && savedMoldId && !this.isEditMode) {
-          uploads.push(this.moldService.uploadMoldImage(savedMoldId, this.pendingImageFile, 'front'));
-        }
-        if (this.pendingBackImageFile && savedMoldId && !this.isEditMode) {
-          uploads.push(this.moldService.uploadMoldImage(savedMoldId, this.pendingBackImageFile, 'back'));
-        }
-
-        if (uploads.length > 0) {
-          let completed = 0;
-          uploads.forEach(upload$ => {
-            upload$.subscribe({
-              next: () => {
-                completed++;
-                if (completed === uploads.length) {
-                  this.saving = false;
-                  this.successMessage = 'Molde guardado exitosamente';
-                  this.clearDraft();
-                  setTimeout(() => this.router.navigate(['/moldes']), 1500);
-                }
-              },
-              error: () => {
-                completed++;
-                if (completed === uploads.length) {
-                  this.saving = false;
-                  this.successMessage = 'Molde guardado (alguna imagen pendiente)';
-                  this.clearDraft();
-                  setTimeout(() => this.router.navigate(['/moldes']), 1500);
-                }
-              }
-            });
-          });
-        } else {
-          this.saving = false;
-          this.successMessage = 'Molde guardado exitosamente';
-          this.clearDraft();
-          setTimeout(() => this.router.navigate(['/moldes']), 1500);
-        }
-      },
-      error: (err: any) => {
-        this.saving = false;
-        this.errorMessage = err.error?.error || 'Error al guardar el molde';
-        console.error(err);
-      }
+  confirmAddModal(part: any): void {
+    this.activeParts.push({
+      name: part.name,
+      item_type: part.item_type || 'insumo',
+      view: 'front',
+      position_x: null,
+      position_y: null,
+      is_mandatory: false
     });
+    this.showAddModal = false;
+    this.saveDraft();
+  }
+
+  openMaterialInventorySearch(type: 'todos' | 'tela' | 'insumo' = 'todos'): void {
+    this.inventorySearchFilterType = type;
+    this.editingPart = null;
+    this.showInventorySearch = true;
+  }
+
+  addPresetMaterial(preset: { name: string; type: 'tela' | 'insumo'; description?: string }): void {
+    const newPart: MoldPart = {
+      name: preset.name,
+      item_type: preset.type,
+      view: 'front',
+      position_x: null,
+      position_y: null,
+      is_mandatory: true,
+      description: preset.description || '',
+      types: [{ name: 'Estándar', technical_description: '', total_time: 0, is_default: true, operations: [] }]
+    };
+    (newPart as any).material_source = 'default';
+    this.activeParts.push(newPart);
+    this.saveDraft();
+  }
+
+  togglePartMandatory(part: MoldPart): void {
+    part.is_mandatory = !part.is_mandatory;
+    this.saveDraft();
   }
 
   handleInventorySelect(item: any): void {
     if (this.editingPart) {
-      this.editingPart.name = item.descripcion;
-      this.editingPart.description = `${item.referencia} - ${item.color}`;
-      
-      // Si estamos en modo edición, actualizar el componente original y guardar borrador
-      const index = this.activeParts.findIndex(p => p === this.editingPart || (p.id && p.id === this.editingPart?.id));
-      if (index !== -1) {
-        this.activeParts[index] = { ...this.editingPart };
-      }
+      this.editingPart.name = item.descripcion || item.referencia;
+      this.editingPart.description = `${item.referencia} ${item.color ? '- ' + item.color : ''}`.trim();
+      (this.editingPart as any).siesa_reference = item.referencia;
+      (this.editingPart as any).siesa_color = item.color;
+      (this.editingPart as any).siesa_id_item = item.id_item;
+      (this.editingPart as any).material_source = 'siesa';
+      this.editingPart = null;
+    } else {
+      const isTela = item.es_tela || (item.grupo || '').toUpperCase().includes('TELA');
+      const newMat: MoldPart = {
+        name: item.descripcion || item.referencia,
+        item_type: isTela ? 'tela' : 'insumo',
+        view: 'front',
+        position_x: null,
+        position_y: null,
+        is_mandatory: true,
+        description: `${item.referencia} ${item.color ? '- ' + item.color : ''}`.trim(),
+        types: [{ name: 'Estándar', technical_description: '', total_time: 0, is_default: true, operations: [] }]
+      };
+      (newMat as any).siesa_reference = item.referencia;
+      (newMat as any).siesa_color = item.color;
+      (newMat as any).siesa_id_item = item.id_item;
+      (newMat as any).material_source = 'siesa';
+      this.activeParts.push(newMat);
+    }
+    this.showInventorySearch = false;
+    this.saveDraft();
+  }
 
-      this.showInventorySearch = false;
-      this.saveDraft();
+  removePart(partOrIndex: MoldPart | number): void {
+    if (typeof partOrIndex === 'number') {
+      this.parts.splice(partOrIndex, 1);
+    } else {
+      const idx = this.parts.indexOf(partOrIndex);
+      if (idx !== -1) {
+        this.parts.splice(idx, 1);
+      }
+    }
+    this.saveDraft();
+  }
+
+  // ==================== OPERACIONES & TIEMPOS SAM ====================
+
+  addGlobalOperation(): void {
+    this.globalOperations.push({ machine_name: 'PLANA', operation_name: '', execution_time: 0 });
+  }
+
+  removeGlobalOperation(index: number): void {
+    this.globalOperations.splice(index, 1);
+  }
+
+  addTypeToPart(part: MoldPart): void {
+    if (!part.types) part.types = [];
+    part.types.push({ name: 'Nueva Variante', technical_description: '', total_time: 0, is_default: part.types.length === 0, operations: [] });
+  }
+
+  removeTypeFromPart(part: MoldPart, typeIndex: number): void {
+    if (part.types) part.types.splice(typeIndex, 1);
+  }
+
+  setDefaultType(part: MoldPart, selectedType: any): void {
+    if (part.types) {
+      part.types.forEach(t => t.is_default = false);
+      selectedType.is_default = true;
     }
   }
 
-  goBack(): void {
-    this.router.navigate(['/moldes']);
+  addOperationToType(type: any): void {
+    if (!type.operations) type.operations = [];
+    type.operations.push({ machine_name: 'PLANA', operation_name: '', execution_time: 0 });
   }
+
+  removeOperationFromType(type: any, opIndex: number): void {
+    if (type.operations) {
+      type.operations.splice(opIndex, 1);
+      this.recalculateTypeTotalTime(type);
+    }
+  }
+
+  recalculateTypeTotalTime(type: any): number {
+    if (!type || !type.operations) return 0;
+    const total = type.operations.reduce((acc: number, op: any) => acc + (parseFloat(op.execution_time) || 0), 0);
+    type.total_time = total;
+    return total;
+  }
+
+  get totalGarmentStandardTime(): number {
+    let globalTotal = (this.globalOperations || []).reduce((acc: number, op: any) => acc + (parseFloat(op.execution_time) || 0), 0);
+    let partsTotal = 0;
+    this.parts.forEach((p: any) => {
+      if (p.types && p.types.length > 0) {
+        const defType = p.types.find((t: any) => t.is_default) || p.types[0];
+        if (defType) partsTotal += this.recalculateTypeTotalTime(defType);
+      }
+    });
+    return globalTotal + partsTotal;
+  }
+
+  // ==================== DRAFT & SAVE ====================
+
+  saveDraft(): void {
+    if (this.isReadOnly) return;
+    localStorage.setItem(this.DRAFT_KEY, JSON.stringify({
+      moldName: this.moldName,
+      moldDescription: this.moldDescription,
+      mold_category_id: this.mold_category_id,
+      zones: this.zones,
+      parts: this.parts,
+      customImageUrl: this.customImageUrl,
+      backImageUrl: this.backImageUrl,
+      activeView: this.activeView,
+      timestamp: Date.now()
+    }));
+  }
+
+  checkDraft(): void {
+    const saved = localStorage.getItem(this.DRAFT_KEY);
+    if (!saved) return;
+    const draft = JSON.parse(saved);
+    if (draft.moldName || draft.zones?.length > 0 || draft.parts?.length > 0) {
+      Swal.fire({
+        title: '¿Restaurar borrador?',
+        text: `Trabajo pendiente del ${new Date(draft.timestamp).toLocaleString()}.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, restaurar',
+        cancelButtonText: 'Descartar'
+      }).then((res) => {
+        if (res.isConfirmed) {
+          this.moldName = draft.moldName || '';
+          this.moldDescription = draft.moldDescription || '';
+          this.mold_category_id = draft.mold_category_id || null;
+          this.zones = draft.zones || [];
+          this.parts = draft.parts || [];
+          this.customImageUrl = draft.customImageUrl || '';
+          this.backImageUrl = draft.backImageUrl || '';
+          if (draft.activeView) this.activeView = draft.activeView;
+          this.currentTemplate = { image: this.customImageUrl };
+        } else {
+          this.clearDraft();
+        }
+      });
+    }
+  }
+
+  clearDraft(): void { localStorage.removeItem(this.DRAFT_KEY); }
+
+  saveMold(): void {
+    this.saving = true;
+    const payload = {
+      name: this.moldName.trim(),
+      description: this.moldDescription.trim() || undefined,
+      mold_category_id: this.mold_category_id,
+      zones: this.zones,
+      parts: this.parts.map(p => ({
+        ...p,
+        view: (p.view || 'front') as 'front' | 'back',
+        types: (p.types || []).map((t: any) => ({
+          ...t,
+          materials: t.materials || ['Tela Principal', 'Hilo de Confección'],
+          is_disabled: t.is_disabled === true || t.is_active === false,
+          total_time: this.recalculateTypeTotalTime(t),
+          operations: (t.operations || []).map((op: any) => ({
+            ...op,
+            mold_machine_id: op.mold_machine_id || this.machinesList.find(m => m.name.toLowerCase() === (op.machine_name || '').toLowerCase())?.id,
+            execution_time: parseFloat(op.execution_time) || 0
+          }))
+        }))
+      })),
+      global_operations: (this.globalOperations || []).map((gOp: any) => ({
+        ...gOp,
+        mold_machine_id: gOp.mold_machine_id || this.machinesList.find(m => m.name.toLowerCase() === (gOp.machine_name || '').toLowerCase())?.id,
+        execution_time: parseFloat(gOp.execution_time) || 0
+      }))
+    };
+
+    const action$ = this.isEditMode && this.moldId
+      ? this.moldService.updateMold(this.moldId, payload)
+      : this.moldService.createMold(payload);
+
+    action$.subscribe({
+      next: (res: any) => {
+        const savedId = res.data?.id || this.moldId;
+        const uploads: any[] = [];
+        if (this.pendingImageFile && savedId) {
+          uploads.push(this.moldService.uploadMoldImage(savedId, this.pendingImageFile, 'front'));
+        }
+        if (this.pendingBackImageFile && savedId) {
+          uploads.push(this.moldService.uploadMoldImage(savedId, this.pendingBackImageFile, 'back'));
+        }
+
+        this.saving = false;
+        this.successMessage = 'Molde guardado exitosamente';
+        this.clearDraft();
+        Swal.fire({
+          title: '¡Guardado!',
+          text: 'El molde y su arquitectura fueron guardados correctamente.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        setTimeout(() => this.router.navigate(['/moldes']), 1200);
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.errorMessage = err.error?.error || 'Error al guardar el molde';
+        Swal.fire('Error al guardar', this.errorMessage, 'error');
+      }
+    });
+  }
+
+  switchToEditMode(): void {
+    this.isReadOnly = false;
+    if (this.moldId) {
+      this.router.navigate(['/moldes/admin', this.moldId]);
+    }
+  }
+
+  goBack(): void { this.router.navigate(['/moldes']); }
 }

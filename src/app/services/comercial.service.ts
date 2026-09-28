@@ -240,4 +240,57 @@ export class ComercialService {
       { ...data, usuario_id: this.uid() }
     );
   }
+
+  // ==================== TRAZABILIDAD DE MATERIALES Y ABASTECIMIENTO ====================
+
+  listarMaterialesSolicitud(solicitudId: number): Observable<{ success: boolean; data: any }> {
+    return this.http.get<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/materiales`);
+  }
+
+  guardarMateriales(solicitudId: number, data: any): Observable<{ success: boolean; data: any; message: string }> {
+    return this.http.post<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/materiales`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
+  actualizarMaterial(id: number, data: any): Observable<{ success: boolean; data: any; message: string }> {
+    return this.http.put<any>(`${this.api}/abastecimiento/materiales/${id}`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
+  eliminarMaterial(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<any>(`${this.api}/abastecimiento/materiales/${id}`);
+  }
+
+  despacharMaterial(id: number, data: any): Observable<{ success: boolean; data: any; message: string }> {
+    return this.http.post<any>(`${this.api}/abastecimiento/materiales/${id}/despacho`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
+  listarSolicitudesAbastecimiento(filtros?: any): Observable<{ success: boolean; data: any[]; pagination: any }> {
+    let params = new HttpParams();
+    if (filtros) {
+      Object.keys(filtros).forEach(k => {
+        if (filtros[k] !== null && filtros[k] !== undefined && filtros[k] !== '') {
+          params = params.set(k, filtros[k]);
+        }
+      });
+    }
+    return this.http.get<any>(`${this.api}/abastecimiento/solicitudes`, { params });
+  }
+
+  buscarInsumosSiesa(params: { q?: string; con_stock?: boolean; bodega?: string; grupo?: string }): Observable<{ success: boolean; data: any[] }> {
+    let httpParams = new HttpParams();
+    if (params.q) httpParams = httpParams.set('q', params.q);
+    if (params.con_stock !== undefined) httpParams = httpParams.set('con_stock', params.con_stock.toString());
+    if (params.bodega) httpParams = httpParams.set('bodega', params.bodega);
+    if (params.grupo) httpParams = httpParams.set('grupo', params.grupo);
+    return this.http.get<any>(`${this.api}/siesa/insumos/agrupados`, { params: httpParams });
+  }
 }
+

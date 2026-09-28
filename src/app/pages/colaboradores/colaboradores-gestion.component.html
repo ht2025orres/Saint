@@ -306,3 +306,210 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL DE VERIFICACIÓN Y VISTA PREVIA DE SINCRONIZACIÓN SIESA NÓMINA WEB -->
+<div *ngIf="mostrarModalSiesaPreview" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-fadeIn" style="background: rgba(15,23,42,0.75); backdrop-filter: blur(8px);">
+  <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Modal Header -->
+    <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+          <i class="fas fa-cloud-download-alt text-lg"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-white uppercase tracking-tight flex items-center gap-2 mb-0">
+            <span>Vista Previa de Sincronización Siesa Nómina</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">Modo Verificación</span>
+          </h2>
+          <p class="text-xs text-slate-400 font-medium mb-0">Revisa el informe de cambios antes de confirmar su aplicación en las bases de datos</p>
+        </div>
+      </div>
+      <button type="button" (click)="cerrarPreviewSiesa()" class="btn-close btn-close-white"></button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="cargandoSiesaPreview" class="flex flex-col items-center justify-center py-20 px-6 gap-3 text-slate-500 text-center">
+      <div class="spinner-border text-warning" role="status" style="width: 3rem; height: 3rem;"></div>
+      <div>
+        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider mt-3">Escaneando Siesa Nómina Web...</h4>
+        <p class="text-xs text-slate-400 font-medium">Analizando contratos activos y comparando con los registros de Saint (sin modificar datos)</p>
+      </div>
+    </div>
+
+    <!-- Content when loaded -->
+    <div *ngIf="!cargandoSiesaPreview && siesaPreviewSummary" class="flex-1 overflow-y-auto p-6 flex flex-col gap-6" style="max-h: 65vh;">
+      
+      <!-- Metrics Cards Header -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-sm-3">
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="text-muted small font-weight-bold uppercase"><i class="fas fa-users me-1"></i> Leídos en Siesa</div>
+            <div class="h3 font-weight-bold text-dark mb-0">{{ siesaPreviewSummary.siesa_activos_leidos }}</div>
+            <div class="small text-muted">Contratos activos</div>
+          </div>
+        </div>
+
+        <div class="col-6 col-sm-3" (click)="activeSiesaTab = 'nuevos'">
+          <div class="p-3 rounded-3 border cursor-pointer" [ngClass]="activeSiesaTab === 'nuevos' ? 'bg-success bg-opacity-10 border-success' : 'bg-light'">
+            <div class="text-success small font-weight-bold uppercase"><i class="fas fa-user-plus me-1"></i> Nuevos a Crear</div>
+            <div class="h3 font-weight-bold text-success mb-0">{{ siesaPreviewSummary.nuevos_creados }}</div>
+            <div class="small text-success">Nuevos colaboradores</div>
+          </div>
+        </div>
+
+        <div class="col-6 col-sm-3" (click)="activeSiesaTab = 'actualizados'">
+          <div class="p-3 rounded-3 border cursor-pointer" [ngClass]="activeSiesaTab === 'actualizados' ? 'bg-primary bg-opacity-10 border-primary' : 'bg-light'">
+            <div class="text-primary small font-weight-bold uppercase"><i class="fas fa-user-edit me-1"></i> A Actualizar</div>
+            <div class="h3 font-weight-bold text-primary mb-0">{{ siesaPreviewSummary.actualizados }}</div>
+            <div class="small text-primary">Modificaciones</div>
+          </div>
+        </div>
+
+        <div class="col-6 col-sm-3" (click)="activeSiesaTab = 'inactivados'">
+          <div class="p-3 rounded-3 border cursor-pointer" [ngClass]="activeSiesaTab === 'inactivados' ? 'bg-danger bg-opacity-10 border-danger' : 'bg-light'">
+            <div class="text-danger small font-weight-bold uppercase"><i class="fas fa-user-slash me-1"></i> Retiros / Inactivar</div>
+            <div class="h3 font-weight-bold text-danger mb-0">{{ siesaPreviewSummary.inactivados_retiros }}</div>
+            <div class="small text-danger">Desvinculaciones</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+          <button class="nav-link font-weight-bold" [ngClass]="{'active text-success': activeSiesaTab === 'nuevos'}" (click)="activeSiesaTab = 'nuevos'">
+            <i class="fas fa-user-plus me-1"></i> Nuevos a Crear
+            <span class="badge bg-success ms-1">{{ siesaPreviewSummary.detalles?.nuevos?.length || 0 }}</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link font-weight-bold" [ngClass]="{'active text-primary': activeSiesaTab === 'actualizados'}" (click)="activeSiesaTab = 'actualizados'">
+            <i class="fas fa-user-edit me-1"></i> Modificaciones
+            <span class="badge bg-primary ms-1">{{ siesaPreviewSummary.detalles?.actualizados?.length || 0 }}</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link font-weight-bold" [ngClass]="{'active text-danger': activeSiesaTab === 'inactivados'}" (click)="activeSiesaTab = 'inactivados'">
+            <i class="fas fa-user-slash me-1"></i> Retiros / Inactivar
+            <span class="badge bg-danger ms-1">{{ siesaPreviewSummary.detalles?.inactivados?.length || 0 }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Tab Content: NUEVOS -->
+      <div *ngIf="activeSiesaTab === 'nuevos'">
+        <div *ngIf="!siesaPreviewSummary.detalles?.nuevos?.length" class="text-center py-5 bg-light rounded border">
+          <i class="fas fa-check-circle text-success h2 mb-2"></i>
+          <p class="font-weight-bold mb-0 text-secondary">No se detectaron colaboradores nuevos</p>
+          <small class="text-muted">Todos los asalariados activos en Siesa ya están registrados en Saint.</small>
+        </div>
+
+        <div *ngIf="siesaPreviewSummary.detalles?.nuevos?.length" class="table-responsive border rounded">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th>Cédula</th>
+                <th>Nombre Completo</th>
+                <th>Cargo</th>
+                <th>Centro de Costo</th>
+                <th>Fecha Ingreso</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let n of siesaPreviewSummary.detalles.nuevos">
+                <td class="fw-bold"><code>{{ n.cedula }}</code></td>
+                <td class="fw-bold">{{ n.nombre_completo }}</td>
+                <td><span class="badge bg-success bg-opacity-10 text-success border border-success">{{ n.cargo }}</span></td>
+                <td>{{ n.centro_costo }}</td>
+                <td class="text-muted">{{ n.fecha_ingreso }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: ACTUALIZADOS -->
+      <div *ngIf="activeSiesaTab === 'actualizados'">
+        <div *ngIf="!siesaPreviewSummary.detalles?.actualizados?.length" class="text-center py-5 bg-light rounded border">
+          <i class="fas fa-check-circle text-primary h2 mb-2"></i>
+          <p class="font-weight-bold mb-0 text-secondary">No hay modificaciones pendientes</p>
+          <small class="text-muted">Los datos de todos los colaboradores coinciden exactamente con Siesa.</small>
+        </div>
+
+        <div *ngIf="siesaPreviewSummary.detalles?.actualizados?.length" class="space-y-2">
+          <div *ngFor="let act of siesaPreviewSummary.detalles.actualizados" class="p-3 bg-white border rounded mb-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+              <span class="fw-bold text-dark me-2">{{ act.nombre_completo }}</span>
+              <span class="badge bg-light text-muted border">C.C. {{ act.cedula }}</span>
+            </div>
+            <div class="d-flex flex-wrap gap-1">
+              <span *ngFor="let c of act.cambios" class="badge bg-primary bg-opacity-10 text-primary border border-primary p-2">
+                <strong class="text-uppercase me-1">{{ c.campo }}:</strong>
+                <span class="text-muted text-decoration-line-through me-1">{{ c.anterior }}</span>
+                <i class="fas fa-arrow-right mx-1 text-primary"></i>
+                <span class="fw-bold text-dark">{{ c.nuevo }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: INACTIVADOS -->
+      <div *ngIf="activeSiesaTab === 'inactivados'">
+        <div *ngIf="!siesaPreviewSummary.detalles?.inactivados?.length" class="text-center py-5 bg-light rounded border">
+          <i class="fas fa-check-circle text-success h2 mb-2"></i>
+          <p class="font-weight-bold mb-0 text-secondary">No se detectaron retiros ni inactivaciones</p>
+          <small class="text-muted">Todos los colaboradores activos en Saint continúan vigentes en Siesa.</small>
+        </div>
+
+        <div *ngIf="siesaPreviewSummary.detalles?.inactivados?.length">
+          <div class="alert alert-danger small mb-3 d-flex align-items-center gap-2">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span><strong>Atención:</strong> Los siguientes colaboradores figuran como retirados en Siesa. Su estado pasará a <strong>INACTIVO</strong> en Saint y Conecta.</span>
+          </div>
+
+          <div class="table-responsive border rounded">
+            <table class="table table-hover align-middle mb-0 small">
+              <thead class="table-light">
+                <tr>
+                  <th>Cédula</th>
+                  <th>Nombre Completo</th>
+                  <th>Cargo</th>
+                  <th>Correo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let inact of siesaPreviewSummary.detalles.inactivados">
+                  <td class="fw-bold text-danger"><code>{{ inact.cedula }}</code></td>
+                  <td class="fw-bold">{{ inact.nombre_completo }}</td>
+                  <td>{{ inact.cargo }}</td>
+                  <td class="text-muted">{{ inact.correo_corporativo }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-3 bg-light border-top d-flex justify-content-between align-items-center">
+      <small class="text-muted"><i class="fas fa-info-circle text-warning me-1"></i> Los cambios solo se aplicarán al presionar el botón de confirmación.</small>
+
+      <div class="d-flex gap-2">
+        <button type="button" (click)="cerrarPreviewSiesa()" [disabled]="ejecutandoSiesaSync" class="btn btn-secondary">
+          Cancelar
+        </button>
+
+        <button type="button" (click)="confirmarYEjecutarSiesaSync()" [disabled]="ejecutandoSiesaSync" class="btn btn-success font-weight-bold">
+          <i *ngIf="ejecutandoSiesaSync" class="fas fa-spinner fa-spin me-1"></i>
+          <i *ngIf="!ejecutandoSiesaSync" class="fas fa-check-circle me-1"></i>
+          <span>Confirmar y Aplicar Cambios</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

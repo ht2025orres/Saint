@@ -97,6 +97,7 @@ const routes: Routes = [
       { path: 'costeos', loadChildren: () => import('./pages/costeos/costeos.module').then(m => m.CosteosModule), title: 'Gestión de Costeos' },
       { path: 'muestras', loadChildren: () => import('./pages/muestras/muestras.module').then(m => m.MuestrasModule), title: 'Gestión de Muestras' },
       { path: 'comerciales', loadChildren: () => import('./pages/comerciales/comerciales.module').then(m => m.ComercialesModule), title: 'Comerciales' },
+      { path: 'abastecimiento', loadChildren: () => import('./pages/abastecimiento/abastecimiento.module').then(m => m.AbastecimientoModule), title: 'Cadena de Abastecimiento y Materiales' },
       { path: 'tiempos-items', component: TiemposItemsComponent, title: 'Tiempos de ítems' },
       { path: 'planeacion', component: PlaneacionComponent, title: 'Planeación' },
       { path: 'centros-costos', component: CentrosCostosComponent, title: 'Centros de costos' },

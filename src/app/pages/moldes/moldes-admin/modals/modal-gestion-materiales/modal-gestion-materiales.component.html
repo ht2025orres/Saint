@@ -1,0 +1,227 @@
+<div class="fixed inset-0 z-[1500] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 md:p-6 animate-in fade-in"
+     *ngIf="isOpen"
+     (click)="onClose()">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-3xl w-full flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95"
+       (click)="$event.stopPropagation()">
+    
+    <!-- Modal Header -->
+    <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-white to-indigo-50/40">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-indigo-500/20">
+          <i class="bi bi-boxes"></i>
+        </span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h3 class="text-base sm:text-lg font-black text-slate-900 truncate">Catálogo Maestro de Insumos & Telas</h3>
+            <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
+              CRUD Global
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 font-medium mt-0.5 truncate">
+            Define la lista maestra de materiales reutilizables en todos los moldes base
+          </p>
+        </div>
+      </div>
+
+      <button type="button" (click)="onClose()" 
+              class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+        <i class="bi bi-x-lg text-xs"></i>
+      </button>
+    </div>
+
+    <!-- Toolbar: Buscador, Filtros y Botón Nuevo -->
+    <div class="p-3 sm:px-5 py-3 bg-slate-50/90 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+      <!-- Search Input -->
+      <div class="relative flex-1">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input type="text" [(ngModel)]="searchQuery" 
+               placeholder="Buscar en el catálogo maestro..."
+               class="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs transition" />
+        <button *ngIf="searchQuery" (click)="searchQuery = ''" 
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+      </div>
+
+      <!-- Type Filter Tabs -->
+      <div class="flex items-center gap-1 bg-white p-0.5 rounded-xl border border-slate-200 shadow-2xs shrink-0 self-start sm:self-auto">
+        <button type="button" 
+                (click)="typeFilter = 'all'"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer"
+                [ngClass]="typeFilter === 'all' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'">
+          Todos ({{ materials.length }})
+        </button>
+        <button type="button" 
+                (click)="typeFilter = 'tela'"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer"
+                [ngClass]="typeFilter === 'tela' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'">
+          Telas
+        </button>
+        <button type="button" 
+                (click)="typeFilter = 'insumo'"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer"
+                [ngClass]="typeFilter === 'insumo' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'">
+          Insumos
+        </button>
+      </div>
+
+      <!-- Action Button -->
+      <button type="button" (click)="startCreate()" *ngIf="!showForm"
+              class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
+        <i class="bi bi-plus-lg"></i>
+        <span>+ Nuevo Insumo</span>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar bg-slate-50/40">
+
+      <!-- Formulario de Creación / Edición (Desplegable) -->
+      <div *ngIf="showForm" class="bg-white rounded-2xl border-2 border-indigo-200 p-4 sm:p-5 shadow-md space-y-3.5 animate-in fade-in zoom-in-95">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <span class="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-2">
+            <i class="bi" [ngClass]="editingMaterial ? 'bi-pencil-square text-indigo-600' : 'bi-plus-circle-fill text-emerald-600'"></i>
+            <span>{{ editingMaterial ? 'Editar Material / Insumo' : 'Nuevo Material / Insumo Requerido' }}</span>
+          </span>
+          <button type="button" (click)="cancelForm()" class="text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+            <i class="bi bi-x-lg"></i> Cancelar
+          </button>
+        </div>
+
+        <!-- Alert Error -->
+        <div *ngIf="errorMessage" class="p-2 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-bold flex items-center gap-2">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Nombre -->
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Nombre del Material / Insumo *</label>
+            <input type="text" [(ngModel)]="formName" 
+                   placeholder="Ej: Botón Pasta 18L, Tela Oxford, Entretela..."
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none transition" />
+          </div>
+
+          <!-- Tipo (Tela / Insumo) -->
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Tipo de Requerimiento</label>
+            <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button type="button" (click)="formType = 'tela'"
+                      class="flex-1 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5"
+                      [ngClass]="formType === 'tela' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'">
+                <i class="bi bi-droplet-fill"></i> Tela
+              </button>
+              <button type="button" (click)="formType = 'insumo'"
+                      class="flex-1 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5"
+                      [ngClass]="formType === 'insumo' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'">
+                <i class="bi bi-box-seam-fill"></i> Insumo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Descripción / Rol en la prenda -->
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Descripción o Función en la Prenda</label>
+          <input type="text" [(ngModel)]="formDescription" 
+                 placeholder="Ej: Botón para pechera y puños, Forro de bolsillos..."
+                 class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-indigo-500 focus:outline-none transition" />
+        </div>
+
+        <!-- Selector de Icono -->
+        <div class="space-y-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Seleccionar Icono Representativo</label>
+          <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar p-1 bg-slate-50 rounded-xl border border-slate-200">
+            <button type="button" *ngFor="let pi of popularIcons"
+                    (click)="formIcon = pi.icon"
+                    class="px-2.5 py-1 rounded-lg text-xs transition border flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    [ngClass]="formIcon === pi.icon ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-300'">
+              <i class="bi" [ngClass]="pi.icon"></i>
+              <span class="text-[10px]">{{ pi.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botones del Formulario -->
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" (click)="cancelForm()" 
+                  class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="button" (click)="saveForm()" 
+                  class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1.5">
+            <i class="bi bi-check2-circle text-sm"></i>
+            <span>{{ editingMaterial ? 'Actualizar Material' : 'Guardar en Catálogo' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredMaterials.length === 0" class="py-12 text-center bg-white rounded-2xl border border-slate-100 shadow-2xs p-4">
+        <i class="bi bi-box-seam text-slate-300 text-3xl mb-2 block"></i>
+        <p class="text-xs font-black text-slate-600 uppercase tracking-wider">Sin materiales coincidentes</p>
+        <p class="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
+          No hay insumos que coincidan con "{{ searchQuery }}". Crea uno nuevo con el botón superior.
+        </p>
+      </div>
+
+      <!-- Lista de Materiales del Catálogo Maestro -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" *ngIf="filteredMaterials.length > 0">
+        <div *ngFor="let item of filteredMaterials" 
+             class="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs hover:border-indigo-200 hover:shadow-xs transition-all flex items-start justify-between gap-3 group">
+          
+          <div class="flex items-start gap-3 min-w-0">
+            <span class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 mt-0.5 shadow-2xs"
+                  [ngClass]="item.type === 'tela' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'">
+              <i class="bi" [ngClass]="item.icon || (item.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill')"></i>
+            </span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="text-xs sm:text-sm font-black text-slate-900 truncate">{{ item.name }}</h4>
+                <span class="px-2 py-0.2 rounded-md text-[8px] font-black uppercase tracking-wider"
+                      [ngClass]="item.type === 'tela' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-amber-50 text-amber-700 border border-amber-100'">
+                  {{ item.type }}
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-400 font-medium mt-0.5 line-clamp-2" *ngIf="item.description">
+                {{ item.description }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" (click)="startEdit(item)"
+                    class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 border border-slate-200 flex items-center justify-center text-xs transition cursor-pointer"
+                    title="Editar material">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button type="button" (click)="deleteMaterial(item)"
+                    class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 flex items-center justify-center text-xs transition cursor-pointer"
+                    title="Eliminar material">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/90">
+      <button type="button" (click)="resetToDefaults()" 
+              class="text-[11px] font-bold text-slate-400 hover:text-slate-700 flex items-center gap-1 transition cursor-pointer">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        <span>Restablecer predeterminados</span>
+      </button>
+
+      <button type="button" (click)="onClose()" 
+              class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition cursor-pointer">
+        Listo / Cerrar
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -157,7 +157,7 @@ export class ModalInformeTareaComponent implements OnChanges {
   }
 
   get usuariosFiltrados(): UsuarioCache[] {
-    return this.usuarios;
+    return this.usuarios || [];
   }
 
   submit(): void {

@@ -1,0 +1,77 @@
+<div class="fixed inset-0 z-[1300] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+     *ngIf="isOpen">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-xl w-full p-6 space-y-4 animate-in zoom-in-95">
+    
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs text-lg">
+          <i class="bi bi-bounding-box-circles"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">
+            {{ isEdit ? 'Editar Región Anatómica' : 'Seleccionar Región Anatómica' }}
+          </h3>
+          <p class="text-[11px] text-slate-400 font-medium">Define a qué región anatómica corresponde el trazo en la prenda</p>
+        </div>
+      </div>
+      <button (click)="onCancel()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Banner Informativo -->
+    <div class="px-3.5 py-2 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-950 flex items-center gap-2.5">
+      <i class="bi bi-info-circle-fill text-indigo-600 text-sm shrink-0"></i>
+      <span>Elige la región anatómica base. Dentro de ella podrás configurar sus variantes y habilitar los aditamentos opcionales (bolsillos, reflectivos, etc.).</span>
+    </div>
+
+    <!-- Cuadrícula Visual de Selección de Zonas Anatómicas Reales -->
+    <div class="grid grid-cols-2 gap-2.5 max-h-80 overflow-y-auto custom-scrollbar p-0.5">
+      <button type="button" 
+              *ngFor="let opt of zoneTypeOptions"
+              (click)="onSelectOption(opt.value)"
+              class="group flex items-start gap-3 p-3 rounded-2xl border-2 text-left transition-all hover:scale-[1.01] hover:shadow-sm cursor-pointer"
+              [ngClass]="pendingZoneType === opt.value 
+                ? 'border-indigo-600 bg-indigo-50/60 shadow-xs ring-2 ring-indigo-500/20' 
+                : 'border-slate-100 bg-slate-50/60 hover:border-indigo-200 hover:bg-white'">
+        <span class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shrink-0 shadow-xs mt-0.5 transition-transform group-hover:scale-105"
+              [style.backgroundColor]="opt.color">
+          <i class="bi" [ngClass]="opt.icon || 'bi-bounding-box-circles'"></i>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-black text-slate-800 group-hover:text-indigo-600 transition-colors truncate">
+            {{ opt.label }}
+          </p>
+          <p class="text-[10px] text-slate-500 font-normal leading-tight mt-0.5 line-clamp-2">
+            {{ opt.description }}
+          </p>
+          <span class="inline-block text-[8px] font-bold text-indigo-600 bg-indigo-100/70 px-1.5 py-0.2 rounded-md mt-1 truncate max-w-full">
+            {{ opt.opcionalesEjemplo }}
+          </span>
+        </div>
+        <i class="bi bi-check-circle-fill text-indigo-600 text-sm opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+           [class.opacity-100]="pendingZoneType === opt.value"></i>
+      </button>
+    </div>
+
+    <!-- Footer con Acciones -->
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+      <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full" [style.backgroundColor]="getZoneColor(pendingZoneType)"></span>
+        {{ getZoneLabel(pendingZoneType) }}
+      </span>
+      <div class="flex items-center gap-2">
+        <button type="button" (click)="onCancel()"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" 
+                (click)="onConfirm()"
+                class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition-all cursor-pointer">
+          {{ isEdit ? 'Actualizar Región' : 'Confirmar y Ver Partes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

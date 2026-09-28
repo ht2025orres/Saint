@@ -4,6 +4,7 @@ import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.s
 import Swal from 'sweetalert2';
 
 export interface TareaMinutaFila {
+  id?: number;
   idTemp: number;
   titulo: string;
   descripcion: string;
@@ -23,6 +24,7 @@ export class ModalReunionComponent implements OnChanges {
   @Input() usuarioId = 0;
   @Input() usuariosDisponibles: UsuarioCache[] = [];
   @Input() esGestor = true;
+  @Input() vistaMode?: 'member' | undefined;
 
   @Output() onCerrar = new EventEmitter<void>();
   @Output() onGuardado = new EventEmitter<void>();
@@ -30,8 +32,13 @@ export class ModalReunionComponent implements OnChanges {
   modoTab: 'nueva' | 'historico' = 'nueva';
   saving = false;
   loadingHistorico = false;
+  loadingBusquedaFecha = false;
 
-  // Formulario Nueva Reunión
+  // Edición / Estado
+  reunionId: number | null = null;
+  esEdicionReunion = false;
+
+  // Formulario Nueva / Editar Reunión
   fechaReunion = '';
   tituloReunion = 'Reunión de Avance Diario / Minuta';
   descripcionReunion = '';
@@ -53,6 +60,7 @@ export class ModalReunionComponent implements OnChanges {
     if (changes['show']?.currentValue === true) {
       this._resetForm();
       if (this.seguimientoId) {
+        this.verificarReunionExistenteParaFecha();
         this.cargarHistorico();
       }
     }
@@ -61,11 +69,12 @@ export class ModalReunionComponent implements OnChanges {
   private _resetForm(): void {
     this.modoTab = 'nueva';
     this.saving = false;
+    this.reunionId = null;
+    this.esEdicionReunion = false;
     this.fechaReunion = this._getFechaActualIso();
     this.tituloReunion = 'Reunión de Avance Diario / Minuta';
     this.descripcionReunion = '';
     this.tareasMinuta = [];
-    this.agregarFilaTarea();
   }
 
   private _getFechaActualIso(): string {
@@ -76,6 +85,84 @@ export class ModalReunionComponent implements OnChanges {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  onFechaChange(): void {
+    this.verificarReunionExistenteParaFecha();
+  }
+
+  verificarReunionExistenteParaFecha(): void {
+    if (!this.seguimientoId || !this.fechaReunion) return;
+
+    this.loadingBusquedaFecha = true;
+    this._cdr.markForCheck();
+
+    const fechaSoloDia = this.fechaReunion.split('T')[0];
+
+    this._proyectoService.buscarReunionPorFecha(this.seguimientoId, fechaSoloDia, this.usuarioId).subscribe({
+      next: (res: any) => {
+        this.loadingBusquedaFecha = false;
+        if (res.data) {
+          this.cargarReunionEnFormulario(res.data);
+        } else {
+          this.reunionId = null;
+          this.esEdicionReunion = false;
+          this.tituloReunion = 'Reunión de Avance Diario / Minuta';
+          this.descripcionReunion = '';
+          this.tareasMinuta = [];
+          this.agregarFilaTarea();
+        }
+        this._cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingBusquedaFecha = false;
+        this.reunionId = null;
+        this.esEdicionReunion = false;
+        this._cdr.markForCheck();
+      },
+    });
+  }
+
+  cargarReunionEnFormulario(r: SeguimientoReunion): void {
+    this.reunionId = r.id;
+    this.esEdicionReunion = true;
+    this.modoTab = 'nueva';
+    this.fechaReunion = r.fecha ? String(r.fecha).replace(' ', 'T').substring(0, 16) : this._getFechaActualIso();
+    this.tituloReunion = r.titulo || 'Reunión de Avance Diario / Minuta';
+    this.descripcionReunion = r.descripcion || '';
+
+    const tareasExistentes = r.tareas || [];
+    if (tareasExistentes.length > 0) {
+      this.tareasMinuta = tareasExistentes.map((t: any) => {
+        const respIds: number[] = Array.isArray(t.responsables) && t.responsables.length > 0
+          ? t.responsables.map((id: any) => Number(id))
+          : (t.usuario_id ? [Number(t.usuario_id)] : []);
+
+        const respList: UsuarioCache[] = respIds.map(uid => {
+          const uFound = this.usuariosDisponibles.find(u => Number(u.id) === uid);
+          return uFound || { id: uid, nombre: this.state.nombreUsuario(uid) };
+        });
+
+        return {
+          id: t.id,
+          idTemp: t.id,
+          titulo: t.titulo || '',
+          descripcion: t.descripcion || '',
+          responsablesSelec: respList,
+          fecha_limite_entrega: t.fecha_limite_entrega ? String(t.fecha_limite_entrega).replace(' ', 'T').substring(0, 16) : this.fechaReunion,
+          busquedaResp: '',
+          showRespDropdown: false,
+        };
+      });
+    } else {
+      this.tareasMinuta = [];
+      this.agregarFilaTarea();
+    }
+    this._cdr.markForCheck();
+  }
+
+  cargarReunionParaEditar(r: SeguimientoReunion): void {
+    this.cargarReunionEnFormulario(r);
   }
 
   agregarFilaTarea(): void {
@@ -94,7 +181,6 @@ export class ModalReunionComponent implements OnChanges {
   onTituloKeydown(event: KeyboardEvent, index: number): void {
     if (event.key === 'Enter') {
       event.preventDefault();
-      // Si estamos en la última fila y tiene contenido, agregamos una nueva fila
       if (index === this.tareasMinuta.length - 1 && this.tareasMinuta[index].titulo.trim().length > 0) {
         this.agregarFilaTarea();
       }
@@ -119,25 +205,38 @@ export class ModalReunionComponent implements OnChanges {
   }
 
   usuariosFiltradosFila(tFila: TareaMinutaFila): UsuarioCache[] {
-    const ids = new Set(tFila.responsablesSelec.map((r) => r.id));
-    const q = tFila.busquedaResp.toLowerCase().trim();
-    return this.usuariosDisponibles
-      .filter((u) => !ids.has(u.id) && (!q || u.nombre.toLowerCase().includes(q)))
-      .slice(0, 8);
+    const ids = new Set(tFila.responsablesSelec.map((r) => Number(r.id)));
+    const q = (tFila.busquedaResp || '').toLowerCase().trim();
+    const lista = (this.usuariosDisponibles && this.usuariosDisponibles.length > 0)
+      ? this.usuariosDisponibles
+      : this.state.usuariosResponsables;
+    return (lista || [])
+      .filter((u) => u && u.id != null && !ids.has(Number(u.id)) && (!q || (u.nombre || '').toLowerCase().includes(q)))
+      .slice(0, 15);
   }
 
-  agregarResponsableFila(tFila: TareaMinutaFila, u: UsuarioCache): void {
-    if (!tFila.responsablesSelec.find((r) => r.id === u.id)) {
+  agregarResponsableFila(tFila: TareaMinutaFila, u: UsuarioCache, ev?: Event): void {
+    if (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    const targetId = Number(u.id);
+    if (!tFila.responsablesSelec.find((r) => Number(r.id) === targetId)) {
       tFila.responsablesSelec.push(u);
     }
     tFila.busquedaResp = '';
     tFila.showRespDropdown = false;
-    this._cdr.markForCheck();
+    this._cdr.detectChanges();
   }
 
-  quitarResponsableFila(tFila: TareaMinutaFila, uid: number): void {
-    tFila.responsablesSelec = tFila.responsablesSelec.filter((r) => r.id !== uid);
-    this._cdr.markForCheck();
+  quitarResponsableFila(tFila: TareaMinutaFila, uid: number | string, ev?: Event): void {
+    if (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    const targetId = Number(uid);
+    tFila.responsablesSelec = tFila.responsablesSelec.filter((r) => Number(r.id) !== targetId);
+    this._cdr.detectChanges();
   }
 
   cargarHistorico(): void {
@@ -145,7 +244,7 @@ export class ModalReunionComponent implements OnChanges {
     this.loadingHistorico = true;
     this._cdr.markForCheck();
 
-    this._proyectoService.getReuniones(this.seguimientoId, this.usuarioId).subscribe({
+    this._proyectoService.getReuniones(this.seguimientoId, this.usuarioId, this.vistaMode).subscribe({
       next: (res: any) => {
         this.reunionesHistoricas = res.data || [];
         if (this.reunionesHistoricas.length > 0 && !this.reunionExpandidaId) {
@@ -191,16 +290,24 @@ export class ModalReunionComponent implements OnChanges {
       return;
     }
 
+    const tareaSinResp = tareasValidas.find((t) => !t.responsablesSelec || t.responsablesSelec.length === 0);
+    if (tareaSinResp) {
+      this.state.showToast(`La tarea "${tareaSinResp.titulo}" debe tener al menos un responsable`, 'warning');
+      return;
+    }
+
     this.saving = true;
     this._cdr.markForCheck();
 
     const payload = {
+      reunion_id: this.reunionId || undefined,
       seguimiento_id: this.seguimientoId,
       usuario_id: this.usuarioId,
       fecha: this.fechaReunion || this._getFechaActualIso(),
       titulo: this.tituloReunion.trim() || 'Reunión / Minuta del Día',
       descripcion: this.descripcionReunion.trim(),
       tareas: tareasValidas.map((t) => ({
+        id: t.id || undefined,
         titulo: t.titulo.trim(),
         descripcion: t.descripcion.trim(),
         responsables: t.responsablesSelec.map((r) => r.id),
@@ -211,7 +318,7 @@ export class ModalReunionComponent implements OnChanges {
     this._proyectoService.crearReunionConTareas(payload).subscribe({
       next: (res: any) => {
         this.saving = false;
-        this.state.showToast('Reunión y tareas registradas correctamente');
+        this.state.showToast(this.esEdicionReunion ? 'Reunión del día actualizada correctamente' : 'Reunión y tareas registradas correctamente');
         this.onGuardado.emit();
         this.cerrar();
       },

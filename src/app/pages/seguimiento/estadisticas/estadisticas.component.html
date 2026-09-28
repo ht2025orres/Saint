@@ -36,6 +36,41 @@
     </div>
   </div>
 
+  <!-- ── SUB-PESTAÑAS DE ESTADÍSTICAS ───────────────────────────────── -->
+  <div class="flex items-center gap-1 bg-gray-100/90 p-1.5 rounded-2xl max-w-md border border-gray-200/60 shadow-inner">
+    <button
+      (click)="setSubTab('equipo')"
+      class="flex-1 py-2 px-4 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+      [ngClass]="subTab === 'equipo'
+        ? 'bg-white text-blue-700 shadow-md shadow-gray-200/50'
+        : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'">
+      <i class="bi bi-people-fill text-sm"></i>
+      <span>Carga de Equipo</span>
+    </button>
+
+    <button
+      (click)="setSubTab('proyectos')"
+      class="flex-1 py-2 px-4 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+      [ngClass]="subTab === 'proyectos'
+        ? 'bg-white text-indigo-700 shadow-md shadow-gray-200/50'
+        : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'">
+      <i class="bi bi-graph-up-arrow text-sm"></i>
+      <span>Crecimiento & Avance</span>
+    </button>
+  </div>
+
+  <!-- Sub-pestaña 2: Crecimiento y Avance de Proyectos -->
+  <ng-container *ngIf="subTab === 'proyectos'">
+    <app-estadisticas-proyectos
+      [usuarioId]="usuarioId"
+      [puedeGestionarModulo]="puedeGestionarModulo"
+      [vistaMode]="vistaMode">
+    </app-estadisticas-proyectos>
+  </ng-container>
+
+  <!-- Sub-pestaña 1: Carga y Rendimiento de Equipo (Existente) -->
+  <ng-container *ngIf="subTab === 'equipo'">
+
   <!-- ── SPINNER DE CARGA ─────────────────────────────────────────────── -->
   <div *ngIf="loading" class="flex flex-col items-center justify-center py-24 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -239,6 +274,7 @@
 
     </div>
 
+  </ng-container>
   </ng-container>
 
 </div>

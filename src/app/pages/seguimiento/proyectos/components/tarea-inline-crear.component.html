@@ -29,9 +29,10 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-2 pl-10">
     <!-- Estado -->
     <div class="relative" data-inline-estado>
+      <div *ngIf="showInlineEstado" class="fixed inset-0 z-40" (click)="showInlineEstado = false"></div>
       <label class="block text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Estado</label>
       <button (click)="showInlineEstado = !showInlineEstado"
-        class="w-full inline-flex items-center justify-between gap-1.5 px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border-2 shadow-sm transition-all"
+        class="w-full inline-flex items-center justify-between gap-1.5 px-2 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg border-2 shadow-xs transition-all relative z-45"
         [ngClass]="state.getEstadoBadgeClass(inlineTaskForm.estado)">
         <span class="flex items-center gap-1.5">
           <i [class]="'mdi ' + state.getEstadoIcon(inlineTaskForm.estado)"></i>
@@ -61,16 +62,17 @@
       <label class="block text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Fecha Límite</label>
       <input type="datetime-local" [(ngModel)]="inlineTaskForm.fecha_limite_entrega"
         class="w-full text-[9px] font-bold text-slate-600 border-2 border-slate-50 rounded-lg px-2 py-1 outline-none
-               focus:border-blue-400 bg-slate-50/50 focus:bg-white transition-all shadow-sm">
+               focus:border-blue-400 bg-slate-50/50 focus:bg-white transition-all shadow-xs">
     </div>
 
     <!-- Asignado -->
     <div class="relative" data-inline-asignado>
+      <div *ngIf="showInlineAsignado" class="fixed inset-0 z-40" (click)="showInlineAsignado = false"></div>
       <label class="block text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Responsable</label>
       <button (click)="showInlineAsignado = !showInlineAsignado"
-        class="w-full flex items-center gap-1.5 px-2 py-1 bg-slate-50/50 border-2 border-slate-50 rounded-lg hover:border-blue-200 transition-all text-left shadow-sm"
+        class="w-full flex items-center gap-1.5 px-2 py-1 bg-slate-50/50 border-2 border-slate-50 rounded-lg hover:border-blue-200 transition-all text-left shadow-xs relative z-45"
         [ngClass]="{'bg-white border-blue-100': inlineTaskForm.asignado_id}">
-        <div class="w-5 h-5 rounded flex items-center justify-center text-white text-[8px] font-black shadow-sm"
+        <div class="w-5 h-5 rounded flex items-center justify-center text-white text-[8px] font-black shadow-xs"
           [ngClass]="inlineTaskForm.asignado_id ? state.getColorPorId(inlineTaskForm.asignado_id) : 'bg-slate-300'">
           {{ inlineTaskForm.asignado_id ? state.getInicialesResponsable(inlineTaskForm.asignado_id) : '?' }}
         </div>
@@ -91,7 +93,7 @@
           <div *ngFor="let u of inlineUsuariosFiltrados"
             (click)="inlineTaskForm.asignado_id = u.id; showInlineAsignado = false"
             class="flex items-center gap-2.5 px-2.5 py-2 text-[10px] font-bold text-slate-600 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
-            <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-black shadow-sm flex-shrink-0"
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-black shadow-xs flex-shrink-0"
               [ngClass]="state.getColorPorId(u.id)">{{ state.getInicialesCorta(u.id) }}</div>
             <div class="min-w-0 flex-1">
               <span class="truncate block font-bold text-slate-800 text-xs">{{ u.nombre }}</span>
@@ -103,11 +105,11 @@
     </div>
   </div>
 
-  <!-- Descripción -->
-  <div class="flex items-center gap-2 mt-3 pl-10 border-t border-slate-50 pt-2">
-    <i class="mdi mdi-text-align-left text-slate-300 text-base"></i>
-    <input type="text" [(ngModel)]="inlineTaskForm.descripcion"
-      placeholder="Descripción opcional..."
-      class="flex-1 text-[9px] font-medium text-slate-500 outline-none bg-transparent placeholder-slate-300 transition-colors">
+  <!-- Descripción Amplia -->
+  <div class="flex items-start gap-2 mt-3 pl-10 border-t border-slate-100 pt-2.5">
+    <i class="mdi mdi-text-align-left text-blue-400 text-base mt-1 flex-shrink-0"></i>
+    <textarea rows="2" [(ngModel)]="inlineTaskForm.descripcion"
+      placeholder="Escribe la descripción detallada de la tarea (opcional)..."
+      class="flex-1 text-xs font-medium text-slate-700 outline-none bg-slate-50/70 border border-slate-100 focus:border-blue-300 focus:bg-white rounded-xl p-2.5 placeholder-slate-300 transition-all resize-y leading-relaxed"></textarea>
   </div>
 </div>

@@ -16,7 +16,7 @@
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                 </span>
-                <span class="text-sm font-bold text-slate-700 uppercase">{{ currentUser.email }}</span>
+                <span class="text-sm font-bold text-slate-700 uppercase font-mono">{{ currentUser.email }}</span>
             </div>
         </div>
     </div>
@@ -29,8 +29,8 @@
 
     <div *ngIf="editingUser" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <!-- Left Column: User Card & Personal Info -->
-        <div class="lg:col-span-2 space-y-8">
+        <!-- Left Column: Personal Info & Signature -->
+        <div class="lg:col-span-2 space-y-8 min-w-0">
             
             <!-- Personal Info Card -->
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -101,7 +101,7 @@
                         </div>
 
                         <div class="flex justify-end pt-4">
-                            <button type="submit" class="group flex items-center gap-2 px-8 py-3.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none" [disabled]="loading">
+                            <button type="submit" class="group flex items-center gap-2 px-8 py-3.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none cursor-pointer" [disabled]="loading">
                                 <i class="bi bi-check2-circle text-lg" *ngIf="!loading"></i>
                                 <span *ngIf="!loading">Actualizar Perfil</span>
                                 <span *ngIf="loading" class="flex items-center gap-2">
@@ -113,77 +113,213 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Firma Pre-cargada Card -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="bi bi-pen-fill text-blue-600"></i>
+                            Mi Firma Electrónica Pre-cargada
+                        </h2>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Almacenada de forma segura para reutilización en firmas oficiales</p>
+                    </div>
+                    <div *ngIf="editingUser.firma_url" class="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-200">
+                        <i class="bi bi-check-circle-fill text-green-600"></i>
+                        Firma Activa
+                    </div>
+                </div>
+
+                <div class="p-8 space-y-6">
+
+                    <!-- Vista Previa de Firma Actual Guardada -->
+                    <div *ngIf="editingUser.firma_url" class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div class="flex flex-wrap items-center justify-between gap-4 mb-3">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Firma Registrada Actualmente</span>
+                            <button type="button" (click)="eliminarFirmaGuardada()" class="flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg border border-red-200 transition-colors cursor-pointer" [disabled]="savingFirma">
+                                <i class="bi bi-trash3-fill"></i>
+                                Eliminar Firma
+                            </button>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-center min-h-[100px] max-h-[160px] overflow-hidden">
+                            <img [src]="editingUser.firma_url" alt="Firma precargada" class="max-h-28 object-contain" />
+                        </div>
+                    </div>
+
+                    <!-- Selector de Método: Dibujar vs Imagen -->
+                    <div class="flex items-center gap-2 p-1 bg-slate-100 rounded-xl">
+                        <button type="button" (click)="setMetodoFirmaPerfil('PULSO')" [class.bg-white]="metodoFirmaPerfil === 'PULSO'" [class.shadow-sm]="metodoFirmaPerfil === 'PULSO'" [class.text-blue-600]="metodoFirmaPerfil === 'PULSO'" class="flex-1 py-2 px-4 rounded-lg text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="bi bi-vector-pen"></i>
+                            Dibujar a Pulso
+                        </button>
+                        <button type="button" (click)="setMetodoFirmaPerfil('IMAGEN')" [class.bg-white]="metodoFirmaPerfil === 'IMAGEN'" [class.shadow-sm]="metodoFirmaPerfil === 'IMAGEN'" [class.text-blue-600]="metodoFirmaPerfil === 'IMAGEN'" class="flex-1 py-2 px-4 rounded-lg text-xs font-bold text-slate-600 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="bi bi-image"></i>
+                            Subir Imagen de Firma
+                        </button>
+                    </div>
+
+                    <!-- Método: Dibujar a Pulso -->
+                    <div *ngIf="metodoFirmaPerfil === 'PULSO'" class="space-y-4">
+                        <div class="relative bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 p-2 text-center">
+                            <canvas #signatureCanvas class="w-full bg-white rounded-xl shadow-inner cursor-crosshair touch-none"></canvas>
+                            <div class="mt-2 flex items-center justify-between text-[11px] font-semibold text-slate-400 px-2">
+                                <span>Dibuja tu trazado con el mouse o pantalla táctil</span>
+                                <span *ngIf="signatureWidthPx > 0" class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                    Dimensiones: {{ signatureWidthPx }} × {{ signatureHeightPx }} px
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <button type="button" (click)="limpiarCanvasPerfil()" class="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer">
+                                <i class="bi bi-eraser-fill"></i>
+                                Limpiar Trazo
+                            </button>
+                            <button type="button" (click)="guardarFirmaPrecargada()" class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-200 disabled:opacity-50 cursor-pointer" [disabled]="savingFirma">
+                                <i class="bi bi-check-circle-fill" *ngIf="!savingFirma"></i>
+                                <div *ngIf="savingFirma" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div>
+                                {{ savingFirma ? 'Guardando Firma...' : 'Guardar Firma' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Método: Subir Imagen -->
+                    <div *ngIf="metodoFirmaPerfil === 'IMAGEN'" class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Seleccionar archivo de imagen</label>
+                            <input type="file" (change)="onFirmaFileSelected($event)" accept="image/png, image/jpeg, image/svg+xml" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all border border-slate-200 rounded-xl bg-slate-50 cursor-pointer" />
+                        </div>
+
+                        <!-- Preview de Imagen Seleccionada -->
+                        <div *ngIf="signaturePreviewBase64" class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                                <span>Vista previa de la imagen:</span>
+                                <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                    Dimensiones reales: {{ signatureWidthPx }} × {{ signatureHeightPx }} px
+                                </span>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-center max-h-32 overflow-hidden">
+                                <img [src]="signaturePreviewBase64" alt="Preview firma" class="max-h-24 object-contain" />
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button type="button" (click)="guardarFirmaPrecargada()" class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-200 disabled:opacity-50 cursor-pointer" [disabled]="savingFirma || !signaturePreviewBase64">
+                                <i class="bi bi-check-circle-fill" *ngIf="!savingFirma"></i>
+                                <div *ngIf="savingFirma" class="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></div>
+                                {{ savingFirma ? 'Guardando Imagen...' : 'Guardar Imagen' }}
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
-        <!-- Right Column: Roles, Modules & Permissions -->
-        <div class="space-y-8">
+        <!-- Right Column: User Summary Card, Modules & Permissions -->
+        <div class="space-y-8 min-w-0">
             
-            <!-- User Summary Card -->
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-8 text-center">
-                <div class="relative inline-block mb-4">
+            <!-- User Summary Card (Fixed Top Avatar & Clean Collapsed Roles Trigger) -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 sm:p-8 text-center min-w-0">
+                <div class="relative inline-block mb-4 pt-4">
                     <div class="h-24 w-24 bg-gradient-to-tr from-blue-100 to-indigo-50 rounded-full flex items-center justify-center border-4 border-white shadow-md mx-auto">
                         <span class="text-3xl font-black text-blue-600">{{ editingUser.firstName.charAt(0) }}{{ editingUser.lastName.charAt(0) }}</span>
                     </div>
-                    <div class="absolute -bottom-1 -right-1 h-8 w-8 bg-blue-600 rounded-full border-4 border-white flex items-center justify-center">
-                        <i class="bi bi-camera-fill text-white text-[10px]"></i>
-                    </div>
                 </div>
-                <h3 class="text-xl font-extrabold text-slate-900">{{ editingUser.firstName }} {{ editingUser.lastName }}</h3>
-                <p class="text-sm text-slate-500 font-medium mb-4">{{ editingUser.email }}</p>
+                <h3 class="text-xl font-extrabold text-slate-900 break-words">{{ editingUser.firstName }} {{ editingUser.lastName }}</h3>
+                <p class="text-sm text-slate-500 font-medium mb-4 break-all">{{ editingUser.email }}</p>
                 
-                <div class="flex flex-wrap justify-center gap-2">
-                    <span *ngFor="let profile of userProfiles" class="px-3 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-wider rounded-full border border-blue-100">
-                        {{ profile.name }}
+                <!-- Roles Section (Clean & Collapsed with Interactive Modal/Popover Trigger) -->
+                <div class="pt-3 border-t border-slate-100 flex flex-col items-center">
+                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block mb-2.5">
+                        Cargos Asignados ({{ userProfiles.length }})
                     </span>
+
+                    <div *ngIf="userProfiles.length === 0" class="text-xs text-slate-400 italic">
+                        Sin roles asignados
+                    </div>
+
+                    <!-- If 1 or 2 roles: show badges directly -->
+                    <div *ngIf="userProfiles.length > 0 && userProfiles.length <= 2" class="flex flex-wrap justify-center gap-2">
+                        <span *ngFor="let profile of userProfiles" class="px-3 py-1 bg-blue-50 text-blue-700 text-[11px] font-bold rounded-xl border border-blue-100">
+                            {{ profile.name }}
+                        </span>
+                    </div>
+
+                    <!-- If > 2 roles: show first 2 preview + button to open full list modal -->
+                    <div *ngIf="userProfiles.length > 2" class="flex flex-wrap justify-center items-center gap-2">
+                        <span *ngFor="let profile of userProfiles.slice(0, 2)" class="px-3 py-1 bg-blue-50 text-blue-700 text-[11px] font-bold rounded-xl border border-blue-100">
+                            {{ profile.name }}
+                        </span>
+                        <button type="button" (click)="openModalRoles()" class="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-extrabold rounded-xl border border-indigo-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs">
+                            <i class="bi bi-[#10] bi-plus-circle-fill text-indigo-500"></i>
+                            +{{ userProfiles.length - 2 }} más
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Modules Section -->
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-w-0">
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                         <i class="bi bi-grid-1x2 text-indigo-600"></i>
                         Módulos Asignados
                     </h2>
+                    <span class="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-full border border-slate-200">
+                        {{ userModules.length }}
+                    </span>
                 </div>
                 <div class="p-6">
                     <div *ngIf="userModules.length === 0" class="text-center py-4">
                         <p class="text-xs text-slate-400 italic">No tienes módulos asignados</p>
                     </div>
                     <div class="space-y-3">
-                        <div *ngFor="let mod of userModules" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group hover:border-blue-200 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <div class="p-2 bg-white rounded-lg shadow-sm group-hover:bg-blue-50 transition-colors">
-                                    <i class="bi bi-box text-blue-600"></i>
+                        <div *ngFor="let mod of userModules" (click)="openModalPermisos(mod.id)" class="flex items-center justify-between p-3 bg-slate-50 hover:bg-blue-50/50 rounded-xl border border-slate-100 hover:border-blue-200 group transition-all cursor-pointer min-w-0" title="Haz clic para ver los permisos de este módulo">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="p-2 bg-white rounded-lg shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
+                                    <i class="bi bi-box text-blue-600 group-hover:text-white"></i>
                                 </div>
-                                <span class="text-sm font-bold text-slate-700">{{ mod.name }}</span>
+                                <span class="text-sm font-bold text-slate-700 group-hover:text-blue-700 truncate">{{ mod.name }}</span>
                             </div>
-                            <i class="bi bi-chevron-right text-slate-300 text-xs" *ngIf="mod.name !== 'Módulo ' + mod.id"></i>
+                            <i class="bi bi-chevron-right text-slate-300 group-hover:text-blue-500 text-xs shrink-0"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Permissions Section -->
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+            <!-- Permissions Section (Clean Collapsed Preview + Interactive Full Matrix Drawer/Modal) -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-w-0">
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                         <i class="bi bi-shield-check text-green-600"></i>
                         Permisos Efectivos
                     </h2>
+                    <span class="px-2.5 py-0.5 bg-green-50 text-green-700 text-xs font-extrabold rounded-full border border-green-200">
+                        {{ userPermissions.length }}
+                    </span>
                 </div>
                 <div class="p-6">
                     <div *ngIf="userPermissions.length === 0" class="text-center py-4">
                         <p class="text-xs text-slate-400 italic">No tienes permisos específicos asignados</p>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <span *ngFor="let perm of userPermissions" class="px-3 py-1.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-lg border border-slate-200 flex items-center gap-1.5">
-                            <i class="bi bi-dot text-lg text-slate-400"></i>
-                            {{ perm.name }}
-                        </span>
+                    
+                    <!-- Clean Preview Stack of First 3 Permissions -->
+                    <div *ngIf="userPermissions.length > 0" class="space-y-2">
+                        <div *ngFor="let perm of userPermissions.slice(0, 3)" class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-2.5 text-xs font-bold text-slate-700">
+                            <i class="bi bi-check-circle-fill text-green-500 text-sm shrink-0"></i>
+                            <span class="truncate">{{ perm.name }}</span>
+                        </div>
                     </div>
-                    <p class="mt-6 text-[10px] text-slate-400 text-center leading-relaxed">
-                        Los permisos mostrados son aquellos asignados directamente a tu cuenta o heredados por tu perfil actual.
+
+                    <!-- Prominent Trigger Button to Open Detailed Grouped Modal -->
+                    <button *ngIf="userPermissions.length > 0" type="button" (click)="openModalPermisos()" class="w-full mt-4 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer">
+                        <i class="bi bi-shield-lock-fill text-blue-400"></i>
+                        Ver Todos los Permisos ({{ userPermissions.length }})
+                    </button>
+
+                    <p class="mt-4 text-[10px] text-slate-400 text-center leading-relaxed">
+                        Los permisos son asignados directamente o heredados por tu perfil actual.
                     </p>
                 </div>
             </div>
@@ -199,9 +335,135 @@
             </div>
             <h3 class="text-2xl font-black text-slate-800 mb-2">¡Ups! Algo salió mal</h3>
             <p class="text-slate-500 mb-8 max-w-md mx-auto">No pudimos cargar la información de tu perfil. Por favor, intenta recargar la página o contacta con soporte.</p>
-            <button (click)="loadCurrentUser()" class="px-8 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg">
+            <button (click)="loadCurrentUser()" class="px-8 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg cursor-pointer">
                 Reintentar Carga
             </button>
         </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 1: LISTADO COMPLETO DE ROLES / CARGOS -->
+<!-- ========================================================================= -->
+<div *ngIf="modalRolesOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[85vh]">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+                    <i class="bi bi-person-badge-fill text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900">Cargos y Roles Asignados</h3>
+                    <p class="text-xs text-slate-500">Total: {{ userProfiles.length }} roles</p>
+                </div>
+            </div>
+            <button type="button" (click)="closeModalRoles()" class="h-9 w-9 bg-white border border-slate-200 hover:bg-slate-100 rounded-full flex items-center justify-center text-slate-500 transition-colors cursor-pointer">
+                <i class="bi bi-x-lg text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 overflow-y-auto space-y-3">
+            <div *ngFor="let profile of userProfiles" class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center gap-3">
+                <div class="h-10 w-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-bold">
+                    <i class="bi bi-shield-check text-lg"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider">{{ profile.name }}</h4>
+                    <p class="text-[11px] text-slate-500 mt-0.5" *ngIf="profile.description">{{ profile.description }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <button type="button" (click)="closeModalRoles()" class="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer">
+                Cerrar
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 2: MATRIZ COMPLETA DE PERMISOS EFECTIVOS (AGRUPADA POR MÓDULO CON BÚSQUEDA) -->
+<!-- ========================================================================= -->
+<div *ngIf="modalPermisosOpen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-green-50 text-green-600 rounded-xl border border-green-100">
+                    <i class="bi bi-shield-check text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-900">Permisos Efectivos</h3>
+                    <p class="text-xs text-slate-500 font-medium">Consulta detallada por módulos del sistema</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Search Input inside modal -->
+                <div class="relative flex-1 sm:w-64">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" [(ngModel)]="filtroPermisosModal" placeholder="Buscar permiso..." class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 transition-all" />
+                </div>
+                <button type="button" (click)="closeModalPermisos()" class="h-9 w-9 bg-white border border-slate-200 hover:bg-slate-100 rounded-full flex items-center justify-center text-slate-500 transition-colors cursor-pointer shrink-0">
+                    <i class="bi bi-x-lg text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Filter Indicator if clicked from a specific module -->
+        <div *ngIf="selectedModuleFilter" class="px-6 py-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
+            <span class="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                <i class="bi bi-funnel-fill text-blue-500"></i>
+                Filtrado por módulo seleccionado
+            </span>
+            <button type="button" (click)="selectedModuleFilter = null" class="text-xs text-blue-600 hover:underline font-bold cursor-pointer">
+                Mostrar todos
+            </button>
+        </div>
+
+        <!-- Modal Body: Grouped Permissions List -->
+        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+            <div *ngIf="groupedPermissionsModal.length === 0" class="text-center py-12">
+                <i class="bi bi-search text-slate-300 text-4xl block mb-2"></i>
+                <p class="text-sm font-bold text-slate-700">No se encontraron permisos</p>
+                <p class="text-xs text-slate-400 mt-1">Intenta con otro término de búsqueda</p>
+            </div>
+
+            <div *ngFor="let group of groupedPermissionsModal" class="bg-slate-50/80 rounded-2xl border border-slate-200/80 overflow-hidden">
+                <div class="px-5 py-3 bg-slate-100/70 border-b border-slate-200/60 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <i class="bi bi-box-seam text-blue-600 text-sm"></i>
+                        <h4 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">{{ group.moduleName }}</h4>
+                    </div>
+                    <span class="px-2.5 py-0.5 bg-white text-slate-700 text-[11px] font-extrabold rounded-full border border-slate-200">
+                        {{ group.permissions.length }} permisos
+                    </span>
+                </div>
+                <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div *ngFor="let perm of group.permissions" class="p-2.5 bg-white rounded-xl border border-slate-200/70 flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                        <i class="bi bi-check-circle-fill text-green-500 text-sm shrink-0"></i>
+                        <span class="break-words leading-tight">{{ perm.name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500">
+                Mostrando {{ filteredPermissionsModal.length }} de {{ userPermissions.length }} permisos totales
+            </span>
+            <button type="button" (click)="closeModalPermisos()" class="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer">
+                Cerrar
+            </button>
+        </div>
+
     </div>
 </div>

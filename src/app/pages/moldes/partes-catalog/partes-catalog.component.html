@@ -1,0 +1,243 @@
+<div class="min-h-screen bg-slate-50/60 p-3 md:p-6 font-sans">
+  
+  <!-- ════════════════════ TOP HEADER BAR ════════════════════ -->
+  <div class="max-w-7xl mx-auto mb-4">
+    <div class="bg-white px-5 py-4 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      
+      <!-- Titular e Identidad -->
+      <div class="flex items-center space-x-3.5">
+        <button (click)="goBack()" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all cursor-pointer" title="Volver al Administrador de Moldes">
+          <i class="bi bi-arrow-left text-lg"></i>
+        </button>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
+              Ingeniería & Producción
+            </span>
+            <span class="text-xs text-slate-400 font-medium">/</span>
+            <h1 class="text-lg md:text-xl font-black text-slate-900 tracking-tight">Catálogo Modular de Partes</h1>
+          </div>
+          <p class="text-xs text-slate-500 font-medium mt-0.5">
+            Estructura anatómica, variantes técnicas y costeo estándar SAM sin parámetros en texto libre.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════ BARRA DE MÉTRICAS COMPACTA ════════════════════ -->
+    <div class="bg-white/80 backdrop-blur-xs px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs mt-3 flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar text-xs">
+      
+      <div class="flex items-center gap-2 px-2 py-1 rounded-lg shrink-0">
+        <span class="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-black">
+          <i class="bi bi-puzzle"></i>
+        </span>
+        <span class="font-bold text-slate-800">{{ allMasterParts.length }}</span>
+        <span class="text-slate-400 font-medium">Partes Maestras</span>
+      </div>
+
+      <div class="h-4 w-px bg-slate-200 shrink-0 hidden sm:block"></div>
+
+      <div class="flex items-center gap-2 px-2 py-1 rounded-lg shrink-0">
+        <span class="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">
+          <i class="bi bi-sliders"></i>
+        </span>
+        <span class="font-bold text-slate-800">{{ totalVariantsCount }}</span>
+        <span class="text-slate-400 font-medium">Variantes Técnicas</span>
+      </div>
+
+      <div class="h-4 w-px bg-slate-200 shrink-0 hidden sm:block"></div>
+
+      <div class="flex items-center gap-2 px-2 py-1 rounded-lg shrink-0">
+        <span class="w-6 h-6 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-black">
+          <i class="bi bi-stopwatch"></i>
+        </span>
+        <span class="font-bold text-slate-800">{{ totalSamOperationsCount }}</span>
+        <span class="text-slate-400 font-medium">Operaciones SAM</span>
+      </div>
+
+      <div class="h-4 w-px bg-slate-200 shrink-0 hidden sm:block"></div>
+
+      <div class="flex items-center gap-2 px-2 py-1 rounded-lg shrink-0">
+        <span class="w-6 h-6 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-black">
+          <i class="bi bi-bounding-box-circles"></i>
+        </span>
+        <span class="font-bold text-slate-800">{{ regions.length - 1 }} Base + 1 Gen</span>
+        <span class="text-slate-400 font-medium">Regiones</span>
+      </div>
+
+      <div class="h-4 w-px bg-slate-200 shrink-0 hidden sm:block"></div>
+
+      <div class="flex items-center gap-2 px-2 py-1 rounded-lg shrink-0">
+        <span class="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-black">
+          <i class="bi bi-gear"></i>
+        </span>
+        <span class="font-bold text-slate-800">{{ machines.length }}</span>
+        <span class="text-slate-400 font-medium">Máquinas</span>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════ PESTAÑAS DE NAVEGACIÓN ════════════════════ -->
+    <div class="flex items-center gap-1.5 mt-3 border-b border-slate-200 pb-px overflow-x-auto custom-scrollbar">
+      
+      <button (click)="setTab('regiones')" 
+              class="px-4 py-2.5 rounded-t-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all border-b-2 cursor-pointer"
+              [ngClass]="activeTab === 'regiones' ? 'bg-white text-indigo-600 border-indigo-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100/60'">
+        <i class="bi bi-bounding-box-circles text-sm"></i>
+        <span>1. Regiones Anatómicas</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [ngClass]="activeTab === 'regiones' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-200 text-slate-600'">
+          {{ regions.length }}
+        </span>
+      </button>
+
+      <button (click)="setTab('partes')" 
+              class="px-4 py-2.5 rounded-t-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all border-b-2 cursor-pointer"
+              [ngClass]="activeTab === 'partes' ? 'bg-white text-indigo-600 border-indigo-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100/60'">
+        <i class="bi bi-puzzle text-sm"></i>
+        <span>2. Partes y Variantes</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [ngClass]="activeTab === 'partes' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-200 text-slate-600'">
+          {{ allMasterParts.length }}
+        </span>
+      </button>
+
+      <button (click)="setTab('operaciones')" 
+              class="px-4 py-2.5 rounded-t-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all border-b-2 cursor-pointer"
+              [ngClass]="activeTab === 'operaciones' || activeTab === 'maquinaria' ? 'bg-white text-indigo-600 border-indigo-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100/60'">
+        <i class="bi bi-gear-wide-connected text-sm"></i>
+        <span>3. Ingeniería SAM & Maquinaria</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [ngClass]="activeTab === 'operaciones' || activeTab === 'maquinaria' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-200 text-slate-600'">
+          {{ sharedOperationsLibrary.length }} ops • {{ machines.length }} máq
+        </span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ═══ SUBCOMPONENTES DE PESTAÑAS ═══ -->
+  
+  <!-- TAB 1: Regiones Anatómicas -->
+  <app-catalog-tab-regiones
+    *ngIf="activeTab === 'regiones'"
+    [regions]="regions"
+    [allMasterParts]="allMasterParts"
+    (createRegion)="openCreateRegionModal()"
+    (editRegion)="openEditRegionModal($event)"
+    (createPartForRegion)="openCreateModal($event)"
+    (filterByRegion)="filterByRegionAndSwitchTab($event)"
+    (viewRegionCatalog)="openRegionPartsModal($event)"
+    (editPart)="openEditModal($event)"
+    (deletePart)="deletePart($event)">
+  </app-catalog-tab-regiones>
+
+  <!-- TAB 2: Partes y Variantes -->
+  <app-catalog-tab-partes
+    *ngIf="activeTab === 'partes'"
+    [parts]="filteredParts"
+    [allMasterParts]="allMasterParts"
+    [regions]="regions"
+    [searchTerm]="searchTerm"
+    [selectedZoneFilter]="selectedZoneFilter"
+    [isLoading]="isLoading"
+    (searchTermChange)="searchTerm = $event"
+    (selectRegion)="selectRegionFilter($event)"
+    (createPart)="openCreateModal($event)"
+    (editPart)="openEditModal($event)"
+    (deletePart)="deletePart($event)">
+  </app-catalog-tab-partes>
+
+  <!-- TAB 3: Ingeniería SAM & Maquinaria -->
+  <app-catalog-tab-operaciones
+    *ngIf="activeTab === 'operaciones' || activeTab === 'maquinaria'"
+    [machines]="machines"
+    [sharedOperationsLibrary]="sharedOperationsLibrary"
+    [categoriesList]="categoriesList"
+    [machineSearchTerm]="machineSearchTerm"
+    [opSearchTerm]="opSearchTerm"
+    [opSelectedMachine]="opSelectedMachine"
+    [opSelectedCategory]="opSelectedCategory"
+    [opPageSize]="opPageSize"
+    [opCurrentPage]="opCurrentPage"
+    (createMachine)="openCreateMachineModal()"
+    (editMachine)="openEditMachineModal($event)"
+    (deleteMachine)="deleteMachine($event)"
+    (createOp)="openCreateStandardOpModal()"
+    (editOp)="openEditStandardOpModal($event.op, $event.index)"
+    (deleteOp)="deleteStandardOp($event)"
+    (machineSearchTermChange)="machineSearchTerm = $event"
+    (opSearchTermChange)="opSearchTerm = $event"
+    (opSelectedMachineChange)="opSelectedMachine = $event"
+    (opSelectedCategoryChange)="opSelectedCategory = $event"
+    (opPageSizeChange)="opPageSize = $event"
+    (opCurrentPageChange)="opCurrentPage = $event">
+  </app-catalog-tab-operaciones>
+
+</div>
+
+<!-- ═══ MODALES MODULARES DEDICADOS ═══ -->
+
+<!-- MODAL 1: Crear / Editar Parte Maestra y Variantes -->
+<app-modal-parte-form
+  [isOpen]="isModalOpen"
+  [isEditing]="isEditing"
+  [partForm]="partForm"
+  [regions]="regions"
+  [machines]="machines"
+  [sharedOperationsLibrary]="sharedOperationsLibrary"
+  [activeOpSuggestionIndex]="activeOpSuggestionIndex"
+  (closeModal)="closeModal()"
+  (savePart)="savePart()"
+  (generateAutoCode)="generateAutoCode($event)"
+  (selectZone)="selectZone($event)"
+  (selectIcon)="selectIcon($event)"
+  (addType)="addType()"
+  (removeType)="removeType($event)"
+  (setDefaultType)="setDefaultType($event)"
+  (autoGenerateTechnicalDescription)="autoGenerateTechnicalDescription($event)"
+  (toggleModalVariant)="toggleModalVariant($event)"
+  (addOperationToVariant)="addOperation($event)"
+  (removeOperationFromVariant)="removeOperation($event.type, $event.index)"
+  (selectOperationSuggestion)="selectSharedOp($event.typeIdx, $event.opIdx, $event.op)">
+</app-modal-parte-form>
+
+<!-- MODAL 2: Crear / Editar Región Anatómica -->
+<app-modal-region-form
+  [isOpen]="isRegionModalOpen"
+  [isEditing]="isEditingRegion"
+  [regionForm]="regionForm"
+  (saveRegion)="saveRegion()"
+  (closeRegion)="isRegionModalOpen = false">
+</app-modal-region-form>
+
+<!-- MODAL 3: Crear / Editar Máquina de Confección -->
+<app-modal-maquina-form
+  [isOpen]="isMachineModalOpen"
+  [isEditing]="isEditingMachine"
+  [machineForm]="machineForm"
+  (saveMachine)="saveMachine()"
+  (closeMachine)="isMachineModalOpen = false">
+</app-modal-maquina-form>
+
+<!-- MODAL 4: Crear / Editar Operación Estándar SAM -->
+<app-modal-standard-op-form
+  [isOpen]="isStandardOpModalOpen"
+  [isEditing]="isEditingStandardOp"
+  [standardOpForm]="standardOpForm"
+  [machines]="machines"
+  [categoriesList]="categoriesList"
+  (saveOp)="saveStandardOp()"
+  (closeOp)="isStandardOpModalOpen = false">
+</app-modal-standard-op-form>
+
+<!-- MODAL 5: Catálogo Completo de Partes de una Región -->
+<app-modal-region-parts
+  [isOpen]="isRegionPartsModalOpen"
+  [region]="selectedRegionForPartsModal"
+  [isGeneral]="isGeneralPartsModal"
+  [parts]="regionModalParts"
+  [machines]="machines"
+  (closeModal)="closeRegionPartsModal()"
+  (createPart)="openCreateModal($event)"
+  (editPart)="openEditModal($event)"
+  (deletePart)="deletePart($event)">
+</app-modal-region-parts>

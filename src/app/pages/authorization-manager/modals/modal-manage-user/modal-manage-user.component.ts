@@ -473,11 +473,16 @@ export class ModalManageUserComponent {
     });
   }
 
-  ejecutarAccionGlpi(accion: 'create' | 'enable' | 'disable'): void {
+  ejecutarAccionGlpi(accion: 'create' | 'enable' | 'disable', customUsername?: string): void {
     if (!this.editingUser?.id) return;
     this.platformActionLoading = true;
 
-    this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/${this.editingUser.id}/manage-glpi`, { action: accion }).subscribe({
+    const payload: any = { action: accion };
+    if (customUsername) {
+      payload.custom_username = customUsername;
+    }
+
+    this.http.post<any>(`${environment.URL_API_LARAVEL}/colaboradores/${this.editingUser.id}/manage-glpi`, payload).subscribe({
       next: (res) => {
         Swal.fire('Éxito', res.message || 'Acción en GLPI ejecutada con éxito', 'success');
         this.platformActionLoading = false;
@@ -485,8 +490,43 @@ export class ModalManageUserComponent {
         this.onSaved.emit();
       },
       error: (err) => {
-        Swal.fire('Error GLPI', err.error?.message || err.message, 'error');
         this.platformActionLoading = false;
+        if (err.status === 409 && err.error?.conflict) {
+          const suggested = (err.error.existing_username || '') + '2';
+          Swal.fire({
+            title: 'Nomenclatura Duplicada en GLPI',
+            html: `
+              <div class="text-left text-xs text-slate-700 flex flex-col gap-2">
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 font-medium">
+                  <i class="bi bi-exclamation-triangle-fill text-amber-600 me-1"></i>
+                  ${err.error.message}
+                </div>
+                <p class="font-bold text-slate-800 mt-1">Escribe el nuevo nombre de usuario que deseas asignarle en GLPI:</p>
+              </div>
+            `,
+            input: 'text',
+            inputValue: suggested,
+            showCancelButton: true,
+            confirmButtonText: 'Crear con este usuario',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+              confirmButton: 'bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-emerald-700',
+              cancelButton: 'bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-300'
+            },
+            inputValidator: (value) => {
+              if (!value || !value.trim()) {
+                return 'Debes ingresar un nombre de usuario válido';
+              }
+              return null;
+            }
+          }).then((result) => {
+            if (result.isConfirmed && result.value) {
+              this.ejecutarAccionGlpi('create', result.value.trim());
+            }
+          });
+        } else {
+          Swal.fire('Error GLPI', err.error?.message || err.message, 'error');
+        }
       }
     });
   }

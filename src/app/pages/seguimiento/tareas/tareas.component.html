@@ -421,8 +421,8 @@
                       <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
                     </span>
                   </div>
-                  <h4 class="text-base font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ t.titulo }}</h4>
-                  <p class="text-xs text-gray-400 font-medium mt-0.5 truncate">{{ t.descripcion || 'Sin descripción adicional' }}</p>
+                  <h4 class="text-base font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-snug">{{ t.titulo }}</h4>
+                  <p *ngIf="t.descripcion" class="text-xs text-gray-500 font-medium mt-1 leading-relaxed line-clamp-2 max-w-4xl" [title]="t.descripcion">{{ t.descripcion }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-4">
@@ -515,8 +515,8 @@
                     <span *ngIf="t.fecha_limite_entrega" class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                       <i class="bi bi-calendar-event mr-1"></i> {{ t.fecha_limite_entrega | date:'dd MMM yyyy':'UTC' }}
                     </span>
-                    <p class="text-xs text-gray-400 font-medium truncate">{{ t.descripcion || 'Sin descripción' }}</p>
                   </div>
+                  <p *ngIf="t.descripcion" class="text-xs text-gray-500 font-medium mt-1 leading-relaxed line-clamp-2 max-w-4xl" [title]="t.descripcion">{{ t.descripcion }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
@@ -780,11 +780,12 @@
     [proyecto]="proyectoSeleccionado"
     [actividades]="[]"
     [esSeguimiento]="true"
-    [usuariosDisponibles]="state.usuariosCache"
+    [usuariosDisponibles]="state.usuariosResponsables"
     [saving]="savingTarea"
     [esAdmin]="!!vistaMes?.es_gestor"
     (onCerrar)="showModalTarea = false"
-    (onGuardar)="onGuardarTarea($event)">
+    (onGuardar)="onGuardarTarea($event)"
+    (onEliminar)="eliminarTareaDesdeModal($event)">
   </app-modal-tarea>
 
   <app-modal-informe-tarea
@@ -809,8 +810,9 @@
     [show]="showModalReunion"
     [seguimientoId]="seguimientoActual?.id || 0"
     [usuarioId]="usuarioId"
-    [usuariosDisponibles]="state.usuariosCache"
+    [usuariosDisponibles]="state.usuariosResponsables"
     [esGestor]="!!vistaMes?.es_gestor"
+    [vistaMode]="vistaMode"
     (onCerrar)="showModalReunion = false"
     (onGuardado)="cargarDatos()">
   </app-modal-reunion>

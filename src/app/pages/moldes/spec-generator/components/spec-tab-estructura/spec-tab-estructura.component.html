@@ -1,0 +1,393 @@
+<div class="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+  <!-- ═══ DATOS BÁSICOS & RESUMEN ESTRUCTURAL ═══ -->
+  <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="space-y-4">
+      <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest">
+        <i class="bi"
+          [ngClass]="context === 'comercial' ? 'bi-file-earmark-text text-amber-600' : 'bi-file-earmark-diff text-indigo-600'"></i>
+        {{ context === 'comercial' ? 'Descripción General (OPM)' : 'Descripción General' }}
+      </h3>
+
+      <!-- COMERCIAL: Un solo textarea -->
+      <div *ngIf="context === 'comercial'"
+        class="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+          <span class="text-[10px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="bi bi-file-earmark-text text-amber-600"></i> Observaciones / Descripción General del Cliente (OPM)
+          </span>
+          <span
+            class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[8px] font-extrabold rounded uppercase">Comercial</span>
+        </div>
+        <textarea [ngModel]="generalDescription" (ngModelChange)="onDescChange($event)" rows="3"
+          placeholder="Diligencie especificaciones y observaciones generales enviadas por el cliente para esta prenda..."
+          class="w-full p-3 bg-white border border-amber-300 rounded-xl text-xs font-medium focus:border-amber-500 outline-none transition-all resize-none text-slate-800 leading-relaxed"></textarea>
+      </div>
+
+      <!-- MUESTRAS/FICHA: Dos columnas -->
+      <div *ngIf="context !== 'comercial'" class="space-y-3">
+        <div class="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex flex-col gap-2">
+          <div class="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+            <span class="text-[10px] font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="bi bi-person-badge text-amber-600"></i> Solicitud Comercial (Cliente)
+            </span>
+            <span
+              class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[8px] font-extrabold rounded uppercase">Comercial</span>
+          </div>
+          <div *ngIf="itemData || solicitudData || clientGeneralDescription" class="space-y-2 text-xs text-amber-950">
+            <div *ngIf="itemData?.descripcion" class="font-bold text-slate-700 flex items-center gap-1.5">
+              <span class="px-1.5 py-0.5 bg-amber-200 text-amber-900 text-[9px] font-extrabold rounded uppercase">Prenda
+                / Ítem</span>
+              <span>{{ itemData.descripcion }}</span>
+            </div>
+            <div *ngIf="itemData?.item_cliente || itemData?.siesa_referencia"
+              class="text-[11px] font-semibold text-amber-900 flex flex-wrap gap-3">
+              <span *ngIf="itemData?.item_cliente"><strong>Ref. Cliente:</strong> {{ itemData.item_cliente }}</span>
+              <span *ngIf="itemData?.siesa_referencia"><strong>Ref. SIESA:</strong> {{ itemData.siesa_referencia
+                }}</span>
+            </div>
+            <div *ngIf="clientGeneralDescription"
+              class="p-2.5 bg-amber-100/70 rounded-xl border border-amber-200 text-amber-950 font-medium leading-relaxed">
+              <strong class="text-[9px] font-black uppercase text-amber-800 block mb-0.5"><i
+                  class="bi bi-card-text"></i> Descripción de la Solicitud (Cliente):</strong>
+              <span>{{ clientGeneralDescription }}</span>
+            </div>
+            <div *ngIf="solicitudData?.observaciones"
+              class="text-[11px] italic bg-amber-100/50 p-2 rounded-xl border border-amber-200/60">
+              <strong class="font-bold not-italic">Obs. Comercial:</strong> {{ solicitudData.observaciones }}
+            </div>
+          </div>
+          <div *ngIf="!itemData && !solicitudData && !clientGeneralDescription"
+            class="text-xs text-amber-700/70 italic py-2">
+            Sin observaciones comerciales en la solicitud.
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex flex-col gap-2">
+          <div class="flex items-center justify-between border-b border-indigo-200/60 pb-1.5">
+            <span class="text-[10px] font-black text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="bi bi-gear-wide-connected text-indigo-600"></i> Especificación Técnica General (OPM)
+            </span>
+            <span
+              class="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[8px] font-extrabold rounded uppercase">Técnica</span>
+          </div>
+          <textarea [ngModel]="generalDescription" (ngModelChange)="onDescChange($event)" rows="3"
+            placeholder="Diligencie especificaciones y observaciones técnicas generales para confección y muestras..."
+            class="w-full p-3 bg-white border border-indigo-200 rounded-xl text-xs font-medium focus:border-indigo-500 outline-none transition-all resize-none text-slate-800 leading-relaxed"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen Estructural -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase tracking-widest">
+        <i class="bi bi-bar-chart-steps text-indigo-600"></i> Resumen Estructural
+      </h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100 text-center">
+          <span class="block text-2xl font-black text-indigo-600">{{ totalZonesCount }}</span>
+          <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Zonas del Molde</span>
+        </div>
+        <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 text-center">
+          <span class="block text-2xl font-black text-emerald-600">{{ configuredPartsCount }}</span>
+          <span class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Partes Configuradas</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-purple-50/70 p-3 rounded-2xl border border-purple-100 text-center">
+          <span class="block text-lg font-black text-purple-600">{{ consolidatedMaterials.length }}</span>
+          <span class="text-[9px] font-black text-purple-500 uppercase tracking-widest">Materiales (Auto)</span>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center">
+          <span class="block text-lg font-black text-slate-700">{{ activePartsCount }}</span>
+          <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Partes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECCIÓN UNIFICADA: MATERIALES E INSUMOS REQUERIDOS ═══ -->
+  <div class="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-visible relative">
+
+    <!-- 1. Cabecera -->
+    <div class="p-4 sm:p-5 flex flex-col gap-3 bg-white rounded-t-3xl border-b border-slate-100">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <i class="bi bi-boxes text-sm"></i>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">
+              Materiales e Insumos Requeridos
+            </h3>
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800">
+              {{ consolidatedMaterials.length }} {{ consolidatedMaterials.length === 1 ? 'Material' : 'Materiales' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Botón Agregar Material Extra -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" (click)="showAddExtraMaterial = !showAddExtraMaterial"
+            class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+            <i class="bi bi-plus-circle text-xs text-emerald-500"></i>
+            <span>Agregar Material</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel Desplegable: Selector de Material Maestro / Adicional -->
+      <div *ngIf="showAddExtraMaterial"
+        class="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200 shadow-sm">
+
+        <div class="flex items-center justify-between gap-2 border-b border-slate-200/60 pb-2">
+          <div class="flex items-center gap-2">
+            <i class="bi bi-box-seam-fill text-indigo-600 text-xs"></i>
+            <span class="text-xs font-black text-slate-800 uppercase tracking-wider">
+              Seleccionar Material del Catálogo
+            </span>
+          </div>
+          <button type="button" (click)="showAddExtraMaterial = false"
+            class="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition cursor-pointer">
+            <i class="bi bi-x-lg text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Buscador + Filtros de Tipo -->
+        <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <div class="relative flex-1">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" [(ngModel)]="materialPickerSearch" (keyup.enter)="addCustomMaterial()"
+              placeholder="Buscar en catálogo de materiales (ej. Velcro, Cinta, Broches...)"
+              class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:border-indigo-400 focus:outline-none transition shadow-2xs" />
+          </div>
+
+          <!-- Tabs de Tipo -->
+          <div
+            class="flex items-center gap-0.5 p-0.5 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shrink-0 shadow-2xs">
+            <button type="button" (click)="materialPickerTab = 'all'"
+              class="px-2.5 py-1 rounded-lg transition cursor-pointer"
+              [ngClass]="materialPickerTab === 'all' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Todos ({{ masterMaterials.length }})
+            </button>
+            <button type="button" (click)="materialPickerTab = 'tela'"
+              class="px-2.5 py-1 rounded-lg transition cursor-pointer"
+              [ngClass]="materialPickerTab === 'tela' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Telas
+            </button>
+            <button type="button" (click)="materialPickerTab = 'insumo'"
+              class="px-2.5 py-1 rounded-lg transition cursor-pointer"
+              [ngClass]="materialPickerTab === 'insumo' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Insumos
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Materiales del Catálogo Maestro (Tarjetas seleccionables) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
+          <button *ngFor="let preset of filteredPickerMaterials" type="button" (click)="addPresetMaterial(preset)"
+            class="flex items-center gap-2.5 p-2 bg-white hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-300 rounded-xl text-left transition cursor-pointer shadow-2xs group">
+            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 shadow-2xs"
+              [ngClass]="preset.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+              <i class="bi"
+                [ngClass]="preset.icon || (preset.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill')"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+              <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-900 truncate block">{{ preset.name
+                }}</span>
+              <span class="text-[8px] font-black uppercase tracking-wider"
+                [ngClass]="preset.type === 'tela' ? 'text-indigo-600' : 'text-amber-700'">
+                {{ preset.type === 'tela' ? 'Tela' : 'Insumo' }}
+              </span>
+            </div>
+            <i class="bi bi-plus-lg text-slate-400 group-hover:text-indigo-600 text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Opción de Material Manual / Libre (Siempre visible como alternativa) -->
+        <div
+          class="pt-2.5 border-t border-slate-200/90 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50/70 -mx-3 -mb-3 p-3 rounded-b-2xl">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <i class="bi bi-pencil-square text-indigo-600 text-xs shrink-0"></i>
+            <span class="text-[11px] text-slate-600 font-semibold truncate">
+              ¿No encuentras el material en la lista? Agrégalo manualmente:
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <input type="text" [(ngModel)]="manualCustomName" (keyup.enter)="addCustomMaterial()"
+              placeholder="Nombre del material..."
+              class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:border-indigo-400 focus:outline-none min-w-44 shadow-2xs" />
+            <select [(ngModel)]="extraMaterialType"
+              class="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none text-slate-700 shadow-2xs">
+              <option value="tela">TELA</option>
+              <option value="insumo">INSUMO</option>
+            </select>
+            <button type="button" (click)="addCustomMaterial()"
+              [disabled]="!manualCustomName?.trim() && !materialPickerSearch?.trim()"
+              class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-[10px] font-black transition cursor-pointer shadow-xs whitespace-nowrap">
+              + Agregar Manual
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros: Tipo + Desplegable por Parte -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <!-- Tabs de Tipo -->
+        <div class="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg text-[10px] font-bold shrink-0">
+          <button type="button" (click)="materialTypeTab = 'all'"
+            class="px-3 py-1 rounded-md transition cursor-pointer text-center"
+            [ngClass]="materialTypeTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+            Todos ({{ consolidatedMaterials.length }})
+          </button>
+          <button type="button" (click)="materialTypeTab = 'tela'"
+            class="px-3 py-1 rounded-md transition cursor-pointer text-center"
+            [ngClass]="materialTypeTab === 'tela' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+            Telas ({{ telasConsolidadasCount }})
+          </button>
+          <button type="button" (click)="materialTypeTab = 'insumo'"
+            class="px-3 py-1 rounded-md transition cursor-pointer text-center"
+            [ngClass]="materialTypeTab === 'insumo' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+            Insumos ({{ insumosConsolidadosCount }})
+          </button>
+        </div>
+
+        <!-- Desplegable por Parte -->
+        <div class="relative flex items-center gap-2" *ngIf="uniqueSourceParts.length > 1">
+          <div class="relative min-w-[200px] sm:min-w-[240px]">
+            <i
+              class="bi bi-puzzle absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-xs pointer-events-none"></i>
+            <select [(ngModel)]="materialPartFilter"
+              class="w-full pl-8 pr-8 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-indigo-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition cursor-pointer appearance-none shadow-2xs">
+              <option value="">Todas las partes ({{ uniqueSourceParts.length }})</option>
+              <option *ngFor="let partName of uniqueSourceParts" [value]="partName">
+                {{ partName }}
+              </option>
+            </select>
+            <i
+              class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none"></i>
+          </div>
+          <button *ngIf="materialPartFilter" type="button" (click)="materialPartFilter = ''"
+            class="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+            title="Mostrar todas las partes">
+            <i class="bi bi-x-circle-fill text-sm"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Listado de Materiales (Cards) -->
+    <div class="p-3 sm:p-4 space-y-2.5" *ngIf="filteredConsolidatedMaterials.length > 0">
+      <div *ngFor="let mat of filteredConsolidatedMaterials; trackBy: trackByMaterialName"
+        class="flex flex-col gap-3 p-3.5 rounded-2xl border border-slate-100 hover:border-indigo-200/80 hover:bg-slate-50/70 transition-all bg-white shadow-2xs group">
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <!-- Material Icon + Name + Badges -->
+          <div class="flex items-center gap-3 min-w-0 md:w-64 shrink-0">
+            <span class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-2xs"
+              [ngClass]="mat.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+              <i class="bi" [ngClass]="mat.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill'"></i>
+            </span>
+            <div class="min-w-0">
+              <p class="font-black text-slate-800 text-xs truncate">{{ mat.name }}</p>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span
+                  [ngClass]="mat.type === 'tela' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-100'"
+                  class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border">
+                  {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
+                </span>
+                <span *ngIf="!mat.isExtra" class="text-[9px] text-slate-400 font-bold">
+                  {{ mat.sourceParts.length }} {{ mat.sourceParts.length === 1 ? 'parte' : 'partes' }}
+                </span>
+                <span *ngIf="mat.isExtra"
+                  class="text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 rounded uppercase">
+                  Adicional
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Source Parts count + tooltip -->
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1 justify-start md:justify-end">
+            <div *ngIf="mat.sourceParts.length > 0" class="relative cursor-help inline-flex items-center gap-1"
+              [title]="'Usado en:\n• ' + mat.sourceParts.join('\n• ')">
+              <span class="text-[9px] text-slate-400 font-bold">
+                {{ mat.sourceParts.length }} {{ mat.sourceParts.length === 1 ? 'parte' : 'partes' }}
+              </span>
+              <i class="bi bi-info-circle text-[10px] text-slate-400 hover:text-indigo-600 transition"></i>
+            </div>
+            <!-- Delete button for extra materials -->
+            <button *ngIf="mat.isExtra" type="button" (click)="removeExtraMaterial(mat)"
+              class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
+              title="Eliminar material adicional">
+              <i class="bi bi-trash text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sección de Vinculación SIESA / Manual -->
+        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+          <ng-container *ngIf="mat.siesaRef">
+            <div class="flex items-center justify-between gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl w-full">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="text-[8px] font-black text-emerald-600 uppercase shrink-0 px-1.5 py-0.5 bg-emerald-100/60 rounded-md">{{ mat.siesaRef.assignment_source || 'SIESA' }}</span>
+                <span class="text-[11px] font-bold text-slate-700 truncate" [title]="mat.siesaRef.descripcion">{{ mat.siesaRef.descripcion }}</span>
+              </div>
+              <button type="button" (click)="clearMaterialSiesa(mat)"
+                class="w-5 h-5 bg-white border border-slate-200 text-slate-400 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all cursor-pointer shrink-0"
+                title="Desvincular material">
+                <i class="bi bi-x text-[10px]"></i>
+              </button>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!mat.siesaRef">
+            <span class="text-[10px] text-slate-400 font-medium italic">Sin vincular</span>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" (click)="linkSiesaToMaterial(mat)"
+                class="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-[9px] font-black hover:bg-indigo-600 hover:text-white transition-all cursor-pointer"
+                title="Buscar en SIESA">
+                SIESA
+              </button>
+              <button type="button" (click)="linkManualToMaterial(mat)"
+                class="px-3 py-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg text-[9px] font-black hover:bg-slate-100 transition-all cursor-pointer"
+                title="Asignar manual">
+                MANUAL
+              </button>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Empty State -->
+    <div *ngIf="filteredConsolidatedMaterials.length === 0" class="py-10 text-center px-6">
+      <div *ngIf="consolidatedMaterials.length === 0">
+        <div
+          class="w-12 h-12 rounded-2xl bg-indigo-50/70 text-indigo-500 mx-auto flex items-center justify-center mb-3">
+          <i class="bi bi-boxes text-xl"></i>
+        </div>
+        <p class="text-xs font-bold text-slate-700">Sin materiales consolidados</p>
+        <p class="text-[11px] text-slate-400 mt-1 max-w-md mx-auto">
+          Los materiales e insumos se recopilarán automáticamente según las partes y variantes seleccionadas en el
+          diseño.
+        </p>
+        <button type="button" (click)="showAddExtraMaterial = true"
+          class="mt-3 px-4 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl text-[10px] font-bold transition cursor-pointer">
+          <i class="bi bi-plus-circle"></i> Agregar material adicional
+        </button>
+      </div>
+      <div *ngIf="consolidatedMaterials.length > 0">
+        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2">
+          <i class="bi bi-funnel text-lg"></i>
+        </div>
+        <p class="text-xs font-bold text-slate-600">Ningún material coincide con este filtro</p>
+        <button type="button" (click)="materialPartFilter = ''; materialTypeTab = 'all'"
+          class="mt-2 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer transition">
+          <i class="bi bi-arrow-counterclockwise"></i> Limpiar filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

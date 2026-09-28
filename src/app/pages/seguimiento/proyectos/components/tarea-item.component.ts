@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
 import { Tarea, ProyectoService, EstadoTarea } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService, UsuarioCache } from '../../seguimiento-state.service';
 import Swal from 'sweetalert2';
@@ -8,7 +8,7 @@ interface InlineEditForm {
   descripcion:          string;
   estado:               EstadoTarea;
   fecha_limite_entrega: string;
-  asignado_id:          number | null;
+  responsables_ids:     number[];
 }
 
 @Component({
@@ -36,6 +36,9 @@ export class TareaItemComponent {
 
   isDeleted = false;
 
+  /** Tracked array of responsable info for the inline edit chips (NOT a getter) */
+  inlineEditResponsablesInfoList: { id: number; iniciales: string; nombre: string }[] = [];
+
   constructor(
     public state: SeguimientoStateService,
     private proyServ: ProyectoService,
@@ -58,7 +61,7 @@ export class TareaItemComponent {
 
     // Si estamos editando y el click es fuera de este componente completo
     if (this.inlineEditId && !this.saving) {
-      if (!this.el.nativeElement.contains(target)) {
+      if (target.isConnected && !this.el.nativeElement.contains(target)) {
         if (this.inlineEditForm.titulo?.trim() && this._inlineEditChanged()) {
           this.guardarEdicionInline();
         } else {
@@ -69,15 +72,24 @@ export class TareaItemComponent {
     this.cdr.markForCheck();
   }
 
-  get inlineEditAsignadoNombre(): string {
-    return this.state.usuariosResponsables.find(u => u.id === this.inlineEditForm.asignado_id)?.nombre ?? '';
+  /** Rebuild the tracked responsables info list from the current form IDs */
+  private _rebuildResponsablesInfo(): void {
+    this.inlineEditResponsablesInfoList = this.inlineEditForm.responsables_ids.map(id => {
+      const numId = Number(id);
+      return {
+        id: numId,
+        iniciales: this.state.getInicialesCorta(numId),
+        nombre: this.state.nombreUsuario(numId) || '?',
+      };
+    });
   }
 
   get inlineEditUsuariosFiltrados(): UsuarioCache[] {
+    const ids = new Set(this.inlineEditForm.responsables_ids.map(id => Number(id)));
     const q = this.inlineEditBusqResp.toLowerCase();
-    return q
-      ? this.state.usuariosAdministradores.filter(u => u.nombre.toLowerCase().includes(q)).slice(0, 8)
-      : this.state.usuariosAdministradores.slice(0, 8);
+    return this.state.usuariosAdministradores
+      .filter(u => !ids.has(Number(u.id)) && (!q || u.nombre.toLowerCase().includes(q)))
+      .slice(0, 8);
   }
 
   puedeCompletarTarea(): boolean {
@@ -96,7 +108,7 @@ export class TareaItemComponent {
       descripcion:          this.tarea.descripcion ?? '',
       estado:               this.tarea.estado ?? 'pendiente',
       fecha_limite_entrega: this._toLocal(this.tarea.fecha_limite_entrega),
-      asignado_id:          (this.tarea.responsables && this.tarea.responsables.length > 0) ? this.tarea.responsables[0] : null,
+      responsables_ids:     (this.tarea.responsables ?? []).map((r: any) => Number(r)),
     };
     this.inlineEditOriginal = { ...this.inlineEditForm };
 
@@ -104,7 +116,8 @@ export class TareaItemComponent {
     this.showInlineEditEstado = false;
     this.showInlineEditAsignado = false;
 
-    this.cdr.markForCheck();
+    this._rebuildResponsablesInfo();
+    this.cdr.detectChanges();
     setTimeout(() => {
       const input = this.el.nativeElement.querySelector('[data-edit-title]');
       input?.focus();
@@ -116,6 +129,11 @@ export class TareaItemComponent {
     if (!this.inlineEditId || !this.inlineEditForm.titulo.trim() || this.saving) return;
     if (!this._inlineEditChanged()) return this.cancelarEdicionInline();
 
+    if (!this.inlineEditForm.responsables_ids || this.inlineEditForm.responsables_ids.length === 0) {
+      this.state.showToast('Debe asignar al menos un responsable a la tarea', 'warning');
+      return;
+    }
+
     // Guardar estado original para revertir en caso de error
     const backup = { ...this.tarea };
 
@@ -124,12 +142,7 @@ export class TareaItemComponent {
     this.tarea.descripcion = this.inlineEditForm.descripcion;
     this.tarea.estado = this.inlineEditForm.estado;
     this.tarea.fecha_limite_entrega = this.inlineEditForm.fecha_limite_entrega;
-    // Responsables es un poco más complejo porque es un array
-    if (this.inlineEditForm.asignado_id) {
-      this.tarea.responsables = [this.inlineEditForm.asignado_id];
-    } else {
-      this.tarea.responsables = [];
-    }
+    this.tarea.responsables = [...this.inlineEditForm.responsables_ids];
 
     this.saving = true;
     this.inlineEditId = null; // Cerramos el editor inmediatamente
@@ -141,7 +154,7 @@ export class TareaItemComponent {
       estado:               this.inlineEditForm.estado as EstadoTarea,
       fecha_limite_entrega: this.inlineEditForm.fecha_limite_entrega,
       usuario_id:           this.usuarioId,
-      responsables:         this.inlineEditForm.asignado_id ? [this.inlineEditForm.asignado_id] : [],
+      responsables:         [...this.inlineEditForm.responsables_ids],
     };
 
     this.proyServ.actualizarTarea(backup.id, body).subscribe({
@@ -175,64 +188,143 @@ export class TareaItemComponent {
     if (ev.key === 'Escape') this.cancelarEdicionInline();
   }
 
+  async promptCompletarTarea(tituloTarea: string): Promise<{ notas: string; archivo: File | null } | null> {
+    let archivoSeleccionado: File | null = null;
+
+    const res = await Swal.fire({
+      title: '',
+      html: `
+        <div class="p-2 text-left font-sans">
+          <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shadow-lg shadow-emerald-200 flex-shrink-0">
+              <i class="bi bi-check-circle-fill text-2xl"></i>
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-base font-black text-slate-800 tracking-tight">Finalizar y Completar Tarea</h3>
+              <p class="text-xs font-semibold text-slate-400 truncate max-w-[320px]">${tituloTarea}</p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i class="bi bi-journal-text text-emerald-500"></i>
+              Nota o Comentario de Cumplimiento
+            </label>
+            <textarea id="swal-comp-notas" rows="3"
+              class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 transition-all outline-none resize-none shadow-xs"
+              placeholder="Describe brevemente el resultado, observaciones o entregables de esta tarea..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i class="bi bi-paperclip text-emerald-500"></i>
+              Evidencia Adjunta <span class="text-[9px] font-normal text-slate-400 normal-case">(Opcional)</span>
+            </label>
+            <div class="relative">
+              <input type="file" id="swal-comp-file" class="hidden" />
+              <button type="button" id="swal-comp-file-btn"
+                class="w-full flex items-center justify-between px-4 py-3 bg-emerald-50/60 hover:bg-emerald-100/70 border-2 border-dashed border-emerald-200 rounded-2xl transition-all cursor-pointer group">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <i class="bi bi-cloud-arrow-up-fill text-sm"></i>
+                  </div>
+                  <span id="swal-comp-file-label" class="text-xs font-bold text-emerald-800 truncate">Seleccionar archivo de evidencia...</span>
+                </div>
+                <span class="text-[10px] font-black text-emerald-600 bg-white px-2 py-1 rounded-lg border border-emerald-100 shadow-2xs">Examinar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      showDenyButton: false,
+      confirmButtonText: '<i class="bi bi-check2-circle mr-1"></i> Completar Tarea',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#94a3b8',
+      customClass: {
+        popup: 'rounded-[2rem] p-6 border border-slate-100 shadow-2xl',
+        confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5 shadow-md',
+        cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+      },
+      didOpen: () => {
+        const fileInput = document.getElementById('swal-comp-file') as HTMLInputElement;
+        const fileBtn   = document.getElementById('swal-comp-file-btn');
+        const fileLabel = document.getElementById('swal-comp-file-label');
+
+        fileBtn?.addEventListener('click', () => fileInput?.click());
+        fileInput?.addEventListener('change', () => {
+          if (fileInput.files && fileInput.files[0]) {
+            archivoSeleccionado = fileInput.files[0];
+            if (fileLabel) fileLabel.innerText = `📄 ${archivoSeleccionado.name}`;
+          }
+        });
+      },
+      preConfirm: () => {
+        const notas = (document.getElementById('swal-comp-notas') as HTMLTextAreaElement)?.value || '';
+        return { notas, archivo: archivoSeleccionado };
+      }
+    });
+
+    if (!res.isConfirmed || !res.value) {
+      return null;
+    }
+
+    const { notas, archivo } = res.value;
+
+    // Si no hay notas ni archivo, pedir confirmación
+    if (!notas.trim() && !archivo) {
+      const confirm = await Swal.fire({
+        title: '',
+        html: `
+          <div class="p-2 text-center font-sans">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-amber-200">
+              <i class="bi bi-exclamation-triangle-fill text-3xl"></i>
+            </div>
+            <h3 class="text-base font-black text-slate-800 tracking-tight mb-1">¿Completar sin evidencia?</h3>
+            <p class="text-xs font-medium text-slate-500 leading-relaxed">No agregaste notas ni adjuntaste archivos.<br>¿Deseas completar la tarea de todas formas?</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-check-lg mr-1"></i> Sí, completar',
+        cancelButtonText: 'Volver',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#94a3b8',
+        customClass: {
+          popup: 'rounded-[2rem] p-6 border border-slate-100 shadow-2xl',
+          confirmButton: 'rounded-xl text-xs font-bold px-4 py-2.5 shadow-md',
+          cancelButton: 'rounded-xl text-xs font-bold px-4 py-2.5',
+        },
+      });
+
+      if (!confirm.isConfirmed) return null;
+    }
+
+    return { notas, archivo };
+  }
+
   async completarTarea(): Promise<void> {
     const t = this.tarea;
-    const yaTieneAdjuntos = (t.notas && t.notas.trim().length > 0) || (t.evidencias_count && t.evidencias_count > 0);
 
-    if (yaTieneAdjuntos || t.estado === 'completado') {
+    // Si ya está completada, reabrirla directamente
+    if (t.estado === 'completado') {
       this._ejecutarCambioEstadoTarea(t);
       return;
     }
 
-    const { value: formValue } = await Swal.fire({
-      title: 'Completar Tarea',
-      html: `
-        <div class="text-left">
-          <p class="text-sm text-slate-500 mb-4">Puedes adjuntar una nota o evidencia para finalizar esta tarea.</p>
-          <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nota / Comentario</label>
-          <textarea id="swal-notas" class="w-full border border-slate-200 rounded-xl p-3 text-sm outline-none focus:border-blue-400 h-24 mb-4" placeholder="Escribe algo sobre el cumplimiento..."></textarea>
-          
-          <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Evidencia (Opcional)</label>
-          <input type="file" id="swal-archivo" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: 'Completar con adjuntos',
-      denyButtonText: 'Completar sin nada',
-      showDenyButton: true,
-      confirmButtonColor: '#10b981',
-      denyButtonColor: '#64748b',
-      preConfirm: () => {
-        const notas = (document.getElementById('swal-notas') as HTMLTextAreaElement).value;
-        const archivoInput = document.getElementById('swal-archivo') as HTMLInputElement;
-        const archivo = archivoInput.files ? archivoInput.files[0] : null;
-        return { notas, archivo };
-      }
-    });
+    const resultado = await this.promptCompletarTarea(t.titulo);
+    if (!resultado) return; // Se canceló la acción
 
-    if (formValue === undefined) return;
+    const formData = new FormData();
+    if (resultado.notas) formData.append('notas', resultado.notas);
+    if (resultado.archivo) formData.append('archivo', resultado.archivo);
 
-    if (formValue === false) {
-      const confirm = await Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Vas a completar la tarea sin adjuntar ninguna nota ni evidencia.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, completar así',
-        confirmButtonColor: '#10b981',
-      });
-      if (confirm.isConfirmed) {
-        this._ejecutarCambioEstadoTarea(t);
-      }
-      return;
+    // Actualización optimista de notas en local
+    if (resultado.notas) {
+      t.notas = resultado.notas;
     }
 
-    if (formValue) {
-      const formData = new FormData();
-      if (formValue.notas) formData.append('notas', formValue.notas);
-      if (formValue.archivo) formData.append('archivo', formValue.archivo);
-      this._ejecutarCambioEstadoTarea(t, formData);
-    }
+    this._ejecutarCambioEstadoTarea(t, formData);
   }
 
   private _ejecutarCambioEstadoTarea(t: Tarea, data?: FormData): void {
@@ -249,10 +341,12 @@ export class TareaItemComponent {
       next: () => {
         this.state.showToast(nuevoEstado === 'completado' ? 'Tarea completada' : 'Tarea pendiente');
         this.saving = false;
+        this.onRefresh.emit(true); // Recargar parent para refrescar evidencias y datos del servidor
+        this.cdr.markForCheck();
       },
       error: () => {
         // Revertir
-        t.estado = backup.estado;
+        Object.assign(t, backup);
         this.saving = false;
         this.state.showToast('Error al actualizar tarea', 'error');
         this.cdr.markForCheck();
@@ -376,8 +470,34 @@ export class TareaItemComponent {
     return JSON.stringify(this.inlineEditForm) !== JSON.stringify(this.inlineEditOriginal);
   }
 
+  inlineEditAgregarResp(u: UsuarioCache, ev?: Event): void {
+    if (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    const numId = Number(u.id);
+    if (!this.inlineEditForm.responsables_ids.some(r => Number(r) === numId)) {
+      this.inlineEditForm.responsables_ids = [...this.inlineEditForm.responsables_ids, numId];
+    }
+    this.inlineEditBusqResp = '';
+    this.showInlineEditAsignado = false;
+    this._rebuildResponsablesInfo();
+    this.cdr.detectChanges();
+  }
+
+  inlineEditQuitarResp(id: number | string, ev?: Event): void {
+    if (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    const numId = Number(id);
+    this.inlineEditForm.responsables_ids = this.inlineEditForm.responsables_ids.filter(r => Number(r) !== numId);
+    this._rebuildResponsablesInfo();
+    this.cdr.detectChanges();
+  }
+
   private _emptyInlineEditForm(): InlineEditForm {
-    return { titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '', asignado_id: null };
+    return { titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '', responsables_ids: [] };
   }
 
   private _toLocal(v?: string | null): string {

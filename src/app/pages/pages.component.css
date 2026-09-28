@@ -4,23 +4,49 @@
 
 .page-wrapper.full-width-wrapper,
 .page-wrapper {
-    margin-left: 0 !important;
     padding-left: 0 !important;
     padding-top: 56px !important;
-    width: 100% !important;
-    max-width: 100% !important;
     min-height: calc(100vh - 56px);
-    transition: none !important;
+    transition: margin-left 0.3s ease, width 0.3s ease !important;
 }
 
-body.mini-sidebar .page-wrapper,
-body.sidebar-mobile-open .page-wrapper {
-    margin-left: 0 !important;
-}
-
-@media (max-width: 767px) {
+/* Tablet (768px <= width < 992px): Sidebar is fixed on left (mini-sidebar by default) */
+@media (min-width: 768px) and (max-width: 991.98px) {
     .page-wrapper.full-width-wrapper,
-    .page-wrapper {
+    .page-wrapper,
+    body.mini-sidebar .page-wrapper {
+        margin-left: 70px !important;
+        width: calc(100% - 70px) !important;
+        max-width: calc(100% - 70px) !important;
+    }
+
+    body:not(.mini-sidebar) .page-wrapper {
+        margin-left: 240px !important;
+        width: calc(100% - 240px) !important;
+        max-width: calc(100% - 240px) !important;
+    }
+}
+
+/* Desktop (>= 992px): Topbar layout used, sidebar hidden */
+@media (min-width: 992px) {
+    .page-wrapper.full-width-wrapper,
+    .page-wrapper,
+    body.mini-sidebar .page-wrapper,
+    body.sidebar-mobile-open .page-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Mobile (< 768px): Drawer sidebar hidden off-screen */
+@media (max-width: 767.98px) {
+    .page-wrapper.full-width-wrapper,
+    .page-wrapper,
+    body.sidebar-mobile-open .page-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
         padding-top: 56px !important;
     }
 }

@@ -24,7 +24,8 @@
                 <a *ngIf="!item.submenu" 
                    class="sidebar-link waves-effect waves-dark" 
                    [routerLink]="item.link" 
-                   routerLinkActive="active">
+                   routerLinkActive="active"
+                   [routerLinkActiveOptions]="{ exact: true }">
                   <i [class]="item.icon"></i>
                   <span class="hide-menu saint-menu-label">{{ item.label }}</span>
                 </a>
@@ -46,7 +47,8 @@
                       <li *ngIf="canShowMenuItem(sub)">
                         <a class="sidebar-sublink" 
                            [routerLink]="sub.link" 
-                           routerLinkActive="active">
+                           routerLinkActive="active"
+                           [routerLinkActiveOptions]="{ exact: true }">
                           {{ sub.label }}
                         </a>
                       </li>
@@ -91,7 +93,7 @@
   (mouseenter)="keepFloatPanelOpen()" (mouseleave)="closeFloatPanel()">
   <ul class="floating-submenu">
     <li *ngFor="let item of hoveredSubmenu">
-      <a [routerLink]="item.link" routerLinkActive="active">{{ item.label }}</a>
+      <a [routerLink]="item.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ item.label }}</a>
     </li>
   </ul>
 </div>
