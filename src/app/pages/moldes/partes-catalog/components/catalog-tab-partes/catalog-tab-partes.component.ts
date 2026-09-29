@@ -26,6 +26,34 @@ export class CatalogTabPartesComponent {
 
   showRegionFilterDropdown = false;
   regionFilterSearchTerm = '';
+  
+  // Mini búsqueda y control por tarjeta
+  cardSearchTerms: { [partId: number]: string } = {};
+  showCardSearch: { [partId: number]: boolean } = {};
+
+  toggleCardSearch(partId: number): void {
+    this.showCardSearch[partId] = !this.showCardSearch[partId];
+    if (!this.showCardSearch[partId]) {
+      this.cardSearchTerms[partId] = '';
+    }
+  }
+
+  getFilteredVariants(part: any): any[] {
+    if (!part || !part.types) return [];
+    const term = (this.cardSearchTerms[part.id] || '').trim().toLowerCase();
+    if (!term) return part.types;
+    return part.types.filter((t: any) =>
+      (t.name && t.name.toLowerCase().includes(term)) ||
+      (t.technical_description && t.technical_description.toLowerCase().includes(term)) ||
+      (t.materials && Array.isArray(t.materials) && t.materials.some((m: string) => m.toLowerCase().includes(term)))
+    );
+  }
+
+  getPartTotalSam(part: any): number {
+    if (!part || !part.types || part.types.length === 0) return 0;
+    const total = part.types.reduce((sum: number, t: any) => sum + this.calculateVariantTotalTime(t), 0);
+    return parseFloat(total.toFixed(2));
+  }
 
   get filteredRegionsForDropdown(): AnatomicalRegion[] {
     if (!this.regionFilterSearchTerm) return this.regions;

@@ -20,6 +20,26 @@ export class ModalRegionPartsComponent {
 
   searchTerm = '';
   expandedPartIds: Set<any> = new Set();
+  cardSearchTerms: { [partId: number]: string } = {};
+  showCardSearch: { [partId: number]: boolean } = {};
+
+  toggleCardSearch(partId: number): void {
+    this.showCardSearch[partId] = !this.showCardSearch[partId];
+    if (!this.showCardSearch[partId]) {
+      this.cardSearchTerms[partId] = '';
+    }
+  }
+
+  getFilteredVariants(part: any): any[] {
+    if (!part || !part.types) return [];
+    const term = (this.cardSearchTerms[part.id] || '').trim().toLowerCase();
+    if (!term) return part.types;
+    return part.types.filter((t: any) =>
+      (t.name && t.name.toLowerCase().includes(term)) ||
+      (t.technical_description && t.technical_description.toLowerCase().includes(term)) ||
+      (t.materials && Array.isArray(t.materials) && t.materials.some((m: string) => m.toLowerCase().includes(term)))
+    );
+  }
 
   get filteredParts(): any[] {
     if (!this.parts) return [];
