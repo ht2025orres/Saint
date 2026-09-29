@@ -1,5 +1,5 @@
-import {Component} from '@angular/core';
-declare let $: any;
+import { Component } from '@angular/core';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -8,4 +8,10 @@ declare let $: any;
 })
 export class AppComponent {
   title = 'saint-app';
+  isTesting = environment.isTesting || false;
+  isBannerMinimized = false;
+
+  toggleBanner(): void {
+    this.isBannerMinimized = !this.isBannerMinimized;
+  }
 }

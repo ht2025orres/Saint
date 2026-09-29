@@ -1,5 +1,7 @@
 export const environment = {
   production: false,
+  isTesting: true,
+  envName: 'pruebas',
   URL_LOGIN: 'https://api-pruebas.colegioprovidencia.edu.co/api',
   URL_ERP_INTEGRATION: 'https://api-pruebas.colegioprovidencia.edu.co/api',
   URL_TECHNICAL_DATA_SHEET: 'https://api-pruebas.colegioprovidencia.edu.co/api',

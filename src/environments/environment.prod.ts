@@ -1,5 +1,7 @@
 export const environment = {
   production: true,
+  isTesting: false,
+  envName: 'produccion',
   URL_LOGIN: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
   URL_ERP_INTEGRATION: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',
   URL_TECHNICAL_DATA_SHEET: 'https://colegioprovidencia.edu.co/Saint-Backend/public/api',

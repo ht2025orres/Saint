@@ -1,5 +1,7 @@
 export const environment = {
   production: false,
+  isTesting: false,
+  envName: 'local',
   URL_LOGIN: 'http://127.0.0.1:8000/api',
   URL_ERP_INTEGRATION: 'http://127.0.0.1:8000/api',
   URL_TECHNICAL_DATA_SHEET: 'http://127.0.0.1:8000/api',
