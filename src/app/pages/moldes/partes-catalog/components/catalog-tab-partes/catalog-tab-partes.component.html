@@ -219,30 +219,22 @@
         
         <!-- Cabecera de Variantes con buscador toggleable -->
         <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              Variantes ({{ part.types?.length || 0 }})
-            </span>
-            <span *ngIf="getPartTotalSam(part) > 0" class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/60" title="Suma total SAM de variantes">
-              Σ {{ getPartTotalSam(part) | number:'1.2-2' }}m
-            </span>
-          </div>
+          <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+            Variantes ({{ part.types?.length || 0 }})
+          </span>
 
-          <div class="flex items-center gap-1">
-            <!-- Botón para mostrar / ocultar mini-búsqueda interna -->
-            <button 
-              type="button"
-              (click)="toggleCardSearch(part.id)"
-              class="px-1.5 py-0.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-              [ngClass]="showCardSearch[part.id] || cardSearchTerms[part.id] ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'"
-              title="Buscar o filtrar variantes en esta parte">
-              <i class="bi bi-search text-[10px]"></i>
-              <span *ngIf="cardSearchTerms[part.id]" class="text-[9px] font-mono font-black">
-                {{ getFilteredVariants(part).length }}/{{ part.types?.length || 0 }}
-              </span>
-            </button>
-            <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">SAM</span>
-          </div>
+          <!-- Botón para mostrar / ocultar mini-búsqueda interna -->
+          <button 
+            type="button"
+            (click)="toggleCardSearch(part.id)"
+            class="px-1.5 py-0.5 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+            [ngClass]="showCardSearch[part.id] || cardSearchTerms[part.id] ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'"
+            title="Buscar o filtrar variantes en esta parte">
+            <i class="bi bi-search text-[10px]"></i>
+            <span *ngIf="cardSearchTerms[part.id]" class="text-[9px] font-mono font-black">
+              {{ getFilteredVariants(part).length }}/{{ part.types?.length || 0 }}
+            </span>
+          </button>
         </div>
 
         <!-- Barra de mini-búsqueda desplegable en la tarjeta -->
@@ -318,14 +310,6 @@
             </button>
           </div>
 
-        </div>
-
-        <!-- Indicador de Scroll para tarjetas con más de 3 variantes -->
-        <div *ngIf="(part.types?.length || 0) > 3 && !cardSearchTerms[part.id]" class="flex items-center justify-between text-[9px] text-slate-400 font-bold pt-1 px-1 border-t border-slate-50">
-          <span>{{ part.types.length }} variantes totales</span>
-          <span class="flex items-center gap-1 text-indigo-500">
-            <i class="bi bi-arrows-vertical"></i> Desliza para ver más
-          </span>
         </div>
 
       </div>
