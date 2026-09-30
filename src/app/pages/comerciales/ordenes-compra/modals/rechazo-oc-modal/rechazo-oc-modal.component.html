@@ -1,0 +1,31 @@
+<!-- ========== MODAL RECHAZO ========== -->
+<div *ngIf="visible" class="fixed inset-0 flex items-center justify-center p-3 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
+  <div class="bg-white rounded-xl w-full max-w-md p-5 shadow-2xl" style="z-index: 1051 !important;">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base sm:text-lg font-bold text-gray-900">Rechazar Orden de Compra</h2>
+      <button (click)="close()" class="text-gray-400 hover:text-gray-600">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <p class="text-xs text-gray-600 mb-3">
+      Indique el motivo del rechazo para la orden <strong>{{ orden?.numero_orden }}</strong> (mínimo 10 caracteres).
+    </p>
+
+    <textarea [(ngModel)]="motivoRechazo"
+      class="w-full p-2.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none outline-none"
+      rows="3" placeholder="Escriba el motivo detallado del rechazo..."></textarea>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button (click)="close()"
+        class="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+        Cancelar
+      </button>
+      <button (click)="confirmar()"
+        class="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
+        [disabled]="!motivoRechazo.trim() || motivoRechazo.length < 10">
+        Rechazar Orden
+      </button>
+    </div>
+  </div>
+</div>

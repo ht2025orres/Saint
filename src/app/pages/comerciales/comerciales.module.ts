@@ -11,6 +11,9 @@ import { ItemSearchModalComponent } from './modals/item-search-modal/item-search
 import { MoldSelectModalComponent } from './modals/mold-select-modal/mold-select-modal.component';
 import { SolicitudCapturaComponent } from './solicitud-captura/solicitud-captura.component';
 import { OrdenCompraComponent } from './ordenes-compra/orden-compra.component';
+import { DetalleOcModalComponent } from './ordenes-compra/modals/detalle-oc-modal/detalle-oc-modal.component';
+import { VincularPvModalComponent } from './ordenes-compra/modals/vincular-pv-modal/vincular-pv-modal.component';
+import { RechazoOcModalComponent } from './ordenes-compra/modals/rechazo-oc-modal/rechazo-oc-modal.component';
 import { SharedModule } from '../../shared/shared.module';
 import { MoldesModule } from '../moldes/moldes.module';
 
@@ -24,6 +27,9 @@ import { MoldesModule } from '../moldes/moldes.module';
     MoldSelectModalComponent,
     SolicitudCapturaComponent,
     OrdenCompraComponent,
+    DetalleOcModalComponent,
+    VincularPvModalComponent,
+    RechazoOcModalComponent,
   ],
   imports: [
     CommonModule,
