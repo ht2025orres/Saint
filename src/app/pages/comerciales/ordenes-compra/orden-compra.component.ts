@@ -576,27 +576,41 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
 
   // ========== DOCUMENTOS ==========
   verDocumento(orden: OrdenCompra): void {
-    this.isLoadingDocument = true;
-    this.documentoOrdenNumero = orden.numero_orden;
+    if (!orden || !orden.id) return;
 
-    this.fileService.getTemporaryUrl(orden.id, 'orden_compra', 15).subscribe({
+    const win = window.open('', '_blank', 'width=1050,height=850,scrollbars=yes,resizable=yes');
+    if (win) {
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Documento OC ${orden.numero_orden || ''}</title></head>
+        <body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f8fafc;color:#64748b;">
+          <div style="text-align:center;">
+            <p style="font-size:16px;font-weight:600;margin-bottom:6px;">Cargando documento original...</p>
+            <p style="font-size:12px;color:#94a3b8;">OC ${orden.numero_orden || ''}</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    this.fileService.getTemporaryUrl(orden.id, 'orden_compra', 30).subscribe({
       next: (res) => {
-        this.documentoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(res.url);
-        this.mostrarModalDocumento = true;
-        this.isLoadingDocument = false;
+        if (res && res.url) {
+          if (win && !win.closed) {
+            win.location.href = res.url;
+          }
+        } else {
+          if (win && !win.closed) win.close();
+          Swal.fire('Atención', 'No se encontró archivo adjunto para esta orden', 'info');
+        }
       },
       error: (err) => {
+        if (win && !win.closed) win.close();
         console.error('Error al obtener URL:', err);
         Swal.fire('Error', 'No se pudo obtener el documento', 'error');
-        this.isLoadingDocument = false;
       }
     });
-  }
-
-  cerrarModalDocumento(): void {
-    this.mostrarModalDocumento = false;
-    this.documentoUrl = null;
-    this.documentoOrdenNumero = '';
   }
 
   descargarDocumento(orden: OrdenCompra): void {
@@ -616,41 +630,32 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
 
   // ========== DETALLE E ÍTEMS OC ==========
   verDetalleOC(orden: any): void {
-    const popupWin = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
-    if (popupWin) {
-      popupWin.document.write('<p style="font-family:sans-serif;text-align:center;padding:40px;color:#64748b;font-size:14px;">Cargando detalles de la Orden de Compra...</p>');
-    }
+    this.ordenSeleccionada = orden;
+    this.itemsOrdenSeleccionada = [];
+    this.mostrarModalDetalleOC = true;
+    this.isLoadingDetalleOC = true;
 
     this.ordenCompraService.obtenerDetalle(orden.id).subscribe({
       next: (res) => {
-        const fullOrden = res.data || orden;
-        let items = fullOrden.items || [];
-        if (!items || items.length === 0) {
-          this.ordenCompraService.obtenerItems(orden.id).subscribe({
-            next: (itemsRes) => {
-              items = itemsRes?.data || [];
-              this.renderizarPopupDetalleOC(popupWin, fullOrden, items);
-            },
-            error: () => {
-              this.renderizarPopupDetalleOC(popupWin, fullOrden, []);
-            }
-          });
-        } else {
-          this.renderizarPopupDetalleOC(popupWin, fullOrden, items);
+        if (res.data) {
+          this.ordenSeleccionada = res.data;
+          this.itemsOrdenSeleccionada = res.data.items || [];
+          if (!this.itemsOrdenSeleccionada || this.itemsOrdenSeleccionada.length === 0) {
+            this.ordenCompraService.obtenerItems(orden.id).subscribe({
+              next: (itemsRes) => {
+                if (itemsRes && itemsRes.data) {
+                  this.itemsOrdenSeleccionada = itemsRes.data;
+                }
+              }
+            });
+          }
         }
+        this.isLoadingDetalleOC = false;
       },
       error: () => {
-        this.renderizarPopupDetalleOC(popupWin, orden, []);
+        this.isLoadingDetalleOC = false;
       }
     });
-  }
-
-  private renderizarPopupDetalleOC(popupWin: Window | null, orden: any, items: any[]): void {
-    if (!popupWin || popupWin.closed) return;
-    const html = generarHtmlDetalleOrdenCompra(orden, items);
-    popupWin.document.open();
-    popupWin.document.write(html);
-    popupWin.document.close();
   }
 
   cerrarModalDetalleOC(): void {
