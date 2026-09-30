@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
-import { OrdenCompraService } from '../../../../services/orden-compra.service';
+import { OrdenCompraService } from 'src/app/services/orden-compra.service';
 import Swal from 'sweetalert2';
 
 @Component({
