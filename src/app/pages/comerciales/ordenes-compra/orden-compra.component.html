@@ -1,63 +1,74 @@
-<div class="bg-gray-50 p-6">
-  <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Recepción y Procesamiento de OCs</h1>
-      <p class="text-gray-600">Bandeja de Ingeniería: Recepción de Órdenes de Compra, vinculación con Pedidos de Venta (PV) en Siesa y confirmación de procesamiento</p>
+<div class="bg-gray-50 p-3 sm:p-5 min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-4">
+    <!-- Header Compacto y Elegante -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <i class="bi bi-inboxes text-blue-600"></i>
+          Recepción y Procesamiento de OCs
+        </h1>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+          Ingeniería
+        </span>
+        <span>{{ totalOrdenes }} órdenes registradas</span>
+      </div>
     </div>
 
     <!-- Indicador de carga -->
-    <div *ngIf="isLoading" class="bg-white rounded-lg shadow p-8 text-center">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      <p class="mt-4 text-gray-600">Cargando órdenes...</p>
+    <div *ngIf="isLoading" class="bg-white rounded-xl shadow-xs border border-gray-100 p-8 text-center">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-2 text-xs text-gray-500 font-medium">Cargando órdenes de compra...</p>
     </div>
 
     <!-- Contenido principal -->
-    <div *ngIf="!isLoading">
-      <!-- Barra de acciones y filtros -->
-      <div class="bg-white rounded-lg shadow mb-6 p-4">
-        <div class="flex flex-col md:flex-row gap-4">
+    <div *ngIf="!isLoading" class="space-y-3">
+      <!-- Barra de acciones y filtros compacta -->
+      <div class="bg-white rounded-xl shadow-xs border border-gray-200/80 p-3">
+        <div class="flex flex-col sm:flex-row gap-2.5">
           <!-- Búsqueda -->
-          <div class="flex-1">
+          <div class="relative flex-1">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
             <input type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Buscar por número de orden, cliente o PV..." [(ngModel)]="filters.busqueda"
+              class="w-full pl-8 pr-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              placeholder="Buscar por # de orden, cliente o PV..." [(ngModel)]="filters.busqueda"
               (input)="applyFilters()">
           </div>
 
           <!-- Filtro estado -->
-          <div class="w-full md:w-48">
+          <div class="w-full sm:w-44">
             <select
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white transition"
               [(ngModel)]="filters.estado" (change)="applyFilters()">
               <option value="">Todos los estados</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="PROCESADA">Procesada</option>
-              <option value="RECHAZADA">Rechazada</option>
+              <option value="PENDIENTE">Pendientes</option>
+              <option value="PROCESADA">Procesadas</option>
+              <option value="RECHAZADA">Rechazadas</option>
             </select>
           </div>
         </div>
       </div>
 
-      <!-- Barra de agrupación por Clientes (Pestañas / Chips rápidos) -->
-      <div *ngIf="clientesAgrupados && clientesAgrupados.length > 0" class="mb-6">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+      <!-- Barra de agrupación por Clientes (Chips rápidos y compactos) -->
+      <div *ngIf="clientesAgrupados && clientesAgrupados.length > 0" class="space-y-1.5">
+        <div class="flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+          <span class="flex items-center gap-1">
             <i class="bi bi-buildings"></i> Clientes ({{ clientesAgrupados.length }})
           </span>
-          <span *ngIf="filtroCliente" (click)="filtrarPorCliente('')" class="text-xs text-blue-600 font-semibold cursor-pointer hover:underline">
-            Limpiar filtro de cliente
-          </span>
+          <button *ngIf="filtroCliente" (click)="filtrarPorCliente('')" class="text-blue-600 font-semibold hover:underline cursor-pointer lowercase first-letter:uppercase">
+            Mostrar todos
+          </button>
         </div>
-        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+        <div class="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
           <!-- Botón Todos -->
           <button
             type="button"
             (click)="filtrarPorCliente('')"
-            class="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-2 shadow-xs"
-            [ngClass]="!filtroCliente ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'">
+            class="px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-1.5 shadow-2xs"
+            [ngClass]="!filtroCliente ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'">
             <span>Todos</span>
-            <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold"
               [ngClass]="!filtroCliente ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
               {{ ordenes.length }}
             </span>
@@ -68,154 +79,154 @@
             *ngFor="let c of clientesAgrupados"
             type="button"
             (click)="filtrarPorCliente(c.cliente)"
-            class="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-2 shadow-xs"
-            [ngClass]="filtroCliente === c.cliente ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'">
-            <span class="truncate max-w-[180px]" [title]="c.cliente">{{ c.cliente }}</span>
-            <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+            class="px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-1.5 shadow-2xs"
+            [ngClass]="filtroCliente === c.cliente ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'">
+            <span class="truncate max-w-[150px] sm:max-w-[200px]" [title]="c.cliente">{{ c.cliente }}</span>
+            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold"
               [ngClass]="filtroCliente === c.cliente ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
               {{ c.total }}
             </span>
-            <span *ngIf="c.pendientes > 0" class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold"
+            <span *ngIf="c.pendientes > 0" class="px-1.5 py-0.2 rounded text-[10px] font-extrabold"
               [ngClass]="filtroCliente === c.cliente ? 'bg-amber-400 text-amber-950' : 'bg-amber-100 text-amber-800'"
               title="{{ c.pendientes }} pendientes">
-              {{ c.pendientes }} pend.
+              {{ c.pendientes }}p
             </span>
           </button>
         </div>
       </div>
 
-      <!-- Lista de órdenes -->
-      <div *ngIf="currentOrdenes?.length > 0; else sinOrdenes" class="space-y-4">
+      <!-- Lista de órdenes compacta -->
+      <div *ngIf="currentOrdenes?.length > 0; else sinOrdenes" class="space-y-2.5">
         <div *ngFor="let orden of currentOrdenes"
-          class="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
-          <div class="flex flex-col md:flex-row md:items-center gap-4">
+          class="bg-white rounded-xl border border-gray-200/90 shadow-xs hover:shadow-md transition-shadow p-3 sm:p-4">
+          <div class="flex flex-col md:flex-row md:items-center gap-3">
             <!-- Info principal -->
-            <div class="flex-1">
-              <div class="flex items-start justify-between mb-3">
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-900">OC {{ orden.numero_orden }}</h3>
-                  <p class="text-sm text-gray-600">{{ orden.cliente }}</p>
-                  <p *ngIf="orden.pv_asociado" class="text-xs text-green-600 mt-1 font-semibold flex items-center gap-1">
-                    <i class="bi bi-link-45deg text-sm"></i> PV Siesa: {{ orden.pv_asociado }}
-                  </p>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-sm sm:text-base font-bold text-gray-900 truncate">OC {{ orden.numero_orden }}</h3>
+                    <span *ngIf="orden.pv_asociado" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                      <i class="bi bi-link-45deg"></i> PV: {{ orden.pv_asociado }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-gray-500 font-medium truncate mt-0.5" [title]="orden.cliente">{{ orden.cliente }}</p>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-medium" [ngClass]="getEstadoBadgeClass(orden.estado)">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap" [ngClass]="getEstadoBadgeClass(orden.estado)">
                   {{ getEstadoTexto(orden.estado) }}
                 </span>
               </div>
 
-              <!-- Métricas -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <!-- Métricas compactas -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-gray-50">
                 <div>
-                  <p class="text-xs text-gray-500">Fecha Registro</p>
-                  <p class="font-medium text-gray-900">{{ (orden.fecha_registro || orden.created_at) | date:'dd/MM/yyyy' }}</p>
+                  <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fecha Registro</p>
+                  <p class="text-xs font-semibold text-gray-800">{{ (orden.fecha_registro || orden.created_at) | date:'dd/MM/yyyy' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">Fecha Entrega</p>
-                  <p class="font-medium text-gray-900">{{ orden.fecha_entrega_estimada ? (orden.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</p>
+                  <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fecha Entrega</p>
+                  <p class="text-xs font-semibold text-gray-800">{{ orden.fecha_entrega_estimada ? (orden.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">Días para Entrega</p>
+                  <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Días Entrega</p>
                   <span *ngIf="calcularDiasRestantes(orden.fecha_entrega_estimada) as diasInfo"
-                        class="inline-block font-semibold text-xs px-2 py-0.5 rounded border mt-0.5"
+                        class="inline-block font-bold text-[11px] px-1.5 py-0.2 rounded border"
                         [ngClass]="diasInfo.clase">
                     {{ diasInfo.texto }}
                   </span>
-                  <span *ngIf="!calcularDiasRestantes(orden.fecha_entrega_estimada)" class="text-gray-400 text-xs">
+                  <span *ngIf="!calcularDiasRestantes(orden.fecha_entrega_estimada)" class="text-gray-400 text-xs font-medium">
                     {{ orden.dias_entrega ? orden.dias_entrega + ' días' : 'N/A' }}
                   </span>
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">Documento</p>
-                  <p class="font-medium text-gray-900">
-                    <i class="bi bi-file-earmark-pdf text-red-600"></i>
+                  <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Documento</p>
+                  <p class="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                    <i class="bi bi-file-earmark-pdf-fill text-red-500"></i>
                     PDF
                   </p>
                 </div>
-                <div *ngIf="orden.observaciones && orden.estado === 'RECHAZADA'" class="col-span-2 md:col-span-4">
-                  <p class="text-xs text-gray-500">Motivo rechazo</p>
-                  <p class="text-sm text-red-600 truncate" [title]="orden.observaciones">
+                <div *ngIf="orden.observaciones && orden.estado === 'RECHAZADA'" class="col-span-2 sm:col-span-4">
+                  <p class="text-[10px] uppercase font-bold text-red-500 tracking-wider">Motivo rechazo:</p>
+                  <p class="text-xs text-red-700 truncate" [title]="orden.observaciones">
                     {{ orden.observaciones }}
                   </p>
                 </div>
               </div>
             </div>
 
-            <!-- Acciones -->
-            <div class="flex items-center justify-between w-full md:w-auto gap-2 flex-wrap">
+            <!-- Acciones compactas -->
+            <div class="flex items-center justify-between md:justify-end gap-1.5 flex-wrap pt-2 md:pt-0 border-t md:border-t-0 border-gray-100">
               <!-- Ver Detalle -->
               <button
                 (click)="verDetalleOC(orden)"
-                class="inline-flex items-center justify-center px-3 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors gap-1"
-                title="Ver detalles e ítems de la orden">
+                class="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors gap-1 shadow-2xs"
+                title="Ver desglose e ítems de la orden">
                 <i class="bi bi-card-text"></i> Detalle
               </button>
 
-              <!-- Ver / Descargar Documento -->
+              <!-- Ver / Descargar Documento Original -->
               <div class="flex gap-1">
                 <button
                   (click)="verDocumento(orden)"
-                  class="inline-flex items-center justify-center w-9 h-9 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  class="inline-flex items-center justify-center w-8 h-8 text-blue-600 border border-blue-300 bg-blue-50/50 rounded-lg hover:bg-blue-100 transition-colors"
                   [disabled]="isLoadingDocument"
                   title="Ver documento original">
-                  <i class="bi bi-eye text-base"></i>
+                  <i class="bi bi-eye text-sm"></i>
                 </button>
 
                 <button
                   (click)="descargarDocumento(orden)"
-                  class="inline-flex items-center justify-center w-9 h-9 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
+                  class="inline-flex items-center justify-center w-8 h-8 text-purple-600 border border-purple-300 bg-purple-50/50 rounded-lg hover:bg-purple-100 transition-colors"
                   title="Descargar documento">
-                  <i class="bi bi-download text-base"></i>
+                  <i class="bi bi-download text-sm"></i>
                 </button>
               </div>
 
-              <!-- Desvincular PV (Ingeniería - si es PROCESADA con PV) -->
+              <!-- Desvincular PV (Ingeniería - PROCESADA con PV) -->
               <button *ngIf="orden.estado === 'PROCESADA' && orden.pv_asociado"
                 (click)="desvincularPVSiesa(orden, $event)"
-                class="inline-flex items-center justify-center w-9 h-9 text-amber-600 border border-amber-400 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                class="inline-flex items-center justify-center w-8 h-8 text-amber-700 border border-amber-400 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
                 title="Desvincular PV y regresar a pendiente">
-                <i class="bi bi-link-45deg text-lg"></i>
+                <i class="bi bi-link-45deg text-base"></i>
               </button>
 
-              <!-- Procesar / Vincular Manual / Rechazar (Ingeniería - PENDIENTE) -->
+              <!-- Acciones de Ingeniería (PENDIENTE) -->
               <div *ngIf="authService.hasAnyPermission([38]) && orden.estado === 'PENDIENTE'"
-                class="flex gap-1 ml-auto">
-                <!-- Procesar Automático (Busca PV en Siesa) -->
+                class="flex gap-1 ml-auto md:ml-0">
+                <!-- Procesar Automático (Busca en Siesa) -->
                 <button
                   (click)="procesarOrden(orden)"
-                  class="p-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                  class="inline-flex items-center justify-center w-8 h-8 text-emerald-600 border border-emerald-400 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
                   [disabled]="isProcesando"
-                  title="Procesar y vincular PV automáticamente desde Siesa">
-                  <i class="bi bi-check-circle text-lg"></i>
+                  title="Vincular automáticamente con PV de Siesa">
+                  <i class="bi bi-check2-circle text-base"></i>
                 </button>
 
-                <!-- Vincular Manualmente ingresando el número de PV -->
+                <!-- Vincular Manual -->
                 <button
                   (click)="vincularPVManual(orden)"
-                  class="p-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                  title="Vincular PV manualmente ingresando el número">
-                  <i class="bi bi-pencil-square text-lg"></i>
+                  class="inline-flex items-center justify-center w-8 h-8 text-blue-600 border border-blue-400 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  title="Vincular manualmente ingresando el número de PV">
+                  <i class="bi bi-pencil-square text-sm"></i>
                 </button>
 
-                <!-- Rechazar orden -->
+                <!-- Rechazar -->
                 <button
                   (click)="abrirModalRechazo(orden)"
-                  class="p-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                  title="Rechazar orden">
-                  <i class="bi bi-x-circle text-lg"></i>
+                  class="inline-flex items-center justify-center w-8 h-8 text-red-600 border border-red-300 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                  title="Rechazar orden de compra">
+                  <i class="bi bi-x-circle text-sm"></i>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Info y paginación -->
-        <div class="bg-white rounded-lg shadow p-4">
-          <div class="flex justify-between items-center mb-4">
-            <p class="text-sm text-gray-600">
-              Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalOrdenes }} órdenes
-            </p>
-          </div>
+        <!-- Paginación compacta -->
+        <div class="bg-white rounded-xl border border-gray-200/80 shadow-xs p-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p class="text-xs text-gray-500 font-medium">
+            Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalOrdenes }} órdenes
+          </p>
 
           <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)" [instanceId]="paginatorId"
             [showPageSizeSelector]="true" [pageSizeOptions]="[10, 25, 50]">
@@ -225,12 +236,12 @@
 
       <!-- Sin órdenes -->
       <ng-template #sinOrdenes>
-        <div class="bg-white rounded-lg shadow p-12 text-center">
-          <i class="bi bi-inbox text-6xl text-gray-300"></i>
-          <h3 class="mt-4 text-lg font-medium text-gray-900">No hay órdenes</h3>
-          <p class="mt-2 text-gray-600">
+        <div class="bg-white rounded-xl border border-gray-200/80 shadow-xs p-8 text-center">
+          <i class="bi bi-inbox text-4xl text-gray-300"></i>
+          <h3 class="mt-2 text-sm font-semibold text-gray-900">No hay órdenes para mostrar</h3>
+          <p class="mt-1 text-xs text-gray-500">
             <span *ngIf="filters.busqueda || filters.estado || filtroCliente; else mensajeInicial">
-              No se encontraron órdenes con los filtros aplicados
+              No se encontraron órdenes con los filtros aplicados.
             </span>
             <ng-template #mensajeInicial>
               No hay órdenes de compra registradas pendientes por procesar.
@@ -243,87 +254,87 @@
 </div>
 
 <!-- ==================== MODAL: DETALLE E ÍTEMS DE LA OC ==================== -->
-<div *ngIf="mostrarModalDetalleOC" class="fixed inset-0 flex items-center justify-center p-4 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1051 !important;">
+<div *ngIf="mostrarModalDetalleOC" class="fixed inset-0 flex items-center justify-center p-2 sm:p-4 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1051 !important;">
     <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 text-white">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
-          <i class="bi bi-receipt text-white text-lg"></i>
+    <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 text-white">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shadow-inner shrink-0">
+          <i class="bi bi-receipt text-white text-base"></i>
         </div>
-        <div>
-          <h3 class="font-extrabold text-white text-base">Detalles de Orden de Compra: {{ ordenSeleccionada?.numero_orden }}</h3>
-          <p class="text-xs text-blue-100 font-medium">{{ ordenSeleccionada?.cliente }}</p>
+        <div class="min-w-0">
+          <h3 class="font-extrabold text-white text-sm sm:text-base truncate">OC: {{ ordenSeleccionada?.numero_orden }}</h3>
+          <p class="text-[11px] text-blue-100 font-medium truncate">{{ ordenSeleccionada?.cliente }}</p>
         </div>
       </div>
-      <button (click)="cerrarModalDetalleOC()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
-        <i class="bi bi-x-lg"></i>
+      <button (click)="cerrarModalDetalleOC()" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center shrink-0">
+        <i class="bi bi-x-lg text-xs"></i>
       </button>
     </div>
 
     <!-- Body -->
-    <div class="flex-1 p-6 overflow-y-auto space-y-6">
+    <div class="flex-1 p-3 sm:p-5 overflow-y-auto space-y-4">
       <!-- Info Cards Row 1: Estado, PV, Registro, Recepción -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Estado</span>
-          <span class="text-xs font-bold px-2.5 py-0.5 rounded-md mt-1 inline-block" [ngClass]="getEstadoBadgeClass(ordenSeleccionada?.estado)">
+          <span class="text-[11px] font-bold px-2 py-0.2 rounded mt-0.5 inline-block" [ngClass]="getEstadoBadgeClass(ordenSeleccionada?.estado)">
             {{ getEstadoTexto(ordenSeleccionada?.estado) }}
           </span>
         </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">PV Siesa</span>
-          <span *ngIf="ordenSeleccionada?.pv_asociado" class="text-sm font-extrabold text-emerald-600 block mt-1">
+          <span *ngIf="ordenSeleccionada?.pv_asociado" class="text-xs font-extrabold text-emerald-600 block mt-0.5">
             {{ ordenSeleccionada?.pv_asociado }}
           </span>
-          <span *ngIf="!ordenSeleccionada?.pv_asociado" class="text-xs font-bold text-amber-600 block mt-1">
+          <span *ngIf="!ordenSeleccionada?.pv_asociado" class="text-[11px] font-bold text-amber-600 block mt-0.5">
             Sin vincular
           </span>
         </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Fecha Registro</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ (ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) ? ((ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) | date:'dd/MM/yyyy') : 'N/A' }}</span>
+          <span class="text-xs font-semibold text-gray-800 block mt-0.5">{{ (ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) ? ((ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) | date:'dd/MM/yyyy') : 'N/A' }}</span>
         </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Fecha Recepción</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.fecha_recepcion ? (ordenSeleccionada?.fecha_recepcion | date:'dd/MM/yyyy') : 'N/A' }}</span>
+          <span class="text-xs font-semibold text-gray-800 block mt-0.5">{{ ordenSeleccionada?.fecha_recepcion ? (ordenSeleccionada?.fecha_recepcion | date:'dd/MM/yyyy') : 'N/A' }}</span>
         </div>
       </div>
 
       <!-- Info Cards Row 2: Entrega, Plazo Pactado, Días Restantes, Creador -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Entrega Estimada</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.fecha_entrega_estimada ? (ordenSeleccionada?.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</span>
+          <span class="text-xs font-semibold text-gray-800 block mt-0.5">{{ ordenSeleccionada?.fecha_entrega_estimada ? (ordenSeleccionada?.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</span>
         </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Plazo Pactado</span>
-          <span class="text-xs font-bold text-blue-700 block mt-1">
+          <span class="text-xs font-bold text-blue-700 block mt-0.5">
             <i class="bi bi-calendar-range mr-1"></i>
             {{ calcularPlazoPactado(ordenSeleccionada?.fecha_recepcion || ordenSeleccionada?.fecha_registro || ordenSeleccionada?.created_at, ordenSeleccionada?.fecha_entrega_estimada, ordenSeleccionada?.dias_entrega) }}
           </span>
         </div>
-        <div class="p-3.5 rounded-xl border" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase || 'bg-gray-50 border-gray-100'">
+        <div class="p-2.5 rounded-lg border" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase || 'bg-gray-50 border-gray-100'">
           <span class="text-[10px] font-bold uppercase tracking-wider block" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase ? '' : 'text-gray-400'">Días para Entrega</span>
-          <span class="text-xs font-bold block mt-1" *ngIf="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada) as diasInfo">
+          <span class="text-xs font-bold block mt-0.5" *ngIf="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada) as diasInfo">
             <i class="bi" [ngClass]="diasInfo.dias === 0 ? 'bi-exclamation-triangle-fill' : (diasInfo.texto.includes('Vencida') ? 'bi-x-circle-fill' : 'bi-clock-fill')"></i>
             {{ diasInfo.texto }}
           </span>
-          <span class="text-xs font-bold text-gray-400 block mt-1" *ngIf="!calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)">
+          <span class="text-xs font-bold text-gray-400 block mt-0.5" *ngIf="!calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)">
             N/A
           </span>
         </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+        <div class="p-2.5 rounded-lg bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Registrado por</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1 truncate" [title]="ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A'">
-            {{ ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A' }}
+          <span class="text-xs font-bold text-gray-800 block mt-0.5 truncate" [title]="ordenSeleccionada?.usuario_creacion_nombre || ordenSeleccionada?.usuario_registro || 'N/A'">
+            {{ ordenSeleccionada?.usuario_creacion_nombre || ordenSeleccionada?.usuario_registro || 'N/A' }}
           </span>
         </div>
       </div>
 
       <!-- Observaciones / Motivo de Rechazo -->
-      <div *ngIf="ordenSeleccionada?.observaciones" class="p-4 rounded-xl bg-amber-50 border border-amber-200">
-        <span class="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+      <div *ngIf="ordenSeleccionada?.observaciones" class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+        <span class="text-xs font-bold text-amber-800 flex items-center gap-1 mb-0.5">
           <i class="bi bi-info-circle-fill"></i> Observaciones / Notas:
         </span>
         <p class="text-xs text-amber-900 leading-relaxed">{{ ordenSeleccionada?.observaciones }}</p>
@@ -331,175 +342,185 @@
 
       <!-- SECCIÓN 1: Tabla de Ítems Cargados del Cliente (OC) -->
       <div>
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">
             <i class="bi bi-file-earmark-text text-blue-600"></i>
             Ítems de la Orden de Compra ({{ itemsOrdenSeleccionada.length }})
           </h4>
         </div>
 
-        <div *ngIf="isLoadingDetalleOC" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="text-xs text-gray-500 mt-2">Cargando desglose de ítems...</p>
+        <div *ngIf="isLoadingDetalleOC" class="text-center py-6">
+          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <p class="text-xs text-gray-400 mt-1">Cargando desglose de ítems...</p>
         </div>
 
-        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length > 0" class="border border-gray-200 rounded-xl overflow-hidden shadow-xs">
-          <table class="w-full text-xs">
-            <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold">
-              <tr>
-                <th class="px-4 py-3 text-left w-2/5">Ítem del Cliente (ID / Descripción)</th>
-                <th class="px-4 py-3 text-left w-1/4">Ítem Interno (Ref / Sugerencia)</th>
-                <th class="px-4 py-3 text-center">Cant.</th>
-                <th class="px-4 py-3 text-right">Precio Unit.</th>
-                <th class="px-4 py-3 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr *ngFor="let item of itemsOrdenSeleccionada" class="hover:bg-gray-50/80 transition-colors">
-                <!-- Datos del Cliente -->
-                <td class="px-4 py-3 align-top">
-                  <div class="font-bold text-gray-800 text-xs">
-                    <span class="text-gray-400 font-normal">ID/Cód:</span> {{ item.codigo_item || '—' }}
-                  </div>
-                  <div class="text-xs text-gray-600 mt-0.5 leading-relaxed">{{ item.descripcion }}</div>
-                </td>
-                <!-- Datos Internos -->
-                <td class="px-4 py-3 align-top">
-                  <div class="font-bold text-blue-700 text-xs flex items-center gap-1">
-                    <i class="bi bi-tag-fill text-[10px] text-blue-400"></i>
-                    {{ item.referencia || '—' }}
-                  </div>
-                  <div class="text-[11px] text-gray-500 mt-1">
-                    <span *ngIf="item.rowid_siesa" class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-[10px]">
-                      <i class="bi bi-check2-circle mr-1"></i> Siesa #{{ item.rowid_siesa }}
-                    </span>
-                    <span *ngIf="!item.rowid_siesa" class="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium text-[10px]">
-                      Sin vincular
-                    </span>
-                  </div>
-                </td>
-                <!-- Cantidad -->
-                <td class="px-4 py-3 align-top text-center">
-                  <span class="font-bold text-gray-900 text-xs">{{ item.cantidad }}</span>
-                  <span class="text-[10px] text-gray-400 block">{{ item.unidad_medida || 'UND' }}</span>
-                </td>
-                <!-- Precio Unitario -->
-                <td class="px-4 py-3 align-top text-right text-gray-600 text-xs">
-                  {{ (item.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
-                </td>
-                <!-- Total -->
-                <td class="px-4 py-3 align-top text-right font-bold text-blue-600 text-xs">
-                  {{ (item.precio_total || (item.cantidad * item.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length > 0" class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold">
+                <tr>
+                  <th class="px-3 py-2 text-left w-2/5">Ítem del Cliente (ID / Descripción)</th>
+                  <th class="px-3 py-2 text-left w-1/4">Ítem Interno (Ref / Sugerencia)</th>
+                  <th class="px-2 py-2 text-center">Cant.</th>
+                  <th class="px-3 py-2 text-right">Precio Unit.</th>
+                  <th class="px-3 py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr *ngFor="let item of itemsOrdenSeleccionada" class="hover:bg-gray-50/80 transition-colors">
+                  <!-- Datos del Cliente -->
+                  <td class="px-3 py-2 align-top">
+                    <div class="font-bold text-gray-800 text-xs">
+                      <span class="text-gray-400 font-normal">ID:</span> {{ item.codigo_item || '—' }}
+                    </div>
+                    <div class="text-[11px] text-gray-600 mt-0.5 leading-relaxed">{{ item.descripcion }}</div>
+                  </td>
+                  <!-- Datos Internos -->
+                  <td class="px-3 py-2 align-top">
+                    <div class="font-bold text-blue-700 text-xs flex items-center gap-1">
+                      <i class="bi bi-tag-fill text-[10px] text-blue-400"></i>
+                      {{ item.referencia || '—' }}
+                    </div>
+                    <div class="text-[10px] text-gray-500 mt-0.5">
+                      <span *ngIf="item.rowid_siesa" class="inline-flex items-center px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-[10px]">
+                        <i class="bi bi-check2-circle mr-0.5"></i> Siesa #{{ item.rowid_siesa }}
+                      </span>
+                      <span *ngIf="!item.rowid_siesa" class="inline-flex items-center px-1.5 py-0.2 rounded bg-gray-100 text-gray-500 font-medium text-[10px]">
+                        Sin vincular
+                      </span>
+                    </div>
+                  </td>
+                  <!-- Cantidad -->
+                  <td class="px-2 py-2 align-top text-center">
+                    <span class="font-bold text-gray-900 text-xs">{{ item.cantidad }}</span>
+                    <span class="text-[10px] text-gray-400 block">{{ item.unidad_medida || 'UND' }}</span>
+                  </td>
+                  <!-- Precio Unitario -->
+                  <td class="px-3 py-2 align-top text-right text-gray-600 text-xs">
+                    {{ (item.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </td>
+                  <!-- Total -->
+                  <td class="px-3 py-2 align-top text-right font-bold text-blue-600 text-xs">
+                    {{ (item.precio_total || (item.cantidad * item.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length === 0" class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-          <p class="text-xs text-gray-400">No se encontraron ítems desglosados en esta orden de compra.</p>
+        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length === 0" class="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+          <p class="text-xs text-gray-400">No se encontraron ítems desglosados en esta orden.</p>
         </div>
       </div>
 
-      <!-- SECCIÓN 2: Ítems Cargados en Siesa (Pedido de Venta) -->
+      <!-- SECCIÓN 2: Ítems Cargados en Siesa (Pedido de Venta) con ID de Ítem y IDs de Tallas -->
       <div *ngIf="ordenSeleccionada?.pv_asociado || (itemsSiesaOrden && itemsSiesaOrden.length > 0)">
-        <div class="flex items-center justify-between mb-3 pt-4 border-t border-gray-100">
-          <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+        <div class="flex items-center justify-between mb-2 pt-3 border-t border-gray-100">
+          <h4 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">
             <i class="bi bi-box-seam text-emerald-600"></i>
-            Ítems Cargados en Siesa (PV: {{ ordenSeleccionada?.pv_asociado }})
+            Ítems en Siesa (PV: {{ ordenSeleccionada?.pv_asociado }})
             <span class="text-xs font-normal text-gray-500">({{ itemsSiesaOrden.length }} registros)</span>
           </h4>
-          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <i class="bi bi-check-circle-fill mr-1"></i> Datos Siesa Oficiales
+          <span class="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <i class="bi bi-check-circle-fill mr-0.5"></i> Siesa Oficial
           </span>
         </div>
 
-        <div *ngIf="itemsSiesaOrden && itemsSiesaOrden.length > 0" class="border border-emerald-200 rounded-xl overflow-hidden shadow-xs bg-white">
-          <table class="w-full text-xs">
-            <thead class="bg-emerald-50/70 border-b border-emerald-200 text-emerald-900 font-bold">
-              <tr>
-                <th class="px-4 py-3 text-left w-1/4">Referencia / Cód.</th>
-                <th class="px-4 py-3 text-left w-2/5">Descripción</th>
-                <th class="px-3 py-3 text-center">Color / Talla</th>
-                <th class="px-3 py-3 text-center">Cant.</th>
-                <th class="px-3 py-3 text-right">Precio Unit.</th>
-                <th class="px-4 py-3 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-emerald-100">
-              <tr *ngFor="let itemS of itemsSiesaOrden" class="hover:bg-emerald-50/30 transition-colors">
-                <!-- Referencia -->
-                <td class="px-4 py-3 align-top font-bold text-emerald-800">
-                  <div class="flex items-center gap-1.5">
-                    <i class="bi bi-tag-fill text-[11px] text-emerald-500"></i>
-                    <span>{{ itemS.referencia || itemS.f120_id || '—' }}</span>
-                  </div>
-                </td>
-                <!-- Descripción -->
-                <td class="px-4 py-3 align-top">
-                  <div class="font-medium text-gray-800">{{ itemS.descripcion || itemS.descripcion_corta || '—' }}</div>
-                </td>
-                <!-- Color / Talla -->
-                <td class="px-3 py-3 align-top text-center">
-                  <div *ngIf="itemS.color || itemS.talla" class="inline-flex items-center gap-1">
-                    <span *ngIf="itemS.color" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-semibold">
-                      {{ itemS.color }}
-                    </span>
-                    <span *ngIf="itemS.talla" class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
-                      {{ itemS.talla }}
-                    </span>
-                  </div>
-                  <span *ngIf="!itemS.color && !itemS.talla" class="text-gray-400">—</span>
-                </td>
-                <!-- Cantidad -->
-                <td class="px-3 py-3 align-top text-center">
-                  <span class="font-bold text-gray-900">{{ itemS.cantidad }}</span>
-                  <span class="text-[10px] text-gray-400 block">{{ itemS.unidad_medida || 'UND' }}</span>
-                </td>
-                <!-- Precio Unitario -->
-                <td class="px-3 py-3 align-top text-right text-gray-600">
-                  {{ (itemS.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
-                </td>
-                <!-- Total -->
-                <td class="px-4 py-3 align-top text-right font-bold text-emerald-700">
-                  {{ (itemS.valor_total || (itemS.cantidad * itemS.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
-                </td>
-              </tr>
-            </tbody>
-            <!-- Totales Siesa -->
-            <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-200 text-emerald-950">
-              <tr>
-                <td colspan="3" class="px-4 py-2.5 text-right uppercase tracking-wider text-[11px]">Totales Siesa:</td>
-                <td class="px-3 py-2.5 text-center text-xs font-extrabold text-emerald-900">{{ getTotalCantidadSiesa() }}</td>
-                <td></td>
-                <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-900">
-                  {{ getTotalValorSiesa() | currency:'COP':'symbol-narrow':'1.0-0' }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+        <div *ngIf="itemsSiesaOrden && itemsSiesaOrden.length > 0" class="border border-emerald-200 rounded-xl overflow-hidden shadow-2xs bg-white">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-emerald-50/70 border-b border-emerald-200 text-emerald-900 font-bold">
+                <tr>
+                  <th class="px-3 py-2 text-left w-1/4">Ítem Siesa (ID / Referencia)</th>
+                  <th class="px-3 py-2 text-left w-2/5">Descripción</th>
+                  <th class="px-2 py-2 text-center">ID Talla / Color</th>
+                  <th class="px-2 py-2 text-center">Cant.</th>
+                  <th class="px-3 py-2 text-right">Precio Unit.</th>
+                  <th class="px-3 py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-emerald-100">
+                <tr *ngFor="let itemS of itemsSiesaOrden" class="hover:bg-emerald-50/30 transition-colors">
+                  <!-- ID / Referencia Siesa -->
+                  <td class="px-3 py-2 align-top">
+                    <div class="font-bold text-emerald-800 text-xs flex items-center gap-1">
+                      <i class="bi bi-tag-fill text-[10px] text-emerald-500"></i>
+                      <span>{{ itemS.referencia || '—' }}</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-mono mt-0.5">
+                      ID Ítem: <strong class="text-gray-700">{{ itemS.f120_id || '—' }}</strong>
+                    </div>
+                  </td>
+                  <!-- Descripción -->
+                  <td class="px-3 py-2 align-top">
+                    <div class="font-medium text-gray-800 text-[11px] leading-relaxed">{{ itemS.descripcion || itemS.descripcion_corta || '—' }}</div>
+                  </td>
+                  <!-- ID Talla / Color -->
+                  <td class="px-2 py-2 align-top text-center">
+                    <div class="inline-flex flex-col items-center gap-0.5">
+                      <!-- ID de Talla -->
+                      <span *ngIf="itemS.id_talla" class="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 text-[10px] font-mono font-bold border border-blue-200" [title]="'ID Talla: ' + itemS.id_talla + (itemS.talla ? ' (' + itemS.talla + ')' : '')">
+                        Talla: {{ itemS.id_talla }}
+                      </span>
+                      <span *ngIf="!itemS.id_talla" class="text-gray-400 text-[10px]">—</span>
+
+                      <!-- Color (si existe) -->
+                      <span *ngIf="itemS.color || itemS.id_color" class="text-[9px] text-gray-500 truncate max-w-[90px]" [title]="itemS.color || itemS.id_color">
+                        {{ itemS.color || itemS.id_color }}
+                      </span>
+                    </div>
+                  </td>
+                  <!-- Cantidad -->
+                  <td class="px-2 py-2 align-top text-center">
+                    <span class="font-bold text-gray-900 text-xs">{{ itemS.cantidad }}</span>
+                    <span class="text-[10px] text-gray-400 block">{{ itemS.unidad_medida || 'UND' }}</span>
+                  </td>
+                  <!-- Precio Unitario -->
+                  <td class="px-3 py-2 align-top text-right text-gray-600 text-xs">
+                    {{ (itemS.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </td>
+                  <!-- Total -->
+                  <td class="px-3 py-2 align-top text-right font-bold text-emerald-700 text-xs">
+                    {{ (itemS.valor_total || (itemS.cantidad * itemS.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </td>
+                </tr>
+              </tbody>
+              <!-- Totales Siesa -->
+              <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-200 text-emerald-950">
+                <tr>
+                  <td colspan="3" class="px-3 py-2 text-right uppercase tracking-wider text-[10px]">Totales Siesa:</td>
+                  <td class="px-2 py-2 text-center text-xs font-extrabold text-emerald-900">{{ getTotalCantidadSiesa() }}</td>
+                  <td></td>
+                  <td class="px-3 py-2 text-right text-xs font-extrabold text-emerald-900">
+                    {{ getTotalValorSiesa() | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
 
-        <div *ngIf="(!itemsSiesaOrden || itemsSiesaOrden.length === 0) && !isLoadingDetalleOC" class="text-center py-6 bg-emerald-50/40 rounded-xl border border-dashed border-emerald-200">
+        <div *ngIf="(!itemsSiesaOrden || itemsSiesaOrden.length === 0) && !isLoadingDetalleOC" class="text-center py-4 bg-emerald-50/40 rounded-xl border border-dashed border-emerald-200">
           <p class="text-xs text-emerald-700">No se encontraron ítems cargados en Siesa para el PV {{ ordenSeleccionada?.pv_asociado }}.</p>
         </div>
       </div>
     </div>
 
     <!-- Footer con acciones -->
-    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+    <div class="px-4 sm:px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
       <div class="flex items-center gap-2">
-        <button (click)="verDocumento(ordenSeleccionada)" class="px-4 py-2 text-xs font-bold rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-1.5 shadow-xs">
+        <button (click)="verDocumento(ordenSeleccionada)" class="px-3 py-1.5 text-xs font-bold rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-1 shadow-2xs">
           <i class="bi bi-file-earmark-pdf-fill"></i> Ver Documento Original
         </button>
         <!-- Desvincular PV: solo visible si la orden está PROCESADA y tiene PV (Ingeniería) -->
         <button *ngIf="ordenSeleccionada?.estado === 'PROCESADA' && ordenSeleccionada?.pv_asociado"
                 (click)="desvincularPVSiesa(ordenSeleccionada)"
-                class="px-4 py-2 text-xs font-bold rounded-xl text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1.5">
+                class="px-3 py-1.5 text-xs font-bold rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1">
           <i class="bi bi-link-45deg"></i> Desvincular PV
         </button>
       </div>
-      <button (click)="cerrarModalDetalleOC()" class="px-4 py-2 text-xs font-bold rounded-xl bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+      <button (click)="cerrarModalDetalleOC()" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
         Cerrar
       </button>
     </div>
@@ -507,31 +528,30 @@
 </div>
 
 <!-- ========== MODAL RECHAZO ========== -->
-<div *ngIf="mostrarModalRechazo" class="fixed inset-0 flex items-center justify-center p-4 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
-  <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-2xl" style="z-index: 1051 !important;">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-xl font-bold text-gray-900">Rechazar Orden</h2>
+<div *ngIf="mostrarModalRechazo" class="fixed inset-0 flex items-center justify-center p-3 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
+  <div class="bg-white rounded-xl w-full max-w-md p-5 shadow-2xl" style="z-index: 1051 !important;">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base sm:text-lg font-bold text-gray-900">Rechazar Orden de Compra</h2>
       <button (click)="cerrarModalRechazo()" class="text-gray-400 hover:text-gray-600">
-        <i class="bi bi-x-lg text-xl"></i>
+        <i class="bi bi-x-lg text-sm"></i>
       </button>
     </div>
 
-    <p class="text-sm text-gray-600 mb-4">
-      Está a punto de rechazar la orden <strong>{{ ordenArechazar?.numero_orden }}</strong>.
-      Debe indicar el motivo del rechazo (mínimo 10 caracteres).
+    <p class="text-xs text-gray-600 mb-3">
+      Indique el motivo del rechazo para la orden <strong>{{ ordenArechazar?.numero_orden }}</strong> (mínimo 10 caracteres).
     </p>
 
     <textarea [(ngModel)]="motivoRechazo"
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-      rows="4" placeholder="Escriba el motivo del rechazo..."></textarea>
+      class="w-full p-2.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none outline-none"
+      rows="3" placeholder="Escriba el motivo detallado del rechazo..."></textarea>
 
-    <div class="flex justify-end gap-3 mt-6">
+    <div class="flex justify-end gap-2 mt-4">
       <button (click)="cerrarModalRechazo()"
-        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+        class="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
         Cancelar
       </button>
       <button (click)="confirmarRechazo()"
-        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+        class="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
         [disabled]="!motivoRechazo.trim() || motivoRechazo.length < 10">
         Rechazar Orden
       </button>
