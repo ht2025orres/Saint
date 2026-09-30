@@ -235,11 +235,18 @@
         </div>
       </div>
 
-      <!-- Info Cards Row 2: Entrega, Días, Usuario, Ítems -->
+      <!-- Info Cards Row 2: Entrega, Plazo Pactado, Días Restantes, Creador -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Entrega Estimada</span>
           <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.fecha_entrega_estimada ? (ordenSeleccionada?.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</span>
+        </div>
+        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Plazo Pactado</span>
+          <span class="text-xs font-bold text-blue-700 block mt-1">
+            <i class="bi bi-calendar-range mr-1"></i>
+            {{ calcularPlazoPactado(ordenSeleccionada?.fecha_recepcion || ordenSeleccionada?.fecha_registro || ordenSeleccionada?.created_at, ordenSeleccionada?.fecha_entrega_estimada, ordenSeleccionada?.dias_entrega) }}
+          </span>
         </div>
         <div class="p-3.5 rounded-xl border" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase || 'bg-gray-50 border-gray-100'">
           <span class="text-[10px] font-bold uppercase tracking-wider block" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase ? '' : 'text-gray-400'">Días para Entrega</span>
@@ -253,11 +260,9 @@
         </div>
         <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Registrado por</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A' }}</span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Ítems</span>
-          <span class="text-sm font-extrabold text-blue-600 block mt-1">{{ itemsOrdenSeleccionada.length || ordenSeleccionada?.items_count || 0 }}</span>
+          <span class="text-xs font-bold text-gray-800 block mt-1 truncate" [title]="ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A'">
+            {{ ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A' }}
+          </span>
         </div>
       </div>
 
@@ -269,7 +274,7 @@
         <p class="text-xs text-amber-900 leading-relaxed">{{ ordenSeleccionada?.observaciones }}</p>
       </div>
 
-      <!-- Tabla de Ítems Cargados -->
+      <!-- Tabla de Ítems Cargados: Cliente vs Siesa -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
@@ -283,24 +288,54 @@
           <p class="text-xs text-gray-500 mt-2">Cargando desglose de ítems...</p>
         </div>
 
-        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length > 0" class="border border-gray-200 rounded-xl overflow-hidden">
+        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length > 0" class="border border-gray-200 rounded-xl overflow-hidden shadow-xs">
           <table class="w-full text-xs">
             <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold">
               <tr>
-                <th class="px-4 py-2.5 text-left">Código / Ref</th>
-                <th class="px-4 py-2.5 text-left">Descripción</th>
-                <th class="px-4 py-2.5 text-center">Cant.</th>
-                <th class="px-4 py-2.5 text-right">Precio Unit.</th>
-                <th class="px-4 py-2.5 text-right">Total</th>
+                <th class="px-4 py-3 text-left w-2/5">Ítem del Cliente (ID / Descripción)</th>
+                <th class="px-4 py-3 text-left w-1/4">Ítem Interno (Siesa / Ref)</th>
+                <th class="px-4 py-3 text-center">Cant.</th>
+                <th class="px-4 py-3 text-right">Precio Unit.</th>
+                <th class="px-4 py-3 text-right">Total</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr *ngFor="let item of itemsOrdenSeleccionada" class="hover:bg-gray-50">
-                <td class="px-4 py-2.5 font-bold text-gray-800">{{ item.codigo_item || item.referencia || '—' }}</td>
-                <td class="px-4 py-2.5 text-gray-600">{{ item.descripcion }}</td>
-                <td class="px-4 py-2.5 text-center font-bold text-gray-900">{{ item.cantidad }}</td>
-                <td class="px-4 py-2.5 text-right text-gray-600">{{ (item.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
-                <td class="px-4 py-2.5 text-right font-bold text-blue-600">{{ (item.precio_total || (item.cantidad * item.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+              <tr *ngFor="let item of itemsOrdenSeleccionada" class="hover:bg-gray-50/80 transition-colors">
+                <!-- Datos del Cliente -->
+                <td class="px-4 py-3 align-top">
+                  <div class="font-bold text-gray-800 text-xs">
+                    <span class="text-gray-400 font-normal">ID/Cód:</span> {{ item.codigo_item || '—' }}
+                  </div>
+                  <div class="text-xs text-gray-600 mt-0.5 leading-relaxed">{{ item.descripcion }}</div>
+                </td>
+                <!-- Datos Internos Siesa -->
+                <td class="px-4 py-3 align-top">
+                  <div class="font-bold text-blue-700 text-xs flex items-center gap-1">
+                    <i class="bi bi-tag-fill text-[10px] text-blue-400"></i>
+                    {{ item.referencia || '—' }}
+                  </div>
+                  <div class="text-[11px] text-gray-500 mt-1">
+                    <span *ngIf="item.rowid_siesa" class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-[10px]">
+                      <i class="bi bi-check2-circle mr-1"></i> Siesa #{{ item.rowid_siesa }}
+                    </span>
+                    <span *ngIf="!item.rowid_siesa" class="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-medium text-[10px]">
+                      Sin vincular
+                    </span>
+                  </div>
+                </td>
+                <!-- Cantidad -->
+                <td class="px-4 py-3 align-top text-center">
+                  <span class="font-bold text-gray-900 text-xs">{{ item.cantidad }}</span>
+                  <span class="text-[10px] text-gray-400 block">{{ item.unidad_medida || 'UND' }}</span>
+                </td>
+                <!-- Precio Unitario -->
+                <td class="px-4 py-3 align-top text-right text-gray-600 text-xs">
+                  {{ (item.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </td>
+                <!-- Total -->
+                <td class="px-4 py-3 align-top text-right font-bold text-blue-600 text-xs">
+                  {{ (item.precio_total || (item.cantidad * item.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </td>
               </tr>
             </tbody>
           </table>

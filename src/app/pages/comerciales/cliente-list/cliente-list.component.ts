@@ -816,6 +816,24 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     }
   }
 
+  calcularPlazoPactado(fechaInicio: string | null, fechaFin: string | null, diasOriginal?: any): string {
+    if (diasOriginal && Number(diasOriginal) > 0) {
+      return `${diasOriginal} días`;
+    }
+    if (!fechaInicio || !fechaFin) return 'N/A';
+    try {
+      const inicio = new Date(fechaInicio);
+      inicio.setHours(0, 0, 0, 0);
+      const fin = new Date(fechaFin);
+      fin.setHours(0, 0, 0, 0);
+      const diffMs = fin.getTime() - inicio.getTime();
+      const dias = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      return dias > 0 ? `${dias} días` : (dias === 0 ? 'Mismo día' : `${dias} días`);
+    } catch {
+      return 'N/A';
+    }
+  }
+
   // ==================== HELPERS ====================
   getEstadoBadgeClass(estado: string): string {
     const map: Record<string, string> = {
