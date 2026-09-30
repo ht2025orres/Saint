@@ -75,6 +75,12 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
   ordenArechazar: OrdenCompra | null = null;
   motivoRechazo = '';
 
+  // Modal Detalle e Ítems OC
+  mostrarModalDetalleOC = false;
+  ordenSeleccionada: any = null;
+  itemsOrdenSeleccionada: any[] = [];
+  isLoadingDetalleOC = false;
+
   constructor(
     public paginationService: PaginationService,
     private ordenCompraService: OrdenCompraService,
@@ -593,6 +599,99 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
         Swal.fire('Error', 'No se pudo descargar el documento', 'error');
       }
     });
+  }
+
+  // ========== DETALLE E ÍTEMS OC ==========
+  verDetalleOC(orden: any): void {
+    this.ordenSeleccionada = orden;
+    this.itemsOrdenSeleccionada = [];
+    this.mostrarModalDetalleOC = true;
+    this.isLoadingDetalleOC = true;
+
+    this.ordenCompraService.obtenerDetalle(orden.id).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.ordenSeleccionada = res.data;
+          this.itemsOrdenSeleccionada = res.data.items || [];
+          if (!this.itemsOrdenSeleccionada || this.itemsOrdenSeleccionada.length === 0) {
+            this.ordenCompraService.obtenerItems(orden.id).subscribe({
+              next: (itemsRes) => {
+                if (itemsRes && itemsRes.data) {
+                  this.itemsOrdenSeleccionada = itemsRes.data;
+                }
+              }
+            });
+          }
+        }
+        this.isLoadingDetalleOC = false;
+      },
+      error: () => {
+        this.isLoadingDetalleOC = false;
+      }
+    });
+  }
+
+  cerrarModalDetalleOC(): void {
+    this.mostrarModalDetalleOC = false;
+    this.ordenSeleccionada = null;
+    this.itemsOrdenSeleccionada = [];
+  }
+
+  desvincularPVSiesa(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!orden || !orden.id) return;
+
+    Swal.fire({
+      title: '¿Desvincular PV de esta OC?',
+      html: `<p class="text-sm text-slate-600">Se desvinculará el <strong>PV ${orden.pv_asociado}</strong> de la <strong>OC ${orden.numero_orden}</strong>.</p><p class="text-xs text-amber-600 mt-2 font-medium">La orden volverá a estado PENDIENTE.</p>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: '<i class="bi bi-link-45deg"></i> Sí, desvincular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ordenCompraService.desvincularPV(orden.id).subscribe({
+          next: (res) => {
+            Swal.fire({
+              title: 'PV Desvinculado',
+              text: res.message || 'La orden volvió a estado PENDIENTE.',
+              icon: 'success',
+              timer: 1800,
+              showConfirmButton: false
+            });
+            if (this.ordenSeleccionada && this.ordenSeleccionada.id === orden.id) {
+              this.ordenSeleccionada.pv_asociado = null;
+              this.ordenSeleccionada.estado = 'PENDIENTE';
+            }
+            this.cargarOrdenes();
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo desvincular el PV', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  calcularDiasRestantes(fechaEntrega: string | null): { dias: number; texto: string; clase: string } | null {
+    if (!fechaEntrega) return null;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const entrega = new Date(fechaEntrega);
+    entrega.setHours(0, 0, 0, 0);
+    const diffMs = entrega.getTime() - hoy.getTime();
+    const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (dias < 0) {
+      return { dias: Math.abs(dias), texto: `Vencida hace ${Math.abs(dias)} día${Math.abs(dias) !== 1 ? 's' : ''}`, clase: 'text-rose-600 bg-rose-50 border-rose-200' };
+    } else if (dias === 0) {
+      return { dias: 0, texto: 'Entrega hoy', clase: 'text-amber-700 bg-amber-50 border-amber-200' };
+    } else if (dias <= 3) {
+      return { dias, texto: `${dias} día${dias !== 1 ? 's' : ''} restante${dias !== 1 ? 's' : ''}`, clase: 'text-amber-700 bg-amber-50 border-amber-200' };
+    } else {
+      return { dias, texto: `${dias} días restantes`, clase: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+    }
   }
 
   // ========== UTILIDADES ==========
