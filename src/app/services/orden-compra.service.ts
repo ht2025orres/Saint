@@ -134,6 +134,12 @@ export class OrdenCompraService {
     );
   }
 
+  consultarPV(numeroPV: string): Observable<{ success: boolean; existe_en_siesa?: boolean; message?: string; pv?: any }> {
+    return this.http.get<any>(
+      `${this.apiLaravelUrl}/ordenes-compra/consultar-pv/${encodeURIComponent(numeroPV)}`
+    );
+  }
+
   guardarItems(ordenId: number, items: any[]): Observable<{ success: boolean; data: any[]; message: string }> {
     return this.http.post<any>(
       `${this.apiLaravelUrl}/ordenes-compra/${ordenId}/items`,

@@ -90,6 +90,16 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
   itemsSiesaOrden: any[] = [];
   isLoadingDetalleOC = false;
 
+  // Modal Vinculación Interactiva PV
+  mostrarModalVincularPV = false;
+  ordenParaVincular: any = null;
+  pvInput = '';
+  isBuscandoPVSiesa = false;
+  isGuardandoVinculacion = false;
+  infoPVSiesa: any = null;
+  errorBusquedaPV = '';
+  busquedaAutomaticaCompletada = false;
+
   constructor(
     public paginationService: PaginationService,
     private ordenCompraService: OrdenCompraService,
@@ -748,55 +758,123 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     this.itemsSiesaOrden = [];
   }
 
-  vincularPVManual(orden: any): void {
+  // ========== MODAL UNIFICADO VINCULAR PV (AUTO / MANUAL + VALIDACIÓN SIESA) ==========
+  abrirModalVincularPV(orden: any): void {
     if (!orden || !orden.id) return;
-    Swal.fire({
-      title: 'Vincular PV Manualmente',
-      html: `
-        <p class="text-sm text-slate-600 mb-3">Ingrese el número de <strong>Pedido de Venta (PV)</strong> de Siesa para la OC <strong>${orden.numero_orden}</strong>:</p>
-      `,
-      input: 'text',
-      inputPlaceholder: 'Ej: 12345 o PV-00123',
-      inputAttributes: {
-        autocapitalize: 'off',
-        autocomplete: 'off'
-      },
-      showCancelButton: true,
-      confirmButtonText: '<i class="bi bi-link-45deg"></i> Vincular',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#2563eb',
-      preConfirm: (value) => {
-        if (!value || !value.trim()) {
-          Swal.showValidationMessage('Debe ingresar un número de PV');
-          return false;
-        }
-        return value.trim();
-      }
-    }).then((result) => {
-      if (result.isConfirmed && result.value) {
-        const pvNumero = result.value;
-        Swal.fire({
-          title: 'Vinculando...',
-          text: 'Asociando PV con la orden de compra',
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading()
-        });
+    this.ordenParaVincular = orden;
+    this.pvInput = '';
+    this.infoPVSiesa = null;
+    this.errorBusquedaPV = '';
+    this.busquedaAutomaticaCompletada = false;
+    this.mostrarModalVincularPV = true;
 
-        this.ordenCompraService.vincularPVManual(orden.id, pvNumero).subscribe({
-          next: (res) => {
-            Swal.fire({
-              title: '¡Vinculada con éxito!',
-              text: res.message || `PV ${pvNumero} vinculado a la OC ${orden.numero_orden}`,
-              icon: 'success',
-              timer: 2000,
-              showConfirmButton: false
-            });
-            this.cargarOrdenes();
-          },
-          error: (err) => {
-            Swal.fire('Error', err.error?.message || 'No se pudo vincular el PV manual', 'error');
-          }
+    // Intentar búsqueda automática con el número de OC registrado
+    if (orden.numero_orden) {
+      this.consultarInfoPV(orden.numero_orden, true);
+    }
+  }
+
+  cerrarModalVincularPV(): void {
+    this.mostrarModalVincularPV = false;
+    this.ordenParaVincular = null;
+    this.pvInput = '';
+    this.infoPVSiesa = null;
+    this.errorBusquedaPV = '';
+    this.busquedaAutomaticaCompletada = false;
+    this.isBuscandoPVSiesa = false;
+    this.isGuardandoVinculacion = false;
+  }
+
+  consultarInfoPV(numero?: string, esAuto = false): void {
+    const valor = (numero !== undefined ? numero : this.pvInput).trim();
+    if (!valor) {
+      this.errorBusquedaPV = 'Por favor ingrese un número de PV o referencia para consultar.';
+      this.infoPVSiesa = null;
+      return;
+    }
+
+    this.isBuscandoPVSiesa = true;
+    this.errorBusquedaPV = '';
+
+    this.ordenCompraService.consultarPV(valor).subscribe({
+      next: (res) => {
+        this.isBuscandoPVSiesa = false;
+        if (esAuto) this.busquedaAutomaticaCompletada = true;
+
+        if (res.success && res.pv) {
+          this.infoPVSiesa = res.pv;
+          this.pvInput = res.pv.numero_pv || valor;
+          this.errorBusquedaPV = '';
+        } else {
+          this.infoPVSiesa = null;
+          this.errorBusquedaPV = res.message || `No se encontró el PV "${valor}" en Siesa.`;
+        }
+      },
+      error: (err) => {
+        this.isBuscandoPVSiesa = false;
+        if (esAuto) this.busquedaAutomaticaCompletada = true;
+        this.infoPVSiesa = null;
+        this.errorBusquedaPV = err.error?.message || 'Error al conectar con Siesa para consultar el PV.';
+      }
+    });
+  }
+
+  coincideOC(): boolean {
+    if (!this.infoPVSiesa || !this.ordenParaVincular) return false;
+    const refSiesa = (this.infoPVSiesa.oc_referencia_siesa || '').trim().toLowerCase();
+    const ocActual = (this.ordenParaVincular.numero_orden || '').trim().toLowerCase();
+    if (!refSiesa || !ocActual) return false;
+    return refSiesa === ocActual || refSiesa.includes(ocActual) || ocActual.includes(refSiesa);
+  }
+
+  confirmarVinculacionPV(): void {
+    if (!this.ordenParaVincular || !this.pvInput.trim()) return;
+
+    const pvNumero = (this.infoPVSiesa?.numero_pv || this.pvInput).trim();
+
+    // Si ya está vinculada en Saint a otra OC, advertir con confirmación
+    if (this.infoPVSiesa?.ya_vinculada_en_saint && this.infoPVSiesa.orden_saint_vinculada?.id !== this.ordenParaVincular.id) {
+      Swal.fire({
+        title: '¡PV ya vinculado en Saint!',
+        html: `
+          <p class="text-sm text-slate-700 mb-2">Este PV <strong>#${pvNumero}</strong> ya se encuentra asociado a la orden <strong>#${this.infoPVSiesa.orden_saint_vinculada.numero_orden}</strong> (Cliente: ${this.infoPVSiesa.orden_saint_vinculada.cliente}).</p>
+          <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-md font-medium border border-amber-200">¿Desea continuar y vincularlo a esta orden actual de todas formas?</p>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, vincular',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d97706'
+      }).then((res) => {
+        if (res.isConfirmed) {
+          this.ejecutarVinculacionPV(pvNumero);
+        }
+      });
+      return;
+    }
+
+    this.ejecutarVinculacionPV(pvNumero);
+  }
+
+  private ejecutarVinculacionPV(pvNumero: string): void {
+    this.isGuardandoVinculacion = true;
+
+    this.ordenCompraService.vincularPVManual(this.ordenParaVincular.id, pvNumero).subscribe({
+      next: (res) => {
+        this.isGuardandoVinculacion = false;
+        this.cerrarModalVincularPV();
+        Swal.fire({
+          title: '¡Vinculada con éxito!',
+          text: res.message || `PV ${pvNumero} vinculado exitosamente a la OC ${this.ordenParaVincular?.numero_orden}`,
+          icon: 'success',
+          timer: 2200,
+          showConfirmButton: false
         });
+        this.cargarOrdenes();
+      },
+      error: (err) => {
+        this.isGuardandoVinculacion = false;
+        Swal.fire('Error', err.error?.message || 'No se pudo vincular el PV a la orden', 'error');
       }
     });
   }

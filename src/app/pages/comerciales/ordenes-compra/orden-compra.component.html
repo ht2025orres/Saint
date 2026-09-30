@@ -214,21 +214,12 @@
               <!-- Acciones de Ingeniería (PENDIENTE) -->
               <div *ngIf="authService.hasAnyPermission([38]) && orden.estado === 'PENDIENTE'"
                 class="flex gap-1 ml-auto md:ml-0">
-                <!-- Procesar Automático (Busca en Siesa) -->
+                <!-- Vincular PV (Modal Unificado: auto + manual) -->
                 <button
-                  (click)="procesarOrden(orden)"
+                  (click)="abrirModalVincularPV(orden)"
                   class="inline-flex items-center justify-center w-8 h-8 text-emerald-600 border border-emerald-400 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
-                  [disabled]="isProcesando"
-                  title="Vincular automáticamente con PV de Siesa">
+                  title="Vincular con PV de Siesa">
                   <i class="bi bi-check2-circle text-base"></i>
-                </button>
-
-                <!-- Vincular Manual -->
-                <button
-                  (click)="vincularPVManual(orden)"
-                  class="inline-flex items-center justify-center w-8 h-8 text-blue-600 border border-blue-400 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                  title="Vincular manualmente ingresando el número de PV">
-                  <i class="bi bi-pencil-square text-sm"></i>
                 </button>
 
                 <!-- Rechazar -->
@@ -575,6 +566,159 @@
         class="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
         [disabled]="!motivoRechazo.trim() || motivoRechazo.length < 10">
         Rechazar Orden
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL VINCULAR PV (Unificado: Automático + Manual + Validación Siesa) ========== -->
+<div *ngIf="mostrarModalVincularPV" class="fixed inset-0 flex items-center justify-center p-3 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
+  <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" style="z-index: 1051 !important;">
+
+    <!-- Header -->
+    <div class="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-bold flex items-center gap-1.5">
+          <i class="bi bi-link-45deg"></i> Vincular PV
+        </h2>
+        <p class="text-[10px] text-emerald-100 mt-0.5">OC <strong>{{ ordenParaVincular?.numero_orden }}</strong> · {{ ordenParaVincular?.cliente }}</p>
+      </div>
+      <button (click)="cerrarModalVincularPV()" class="text-white/70 hover:text-white transition-colors">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Cuerpo -->
+    <div class="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+
+      <!-- Estado búsqueda automática -->
+      <div *ngIf="isBuscandoPVSiesa && !busquedaAutomaticaCompletada"
+        class="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-2.5 text-xs font-medium">
+        <div class="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+        Buscando PV en Siesa con referencia OC {{ ordenParaVincular?.numero_orden }}...
+      </div>
+
+      <div *ngIf="busquedaAutomaticaCompletada && !infoPVSiesa && !isBuscandoPVSiesa"
+        class="flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-3 py-2.5 text-xs">
+        <i class="bi bi-exclamation-triangle-fill text-amber-500"></i>
+        <span>No se encontró PV automáticamente para la OC <strong>{{ ordenParaVincular?.numero_orden }}</strong>. Ingrese el número de PV manualmente.</span>
+      </div>
+
+      <div *ngIf="busquedaAutomaticaCompletada && infoPVSiesa && !isBuscandoPVSiesa"
+        class="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-3 py-2.5 text-xs">
+        <i class="bi bi-check-circle-fill text-emerald-500"></i>
+        <span>PV encontrado automáticamente: <strong>#{{ infoPVSiesa.numero_pv }}</strong></span>
+      </div>
+
+      <!-- Input manual / editar -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-gray-700 flex items-center gap-1">
+          <i class="bi bi-search text-gray-400"></i> Número de PV
+        </label>
+        <div class="flex gap-2">
+          <input
+            [(ngModel)]="pvInput"
+            (keyup.enter)="consultarInfoPV()"
+            type="text"
+            class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+            placeholder="Ej: 50457"
+            [disabled]="isBuscandoPVSiesa || isGuardandoVinculacion">
+          <button
+            (click)="consultarInfoPV()"
+            [disabled]="isBuscandoPVSiesa || !pvInput.trim() || isGuardandoVinculacion"
+            class="px-3 py-2 text-xs font-bold rounded-lg bg-slate-700 text-white hover:bg-slate-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1">
+            <i class="bi bi-search"></i> Consultar
+          </button>
+        </div>
+      </div>
+
+      <!-- Spinner consulta manual -->
+      <div *ngIf="isBuscandoPVSiesa && busquedaAutomaticaCompletada"
+        class="flex items-center justify-center gap-2 py-3 text-xs text-gray-500">
+        <div class="animate-spin w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
+        Consultando PV en Siesa...
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="errorBusquedaPV && !isBuscandoPVSiesa"
+        class="flex items-start gap-2 bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2.5 text-xs">
+        <i class="bi bi-x-octagon-fill text-red-500 mt-0.5"></i>
+        <span>{{ errorBusquedaPV }}</span>
+      </div>
+
+      <!-- Tarjeta Info PV Siesa -->
+      <div *ngIf="infoPVSiesa && !isBuscandoPVSiesa" class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+        <h4 class="text-xs font-bold text-gray-800 flex items-center gap-1.5 uppercase tracking-wider">
+          <i class="bi bi-database-fill-check text-emerald-600"></i> Datos del PV en Siesa
+        </h4>
+
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+          <!-- PV -->
+          <div>
+            <span class="text-gray-500 text-[10px] uppercase tracking-wide">PV Siesa</span>
+            <p class="font-bold text-gray-900 text-sm">#{{ infoPVSiesa.numero_pv }}</p>
+          </div>
+          <!-- Fecha -->
+          <div>
+            <span class="text-gray-500 text-[10px] uppercase tracking-wide">Fecha PV</span>
+            <p class="font-semibold text-gray-800">{{ infoPVSiesa.fecha || '—' }}</p>
+          </div>
+          <!-- Cliente -->
+          <div class="col-span-2">
+            <span class="text-gray-500 text-[10px] uppercase tracking-wide">Cliente Siesa</span>
+            <p class="font-semibold text-gray-800">{{ infoPVSiesa.cliente_siesa }} <span class="text-gray-400 font-normal">({{ infoPVSiesa.nit_cliente }})</span></p>
+          </div>
+          <!-- OC Referencia en Siesa -->
+          <div class="col-span-2">
+            <span class="text-gray-500 text-[10px] uppercase tracking-wide">OC Referencia registrada en Siesa</span>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="font-bold text-gray-900">{{ infoPVSiesa.oc_referencia_siesa || 'Sin referencia' }}</span>
+              <span *ngIf="infoPVSiesa.oc_referencia_siesa && coincideOC()"
+                class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
+                <i class="bi bi-check-lg"></i> Coincide con esta OC
+              </span>
+              <span *ngIf="infoPVSiesa.oc_referencia_siesa && !coincideOC()"
+                class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300">
+                <i class="bi bi-exclamation-triangle"></i> No coincide (esta OC: {{ ordenParaVincular?.numero_orden }})
+              </span>
+            </div>
+          </div>
+          <!-- Items / Unidades -->
+          <div>
+            <span class="text-gray-500 text-[10px] uppercase tracking-wide">Ítems / Unidades</span>
+            <p class="font-semibold text-gray-800">{{ infoPVSiesa.total_items }} ítems · {{ infoPVSiesa.total_unidades | number:'1.0-0' }} uds</p>
+          </div>
+          <!-- Valor -->
+          <div>
+            <span class="text-gray-500 text-[10px] uppercase tracking-wide">Valor Total</span>
+            <p class="font-bold text-emerald-700">{{ infoPVSiesa.valor_total | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+          </div>
+        </div>
+
+        <!-- Alerta duplicado en Saint -->
+        <div *ngIf="infoPVSiesa.ya_vinculada_en_saint"
+          class="flex items-start gap-2 bg-red-50 text-red-700 border border-red-300 rounded-lg px-3 py-2 text-xs mt-2">
+          <i class="bi bi-exclamation-diamond-fill text-red-500 mt-0.5"></i>
+          <div>
+            <p class="font-bold">Este PV ya está vinculado a otra OC en Saint</p>
+            <p class="text-[10px] mt-0.5">OC #{{ infoPVSiesa.orden_saint_vinculada?.numero_orden }} · {{ infoPVSiesa.orden_saint_vinculada?.cliente }} · Estado: {{ infoPVSiesa.orden_saint_vinculada?.estado }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
+      <button (click)="cerrarModalVincularPV()"
+        class="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium">
+        Cancelar
+      </button>
+      <button
+        (click)="confirmarVinculacionPV()"
+        [disabled]="!infoPVSiesa || isGuardandoVinculacion || isBuscandoPVSiesa"
+        class="px-4 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 shadow-sm">
+        <i class="bi" [ngClass]="isGuardandoVinculacion ? 'bi-arrow-repeat animate-spin' : 'bi-check2-circle'"></i>
+        {{ isGuardandoVinculacion ? 'Vinculando...' : 'Vincular PV #' + (infoPVSiesa?.numero_pv || '') }}
       </button>
     </div>
   </div>
