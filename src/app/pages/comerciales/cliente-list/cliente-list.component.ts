@@ -61,6 +61,13 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   pagedOrdenes: any[] = [];
   ordenSearch = '';
   ordenEstadoFilter = '';
+  ordenClienteFilter = '';
+  ordenFechaFilter = 'este_mes';
+  ordenFechaDesde = '';
+  ordenFechaHasta = '';
+  busquedaClienteOC = '';
+  mostrarDropdownClientesOC = false;
+  clientesAgrupadosOC: Array<{ cliente: string; total: number; pendientes: number }> = [];
   isLoadingOrdenes = false;
   estadisticasOC: any = null;
 
@@ -74,6 +81,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   mostrarModalDetalleOC = false;
   ordenSeleccionada: any = null;
   itemsOrdenSeleccionada: any[] = [];
+  itemsSiesaOrden: any[] = [];
   isLoadingDetalleOC = false;
 
   // Acciones OC
@@ -521,6 +529,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.ordenCompraService.obtenerOrdenes().subscribe({
       next: (res) => {
         this.ordenes = res.data || [];
+        this.construirAgrupacionClientesOC();
         this.applyOrdenFilters();
         this.isLoadingOrdenes = false;
       },
@@ -533,6 +542,47 @@ export class ClienteListComponent implements OnInit, OnDestroy {
       next: (res) => { this.estadisticasOC = res.data; },
       error: () => {}
     });
+  }
+
+  construirAgrupacionClientesOC(): void {
+    const map = new Map<string, { cliente: string; total: number; pendientes: number }>();
+    this.ordenes.forEach((o: any) => {
+      const cli = (o.cliente || 'Sin Cliente').trim();
+      if (!map.has(cli)) {
+        map.set(cli, { cliente: cli, total: 0, pendientes: 0 });
+      }
+      const item = map.get(cli)!;
+      item.total++;
+      if (o.estado === 'PENDIENTE') item.pendientes++;
+    });
+    this.clientesAgrupadosOC = Array.from(map.values()).sort((a, b) => b.pendientes - a.pendientes || b.total - a.total);
+  }
+
+  getClientesFiltradosOC(): Array<{ cliente: string; total: number; pendientes: number }> {
+    if (!this.busquedaClienteOC.trim()) {
+      return this.clientesAgrupadosOC.slice(0, 8);
+    }
+    const q = this.busquedaClienteOC.toLowerCase().trim();
+    return this.clientesAgrupadosOC.filter(c => c.cliente.toLowerCase().includes(q));
+  }
+
+  seleccionarClienteOC(cliente: string): void {
+    this.ordenClienteFilter = cliente;
+    this.busquedaClienteOC = '';
+    this.mostrarDropdownClientesOC = false;
+    this.applyOrdenFilters();
+  }
+
+  limpiarClienteOC(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.ordenClienteFilter = '';
+    this.busquedaClienteOC = '';
+    this.mostrarDropdownClientesOC = false;
+    this.applyOrdenFilters();
+  }
+
+  toggleDropdownClientesOC(abrir?: boolean): void {
+    this.mostrarDropdownClientesOC = abrir !== undefined ? abrir : !this.mostrarDropdownClientesOC;
   }
 
   applyOrdenFilters(): void {
@@ -548,6 +598,53 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     if (this.ordenEstadoFilter) {
       result = result.filter((o: any) => o.estado === this.ordenEstadoFilter);
     }
+    if (this.ordenClienteFilter) {
+      result = result.filter((o: any) => (o.cliente || '').trim().toLowerCase() === this.ordenClienteFilter.trim().toLowerCase());
+    }
+
+    // Filtro por Fecha / Período
+    const ahora = new Date();
+    const mesActualStr = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+    const prevD = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+    const mesAnteriorStr = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`;
+
+    if (this.ordenFechaFilter === 'este_mes') {
+      result = result.filter((o: any) => {
+        const fReg = (o.fecha_recepcion || o.fecha_registro || o.created_at || '').substring(0, 10);
+        const fEnt = (o.fecha_entrega_estimada || '').substring(0, 10);
+        return fReg.startsWith(mesActualStr) || fEnt.startsWith(mesActualStr);
+      });
+    } else if (this.ordenFechaFilter === 'subidos_mes') {
+      result = result.filter((o: any) => {
+        const fReg = (o.fecha_recepcion || o.fecha_registro || o.created_at || '').substring(0, 10);
+        return fReg.startsWith(mesActualStr);
+      });
+    } else if (this.ordenFechaFilter === 'entrega_mes') {
+      result = result.filter((o: any) => {
+        const fEnt = (o.fecha_entrega_estimada || '').substring(0, 10);
+        return fEnt.startsWith(mesActualStr);
+      });
+    } else if (this.ordenFechaFilter === 'mes_anterior') {
+      result = result.filter((o: any) => {
+        const fReg = (o.fecha_recepcion || o.fecha_registro || o.created_at || '').substring(0, 10);
+        const fEnt = (o.fecha_entrega_estimada || '').substring(0, 10);
+        return fReg.startsWith(mesAnteriorStr) || fEnt.startsWith(mesAnteriorStr);
+      });
+    } else if (this.ordenFechaFilter === 'personalizado') {
+      if (this.ordenFechaDesde) {
+        result = result.filter((o: any) => {
+          const f = (o.fecha_recepcion || o.fecha_registro || o.created_at || '').substring(0, 10);
+          return f >= this.ordenFechaDesde;
+        });
+      }
+      if (this.ordenFechaHasta) {
+        result = result.filter((o: any) => {
+          const f = (o.fecha_recepcion || o.fecha_registro || o.created_at || '').substring(0, 10);
+          return f <= this.ordenFechaHasta;
+        });
+      }
+    }
+
     this.filteredOrdenes = result;
     this.initOrdenesPaginator();
   }
@@ -627,14 +724,16 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   verDetalleOC(orden: any): void {
     this.ordenSeleccionada = orden;
     this.itemsOrdenSeleccionada = [];
+    this.itemsSiesaOrden = [];
     this.mostrarModalDetalleOC = true;
     this.isLoadingDetalleOC = true;
 
     this.ordenCompraService.obtenerDetalle(orden.id).subscribe({
       next: (res) => {
         if (res.data) {
-          this.ordenSeleccionada = res.data;
+          this.ordenSeleccionada = { ...orden, ...res.data };
           this.itemsOrdenSeleccionada = res.data.items || [];
+          this.itemsSiesaOrden = res.data.items_siesa || [];
           if (!this.itemsOrdenSeleccionada || this.itemsOrdenSeleccionada.length === 0) {
             this.ordenCompraService.obtenerItems(orden.id).subscribe({
               next: (itemsRes) => {
@@ -657,6 +756,15 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.mostrarModalDetalleOC = false;
     this.ordenSeleccionada = null;
     this.itemsOrdenSeleccionada = [];
+    this.itemsSiesaOrden = [];
+  }
+
+  getTotalCantidadSiesa(): number {
+    return (this.itemsSiesaOrden || []).reduce((acc, item) => acc + (Number(item.cantidad) || 0), 0);
+  }
+
+  getTotalValorSiesa(): number {
+    return (this.itemsSiesaOrden || []).reduce((acc, item) => acc + (Number(item.valor_total) || 0), 0);
   }
 
   vincularPVSiesa(orden: any, event?: Event): void {

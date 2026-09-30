@@ -42,9 +42,14 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
 
   filters = {
     busqueda: '',
-    estado: ''
+    estado: '',
+    periodo: 'este_mes',
+    fechaDesde: '',
+    fechaHasta: ''
   };
   filtroCliente = '';
+  busquedaClienteInput = '';
+  mostrarDropdownClientes = false;
   clientesAgrupados: Array<{ cliente: string; total: number; pendientes: number; procesadas: number }> = [];
 
   mostrarModalNuevaOrden = false;
@@ -161,9 +166,31 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     this.clientesAgrupados = Array.from(map.values()).sort((a, b) => b.pendientes - a.pendientes || b.total - a.total);
   }
 
-  filtrarPorCliente(cliente: string): void {
-    this.filtroCliente = this.filtroCliente === cliente ? '' : cliente;
+  getClientesFiltrados(): Array<{ cliente: string; total: number; pendientes: number; procesadas: number }> {
+    if (!this.busquedaClienteInput.trim()) {
+      return this.clientesAgrupados.slice(0, 8);
+    }
+    const q = this.busquedaClienteInput.toLowerCase().trim();
+    return this.clientesAgrupados.filter(c => c.cliente.toLowerCase().includes(q));
+  }
+
+  seleccionarCliente(cliente: string): void {
+    this.filtroCliente = cliente;
+    this.busquedaClienteInput = '';
+    this.mostrarDropdownClientes = false;
     this.applyFilters();
+  }
+
+  limpiarFiltroCliente(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.filtroCliente = '';
+    this.busquedaClienteInput = '';
+    this.mostrarDropdownClientes = false;
+    this.applyFilters();
+  }
+
+  toggleDropdownClientes(abrir?: boolean): void {
+    this.mostrarDropdownClientes = abrir !== undefined ? abrir : !this.mostrarDropdownClientes;
   }
 
   inicializarPaginacion(): void {
@@ -200,7 +227,32 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
       cumpleCliente = (orden.cliente || '').trim().toLowerCase() === this.filtroCliente.trim().toLowerCase();
     }
 
-    return cumpleBusqueda && cumpleEstado && cumpleCliente;
+    // Filtro por Fecha / Período
+    let cumpleFecha = true;
+    const fechaRegistro = (orden.fecha_registro || (orden as any).created_at || '').substring(0, 10);
+    const fechaEntrega = ((orden as any).fecha_entrega_estimada || '').substring(0, 10);
+
+    const ahora = new Date();
+    const mesActualStr = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+    const mesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+    const mesAnteriorStr = `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, '0')}`;
+
+    if (filtros.periodo === 'este_mes') {
+      const subidoEsteMes = fechaRegistro.startsWith(mesActualStr);
+      const entregaEsteMes = fechaEntrega.startsWith(mesActualStr);
+      cumpleFecha = subidoEsteMes || entregaEsteMes;
+    } else if (filtros.periodo === 'subidos_mes') {
+      cumpleFecha = fechaRegistro.startsWith(mesActualStr);
+    } else if (filtros.periodo === 'entrega_mes') {
+      cumpleFecha = fechaEntrega.startsWith(mesActualStr);
+    } else if (filtros.periodo === 'mes_anterior') {
+      cumpleFecha = fechaRegistro.startsWith(mesAnteriorStr) || fechaEntrega.startsWith(mesAnteriorStr);
+    } else if (filtros.periodo === 'personalizado') {
+      if (filtros.fechaDesde && fechaRegistro < filtros.fechaDesde) cumpleFecha = false;
+      if (filtros.fechaHasta && fechaRegistro > filtros.fechaHasta) cumpleFecha = false;
+    }
+
+    return cumpleBusqueda && cumpleEstado && cumpleCliente && cumpleFecha;
   };
 
   applyFilters(): void {
