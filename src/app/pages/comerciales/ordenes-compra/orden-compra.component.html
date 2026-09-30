@@ -187,153 +187,8 @@
   </div>
 </div>
 
-<!-- ==================== MODAL: DETALLE E ÍTEMS DE LA OC ==================== -->
-<div *ngIf="mostrarModalDetalleOC" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-    <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-          <i class="bi bi-receipt text-white text-lg"></i>
-        </div>
-        <div>
-          <h3 class="font-extrabold text-white text-base">Detalles de Orden de Compra: {{ ordenSeleccionada?.numero_orden }}</h3>
-          <p class="text-xs text-indigo-100">{{ ordenSeleccionada?.cliente }}</p>
-        </div>
-      </div>
-      <button (click)="cerrarModalDetalleOC()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="flex-1 p-6 overflow-y-auto space-y-6">
-      <!-- Info Cards Row 1: Estado, PV, Registro, Recepción -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Estado</span>
-          <span class="text-xs font-bold px-2.5 py-0.5 rounded-md mt-1 inline-block" [ngClass]="getEstadoBadgeClass(ordenSeleccionada?.estado)">
-            {{ getEstadoTexto(ordenSeleccionada?.estado) }}
-          </span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">PV Siesa</span>
-          <span *ngIf="ordenSeleccionada?.pv_asociado" class="text-sm font-extrabold text-emerald-600 block mt-1">
-            {{ ordenSeleccionada?.pv_asociado }}
-          </span>
-          <span *ngIf="!ordenSeleccionada?.pv_asociado" class="text-xs font-bold text-amber-600 block mt-1">
-            Sin vincular
-          </span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Fecha Registro</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ (ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) ? ((ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) | date:'dd/MM/yyyy') : 'N/A' }}</span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Fecha Recepción</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.fecha_recepcion ? (ordenSeleccionada?.fecha_recepcion | date:'dd/MM/yyyy') : 'N/A' }}</span>
-        </div>
-      </div>
-
-      <!-- Info Cards Row 2: Entrega, Días, Usuario, Ítems -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Entrega Estimada</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.fecha_entrega_estimada ? (ordenSeleccionada?.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</span>
-        </div>
-        <div class="p-3.5 rounded-xl border" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase || 'bg-gray-50 border-gray-100'">
-          <span class="text-[10px] font-bold uppercase tracking-wider block" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase ? '' : 'text-gray-400'">Días para Entrega</span>
-          <span class="text-xs font-bold block mt-1" *ngIf="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada) as diasInfo">
-            <i class="bi" [ngClass]="diasInfo.dias === 0 ? 'bi-exclamation-triangle-fill' : (diasInfo.texto.includes('Vencida') ? 'bi-x-circle-fill' : 'bi-clock-fill')"></i>
-            {{ diasInfo.texto }}
-          </span>
-          <span class="text-xs font-bold text-gray-400 block mt-1" *ngIf="!calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)">
-            N/A
-          </span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Registrado por</span>
-          <span class="text-xs font-bold text-gray-800 block mt-1">{{ ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A' }}</span>
-        </div>
-        <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Ítems</span>
-          <span class="text-sm font-extrabold text-blue-600 block mt-1">{{ itemsOrdenSeleccionada.length || ordenSeleccionada?.items_count || 0 }}</span>
-        </div>
-      </div>
-
-      <!-- Observaciones / Motivo de Rechazo -->
-      <div *ngIf="ordenSeleccionada?.observaciones" class="p-4 rounded-xl bg-amber-50 border border-amber-200">
-        <span class="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-1">
-          <i class="bi bi-info-circle-fill"></i> Observaciones / Notas:
-        </span>
-        <p class="text-xs text-amber-900 leading-relaxed">{{ ordenSeleccionada?.observaciones }}</p>
-      </div>
-
-      <!-- Tabla de Ítems Cargados -->
-      <div>
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
-            <i class="bi bi-box-seam text-blue-600"></i>
-            Ítems Registrados ({{ itemsOrdenSeleccionada.length }})
-          </h4>
-        </div>
-
-        <div *ngIf="isLoadingDetalleOC" class="text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="text-xs text-gray-500 mt-2">Cargando desglose de ítems...</p>
-        </div>
-
-        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length > 0" class="border border-gray-200 rounded-xl overflow-hidden">
-          <table class="w-full text-xs">
-            <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold">
-              <tr>
-                <th class="px-4 py-2.5 text-left">Código / Ref</th>
-                <th class="px-4 py-2.5 text-left">Descripción</th>
-                <th class="px-4 py-2.5 text-center">Cant.</th>
-                <th class="px-4 py-2.5 text-right">Precio Unit.</th>
-                <th class="px-4 py-2.5 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr *ngFor="let item of itemsOrdenSeleccionada" class="hover:bg-gray-50">
-                <td class="px-4 py-2.5 font-bold text-gray-800">{{ item.codigo_item || item.referencia || '—' }}</td>
-                <td class="px-4 py-2.5 text-gray-600">{{ item.descripcion }}</td>
-                <td class="px-4 py-2.5 text-center font-bold text-gray-900">{{ item.cantidad }}</td>
-                <td class="px-4 py-2.5 text-right text-gray-600">{{ (item.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
-                <td class="px-4 py-2.5 text-right font-bold text-blue-600">{{ (item.precio_total || (item.cantidad * item.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length === 0" class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-          <p class="text-xs text-gray-400">No se encontraron ítems desglosados en esta orden.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer con acciones -->
-    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
-      <div class="flex items-center gap-2">
-        <button (click)="verDocumento(ordenSeleccionada)" class="px-4 py-2 text-xs font-bold rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-1.5">
-          <i class="bi bi-file-earmark-pdf-fill"></i> Ver Documento Original
-        </button>
-        <!-- Desvincular PV: solo visible si la orden está PROCESADA y tiene PV -->
-        <button *ngIf="ordenSeleccionada?.estado === 'PROCESADA' && ordenSeleccionada?.pv_asociado"
-                (click)="desvincularPVSiesa(ordenSeleccionada)"
-                class="px-4 py-2 text-xs font-bold rounded-xl text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1.5">
-          <i class="bi bi-link-45deg"></i> Desvincular PV
-        </button>
-      </div>
-      <button (click)="cerrarModalDetalleOC()" class="px-4 py-2 text-xs font-bold rounded-xl bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
-        Cerrar
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- ========== MODAL RECHAZO ========== -->
-<div *ngIf="mostrarModalRechazo" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+<div *ngIf="mostrarModalRechazo" class="fixed inset-0 flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1050 !important;">
   <div class="bg-white rounded-lg w-full max-w-md p-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-xl font-bold text-gray-900">Rechazar Orden</h2>
@@ -367,7 +222,7 @@
 
 <!-- ========== MODAL VISOR DE DOCUMENTO ========== -->
 <div *ngIf="mostrarModalDocumento"
-  class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4" style="z-index: 1060 !important;">
+  class="fixed inset-0 flex items-center justify-center p-4" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1060 !important;">
   <div class="bg-white rounded-lg w-full h-full max-w-6xl h-[90vh] flex flex-col overflow-hidden" style="z-index: 1061 !important;">
     <!-- Header -->
     <div class="border-b border-gray-200 p-4 flex items-center justify-between flex-shrink-0">

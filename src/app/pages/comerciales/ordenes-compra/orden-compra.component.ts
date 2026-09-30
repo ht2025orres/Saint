@@ -3,6 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PaginationService, FilterFunction } from 'src/app/shared/pagination/pagination.service';
 import { OrdenCompraService, OcrItemExtraido, OcrAnalysisResult, SugerenciaSiesa } from 'src/app/services/orden-compra.service';
+import { generarHtmlDetalleOrdenCompra } from 'src/app/shared/templates/orden-compra-popup.template';
 import { FileService } from 'src/app/services/file.service';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/services/auth.service';
@@ -92,7 +93,19 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadTailwind();
+    this.setupPopupHandlers();
     this.cargarOrdenes();
+  }
+
+  private setupPopupHandlers(): void {
+    (window as any).desvincularDesdePopup = (id: number) => {
+      const ord = this.ordenes.find(o => o.id === id) || { id };
+      this.desvincularPVSiesa(ord);
+    };
+    (window as any).verDocumentoDesdePopup = (id: number) => {
+      const ord = this.ordenes.find(o => o.id === id) || { id };
+      this.verDocumento(ord as any);
+    };
   }
 
   private loadTailwind(): void {
@@ -603,32 +616,41 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
 
   // ========== DETALLE E ÍTEMS OC ==========
   verDetalleOC(orden: any): void {
-    this.ordenSeleccionada = orden;
-    this.itemsOrdenSeleccionada = [];
-    this.mostrarModalDetalleOC = true;
-    this.isLoadingDetalleOC = true;
+    const popupWin = window.open('', '_blank', 'width=980,height=820,scrollbars=yes,resizable=yes');
+    if (popupWin) {
+      popupWin.document.write('<p style="font-family:sans-serif;text-align:center;padding:40px;color:#64748b;font-size:14px;">Cargando detalles de la Orden de Compra...</p>');
+    }
 
     this.ordenCompraService.obtenerDetalle(orden.id).subscribe({
       next: (res) => {
-        if (res.data) {
-          this.ordenSeleccionada = res.data;
-          this.itemsOrdenSeleccionada = res.data.items || [];
-          if (!this.itemsOrdenSeleccionada || this.itemsOrdenSeleccionada.length === 0) {
-            this.ordenCompraService.obtenerItems(orden.id).subscribe({
-              next: (itemsRes) => {
-                if (itemsRes && itemsRes.data) {
-                  this.itemsOrdenSeleccionada = itemsRes.data;
-                }
-              }
-            });
-          }
+        const fullOrden = res.data || orden;
+        let items = fullOrden.items || [];
+        if (!items || items.length === 0) {
+          this.ordenCompraService.obtenerItems(orden.id).subscribe({
+            next: (itemsRes) => {
+              items = itemsRes?.data || [];
+              this.renderizarPopupDetalleOC(popupWin, fullOrden, items);
+            },
+            error: () => {
+              this.renderizarPopupDetalleOC(popupWin, fullOrden, []);
+            }
+          });
+        } else {
+          this.renderizarPopupDetalleOC(popupWin, fullOrden, items);
         }
-        this.isLoadingDetalleOC = false;
       },
       error: () => {
-        this.isLoadingDetalleOC = false;
+        this.renderizarPopupDetalleOC(popupWin, orden, []);
       }
     });
+  }
+
+  private renderizarPopupDetalleOC(popupWin: Window | null, orden: any, items: any[]): void {
+    if (!popupWin || popupWin.closed) return;
+    const html = generarHtmlDetalleOrdenCompra(orden, items);
+    popupWin.document.open();
+    popupWin.document.write(html);
+    popupWin.document.close();
   }
 
   cerrarModalDetalleOC(): void {
