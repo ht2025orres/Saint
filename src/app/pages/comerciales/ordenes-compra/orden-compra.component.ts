@@ -44,6 +44,8 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     busqueda: '',
     estado: ''
   };
+  filtroCliente = '';
+  clientesAgrupados: Array<{ cliente: string; total: number; pendientes: number; procesadas: number }> = [];
 
   mostrarModalNuevaOrden = false;
   nuevaOrden = {
@@ -80,6 +82,7 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
   mostrarModalDetalleOC = false;
   ordenSeleccionada: any = null;
   itemsOrdenSeleccionada: any[] = [];
+  itemsSiesaOrden: any[] = [];
   isLoadingDetalleOC = false;
 
   constructor(
@@ -131,6 +134,7 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.ordenes = res['data'] || [];
         this.totalOrdenes = this.ordenes.length;
+        this.construirAgrupacionClientes();
         this.inicializarPaginacion();
       },
       error: () => {
@@ -140,6 +144,26 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  construirAgrupacionClientes(): void {
+    const map = new Map<string, { cliente: string; total: number; pendientes: number; procesadas: number }>();
+    this.ordenes.forEach(o => {
+      const cli = (o.cliente || 'Sin Cliente').trim();
+      if (!map.has(cli)) {
+        map.set(cli, { cliente: cli, total: 0, pendientes: 0, procesadas: 0 });
+      }
+      const item = map.get(cli)!;
+      item.total++;
+      if (o.estado === 'PENDIENTE') item.pendientes++;
+      if (o.estado === 'PROCESADA') item.procesadas++;
+    });
+    this.clientesAgrupados = Array.from(map.values()).sort((a, b) => b.pendientes - a.pendientes || b.total - a.total);
+  }
+
+  filtrarPorCliente(cliente: string): void {
+    this.filtroCliente = this.filtroCliente === cliente ? '' : cliente;
+    this.applyFilters();
   }
 
   inicializarPaginacion(): void {
@@ -171,7 +195,12 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
       cumpleEstado = orden.estado === filtros.estado;
     }
 
-    return cumpleBusqueda && cumpleEstado;
+    let cumpleCliente = true;
+    if (this.filtroCliente) {
+      cumpleCliente = (orden.cliente || '').trim().toLowerCase() === this.filtroCliente.trim().toLowerCase();
+    }
+
+    return cumpleBusqueda && cumpleEstado && cumpleCliente;
   };
 
   applyFilters(): void {
@@ -632,14 +661,16 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
   verDetalleOC(orden: any): void {
     this.ordenSeleccionada = orden;
     this.itemsOrdenSeleccionada = [];
+    this.itemsSiesaOrden = [];
     this.mostrarModalDetalleOC = true;
     this.isLoadingDetalleOC = true;
 
     this.ordenCompraService.obtenerDetalle(orden.id).subscribe({
       next: (res) => {
         if (res.data) {
-          this.ordenSeleccionada = res.data;
+          this.ordenSeleccionada = { ...orden, ...res.data };
           this.itemsOrdenSeleccionada = res.data.items || [];
+          this.itemsSiesaOrden = res.data.items_siesa || [];
           if (!this.itemsOrdenSeleccionada || this.itemsOrdenSeleccionada.length === 0) {
             this.ordenCompraService.obtenerItems(orden.id).subscribe({
               next: (itemsRes) => {
@@ -662,6 +693,68 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
     this.mostrarModalDetalleOC = false;
     this.ordenSeleccionada = null;
     this.itemsOrdenSeleccionada = [];
+    this.itemsSiesaOrden = [];
+  }
+
+  vincularPVManual(orden: any): void {
+    if (!orden || !orden.id) return;
+    Swal.fire({
+      title: 'Vincular PV Manualmente',
+      html: `
+        <p class="text-sm text-slate-600 mb-3">Ingrese el número de <strong>Pedido de Venta (PV)</strong> de Siesa para la OC <strong>${orden.numero_orden}</strong>:</p>
+      `,
+      input: 'text',
+      inputPlaceholder: 'Ej: 12345 o PV-00123',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocomplete: 'off'
+      },
+      showCancelButton: true,
+      confirmButtonText: '<i class="bi bi-link-45deg"></i> Vincular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+      preConfirm: (value) => {
+        if (!value || !value.trim()) {
+          Swal.showValidationMessage('Debe ingresar un número de PV');
+          return false;
+        }
+        return value.trim();
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const pvNumero = result.value;
+        Swal.fire({
+          title: 'Vinculando...',
+          text: 'Asociando PV con la orden de compra',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        this.ordenCompraService.vincularPVManual(orden.id, pvNumero).subscribe({
+          next: (res) => {
+            Swal.fire({
+              title: '¡Vinculada con éxito!',
+              text: res.message || `PV ${pvNumero} vinculado a la OC ${orden.numero_orden}`,
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.cargarOrdenes();
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo vincular el PV manual', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  getTotalCantidadSiesa(): number {
+    return (this.itemsSiesaOrden || []).reduce((acc, item) => acc + (Number(item.cantidad) || 0), 0);
+  }
+
+  getTotalValorSiesa(): number {
+    return (this.itemsSiesaOrden || []).reduce((acc, item) => acc + (Number(item.valor_total) || 0), 0);
   }
 
   desvincularPVSiesa(orden: any, event?: Event): void {
@@ -733,7 +826,8 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
       fin.setHours(0, 0, 0, 0);
       const diffMs = fin.getTime() - inicio.getTime();
       const dias = Math.round(diffMs / (1000 * 60 * 60 * 24));
-      return dias > 0 ? `${dias} días` : (dias === 0 ? 'Mismo día' : `${dias} días`);
+      if (dias < 0) return 'N/A';
+      return dias > 0 ? `${dias} días` : 'Mismo día';
     } catch {
       return 'N/A';
     }

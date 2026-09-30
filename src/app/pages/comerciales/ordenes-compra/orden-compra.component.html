@@ -39,6 +39,51 @@
         </div>
       </div>
 
+      <!-- Barra de agrupación por Clientes (Pestañas / Chips rápidos) -->
+      <div *ngIf="clientesAgrupados && clientesAgrupados.length > 0" class="mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="bi bi-buildings"></i> Clientes ({{ clientesAgrupados.length }})
+          </span>
+          <span *ngIf="filtroCliente" (click)="filtrarPorCliente('')" class="text-xs text-blue-600 font-semibold cursor-pointer hover:underline">
+            Limpiar filtro de cliente
+          </span>
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+          <!-- Botón Todos -->
+          <button
+            type="button"
+            (click)="filtrarPorCliente('')"
+            class="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-2 shadow-xs"
+            [ngClass]="!filtroCliente ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'">
+            <span>Todos</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+              [ngClass]="!filtroCliente ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
+              {{ ordenes.length }}
+            </span>
+          </button>
+
+          <!-- Chips de cada cliente -->
+          <button
+            *ngFor="let c of clientesAgrupados"
+            type="button"
+            (click)="filtrarPorCliente(c.cliente)"
+            class="px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-2 shadow-xs"
+            [ngClass]="filtroCliente === c.cliente ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'">
+            <span class="truncate max-w-[180px]" [title]="c.cliente">{{ c.cliente }}</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+              [ngClass]="filtroCliente === c.cliente ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'">
+              {{ c.total }}
+            </span>
+            <span *ngIf="c.pendientes > 0" class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold"
+              [ngClass]="filtroCliente === c.cliente ? 'bg-amber-400 text-amber-950' : 'bg-amber-100 text-amber-800'"
+              title="{{ c.pendientes }} pendientes">
+              {{ c.pendientes }} pend.
+            </span>
+          </button>
+        </div>
+      </div>
+
       <!-- Lista de órdenes -->
       <div *ngIf="currentOrdenes?.length > 0; else sinOrdenes" class="space-y-4">
         <div *ngFor="let orden of currentOrdenes"
@@ -50,8 +95,8 @@
                 <div>
                   <h3 class="text-lg font-semibold text-gray-900">OC {{ orden.numero_orden }}</h3>
                   <p class="text-sm text-gray-600">{{ orden.cliente }}</p>
-                  <p *ngIf="orden.pv_asociado" class="text-xs text-green-600 mt-1 font-semibold">
-                    <i class="bi bi-link-45deg"></i> PV: {{ orden.pv_asociado }}
+                  <p *ngIf="orden.pv_asociado" class="text-xs text-green-600 mt-1 font-semibold flex items-center gap-1">
+                    <i class="bi bi-link-45deg text-sm"></i> PV Siesa: {{ orden.pv_asociado }}
                   </p>
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-medium" [ngClass]="getEstadoBadgeClass(orden.estado)">
@@ -124,7 +169,7 @@
                 </button>
               </div>
 
-              <!-- Desvincular PV (si es PROCESADA con PV) -->
+              <!-- Desvincular PV (Ingeniería - si es PROCESADA con PV) -->
               <button *ngIf="orden.estado === 'PROCESADA' && orden.pv_asociado"
                 (click)="desvincularPVSiesa(orden, $event)"
                 class="inline-flex items-center justify-center w-9 h-9 text-amber-600 border border-amber-400 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
@@ -132,17 +177,27 @@
                 <i class="bi bi-link-45deg text-lg"></i>
               </button>
 
-              <!-- Procesar / Rechazar (Ingeniería - PENDIENTE) -->
+              <!-- Procesar / Vincular Manual / Rechazar (Ingeniería - PENDIENTE) -->
               <div *ngIf="authService.hasAnyPermission([38]) && orden.estado === 'PENDIENTE'"
                 class="flex gap-1 ml-auto">
+                <!-- Procesar Automático (Busca PV en Siesa) -->
                 <button
                   (click)="procesarOrden(orden)"
                   class="p-2 text-green-600 border border-green-600 rounded-lg hover:bg-green-50 transition-colors"
                   [disabled]="isProcesando"
-                  title="Procesar y vincular PV">
+                  title="Procesar y vincular PV automáticamente desde Siesa">
                   <i class="bi bi-check-circle text-lg"></i>
                 </button>
 
+                <!-- Vincular Manualmente ingresando el número de PV -->
+                <button
+                  (click)="vincularPVManual(orden)"
+                  class="p-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                  title="Vincular PV manualmente ingresando el número">
+                  <i class="bi bi-pencil-square text-lg"></i>
+                </button>
+
+                <!-- Rechazar orden -->
                 <button
                   (click)="abrirModalRechazo(orden)"
                   class="p-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
@@ -174,7 +229,7 @@
           <i class="bi bi-inbox text-6xl text-gray-300"></i>
           <h3 class="mt-4 text-lg font-medium text-gray-900">No hay órdenes</h3>
           <p class="mt-2 text-gray-600">
-            <span *ngIf="filters.busqueda || filters.estado; else mensajeInicial">
+            <span *ngIf="filters.busqueda || filters.estado || filtroCliente; else mensajeInicial">
               No se encontraron órdenes con los filtros aplicados
             </span>
             <ng-template #mensajeInicial>
@@ -189,7 +244,7 @@
 
 <!-- ==================== MODAL: DETALLE E ÍTEMS DE LA OC ==================== -->
 <div *ngIf="mostrarModalDetalleOC" class="fixed inset-0 flex items-center justify-center p-4 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1051 !important;">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1051 !important;">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 text-white">
       <div class="flex items-center gap-3">
@@ -274,12 +329,12 @@
         <p class="text-xs text-amber-900 leading-relaxed">{{ ordenSeleccionada?.observaciones }}</p>
       </div>
 
-      <!-- Tabla de Ítems Cargados: Cliente vs Siesa -->
+      <!-- SECCIÓN 1: Tabla de Ítems Cargados del Cliente (OC) -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
-            <i class="bi bi-box-seam text-blue-600"></i>
-            Ítems Registrados ({{ itemsOrdenSeleccionada.length }})
+            <i class="bi bi-file-earmark-text text-blue-600"></i>
+            Ítems de la Orden de Compra ({{ itemsOrdenSeleccionada.length }})
           </h4>
         </div>
 
@@ -293,7 +348,7 @@
             <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold">
               <tr>
                 <th class="px-4 py-3 text-left w-2/5">Ítem del Cliente (ID / Descripción)</th>
-                <th class="px-4 py-3 text-left w-1/4">Ítem Interno (Siesa / Ref)</th>
+                <th class="px-4 py-3 text-left w-1/4">Ítem Interno (Ref / Sugerencia)</th>
                 <th class="px-4 py-3 text-center">Cant.</th>
                 <th class="px-4 py-3 text-right">Precio Unit.</th>
                 <th class="px-4 py-3 text-right">Total</th>
@@ -308,7 +363,7 @@
                   </div>
                   <div class="text-xs text-gray-600 mt-0.5 leading-relaxed">{{ item.descripcion }}</div>
                 </td>
-                <!-- Datos Internos Siesa -->
+                <!-- Datos Internos -->
                 <td class="px-4 py-3 align-top">
                   <div class="font-bold text-blue-700 text-xs flex items-center gap-1">
                     <i class="bi bi-tag-fill text-[10px] text-blue-400"></i>
@@ -342,7 +397,91 @@
         </div>
 
         <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length === 0" class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-          <p class="text-xs text-gray-400">No se encontraron ítems desglosados en esta orden.</p>
+          <p class="text-xs text-gray-400">No se encontraron ítems desglosados en esta orden de compra.</p>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: Ítems Cargados en Siesa (Pedido de Venta) -->
+      <div *ngIf="ordenSeleccionada?.pv_asociado || (itemsSiesaOrden && itemsSiesaOrden.length > 0)">
+        <div class="flex items-center justify-between mb-3 pt-4 border-t border-gray-100">
+          <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+            <i class="bi bi-box-seam text-emerald-600"></i>
+            Ítems Cargados en Siesa (PV: {{ ordenSeleccionada?.pv_asociado }})
+            <span class="text-xs font-normal text-gray-500">({{ itemsSiesaOrden.length }} registros)</span>
+          </h4>
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <i class="bi bi-check-circle-fill mr-1"></i> Datos Siesa Oficiales
+          </span>
+        </div>
+
+        <div *ngIf="itemsSiesaOrden && itemsSiesaOrden.length > 0" class="border border-emerald-200 rounded-xl overflow-hidden shadow-xs bg-white">
+          <table class="w-full text-xs">
+            <thead class="bg-emerald-50/70 border-b border-emerald-200 text-emerald-900 font-bold">
+              <tr>
+                <th class="px-4 py-3 text-left w-1/4">Referencia / Cód.</th>
+                <th class="px-4 py-3 text-left w-2/5">Descripción</th>
+                <th class="px-3 py-3 text-center">Color / Talla</th>
+                <th class="px-3 py-3 text-center">Cant.</th>
+                <th class="px-3 py-3 text-right">Precio Unit.</th>
+                <th class="px-4 py-3 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-emerald-100">
+              <tr *ngFor="let itemS of itemsSiesaOrden" class="hover:bg-emerald-50/30 transition-colors">
+                <!-- Referencia -->
+                <td class="px-4 py-3 align-top font-bold text-emerald-800">
+                  <div class="flex items-center gap-1.5">
+                    <i class="bi bi-tag-fill text-[11px] text-emerald-500"></i>
+                    <span>{{ itemS.referencia || itemS.f120_id || '—' }}</span>
+                  </div>
+                </td>
+                <!-- Descripción -->
+                <td class="px-4 py-3 align-top">
+                  <div class="font-medium text-gray-800">{{ itemS.descripcion || itemS.descripcion_corta || '—' }}</div>
+                </td>
+                <!-- Color / Talla -->
+                <td class="px-3 py-3 align-top text-center">
+                  <div *ngIf="itemS.color || itemS.talla" class="inline-flex items-center gap-1">
+                    <span *ngIf="itemS.color" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-semibold">
+                      {{ itemS.color }}
+                    </span>
+                    <span *ngIf="itemS.talla" class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
+                      {{ itemS.talla }}
+                    </span>
+                  </div>
+                  <span *ngIf="!itemS.color && !itemS.talla" class="text-gray-400">—</span>
+                </td>
+                <!-- Cantidad -->
+                <td class="px-3 py-3 align-top text-center">
+                  <span class="font-bold text-gray-900">{{ itemS.cantidad }}</span>
+                  <span class="text-[10px] text-gray-400 block">{{ itemS.unidad_medida || 'UND' }}</span>
+                </td>
+                <!-- Precio Unitario -->
+                <td class="px-3 py-3 align-top text-right text-gray-600">
+                  {{ (itemS.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </td>
+                <!-- Total -->
+                <td class="px-4 py-3 align-top text-right font-bold text-emerald-700">
+                  {{ (itemS.valor_total || (itemS.cantidad * itemS.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </td>
+              </tr>
+            </tbody>
+            <!-- Totales Siesa -->
+            <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-200 text-emerald-950">
+              <tr>
+                <td colspan="3" class="px-4 py-2.5 text-right uppercase tracking-wider text-[11px]">Totales Siesa:</td>
+                <td class="px-3 py-2.5 text-center text-xs font-extrabold text-emerald-900">{{ getTotalCantidadSiesa() }}</td>
+                <td></td>
+                <td class="px-4 py-2.5 text-right text-xs font-extrabold text-emerald-900">
+                  {{ getTotalValorSiesa() | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div *ngIf="(!itemsSiesaOrden || itemsSiesaOrden.length === 0) && !isLoadingDetalleOC" class="text-center py-6 bg-emerald-50/40 rounded-xl border border-dashed border-emerald-200">
+          <p class="text-xs text-emerald-700">No se encontraron ítems cargados en Siesa para el PV {{ ordenSeleccionada?.pv_asociado }}.</p>
         </div>
       </div>
     </div>
@@ -353,7 +492,7 @@
         <button (click)="verDocumento(ordenSeleccionada)" class="px-4 py-2 text-xs font-bold rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-1.5 shadow-xs">
           <i class="bi bi-file-earmark-pdf-fill"></i> Ver Documento Original
         </button>
-        <!-- Desvincular PV: solo visible si la orden está PROCESADA y tiene PV -->
+        <!-- Desvincular PV: solo visible si la orden está PROCESADA y tiene PV (Ingeniería) -->
         <button *ngIf="ordenSeleccionada?.estado === 'PROCESADA' && ordenSeleccionada?.pv_asociado"
                 (click)="desvincularPVSiesa(ordenSeleccionada)"
                 class="px-4 py-2 text-xs font-bold rounded-xl text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1.5">

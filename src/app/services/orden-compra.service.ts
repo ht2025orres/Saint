@@ -124,6 +124,16 @@ export class OrdenCompraService {
     );
   }
 
+  vincularPVManual(id: number, pvNumero: string): Observable<{ success: boolean; message: string; data: any }> {
+    return this.http.put<any>(
+      `${this.apiLaravelUrl}/ordenes-compra/${id}/vincular-manual`,
+      {
+        pv_numero: pvNumero,
+        usuario_id: this.getUsuarioActual()
+      }
+    );
+  }
+
   guardarItems(ordenId: number, items: any[]): Observable<{ success: boolean; data: any[]; message: string }> {
     return this.http.post<any>(
       `${this.apiLaravelUrl}/ordenes-compra/${ordenId}/items`,
