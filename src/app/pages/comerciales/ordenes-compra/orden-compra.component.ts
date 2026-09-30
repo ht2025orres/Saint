@@ -86,7 +86,6 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadTailwind();
-    this.cargarClientes();
     this.cargarOrdenes();
   }
 
@@ -105,20 +104,6 @@ export class OrdenCompraComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     const links = this.document.head.querySelectorAll('link[href*="tailwindcss"], link[href*="bootstrap-icons"]');
     links.forEach(link => link.remove());
-  }
-
-  cargarClientes(): void {
-    this.ordenCompraService.obtenerClientes().subscribe({
-      next: (res) => {
-        this.clientes = (res['data'] || []).map((cliente: any) => ({
-          id: cliente.id,
-          razon_social: cliente.razon_social || cliente.nombre || ''
-        }));
-      },
-      error: () => {
-        Swal.fire('Error', 'No se pudieron cargar los clientes', 'error');
-      }
-    });
   }
 
   cargarOrdenes(): void {

@@ -1,8 +1,10 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ComercialService, ClienteSiesa, Solicitud } from '../../../services/comercial.service';
 import { OrdenCompraService } from '../../../services/orden-compra.service';
+import { FileService } from '../../../services/file.service';
 import { PaginationService, PaginationState } from '../../../shared/pagination/pagination.service';
 import { Subscription, forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -61,6 +63,24 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   isLoadingOrdenes = false;
   estadisticasOC: any = null;
 
+  // Modal Documento OC
+  mostrarModalDocumento = false;
+  documentoUrl: SafeResourceUrl | null = null;
+  documentoOrdenNumero = '';
+  isLoadingDocument = false;
+
+  // Modal Detalle e Ítems OC
+  mostrarModalDetalleOC = false;
+  ordenSeleccionada: any = null;
+  itemsOrdenSeleccionada: any[] = [];
+  isLoadingDetalleOC = false;
+
+  // Acciones OC
+  isBuscandoPVSiesa = false;
+  mostrarModalRechazo = false;
+  ordenARechazar: any = null;
+  motivoRechazo = '';
+
   // KPI computed
   totalSolicitudesPendientes = 0;
   totalOCPendientes = 0;
@@ -78,6 +98,8 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   constructor(
     private comercialService: ComercialService,
     private ordenCompraService: OrdenCompraService,
+    private fileService: FileService,
+    private sanitizer: DomSanitizer,
     private router: Router,
     private route: ActivatedRoute,
     public paginationService: PaginationService,
@@ -528,6 +550,249 @@ export class ClienteListComponent implements OnInit, OnDestroy {
 
   irACaptura(): void {
     this.router.navigate(['/comerciales/captura']);
+  }
+
+  // ==================== VISUALIZACIÓN Y GESTIÓN DE OC ====================
+
+  verDocumentoOC(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!orden.id) return;
+
+    this.isLoadingDocument = true;
+    this.documentoOrdenNumero = orden.numero_orden;
+
+    this.fileService.getTemporaryUrl(orden.id, 'orden_compra', 30).subscribe({
+      next: (res) => {
+        if (res && res.url) {
+          this.documentoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(res.url);
+          this.mostrarModalDocumento = true;
+        } else {
+          Swal.fire('Atención', 'No se encontró archivo adjunto para esta orden', 'info');
+        }
+        this.isLoadingDocument = false;
+      },
+      error: (err) => {
+        console.warn('Error al obtener URL temporal:', err);
+        Swal.fire('Error', 'No se pudo obtener el documento de la orden', 'error');
+        this.isLoadingDocument = false;
+      }
+    });
+  }
+
+  cerrarModalDocumento(): void {
+    this.mostrarModalDocumento = false;
+    this.documentoUrl = null;
+    this.documentoOrdenNumero = '';
+  }
+
+  descargarDocumentoOC(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!orden.id) return;
+
+    this.fileService.getTemporaryUrl(orden.id, 'orden_compra', 5).subscribe({
+      next: (res) => {
+        if (res && res.url) {
+          const a = document.createElement('a');
+          a.href = res.url;
+          a.download = `OC_${orden.numero_orden}.pdf`;
+          a.target = '_blank';
+          a.click();
+        }
+      },
+      error: () => Swal.fire('Error', 'No se pudo descargar el documento', 'error')
+    });
+  }
+
+  verDetalleOC(orden: any): void {
+    this.ordenSeleccionada = orden;
+    this.itemsOrdenSeleccionada = [];
+    this.mostrarModalDetalleOC = true;
+    this.isLoadingDetalleOC = true;
+
+    this.ordenCompraService.obtenerDetalle(orden.id).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.ordenSeleccionada = res.data;
+          this.itemsOrdenSeleccionada = res.data.items || [];
+          if (!this.itemsOrdenSeleccionada || this.itemsOrdenSeleccionada.length === 0) {
+            this.ordenCompraService.obtenerItems(orden.id).subscribe({
+              next: (itemsRes) => {
+                if (itemsRes && itemsRes.data) {
+                  this.itemsOrdenSeleccionada = itemsRes.data;
+                }
+              }
+            });
+          }
+        }
+        this.isLoadingDetalleOC = false;
+      },
+      error: () => {
+        this.isLoadingDetalleOC = false;
+      }
+    });
+  }
+
+  cerrarModalDetalleOC(): void {
+    this.mostrarModalDetalleOC = false;
+    this.ordenSeleccionada = null;
+    this.itemsOrdenSeleccionada = [];
+  }
+
+  vincularPVSiesa(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!orden.id) return;
+
+    Swal.fire({
+      title: 'Buscar PV en Siesa',
+      html: `<p class="text-sm text-slate-600">Se buscará automáticamente en Siesa el Pedido de Venta (PV) asociado a la <strong>OC ${orden.numero_orden}</strong>.</p>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '<i class="bi bi-search"></i> Buscar y Vincular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#4f46e5'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.isBuscandoPVSiesa = true;
+        this.ordenCompraService.procesarOrden(orden.id).subscribe({
+          next: (res) => {
+            this.isBuscandoPVSiesa = false;
+            const pv = res.data?.pv_encontrado || res.data?.orden?.pv_asociado;
+            Swal.fire({
+              title: '¡PV Vinculado con Éxito!',
+              html: `<p class="text-sm">La OC <strong>${orden.numero_orden}</strong> fue vinculada al <strong>PV: ${pv}</strong> en Siesa y marcada como PROCESADA.</p>`,
+              icon: 'success'
+            });
+            this.loadOrdenes();
+          },
+          error: (err) => {
+            this.isBuscandoPVSiesa = false;
+            Swal.fire('No encontrado', err.error?.message || 'No se encontró un PV asociado a esta OC en Siesa todavía.', 'warning');
+          }
+        });
+      }
+    });
+  }
+
+  abrirModalRechazoOC(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.ordenARechazar = orden;
+    this.motivoRechazo = '';
+    this.mostrarModalRechazo = true;
+  }
+
+  cerrarModalRechazoOC(): void {
+    this.mostrarModalRechazo = false;
+    this.ordenARechazar = null;
+    this.motivoRechazo = '';
+  }
+
+  confirmarRechazoOC(): void {
+    if (!this.ordenARechazar || !this.motivoRechazo.trim() || this.motivoRechazo.trim().length < 10) {
+      Swal.fire('Atención', 'El motivo de rechazo debe contener al menos 10 caracteres', 'warning');
+      return;
+    }
+
+    this.ordenCompraService.rechazarOrden(this.ordenARechazar.id, this.motivoRechazo.trim()).subscribe({
+      next: () => {
+        Swal.fire({ title: 'Orden Rechazada', text: 'La orden ha sido rechazada y notificada.', icon: 'success', timer: 1500, showConfirmButton: false });
+        this.cerrarModalRechazoOC();
+        this.loadOrdenes();
+      },
+      error: (err) => {
+        Swal.fire('Error', err.error?.message || 'No se pudo rechazar la orden', 'error');
+      }
+    });
+  }
+
+  eliminarOC(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!orden || !orden.id) return;
+
+    Swal.fire({
+      title: '¿Eliminar Orden de Compra?',
+      html: `<p class="text-sm text-slate-600">¿Estás seguro de eliminar la <strong>OC ${orden.numero_orden}</strong> de <strong>${orden.cliente}</strong>?</p><p class="text-xs text-rose-500 mt-2 font-medium">Esta acción no se puede deshacer.</p>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: '<i class="bi bi-trash3"></i> Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#e11d48'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ordenCompraService.eliminarOrden(orden.id).subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Orden Eliminada',
+              text: 'La orden de compra ha sido eliminada correctamente.',
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false
+            });
+            this.loadOrdenes();
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo eliminar la orden', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  desvincularPVSiesa(orden: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!orden || !orden.id) return;
+
+    Swal.fire({
+      title: '¿Desvincular PV de esta OC?',
+      html: `<p class="text-sm text-slate-600">Se desvinculará el <strong>PV ${orden.pv_asociado}</strong> de la <strong>OC ${orden.numero_orden}</strong>.</p><p class="text-xs text-amber-600 mt-2 font-medium">La orden volverá a estado PENDIENTE.</p>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: '<i class="bi bi-link-45deg"></i> Sí, desvincular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ordenCompraService.desvincularPV(orden.id).subscribe({
+          next: (res) => {
+            Swal.fire({
+              title: 'PV Desvinculado',
+              text: res.message || 'La orden volvió a estado PENDIENTE.',
+              icon: 'success',
+              timer: 1800,
+              showConfirmButton: false
+            });
+            // Actualizar la orden seleccionada si el modal sigue abierto
+            if (this.ordenSeleccionada && this.ordenSeleccionada.id === orden.id) {
+              this.ordenSeleccionada.pv_asociado = null;
+              this.ordenSeleccionada.estado = 'PENDIENTE';
+            }
+            this.loadOrdenes();
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo desvincular el PV', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  calcularDiasRestantes(fechaEntrega: string | null): { dias: number; texto: string; clase: string } | null {
+    if (!fechaEntrega) return null;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const entrega = new Date(fechaEntrega);
+    entrega.setHours(0, 0, 0, 0);
+    const diffMs = entrega.getTime() - hoy.getTime();
+    const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (dias < 0) {
+      return { dias: Math.abs(dias), texto: `Vencida hace ${Math.abs(dias)} día${Math.abs(dias) !== 1 ? 's' : ''}`, clase: 'text-rose-600 bg-rose-50 border-rose-200' };
+    } else if (dias === 0) {
+      return { dias: 0, texto: 'Entrega hoy', clase: 'text-amber-700 bg-amber-50 border-amber-200' };
+    } else if (dias <= 3) {
+      return { dias, texto: `${dias} día${dias !== 1 ? 's' : ''} restante${dias !== 1 ? 's' : ''}`, clase: 'text-amber-700 bg-amber-50 border-amber-200' };
+    } else {
+      return { dias, texto: `${dias} días restantes`, clase: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+    }
   }
 
   // ==================== HELPERS ====================

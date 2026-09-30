@@ -5,6 +5,7 @@ import { ClienteItemsComponent } from './cliente-items/cliente-items.component';
 import { CosteoFormComponent } from './costeo-form/costeo-form.component';
 import { CosteoDetailComponent } from './costeo-detail/costeo-detail.component';
 import { SolicitudCapturaComponent } from './solicitud-captura/solicitud-captura.component';
+import { OrdenCompraComponent } from './ordenes-compra/orden-compra.component';
 
 const routes: Routes = [
   { path: '', component: ClienteListComponent },
@@ -15,6 +16,8 @@ const routes: Routes = [
   { path: 'solicitud/:id', component: CosteoDetailComponent },
   { path: 'solicitud/:id/editar', component: CosteoFormComponent },
   { path: 'captura', component: SolicitudCapturaComponent },
+  { path: 'ordenes-compra', component: OrdenCompraComponent, title: 'Órdenes de Compra' },
+  { path: 'recepcion-oc', component: OrdenCompraComponent, title: 'Recepción y Gestión de OC' },
 ];
 
 @NgModule({

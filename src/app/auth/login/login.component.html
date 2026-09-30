@@ -1,7 +1,44 @@
-<!-- ============================================================== -->
-<!-- Main wrapper - style you can find in pages.scss -->
-<!-- ============================================================== -->
 <section id="wrapper">
+  <!-- Banner de Ambiente de Pruebas -->
+  <aside *ngIf="isTesting" 
+         class="testing-banner-auth"
+         role="alert"
+         aria-label="Aviso de entorno de pruebas">
+    <div class="testing-banner-inner" *ngIf="!isBannerMinimized">
+      <div class="testing-banner-content">
+        <span class="testing-badge">
+          <i class="bi bi-cone-striped"></i> ENTORNO DE PRUEBAS
+        </span>
+        <span class="testing-message">
+          ⚠️ <strong>Atención:</strong> Esta es una <u>versión preliminar de pruebas</u> antes de su despliegue en producción. Los datos registrados pueden eliminarse, resetearse o tener modificaciones sin previo aviso.
+        </span>
+      </div>
+      <button type="button" 
+              (click)="toggleBanner()" 
+              class="testing-toggle-btn"
+              title="Minimizar aviso">
+        <i class="bi bi-chevron-up"></i> Minimizar
+      </button>
+    </div>
+
+    <div class="testing-banner-inner" *ngIf="isBannerMinimized">
+      <div class="testing-banner-content">
+        <span class="testing-badge">
+          <i class="bi bi-cone-striped"></i> PRUEBAS
+        </span>
+        <span class="testing-message-mini">
+          Versión preliminar no productiva
+        </span>
+      </div>
+      <button type="button" 
+              (click)="toggleBanner()" 
+              class="testing-toggle-btn"
+              title="Expandir aviso">
+        <i class="bi bi-chevron-down"></i> Ver más
+      </button>
+    </div>
+  </aside>
+
   <div class="login-register" style="background-image:url(../../../assets/images/loginBackground.jpg);">
 
     <div class="card login-box">

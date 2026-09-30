@@ -354,7 +354,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         icon: 'bi bi-briefcase',
         link: '/comerciales',
         modules: [7],
-        permissions: [1]
+        permissions: [1, 37, 38, 59, 60]
       },
       {
         label: 'Abastecimiento y Materiales',

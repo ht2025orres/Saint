@@ -387,24 +387,33 @@
               <tr class="bg-slate-50/80 border-b border-slate-100">
                 <th class="text-left px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">N° Orden</th>
                 <th class="text-left px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">Cliente</th>
-                <th class="text-left px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">PV</th>
+                <th class="text-left px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">PV Siesa</th>
                 <th class="text-center px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">Ítems</th>
                 <th class="text-center px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">Estado</th>
                 <th class="text-left px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">Fecha</th>
+                <th class="text-right px-5 py-3.5 font-black text-slate-400 text-[10px] uppercase tracking-widest">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let orden of pagedOrdenes; let i = index"
                   class="border-b border-slate-50 last:border-0 hover:bg-indigo-50/30 transition-colors cursor-pointer"
+                  (click)="verDetalleOC(orden)"
                   [style.animation-delay]="(i * 25) + 'ms'"
                   style="animation: fadeInUp 0.25s ease forwards; opacity: 0;">
                 <td class="px-5 py-3.5">
-                  <span class="font-black text-slate-900">{{ orden.numero_orden }}</span>
+                  <span class="font-black text-slate-900 flex items-center gap-1.5">
+                    <i class="bi bi-file-earmark-text text-indigo-500"></i>
+                    {{ orden.numero_orden }}
+                  </span>
                 </td>
                 <td class="px-5 py-3.5 text-slate-600 font-medium max-w-xs truncate">{{ orden.cliente }}</td>
                 <td class="px-5 py-3.5">
-                  <span *ngIf="orden.pv_asociado" class="text-emerald-600 font-bold">{{ orden.pv_asociado }}</span>
-                  <span *ngIf="!orden.pv_asociado" class="text-slate-200">—</span>
+                  <span *ngIf="orden.pv_asociado" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <i class="bi bi-link-45deg"></i> PV: {{ orden.pv_asociado }}
+                  </span>
+                  <span *ngIf="!orden.pv_asociado" class="inline-flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md font-bold border border-amber-100">
+                    <i class="bi bi-clock"></i> Sin vincular
+                  </span>
                 </td>
                 <td class="px-5 py-3.5 text-center">
                   <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-bold">{{ orden.items_count || 0 }}</span>
@@ -414,7 +423,41 @@
                     {{ getEstadoLabel(orden.estado) }}
                   </span>
                 </td>
-                <td class="px-5 py-3.5 text-slate-400 text-xs font-medium">{{ orden.fecha_registro }}</td>
+                <td class="px-5 py-3.5 text-slate-400 text-xs font-medium whitespace-nowrap">{{ (orden.fecha_recepcion || orden.fecha_registro) | date:'dd/MM/yyyy' }}</td>
+                <td class="px-5 py-3.5 text-right">
+                  <div class="inline-flex items-center gap-1.5" (click)="$event.stopPropagation()">
+                    <!-- Ver Documento -->
+                    <button *ngIf="orden.archivo_url || orden.id"
+                            (click)="verDocumentoOC(orden, $event)"
+                            title="Ver documento adjunto de la OC"
+                            class="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors text-sm">
+                      <i class="bi bi-file-earmark-pdf-fill"></i>
+                    </button>
+
+                    <!-- Ver Detalle Ítems -->
+                    <button (click)="verDetalleOC(orden)"
+                            title="Ver detalle e ítems de la OC"
+                            class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors text-sm">
+                      <i class="bi bi-eye"></i>
+                    </button>
+
+                    <!-- Desvincular PV (solo PROCESADA con PV) -->
+                    <button *ngIf="orden.estado === 'PROCESADA' && orden.pv_asociado"
+                            (click)="desvincularPVSiesa(orden, $event)"
+                            title="Desvincular PV de esta OC"
+                            class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors text-sm">
+                      <i class="bi bi-link-45deg"></i>
+                    </button>
+
+                    <!-- Eliminar OC (Comerciales) -->
+                    <button *ngIf="orden.estado === 'PENDIENTE'"
+                            (click)="eliminarOC(orden, $event)"
+                            title="Eliminar OC"
+                            class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors text-sm">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -446,5 +489,217 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ==================== MODAL: VISOR DE DOCUMENTO DE OC ==================== -->
+  <div *ngIf="mostrarModalDocumento" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-xs p-4" style="z-index: 1060 !important;">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[88vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1061 !important;">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+            <i class="bi bi-file-earmark-pdf-fill text-indigo-600 text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">Documento Original - OC {{ documentoOrdenNumero }}</h3>
+            <p class="text-xs text-slate-500">Visualización directa del archivo almacenado en la nube</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a *ngIf="documentoUrl" [href]="documentoUrl" target="_blank" class="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors flex items-center gap-1.5">
+            <i class="bi bi-box-arrow-up-right"></i> Abrir en pestaña
+          </a>
+          <button (click)="cerrarModalDocumento()" class="w-8 h-8 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Body / Iframe -->
+      <div class="flex-1 bg-slate-100 p-2 overflow-hidden flex items-center justify-center">
+        <iframe *ngIf="documentoUrl" [src]="documentoUrl" class="w-full h-full rounded-xl border border-slate-200 shadow-inner bg-white"></iframe>
+        <div *ngIf="!documentoUrl" class="text-center p-8">
+          <div class="spinner-border text-indigo-600 mb-2"></div>
+          <p class="text-xs text-slate-500 font-bold">Cargando documento...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: DETALLE E ÍTEMS DE LA OC ==================== -->
+  <div *ngIf="mostrarModalDetalleOC" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-500 to-violet-600 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <i class="bi bi-receipt text-white text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-white text-base">Detalles de Orden de Compra: {{ ordenSeleccionada?.numero_orden }}</h3>
+            <p class="text-xs text-indigo-100">{{ ordenSeleccionada?.cliente }}</p>
+          </div>
+        </div>
+        <button (click)="cerrarModalDetalleOC()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="flex-1 p-6 overflow-y-auto space-y-6">
+        <!-- Info Cards Row 1: Estado, PV, Registro -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estado</span>
+            <span class="text-xs font-black px-2.5 py-0.5 rounded-md mt-1 inline-block" [ngClass]="getEstadoBadgeClass(ordenSeleccionada?.estado)">
+              {{ getEstadoLabel(ordenSeleccionada?.estado) }}
+            </span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">PV Siesa</span>
+            <span *ngIf="ordenSeleccionada?.pv_asociado" class="text-sm font-black text-emerald-600 block mt-1">
+              {{ ordenSeleccionada?.pv_asociado }}
+            </span>
+            <span *ngIf="!ordenSeleccionada?.pv_asociado" class="text-xs font-bold text-amber-600 block mt-1">
+              Sin vincular
+            </span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fecha Registro</span>
+            <span class="text-xs font-bold text-slate-800 block mt-1">{{ (ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) ? ((ordenSeleccionada?.created_at || ordenSeleccionada?.fecha_registro) | date:'dd/MM/yyyy') : 'N/A' }}</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fecha Recepción</span>
+            <span class="text-xs font-bold text-slate-800 block mt-1">{{ ordenSeleccionada?.fecha_recepcion ? (ordenSeleccionada?.fecha_recepcion | date:'dd/MM/yyyy') : 'N/A' }}</span>
+          </div>
+        </div>
+
+        <!-- Info Cards Row 2: Entrega, Días, Usuario, Ítems -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Entrega Estimada</span>
+            <span class="text-xs font-bold text-slate-800 block mt-1">{{ ordenSeleccionada?.fecha_entrega_estimada ? (ordenSeleccionada?.fecha_entrega_estimada | date:'dd/MM/yyyy') : 'N/A' }}</span>
+          </div>
+          <div class="p-3.5 rounded-xl border" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase || 'bg-slate-50 border-slate-100'">
+            <span class="text-[10px] font-bold uppercase tracking-wider block" [ngClass]="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)?.clase ? '' : 'text-slate-400'">Días para Entrega</span>
+            <span class="text-xs font-black block mt-1" *ngIf="calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada) as diasInfo">
+              <i class="bi" [ngClass]="diasInfo.dias === 0 ? 'bi-exclamation-triangle-fill' : (diasInfo.texto.includes('Vencida') ? 'bi-x-circle-fill' : 'bi-clock-fill')"></i>
+              {{ diasInfo.texto }}
+            </span>
+            <span class="text-xs font-bold text-slate-400 block mt-1" *ngIf="!calcularDiasRestantes(ordenSeleccionada?.fecha_entrega_estimada)">
+              N/A
+            </span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Registrado por</span>
+            <span class="text-xs font-bold text-slate-800 block mt-1">{{ ordenSeleccionada?.usuario_creacion || ordenSeleccionada?.usuario_registro || 'N/A' }}</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Ítems</span>
+            <span class="text-sm font-black text-indigo-600 block mt-1">{{ itemsOrdenSeleccionada.length || ordenSeleccionada?.items_count || 0 }}</span>
+          </div>
+        </div>
+
+        <!-- Observaciones / Motivo de Rechazo -->
+        <div *ngIf="ordenSeleccionada?.observaciones" class="p-4 rounded-xl bg-amber-50/60 border border-amber-200">
+          <span class="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+            <i class="bi bi-info-circle-fill"></i> Observaciones / Notas:
+          </span>
+          <p class="text-xs text-amber-900 leading-relaxed">{{ ordenSeleccionada?.observaciones }}</p>
+        </div>
+
+        <!-- Tabla de Ítems Cargados -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-black text-slate-800 text-sm flex items-center gap-2">
+              <i class="bi bi-box-seam text-indigo-600"></i>
+              Ítems Registrados ({{ itemsOrdenSeleccionada.length }})
+            </h4>
+          </div>
+
+          <div *ngIf="isLoadingDetalleOC" class="text-center py-8">
+            <div class="spinner-border text-indigo-600 mb-2"></div>
+            <p class="text-xs text-slate-400">Cargando desglose de ítems...</p>
+          </div>
+
+          <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length > 0" class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                <tr>
+                  <th class="px-4 py-2.5 text-left">Código / Ref</th>
+                  <th class="px-4 py-2.5 text-left">Descripción</th>
+                  <th class="px-4 py-2.5 text-center">Cant.</th>
+                  <th class="px-4 py-2.5 text-right">Precio Unit.</th>
+                  <th class="px-4 py-2.5 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let item of itemsOrdenSeleccionada" class="hover:bg-slate-50">
+                  <td class="px-4 py-2.5 font-bold text-slate-800">{{ item.codigo_item || item.referencia || '—' }}</td>
+                  <td class="px-4 py-2.5 text-slate-600">{{ item.descripcion }}</td>
+                  <td class="px-4 py-2.5 text-center font-bold text-slate-900">{{ item.cantidad }}</td>
+                  <td class="px-4 py-2.5 text-right text-slate-600">{{ (item.precio_unitario || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                  <td class="px-4 py-2.5 text-right font-bold text-indigo-600">{{ (item.precio_total || (item.cantidad * item.precio_unitario) || 0) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div *ngIf="!isLoadingDetalleOC && itemsOrdenSeleccionada.length === 0" class="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <p class="text-xs text-slate-400">No se encontraron ítems desglosados en esta orden.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer con acciones -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <button (click)="verDocumentoOC(ordenSeleccionada)" class="px-4 py-2 text-xs font-bold rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-1.5">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Ver Documento Original
+          </button>
+          <!-- Desvincular PV: solo visible si la orden está PROCESADA y tiene PV -->
+          <button *ngIf="ordenSeleccionada?.estado === 'PROCESADA' && ordenSeleccionada?.pv_asociado"
+                  (click)="desvincularPVSiesa(ordenSeleccionada)"
+                  class="px-4 py-2 text-xs font-bold rounded-xl text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors flex items-center gap-1.5">
+            <i class="bi bi-link-45deg"></i> Desvincular PV
+          </button>
+        </div>
+        <button (click)="cerrarModalDetalleOC()" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: RECHAZO DE OC ==================== -->
+  <div *ngIf="mostrarModalRechazo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn">
+      <div class="px-6 py-4 bg-rose-600 text-white flex items-center justify-between">
+        <h3 class="font-extrabold text-sm flex items-center gap-2">
+          <i class="bi bi-exclamation-octagon-fill"></i> Rechazar Orden de Compra
+        </h3>
+        <button (click)="cerrarModalRechazoOC()" class="text-white hover:text-slate-200">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-slate-600">
+          Indique el motivo por el cual se rechaza la <strong>OC {{ ordenARechazar?.numero_orden }}</strong> de <strong>{{ ordenARechazar?.cliente }}</strong>:
+        </p>
+        <textarea [(ngModel)]="motivoRechazo"
+                  rows="4"
+                  class="w-full text-xs font-medium p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  placeholder="Escriba el motivo detallado de rechazo (mínimo 10 caracteres)..."></textarea>
+      </div>
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button (click)="cerrarModalRechazoOC()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+          Cancelar
+        </button>
+        <button (click)="confirmarRechazoOC()"
+                [disabled]="!motivoRechazo || motivoRechazo.trim().length < 10"
+                class="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl transition-all shadow-sm">
+          Confirmar Rechazo
+        </button>
+      </div>
+    </div>
   </div>
 </div>

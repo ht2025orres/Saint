@@ -14,7 +14,7 @@ export class ErpIntegrationService {
   constructor(private http: HttpClient) { }
 
   searchCustomer(word: string): Observable<Customer[]> {
-    return this.http.get<any>(`${environment.URL_API_LARAVEL}/clientes/${word}`).pipe(
+    return this.http.get<any>(`${environment.URL_API_LARAVEL}/comerciales/clientes/buscar/${word}`).pipe(
       map(res => {
         if (res.success && res.data) {
           return res.data.map((c: any) => ({

@@ -5,6 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import Swal from 'sweetalert2';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MaintenanceService } from '../../services/maintenance.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -20,6 +21,13 @@ export class LoginComponent implements OnInit {
 
   maintenanceActive = false;
   maintenanceData: any = null;
+
+  isTesting = environment.isTesting || false;
+  isBannerMinimized = false;
+
+  toggleBanner(): void {
+    this.isBannerMinimized = !this.isBannerMinimized;
+  }
 
   constructor(
     private authService: AuthService, 

@@ -51,7 +51,7 @@ export class OrdenCompraService {
 
   obtenerClientes(): Observable<{ success: boolean; data: Cliente[] }> {
     return this.http.get<{ success: boolean; data: Cliente[] }>(
-      `${this.apiLaravelUrl}/clientes`,
+      `${this.apiLaravelUrl}/comerciales/clientes`,
       {
         params: { usuario_id: this.getUsuarioActual() }
       }

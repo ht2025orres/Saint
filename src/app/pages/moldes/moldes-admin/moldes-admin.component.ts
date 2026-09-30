@@ -4,6 +4,8 @@ import { MoldService, MoldZone } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
 import Swal from 'sweetalert2';
 import { MoldPart, ZONE_TYPE_OPTIONS } from './moldes-admin.models';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-moldes-admin',
@@ -1008,23 +1010,46 @@ export class MoldesAdminComponent implements OnInit {
         const savedId = res.data?.id || this.moldId;
         const uploads: any[] = [];
         if (this.pendingImageFile && savedId) {
-          uploads.push(this.moldService.uploadMoldImage(savedId, this.pendingImageFile, 'front'));
+          uploads.push(this.moldService.uploadMoldImage(savedId, this.pendingImageFile, 'front').pipe(
+            catchError(err => {
+              console.error('Error al subir imagen frontal del molde', err);
+              return of(null);
+            })
+          ));
         }
         if (this.pendingBackImageFile && savedId) {
-          uploads.push(this.moldService.uploadMoldImage(savedId, this.pendingBackImageFile, 'back'));
+          uploads.push(this.moldService.uploadMoldImage(savedId, this.pendingBackImageFile, 'back').pipe(
+            catchError(err => {
+              console.error('Error al subir imagen trasera del molde', err);
+              return of(null);
+            })
+          ));
         }
 
-        this.saving = false;
-        this.successMessage = 'Molde guardado exitosamente';
-        this.clearDraft();
-        Swal.fire({
-          title: '¡Guardado!',
-          text: 'El molde y su arquitectura fueron guardados correctamente.',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false
-        });
-        setTimeout(() => this.router.navigate(['/moldes']), 1200);
+        const finalizeSave = () => {
+          this.saving = false;
+          this.pendingImageFile = null;
+          this.pendingBackImageFile = null;
+          this.successMessage = 'Molde guardado exitosamente';
+          this.clearDraft();
+          Swal.fire({
+            title: '¡Guardado!',
+            text: 'El molde y su arquitectura fueron guardados correctamente.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+          });
+          setTimeout(() => this.router.navigate(['/moldes']), 1200);
+        };
+
+        if (uploads.length > 0) {
+          forkJoin(uploads).subscribe({
+            next: () => finalizeSave(),
+            error: () => finalizeSave()
+          });
+        } else {
+          finalizeSave();
+        }
       },
       error: (err: any) => {
         this.saving = false;

@@ -167,6 +167,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
             icon: 'bi bi-stopwatch',
             permissions: [1],
             subInterfaces: [
+              { label: 'Recepción y Procesamiento de OCs', link: '/comerciales/ordenes-compra', permissions: [1, 38] },
               { label: 'Planeación de Producción', link: '/planeacion', permissions: [1] },
               { label: 'Tiempos por Ítem', link: '/tiempos-items', permissions: [1] },
             ]
@@ -230,11 +231,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
             label: 'Gestión Comercial',
             icon: 'bi bi-people',
             modules: [7],
-            permissions: [1],
+            permissions: [1, 37, 38, 59, 60],
             subInterfaces: [
-              { label: 'Clientes con Pendientes', link: '/comerciales', permissions: [1] },
-              { label: 'Listado de Solicitudes', link: '/comerciales/solicitudes', permissions: [1] },
-              { label: 'Captura de OC (OCR)', link: '/comerciales/captura', permissions: [1] },
+              { label: 'Gestión Comercial y Clientes', link: '/comerciales', permissions: [1, 37, 38, 59, 60] },
+              { label: 'Captura y Escaneo de OC', link: '/comerciales/captura', permissions: [1, 37, 38, 59, 60] },
             ]
           },
           {

@@ -6,6 +6,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { ComercialService } from '../../../services/comercial.service';
 import { OrdenCompraService } from '../../../services/orden-compra.service';
 import { MoldService } from '../../../services/mold.service';
+import { FileService } from '../../../services/file.service';
 import Swal from 'sweetalert2';
 
 type CampoEstructura = 'numero_oc' | 'cliente_nombre' | 'nit' | 'fecha_solicitud' | 'fecha_entrega' | 'cantidad' | 'descripcion' | 'precio_unitario' | 'item_cfip' | 'item_cliente' | 'talla';
@@ -99,6 +100,7 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
     private service: SolicitudComercialService,
     private comercialService: ComercialService,
     private ordenCompraService: OrdenCompraService,
+    private fileService: FileService,
     public router: Router,
     private route: ActivatedRoute,
     private sanitizer: DomSanitizer,
@@ -133,6 +135,18 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
     this.pasoActual = 1;
     this.htmlDocumentoPlano = null;
     this.itemsProcesados = [];
+  }
+
+  iniciarCapturaManual(): void {
+    this.tipoSolicitud = 'ORDEN_COMPRA';
+    this.nombreArchivo = 'Registro_Manual_OC';
+    this.htmlDocumentoPlano = null;
+    this.textoDocumentoPlano = null;
+    this.originalFile = null;
+    this.originalFileUrl = null;
+    this.itemsProcesados = [];
+    this.agregarNuevoItemVacio();
+    this.cdr.detectChanges();
   }
 
   siguientePaso() {
@@ -1370,7 +1384,7 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
   // GUARDAR ORDEN EN BACKEND
   // ==========================================
 
-  guardarOrden(): void {
+  async guardarOrden(): Promise<void> {
     if (this.itemsProcesados.length === 0) {
       this.mostrarError('No hay ítems para guardar.');
       return;
@@ -1383,18 +1397,37 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
 
     this.savingOrder = true;
 
-    // 1. Crear la OC en backend
+    // 1. Subir archivo original a S3 si está presente
+    let archivoUrl = '';
+    if (this.originalFile) {
+      try {
+        const uploadRes: any = await this.fileService.uploadFile(this.originalFile, 'ordenes_compra').toPromise();
+        if (uploadRes && uploadRes.url) {
+          archivoUrl = uploadRes.url;
+        }
+      } catch (uploadErr) {
+        console.warn('Advertencia: No se pudo subir el archivo de la OC a S3:', uploadErr);
+      }
+    }
+
+    // 2. Crear la OC en backend
     const formData = new FormData();
     formData.append('numero_orden', this.cabeceraOrden.numero_oc);
-    formData.append('cliente_id', '0'); // Se resuelve con el NIT
-    formData.append('archivo_url', ''); // No hay archivo en este flujo
+    formData.append('cliente_id', this.clienteSiesaId ? this.clienteSiesaId.toString() : '0');
+    formData.append('archivo_url', archivoUrl);
     formData.append('incluye_iva', this.cabeceraOrden.incluye_iva ? '1' : '0');
+    if (this.cabeceraOrden.fecha_entrega) {
+      formData.append('fecha_entrega_estimada', this.cabeceraOrden.fecha_entrega);
+    }
+    if (this.cabeceraOrden.fecha_solicitud) {
+      formData.append('fecha_recepcion', this.cabeceraOrden.fecha_solicitud);
+    }
 
     this.ordenCompraService.registrarOrden(formData).subscribe({
       next: (res) => {
         const ordenId = res.data.id;
 
-        // 2. Guardar los ítems parseados
+        // 3. Guardar los ítems parseados
         const itemsPayload = this.itemsProcesados.map(item => ({
           codigo_item: item.item_cfip || item.item_cliente || '',
           descripcion: item.descripcion,
@@ -1402,9 +1435,9 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
           cantidad: item.cantidad || 0,
           precio_unitario: item.precio_unitario || 0,
           precio_total: item.precio_total || 0,
+          unidad_medida: item.unidad_medida || 'UND',
+          rowid_siesa: item.rowid_siesa || null
         }));
-
-        this.comercialService.listarClientes().subscribe(); // Refresh cache
 
         // Guardar ítems parseados vía servicio
         this.ordenCompraService.guardarItems(ordenId, itemsPayload).subscribe({

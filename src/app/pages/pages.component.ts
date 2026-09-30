@@ -1,6 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {AuthService} from '../services/auth.service';
 import { Router } from '@angular/router';
+import { environment } from 'src/environments/environment';
 
 // tslint:disable-next-line:typedef
 declare function customInitFunctions();
@@ -12,6 +13,8 @@ declare function customInitFunctions();
 })
 export class PagesComponent implements OnInit {
   isAuthenticate = false;
+  isTesting = environment.isTesting || false;
+  isBannerMinimized = false;
 
   constructor(public authService: AuthService,
               private router: Router) {
@@ -24,6 +27,10 @@ export class PagesComponent implements OnInit {
 
   stopImpersonating(): void {
     this.authService.stopImpersonating();
+  }
+
+  toggleBanner(): void {
+    this.isBannerMinimized = !this.isBannerMinimized;
   }
 
 }

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-reset-password',
@@ -15,6 +16,13 @@ export class ResetPasswordComponent implements OnInit {
   token = '';
   email = '';
   loading = false;
+
+  isTesting = environment.isTesting || false;
+  isBannerMinimized = false;
+
+  toggleBanner(): void {
+    this.isBannerMinimized = !this.isBannerMinimized;
+  }
 
   constructor(
     private fb: FormBuilder,

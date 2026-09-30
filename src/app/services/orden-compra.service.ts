@@ -51,7 +51,7 @@ export class OrdenCompraService {
 
   obtenerClientes(): Observable<{ success: boolean; data: Cliente[] }> {
     return this.http.get<{ success: boolean; data: Cliente[] }>(
-      `${this.apiLaravelUrl}/clientes`,
+      `${this.apiLaravelUrl}/comerciales/clientes`,
       {
         params: { usuario_id: this.getUsuarioActual() }
       }
@@ -93,8 +93,8 @@ export class OrdenCompraService {
     );
   }
 
-  obtenerDetalleOrden(id: number): Observable<{ success: boolean; data: OrdenCompra }> {
-    return this.http.get<{ success: boolean; data: OrdenCompra }>(
+  obtenerDetalleOrden(id: number): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(
       `${this.apiLaravelUrl}/ordenes-compra/${id}`,
       {
         params: { usuario_id: this.getUsuarioActual() }
@@ -102,11 +102,24 @@ export class OrdenCompraService {
     );
   }
 
+  obtenerDetalle(id: number): Observable<{ success: boolean; data: any }> {
+    return this.obtenerDetalleOrden(id);
+  }
+
   eliminarOrden(id: number): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(
       `${this.apiLaravelUrl}/ordenes-compra/${id}`,
       {
         body: { usuario_id: this.getUsuarioActual() }
+      }
+    );
+  }
+
+  desvincularPV(id: number): Observable<{ success: boolean; message: string; data: OrdenCompra }> {
+    return this.http.put<any>(
+      `${this.apiLaravelUrl}/ordenes-compra/${id}/desvincular`,
+      {
+        usuario_id: this.getUsuarioActual()
       }
     );
   }
