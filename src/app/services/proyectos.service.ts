@@ -337,7 +337,7 @@ export interface FlujoDiario {
   updated_at:          string;
 }
 
-export type ApiResponse<T> = { success: boolean; data: T };
+export type ApiResponse<T> = { success: boolean; data?: T; message?: string; items?: any[]; creadas?: number; duplicadas?: number };
 export type ApiMessage     = { success: boolean; message: string };
 
 @Injectable({ providedIn: 'root' })
