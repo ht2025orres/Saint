@@ -13,7 +13,7 @@ export type Semaforo        = 'rojo' | 'amarillo' | 'verde' | 'gris';
 export type NivelDisplay    = 'gestor' | 'admin' | 'editor' | 'colaborador' | 'lector';
 export type NivelTarea      = 'admin' | 'parcial' | 'basico' | 'sin_acceso';
 
-export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi' | 'compromiso';
+export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi' | 'compromiso' | 'google';
 export type FuenteTarea = OrigenTarea;
 
 export type EstadoInforme      = 'abierto' | 'en_proceso' | 'cerrado';
@@ -43,6 +43,24 @@ export interface TareaConsolidada {
   usuario_id:           number;
   prioridad?:           number;
   proyecto_nombre?:     string;
+  google_event_id?:     string | null;
+}
+
+export interface GoogleCalendarEventoImport {
+  id: string;
+  summary: string;
+  description?: string | null;
+  location?: string | null;
+  start: string;
+  end?: string;
+  ya_importado: boolean;
+  tarea_id?: number | null;
+  tarea_estado?: string | null;
+  // Campos para control en UI
+  seleccionado?: boolean;
+  responsable_id?: number;
+  fecha_limite?: string;
+  notas?: string;
 }
 
 export interface TareasConsolidadasResponse {
@@ -120,6 +138,7 @@ export interface Proyecto {
   id: number; titulo: string; descripcion?: string;
   estado: EstadoProyecto; fecha_limite_entrega?: string;
   usuario_creador_id: number;
+  creador_nombre?: string;
   proceso_id?: number; proceso_nombre?: string;
   es_plantilla?: boolean;
   total_actividades?: number; total_tareas?: number;
@@ -348,6 +367,39 @@ export class ProyectoService {
       params = params.set('vista_mode', vistaMode);
     }
     return this.http.get<TareasConsolidadasResponse>(`${this.api}/tareas-consolidadas`, { params });
+  }
+
+  // ── GOOGLE CALENDAR TAREAS ────────────────────────────────────────────────
+
+  getGoogleCalendarEventsToImport(
+    email?: string,
+    timeMin?: string,
+    timeMax?: string,
+    maxResults?: number
+  ): Observable<{ success: boolean; user_email: string; total: number; items: GoogleCalendarEventoImport[]; message?: string }> {
+    let params = new HttpParams();
+    if (email) params = params.set('email', email);
+    if (timeMin) params = params.set('timeMin', timeMin);
+    if (timeMax) params = params.set('timeMax', timeMax);
+    if (maxResults) params = params.set('maxResults', maxResults.toString());
+    return this.http.get<{ success: boolean; user_email: string; total: number; items: GoogleCalendarEventoImport[]; message?: string }>(
+      `${this.api}/google/calendar/events-to-import`,
+      { params }
+    );
+  }
+
+  importarTareasGoogle(eventos: {
+    google_event_id: string;
+    titulo: string;
+    descripcion?: string;
+    fecha_limite_entrega?: string;
+    responsable_id: number;
+    notas?: string;
+  }[]): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(
+      `${this.api}/google/calendar/import-tasks`,
+      { eventos }
+    ).pipe(tap(() => this.notifyRefresh()));
   }
 
   // ── SEMÁFOROS ─────────────────────────────────────────────────────────────
