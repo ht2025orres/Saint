@@ -288,6 +288,12 @@ export interface SeguimientoTarea {
   reunion_fecha?: string;
   reunion_titulo?: string;
   reunion_descripcion?: string;
+  google_event_id?: string;
+  origen?: string;
+  actividad_titulo?: string;
+  es_creada_por_gestor?: boolean;
+  evidencia?: string;
+  has_evidencia?: boolean;
 }
 
 // ── INTERFACES FLUJOS DIARIOS ─────────────────────────────────────────────────

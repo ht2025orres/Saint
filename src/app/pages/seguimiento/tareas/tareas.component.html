@@ -75,6 +75,14 @@
           + Reunión / Minuta
         </button>
 
+        <!-- Botón Importar de Google Calendar (Solo Gestor o Líder) -->
+        <button *ngIf="puedeGestionarModulo || vistaMes?.es_gestor" (click)="abrirModalGoogle()"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-[9px] uppercase tracking-wider shadow-xs hover:bg-gray-50 hover:text-gray-900 transition-all"
+          title="Importar eventos de Google Calendar">
+          <i class="bi bi-google text-rose-500 text-xs"></i>
+          Importar Calendar
+        </button>
+
         <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
           
           <!-- Filtro Estados -->
@@ -501,6 +509,11 @@
                     <span *ngIf="t.actividad_titulo" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
                       <i class="bi bi-lightning-charge mr-1"></i> {{ t.actividad_titulo }}
                     </span>
+                    <span *ngIf="t.origen === 'google' || t.google_event_id" 
+                      class="px-2 py-0.5 rounded-md text-[8px] font-black text-rose-700 bg-rose-50 border border-rose-200/80 uppercase tracking-wider inline-flex items-center gap-1 shadow-2xs"
+                      title="Tarea importada de Google Calendar">
+                      <i class="bi bi-google text-rose-600 text-[10px]"></i> Calendar
+                    </span>
                     <span *ngIf="t.es_creada_por_gestor || t.reunion_id" 
                       class="px-2 py-0.5 rounded-md text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200/80 uppercase tracking-wider inline-flex items-center gap-1 shadow-2xs"
                       title="Tarea creada o asignada por el Gestor de Proyecto">
@@ -816,6 +829,17 @@
     (onCerrar)="showModalReunion = false"
     (onGuardado)="cargarDatos()">
   </app-modal-reunion>
+
+  <!-- ── MODAL IMPORTAR GOOGLE CALENDAR ──────────────────────────────── -->
+  <app-modal-importar-google
+    [show]="showModalGoogle"
+    [usuarios]="usuariosParaModal"
+    [usuarioActualId]="usuarioId"
+    [usuarioActualEmail]="userEmail"
+    [esLiderOGestor]="puedeGestionarModulo || !!vistaMes?.es_gestor"
+    (onCerrar)="showModalGoogle = false"
+    (onImportado)="onTareasGoogleImportadas($event)">
+  </app-modal-importar-google>
 
 </div>
 

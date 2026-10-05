@@ -17,6 +17,8 @@ import { SeguimientoStateService, UsuarioCache } from '../seguimiento-state.serv
 import { PaginationService } from 'src/app/shared/pagination/pagination.service';
 import { TareaForm } from '../modals/modal-tarea/modal-tarea.component';
 import { InformeTareaForm } from '../modals/modal-informe-tarea/modal-informe-tarea.component';
+import { AuthService } from 'src/app/services/auth.service';
+import { UserService } from 'src/app/services/user.service';
 import Swal from 'sweetalert2';
 
 interface CalendarioDia {
@@ -126,6 +128,10 @@ export class TareasComponent implements OnInit, OnDestroy {
   informeTareaParaEditar: InformeTarea | null = null;
   savingInformeTarea = false;
 
+  // Modal Google Calendar
+  showModalGoogle = false;
+  usuariosParaModal: { id: number; nombre: string; email?: string }[] = [];
+
 
 
   actividadesProyecto: Actividad[] = [];
@@ -149,7 +155,9 @@ export class TareasComponent implements OnInit, OnDestroy {
     public state: SeguimientoStateService,
     private _cdr: ChangeDetectorRef,
     private _pagination: PaginationService,
-    private _el: ElementRef
+    private _el: ElementRef,
+    private _authService: AuthService,
+    private _userService: UserService
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -410,7 +418,12 @@ export class TareasComponent implements OnInit, OnDestroy {
       // Unificar todas las tareas filtradas por origen
       let unificadas: any[] = [];
       if (this.filtroOrigenesSelec.includes('seguimiento')) {
-        unificadas = [...unificadas, ...this.tareasSegFiltradas.map(t => ({ ...t, _origen_label: 'Seguimiento', _color: 'bg-indigo-600', origen: 'seguimiento' }))];
+        unificadas = [...unificadas, ...this.tareasSegFiltradas.map(t => ({
+          ...t,
+          _origen_label: (t.origen === 'google' || t.google_event_id) ? 'Calendar' : 'Seguimiento',
+          _color: (t.origen === 'google' || t.google_event_id) ? 'bg-rose-600' : 'bg-indigo-600',
+          origen: t.origen || 'seguimiento'
+        }))];
       }
       if (this.filtroOrigenesSelec.includes('proyecto')) {
         unificadas = [...unificadas, ...this.tareasProyFiltradas.map(t => ({ ...t, _origen_label: 'Proyecto', _color: 'bg-teal-600', origen: 'proyecto' }))];
@@ -894,6 +907,42 @@ export class TareasComponent implements OnInit, OnDestroy {
     this.proyectoSeleccionado = null;
     this.showModalTarea = true;
     this._cdr.markForCheck();
+  }
+
+  get userEmail(): string {
+    const u = this._authService.user as any;
+    return u?.correo_corporativo || u?.email || '';
+  }
+
+  abrirModalGoogle(): void {
+    if (this.usuariosParaModal.length === 0) {
+      if (this.state.usuariosResponsables.length > 0) {
+        this.usuariosParaModal = this.state.usuariosResponsables.map(u => ({
+          id: u.id,
+          nombre: u.nombre,
+        }));
+      }
+      this._userService.getAll().subscribe(users => {
+        if (users && users.length > 0) {
+          this.usuariosParaModal = users.map(u => ({
+            id: u.id!,
+            nombre: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || `User ${u.id}`,
+            email: (u as any).correo_corporativo || u.email || '',
+          }));
+          this._cdr.markForCheck();
+        }
+      });
+    }
+    this.showModalGoogle = true;
+    this._cdr.markForCheck();
+  }
+
+  onTareasGoogleImportadas(_total: number): void {
+    if (this.mostrandoMes && this.seguimientoActual) {
+      this._cargarDetalleMes(this.seguimientoActual.id, this.mesActual, this.anioActual);
+    } else {
+      this.cargarDatos();
+    }
   }
 
   async promptCompletarTarea(tituloTarea: string): Promise<{ notas: string; archivo: File | null } | null> {
