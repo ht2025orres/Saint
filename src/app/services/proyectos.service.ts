@@ -408,6 +408,12 @@ export class ProyectoService {
     ).pipe(tap(() => this.notifyRefresh()));
   }
 
+  getGoogleAuthUrl(): Observable<{ success: boolean; auth_url: string; message?: string }> {
+    return this.http.get<{ success: boolean; auth_url: string; message?: string }>(
+      `${this.api}/google/auth-url`
+    );
+  }
+
   // ── SEMÁFOROS ─────────────────────────────────────────────────────────────
 
   getConfigSemaforo(): Observable<ApiResponse<ConfiguracionSemaforo[]>> {

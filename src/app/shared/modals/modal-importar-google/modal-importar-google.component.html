@@ -28,9 +28,16 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
         <!-- Cuenta a consultar -->
         <div class="md:col-span-5">
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Cuenta / Calendario Google
-          </label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Cuenta / Calendario Google
+            </label>
+            <button (click)="reconectarGoogle()" type="button"
+              class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+              title="Vincular o renovar autorización de Google">
+              <i class="bi bi-google text-rose-500"></i> Vincular / Renovar
+            </button>
+          </div>
           <div class="relative">
             <input *ngIf="!esLiderOGestor"
                    type="text"
@@ -116,9 +123,15 @@
     <!-- ═══ CUERPO: LISTA DE EVENTOS ════════════════════════════════════════════ -->
     <div class="flex-1 overflow-y-auto p-5">
       <!-- Error o aviso -->
-      <div *ngIf="errorMsg" class="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex items-center gap-2 mb-4">
-        <i class="bi bi-exclamation-triangle-fill text-amber-500 text-base"></i>
-        <span>{{ errorMsg }}</span>
+      <div *ngIf="errorMsg" class="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-amber-500 text-base shrink-0"></i>
+          <span>{{ errorMsg }}</span>
+        </div>
+        <button *ngIf="esErrorAutorizacion" (click)="reconectarGoogle()" type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs whitespace-nowrap shadow-sm transition-all shrink-0 cursor-pointer">
+          <i class="bi bi-google"></i> Conectar con Google
+        </button>
       </div>
 
       <!-- Spinner de carga -->

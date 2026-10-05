@@ -130,6 +130,27 @@ export class ModalImportarGoogleComponent implements OnChanges {
     );
   }
 
+  get esErrorAutorizacion(): boolean {
+    if (!this.errorMsg) return false;
+    const m = this.errorMsg.toLowerCase();
+    return m.includes('invalid_grant') || m.includes('autorizaci') || m.includes('token') || m.includes('no hay cliente google');
+  }
+
+  reconectarGoogle(): void {
+    this.proyectoService.getGoogleAuthUrl().subscribe({
+      next: (res) => {
+        if (res?.auth_url) {
+          window.location.href = res.auth_url;
+        } else {
+          Swal.fire('Error', res?.message || 'No se pudo obtener la URL de Google.', 'error');
+        }
+      },
+      error: (err) => {
+        Swal.fire('Error', err?.error?.message || 'Error al conectar con Google.', 'error');
+      }
+    });
+  }
+
   get totalSeleccionados(): number {
     return this.eventos.filter(e => e.seleccionado && !e.ya_importado).length;
   }
