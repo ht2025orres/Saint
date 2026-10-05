@@ -46,6 +46,10 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.authService.hasAnyPermission([39, 1]);
   }
   get userId():   number { return this.authService.user?.id ?? 0; }
+  get userEmail(): string {
+    const u = this.authService.user as any;
+    return u?.correo_corporativo || u?.email || '';
+  }
   get userName(): string {
     const u = this.authService.user;
     return u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : '';
@@ -53,11 +57,14 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Datos ───────────────────────────────────────────────────────────────────
   tareas: TareaConsolidada[] = [];
-  usuarios: { id: number; nombre: string }[] = [];
+  usuarios: { id: number; nombre: string; email?: string }[] = [];
 
   // ── Filtros ─────────────────────────────────────────────────────────────────
-  filtroOrigen: 'todos' | 'seguimiento' | 'proyecto' | 'glpi' = 'todos';
+  filtroOrigen: 'todos' | 'seguimiento' | 'proyecto' | 'glpi' | 'google' = 'todos';
   filtroEstado: 'todos' | 'pendiente' | 'en_ejecucion'        = 'todos';
+
+  // ── Modal Google Calendar ───────────────────────────────────────────────────
+  showModalGoogle = false;
 
   // ── Formulario nueva tarea ───────────────────────────────────────────────────
   showNuevaTarea     = false;
@@ -132,6 +139,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
       this.usuarios = users.map(u => ({
         id: u.id!,
         nombre: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || `User ${u.id}`,
+        email: (u as any).correo_corporativo || u.email || '',
       }));
       this.cdr.markForCheck();
     });
@@ -148,7 +156,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     const anio = now.getFullYear();
 
     this.proyectoService
-      .getTareasConsolidadas(this.userId, mes, anio, ['seguimiento', 'proyecto', 'glpi'])
+      .getTareasConsolidadas(this.userId, mes, anio, ['seguimiento', 'proyecto', 'glpi', 'google'])
       .pipe(
         catchError(() => of({ success: false, data: [], meta: null as any })),
         finalize(() => { this.loading = false; this.cdr.markForCheck(); }),
@@ -202,7 +210,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       if (ga === 3) {
         // Sin fecha: orden por origen
-        const peso: Record<string, number> = { seguimiento: 0, proyecto: 1, glpi: 2 };
+        const peso: Record<string, number> = { seguimiento: 0, google: 1, proyecto: 2, glpi: 3 };
         return (peso[a.origen] ?? 9) - (peso[b.origen] ?? 9);
       }
       // Hoy y próximas: más cercana primero (asc)
@@ -296,6 +304,16 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
+  abrirModalGoogleCalendar(): void {
+    this.cargarUsuarios();
+    this.showModalGoogle = true;
+    this.cdr.markForCheck();
+  }
+
+  onTareasGoogleImportadas(_total: number): void {
+    this.cargarDatos();
+  }
+
   abrirNuevaTarea(): void {
     this.showNuevaTarea     = true;
     this.nuevaTareaForm     = this._emptyNuevaForm();
@@ -367,7 +385,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.tareas = this.tareas.filter(t => t.id !== tarea.id);
     this.cdr.markForCheck();
 
-    const obs$ = tarea.origen === 'seguimiento'
+    const obs$ = (tarea.origen === 'seguimiento' || tarea.origen === 'google')
       ? this.proyectoService.completarSeguimientoTarea(tarea.id, this.userId)
       : this.proyectoService.completarTarea(tarea.id, this.userId);
 
@@ -398,7 +416,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.editForm.titulo?.trim() || !this._editHasChanges()) {
       this.cancelarEdicion(); return;
     }
-    if (this.editForm.origen !== 'seguimiento') { this.cancelarEdicion(); return; }
+    if (this.editForm.origen !== 'seguimiento' && this.editForm.origen !== 'google') { this.cancelarEdicion(); return; }
 
     // El id numérico real está en editForm
     const tareaId = this.editForm.id as number;
@@ -456,7 +474,7 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   eliminarTarea(tarea: TareaConsolidada): void {
-    if (tarea.origen !== 'seguimiento') return;
+    if (tarea.origen !== 'seguimiento' && tarea.origen !== 'google') return;
     if (!confirm('¿Estás seguro de eliminar esta tarea?')) return;
     this.proyectoService.eliminarSeguimientoTarea(tarea.id, this.userId)
       .pipe(takeUntil(this.destroy$))
