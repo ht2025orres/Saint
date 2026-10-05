@@ -12,6 +12,7 @@ import { LoadingComponent } from './loading/loading.component';
 import { PaginationService } from './pagination/pagination.service';
 import { LoadingButtonDirective } from './loading/loading-button.directive';
 import { SafePipe } from './pipes/safe.pipe';
+import { ModalImportarGoogleComponent } from './modals/modal-importar-google/modal-importar-google.component';
 
 
 @NgModule({
@@ -25,6 +26,7 @@ import { SafePipe } from './pipes/safe.pipe';
         SharedPaginatorComponent,
         LoadingButtonDirective,
         SafePipe,
+        ModalImportarGoogleComponent,
     ],
     exports: [
         FooterComponent,
@@ -36,6 +38,7 @@ import { SafePipe } from './pipes/safe.pipe';
         SharedPaginatorComponent,
         LoadingButtonDirective,
         SafePipe,
+        ModalImportarGoogleComponent,
     ],
     imports: [
         CommonModule,
