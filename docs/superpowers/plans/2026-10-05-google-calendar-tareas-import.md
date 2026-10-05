@@ -28,7 +28,7 @@
 - Consumes: N/A
 - Produces: Columna `google_event_id VARCHAR(255) NULL` con índice en la tabla `seguimiento_tareas`.
 
-- [ ] **Step 1: Crear la migración de base de datos**
+- [x] **Step 1: Crear la migración de base de datos**
 
 ```php
 <?php
@@ -60,17 +60,17 @@ return new class extends Migration
 };
 ```
 
-- [ ] **Step 2: Ejecutar la migración**
+- [x] **Step 2: Ejecutar la migración**
 
 Run: `c:\XamppSS\php\php.exe artisan migrate --path=database/migrations/2026_10_05_000001_add_google_event_id_to_seguimiento_tareas.php`
 Expected: Migrated successfully.
 
-- [ ] **Step 3: Agregar `google_event_id` al `$fillable` de `SeguimientoTarea`**
+- [x] **Step 3: Agregar `google_event_id` al `$fillable` de `SeguimientoTarea`**
 
 En `c:\XamppSS\htdocs\Saint-Backend\app\Models\Proyectos\SeguimientoTarea.php`:
 Añadir `'google_event_id'` al array `$fillable`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add database/migrations/2026_10_05_000001_add_google_event_id_to_seguimiento_tareas.php app/Models/Proyectos/SeguimientoTarea.php
@@ -94,7 +94,7 @@ git commit -m "feat(db): agregar google_event_id a seguimiento_tareas para integ
   - `POST /api/google/calendar/import-tasks` -> `{ success: true, creadas: X, message: '...' }`
   - Soporte de origen `'google'` en `TareaConsolidadaService::FUENTES_TODAS`.
 
-- [ ] **Step 1: Escribir el test para los nuevos endpoints de importación**
+- [x] **Step 1: Escribir el test para los nuevos endpoints de importación**
 
 En `tests/Feature/GoogleCalendarImportTest.php`:
 ```php
@@ -173,12 +173,12 @@ class GoogleCalendarImportTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Ejecutar el test para comprobar que falla**
+- [x] **Step 2: Ejecutar el test para comprobar que falla**
 
 Run: `c:\XamppSS\php\php.exe artisan test tests/Feature/GoogleCalendarImportTest.php`
 Expected: FAIL (Ruta no definida 404).
 
-- [ ] **Step 3: Implementar métodos en `GoogleWorkspaceController.php` y registrar rutas en `api.php`**
+- [x] **Step 3: Implementar métodos en `GoogleWorkspaceController.php` y registrar rutas en `api.php`**
 
 En `GoogleWorkspaceController.php`:
 Implementar `getCalendarEventsToImport(Request $request): JsonResponse` y `importCalendarTasks(Request $request): JsonResponse`.
@@ -195,12 +195,12 @@ Route::prefix('google')->controller(GoogleWorkspaceController::class)->group(fun
 En `TareaConsolidadaService.php`:
 Añadir `'google'` a `FUENTES_TODAS` y manejar su consulta mapeada.
 
-- [ ] **Step 4: Ejecutar el test y comprobar que pasa**
+- [x] **Step 4: Ejecutar el test y comprobar que pasa**
 
 Run: `c:\XamppSS\php\php.exe artisan test tests/Feature/GoogleCalendarImportTest.php`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/Http/Controllers/GoogleWorkspaceController.php routes/api.php app/Services/Proyectos/TareaConsolidadaService.php tests/Feature/GoogleCalendarImportTest.php
@@ -220,7 +220,7 @@ git commit -m "feat(api): endpoints para consultar eventos de calendar y guardad
   - `getGoogleCalendarEventsToImport(email?: string, timeMin?: string, timeMax?: string): Observable<ApiResponse<any>>`
   - `importarTareasGoogle(eventos: any[]): Observable<ApiResponse<any>>`
 
-- [ ] **Step 1: Agregar interfaces y métodos en `proyectos.service.ts`**
+- [x] **Step 1: Agregar interfaces y métodos en `proyectos.service.ts`**
 
 ```typescript
 export interface GoogleCalendarEventoImport {
@@ -253,12 +253,12 @@ importarTareasGoogle(eventos: any[]): Observable<ApiResponse<any>> {
 }
 ```
 
-- [ ] **Step 2: Verificar compilación en frontend**
+- [x] **Step 2: Verificar compilación en frontend**
 
 Run: `npx ng build --configuration development --no-progress` o comprobación de TypeScript `tsc --noEmit`.
 Expected: Compilación sin errores.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/services/proyectos.service.ts
@@ -285,19 +285,19 @@ git commit -m "feat(services): metodos para consultar e importar eventos de goog
   - `@Output() onCerrar = new EventEmitter<void>();`
   - `@Output() onImportado = new EventEmitter<number>();`
 
-- [ ] **Step 1: Crear la lógica del componente TypeScript**
+- [x] **Step 1: Crear la lógica del componente TypeScript**
 
 Implementar selector de colaborador, selector de rango de fechas (default: mes actual), consulta al servicio con spinner, checkbox "Seleccionar todos", selector masivo de responsable, y botón de importación que valida que los seleccionados tengan responsable asignado.
 
-- [ ] **Step 2: Crear la plantilla HTML y estilos SCSS**
+- [x] **Step 2: Crear la plantilla HTML y estilos SCSS**
 
 Diseñar con estilo corporativo limpio, iconos de Bootstrap Icons, inputs elegantes, badges de estado (`✔ Ya importado` vs `Disponible`) y preview responsivo.
 
-- [ ] **Step 3: Declarar y exportar en `shared.module.ts`**
+- [x] **Step 3: Declarar y exportar en `shared.module.ts`**
 
 Registrar `ModalImportarGoogleComponent` en `declarations` y `exports` de `SharedModule`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/shared/modals/modal-importar-google/ src/app/shared/shared.module.ts
@@ -312,7 +312,7 @@ git commit -m "feat(ui): componente modal reusable para importar eventos de goog
 - Modify: `c:\XamppSS\htdocs\Saint\src\app\shared\task-panel\task-panel.component.html`
 - Modify: `c:\XamppSS\htdocs\Saint\src\app\shared\task-panel\task-panel.component.ts`
 
-- [ ] **Step 1: Agregar el botón "Importar de Calendar" en la cabecera o barra de acciones**
+- [x] **Step 1: Agregar el botón "Importar de Calendar" en la cabecera o barra de acciones**
 
 En `task-panel.component.html`:
 Junto al botón `+ Añadir tarea` (visible para `esGestor || esAdmin`):
@@ -326,13 +326,13 @@ Junto al botón `+ Añadir tarea` (visible para `esGestor || esAdmin`):
 </button>
 ```
 
-- [ ] **Step 2: Declarar el modal y métodos en `task-panel.component.ts`**
+- [x] **Step 2: Declarar el modal y métodos en `task-panel.component.ts`**
 
 Añadir `showModalGoogle = false;`, método `abrirModalGoogleCalendar()` y vincular evento `(onImportado)="onTareasGoogleImportadas($event)"`.
 
-- [ ] **Step 3: Agregar estilos SCSS para el botón en `task-panel.component.scss`**
+- [x] **Step 3: Agregar estilos SCSS para el botón en `task-panel.component.scss`**
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/app/shared/task-panel/task-panel.component.html src/app/shared/task-panel/task-panel.component.ts src/app/shared/task-panel/task-panel.component.scss
@@ -347,15 +347,15 @@ git commit -m "feat(panel): boton y modal de importacion de google calendar en p
 - Modify: `c:\XamppSS\htdocs\Saint\src\app\pages\seguimiento\tareas\tareas.component.html`
 - Modify: `c:\XamppSS\htdocs\Saint\src\app\pages\seguimiento\tareas\tareas.component.ts`
 
-- [ ] **Step 1: Añadir el botón en la barra superior de acciones de `tareas.component.html`**
+- [x] **Step 1: Añadir el botón en la barra superior de acciones de `tareas.component.html`**
 
 Visible en la barra superior junto al toggle de vista lista/calendario, condicionado a `puedeGestionarModulo`.
 
-- [ ] **Step 2: Vincular modal y recarga en `tareas.component.ts`**
+- [x] **Step 2: Vincular modal y recarga en `tareas.component.ts`**
 
 Control de apertura de `ModalImportarGoogleComponent` y refresco automático al completarse.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/app/pages/seguimiento/tareas/tareas.component.html src/app/pages/seguimiento/tareas/tareas.component.ts
@@ -369,22 +369,22 @@ git commit -m "feat(tareas): boton de importacion de google calendar en la vista
 **Files:**
 - Test y verificación global.
 
-- [ ] **Step 1: Ejecutar suite de pruebas de Backend**
+- [x] **Step 1: Ejecutar suite de pruebas de Backend**
 
 Run: `c:\XamppSS\php\php.exe artisan test`
 Expected: Todos los tests pasan correctamente.
 
-- [ ] **Step 2: Probar compilación del Frontend sin advertencias ni errores**
+- [x] **Step 2: Probar compilación del Frontend sin advertencias ni errores**
 
 Run: `npx ng build --configuration development --no-progress`
 Expected: Build exitoso.
 
-- [ ] **Step 3: Prueba funcional interactiva**
+- [x] **Step 3: Prueba funcional interactiva**
   - Abrir el panel de tareas lateral -> verificar presencia del botón "Importar Calendar".
   - Consultar eventos -> verificar visualización de eventos y detección de duplicados.
   - Asignar responsable a 2 eventos e importar -> verificar aparición instantánea en el panel con badge "Google Calendar".
 
-- [ ] **Step 4: Commit final**
+- [x] **Step 4: Commit final**
 
 ```bash
 git commit --allow-empty -m "chore: verificacion completa de importacion de tareas de google calendar"
