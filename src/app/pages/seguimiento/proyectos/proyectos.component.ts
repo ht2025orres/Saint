@@ -123,12 +123,30 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   // GETTERS DERIVADOS
   // ════════════════════════════════════════════════════════════════
 
+  private _normalizarTexto(texto?: string | null): string {
+    if (!texto) return '';
+    return texto
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
   get proyectosFiltrados(): Proyecto[] {
-    const q = this.busqueda.toLowerCase().trim();
-    let filtrados = this.proyectos.filter(p =>
-      (!q || p.titulo.toLowerCase().includes(q) ||
-       (p.descripcion ?? '').toLowerCase().includes(q)),
-    );
+    const rawQ = this.busqueda.trim();
+    const qNorm = this._normalizarTexto(rawQ);
+    const searchTerms = qNorm ? qNorm.split(/\s+/).filter(t => t.length > 0) : [];
+
+    let filtrados = this.proyectos.filter(p => {
+      if (searchTerms.length === 0) return true;
+
+      const creadorNombre = p.creador_nombre || this.state.nombreUsuario(p.usuario_creador_id) || '';
+      const searchable = this._normalizarTexto(
+        `${p.id} ${p.titulo} ${p.descripcion ?? ''} ${creadorNombre} ${p.proceso_nombre ?? ''} ${p.estado}`
+      );
+
+      return searchTerms.every(term => searchable.includes(term));
+    });
 
     if (this.filtroTipoProyecto === 'normales') {
       filtrados = filtrados.filter(p => !p.es_proyecto_informe);

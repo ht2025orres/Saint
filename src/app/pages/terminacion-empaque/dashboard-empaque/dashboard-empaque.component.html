@@ -564,11 +564,20 @@
                   </tr>
                 </ng-container>
                 
-                <tr *ngIf="filteredOPs.length === 0">
+                <tr *ngIf="loadingOPs">
                   <td colspan="9" class="text-center py-4">
+                    <div class="spinner-border text-primary me-2" role="status" style="width: 1.5rem; height: 1.5rem;">
+                      <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <span class="text-muted fw-bold">Cargando Órdenes de Producción...</span>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!loadingOPs && filteredOPs.length === 0">
+                  <td colspan="9" class="text-center py-4 text-muted">
                     No se encontraron OPs que coincidan con los criterios de búsqueda
                   </td>
-                  </tr>
+                </tr>
               </tbody>
             </table>
           </div>

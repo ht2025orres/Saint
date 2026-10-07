@@ -916,20 +916,32 @@ export class TareasComponent implements OnInit, OnDestroy {
 
   abrirModalGoogle(): void {
     if (this.usuariosParaModal.length === 0) {
-      if (this.state.usuariosResponsables.length > 0) {
-        this.usuariosParaModal = this.state.usuariosResponsables.map(u => ({
-          id: u.id,
-          nombre: u.nombre,
-        }));
-      }
-      this._userService.getAll().subscribe(users => {
-        if (users && users.length > 0) {
-          this.usuariosParaModal = users.map(u => ({
-            id: u.id!,
-            nombre: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || `User ${u.id}`,
-            email: (u as any).correo_corporativo || u.email || '',
-          }));
+      this._userService.getAllBasic(true, this.usuarioId).subscribe({
+        next: (users) => {
+          if (users && users.length > 0) {
+            this.usuariosParaModal = users.map(u => ({
+              id: u.id!,
+              nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || `User ${u.id}`,
+              email: u.email || u.correo_corporativo || '',
+            }));
+          } else if (this.state.usuariosResponsables.length > 0) {
+            this.usuariosParaModal = this.state.usuariosResponsables.map(u => ({
+              id: u.id,
+              nombre: u.nombre,
+              email: (u as any).email || (u as any).correo_corporativo || '',
+            }));
+          }
           this._cdr.markForCheck();
+        },
+        error: () => {
+          if (this.state.usuariosResponsables.length > 0) {
+            this.usuariosParaModal = this.state.usuariosResponsables.map(u => ({
+              id: u.id,
+              nombre: u.nombre,
+              email: (u as any).email || (u as any).correo_corporativo || '',
+            }));
+            this._cdr.markForCheck();
+          }
         }
       });
     }

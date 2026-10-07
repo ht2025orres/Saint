@@ -12,3 +12,5 @@ export const environment = {
   // --- CONFIGURACIÓN DE BUCKET S3 ---
   S3_FOLDER: 'pruebas',
 };
+
+

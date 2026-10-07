@@ -80,6 +80,8 @@ export class DashboardEmpaqueComponent implements OnInit {
   totalPages: number = 0;
   Math = Math;
   costosPorDia: number[] = [];
+  loadingOPs: boolean = false;
+  loadingDashboard: boolean = false;
 
   // Modales
   selectedItem: any = null;
@@ -297,6 +299,7 @@ export class DashboardEmpaqueComponent implements OnInit {
   }
 
   cargarDashboard() {
+    this.loadingDashboard = true;
     forkJoin({
       empacadores: this.userService.getUsersByPermission(16),
       dashboard: this.empaqueService.getDashboardData({
@@ -304,31 +307,51 @@ export class DashboardEmpaqueComponent implements OnInit {
         fechaFin: this.fechaFin,
         empacador: this.empacadorFiltro
       })
-    }).subscribe(({ empacadores, dashboard }) => {
-      if (Array.isArray(empacadores)) {
-        this.empacadoresList = empacadores.map((u: any) => ({
-          ...u,
-          roles: Array.isArray(u.roles) ? u.roles.reduce((acc: any, role: any) => {
-            acc[role.id] = role.nombre || role.name || String(role.id);
-            return acc;
-          }, {}) : u.roles
-        }));
-      } else if (empacadores && typeof empacadores === 'object' && 'usuarios' in empacadores) {
-        this.empacadoresList = (empacadores as ApiResponse).usuarios;
-      } else {
-        this.empacadoresList = [];
+    }).subscribe({
+      next: ({ empacadores, dashboard }) => {
+        if (Array.isArray(empacadores)) {
+          this.empacadoresList = empacadores.map((u: any) => ({
+            ...u,
+            roles: Array.isArray(u.roles) ? u.roles.reduce((acc: any, role: any) => {
+              acc[role.id] = role.nombre || role.name || String(role.id);
+              return acc;
+            }, {}) : u.roles
+          }));
+        } else if (empacadores && typeof empacadores === 'object' && 'usuarios' in empacadores) {
+          this.empacadoresList = (empacadores as ApiResponse).usuarios;
+        } else {
+          this.empacadoresList = [];
+        }
+        this.procesarDatosDashboard(dashboard);
+        this.loadingDashboard = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar Dashboard Empaque:', err);
+        this.loadingDashboard = false;
       }
-      this.procesarDatosDashboard(dashboard);
     });
   }
 
   cargarDashboardOPs() {
+    this.loadingOPs = true;
     this.empaqueService.getOPsDashboardData({
       fecha: this.fechaFiltroOP,
       estado: this.estadoFiltroOP,
       numero_op: this.numeroOPFiltro
-    }).subscribe((data) => {
-      this.procesarDatosOPs(data);
+    }).subscribe({
+      next: (data) => {
+        this.procesarDatosOPs(data);
+        this.loadingOPs = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar Dashboard OPs:', err);
+        this.loadingOPs = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al cargar OPs',
+          text: 'No se pudo obtener la información de las OPs. Por favor intenta nuevamente.'
+        });
+      }
     });
   }
 

@@ -42,6 +42,18 @@ export class FirmasListaComponent implements OnInit {
   showDetailModal: boolean = false;
   mostrarModalEtiquetas: boolean = false;
 
+  // Modal Compartir Carpeta / Etiqueta
+  mostrarModalCompartirCarpeta: boolean = false;
+  etiquetaParaCompartir: any = null;
+  miembrosCompartidosEtiqueta: any[] = [];
+  cargandoMiembrosEtiqueta: boolean = false;
+  busquedaColaboradorCompartir: string = '';
+  colaboradoresFiltradosCompartir: any[] = [];
+  mostrarDropdownCompartir: boolean = false;
+  colaboradorSeleccionadoParaCompartir: any = null;
+  rolSeleccionadoParaCompartir: string = 'EDITOR';
+  guardandoCompartir: boolean = false;
+
   // Modal Agregar / Editar firmante
   showModalFirmante: boolean = false;
   modalFirmanteMode: 'add' | 'edit' = 'add';
@@ -95,6 +107,7 @@ export class FirmasListaComponent implements OnInit {
   filtroAnio: string = '';
   filtroMes: string = '';
   filtroProceso: string = '';
+  filtroParticipacion: string = ''; // '' | 'firmados_por_mi' | 'por_firmar' | 'creados_por_mi'
   selectedFolderType: 'etiqueta' | 'anio_mes' | 'estado' | 'proceso' | null = null;
   selectedFolderKey: string | null = null;
   selectedFolderName: string = 'Mi Unidad';
@@ -209,7 +222,8 @@ export class FirmasListaComponent implements OnInit {
       this.perPage,
       this.filtroAnio,
       this.filtroMes,
-      this.filtroProceso
+      this.filtroProceso,
+      this.filtroParticipacion
     ).subscribe({
       next: (resp: any) => {
         const paginator = resp.data || {};
@@ -238,12 +252,18 @@ export class FirmasListaComponent implements OnInit {
     clearTimeout(this.searchTimeout);
     this.searchTimeout = setTimeout(() => {
       this.currentPage = 1;
+      if (this.search && this.search.trim().length > 0 && this.viewMode === 'folders') {
+        this.viewMode = 'grid';
+      }
       this.cargarDocumentos(false);
     }, 400);
   }
 
   onFilterChange(): void {
     this.currentPage = 1;
+    if ((this.filtroProceso || this.filtroAnio || this.filtroMes || this.estadoFiltro) && this.viewMode === 'folders') {
+      this.viewMode = 'grid';
+    }
     this.cargarDocumentos(false);
   }
 
@@ -1477,15 +1497,31 @@ export class FirmasListaComponent implements OnInit {
   // ============================
   // GOOGLE DRIVE DRIVE COMPUTED PROPERTIES & FILTERS
   // ============================
-  get carpetasPorEtiqueta(): any[] {
-    const foldersMap = new Map<string, { id: number | null, nombre: string, color: string, count: number }>();
+  get carpetasMisEtiquetas(): any[] {
+    const foldersMap = new Map<string, any>();
 
     const generalCount = (this.resumenStats?.etiquetas && (this.resumenStats.etiquetas['null'] ?? this.resumenStats.etiquetas[''])) ?? 0;
-    foldersMap.set('general', { id: null, nombre: 'General / Sin Etiqueta', color: '#64748b', count: Number(generalCount) || 0 });
+    foldersMap.set('general', {
+      id: null,
+      nombre: 'General / Sin Etiqueta',
+      color: '#64748b',
+      count: Number(generalCount) || 0,
+      es_propietario: true,
+      es_compartida_conmigo: false,
+      total_compartidos: 0
+    });
 
     this.etiquetasList.forEach(e => {
-      const c = (this.resumenStats?.etiquetas && this.resumenStats.etiquetas[e.id!]) ? Number(this.resumenStats.etiquetas[e.id!]) : 0;
-      foldersMap.set(e.id!.toString(), { id: e.id!, nombre: e.nombre, color: e.color || '#2563eb', count: c });
+      if (!e.es_compartida_conmigo) {
+        const c = (this.resumenStats?.etiquetas && this.resumenStats.etiquetas[e.id!]) ? Number(this.resumenStats.etiquetas[e.id!]) : 0;
+        foldersMap.set(e.id!.toString(), {
+          ...e,
+          id: e.id!,
+          nombre: e.nombre,
+          color: e.color || '#2563eb',
+          count: c
+        });
+      }
     });
 
     if (!this.resumenStats) {
@@ -1493,13 +1529,34 @@ export class FirmasListaComponent implements OnInit {
         const key = doc.etiqueta_id ? doc.etiqueta_id.toString() : 'general';
         if (foldersMap.has(key)) {
           foldersMap.get(key)!.count++;
-        } else if (doc.etiqueta) {
-          foldersMap.set(key, { id: doc.etiqueta.id!, nombre: doc.etiqueta.nombre, color: doc.etiqueta.color || '#2563eb', count: 1 });
+        } else if (doc.etiqueta && !doc.etiqueta.es_compartida_conmigo) {
+          foldersMap.set(key, { ...doc.etiqueta, id: doc.etiqueta.id!, nombre: doc.etiqueta.nombre, color: doc.etiqueta.color || '#2563eb', count: 1 });
         }
       });
     }
 
     return Array.from(foldersMap.values()).filter(f => f.count > 0 || f.id !== null);
+  }
+
+  get carpetasCompartidasConmigo(): any[] {
+    const list: any[] = [];
+    this.etiquetasList.forEach(e => {
+      if (e.es_compartida_conmigo) {
+        const c = (this.resumenStats?.etiquetas && this.resumenStats.etiquetas[e.id!]) ? Number(this.resumenStats.etiquetas[e.id!]) : 0;
+        list.push({
+          ...e,
+          id: e.id!,
+          nombre: e.nombre,
+          color: e.color || '#8b5cf6',
+          count: c
+        });
+      }
+    });
+    return list;
+  }
+
+  get carpetasPorEtiqueta(): any[] {
+    return this.carpetasMisEtiquetas;
   }
 
   get carpetasPorAnioMes(): any[] {
@@ -1545,22 +1602,13 @@ export class FirmasListaComponent implements OnInit {
     const map = new Map<string, { nombre: string, count: number }>();
 
     this.documentos.forEach(doc => {
-      const procesosDoc = new Set<string>();
-      if (doc.destinatarios) {
-        doc.destinatarios.forEach(d => {
-          if (d.proceso_nombre) procesosDoc.add(d.proceso_nombre.trim());
-        });
-      }
-      if (doc.etiqueta?.proceso?.nombre) {
-        procesosDoc.add(doc.etiqueta.proceso.nombre.trim());
-      }
-
-      procesosDoc.forEach(pName => {
+      const pName = doc.etiqueta?.proceso?.nombre ? doc.etiqueta.proceso.nombre.trim() : null;
+      if (pName) {
         if (!map.has(pName)) {
           map.set(pName, { nombre: pName, count: 0 });
         }
         map.get(pName)!.count++;
-      });
+      }
     });
 
     return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -1591,11 +1639,6 @@ export class FirmasListaComponent implements OnInit {
 
     const set = new Set<string>();
     this.documentos.forEach(doc => {
-      if (doc.destinatarios) {
-        doc.destinatarios.forEach(d => {
-          if (d.proceso_nombre) set.add(d.proceso_nombre.trim());
-        });
-      }
       if (doc.etiqueta?.proceso?.nombre) {
         set.add(doc.etiqueta.proceso.nombre.trim());
       }
@@ -1665,9 +1708,269 @@ export class FirmasListaComponent implements OnInit {
     this.filtroAnio = '';
     this.filtroMes = '';
     this.filtroProceso = '';
+    this.filtroParticipacion = '';
     this.search = '';
     this.viewMode = 'folders';
     this.currentPage = 1;
     this.cargarDocumentos();
+  }
+
+  /**
+   * Determina si el usuario logueado tiene permisos de creador o admin para gestionar el documento
+   */
+  puedeGestionarDoc(doc: any): boolean {
+    if (!doc) return false;
+    if (this.esAdmin || this.esTecnologia) return true;
+    const currentUserId = this.authService.user?.id;
+    if (doc.creador_id && currentUserId && Number(doc.creador_id) === Number(currentUserId)) {
+      return true;
+    }
+    const currentUserEmail = (this.authService.user?.email || '').toLowerCase().trim();
+    if (currentUserEmail && doc.email_creador && doc.email_creador.toLowerCase().trim() === currentUserEmail) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Obtiene la relación de firmante del usuario actual en un documento
+   */
+  getMiParticipacion(doc: any): { esFirmante: boolean; estado?: string; token?: string; boxes?: any[] } {
+    if (!doc || !doc.destinatarios || !Array.isArray(doc.destinatarios)) {
+      return { esFirmante: false };
+    }
+    const currentUserId = this.authService.user?.id;
+    const currentUserEmail = (this.authService.user?.email || '').toLowerCase().trim();
+
+    const misBoxes = doc.destinatarios.filter((d: any) => {
+      if (currentUserId && d.colaborador_id && Number(d.colaborador_id) === Number(currentUserId)) {
+        return true;
+      }
+      if (currentUserEmail && d.email_destinatario && d.email_destinatario.toLowerCase().trim() === currentUserEmail) {
+        return true;
+      }
+      return false;
+    });
+
+    if (misBoxes.length === 0) {
+      return { esFirmante: false };
+    }
+
+    const pendiente = misBoxes.find((b: any) => b.estado === 'PENDIENTE');
+    const token = pendiente?.token_firma || misBoxes[0]?.token_firma;
+    const estado = pendiente ? 'PENDIENTE' : (misBoxes.every((b: any) => b.estado === 'FIRMADO') ? 'FIRMADO' : misBoxes[0]?.estado);
+
+    return {
+      esFirmante: true,
+      estado,
+      token,
+      boxes: misBoxes
+    };
+  }
+
+  /**
+   * Verifica si un grupo de firmantes agrupados por persona corresponde al usuario autenticado
+   */
+  isMiUsuarioGroup(group: any): boolean {
+    if (!group) return false;
+    const currentUserId = this.authService.user?.id;
+    const currentUserEmail = (this.authService.user?.email || '').toLowerCase().trim();
+
+    if (currentUserId && group.boxes?.some((b: any) => b.colaborador_id && Number(b.colaborador_id) === Number(currentUserId))) {
+      return true;
+    }
+    if (currentUserEmail && group.email_destinatario && group.email_destinatario.toLowerCase().trim() === currentUserEmail) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Abre directamente la pantalla de firma para el token del firmante actual en nueva pestaña
+   */
+  abrirFirmarDocumento(token?: string): void {
+    if (!token) {
+      Swal.fire('Firma no disponible', 'No se encontró un token válido para firmar este documento.', 'info');
+      return;
+    }
+    window.open(`/firmar-publico/${token}`, '_blank');
+  }
+
+  /**
+   * Filtrar por tipo de participación (Todos, Firmados por mí, Por firmar, Creados por mí)
+   */
+  filtrarParticipacion(tipo: string): void {
+    this.filtroParticipacion = tipo;
+    this.currentPage = 1;
+    if (this.viewMode === 'folders') {
+      this.viewMode = 'grid';
+    }
+    this.cargarDocumentos(true);
+  }
+
+  getParticipacionLabel(): string {
+    switch (this.filtroParticipacion) {
+      case 'firmados_por_mi': return 'Firmados por mí';
+      case 'por_firmar': return 'Pendientes de mi firma';
+      case 'creados_por_mi': return 'Mis solicitudes creadas';
+      default: return 'Todos los documentos';
+    }
+  }
+
+  get countMisFirmados(): number {
+    return this.resumenStats?.participacion?.firmados ?? 0;
+  }
+
+  get countMisPorFirmar(): number {
+    return this.resumenStats?.participacion?.por_firmar ?? 0;
+  }
+
+  get countMisCreados(): number {
+    return this.resumenStats?.participacion?.creados ?? 0;
+  }
+
+  // ============================
+  // MÉTODOS PARA COMPARTIR CARPETAS
+  // ============================
+  abrirModalCompartirCarpeta(folder: any, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (!folder || !folder.id) {
+      Swal.fire('Información', 'La carpeta General no se puede compartir individualmente.', 'info');
+      return;
+    }
+    this.etiquetaParaCompartir = folder;
+    this.miembrosCompartidosEtiqueta = [];
+    this.colaboradorSeleccionadoParaCompartir = null;
+    this.busquedaColaboradorCompartir = '';
+    this.rolSeleccionadoParaCompartir = 'EDITOR';
+    this.mostrarDropdownCompartir = false;
+    this.mostrarModalCompartirCarpeta = true;
+    this.cargarMiembrosEtiqueta(folder.id);
+  }
+
+  cerrarModalCompartirCarpeta(): void {
+    this.mostrarModalCompartirCarpeta = false;
+    this.etiquetaParaCompartir = null;
+    this.miembrosCompartidosEtiqueta = [];
+    this.colaboradorSeleccionadoParaCompartir = null;
+    this.busquedaColaboradorCompartir = '';
+    this.mostrarDropdownCompartir = false;
+  }
+
+  cargarMiembrosEtiqueta(etiquetaId: number): void {
+    this.cargandoMiembrosEtiqueta = true;
+    this.docFirmaService.getMiembrosEtiqueta(etiquetaId).subscribe({
+      next: (res: any) => {
+        this.miembrosCompartidosEtiqueta = res.data || [];
+        this.cargandoMiembrosEtiqueta = false;
+      },
+      error: (err: any) => {
+        console.error('Error cargando miembros de la carpeta:', err);
+        this.cargandoMiembrosEtiqueta = false;
+      }
+    });
+  }
+
+  onBusquedaColaboradorCompartirChange(): void {
+    const q = (this.busquedaColaboradorCompartir || '').toLowerCase().trim();
+    if (!q) {
+      this.colaboradoresFiltradosCompartir = [];
+      this.mostrarDropdownCompartir = false;
+      return;
+    }
+    const currentUserId = this.authService.user?.id;
+    const yaMiembrosIds = this.miembrosCompartidosEtiqueta.map((m: any) => m.id);
+
+    this.colaboradoresFiltradosCompartir = this.colaboradoresList.filter((c: any) => {
+      if (currentUserId && Number(c.id) === Number(currentUserId)) return false;
+      if (yaMiembrosIds.includes(c.id)) return false;
+      const full = `${c.nombres || c.firstName || ''} ${c.apellidos || c.lastName || ''}`.toLowerCase();
+      const email = (c.correo_corporativo || c.correo_personal || c.email || '').toLowerCase();
+      return full.includes(q) || email.includes(q);
+    }).slice(0, 8);
+
+    this.mostrarDropdownCompartir = this.colaboradoresFiltradosCompartir.length > 0;
+  }
+
+  seleccionarColaboradorCompartir(colab: any): void {
+    this.colaboradorSeleccionadoParaCompartir = colab;
+    this.busquedaColaboradorCompartir = `${colab.nombres || colab.firstName} ${colab.apellidos || colab.lastName}`;
+    this.mostrarDropdownCompartir = false;
+  }
+
+  limpiarColaboradorCompartir(): void {
+    this.colaboradorSeleccionadoParaCompartir = null;
+    this.busquedaColaboradorCompartir = '';
+    this.colaboradoresFiltradosCompartir = [];
+    this.mostrarDropdownCompartir = false;
+  }
+
+  agregarColaboradorCarpeta(): void {
+    if (!this.etiquetaParaCompartir?.id) return;
+    if (!this.colaboradorSeleccionadoParaCompartir) {
+      Swal.fire('Atención', 'Por favor busca y selecciona un colaborador de la lista desplegable.', 'warning');
+      return;
+    }
+
+    this.guardandoCompartir = true;
+    const payload = [{
+      colaborador_id: this.colaboradorSeleccionadoParaCompartir.id,
+      rol: this.rolSeleccionadoParaCompartir || 'EDITOR'
+    }];
+
+    this.docFirmaService.compartirEtiqueta(this.etiquetaParaCompartir.id, payload).subscribe({
+      next: (res: any) => {
+        Swal.fire({
+          icon: 'success',
+          title: '¡Carpeta compartida!',
+          text: `Se ha otorgado acceso a ${this.colaboradorSeleccionadoParaCompartir.nombres || this.colaboradorSeleccionadoParaCompartir.firstName}`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        this.guardandoCompartir = false;
+        this.limpiarColaboradorCompartir();
+        this.cargarMiembrosEtiqueta(this.etiquetaParaCompartir.id);
+        this.cargarEtiquetas();
+      },
+      error: (err: any) => {
+        this.guardandoCompartir = false;
+        Swal.fire('Error', err.error?.message || 'No fue posible compartir la carpeta', 'error');
+      }
+    });
+  }
+
+  removerColaboradorCarpeta(colaboradorId: number): void {
+    if (!this.etiquetaParaCompartir?.id) return;
+
+    Swal.fire({
+      title: '¿Revocar acceso?',
+      text: 'El colaborador dejará de tener acceso a los documentos de esta carpeta.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, revocar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444'
+    }).then((r) => {
+      if (r.isConfirmed) {
+        this.docFirmaService.removerCompartidoEtiqueta(this.etiquetaParaCompartir.id, colaboradorId).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Acceso revocado',
+              timer: 1500,
+              showConfirmButton: false
+            });
+            this.cargarMiembrosEtiqueta(this.etiquetaParaCompartir.id);
+            this.cargarEtiquetas();
+          },
+          error: (err: any) => {
+            Swal.fire('Error', err.error?.message || 'Error al remover colaborador', 'error');
+          }
+        });
+      }
+    });
   }
 }

@@ -132,14 +132,14 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // ── Carga de usuarios ────────────────────────────────────────────────────────
+  // ── Carga de usuarios (solo miembros del equipo/proceso) ─────────────────────────
   cargarUsuarios(): void {
     if (this.usuarios.length > 0) return;
-    this.userService.getAll().pipe(takeUntil(this.destroy$)).subscribe(users => {
-      this.usuarios = users.map(u => ({
+    this.userService.getAllBasic(true, this.userId).pipe(takeUntil(this.destroy$)).subscribe(users => {
+      this.usuarios = (users || []).map(u => ({
         id: u.id!,
-        nombre: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || `User ${u.id}`,
-        email: (u as any).correo_corporativo || u.email || '',
+        nombre: u.nombre_completo || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || `User ${u.id}`,
+        email: u.email || u.correo_corporativo || '',
       }));
       this.cdr.markForCheck();
     });

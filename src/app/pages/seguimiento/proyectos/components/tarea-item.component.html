@@ -42,7 +42,10 @@
     </div>
 
     <!-- Fecha -->
-    <div class="relative flex-shrink-0">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <div *ngIf="tarea.created_at" class="text-[9px] font-bold text-slate-400 whitespace-nowrap hidden sm:block" title="Fecha de creación">
+        <i class="mdi mdi-calendar-plus mr-0.5"></i>Creada: {{ tarea.created_at | date:'dd/MM/yy' }}
+      </div>
       <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega"
         class="text-[10px] font-bold text-slate-600 border-2 border-slate-50 rounded-lg px-2 py-1.5 outline-none
                focus:border-amber-400 bg-slate-50/50 focus:bg-white transition-all shadow-xs">
@@ -176,6 +179,10 @@
           class="text-[7px] font-black text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-lg border border-emerald-100 uppercase tracking-widest hover:bg-emerald-100 transition-colors cursor-pointer">
           <i class="mdi mdi-attachment mr-1"></i>{{ tarea.evidencias_count }} Adjuntos
         </span>
+        <div *ngIf="tarea.created_at" class="flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 rounded-lg text-slate-500 border border-slate-100 text-[9px] font-bold" title="Fecha de creación de la tarea">
+          <i class="mdi mdi-calendar-plus text-slate-400"></i>
+          Creada: {{ tarea.created_at | date:'dd MMM, yyyy' }}
+        </div>
         <div *ngIf="tarea.fecha_limite_entrega" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100 text-[9px] font-bold">
           <i class="mdi mdi-calendar-clock text-blue-500"></i>
           {{ tarea.fecha_limite_entrega | date:'dd MMM, HH:mm':'UTC' }}

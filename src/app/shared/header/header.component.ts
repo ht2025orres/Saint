@@ -309,7 +309,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
             icon: 'bi bi-kanban',
             subInterfaces: [
               { label: 'Seguimiento Financiero', link: '/seguimiento-proyectos/proyectos-activos', permissions: [1, 56, 57] },
-              { label: 'Seguimiento de Proyectos', link: '/seguimiento', modules: [8], permissions: [1] },
+              { label: 'Gestión de proyectos', link: '/seguimiento', modules: [8], permissions: [1] },
               { label: 'Seguimiento Documentos', link: '/seguimiento-documentos', modules: [10], permissions: [1, 50, 51] },
             ]
           },

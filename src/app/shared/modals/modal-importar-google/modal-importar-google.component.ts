@@ -99,10 +99,13 @@ export class ModalImportarGoogleComponent implements OnChanges {
         next: (resp) => {
           this.loadingEventos = false;
           if (resp.success) {
+            const userConsultado = this.usuarios.find(u => u.email === this.selectedEmail);
+            const defaultResponsableId = userConsultado ? userConsultado.id : (this.usuarioActualId || undefined);
+
             this.eventos = (resp.items || []).map(ev => ({
               ...ev,
               seleccionado: false,
-              responsable_id: this.usuarioActualId || undefined,
+              responsable_id: defaultResponsableId,
               fecha_limite: ev.start ? ev.start.replace('T', ' ').slice(0, 16) : undefined,
               notas: ''
             }));
@@ -155,6 +158,13 @@ export class ModalImportarGoogleComponent implements OnChanges {
     return this.eventos.filter(e => e.seleccionado && !e.ya_importado).length;
   }
 
+  toggleEvento(e: GoogleCalendarEventoImport): void {
+    if (e.ya_importado) return;
+    e.seleccionado = !e.seleccionado;
+    this.actualizarEstadoTodos();
+    this.cdr.markForCheck();
+  }
+
   toggleSeleccionarTodos(): void {
     this.todosSeleccionados = !this.todosSeleccionados;
     this.eventosFiltrados.forEach(e => {
@@ -162,6 +172,13 @@ export class ModalImportarGoogleComponent implements OnChanges {
         e.seleccionado = this.todosSeleccionados;
       }
     });
+    this.cdr.markForCheck();
+  }
+
+  actualizarEstadoTodos(): void {
+    const disponibles = this.eventosFiltrados.filter(e => !e.ya_importado);
+    this.todosSeleccionados = disponibles.length > 0 && disponibles.every(e => e.seleccionado);
+    this.cdr.markForCheck();
   }
 
   aplicarResponsableMasivo(): void {

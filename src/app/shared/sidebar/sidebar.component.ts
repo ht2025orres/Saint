@@ -142,7 +142,7 @@ export class SidebarComponent implements OnInit, AfterViewInit, OnDestroy {
         permissions: [1]
       },
       {
-        label: 'Seguimiento de Proyectos',
+        label: 'Gestión de proyectos',
         icon: 'bi bi-kanban',
         link: '/seguimiento',
         modules: [8],

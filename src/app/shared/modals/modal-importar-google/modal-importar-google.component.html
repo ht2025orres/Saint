@@ -49,9 +49,9 @@
                     [(ngModel)]="selectedEmail"
                     (change)="consultarEventos()"
                     class="w-full text-xs font-semibold px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all">
-              <option value="">-- Seleccionar colaborador --</option>
+              <option value="">-- Miembro de mi equipo --</option>
               <option *ngFor="let u of usuarios" [value]="u.email || u.nombre">
-                {{ u.nombre }} {{ u.email ? '(' + u.email + ')' : '' }}
+                {{ u.nombre }} {{ u.email ? '(' + u.email + ')' : '(Sin correo)' }}
               </option>
             </select>
           </div>
@@ -89,11 +89,14 @@
            class="pt-3 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
         
         <div class="flex items-center gap-3">
-          <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-700 select-none">
-            <input type="checkbox"
-                   [checked]="todosSeleccionados"
-                   (change)="toggleSeleccionarTodos()"
-                   class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
+          <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-700 select-none py-1 px-2.5 rounded-lg hover:bg-slate-100/80 transition-colors">
+            <div class="relative flex items-center justify-center shrink-0">
+              <input type="checkbox"
+                     [checked]="todosSeleccionados"
+                     (change)="toggleSeleccionarTodos()"
+                     class="peer appearance-none w-5 h-5 rounded-md border-2 border-slate-300 bg-white checked:bg-indigo-600 checked:border-indigo-600 transition-all cursor-pointer">
+              <i class="bi bi-check-lg text-white absolute scale-0 peer-checked:scale-100 transition-transform pointer-events-none text-xs font-black"></i>
+            </div>
             <span>Seleccionar disponibles</span>
           </label>
           <span class="text-slate-400">|</span>
@@ -156,20 +159,27 @@
              class="group p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
              [ngClass]="{
                'bg-slate-50/70 border-slate-200 opacity-60': e.ya_importado,
-               'bg-indigo-50/30 border-indigo-200 shadow-sm': e.seleccionado && !e.ya_importado,
-               'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm': !e.seleccionado && !e.ya_importado
+               'bg-indigo-50/60 border-indigo-300 shadow-sm ring-1 ring-indigo-200': e.seleccionado && !e.ya_importado,
+               'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm': !e.seleccionado && !e.ya_importado
              }">
 
-          <!-- Checkbox y datos principales -->
-          <div class="flex items-start gap-3 flex-1 min-w-0">
-            <input type="checkbox"
-                   [(ngModel)]="e.seleccionado"
-                   [disabled]="e.ya_importado"
-                   class="mt-1 w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 disabled:opacity-40 cursor-pointer">
+          <!-- Checkbox y datos principales (Click para seleccionar) -->
+          <div class="flex items-start gap-3.5 flex-1 min-w-0">
+            <!-- Checkbox visible y estilizado -->
+            <label class="relative flex items-center justify-center shrink-0 mt-0.5 cursor-pointer"
+                   [ngClass]="{'cursor-not-allowed opacity-40': e.ya_importado}">
+              <input type="checkbox"
+                     [checked]="e.seleccionado"
+                     (change)="toggleEvento(e)"
+                     [disabled]="e.ya_importado"
+                     class="peer appearance-none w-5 h-5 rounded-md border-2 border-slate-300 bg-white checked:bg-indigo-600 checked:border-indigo-600 disabled:bg-slate-200 disabled:border-slate-300 disabled:cursor-not-allowed transition-all cursor-pointer">
+              <i class="bi bi-check-lg text-white absolute scale-0 peer-checked:scale-100 transition-transform pointer-events-none text-xs font-black"></i>
+            </label>
 
-            <div class="flex-1 min-w-0">
+            <!-- Datos del evento (Click en el texto también selecciona) -->
+            <div class="flex-1 min-w-0 cursor-pointer select-none" (click)="toggleEvento(e)">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="font-bold text-xs text-slate-800 truncate" [title]="e.summary">
+                <span class="font-bold text-xs text-slate-800 group-hover:text-indigo-600 transition-colors truncate" [title]="e.summary">
                   {{ e.summary || '(Sin título)' }}
                 </span>
                 
@@ -179,8 +189,8 @@
                   <i class="bi bi-check-circle-fill"></i> Ya en Saint
                 </span>
                 <span *ngIf="!e.ya_importado"
-                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                  Google Calendar
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 flex items-center gap-1">
+                  <i class="bi bi-google"></i> Google Calendar
                 </span>
               </div>
 
@@ -196,15 +206,15 @@
             </div>
           </div>
 
-          <!-- Controles de la tarea: Fecha y Responsable -->
-          <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+          <!-- Controles de la tarea: Fecha y Responsable (Click aquí no altera la selección) -->
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0" (click)="$event.stopPropagation()">
             <!-- Fecha de entrega -->
             <div class="flex flex-col">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha Entrega</span>
               <input type="datetime-local"
                      [(ngModel)]="e.fecha_limite"
                      [disabled]="e.ya_importado"
-                     class="text-xs font-semibold px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 disabled:bg-slate-100">
+                     class="text-xs font-semibold px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 disabled:bg-slate-100 focus:outline-none focus:border-indigo-500">
             </div>
 
             <!-- Asignar Responsable -->
@@ -212,7 +222,7 @@
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Responsable</span>
               <select [(ngModel)]="e.responsable_id"
                       [disabled]="e.ya_importado"
-                      class="text-xs font-semibold px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 disabled:bg-slate-100 max-w-[140px] truncate">
+                      class="text-xs font-semibold px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 disabled:bg-slate-100 max-w-[150px] truncate focus:outline-none focus:border-indigo-500">
                 <option [ngValue]="undefined">-- Seleccionar --</option>
                 <option *ngFor="let u of usuarios" [value]="u.id">{{ u.nombre }}</option>
               </select>

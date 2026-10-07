@@ -15,10 +15,18 @@
           [ngClass]="state.getSemaforoClass(detalle?.semaforo)"></span>
         <div class="min-w-0">
           <h2 class="text-base font-bold text-gray-900 truncate">{{ detalle?.titulo }}</h2>
-          <div class="flex items-center gap-2 mt-0.5">
+          <div class="flex items-center gap-3 mt-0.5 flex-wrap">
             <span *ngIf="detalle" class="text-xs px-2 py-0.5 rounded-full"
               [ngClass]="state.getEstadoBadgeClass(detalle.estado)">
               {{ detalle.estado | uppercase }}
+            </span>
+            <span *ngIf="detalle?.creador_nombre || detalle?.usuario_creador_id" class="text-xs text-slate-600 font-bold flex items-center gap-1">
+              <i class="mdi mdi-account-circle-outline text-indigo-500"></i>
+              Creado por: <strong class="text-slate-800">{{ detalle?.creador_nombre || state.nombreUsuario(detalle!.usuario_creador_id) || ('Usuario #' + detalle?.usuario_creador_id) }}</strong>
+            </span>
+            <span *ngIf="detalle?.created_at" class="text-xs text-slate-400 font-semibold flex items-center gap-1">
+              <i class="mdi mdi-calendar-plus text-slate-400"></i>
+              {{ detalle?.created_at | date:'dd MMM, yyyy' }}
             </span>
           </div>
         </div>
