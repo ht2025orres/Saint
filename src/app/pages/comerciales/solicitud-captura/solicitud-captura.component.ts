@@ -1540,6 +1540,21 @@ export class SolicitudCapturaComponent implements OnInit, OnDestroy {
     }
   }
 
+  onStepperOpmGuardada(event: any): void {
+    if (this.itemSeleccionadoParaConfigurar) {
+      this.itemSeleccionadoParaConfigurar.technical_spec_id = event.technicalSpecId;
+      this.itemSeleccionadoParaConfigurar.opm_reference = event.reference;
+      this.itemSeleccionadoParaConfigurar.total_sam_time = event.samTime;
+      if (event.tallas && Array.isArray(event.tallas)) {
+        this.itemSeleccionadoParaConfigurar.tallas = event.tallas;
+      }
+      this.mostrarMensaje(`OPM ${event.reference} vinculada exitosamente.`);
+    }
+    this.saveToLocalStorage();
+    this.mostrarModalConfiguradorPrenda = false;
+    this.cdr.detectChanges();
+  }
+
   onSpecSavedParaItem(specId: number): void {
     if (this.itemSeleccionadoParaConfigurar) {
       this.itemSeleccionadoParaConfigurar.technical_spec_id = specId;

@@ -27,6 +27,8 @@ interface LocalItem {
   moldId: number | null;
   moldName: string;
   technicalSpecId: number | null;
+  opmReference?: string;
+  totalSamTime?: number;
   specExpanded: boolean;
   availableMolds: any[];
   activeTab?: 'tallas' | 'molde';
@@ -636,6 +638,18 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       this.items[index].draftComponents = components;
       this.saveToLocalStorage();
     }
+  }
+
+  onItemOpmSaved(index: number, event: any): void {
+    const item = this.items[index];
+    if (!item) return;
+    item.technicalSpecId = event.technicalSpecId;
+    item.opmReference = event.reference;
+    item.totalSamTime = event.samTime;
+    if (event.tallas && Array.isArray(event.tallas)) {
+      item.tallas = event.tallas;
+    }
+    this.saveToLocalStorage();
   }
 
   onItemSpecSaved(index: number, specId: number): void {

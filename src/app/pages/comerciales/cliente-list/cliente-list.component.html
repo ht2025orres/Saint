@@ -34,8 +34,15 @@
             <i class="bi bi-people-fill text-indigo-600"></i>
           </div>
           <div>
-            <div class="text-xl font-black text-slate-900">{{ clientesConPendientes.length }}</div>
-            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Clientes Activos</div>
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-xl font-black text-slate-900">{{ todosClientesConPendientes.length }}</span>
+              <span *ngIf="totalClientesConPendientes > 0" class="text-xs font-bold text-amber-600">
+                ({{ totalClientesConPendientes }} pendientes)
+              </span>
+            </div>
+            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+              Clientes con Actividad ({{ periodoActividadAnios === 1 ? 'Último año' : (periodoActividadAnios ? 'Últimos ' + periodoActividadAnios + ' años' : 'Histórico Completo') }})
+            </div>
           </div>
         </div>
       </div>
@@ -67,18 +74,18 @@
     <div class="flex items-center gap-1 mb-5">
       <div class="flex bg-white p-1 rounded-xl border border-slate-100 shadow-sm">
         <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
+                [ngClass]="viewMode === 'clientes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
+                (click)="switchView('clientes')">
+          <i class="bi bi-people mr-1.5"></i> Directorio de Clientes
+          <span *ngIf="todosClientesConPendientes.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
+                [ngClass]="viewMode === 'clientes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'">{{ todosClientesConPendientes.length }}</span>
+        </button>
+        <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
                 [ngClass]="viewMode === 'solicitudes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
                 (click)="switchView('solicitudes')">
           <i class="bi bi-file-earmark-text mr-1.5"></i> Solicitudes
           <span *ngIf="solicitudes.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
                 [ngClass]="viewMode === 'solicitudes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'">{{ solicitudes.length }}</span>
-        </button>
-        <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
-                [ngClass]="viewMode === 'clientes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
-                (click)="switchView('clientes')">
-          <i class="bi bi-people mr-1.5"></i> Clientes con Pendientes
-          <span *ngIf="clientesConPendientes.length" class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
-                [ngClass]="viewMode === 'clientes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'">{{ clientesConPendientes.length }}</span>
         </button>
         <button class="px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200"
                 [ngClass]="viewMode === 'ordenes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'"
@@ -90,10 +97,11 @@
       </div>
     </div>
 
-    <!-- ==================== TAB: CLIENTES CON PENDIENTES ==================== -->
+    <!-- ==================== TAB: CLIENTES ==================== -->
     <div *ngIf="viewMode === 'clientes'">
-      <!-- Search -->
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+      <!-- Search & Filters -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
+        <!-- Buscador -->
         <div class="relative flex-1">
           <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
           <input type="text"
@@ -105,6 +113,43 @@
                   (click)="searchTerm = ''; applyClienteFilters()">
             <i class="bi bi-x-circle-fill"></i>
           </button>
+        </div>
+
+        <!-- Controles: Selector de Actividad Siesa + Todos vs Pendientes -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Selector Período de Actividad Reciente -->
+          <div class="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs shrink-0">
+            <span class="text-[11px] font-bold text-slate-400 pl-2 pr-0.5 flex items-center gap-1">
+              <i class="bi bi-clock-history text-indigo-500"></i> Actividad:
+            </span>
+            <select
+              [(ngModel)]="periodoActividadAnios"
+              (change)="cambiarPeriodoActividad(+periodoActividadAnios)"
+              class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2.5 py-1.5 outline-none hover:bg-slate-100 transition-colors cursor-pointer">
+              <option [value]="1">Último año</option>
+              <option [value]="2">Últimos 2 años</option>
+              <option [value]="3">Últimos 3 años</option>
+              <option [value]="0">Todo el histórico</option>
+            </select>
+          </div>
+
+          <!-- Segmented Control: Todos los Clientes vs Con Pendientes -->
+          <div class="flex items-center bg-white p-1 rounded-xl border border-slate-200 shadow-2xs shrink-0">
+            <button
+              type="button"
+              (click)="setFiltroClientesTipo('todos')"
+              [ngClass]="filtroClientesTipo === 'todos' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
+              <i class="bi bi-people-fill"></i> Todos ({{ todosClientesConPendientes.length }})
+            </button>
+            <button
+              type="button"
+              (click)="setFiltroClientesTipo('pendientes')"
+              [ngClass]="filtroClientesTipo === 'pendientes' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+              class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
+              <i class="bi bi-hourglass-split"></i> Solo con Pendientes ({{ totalClientesConPendientes }})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -176,16 +221,26 @@
         <div class="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
           <i class="bi bi-inbox text-3xl text-slate-300"></i>
         </div>
-        <h3 class="text-base font-bold text-slate-700 mb-1">Sin clientes con pendientes</h3>
-        <p class="text-xs text-slate-400 mb-5">Todos los clientes están al día. Puedes crear una nueva solicitud o capturar una OC.</p>
+        <h3 class="text-base font-bold text-slate-700 mb-1">
+          {{ filtroClientesTipo === 'pendientes' ? 'Sin clientes con pendientes' : 'No se encontraron clientes' }}
+        </h3>
+        <p class="text-xs text-slate-400 mb-5">
+          {{ filtroClientesTipo === 'pendientes' ? 'Todos los clientes están al día con sus solicitudes y órdenes.' : 'Intenta ajustar los términos de búsqueda.' }}
+        </p>
         <div class="flex justify-center gap-3">
-          <button class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-sm"
+          <button *ngIf="filtroClientesTipo === 'pendientes'" 
+                  class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+                  (click)="setFiltroClientesTipo('todos')">
+            <i class="bi bi-people"></i> Ver Todos los Clientes
+          </button>
+          <button *ngIf="searchTerm" 
+                  class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+                  (click)="searchTerm = ''; applyClienteFilters()">
+            <i class="bi bi-x-circle"></i> Limpiar Búsqueda
+          </button>
+          <button class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-sm cursor-pointer"
                   (click)="nuevaSolicitud()">
             <i class="bi bi-plus-lg"></i> Nueva Solicitud
-          </button>
-          <button class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all"
-                  (click)="showAllClientes = !showAllClientes; loadClientes()">
-            <i class="bi bi-people"></i> Ver Todos los Clientes
           </button>
         </div>
       </div>

@@ -1,0 +1,426 @@
+<div class="mold-stepper-container" *ngIf="!loadingMold && mold; else loadingState">
+
+  <!-- ==================== HEADER COMPACTO DEL MOLDE ==================== -->
+  <div class="mold-stepper-header">
+    <div class="header-left">
+      <div class="mold-icon-badge">
+        <i class="bi bi-scissors"></i>
+      </div>
+      <div class="mold-titles">
+        <div class="mold-category-tag">
+          <span class="badge-cat"><i class="bi bi-tag-fill"></i> {{ mold.category?.name || 'Prenda' }}</span>
+          <span *ngIf="item.technicalSpecId || item.technical_spec_id || generatedOpmCode" class="badge-opm-code">
+            <i class="bi bi-check-circle-fill"></i> {{ generatedOpmCode || item.opmReference || item.opm_reference || ('OPM ID: ' + (item.technicalSpecId || item.technical_spec_id)) }}
+          </span>
+        </div>
+        <h3 class="mold-name">{{ mold.name }}</h3>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="sam-counter-box" title="Tiempo estándar total de confección acumulado">
+        <span class="sam-label"><i class="bi bi-clock-history"></i> Tiempo SAM</span>
+        <span class="sam-value">{{ totalSamTime }} <small>min</small></span>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn-action-outline" (click)="onChangeMold.emit()" title="Cambiar de molde base">
+          <i class="bi bi-arrow-repeat"></i> Cambiar
+        </button>
+        <button type="button" class="btn-action-danger" (click)="onRemoveMold.emit()" title="Desvincular molde">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEPPER SUPERIOR CON CHECKS ==================== -->
+  <div class="stepper-nav-bar">
+    <div class="stepper-track">
+      <div *ngFor="let step of steps; let sIdx = index" 
+           class="step-item"
+           [class.active]="activeStepIndex === sIdx"
+           [class.completed]="step.isCompleted"
+           (click)="goToStep(sIdx)">
+        
+        <div class="step-indicator">
+          <i *ngIf="step.isCompleted && activeStepIndex !== sIdx" class="bi bi-check-circle-fill check-icon"></i>
+          <span *ngIf="!step.isCompleted || activeStepIndex === sIdx" class="step-number">{{ sIdx + 1 }}</span>
+        </div>
+
+        <div class="step-text">
+          <span class="step-title">{{ step.title }}</span>
+          <span class="step-subtitle">{{ step.subtitle }}</span>
+        </div>
+
+        <div *ngIf="sIdx < steps.length - 1" class="step-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CUERPO PRINCIPAL DEL ASISTENTE ==================== -->
+  <div class="stepper-body">
+
+    <!-- ── PASOS DE DISEÑO 1 A 5 (VISTA SPLIT: FIGURÍN + OPCIONES) ── -->
+    <div *ngIf="activeStepIndex < 5" class="design-split-grid">
+
+      <!-- COLUMNA IZQUIERDA: FIGURÍN Y ZONAS ANATÓMICAS -->
+      <div class="figurine-column">
+        <div class="figurine-card">
+          <div class="figurine-toolbar">
+            <span class="view-tag">
+              <i class="bi" [ngClass]="activeView === 'front' ? 'bi-front' : 'bi-back'"></i>
+              Vista: <strong>{{ activeView === 'front' ? 'Delantera' : 'Posterior' }}</strong>
+            </span>
+            <button type="button" class="btn-flip-view" (click)="toggleViewManual()" title="Voltear frente/espalda">
+              <i class="bi bi-arrow-left-right"></i> Girar
+            </button>
+          </div>
+
+          <!-- Canvas del Figurín con Ilustración e interactividad SVG -->
+          <div class="figurine-stage">
+            <img [src]="activeImageUrl" 
+                 [alt]="mold.name" 
+                 class="garment-flat-image"
+                 (error)="onImageError()" />
+
+            <!-- Capa de Zonas Anatómicas SVG -->
+            <svg class="zones-svg-layer" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <g *ngFor="let zone of currentActiveZones">
+                <path [attr.d]="getSvgPath(zone)"
+                      class="zone-svg-polygon"
+                      [class.highlighted]="isZoneHighlighted(zone)"
+                      [attr.fill]="isZoneHighlighted(zone) ? 'rgba(79, 70, 229, 0.35)' : 'rgba(148, 163, 184, 0.12)'"
+                      [attr.stroke]="isZoneHighlighted(zone) ? '#4f46e5' : '#94a3b8'"
+                      [attr.stroke-width]="isZoneHighlighted(zone) ? '2' : '0.8'" />
+              </g>
+            </svg>
+          </div>
+
+          <div class="figurine-footer-hint">
+            <i class="bi bi-info-circle"></i> Zona activa: <strong>{{ steps[activeStepIndex]?.title }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: CONFIGURACIÓN DE OPCIONES DE DISEÑO -->
+      <div class="options-column">
+        <div class="options-card">
+          <div class="options-header">
+            <div class="step-header-info">
+              <span class="step-badge">Paso {{ activeStepIndex + 1 }} de 6</span>
+              <h2 class="step-main-title">{{ steps[activeStepIndex]?.title }}</h2>
+              <p class="step-description">Elige la variante de confección que requiere el cliente para esta parte de la prenda.</p>
+            </div>
+          </div>
+
+          <!-- LISTADO DE PARTES DE ESTE PASO -->
+          <div class="step-parts-container">
+            
+            <!-- CASO 1: PASO PECHO (Diferenciar Cartera y Bolsillos) -->
+            <ng-container *ngIf="steps[activeStepIndex].id === 'pecho'">
+              <div *ngFor="let part of steps[activeStepIndex].parts" class="part-block">
+                <div class="part-block-title">
+                  <i class="bi" [ngClass]="isCarteraPart(part) ? 'bi-columns' : 'bi-wallet2'"></i>
+                  <h4>{{ part.name }}</h4>
+                  <span class="badge-part-mandatory" *ngIf="part.is_mandatory">Obligatorio</span>
+                </div>
+
+                <!-- Grid de Opciones de Tipo -->
+                <div class="variants-cards-grid">
+                  <div *ngFor="let type of part.types" 
+                       class="variant-card"
+                       [class.selected]="isTypeSelected(part.id, type.id)"
+                       (click)="selectTypeForPart(part, type)">
+                    
+                    <div class="variant-card-head">
+                      <div class="radio-indicator">
+                        <i class="bi bi-check-circle-fill" *ngIf="isTypeSelected(part.id, type.id)"></i>
+                        <span class="radio-circle" *ngIf="!isTypeSelected(part.id, type.id)"></span>
+                      </div>
+                      <span class="variant-name">{{ type.name }}</span>
+                    </div>
+
+                    <p *ngIf="type.technical_description" class="variant-desc">
+                      {{ type.technical_description }}
+                    </p>
+
+                    <div class="variant-card-foot">
+                      <span class="variant-time-pill" *ngIf="type.total_time">
+                        <i class="bi bi-clock"></i> +{{ type.total_time }} min
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- CASO 2: PASO MANGAS (Con toggle opcional para diferenciar izquierda/derecha) -->
+            <ng-container *ngIf="steps[activeStepIndex].id === 'manga'">
+              <div class="sleeve-toggle-box">
+                <label class="sleeve-toggle-label">
+                  <input type="checkbox" [(ngModel)]="diferenciarMangas" />
+                  <span>Diferenciar diseño de Manga Izquierda y Manga Derecha</span>
+                </label>
+              </div>
+
+              <div *ngFor="let part of steps[activeStepIndex].parts" class="part-block">
+                <div class="part-block-title">
+                  <i class="bi bi-layers"></i>
+                  <h4>{{ part.name }}</h4>
+                </div>
+
+                <div class="variants-cards-grid">
+                  <div *ngFor="let type of part.types" 
+                       class="variant-card"
+                       [class.selected]="isTypeSelected(part.id, type.id)"
+                       (click)="selectTypeForPart(part, type)">
+                    
+                    <div class="variant-card-head">
+                      <div class="radio-indicator">
+                        <i class="bi bi-check-circle-fill" *ngIf="isTypeSelected(part.id, type.id)"></i>
+                        <span class="radio-circle" *ngIf="!isTypeSelected(part.id, type.id)"></span>
+                      </div>
+                      <span class="variant-name">{{ type.name }}</span>
+                    </div>
+
+                    <p *ngIf="type.technical_description" class="variant-desc">
+                      {{ type.technical_description }}
+                    </p>
+
+                    <div class="variant-card-foot">
+                      <span class="variant-time-pill" *ngIf="type.total_time">
+                        <i class="bi bi-clock"></i> +{{ type.total_time }} min
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- CASO 3: PASOS ESTÁNDAR (Cuello, Espalda, Pretina) -->
+            <ng-container *ngIf="steps[activeStepIndex].id !== 'pecho' && steps[activeStepIndex].id !== 'manga'">
+              <div *ngFor="let part of steps[activeStepIndex].parts" class="part-block">
+                <div class="part-block-title">
+                  <i class="bi" [ngClass]="steps[activeStepIndex].icon"></i>
+                  <h4>{{ part.name }}</h4>
+                </div>
+
+                <div class="variants-cards-grid">
+                  <div *ngFor="let type of part.types" 
+                       class="variant-card"
+                       [class.selected]="isTypeSelected(part.id, type.id)"
+                       (click)="selectTypeForPart(part, type)">
+                    
+                    <div class="variant-card-head">
+                      <div class="radio-indicator">
+                        <i class="bi bi-check-circle-fill" *ngIf="isTypeSelected(part.id, type.id)"></i>
+                        <span class="radio-circle" *ngIf="!isTypeSelected(part.id, type.id)"></span>
+                      </div>
+                      <span class="variant-name">{{ type.name }}</span>
+                    </div>
+
+                    <p *ngIf="type.technical_description" class="variant-desc">
+                      {{ type.technical_description }}
+                    </p>
+
+                    <div class="variant-card-foot">
+                      <span class="variant-time-pill" *ngIf="type.total_time">
+                        <i class="bi bi-clock"></i> +{{ type.total_time }} min
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- CAMPO DE OBSERVACIONES ESPECÍFICAS DE ESTA ZONA -->
+            <div class="zone-observations-box">
+              <label class="obs-label">
+                <i class="bi bi-chat-left-text"></i> Observaciones para {{ steps[activeStepIndex]?.title }} (Opcional):
+              </label>
+              <textarea class="form-textarea obs-textarea"
+                        rows="2"
+                        placeholder="Ej. Bordado corporativo en solapa, costura doble pespunte, hilo color contraste..."
+                        [(ngModel)]="zoneObservations[steps[activeStepIndex].id]">
+              </textarea>
+            </div>
+
+          </div>
+
+          <!-- FOOTER DE NAVEGACIÓN DEL PASO -->
+          <div class="step-nav-footer">
+            <button type="button" 
+                    class="btn-nav-prev" 
+                    *ngIf="activeStepIndex > 0"
+                    (click)="prevStep()">
+              <i class="bi bi-chevron-left"></i> Anterior
+            </button>
+            <div class="flex-spacer"></div>
+            <button type="button" 
+                    class="btn-nav-next" 
+                    (click)="nextStep()">
+              <span>Validar y Siguiente</span>
+              <i class="bi bi-check-lg"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── PASO 6: RESUMEN FINAL, TALLAS Y CANTIDADES ── -->
+    <div *ngIf="activeStepIndex === 5" class="summary-step-view">
+      
+      <div class="summary-hero-card">
+        <div class="summary-hero-header">
+          <div class="hero-left">
+            <span class="step-badge">Paso 6 de 6 · Cierre de Configuración</span>
+            <h2 class="hero-title">Resumen de Diseño y Distribución de Tallas</h2>
+            <p class="hero-subtitle">Revisa las elecciones de confección para esta muestra y define las cantidades por talla.</p>
+          </div>
+          <div class="hero-right">
+            <div class="hero-sam-stat">
+              <span class="stat-num">{{ totalSamTime }}</span>
+              <span class="stat-unit">minutos SAM</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-content-grid">
+
+          <!-- COLUMNA 1: FICHA RESUMEN DE LAS 5 ZONAS -->
+          <div class="summary-specs-column">
+            <h4 class="column-subtitle"><i class="bi bi-card-checklist"></i> Especificaciones de Diseño</h4>
+
+            <div class="specs-summary-list">
+              <div *ngFor="let s of steps.slice(0, 5); let stepIdx = index" 
+                   class="spec-summary-item"
+                   (click)="goToStep(stepIdx)">
+                
+                <div class="spec-item-icon">
+                  <i class="bi" [ngClass]="s.icon"></i>
+                </div>
+
+                <div class="spec-item-body">
+                  <div class="spec-zone-title">{{ s.title }}</div>
+                  
+                  <div class="spec-variants-list">
+                    <span *ngFor="let p of s.parts" class="variant-tag">
+                      <strong>{{ p.name }}:</strong> 
+                      {{ selectedTypes[p.id]?.name || 'Por defecto' }}
+                      <small *ngIf="selectedTypes[p.id]?.total_time">({{ selectedTypes[p.id].total_time }} min)</small>
+                    </span>
+                  </div>
+
+                  <div *ngIf="zoneObservations[s.id]" class="spec-obs-snippet">
+                    <i class="bi bi-chat-quote"></i> <em>"{{ zoneObservations[s.id] }}"</em>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-edit-step" title="Editar este paso">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMNA 2: MATRIZ DE TALLAS Y CANTIDADES -->
+          <div class="summary-tallas-column">
+            <div class="tallas-box-header">
+              <h4 class="column-subtitle"><i class="bi bi-rulers"></i> Cantidades por Talla</h4>
+              <span class="tallas-total-pill">
+                <strong>{{ getItemTotal() }}</strong> uds. totales
+              </span>
+            </div>
+
+            <!-- Selector Rápido de Tallas Predefinidas -->
+            <div class="quick-tallas-bar">
+              <span class="quick-label">Agregar talla:</span>
+              <div class="quick-chips">
+                <button *ngFor="let tl of tallasLetra" 
+                        type="button" 
+                        class="chip-talla"
+                        (click)="addTallaPreset(tl)">
+                  + {{ tl }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Matriz Editable de Tallas Asignadas -->
+            <div class="tallas-matrix-card">
+              <div *ngIf="!item.tallas || item.tallas.length === 0" class="empty-tallas-notice">
+                <i class="bi bi-exclamation-circle text-amber-500"></i>
+                <span>Haz clic en las tallas arriba para ingresar las cantidades de la muestra.</span>
+              </div>
+
+              <div *ngIf="item.tallas && item.tallas.length > 0" class="tallas-grid">
+                <div *ngFor="let t of item.tallas; let ti = index" class="talla-cell">
+                  <div class="talla-cell-header">
+                    <span class="talla-badge">{{ t.talla }}</span>
+                    <button type="button" class="btn-delete-talla" (click)="removeTalla(ti)">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+                  <div class="talla-input-wrap">
+                    <input type="number" 
+                           class="form-input talla-input"
+                           min="1" 
+                           [(ngModel)]="t.cantidad" />
+                    <span class="unit-tag">uds</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Talla Personalizada -->
+            <div class="custom-talla-row">
+              <input type="text" 
+                     class="form-input form-input-sm" 
+                     placeholder="Talla numérica u otra (ej. 32, 34)..."
+                     [(ngModel)]="customTallaInput"
+                     (keyup.enter)="addCustomTalla()" />
+              <button type="button" class="btn-add-custom" (click)="addCustomTalla()">
+                <i class="bi bi-plus-lg"></i> Añadir
+              </button>
+            </div>
+
+            <!-- ACCIÓN DE GENERAR OPM -->
+            <div class="opm-action-banner">
+              <div *ngIf="opmSuccess" class="opm-ready-box">
+                <i class="bi bi-patch-check-fill text-emerald-600 text-2xl"></i>
+                <div>
+                  <div class="opm-ready-title">OPM Vinculada Exitosamente</div>
+                  <div class="opm-ready-ref">{{ generatedOpmCode }}</div>
+                </div>
+              </div>
+
+              <button type="button" 
+                      class="btn-generate-opm"
+                      [disabled]="isSavingOpm || getItemTotal() <= 0"
+                      (click)="generarOpmFinal()">
+                <i class="bi" [ngClass]="isSavingOpm ? 'bi-hourglass-split' : 'bi-lightning-charge-fill'"></i>
+                <span>{{ isSavingOpm ? 'Generando OPM...' : (opmSuccess ? 'Actualizar OPM y Confirmar' : 'Generar OPM y Confirmar Ítem') }}</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ESTADO DE CARGA -->
+<ng-template #loadingState>
+  <div class="stepper-loading-box">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Cargando información anatómica del molde y librerías de confección...</p>
+  </div>
+</ng-template>
