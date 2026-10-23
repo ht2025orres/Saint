@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { ProyectoService, Informe, InformeTarea, TipoInforme, NivelImpacto } from 'src/app/services/proyectos.service';
 import { SeguimientoStateService } from '../seguimiento-state.service';
 import { InformeForm } from '../modals/modal-informe/modal-informe.component';
@@ -50,6 +50,11 @@ export class InformesComponent implements OnInit, OnDestroy {
   showDetalle = false;
   detalle: Informe | null = null;
   loadingDetalle = false;
+
+  // Evidencias del informe
+  evidencias: any[] = [];
+  loadingEvidencias = false;
+  verHistoricoEvidencias = false;
 
   // Modales
   showModalInforme = false;
@@ -349,12 +354,15 @@ export class InformesComponent implements OnInit, OnDestroy {
   verDetalle(informe: Informe): void {
     this.loadingDetalle = true;
     this.showDetalle = true;
+    this.evidencias = [];
+    this.verHistoricoEvidencias = false;
     this._cdr.markForCheck();
 
     this._proyectoService.getInformeDetalle(informe.id, this.usuarioId).subscribe({
       next: (res) => {
         this.detalle = res.data;
         this.loadingDetalle = false;
+        this.cargarEvidencias();
         this._cdr.markForCheck();
       },
       error: () => {
@@ -368,6 +376,8 @@ export class InformesComponent implements OnInit, OnDestroy {
   cerrarDetalle(): void {
     this.showDetalle = false;
     this.detalle = null;
+    this.evidencias = [];
+    this.verHistoricoEvidencias = false;
     this._cdr.markForCheck();
   }
 
@@ -414,23 +424,37 @@ export class InformesComponent implements OnInit, OnDestroy {
     this.savingInforme = true;
     this._cdr.markForCheck();
 
+    const archivosParaSubir = (form as any).archivos as File[] | undefined;
+
     const body = {
       ...form,
       usuario_id: this.usuarioId
     };
+    delete (body as any).archivos;
 
     const req$ = this.informeParaEditar
       ? this._proyectoService.actualizarInforme(this.informeParaEditar.id, body)
       : this._proyectoService.crearInforme(body);
 
     req$.subscribe({
-      next: () => {
-        this.savingInforme = false;
-        this.showModalInforme = false;
-        this.state.showToast('Informe guardado');
-        this.cargarInformes();
-        if (this.detalle && this.informeParaEditar?.id === this.detalle.id) {
-          this.verDetalle(this.detalle);
+      next: (res: any) => {
+        const nuevoInformeId = this.informeParaEditar ? this.informeParaEditar.id : res.data?.id;
+
+        if (archivosParaSubir && archivosParaSubir.length > 0 && nuevoInformeId) {
+          const uploads$ = archivosParaSubir.map(file => 
+            this._proyectoService.subirEvidencia('informe', nuevoInformeId, file, this.usuarioId)
+          );
+          forkJoin(uploads$).subscribe({
+            next: () => {
+              this.finalizarGuardadoInforme();
+            },
+            error: () => {
+              this.state.showToast('Informe guardado, pero ocurrió un problema al adjuntar algunos archivos', 'warning');
+              this.finalizarGuardadoInforme();
+            }
+          });
+        } else {
+          this.finalizarGuardadoInforme();
         }
       },
       error: () => {
@@ -439,6 +463,17 @@ export class InformesComponent implements OnInit, OnDestroy {
         this._cdr.markForCheck();
       }
     });
+  }
+
+  private finalizarGuardadoInforme(): void {
+    this.savingInforme = false;
+    this.showModalInforme = false;
+    this.state.showToast('Informe guardado');
+    this.cargarInformes();
+    if (this.detalle && this.informeParaEditar?.id === this.detalle.id) {
+      this.verDetalle(this.detalle);
+    }
+    this._cdr.markForCheck();
   }
 
   eliminarInforme(inf: Informe): void {
@@ -534,6 +569,114 @@ export class InformesComponent implements OnInit, OnDestroy {
         this.verDetalle(this.detalle!);
       }
     });
+  }
+
+  // ── ACCIONES EVIDENCIAS ──────────────────────────────────────────
+
+  cargarEvidencias(): void {
+    if (!this.detalle) return;
+    this.loadingEvidencias = true;
+    this._cdr.markForCheck();
+
+    this._proyectoService.getEvidencias('informe', this.detalle.id, this.verHistoricoEvidencias, this.usuarioId).subscribe({
+      next: (res) => {
+        this.evidencias = res.data || [];
+        this.loadingEvidencias = false;
+        this._cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingEvidencias = false;
+        this._cdr.markForCheck();
+      }
+    });
+  }
+
+  onSubirArchivo(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0 || !this.detalle) return;
+
+    const file = input.files[0];
+    this.loadingEvidencias = true;
+    this._cdr.markForCheck();
+
+    this._proyectoService.subirEvidencia('informe', this.detalle.id, file, this.usuarioId).subscribe({
+      next: () => {
+        this.state.showToast('Archivo adjuntado correctamente');
+        this.cargarEvidencias();
+        this.cargarInformes();
+        input.value = '';
+      },
+      error: (err) => {
+        this.loadingEvidencias = false;
+        const msg = err.error?.message || 'Error al subir archivo';
+        this.state.showToast(msg, 'error');
+        input.value = '';
+        this._cdr.markForCheck();
+      }
+    });
+  }
+
+  verEvidencia(ev: any): void {
+    this._proyectoService.getUrlEvidencia(ev.id).subscribe({
+      next: (res) => {
+        if (res.url) {
+          window.open(res.url, '_blank');
+        } else {
+          this.state.showToast('Archivo no disponible', 'error');
+        }
+      },
+      error: () => this.state.showToast('Error al obtener URL del archivo', 'error')
+    });
+  }
+
+  deshabilitarEvidencia(ev: any): void {
+    Swal.fire({
+      title: '¿Deshabilitar archivo?',
+      text: 'El archivo permanecerá en el histórico pero se ocultará del listado activo.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Sí, deshabilitar',
+      cancelButtonText: 'Cancelar'
+    }).then((r) => {
+      if (r.isConfirmed) {
+        this._proyectoService.eliminarEvidencia(ev.id, this.usuarioId).subscribe({
+          next: () => {
+            this.state.showToast('Archivo deshabilitado');
+            this.cargarEvidencias();
+            this.cargarInformes();
+          },
+          error: (err) => {
+            const msg = err.error?.message || 'No se pudo deshabilitar';
+            this.state.showToast(msg, 'error');
+          }
+        });
+      }
+    });
+  }
+
+  restaurarEvidencia(ev: any): void {
+    this._proyectoService.restaurarEvidencia(ev.id, this.usuarioId).subscribe({
+      next: () => {
+        this.state.showToast('Archivo restaurado');
+        this.cargarEvidencias();
+        this.cargarInformes();
+      },
+      error: (err) => {
+        const msg = err.error?.message || 'No se pudo restaurar';
+        this.state.showToast(msg, 'error');
+      }
+    });
+  }
+
+  getIconoArchivo(mime?: string): string {
+    if (!mime) return 'bi bi-file-earmark text-gray-500';
+    if (mime.includes('image')) return 'bi bi-file-earmark-image text-purple-600';
+    if (mime.includes('pdf')) return 'bi bi-file-earmark-pdf text-red-600';
+    if (mime.includes('spreadsheet') || mime.includes('excel') || mime.includes('sheet') || mime.includes('csv')) return 'bi bi-file-earmark-excel text-emerald-600';
+    if (mime.includes('word') || mime.includes('document')) return 'bi bi-file-earmark-word text-blue-600';
+    if (mime.includes('zip') || mime.includes('rar') || mime.includes('compressed')) return 'bi bi-file-earmark-zip text-amber-600';
+    return 'bi bi-file-earmark-text text-gray-600';
   }
 
   // ── DESCARGA PDF ──────────────────────────────────────────────────

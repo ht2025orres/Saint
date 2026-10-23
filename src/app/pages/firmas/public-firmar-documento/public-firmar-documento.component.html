@@ -58,50 +58,97 @@
   <div *ngIf="!loading && errorMessage"
     class="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto w-full my-auto animate-in zoom-in-95 duration-200">
     
-    <!-- TARJETA ESPECIAL SI EL DOCUMENTO FUE ELIMINADO / MOVIDO A LA PAPELERA -->
-    <div *ngIf="errorData?.eliminado || errorData?.razon; else defaultErrorCard"
-         class="w-full bg-white rounded-3xl border border-rose-200 shadow-2xl p-6 sm:p-8 flex flex-col items-center gap-4 relative overflow-hidden">
+    <!-- TARJETA ESPECIAL SI EL ENLACE HA EXPIRADO -->
+    <div *ngIf="errorData?.expirado; else nonExpiredCheck"
+         class="w-full bg-white rounded-3xl border border-amber-200 shadow-2xl p-6 sm:p-8 flex flex-col items-center gap-4 relative overflow-hidden">
       
-      <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600"></div>
+      <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600"></div>
 
-      <div class="w-16 h-16 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 text-3xl shadow-sm">
-        <i class="bi bi-trash3-fill"></i>
+      <div class="w-16 h-16 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center text-amber-600 text-3xl shadow-sm">
+        <i class="bi bi-clock-history"></i>
       </div>
 
       <div>
-        <span class="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full inline-block mb-1.5">
-          Documento Anulado / Movido a la Papelera
+        <span class="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full inline-block mb-1.5">
+          Enlace Expirado por Límite de Tiempo
         </span>
         <h2 class="text-lg sm:text-xl font-black text-slate-900">
-          {{ errorData?.titulo || 'Solicitud de Firma Cancelada' }}
+          {{ errorData?.titulo || 'Solicitud de Firma Electrónica' }}
         </h2>
       </div>
 
-      <!-- RECUADRO DESTACADO CON LA RAZÓN DE ELIMINACIÓN -->
-      <div class="w-full bg-amber-50/80 border border-amber-300/80 rounded-2xl p-4 text-left flex flex-col gap-2 shadow-xs">
-        <div class="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
+      <div class="w-full bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 text-left flex flex-col gap-2.5 shadow-xs">
+        <div *ngIf="errorData?.solicitante" class="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
           <span class="text-[11px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-            <i class="bi bi-info-circle-fill text-amber-600 text-xs"></i> Motivo de Anulación
+            <i class="bi bi-person-fill text-amber-600"></i> Solicitante
           </span>
-          <span *ngIf="errorData?.solicitante" class="text-[10px] font-bold text-slate-600">
-            Por: <span class="text-slate-900 font-extrabold">{{ errorData.solicitante }}</span>
-          </span>
+          <span class="text-xs font-bold text-slate-800">{{ errorData.solicitante }}</span>
         </div>
-        
-        <p class="text-xs text-amber-950 font-bold leading-relaxed italic bg-white/60 p-3 rounded-xl border border-amber-200/50">
-          "{{ errorData?.razon || errorMessage }}"
+
+        <p class="text-xs text-amber-950 font-medium leading-relaxed bg-white/70 p-3 rounded-xl border border-amber-200/60">
+          {{ errorMessage }}
         </p>
 
-        <span class="text-[10px] text-amber-800 font-medium">
-          ℹ️ Este documento fue movido a la papelera por quien solicitó la firma y ya no acepta firmas electrónicas.
-        </span>
+        <div class="text-[11px] text-amber-900 bg-amber-100/70 p-2.5 rounded-xl border border-amber-200/80 flex items-start gap-2">
+          <i class="bi bi-info-circle-fill text-amber-600 mt-0.5 shrink-0 text-xs"></i>
+          <span>
+            <strong>¿Cómo renovar tu enlace?</strong> Comunícate con quien te envió la solicitud para que ingrese al módulo de firmas y haga clic en <strong>"Reenviar invitación"</strong>. Esto generará un acceso renovado automáticamente.
+          </span>
+        </div>
       </div>
 
-      <button (click)="irASaint()" type="button"
-        class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-1">
-        <i class="bi bi-house-door-fill"></i> Ir a Saint System
+      <button (click)="cerrarPestana()" type="button"
+        class="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-sm transition-all flex items-center justify-center gap-2 mt-1">
+        <i class="bi bi-x-circle text-slate-500"></i> Cerrar Pestaña
       </button>
     </div>
+
+    <!-- TARJETA ESPECIAL SI EL DOCUMENTO FUE ELIMINADO / MOVIDO A LA PAPELERA -->
+    <ng-template #nonExpiredCheck>
+      <div *ngIf="errorData?.eliminado || errorData?.razon; else defaultErrorCard"
+           class="w-full bg-white rounded-3xl border border-rose-200 shadow-2xl p-6 sm:p-8 flex flex-col items-center gap-4 relative overflow-hidden">
+        
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600"></div>
+
+        <div class="w-16 h-16 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-center text-rose-600 text-3xl shadow-sm">
+          <i class="bi bi-trash3-fill"></i>
+        </div>
+
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full inline-block mb-1.5">
+            Documento Anulado / Movido a la Papelera
+          </span>
+          <h2 class="text-lg sm:text-xl font-black text-slate-900">
+            {{ errorData?.titulo || 'Solicitud de Firma Cancelada' }}
+          </h2>
+        </div>
+
+        <!-- RECUADRO DESTACADO CON LA RAZÓN DE ELIMINACIÓN -->
+        <div class="w-full bg-amber-50/80 border border-amber-300/80 rounded-2xl p-4 text-left flex flex-col gap-2 shadow-xs">
+          <div class="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
+            <span class="text-[11px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="bi bi-info-circle-fill text-amber-600 text-xs"></i> Motivo de Anulación
+            </span>
+            <span *ngIf="errorData?.solicitante" class="text-[10px] font-bold text-slate-600">
+              Por: <span class="text-slate-900 font-extrabold">{{ errorData.solicitante }}</span>
+            </span>
+          </div>
+          
+          <p class="text-xs text-amber-950 font-bold leading-relaxed italic bg-white/60 p-3 rounded-xl border border-amber-200/50">
+            "{{ errorData?.razon || errorMessage }}"
+          </p>
+
+          <span class="text-[10px] text-amber-800 font-medium">
+            ℹ️ Este documento fue movido a la papelera por quien solicitó la firma y ya no acepta firmas electrónicas.
+          </span>
+        </div>
+
+        <button (click)="irASaint()" type="button"
+          class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-1">
+          <i class="bi bi-house-door-fill"></i> Ir a Saint System
+        </button>
+      </div>
+    </ng-template>
 
     <!-- TARJETA GENÉRICA DE ERROR -->
     <ng-template #defaultErrorCard>

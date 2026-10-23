@@ -1,379 +1,356 @@
-<div class="bg-gray-50 p-6 min-h-screen">
-  <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Semáforo de Centros de Costo</h1>
-      <p class="text-gray-600">Monitoreo presupuestal jerárquico</p>
-    </div>
+<div class="bg-slate-50 min-h-screen p-4 sm:p-6 text-slate-800">
+  <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- Breadcrumb -->
-    <div class="mb-4 flex items-center gap-2 text-sm text-gray-600">
-      <button (click)="volverAProcesos()" 
-              [class.font-semibold]="vistaActual === 'procesos'"
-              [class.text-blue-600]="vistaActual !== 'procesos'"
-              class="hover:text-blue-700">
-        Procesos
-      </button>
-      <span *ngIf="procesoSeleccionado">›</span>
-      <button *ngIf="procesoSeleccionado" 
-              (click)="volverAGrupos()"
-              [class.font-semibold]="vistaActual === 'grupos'"
-              [class.text-blue-600]="vistaActual !== 'grupos'"
-              class="hover:text-blue-700">
-        {{ procesoSeleccionado.nombre }}
-      </button>
-      <span *ngIf="grupoSeleccionado">›</span>
-      <button *ngIf="grupoSeleccionado"
-              (click)="volverAConceptos()"
-              [class.font-semibold]="vistaActual === 'conceptos'"
-              [class.text-blue-600]="vistaActual !== 'conceptos'"
-              class="hover:text-blue-700">
-        {{ grupoSeleccionado.nombre }}
-      </button>
-      <span *ngIf="conceptoSeleccionado">›</span>
-      <span *ngIf="conceptoSeleccionado" class="font-semibold text-gray-900">
-        {{ conceptoSeleccionado.nombre }}
-      </span>
-    </div>
+    <!-- ==================== HEADER Y SELECTOR DE PERÍODO ==================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+            <i class="bi bi-pie-chart-fill text-lg"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Semáforo de Centros de Costo</h1>
+              <span *ngIf="filters.area === 'comercial'" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <i class="bi bi-briefcase-fill text-[10px]"></i> Área Comercial
+              </span>
+              <span *ngIf="filters.area === 'todos'" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">
+                <i class="bi bi-building text-[10px]"></i> Toda la Empresa
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Control presupuestal y ejecución en tiempo real desde Siesa</p>
+          </div>
+        </div>
+      </div>
 
-    <div *ngIf="isLoading" class="bg-white rounded-lg shadow p-8 text-center">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      <p class="mt-4 text-gray-600">Cargando...</p>
-    </div>
+      <!-- Controles: Selector de Área + Período -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Selector Área Comercial / Todos -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button
+            type="button"
+            (click)="setArea('comercial')"
+            [class]="filters.area === 'comercial' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-briefcase-fill"></i> Comercial
+          </button>
+          <button
+            type="button"
+            (click)="setArea('todos')"
+            [class]="filters.area === 'todos' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+            class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-building"></i> Toda la Empresa
+          </button>
+        </div>
 
-    <div *ngIf="!isLoading">
-      <!-- Filtros Fecha -->
-      <div class="bg-white rounded-lg shadow mb-6 p-4">
-        <div class="flex gap-2 items-center">
-          <label class="text-sm font-medium text-gray-700">Período:</label>
-          <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.ano" (change)="onFechaChange()">
+        <!-- Selector Período y Recargar -->
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+          <span class="text-xs font-semibold text-slate-500 px-1.5 flex items-center gap-1">
+            <i class="bi bi-calendar3 text-slate-400"></i> Período:
+          </span>
+          <select
+            class="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm cursor-pointer"
+            [(ngModel)]="filters.mes"
+            (change)="onFechaChange()">
+            <option [value]="1">Enero</option>
+            <option [value]="2">Febrero</option>
+            <option [value]="3">Marzo</option>
+            <option [value]="4">Abril</option>
+            <option [value]="5">Mayo</option>
+            <option [value]="6">Junio</option>
+            <option [value]="7">Julio</option>
+            <option [value]="8">Agosto</option>
+            <option [value]="9">Septiembre</option>
+            <option [value]="10">Octubre</option>
+            <option [value]="11">Noviembre</option>
+            <option [value]="12">Diciembre</option>
+          </select>
+          <select
+            class="bg-white border border-slate-300 text-slate-800 text-xs font-semibold rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm cursor-pointer"
+            [(ngModel)]="filters.ano"
+            (change)="onFechaChange()">
+            <option [value]="anoActual - 2">{{ anoActual - 2 }}</option>
             <option [value]="anoActual - 1">{{ anoActual - 1 }}</option>
             <option [value]="anoActual">{{ anoActual }}</option>
             <option [value]="anoActual + 1">{{ anoActual + 1 }}</option>
           </select>
-          <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.mes" (change)="onFechaChange()">
-            <option [value]="1">Ene</option>
-            <option [value]="2">Feb</option>
-            <option [value]="3">Mar</option>
-            <option [value]="4">Abr</option>
-            <option [value]="5">May</option>
-            <option [value]="6">Jun</option>
-            <option [value]="7">Jul</option>
-            <option [value]="8">Ago</option>
-            <option [value]="9">Sep</option>
-            <option [value]="10">Oct</option>
-            <option [value]="11">Nov</option>
-            <option [value]="12">Dic</option>
+          <button
+            (click)="cargarDatos()"
+            title="Actualizar datos desde Siesa"
+            class="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors cursor-pointer">
+            <i class="bi bi-arrow-clockwise text-base" [class.animate-spin]="isLoading"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TARJETAS KPI ==================== -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- KPI 1: Presupuesto -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Presupuesto</span>
+          <div class="text-lg sm:text-2xl font-bold text-slate-900 mt-1">
+            ${{ kpis.totalPresupuesto | number:'1.0-0' }}
+          </div>
+          <span class="text-[11px] text-slate-400 mt-0.5 block">Asignado para el período</span>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+          <i class="bi bi-wallet2"></i>
+        </div>
+      </div>
+
+      <!-- KPI 2: Real -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Gasto Real</span>
+          <div class="text-lg sm:text-2xl font-bold text-slate-900 mt-1">
+            ${{ kpis.totalReal | number:'1.0-0' }}
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="text-[11px] font-semibold"
+              [class.text-emerald-600]="kpis.porcentajeGlobal <= 80"
+              [class.text-amber-600]="kpis.porcentajeGlobal > 80 && kpis.porcentajeGlobal <= 95"
+              [class.text-rose-600]="kpis.porcentajeGlobal > 95">
+              {{ kpis.porcentajeGlobal | number:'1.1-1' }}%
+            </span>
+            <span class="text-[11px] text-slate-400">ejecutado</span>
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+      </div>
+
+      <!-- KPI 3: Diferencia / Balance -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Balance / Diferencia</span>
+          <div class="text-lg sm:text-2xl font-bold mt-1"
+            [class.text-emerald-600]="kpis.totalDiferencia >= 0"
+            [class.text-rose-600]="kpis.totalDiferencia < 0">
+            ${{ kpis.totalDiferencia | number:'1.0-0' }}
+          </div>
+          <span class="text-[11px] text-slate-400 mt-0.5 block">
+            {{ kpis.totalDiferencia >= 0 ? 'Superávit / Disponible' : 'Sobrecosto acumulado' }}
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+          [class.bg-emerald-50]="kpis.totalDiferencia >= 0"
+          [class.text-emerald-600]="kpis.totalDiferencia >= 0"
+          [class.bg-rose-50]="kpis.totalDiferencia < 0"
+          [class.text-rose-600]="kpis.totalDiferencia < 0">
+          <i class="bi" [class.bi-graph-up-arrow]="kpis.totalDiferencia >= 0" [class.bi-graph-down-arrow]="kpis.totalDiferencia < 0"></i>
+        </div>
+      </div>
+
+      <!-- KPI 4: Conteo Semáforo -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-2">Estado de Cuentas</span>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex-1 bg-emerald-50 border border-emerald-200 rounded-xl p-2 text-center">
+            <span class="text-[10px] font-bold text-emerald-800 uppercase block">🟢 Verde</span>
+            <span class="text-base font-bold text-emerald-700">{{ kpis.conteoVerde }}</span>
+          </div>
+          <div class="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-2 text-center">
+            <span class="text-[10px] font-bold text-amber-800 uppercase block">🟡 Alerta</span>
+            <span class="text-base font-bold text-amber-700">{{ kpis.conteoAmarillo }}</span>
+          </div>
+          <div class="flex-1 bg-rose-50 border border-rose-200 rounded-xl p-2 text-center">
+            <span class="text-[10px] font-bold text-rose-800 uppercase block">🔴 Exceso</span>
+            <span class="text-base font-bold text-rose-700">{{ kpis.conteoRojo }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== BARRA DE FILTROS ==================== -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        <!-- Buscador -->
+        <div class="md:col-span-5 relative">
+          <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input
+            type="text"
+            class="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all"
+            placeholder="Buscar por cuenta, auxiliar, centro de costo o responsable..."
+            [(ngModel)]="filters.busqueda"
+            (input)="applyFilters()">
+        </div>
+
+        <!-- Filtro Centro de Costo -->
+        <div class="md:col-span-4">
+          <select
+            class="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all cursor-pointer"
+            [(ngModel)]="filters.centroCosto"
+            (change)="applyFilters()">
+            <option value="">Todos los Centros de Costo ({{ centrosCostosUnicos.length }})</option>
+            <option *ngFor="let cc of centrosCostosUnicos" [value]="cc">{{ cc }}</option>
           </select>
         </div>
-      </div>
 
-      <!-- Vista Procesos -->
-      <div *ngIf="vistaActual === 'procesos'">
-        <div class="mb-4 flex justify-end">
-          <button (click)="abrirModalProceso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <i class="bi bi-plus-lg mr-2"></i>Nuevo Proceso
+        <!-- Filtro Semáforo -->
+        <div class="md:col-span-2">
+          <select
+            class="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all cursor-pointer"
+            [(ngModel)]="filters.semaforo"
+            (change)="applyFilters()">
+            <option value="">Todos los estados</option>
+            <option value="verde">🟢 Verde (&le; 80%)</option>
+            <option value="amarillo">🟡 Amarillo (81% - 95%)</option>
+            <option value="rojo">🔴 Rojo (&gt; 95% o sobrecosto)</option>
+          </select>
+        </div>
+
+        <!-- Botón Limpiar -->
+        <div class="md:col-span-1 flex justify-end">
+          <button
+            (click)="limpiarFiltros()"
+            title="Limpiar filtros"
+            class="w-full py-2 px-3 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center justify-center gap-1">
+            <i class="bi bi-x-circle"></i>
+            <span class="md:hidden">Limpiar</span>
           </button>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div *ngFor="let proceso of procesos" 
-               class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer"
-               (click)="verGrupos(proceso)">
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900">{{ proceso.nombre }}</h3>
-                <p *ngIf="proceso.responsable" class="text-sm text-gray-500 mt-1">
-                  <i class="bi bi-person"></i> {{ proceso.responsable }}
-                </p>
-              </div>
-              <div class="flex gap-2" (click)="$event.stopPropagation()">
-                <button (click)="abrirModalProceso(proceso)" class="text-blue-600 hover:text-blue-800">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button (click)="eliminarProceso(proceso.id)" class="text-red-600 hover:text-red-800">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </div>
-            
-            <p *ngIf="proceso.descripcion" class="text-sm text-gray-600 mb-4">{{ proceso.descripcion }}</p>
-            
-            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div>
-                <p class="text-gray-500">Presupuesto</p>
-                <p class="font-semibold">{{ proceso.presupuesto | number:'1.2-2' }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">Real</p>
-                <p class="font-semibold">{{ proceso.real | number:'1.2-2' }}</p>
-              </div>
-            </div>
-            
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500">{{ proceso.total_grupos }} grupos</span>
-              <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(proceso.semaforo)">
-                {{ proceso.porcentaje.toFixed(2) }}%
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
+    </div>
 
-      <!-- Vista Grupos -->
-      <div *ngIf="vistaActual === 'grupos'">
-        <div class="mb-4 flex justify-between items-center">
-          <h2 class="text-xl font-semibold">Grupos: {{ procesoSeleccionado?.nombre }}</h2>
-          <button (click)="abrirModalGrupo()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <i class="bi bi-plus-lg mr-2"></i>Nuevo Grupo
-          </button>
-        </div>
+    <!-- ==================== SPINNER CARGA ==================== -->
+    <div *ngIf="isLoading" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+      <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-emerald-500 border-t-transparent"></div>
+      <h3 class="text-base font-bold text-slate-800 mt-4">Consultando Siesa...</h3>
+      <p class="text-xs text-slate-500 mt-1">Calculando ejecución presupuestal del período seleccionado.</p>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div *ngFor="let grupo of grupos" 
-               class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer"
-               (click)="verConceptos(grupo)">
-            <div class="flex justify-between items-start mb-4">
-              <h3 class="text-lg font-semibold text-gray-900">{{ grupo.nombre }}</h3>
-              <div class="flex gap-2" (click)="$event.stopPropagation()">
-                <button (click)="abrirModalGrupo(grupo)" class="text-blue-600 hover:text-blue-800">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button (click)="eliminarGrupo(grupo.id)" class="text-red-600 hover:text-red-800">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </div>
-            
-            <p *ngIf="grupo.descripcion" class="text-sm text-gray-600 mb-4">{{ grupo.descripcion }}</p>
-            
-            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div>
-                <p class="text-gray-500">Presupuesto</p>
-                <p class="font-semibold">{{ grupo.presupuesto | number:'1.2-2' }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">Real</p>
-                <p class="font-semibold">{{ grupo.real | number:'1.2-2' }}</p>
-              </div>
-            </div>
-            
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-gray-500">{{ grupo.total_conceptos }} conceptos</span>
-              <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(grupo.semaforo)">
-                {{ grupo.porcentaje.toFixed(2) }}%
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- ==================== TABLA DE RESULTADOS ==================== -->
+    <div *ngIf="!isLoading && currentCentros.length > 0" class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-100/80 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+              <th class="py-3.5 px-4 text-center w-24">Semáforo</th>
+              <th class="py-3.5 px-4">Cuenta / Auxiliar</th>
+              <th class="py-3.5 px-4">Centro de Costo</th>
+              <th class="py-3.5 px-4 text-right">Presupuesto</th>
+              <th class="py-3.5 px-4 text-right">Real</th>
+              <th class="py-3.5 px-4 text-right">Diferencia</th>
+              <th class="py-3.5 px-4 text-center w-28">% Ejecución</th>
+              <th class="py-3.5 px-4">Responsable</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs">
+            <tr *ngFor="let item of currentCentros" class="hover:bg-slate-50/80 transition-colors">
+              <!-- Semáforo Badge -->
+              <td class="py-3 px-4 text-center">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] shadow-2xs" [ngClass]="getSemaforoClass(item.semaforo)">
+                  <span class="w-1.5 h-1.5 rounded-full" [ngClass]="getSemaforoBadgeDot(item.semaforo)"></span>
+                  {{ getSemaforoLabel(item.semaforo) }}
+                </span>
+              </td>
 
-      <!-- Vista Conceptos -->
-      <div *ngIf="vistaActual === 'conceptos'">
-        <div class="mb-4 flex justify-between items-center">
-          <h2 class="text-xl font-semibold">Conceptos: {{ grupoSeleccionado?.nombre }}</h2>
-          <button (click)="abrirModalConcepto()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <i class="bi bi-plus-lg mr-2"></i>Nuevo Concepto
-          </button>
-        </div>
+              <!-- Cuenta & Auxiliar -->
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-900">{{ item.cuenta }}</div>
+                <div class="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                  <span *ngIf="item.codigo_auxiliar" class="font-mono text-slate-400 bg-slate-100 px-1 py-0.5 rounded text-[10px]">{{ item.codigo_auxiliar }}</span>
+                  <span>{{ item.desc_auxiliar || 'Sin descripción auxiliar' }}</span>
+                </div>
+              </td>
 
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-          <table class="w-full">
-            <thead class="bg-gray-50 border-b">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Concepto</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Presupuesto</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Real</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Ejecución</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cuentas</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y">
-              <tr *ngFor="let concepto of conceptos" class="hover:bg-gray-50 cursor-pointer" (click)="verDetalle(concepto)">
-                <td class="px-4 py-4">
-                  <div class="font-medium text-gray-900">{{ concepto.nombre }}</div>
-                  <div *ngIf="concepto.descripcion" class="text-sm text-gray-500">{{ concepto.descripcion }}</div>
-                </td>
-                <td class="px-4 py-4 text-right font-medium">{{ concepto.presupuesto | number:'1.2-2' }}</td>
-                <td class="px-4 py-4 text-right font-medium">{{ concepto.real | number:'1.2-2' }}</td>
-                <td class="px-4 py-4 text-center">
-                  <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(concepto.semaforo)">
-                    {{ concepto.porcentaje.toFixed(2) }}%
+              <!-- Centro de Costo -->
+              <td class="py-3 px-4">
+                <span class="inline-flex items-center gap-1.5 text-slate-700 font-semibold bg-slate-100/90 border border-slate-200/60 px-2 py-0.5 rounded-lg text-[11px]">
+                  <i class="bi bi-building text-slate-400"></i>
+                  {{ item.desc_ccosto || 'General' }}
+                </span>
+              </td>
+
+              <!-- Presupuesto -->
+              <td class="py-3 px-4 text-right font-semibold text-slate-800">
+                ${{ item.presupuesto | number:'1.2-2' }}
+              </td>
+
+              <!-- Real -->
+              <td class="py-3 px-4 text-right font-bold text-slate-900">
+                ${{ item.real | number:'1.2-2' }}
+              </td>
+
+              <!-- Diferencia -->
+              <td class="py-3 px-4 text-right font-semibold"
+                [class.text-emerald-600]="item.diferencia >= 0"
+                [class.text-rose-600]="item.diferencia < 0">
+                ${{ item.diferencia | number:'1.2-2' }}
+              </td>
+
+              <!-- % Ejecución con Barra -->
+              <td class="py-3 px-4 text-center">
+                <div class="inline-block w-full max-w-[90px]">
+                  <span class="font-bold text-xs"
+                    [class.text-emerald-700]="item.semaforo === 'verde'"
+                    [class.text-amber-700]="item.semaforo === 'amarillo'"
+                    [class.text-rose-700]="item.semaforo === 'rojo'">
+                    {{ item.porcentaje | number:'1.1-1' }}%
                   </span>
-                </td>
-                <td class="px-4 py-4 text-center text-sm">{{ concepto.total_cuentas }}</td>
-                <td class="px-4 py-4 text-center" (click)="$event.stopPropagation()">
-                  <button (click)="abrirModalConcepto(concepto)" class="text-blue-600 hover:text-blue-800 mr-3">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button (click)="eliminarConcepto(concepto.id)" class="text-red-600 hover:text-red-800">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div class="h-full rounded-full transition-all"
+                      [style.width.%]="item.porcentaje > 100 ? 100 : item.porcentaje"
+                      [class.bg-emerald-500]="item.semaforo === 'verde'"
+                      [class.bg-amber-500]="item.semaforo === 'amarillo'"
+                      [class.bg-rose-500]="item.semaforo === 'rojo'">
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Responsable -->
+              <td class="py-3 px-4 text-slate-600">
+                <div class="flex items-center gap-1.5">
+                  <i class="bi bi-person-circle text-slate-400 text-sm"></i>
+                  <span>{{ item.responsable || 'No asignado' }}</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Vista Detalle -->
-      <div *ngIf="vistaActual === 'detalle'">
-        <div class="bg-white rounded-lg shadow mb-6 p-4">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input type="text" class="px-4 py-2 border rounded-lg" placeholder="Buscar..." 
-                   [(ngModel)]="filters.busqueda" (input)="applyFilters()">
-            <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.centroCosto" (change)="applyFilters()">
-              <option value="">Todos los centros</option>
-              <option *ngFor="let centro of centrosCostosUnicos" [value]="centro">{{ centro }}</option>
-            </select>
-            <select class="px-4 py-2 border rounded-lg" [(ngModel)]="filters.semaforo" (change)="applyFilters()">
-              <option value="">Todos los estados</option>
-              <option value="verde">🟢 Verde (0-80%)</option>
-              <option value="amarillo">🟡 Amarillo (81-95%)</option>
-              <option value="rojo">🔴 Rojo (>95%)</option>
-            </select>
-          </div>
-        </div>
+      <!-- Footer Paginación -->
+      <div class="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+        <p class="text-xs text-slate-500 font-medium">
+          Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalCentros }} registros en este período
+        </p>
 
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-          <table class="w-full">
-            <thead class="bg-gray-50 border-b">
-              <tr>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Estado</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cuenta</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Centro Costo</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Presupuesto</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Real</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Diferencia</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">% Ejecución</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y">
-              <tr *ngFor="let detalle of currentDetalles" class="hover:bg-gray-50">
-                <td class="px-4 py-4 text-center">{{ getSemaforoIcon(detalle.semaforo) }}</td>
-                <td class="px-4 py-4 font-medium">{{ detalle.cuenta }}</td>
-                <td class="px-4 py-4">{{ detalle.desc_auxiliar }}</td>
-                <td class="px-4 py-4">{{ detalle.desc_ccosto }}</td>
-                <td class="px-4 py-4 text-right">{{ detalle.presupuesto | number:'1.2-2' }}</td>
-                <td class="px-4 py-4 text-right">{{ detalle.real | number:'1.2-2' }}</td>
-                <td class="px-4 py-4 text-right" 
-                    [class.text-green-600]="detalle.diferencia >= 0"
-                    [class.text-red-600]="detalle.diferencia < 0">
-                  {{ detalle.diferencia | number:'1.2-2' }}
-                </td>
-                <td class="px-4 py-4 text-center">
-                  <span class="px-3 py-1 text-xs font-semibold rounded-full" [ngClass]="getSemaforoClass(detalle.semaforo)">
-                    {{ detalle.porcentaje.toFixed(2) }}%
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <app-shared-paginator
+          *ngIf="paginationService.getPaginatorState(paginatorId)"
+          [instanceId]="paginatorId"
+          [showPageSizeSelector]="true"
+          [pageSizeOptions]="[25, 50, 100]">
+        </app-shared-paginator>
+      </div>
+    </div>
 
-          <div class="p-4 border-t">
-            <div class="flex justify-between items-center mb-4">
-              <p class="text-sm text-gray-600">
-                Mostrando {{ getStartIndex() }} - {{ getEndIndex() }} de {{ totalDetalles }}
-              </p>
-            </div>
-            <app-shared-paginator *ngIf="paginationService.getPaginatorState(paginatorId)" 
-                                  [instanceId]="paginatorId" [showPageSizeSelector]="true" 
-                                  [pageSizeOptions]="[25, 50, 100]">
-            </app-shared-paginator>
-          </div>
-        </div>
+    <!-- ==================== ESTADO SIN DATOS ==================== -->
+    <div *ngIf="!isLoading && currentCentros.length === 0" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto text-3xl mb-4">
+        <i class="bi bi-inbox"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-800">No hay registros presupuestales</h3>
+      <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+        <span *ngIf="filters.busqueda || filters.centroCosto || filters.semaforo">
+          No se encontraron registros con los filtros aplicados. Intenta restablecer los filtros de búsqueda.
+        </span>
+        <span *ngIf="!filters.busqueda && !filters.centroCosto && !filters.semaforo">
+          No se encontraron movimientos ni presupuesto cargado en Siesa para el período {{ filters.mes }}/{{ filters.ano }}.
+        </span>
+      </p>
+      <div class="mt-4" *ngIf="filters.busqueda || filters.centroCosto || filters.semaforo">
+        <button
+          (click)="limpiarFiltros()"
+          class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 text-white hover:bg-slate-900 transition-colors">
+          Limpiar filtros
+        </button>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Modal Proceso -->
-<div *ngIf="modalProceso.visible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-lg p-6 w-full max-w-md">
-    <h3 class="text-lg font-semibold mb-4">{{ modalProceso.isEdit ? 'Editar' : 'Nuevo' }} Proceso</h3>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">Nombre</label>
-        <input type="text" [(ngModel)]="modalProceso.data.nombre" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Responsable</label>
-        <input type="text" [(ngModel)]="modalProceso.data.responsable" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Descripción</label>
-        <textarea [(ngModel)]="modalProceso.data.descripcion" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Orden</label>
-        <input type="number" [(ngModel)]="modalProceso.data.orden" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-    </div>
-    <div class="mt-6 flex justify-end gap-2">
-      <button (click)="cerrarModalProceso()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
-      <button (click)="guardarProceso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Grupo -->
-<div *ngIf="modalGrupo.visible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-lg p-6 w-full max-w-md">
-    <h3 class="text-lg font-semibold mb-4">{{ modalGrupo.isEdit ? 'Editar' : 'Nuevo' }} Grupo</h3>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">Nombre</label>
-        <input type="text" [(ngModel)]="modalGrupo.data.nombre" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Descripción</label>
-        <textarea [(ngModel)]="modalGrupo.data.descripcion" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Orden</label>
-        <input type="number" [(ngModel)]="modalGrupo.data.orden" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-    </div>
-    <div class="mt-6 flex justify-end gap-2">
-      <button (click)="cerrarModalGrupo()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
-      <button (click)="guardarGrupo()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Concepto -->
-<div *ngIf="modalConcepto.visible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-    <h3 class="text-lg font-semibold mb-4">{{ modalConcepto.isEdit ? 'Editar' : 'Nuevo' }} Concepto</h3>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium mb-1">Nombre</label>
-        <input type="text" [(ngModel)]="modalConcepto.data.nombre" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Descripción</label>
-        <textarea [(ngModel)]="modalConcepto.data.descripcion" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Orden</label>
-        <input type="number" [(ngModel)]="modalConcepto.data.orden" class="w-full px-3 py-2 border rounded-lg">
-      </div>
-      <div>
-        <label class="block text-sm font-medium mb-2">Cuentas ({{ modalConcepto.data.cuentas.length }})</label>
-        <div class="border rounded-lg p-3 max-h-60 overflow-y-auto">
-          <div *ngFor="let cuenta of cuentasDisponibles" class="flex items-center py-1">
-            <input type="checkbox" [checked]="isCuentaSeleccionada(cuenta)" 
-                   (change)="toggleCuenta(cuenta)" class="mr-2">
-            <span class="text-sm">{{ cuenta }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="mt-6 flex justify-end gap-2">
-      <button (click)="cerrarModalConcepto()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
-      <button (click)="guardarConcepto()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
-    </div>
   </div>
 </div>

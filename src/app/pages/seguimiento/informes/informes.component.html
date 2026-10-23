@@ -96,6 +96,9 @@
             <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border" [ngClass]="getPrioridadClass(inf.prioridad)">
               {{ inf.prioridad }}
             </span>
+            <span *ngIf="inf.total_evidencias" class="px-2 py-0.5 text-[9px] font-black text-indigo-700 bg-indigo-50 rounded border border-indigo-100 flex items-center gap-1" title="Archivos adjuntos">
+              <i class="bi bi-paperclip"></i> {{ inf.total_evidencias }}
+            </span>
           </div>
 
           <h3 class="font-extrabold text-gray-900 text-lg leading-tight mb-2 group-hover:text-blue-600 transition-colors">
@@ -148,8 +151,11 @@
                   {{ inf.consecutivo || '#' + inf.id }}
                 </td>
                 <td class="p-6">
-                  <span class="font-extrabold text-gray-900 block text-sm cursor-pointer hover:text-blue-600" (click)="verDetalle(inf)">
+                  <span class="font-extrabold text-gray-900 text-sm cursor-pointer hover:text-blue-600 inline-flex items-center gap-2" (click)="verDetalle(inf)">
                     {{ inf.titulo }}
+                    <span *ngIf="inf.total_evidencias" class="px-1.5 py-0.5 text-[9px] font-black text-indigo-700 bg-indigo-50 rounded border border-indigo-100 inline-flex items-center gap-0.5">
+                      <i class="bi bi-paperclip"></i> {{ inf.total_evidencias }}
+                    </span>
                   </span>
                   <span class="text-xs text-gray-400 line-clamp-1 mt-0.5">{{ stripHtml(inf.descripcion_hallazgo) }}</span>
                 </td>
@@ -443,6 +449,99 @@
           </div>
         </div>
 
+        <!-- Documentos y Evidencias Adjuntas del Hallazgo -->
+        <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <i class="bi bi-paperclip text-xl"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-gray-900 text-lg leading-tight">Documentos y Evidencias</h3>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                  Archivos adjuntos para soporte del hallazgo
+                </p>
+              </div>
+            </div>
+
+            <!-- Toggle Histórico (Gestores) -->
+            <button *ngIf="puedeGestionarModulo" 
+              (click)="verHistoricoEvidencias = !verHistoricoEvidencias; cargarEvidencias()"
+              class="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl transition-all"
+              [ngClass]="verHistoricoEvidencias ? 'bg-amber-100 text-amber-700' : 'text-gray-400 hover:bg-gray-100'">
+              <i class="bi mr-1" [ngClass]="verHistoricoEvidencias ? 'bi-eye-fill' : 'bi-eye-slash'"></i>
+              {{ verHistoricoEvidencias ? 'Viendo Histórico' : 'Ver Histórico' }}
+            </button>
+          </div>
+
+          <!-- Spinner al cargar evidencias -->
+          <div *ngIf="loadingEvidencias" class="flex items-center justify-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+
+          <!-- Listado de Evidencias -->
+          <div *ngIf="!loadingEvidencias && evidencias.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            <div *ngFor="let ev of evidencias" 
+              class="flex items-center justify-between p-3.5 bg-gray-50/70 border border-gray-100 rounded-2xl group hover:bg-gray-50 transition-all shadow-xs"
+              [ngClass]="{'opacity-60 grayscale bg-gray-100': ev.deleted_at}">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-blue-500 shadow-xs flex-shrink-0">
+                  <i class="text-xl" [ngClass]="getIconoArchivo(ev.tipo_mime)"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-gray-800 truncate max-w-[200px]" [title]="ev.nombre_archivo">{{ ev.nombre_archivo }}</p>
+                  <p class="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
+                    Subido {{ ev.created_at | date:'dd MMM, hh:mm a' }}
+                    <span *ngIf="ev.deleted_at" class="text-red-500 ml-1 font-black">— DESHABILITADO</span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button (click)="verEvidencia(ev)" 
+                  class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-500 hover:text-blue-600 hover:border-blue-100 flex items-center justify-center transition-all shadow-xs"
+                  title="Ver / Descargar archivo">
+                  <i class="bi bi-eye"></i>
+                </button>
+                
+                <!-- Botón Deshabilitar -->
+                <button *ngIf="!ev.deleted_at" (click)="deshabilitarEvidencia(ev)"
+                  class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-red-500 hover:border-red-100 flex items-center justify-center transition-all shadow-xs"
+                  title="Deshabilitar archivo">
+                  <i class="bi bi-trash"></i>
+                </button>
+
+                <!-- Botón Restaurar -->
+                <button *ngIf="ev.deleted_at && puedeGestionarModulo" (click)="restaurarEvidencia(ev)"
+                  class="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-all shadow-xs"
+                  title="Restaurar archivo">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!loadingEvidencias && evidencias.length === 0" class="text-center py-6 text-gray-400 text-xs italic">
+            No hay archivos adjuntos en este hallazgo todavía.
+          </div>
+
+          <!-- Zona de Carga (Dropzone) -->
+          <div class="relative">
+            <input type="file" (change)="onSubirArchivo($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="loadingEvidencias">
+            <div class="w-full p-6 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-blue-50/30 hover:border-blue-300 transition-all group">
+              <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                <i class="bi bi-cloud-arrow-up text-xl" *ngIf="!loadingEvidencias"></i>
+                <div *ngIf="loadingEvidencias" class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div class="text-center">
+                <p class="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                  {{ loadingEvidencias ? 'Subiendo archivo...' : 'Haz clic o arrastra para adjuntar documentos o imágenes' }}
+                </p>
+                <p class="text-[9px] text-gray-400 font-bold mt-0.5">Soporta PDF, imágenes PNG/JPG, Excel, Word, CSV, ZIP (Máx. 20MB)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Tareas del Informe -->
         <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
           <div class="flex items-center justify-between mb-8">
@@ -568,6 +667,8 @@
   [informe]="informeParaEditar"
   [saving]="savingInforme"
   [procesos]="procesos"
+  [usuarioId]="usuarioId"
+  [esAdmin]="puedeGestionarModulo"
   (onCerrar)="showModalInforme = false"
   (onGuardar)="onGuardarInforme($event)">
 </app-modal-informe>

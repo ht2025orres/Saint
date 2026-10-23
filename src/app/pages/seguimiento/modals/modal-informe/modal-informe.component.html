@@ -38,6 +38,16 @@
         <i class="bi bi-diagram-3 text-sm"></i>
         2. Análisis y Plan de Acción
       </button>
+      <button type="button" (click)="activeTab = 'evidencias'"
+        [ngClass]="activeTab === 'evidencias' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent text-gray-400 hover:text-gray-600 font-bold'"
+        class="py-3 px-5 border-b-2 text-xs uppercase tracking-widest transition-all focus:outline-none flex items-center gap-2">
+        <i class="bi bi-paperclip text-sm"></i>
+        3. Documentos y Evidencias
+        <span *ngIf="informe ? (evidencias.length > 0) : (archivosSeleccionados.length > 0)"
+          class="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[9px] font-black rounded-full">
+          {{ informe ? evidencias.length : archivosSeleccionados.length }}
+        </span>
+      </button>
     </div>
 
     <!-- Body -->
@@ -190,6 +200,140 @@
                 placeholder="Actividades para dar cumplimiento a la acción propuesta."></textarea>
             </div>
           </div>
+        </div>
+
+        <!-- PESTAÑA 3: DOCUMENTOS Y EVIDENCIAS -->
+        <div [hidden]="activeTab !== 'evidencias'" class="space-y-6 animate-in fade-in duration-300">
+          
+          <div class="p-5 bg-indigo-50/40 rounded-2xl border border-indigo-100/50 flex items-start justify-between gap-4">
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 shrink-0">
+                <i class="bi bi-paperclip text-lg"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-extrabold text-indigo-900 mb-0.5">Soporte Documental del Hallazgo</h4>
+                <p class="text-[11px] text-indigo-700 font-medium">
+                  Adjunta reportes, capturas de pantalla, archivos Excel, PDF o cualquier documento que sirva como soporte técnico del hallazgo.
+                </p>
+              </div>
+            </div>
+
+            <!-- Toggle Histórico (Modo Edición - Admins) -->
+            <button *ngIf="informe && esAdmin" type="button"
+              (click)="verHistoricoEvidencias = !verHistoricoEvidencias; cargarEvidencias()"
+              class="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all shrink-0"
+              [ngClass]="verHistoricoEvidencias ? 'bg-amber-100 text-amber-700' : 'text-gray-400 hover:bg-gray-100'">
+              <i class="bi mr-1" [ngClass]="verHistoricoEvidencias ? 'bi-eye-fill' : 'bi-eye-slash'"></i>
+              {{ verHistoricoEvidencias ? 'Viendo Histórico' : 'Ver Histórico' }}
+            </button>
+          </div>
+
+          <!-- MODO EDICIÓN: Evidencias ya existentes en base de datos -->
+          <div *ngIf="informe" class="space-y-4">
+            
+            <div *ngIf="loadingEvidencias" class="flex justify-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+
+            <div *ngIf="!loadingEvidencias && evidencias.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div *ngFor="let ev of evidencias" 
+                class="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-2xl transition-all"
+                [ngClass]="{'opacity-60 grayscale bg-gray-100': ev.deleted_at}">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-xs flex-shrink-0">
+                    <i class="text-xl" [ngClass]="getIconoArchivo(ev.tipo_mime)"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-bold text-gray-800 truncate max-w-[200px]" [title]="ev.nombre_archivo">{{ ev.nombre_archivo }}</p>
+                    <p class="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
+                      Subido {{ ev.created_at | date:'dd MMM, hh:mm a' }}
+                      <span *ngIf="ev.deleted_at" class="text-red-500 ml-1 font-black">— DESHABILITADO</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <button type="button" (click)="verEvidencia(ev)" 
+                    class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-500 hover:text-blue-600 hover:border-blue-100 flex items-center justify-center transition-all shadow-xs"
+                    title="Ver archivo">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button *ngIf="!ev.deleted_at" type="button" (click)="deshabilitarEvidencia(ev)" 
+                    class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-red-500 hover:border-red-100 flex items-center justify-center transition-all shadow-xs"
+                    title="Deshabilitar archivo">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                  <button *ngIf="ev.deleted_at && esAdmin" type="button" (click)="restaurarEvidencia(ev)" 
+                    class="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-all shadow-xs"
+                    title="Restaurar archivo">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="!loadingEvidencias && evidencias.length === 0" class="text-center py-6 text-gray-400 text-xs italic">
+              No hay archivos adjuntos en este informe todavía.
+            </div>
+
+            <!-- Dropzone para subir archivos inmediatamente en modo edición -->
+            <div class="relative">
+              <input type="file" (change)="onSubirArchivoEdicion($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" [disabled]="loadingEvidencias">
+              <div class="w-full p-6 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-gray-50 hover:border-blue-300 transition-all group">
+                <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                  <i class="bi bi-cloud-arrow-up text-xl" *ngIf="!loadingEvidencias"></i>
+                  <div *ngIf="loadingEvidencias" class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <div class="text-center">
+                  <p class="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                    {{ loadingEvidencias ? 'Subiendo archivo...' : 'Haz clic o arrastra para adjuntar un nuevo archivo' }}
+                  </p>
+                  <p class="text-[9px] text-gray-400 font-bold mt-0.5">Soporta PDF, imágenes, Excel, Word, CSV, ZIP (Máx. 20MB)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODO CREACIÓN: Archivos seleccionados para subir al guardar -->
+          <div *ngIf="!informe" class="space-y-4">
+            
+            <div *ngIf="archivosSeleccionados.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              <div *ngFor="let file of archivosSeleccionados; let idx = index"
+                class="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-2xl">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-xs flex-shrink-0">
+                    <i class="text-xl" [ngClass]="getIconoArchivo(file.type)"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-bold text-gray-800 truncate max-w-[200px]" [title]="file.name">{{ file.name }}</p>
+                    <p class="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
+                      {{ (file.size / 1024) | number:'1.0-1' }} KB — Pendiente por subir
+                    </p>
+                  </div>
+                </div>
+                <button type="button" (click)="quitarArchivo(idx)" 
+                  class="w-8 h-8 rounded-lg bg-white border border-gray-100 text-red-500 hover:bg-red-50 flex items-center justify-center transition-all shadow-xs"
+                  title="Quitar archivo">
+                  <i class="bi bi-x-lg text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="relative">
+              <input type="file" multiple (change)="onSeleccionarArchivos($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+              <div class="w-full p-6 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-gray-50 hover:border-blue-300 transition-all group">
+                <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                  <i class="bi bi-cloud-arrow-up text-xl"></i>
+                </div>
+                <div class="text-center">
+                  <p class="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                    Selecciona o arrastra los archivos que deseas adjuntar al nuevo hallazgo
+                  </p>
+                  <p class="text-[9px] text-gray-400 font-bold mt-0.5">Se subirán automáticamente al presionar "Crear Informe"</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </form>

@@ -849,24 +849,27 @@
 <!-- Modal unificado para mostrar detalle de OP o PV -->
 <!-- Modal unificado para mostrar detalle de OP o PV -->
 <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header" style="background-color: #4F45B1;">
-        <h5 class="modal-title" id="detailModalLabel" style="color: white;">
-          {{ getSelectedItemInfo().title }}
-          <small class="ms-2 badge bg-light text-dark">{{ getSelectedItemInfo().subtitle }}</small>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-4 overflow-hidden">
+      <div class="modal-header py-3 px-4" style="background: linear-gradient(135deg, #4F45B1 0%, #362e85 100%);">
+        <h5 class="modal-title d-flex align-items-center gap-2 mb-0" id="detailModalLabel" style="color: white; font-weight: 700;">
+          <i class="bi" [ngClass]="selectedItemType === 'OP' ? 'bi-gear-wide-connected' : 'bi-receipt'"></i>
+          <span>{{ getSelectedItemInfo().title }}</span>
+          <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 ms-2 fw-medium" style="font-size: 11px;">
+            {{ getSelectedItemInfo().subtitle }}
+          </span>
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <div *ngIf="selectedItem">
-          <!-- Información básica en dos columnas -->
-          <div class="row mb-4">
-            <div class="col-md-6" *ngFor="let detail of getSelectedItemInfo().details.slice(0, Math.ceil(getSelectedItemInfo().details.length/2))">
-              <p><strong>{{ detail.label }}:</strong> {{ detail.value }}</p>
-            </div>
-            <div class="col-md-6" *ngFor="let detail of getSelectedItemInfo().details.slice(Math.ceil(getSelectedItemInfo().details.length/2))">
-              <p><strong>{{ detail.label }}:</strong> {{ detail.value }}</p>
+          <!-- Tarjetas de Información Básica (Resumen PV / OP) -->
+          <div class="row g-2 mb-4">
+            <div class="col-6 col-sm-4 col-md" *ngFor="let detail of getSelectedItemInfo().details">
+              <div class="p-2.5 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between shadow-xs">
+                <span class="text-muted fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">{{ detail.label }}</span>
+                <span class="fw-bold text-dark fs-6 mt-1">{{ detail.value }}</span>
+              </div>
             </div>
           </div>
 
@@ -899,31 +902,46 @@
           </div>
 
           <!-- Contenido específico para PVs con Toggle -->
-          <div *ngIf="selectedItemType === 'PV'" class="mt-4">
-            <!-- Toggle Button para modo PV -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold mb-0">Detalle del PV:</h6>
-              <div class="btn-group" role="group">
-                <input type="radio" class="btn-check" name="modoPV" id="modoRecepcionado" 
-                       [checked]="modoDetallePV === 'recepcionado'" 
-                       (change)="cambiarModoDetallePV('recepcionado')">
-                <label class="btn btn-outline-primary btn-sm" for="modoRecepcionado">
-                  <i class="bi bi-inbox"></i> Recepcionado
-                </label>
+          <div *ngIf="selectedItemType === 'PV'" class="mt-4 pt-2 border-top">
+            <!-- Toggle Button para modo PV (Segmented Control moderno) -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-ui-checks text-primary"></i>
+                <span>Detalle del PV:</span>
+              </h6>
+              
+              <div class="pv-mode-toggle p-1 rounded-pill d-inline-flex align-items-center gap-1 shadow-sm">
+                <button type="button" 
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1.5 border-0"
+                        [ngClass]="modoDetallePV === 'recepcionado' ? 'btn-primary text-white shadow-sm' : 'text-muted bg-transparent'"
+                        (click)="cambiarModoDetallePV('recepcionado')">
+                  <i class="bi bi-inbox-fill"></i>
+                  <span>Recepcionado</span>
+                </button>
                 
-                <input type="radio" class="btn-check" name="modoPV" id="modoEmpacado" 
-                       [checked]="modoDetallePV === 'empacado'" 
-                       (change)="cambiarModoDetallePV('empacado')">
-                <label class="btn btn-outline-success btn-sm" for="modoEmpacado">
-                  <i class="bi bi-box-seam"></i> Empacado
-                </label>
+                <button type="button" 
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1.5 border-0"
+                        [ngClass]="modoDetallePV === 'empacado' ? 'btn-success text-white shadow-sm' : 'text-muted bg-transparent'"
+                        (click)="cambiarModoDetallePV('empacado')">
+                  <i class="bi bi-box-seam-fill"></i>
+                  <span>Empacado</span>
+                  <span *ngIf="empaquesPVDetalle?.length" 
+                        class="badge rounded-pill ms-1 px-1.5 py-0.5"
+                        [ngClass]="modoDetallePV === 'empacado' ? 'bg-white text-success' : 'bg-success text-white'"
+                        style="font-size: 10px;">
+                    {{ empaquesPVDetalle.length }}
+                  </span>
+                </button>
               </div>
             </div>
 
             <!-- Modo Recepcionado -->
             <div *ngIf="modoDetallePV === 'recepcionado'">
-              <div class="mb-3">
-                <input type="text" class="form-control" placeholder="Buscar items..."
+              <div class="input-group mb-3 shadow-none">
+                <span class="input-group-text bg-light border-end-0 text-muted">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="text" class="form-control border-start-0 ps-0" placeholder="Buscar items..."
                   [(ngModel)]="filtersItems.busqueda" (input)="aplicarFiltrosItems()" />
               </div>
 
@@ -968,16 +986,24 @@
 
             <!-- Modo Empacado -->
             <div *ngIf="modoDetallePV === 'empacado'">
-              <div class="mb-3">
-                <input type="text" class="form-control" placeholder="Buscar en empaques..."
+              <div class="input-group mb-3 shadow-none">
+                <span class="input-group-text bg-light border-end-0 text-muted">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="text" class="form-control border-start-0 ps-0" placeholder="Buscar en empaques..."
                   [(ngModel)]="filtersEmpaques.busqueda" (input)="aplicarFiltrosEmpaques()" />
               </div>
 
               <div *ngIf="currentEmpaquesPV.length > 0; else noEmpaques">
-                <h6 class="fw-bold mb-3">
-                  <i class="bi bi-box-seam text-success me-2"></i>
-                  Empaques registrados ({{ empaquesPVDetalle.length }})
-                </h6>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <h6 class="fw-bold mb-0 d-flex align-items-center gap-2 text-dark">
+                    <i class="bi bi-box-seam text-success"></i>
+                    <span>Empaques registrados</span>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1">
+                      {{ empaquesPVDetalle.length }}
+                    </span>
+                  </h6>
+                </div>
                 
                 <div class="table-responsive">
                   <table class="table table-bordered table-hover mb-0">

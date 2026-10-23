@@ -57,9 +57,14 @@ export class InventarioService {
     return this.http.get(`${this.apiLaravelUrl}/inventario/bodegas`);
   }
 
-  // Alias para compatibilidad con Dashboard
-  getWarehousesSummary(): Observable<BodegaSummary[]> {
-    return this.http.get<{ success: boolean, data: BodegaSummary[] }>(`${this.apiLaravelUrl}/inventario/bodegas`)
+  // Alias para compatibilidad con Dashboard (con soporte para refresh)
+  getWarehousesSummary(refresh: boolean = false): Observable<BodegaSummary[]> {
+    let params = new HttpParams();
+    if (refresh) {
+      params = params.set('refresh', 'true');
+    }
+
+    return this.http.get<{ success: boolean, data: BodegaSummary[] }>(`${this.apiLaravelUrl}/inventario/bodegas`, { params })
       .pipe(
         map(response => response.data.map(warehouse => ({
           ...warehouse,

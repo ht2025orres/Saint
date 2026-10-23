@@ -1,99 +1,122 @@
-<!-- Overlay para móvil -->
+<!-- Overlay para móvil / tablet (< 992px) -->
 <div class="sidebar-overlay" *ngIf="isMobile && isMobileOpen" (click)="closeMobileSidebar()" aria-label="Cerrar menú">
 </div>
 
-<aside class="left-sidebar saint-sidebar" [class.collapsed]="!isMobile && isCollapsed"
-  [class.mobile-open]="isMobile && isMobileOpen">
+<aside class="left-sidebar saint-sidebar" [class.mobile-open]="isMobile && isMobileOpen">
   <div class="sidebar-surface">
+    <!-- Brand + Close button -->
     <div class="sidebar-brand">
-      <a class="brand-block" routerLink="/dashboard">
-        <img src="../../../assets/images/logo (1).png" alt="SaINT" class="brand-logo collapse-label" />
+      <a class="brand-block" routerLink="/dashboard" (click)="closeMobileSidebar()">
+        <img src="assets/images/logo (1).png" alt="SaINT" class="brand-logo" />
       </a>
-      <button type="button" class="sidebar-toggle" aria-label="Alternar tamaño del menú" (click)="toggleSidebar()">
-        <i class="bi" [ngClass]="isCollapsed ? 'bi-chevron-right' : 'bi-chevron-left'"></i>
+      <button type="button" class="sidebar-close-btn" aria-label="Cerrar menú" (click)="closeMobileSidebar()">
+        <i class="bi bi-x-lg"></i>
       </button>
     </div>
 
+    <!-- Navegación móvil principal -->
     <div class="sidebar-content">
       <div class="scroll-sidebar saint-scroll-sidebar">
         <nav class="sidebar-nav saint-sidebar-nav">
-          <ul id="sidebarnav" class="sidebar-list saint-sidebar-list">
-            <ng-container *ngFor="let item of menuItems">
-              <li *ngIf="canShowMenuItem(item)">
-                <!-- Item sin submenú -->
-                <a *ngIf="!item.submenu" 
-                   class="sidebar-link waves-effect waves-dark" 
-                   [routerLink]="item.link" 
-                   routerLinkActive="active"
-                   [routerLinkActiveOptions]="{ exact: true }">
-                  <i [class]="item.icon"></i>
-                  <span class="hide-menu saint-menu-label">{{ item.label }}</span>
-                </a>
+          <ul class="sidebar-list saint-sidebar-list">
+            
+            <!-- Inicio directo -->
+            <li class="sidebar-item">
+              <a class="sidebar-link sidebar-home-link" 
+                 routerLink="/dashboard" 
+                 routerLinkActive="active"
+                 [routerLinkActiveOptions]="{ exact: true }"
+                 (click)="closeMobileSidebar()">
+                <div class="home-icon-wrap">
+                  <i class="bi bi-speedometer2"></i>
+                </div>
+                <span class="saint-menu-label">Inicio</span>
+              </a>
+            </li>
 
-                <!-- Item con submenú -->
-                <ng-container *ngIf="item.submenu">
-                  <a class="sidebar-link has-arrow waves-effect waves-dark" 
-                     href="javascript:void(0)" 
-                     [attr.aria-expanded]="item.isOpen"
-                     (click)="toggleSubmenu(item)"
-                     (mouseenter)="openFloatPanel(item.submenu, $event)" 
-                     (mouseleave)="closeFloatPanel()">
-                    <i [class]="item.icon"></i>
-                    <span class="hide-menu saint-menu-label">{{ item.label }}</span>
-                    <i class="bi bi-chevron-right arrow-icon"></i>
-                  </a>
-                  <ul [class.show]="item.isOpen" class="collapse sidebar-submenu">
-                    <ng-container *ngFor="let sub of item.submenu">
-                      <li *ngIf="canShowMenuItem(sub)">
-                        <a class="sidebar-sublink" 
-                           [routerLink]="sub.link" 
+            <!-- Separador / Sección -->
+            <li class="sidebar-section-divider">
+              <span>ÁREAS DEL SISTEMA</span>
+            </li>
+
+            <!-- Áreas dinámicas consolidadas -->
+            <ng-container *ngFor="let area of areas">
+              <li *ngIf="canShowArea(area)" class="sidebar-area-item" [style.--area-color]="area.color">
+                
+                <!-- Botón Acordeón del Área -->
+                <button type="button" 
+                        class="sidebar-area-btn" 
+                        [class.expanded]="area.isOpen"
+                        (click)="toggleArea(area)">
+                  <div class="area-btn-left">
+                    <span class="area-icon-wrap" [style.color]="area.color">
+                      <i [class]="area.icon"></i>
+                    </span>
+                    <span class="area-title">{{ area.label }}</span>
+                  </div>
+                  <i class="bi bi-chevron-down area-chevron" [class.chevron-open]="area.isOpen"></i>
+                </button>
+
+                <!-- Contenedor desplegable del Área -->
+                <div class="sidebar-area-body" *ngIf="area.isOpen">
+                  <div *ngFor="let mod of getVisibleModules(area)" class="sidebar-module-block">
+                    
+                    <!-- Encabezado del Módulo (ej. Clientes y Órdenes, Finanzas, etc.) -->
+                    <div class="sidebar-module-header">
+                      <i [class]="mod.icon || 'bi bi-folder'" class="mod-icon" [style.color]="area.color"></i>
+                      <span class="mod-label">{{ mod.label }}</span>
+                    </div>
+
+                    <!-- Lista de Sub-interfaces / Pantallas -->
+                    <ul class="sidebar-sub-list">
+                      <li *ngFor="let sub of getVisibleSubInterfaces(mod)">
+                        <a class="sidebar-sub-link"
+                           [routerLink]="sub.link"
                            routerLinkActive="active"
-                           [routerLinkActiveOptions]="{ exact: true }">
-                          {{ sub.label }}
+                           [routerLinkActiveOptions]="{ exact: true }"
+                           (click)="closeMobileSidebar()">
+                          <i [class]="sub.icon || 'bi bi-chevron-right'" class="sub-arrow"></i>
+                          <span>{{ sub.label }}</span>
                         </a>
                       </li>
-                    </ng-container>
-                  </ul>
-                </ng-container>
+                    </ul>
+
+                  </div>
+                </div>
+
               </li>
             </ng-container>
+
           </ul>
         </nav>
       </div>
     </div>
-    <div class="sidebar-footer">
 
+    <!-- Footer de Usuario & Sesión -->
+    <div class="sidebar-footer">
       <a class="sidebar-utility"
-        [routerLink]="['/my-profile']"
-        routerLinkActive="active">
-        <i class="bi bi-gear utility-icon"></i>
-        <span class="utility-text collapse-label">Configuración</span>
+         routerLink="/my-profile"
+         routerLinkActive="active"
+         (click)="closeMobileSidebar()">
+        <i class="bi bi-person-gear utility-icon"></i>
+        <span class="utility-text">Mi Perfil</span>
       </a>
 
       <div class="sidebar-user-card">
-          <div class="user-avatar">{{ userInitials }}</div>
-          <div class="user-meta collapse-label">
-            <span class="user-name">{{ userName }}</span>
-
-          </div>
-
-          <a (click)="logout()"
-          style="cursor: pointer"
-          class="user-action"
-          title="Cerrar sesión"
-          aria-label="Cerrar sesión">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-meta">
+          <span class="user-name">{{ userName }}</span>
+          <span class="user-role" *ngIf="userPerfil">{{ userPerfil }}</span>
+        </div>
+        <button type="button"
+                (click)="logout()"
+                class="user-action"
+                title="Cerrar sesión"
+                aria-label="Cerrar sesión">
           <i class="bi bi-box-arrow-right"></i>
-        </a>
+        </button>
       </div>
     </div>
+
   </div>
 </aside>
-<!-- Panel flotante cuando sidebar está colapsado -->
-<div class="sidebar-float-panel" *ngIf="isCollapsed && hoveredSubmenu && !isMobile" [style.top.px]="floatPanelTop"
-  (mouseenter)="keepFloatPanelOpen()" (mouseleave)="closeFloatPanel()">
-  <ul class="floating-submenu">
-    <li *ngFor="let item of hoveredSubmenu">
-      <a [routerLink]="item.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ item.label }}</a>
-    </li>
-  </ul>
-</div>

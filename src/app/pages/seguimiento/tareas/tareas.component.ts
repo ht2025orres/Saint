@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
 import { Subscription, forkJoin, Observable } from 'rxjs';
 import { 
   ProyectoService, 
@@ -51,10 +51,16 @@ interface ResumenUsuarioDia {
   templateUrl: './tareas.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TareasComponent implements OnInit, OnDestroy {
+export class TareasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() usuarioId = 0;
   @Input() puedeGestionarModulo = false;
   @Input() vistaMode: 'member' | undefined;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['vistaMode'] && !changes['vistaMode'].firstChange) {
+      this.cargarDatos();
+    }
+  }
 
   // ── ESTADO ──────────────────────────────────────────────────────
   loading = false;

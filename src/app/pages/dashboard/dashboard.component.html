@@ -50,543 +50,1169 @@
 
 <!-- Vista de administrador con pestañas -->
 <div *ngIf="isAdmin || isBillingConsultant" class="admin-dashboard">
-  <ul class="nav nav-tabs mb-4" role="tablist">
-    <li class="nav-item" role="presentation" *ngIf="shouldShowTab('production')">
+  <!-- Barra de Navegación Ejecutiva por Pestañas -->
+  <div class="mb-5 flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-slate-200">
+    <div class="inline-flex p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200/80 gap-1.5 shadow-inner">
       <button 
-        class="nav-link" 
-        [class.active]="activeTab === 'production'"
-        (click)="activeTab = 'production'"
-        type="button">
-        Panel de Producción
+        *ngIf="shouldShowTab('production')"
+        type="button"
+        (click)="setTab('production')"
+        class="px-4 py-2.5 rounded-xl text-xs font-black tracking-wide transition-all duration-200 flex items-center gap-2 cursor-pointer border-0"
+        [ngClass]="activeTab === 'production' 
+          ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200 font-extrabold' 
+          : 'bg-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'">
+        <i class="bi bi-speedometer2 text-sm"></i>
+        <span>Panel de Producción</span>
       </button>
-    </li>
-    <li class="nav-item" role="presentation" *ngIf="shouldShowTab('billing')">
+
       <button 
-        class="nav-link" 
-        [class.active]="activeTab === 'billing'"
-        (click)="activeTab = 'billing'; loadBillingData()"
-        type="button">
-        Dashboard de Facturación
+        *ngIf="shouldShowTab('billing')"
+        type="button"
+        (click)="setTab('billing')"
+        class="px-4 py-2.5 rounded-xl text-xs font-black tracking-wide transition-all duration-200 flex items-center gap-2 cursor-pointer border-0"
+        [ngClass]="activeTab === 'billing' 
+          ? 'bg-white text-emerald-600 shadow-sm shadow-slate-200 font-extrabold' 
+          : 'bg-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'">
+        <i class="bi bi-receipt-cutoff text-sm"></i>
+        <span>Dashboard de Facturación</span>
       </button>
-    </li>
-    <li class="nav-item" role="presentation" *ngIf="shouldShowTab('inventory')">
+
       <button 
-        class="nav-link" 
-        [class.active]="activeTab === 'inventory'"
-        (click)="activeTab = 'inventory'; loadWarehousesData()"
-        type="button">
-        Dashboard de Bodegas
+        *ngIf="shouldShowTab('inventory')"
+        type="button"
+        (click)="setTab('inventory')"
+        class="px-4 py-2.5 rounded-xl text-xs font-black tracking-wide transition-all duration-200 flex items-center gap-2 cursor-pointer border-0"
+        [ngClass]="activeTab === 'inventory' 
+          ? 'bg-white text-amber-600 shadow-sm shadow-slate-200 font-extrabold' 
+          : 'bg-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'">
+        <i class="bi bi-boxes text-sm"></i>
+        <span>Dashboard de Bodegas</span>
       </button>
-    </li>
-  </ul>
+    </div>
+  </div>
 
   <div class="tab-content">
     <!-- Tab: Panel de Producción -->
-    <div *ngIf="activeTab === 'production' && shouldShowTab('production')" class="tab-pane active">
-      <h2 class="text-center mb-4">Panel de Producción</h2>
-      <div class="metrics-grid">
-        <app-metric-card
-          *ngFor="let metric of metrics"
-          [metric]="metric">
-        </app-metric-card>
+    <div *ngIf="activeTab === 'production' && shouldShowTab('production')" class="tab-pane active fade show">
+
+      <!-- 1. Header Banner & Barra de Control -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-blue-500 text-white flex items-center justify-center shadow-md shadow-indigo-100 shrink-0">
+            <i class="bi bi-speedometer2 text-2xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-black text-slate-900 tracking-tight m-0">Centro de Control de Producción</h2>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Planta Activa
+              </span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <i class="bi bi-gear-wide-connected text-[10px]"></i>
+                {{ opsActivas }} OPs Activas
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 font-medium m-0 mt-0.5">
+              Monitoreo continuo del flujo de planta: Confección, Terminación y Empaque
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+          <button
+            type="button"
+            (click)="loadMetrics(true)"
+            [disabled]="loadingProduction"
+            class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-2 cursor-pointer">
+            <i class="bi bi-arrow-clockwise text-indigo-600" [class.spin-icon]="loadingProduction"></i>
+            Actualizar
+          </button>
+          <a
+            routerLink="/dashboard-empaque"
+            class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm shadow-indigo-200 flex items-center gap-1.5 cursor-pointer no-underline">
+            <i class="bi bi-box-seam"></i>
+            Ver Empaque
+          </a>
+        </div>
       </div>
+
+      <!-- 2. KPIs Ejecutivos de Planta (4 Tarjetas) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+        
+        <!-- KPI 1: Volumen Inicial Producción -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">1. Confección & Ensamble</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-buildings text-sm"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-slate-900">{{ totalProducido | number }}</span>
+            <span class="text-xs font-bold text-slate-400">prendas</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <span>Salidas de Confección</span>
+            <span class="font-bold text-blue-600">Base 100%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div class="bg-blue-600 h-1.5 rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <!-- KPI 2: Terminación / Acabados -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">2. Terminación & Acabados</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-scissors text-sm"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-slate-900">{{ totalTerminado | number }}</span>
+            <span class="text-xs font-bold text-emerald-600">({{ avanceTerminacion }}% avance)</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <span>En Acabados (WIP)</span>
+            <span class="font-bold text-amber-600">{{ wipTerminacion | number }} prendas</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div class="bg-emerald-500 h-1.5 rounded-full" [style.width.%]="avanceTerminacion"></div>
+          </div>
+        </div>
+
+        <!-- KPI 3: Empaque & P.T. -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">3. Empaque & P.T.</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-box-seam-fill text-sm"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-slate-900">{{ totalEmpacado | number }}</span>
+            <span class="text-xs font-bold text-amber-600">({{ avanceEmpaque }}% avance)</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <span>En Empaque (WIP)</span>
+            <span class="font-bold text-amber-600">{{ wipEmpaque | number }} prendas</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div class="bg-amber-500 h-1.5 rounded-full" [style.width.%]="avanceEmpaque"></div>
+          </div>
+        </div>
+
+        <!-- KPI 4: Eficiencia Global de Línea -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Rendimiento Punta a Punta</span>
+            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-lightning-charge-fill text-sm"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-2xl font-black text-slate-900">{{ eficienciaGlobal }}%</span>
+            <span class="text-xs font-bold text-purple-600">Eficiencia Global</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <span>Total en Proceso (WIP)</span>
+            <span class="font-bold text-slate-700">{{ totalWip | number }} prendas</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div class="bg-purple-600 h-1.5 rounded-full" [style.width.%]="eficienciaGlobal"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. Flujo Productivo Visual (Pipeline Conectado) -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs mb-5">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider m-0 flex items-center gap-2">
+              <i class="bi bi-diagram-3-fill text-indigo-600"></i>
+              Flujo Continuo de Planta (Pipeline de Fabricación)
+            </h3>
+            <p class="text-xs text-slate-400 m-0 mt-0.5">Trazabilidad de prendas transferidas entre estaciones de trabajo</p>
+          </div>
+          <span class="text-[11px] font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-slate-200/80">
+            Cadena Productiva Activa
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 relative">
+
+          <!-- Estación 1: Producción -->
+          <div class="bg-gradient-to-b from-blue-50/50 to-white rounded-xl border border-blue-100 p-4 relative flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-100/70 px-2 py-0.5 rounded-md">
+                  Paso 1 · Origen
+                </span>
+                <i class="bi bi-buildings-fill text-blue-600 text-lg"></i>
+              </div>
+              <h4 class="text-sm font-black text-slate-800 m-0 mb-3">Confección & Ensamble</h4>
+
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Entradas:</span>
+                  <span class="font-bold text-slate-700">{{ totalProducido | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Salidas:</span>
+                  <span class="font-extrabold text-blue-600">{{ totalProducido | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">En proceso:</span>
+                  <span class="font-bold text-slate-400">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="w-full bg-blue-100 rounded-full h-2 mb-1.5 overflow-hidden">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
+              </div>
+              <div class="text-[11px] font-extrabold text-blue-700 text-right">100% transferido</div>
+            </div>
+          </div>
+
+          <!-- Estación 2: Terminación -->
+          <div class="bg-gradient-to-b from-emerald-50/50 to-white rounded-xl border border-emerald-100 p-4 relative flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                  Paso 2 · Acabados
+                </span>
+                <i class="bi bi-scissors text-emerald-600 text-lg"></i>
+              </div>
+              <h4 class="text-sm font-black text-slate-800 m-0 mb-3">Terminación & Planchado</h4>
+
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Entradas:</span>
+                  <span class="font-bold text-slate-700">{{ totalProducido | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Salidas:</span>
+                  <span class="font-extrabold text-emerald-600">{{ totalTerminado | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">En proceso:</span>
+                  <span class="font-extrabold text-amber-600">{{ wipTerminacion | number }} (WIP)</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="w-full bg-emerald-100 rounded-full h-2 mb-1.5 overflow-hidden">
+                <div class="bg-emerald-500 h-2 rounded-full" [style.width.%]="avanceTerminacion"></div>
+              </div>
+              <div class="text-[11px] font-extrabold text-emerald-700 text-right">{{ avanceTerminacion }}% completado</div>
+            </div>
+          </div>
+
+          <!-- Estación 3: Empaque -->
+          <div class="bg-gradient-to-b from-amber-50/50 to-white rounded-xl border border-amber-100 p-4 relative flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md">
+                  Paso 3 · Empaque
+                </span>
+                <i class="bi bi-box-seam-fill text-amber-600 text-lg"></i>
+              </div>
+              <h4 class="text-sm font-black text-slate-800 m-0 mb-3">Empaque & Embalaje P.T.</h4>
+
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Entradas:</span>
+                  <span class="font-bold text-slate-700">{{ totalTerminado | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Salidas:</span>
+                  <span class="font-extrabold text-amber-600">{{ totalEmpacado | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">En proceso:</span>
+                  <span class="font-extrabold text-amber-600">{{ wipEmpaque | number }} (WIP)</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="w-full bg-amber-100 rounded-full h-2 mb-1.5 overflow-hidden">
+                <div class="bg-amber-500 h-2 rounded-full" [style.width.%]="avanceEmpaque"></div>
+              </div>
+              <div class="text-[11px] font-extrabold text-amber-700 text-right">{{ avanceEmpaque }}% completado</div>
+            </div>
+          </div>
+
+          <!-- Estación 4: Destino Final -->
+          <div class="bg-gradient-to-b from-purple-50/50 to-white rounded-xl border border-purple-100 p-4 relative flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-md">
+                  Destino · Despacho
+                </span>
+                <i class="bi bi-truck text-purple-600 text-lg"></i>
+              </div>
+              <h4 class="text-sm font-black text-slate-800 m-0 mb-3">Listo para Facturar</h4>
+
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">En Bodega P.T.:</span>
+                  <span class="font-extrabold text-purple-700">{{ totalEmpacado | number }}</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Destino:</span>
+                  <span class="font-bold text-slate-700">Remisión / Venta</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-medium">Estado:</span>
+                  <span class="font-bold text-emerald-600 flex items-center gap-1">
+                    <i class="bi bi-check-circle-fill text-[10px]"></i> Disponible
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              (click)="setTab('billing')"
+              class="w-full py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>Ir a Facturación</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 4. Sección de Dos Columnas: Gráfico Analítico + Monitor de Línea -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        
+        <!-- Columna 1 y 2: Gráfico de Rendimiento por Estación (Chart.js) -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <div>
+              <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider m-0 flex items-center gap-2">
+                <i class="bi bi-bar-chart-fill text-indigo-600"></i>
+                Comparativa de Rendimiento por Estación
+              </h3>
+              <p class="text-xs text-slate-400 m-0 mt-0.5">Relación de Entradas, Salidas y Unidades en Proceso</p>
+            </div>
+            <span class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
+              Unidades (Prendas)
+            </span>
+          </div>
+
+          <div class="relative w-full h-[280px]">
+            <canvas id="productionFlowChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Columna 3: Monitor de Balance y Cuellos de Botella -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider m-0 flex items-center gap-2">
+                <i class="bi bi-shield-check text-emerald-600"></i>
+                Salud Operativa de Línea
+              </h3>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            </div>
+
+            <div class="space-y-3.5">
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-slate-700">Estado de Planta</span>
+                  <span class="text-xs font-extrabold text-emerald-600">Línea Balanceada</span>
+                </div>
+                <p class="text-[11px] text-slate-500 m-0">No se detectan cuellos de botella críticos en las estaciones activas.</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-slate-700">Retención en Terminación</span>
+                  <span class="text-xs font-extrabold text-slate-800">{{ retencionTerminacion }}% ({{ wipTerminacion | number }} prendas)</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-emerald-500 h-1.5 rounded-full" [style.width.%]="retencionTerminacion"></div>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-slate-700">Retención en Empaque</span>
+                  <span class="text-xs font-extrabold text-slate-800">{{ retencionEmpaque }}% ({{ wipEmpaque | number }} prendas)</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-amber-500 h-1.5 rounded-full" [style.width.%]="retencionEmpaque"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-medium">
+            <span>Última sincronización</span>
+            <span class="font-bold text-slate-600">Hoy en tiempo real</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 5. Accesos Rápidos Operativos (Direct Links a Módulos) -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+        <div class="mb-3.5">
+          <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider m-0 flex items-center gap-2">
+            <i class="bi bi-grid-fill text-indigo-600"></i>
+            Accesos Rápidos a Módulos de Producción
+          </h3>
+          <p class="text-xs text-slate-400 m-0 mt-0.5">Navegación directa a las áreas de gestión y planta</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <a routerLink="/recepcion-op" class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-sm transition-all group flex items-center gap-3 no-underline cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-file-earmark-arrow-down-fill text-lg"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Recepción de OP</div>
+              <div class="text-[10px] text-slate-400 font-medium">Ingreso de lotes a planta</div>
+            </div>
+          </a>
+
+          <a routerLink="/dashboard-empaque" class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-amber-300 hover:shadow-sm transition-all group flex items-center gap-3 no-underline cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-boxes text-lg"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors">Control de Empaque</div>
+              <div class="text-[10px] text-slate-400 font-medium">Monitoreo de empacadores</div>
+            </div>
+          </a>
+
+          <a routerLink="/distribucion-pv" class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-emerald-300 hover:shadow-sm transition-all group flex items-center gap-3 no-underline cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-diagram-2 text-lg"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">Distribución de PV</div>
+              <div class="text-[10px] text-slate-400 font-medium">Asignar prendas a pedidos</div>
+            </div>
+          </a>
+
+          <a routerLink="/muestras" class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-purple-300 hover:shadow-sm transition-all group flex items-center gap-3 no-underline cursor-pointer">
+            <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <i class="bi bi-palette2 text-lg"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800 group-hover:text-purple-600 transition-colors">Muestras & Confección</div>
+              <div class="text-[10px] text-slate-400 font-medium">Fichas técnicas y prototipos</div>
+            </div>
+          </a>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Sección de Gráficos Mejorada en el Tab de Facturación -->
-    <div *ngIf="activeTab === 'billing' && shouldShowTab('billing')" class="tab-pane active">
+    <!-- Tab: Dashboard de Facturación Mejorado -->
+    <div *ngIf="activeTab === 'billing' && shouldShowTab('billing')" class="tab-pane active fade show">
       
-      <!-- Filtros -->
-      <div class="row mb-4">
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Año:</label>
-          <select class="form-select" [(ngModel)]="selectedYear" (change)="loadBillingData()">
-            <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
-          </select>
+      <!-- 1. Header Banner & Controles Financieros -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 mb-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 text-white flex items-center justify-center shadow-md shadow-emerald-100 shrink-0">
+            <i class="bi bi-receipt-cutoff text-2xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-xl font-black text-slate-900 tracking-tight m-0">Control Financiero & Facturación</h2>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                SIESA Sincronizado
+              </span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <i class="bi bi-calendar3 text-[10px]"></i>
+                {{ getMonthName(selectedMonth) }} {{ selectedYear }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 font-medium m-0 mt-0.5">
+              Seguimiento presupuestal, facturación ejecutada y remisiones en tiempo real
+            </p>
+          </div>
         </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Mes:</label>
-          <select class="form-select" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
-            <option [value]="1">Enero</option>
-            <option [value]="2">Febrero</option>
-            <option [value]="3">Marzo</option>
-            <option [value]="4">Abril</option>
-            <option [value]="5">Mayo</option>
-            <option [value]="6">Junio</option>
-            <option [value]="7">Julio</option>
-            <option [value]="8">Agosto</option>
-            <option [value]="9">Septiembre</option>
-            <option [value]="10">Octubre</option>
-            <option [value]="11">Noviembre</option>
-            <option [value]="12">Diciembre</option>
-          </select>
-        </div>
-        <div class="col-md-6 d-flex align-items-end gap-2">
-          <button class="btn btn-primary flex-grow-1" (click)="openInvoiceModal()">
-            <i class="bi bi-file-earmark-text"></i> Ver Facturas
+
+        <!-- Filtros y Botones de Acción -->
+        <div class="flex items-center gap-2 flex-wrap self-end lg:self-auto shrink-0">
+          <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+            <span class="text-[10px] font-black uppercase text-slate-400">Año:</span>
+            <select class="bg-transparent border-0 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer" [(ngModel)]="selectedYear" (change)="loadBillingData()">
+              <option [value]="year" *ngFor="let year of availableYears">{{year}}</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
+            <span class="text-[10px] font-black uppercase text-slate-400">Mes:</span>
+            <select class="bg-transparent border-0 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer" [(ngModel)]="selectedMonth" (change)="loadBillingData()">
+              <option [value]="1">Enero</option>
+              <option [value]="2">Febrero</option>
+              <option [value]="3">Marzo</option>
+              <option [value]="4">Abril</option>
+              <option [value]="5">Mayo</option>
+              <option [value]="6">Junio</option>
+              <option [value]="7">Julio</option>
+              <option [value]="8">Agosto</option>
+              <option [value]="9">Septiembre</option>
+              <option [value]="10">Octubre</option>
+              <option [value]="11">Noviembre</option>
+              <option [value]="12">Diciembre</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            (click)="loadBillingData(true)"
+            [disabled]="loading"
+            title="Actualizar datos desde SIESA"
+            class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-arrow-clockwise text-emerald-600" [class.spin-icon]="loading"></i>
+            <span>{{ loading ? 'Actualizando...' : 'Actualizar' }}</span>
           </button>
-          <button class="btn btn-info flex-grow-1" (click)="openShipmentModal()">
-            <i class="bi bi-box-seam"></i> Ver Remisiones
+
+          <button
+            type="button"
+            (click)="openInvoiceModal()"
+            class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm shadow-indigo-200 flex items-center gap-1.5 cursor-pointer border-0">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Ver Facturas</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="openShipmentModal()"
+            class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-sm shadow-teal-200 flex items-center gap-1.5 cursor-pointer border-0">
+            <i class="bi bi-box-seam"></i>
+            <span>Ver Remisiones</span>
           </button>
         </div>
       </div>
 
-      <!-- Indicadores Principales -->
-      <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-primary">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">Presupuesto Total</h6>
-                  <h3 class="mb-0">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</h3>
-                  <small class="text-muted">Mes {{getMonthName(selectedMonth)}}</small>
-                </div>
-                <i class="bi bi-cash-coin" style="font-size: 2rem; color: #007bff; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-success">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">Facturación</h6>
-                  <h3 class="mb-0">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</h3>
-                  <small class="text-muted">{{((billingData.totalReal / billingData.totalPresupuesto) * 100) | number:'1.0-0'}}% del presupuesto</small>
-                </div>
-                <i class="bi bi-graph-up" style="font-size: 2rem; color: #28a745; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-info">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">Ingreso Real</h6>
-                  <h3 class="mb-0" 
-                      [class.text-success]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0" 
-                      [class.text-danger]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) < 0">
-                    {{(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) | currency:'$':'symbol':'1.0-0'}}
-                    <small *ngIf="billingData.isPastMonth" class="text-muted d-block" style="font-size: 0.7rem;">
-                      ({{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}})
-                    </small>
-                  </h3>
-                  <small class="text-muted">Facturación + Remisionado - Remis. Anterior</small>
-                </div>
-                <i class="bi bi-arrow-left-right" style="font-size: 2rem; color: #17a2b8; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-          <div class="card border-0 shadow-sm bg-gradient-warning">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                  <h6 class="text-muted mb-2">% Ejecutado</h6>
-                  <h3 class="mb-0">
-                    {{(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) | number:'1.0-0'}}%
-                    <small *ngIf="billingData.isPastMonth" class="text-muted d-block" style="font-size: 0.7rem;">
-                      ({{billingData.porcentajeEjecutado | number:'1.0-0'}}%)
-                    </small>
-                  </h3>
-                  <small class="text-muted">Meta de desempeño</small>
-                </div>
-                <i class="bi bi-speedometer2" style="font-size: 2rem; color: #ffc107; opacity: 0.3;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      <!-- Cargando -->
-      <div *ngIf="loading" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
-        </div>
-        <p class="text-muted mt-3">Cargando datos de facturación...</p>
+      <!-- Barra de progreso discreta cuando actualiza con datos previos visibles -->
+      <div *ngIf="loading && billingData" class="w-full bg-slate-100 h-1 mb-4 rounded-full overflow-hidden">
+        <div class="bg-emerald-500 h-1 rounded-full animate-pulse w-full"></div>
       </div>
 
-      <div *ngIf="!loading && billingData">
-        <!-- Gráficos Principales (2x2) -->
-        <div class="row mb-4">
+      <!-- Skeleton loader inicial si no hay ningún dato aún -->
+      <div *ngIf="loading && !billingData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5 animate-pulse">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 h-28" *ngFor="let i of [1,2,3,4]">
+          <div class="h-3 bg-slate-200 rounded w-1/3 mb-3"></div>
+          <div class="h-6 bg-slate-200 rounded w-2/3 mb-2"></div>
+          <div class="h-2 bg-slate-100 rounded w-1/2"></div>
+        </div>
+      </div>
+
+      <!-- Dashboard con datos activos (Non-blocking) -->
+      <div *ngIf="billingData">
+        <!-- 2. KPIs Ejecutivos Financieros (4 Tarjetas) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+          
+          <!-- KPI 1: Presupuesto Total -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">1. Presupuesto Meta</span>
+              <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <i class="bi bi-wallet2 text-sm"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="text-2xl font-black text-slate-900">{{ billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0' }}</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+              <span>Período {{ getMonthName(selectedMonth) }}</span>
+              <span class="font-bold text-indigo-600">Base 100%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+              <div class="bg-indigo-600 h-1.5 rounded-full" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- KPI 2: Facturación Real -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">2. Facturado SIESA</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <i class="bi bi-cash-stack text-sm"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="text-2xl font-black text-slate-900">{{ (+billingData.totalReal || 0) | currency:'$':'symbol':'1.0-0' }}</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+              <span>vs Presupuesto</span>
+              <span class="font-bold text-emerald-600">{{ (((+billingData.totalReal || 0) / (+billingData.totalPresupuesto || 1)) * 100) | number:'1.0-0' }}%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+              <div class="bg-emerald-500 h-1.5 rounded-full" [style.width.%]="Math.min(100, ((+billingData.totalReal || 0) / (+billingData.totalPresupuesto || 1)) * 100)"></div>
+            </div>
+          </div>
+
+          <!-- KPI 3: Flujo Neto / Ingreso Real -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">3. Flujo Neto (Ingreso)</span>
+              <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <i class="bi bi-arrow-left-right text-sm"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="text-2xl font-black"
+                [ngClass]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+                {{ (+(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) || 0) | currency:'$':'symbol':'1.0-0' }}
+              </span>
+              <span *ngIf="billingData.isPastMonth" class="text-[10px] font-bold text-slate-400">
+                ({{ (+billingData.totalDiferencia || 0) | currency:'$':'symbol':'1.0-0' }})
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+              <span>Fact. + Remis. Act. - Ant.</span>
+              <span class="font-bold" [ngClass]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+                {{ (billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0 ? '+ Superávit' : '- Déficit' }}
+              </span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+              <div class="h-1.5 rounded-full" 
+                [ngClass]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0 ? 'bg-emerald-500' : 'bg-rose-500'"
+                style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- KPI 4: % Cumplimiento Global -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md transition-all duration-200 group">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">4. Cumplimiento Global</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <i class="bi bi-speedometer2 text-sm"></i>
+              </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="text-2xl font-black text-slate-900">
+                {{ (+(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) || 0) | number:'1.0-0' }}%
+              </span>
+              <span *ngIf="billingData.isPastMonth" class="text-[10px] font-bold text-slate-400">
+                ({{ (+billingData.porcentajeEjecutado || 0) | number:'1.0-0' }}%)
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+              <span>Meta mensual</span>
+              <span class="font-bold"
+                [ngClass]="(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) >= 80 ? 'text-emerald-600' : ((billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) >= 50 ? 'text-amber-600' : 'text-rose-600')">
+                {{ (billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) >= 80 ? 'Excelente' : ((billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) >= 50 ? 'En Progreso' : 'Atención') }}
+              </span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
+              <div class="h-1.5 rounded-full"
+                [ngClass]="(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) >= 80 ? 'bg-emerald-500' : ((billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) >= 50 ? 'bg-amber-500' : 'bg-rose-500')"
+                [style.width.%]="Math.min(100, (billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) || 0)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Gráficos Principales (Fila 1: Comparativa y Ejecución General) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           <!-- Gráfico 1: Comparativa Presupuesto vs Real -->
-          <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-bar-chart-fill text-primary"></i> Comparativa: Presupuesto vs Facturación
-                </h5>
-                <small class="text-muted">Análisis por unidad de negocio</small>
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <i class="bi bi-bar-chart-fill text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 m-0">Presupuesto vs Facturación por Unidad</h3>
+                  <p class="text-[11px] text-slate-400 font-medium m-0">Meta presupuestal vs ejecución real consolidada</p>
+                </div>
               </div>
-              <div class="card-body">
-                <canvas id="comparisonChart" style="max-height: 350px;"></canvas>
-              </div>
+            </div>
+            <div class="h-80 relative">
+              <canvas id="comparisonChart"></canvas>
             </div>
           </div>
 
           <!-- Gráfico 2: % Ejecución General -->
-          <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-pie-chart text-info"></i> % de Ejecución General
-                </h5>
-                <small class="text-muted">Progreso del presupuesto</small>
-              </div>
-              <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 350px;">
-                <div style="max-width: 250px; width: 100%;">
-                  <canvas id="executionChart"></canvas>
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <i class="bi bi-pie-chart text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 m-0">% de Cumplimiento Global</h3>
+                  <p class="text-[11px] text-slate-400 font-medium m-0">Progreso total frente a la meta del período</p>
                 </div>
               </div>
+            </div>
+            <div class="h-80 relative flex items-center justify-center">
+              <canvas id="executionChart"></canvas>
             </div>
           </div>
         </div>
 
-        <!-- Gráficos Secundarios (2x1) -->
-        <div class="row mb-4">
+        <!-- 4. Gráficos Secundarios (Fila 2: Variación y Saldo Neto) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           <!-- Gráfico 3: % Ejecución por Unidad -->
-          <div class="col-lg-12 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-percent text-success"></i> % de Ejecución por Unidad de Negocio
-                </h5>
-                <small class="text-muted">Verde ≥80% | Amarillo 50-79% | Rojo &lt;50%</small>
-              </div>
-              <div class="card-body">
-                <canvas id="variationChart" style="max-height: 300px;"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Gráfico 4: Diferencia -->
-        <div class="row mb-4">
-          <div class="col-lg-12">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-graph-up-arrow text-danger"></i> Diferencia por Unidad (Real + Remisionado - Anterior)
-                </h5>
-                <small class="text-muted">Verde: Ingreso positivo | Rojo: Ingreso negativo</small>
-              </div>
-              <div class="card-body">
-                <canvas id="differenceChart" style="max-height: 300px;"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de Detalle de Presupuesto por Unidad -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light border-bottom">
-            <div class="row align-items-center">
-              <div class="col-md-6">
-                <h5 class="mb-0">
-                  <i class="bi bi-table"></i> Presupuesto Detallado por Unidad de Negocio
-                </h5>
-              </div>
-              <div class="col-md-6">
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-search"></i></span>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Buscar por U.N. o Descripción..."
-                    [(ngModel)]="filterUnidad">
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                  <i class="bi bi-percent text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 m-0">% de Ejecución por Unidad de Negocio</h3>
+                  <p class="text-[11px] text-slate-400 font-medium m-0">Verde &ge;80% | Amarillo 50-79% | Rojo &lt;50%</p>
                 </div>
               </div>
             </div>
+            <div class="h-72 relative">
+              <canvas id="variationChart"></canvas>
+            </div>
           </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead class="table-light">
-                  <tr>
-                    <th><i class="bi bi-hash"></i> U.N.</th>
-                    <th>Descripción</th>
-                    <th class="text-end">Presupuesto</th>
-                    <th class="text-end">Facturado</th>
-                    <th class="text-end">Remis. Actual</th>
-                    <th class="text-end">Remis. Anterior</th>
-                    <th class="text-end">Ingreso Real</th>
-                    <th class="text-end">% Ejecutado</th>
-                    <th class="text-center">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of filteredBillingUnits" class="align-middle">
-                    <td><strong>{{item.unidad}}</strong></td>
-                    <td>{{item.descripcion}}</td>
-                    <td class="text-end">{{item.presupuesto | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{item.real | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">
-                      {{(billingData.isPastMonth ? item.remisionadoMesActualConCreditos : item.remisionadoMesActual) | currency:'$':'symbol':'1.0-0'}}
-                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted" style="font-size: 0.75rem;">
-                        ({{item.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}})
-                      </small>
-                    </td>
+
+          <!-- Gráfico 4: Diferencia -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <i class="bi bi-graph-up-arrow text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 m-0">Saldo Neto / Flujo por Unidad</h3>
+                  <p class="text-[11px] text-slate-400 font-medium m-0">Verde: Superávit de ingreso | Rojo: Pendiente</p>
+                </div>
+              </div>
+            </div>
+            <div class="h-72 relative">
+              <canvas id="differenceChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Tabla Detallada por Unidad de Negocio -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden mb-5">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <i class="bi bi-table text-base"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-900 m-0">Detalle de Unidades de Negocio</h3>
+                <p class="text-[11px] text-slate-400 font-medium m-0">Desglose de presupuestos, remisiones e ingresos reales</p>
+              </div>
+            </div>
+
+            <!-- Buscador de unidades -->
+            <div class="w-full sm:w-80 relative">
+              <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input 
+                type="text" 
+                [(ngModel)]="filterUnidad"
+                placeholder="Buscar por código U.N. o descripción..."
+                class="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-indigo-400 text-slate-800 transition-colors">
+              <button 
+                *ngIf="filterUnidad" 
+                (click)="filterUnidad = ''"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 border-0 bg-transparent cursor-pointer p-0">
+                <i class="bi bi-x-circle-fill text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <th class="py-3 px-3.5"><i class="bi bi-hash"></i> U.N.</th>
+                  <th class="py-3 px-3.5">Descripción</th>
+                  <th class="py-3 px-3.5 text-right">Presupuesto</th>
+                  <th class="py-3 px-3.5 text-right">Facturado</th>
+                  <th class="py-3 px-3.5 text-right">Remis. Actual</th>
+                  <th class="py-3 px-3.5 text-right">Remis. Anterior</th>
+                  <th class="py-3 px-3.5 text-right">Ingreso Real</th>
+                  <th class="py-3 px-3.5 text-right">% Ejecutado</th>
+                  <th class="py-3 px-3.5 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let item of filteredBillingUnits" class="hover:bg-slate-50/70 transition-colors">
+                  <td class="py-2.5 px-3.5 font-black text-slate-900">{{ item.unidad }}</td>
+                  <td class="py-2.5 px-3.5 font-bold text-slate-700">{{ item.descripcion }}</td>
+                  <td class="py-2.5 px-3.5 text-right text-slate-600 font-medium">{{ item.presupuesto | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-2.5 px-3.5 text-right text-slate-800 font-bold">{{ item.real | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-2.5 px-3.5 text-right text-slate-600">
+                    {{ (billingData.isPastMonth ? item.remisionadoMesActualConCreditos : item.remisionadoMesActual) | currency:'$':'symbol':'1.0-0' }}
+                    <small *ngIf="billingData.isPastMonth" class="d-block text-[10px] text-slate-400">
+                      ({{ item.remisionadoMesActual | currency:'$':'symbol':'1.0-0' }})
+                    </small>
+                  </td>
+                  
+                  <!-- COLUMNA REMIS. ANTERIOR CON TOOLTIP NATIVO -->
+                  <td class="py-2.5 px-3.5 text-right position-relative">
+                    <span 
+                      class="remis-anterior-value font-medium text-slate-600"
+                      (mouseenter)="showPreviousShipmentsTooltip(item.unidad, $event)"
+                      (mouseleave)="hidePreviousShipmentsTooltip(item.unidad)"
+                      style="cursor: help; text-decoration: underline dotted; text-decoration-color: #94a3b8;">
+                      {{ item.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0' }}
+                    </span>
                     
-                    <!-- COLUMNA REMIS. ANTERIOR CON TOOLTIP -->
-                    <td class="text-end position-relative">
-                      <span 
-                        class="remis-anterior-value"
-                        (mouseenter)="showPreviousShipmentsTooltip(item.unidad, $event)"
-                        (mouseleave)="hidePreviousShipmentsTooltip(item.unidad)"
-                        style="cursor: help; text-decoration: underline dotted; text-decoration-color: #6c757d;">
-                        {{item.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}
-                      </span>
-                      
-                      <!-- Tooltip -->
-                      <div 
-                        *ngIf="isTooltipVisible(item.unidad) && getPreviousShipmentsDetail(item.unidad).length > 0"
-                        class="custom-tooltip"
-                        [style.top.px]="getTooltipPosition(item.unidad).top"
-                        [style.left.px]="getTooltipPosition(item.unidad).left">
-                        <div class="tooltip-arrow"></div>
-                        <div class="tooltip-content">
-                          <div class="fw-bold mb-2 border-bottom pb-1">Detalle por mes</div>
-                          <div *ngFor="let mes of getPreviousShipmentsDetail(item.unidad)" class="tooltip-row">
-                            <span>{{getMonthName(mes.mes)}} {{mes.ano}}:</span>
-                            <span class="fw-bold">{{mes.valor | currency:'$':'symbol':'1.0-0'}}</span>
-                          </div>
+                    <!-- Tooltip flotante con detalle de meses -->
+                    <div 
+                      *ngIf="isTooltipVisible(item.unidad) && getPreviousShipmentsDetail(item.unidad).length > 0"
+                      class="custom-tooltip"
+                      [style.top.px]="getTooltipPosition(item.unidad).top"
+                      [style.left.px]="getTooltipPosition(item.unidad).left">
+                      <div class="tooltip-arrow"></div>
+                      <div class="tooltip-content">
+                        <div class="fw-bold mb-2 border-bottom pb-1">Detalle por mes</div>
+                        <div *ngFor="let mes of getPreviousShipmentsDetail(item.unidad)" class="tooltip-row">
+                          <span>{{ getMonthName(mes.mes) }} {{ mes.ano }}:</span>
+                          <span class="fw-bold">{{ mes.valor | currency:'$':'symbol':'1.0-0' }}</span>
                         </div>
                       </div>
-                    </td>
-                    
-                    <td class="text-end fw-bold" 
-                        [class.text-danger]="(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) < 0" 
-                        [class.text-success]="(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) >= 0">
-                      {{(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) | currency:'$':'symbol':'1.0-0'}}
-                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted" style="font-size: 0.75rem;">
-                        ({{item.diferencia | currency:'$':'symbol':'1.0-0'}})
-                      </small>
-                    </td>
-                    <td class="text-end">
-                      <span class="badge" 
-                        [class.bg-success]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) >= 80" 
-                        [class.bg-warning]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) >= 50 && (billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) < 80"
-                        [class.bg-danger]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) < 50">
-                        {{(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) | number:'1.0-0'}}%
-                      </span>
-                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted mt-1" style="font-size: 0.75rem;">
-                        ({{item.porcentajeEjecutado | number:'1.0-0'}}%)
-                      </small>
-                    </td>
-                    <td class="text-center">
-                      <button class="btn btn-sm btn-outline-primary me-1" (click)="openInvoiceModal(item.unidad)" title="Ver Facturas">
-                        <i class="bi bi-file-earmark-text"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-info" (click)="openShipmentModalByMonth(item.unidad)" title="Ver Remisiones">
-                        <i class="bi bi-box-seam"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
+                    </div>
+                  </td>
+                  
+                  <td class="py-2.5 px-3.5 text-right font-black"
+                    [ngClass]="(billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+                    {{ (billingData.isPastMonth ? item.diferenciaConCreditos : item.diferencia) | currency:'$':'symbol':'1.0-0' }}
+                    <small *ngIf="billingData.isPastMonth" class="d-block text-[10px] text-slate-400">
+                      ({{ item.diferencia | currency:'$':'symbol':'1.0-0' }})
+                    </small>
+                  </td>
 
-                <!-- En el TFOOT, dejar solo el valor sin tooltip -->
-                <tfoot class="table-light fw-bold">
-                  <tr>
-                    <td colspan="2">TOTAL</td>
-                    <td class="text-end">{{billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">{{billingData.totalReal | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">
-                      {{(billingData.isPastMonth ? billingData.remisionadoMesActualConCreditos : billingData.remisionadoMesActual) | currency:'$':'symbol':'1.0-0'}}
-                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted">
-                        ({{billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0'}})
-                      </small>
-                    </td>
-                    <td class="text-end">{{billingData.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end">
-                      {{(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) | currency:'$':'symbol':'1.0-0'}}
-                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted">
-                        ({{billingData.totalDiferencia | currency:'$':'symbol':'1.0-0'}})
-                      </small>
-                    </td>
-                    <td class="text-end">
-                      {{(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) | number:'1.0-0'}}%
-                      <small *ngIf="billingData.isPastMonth" class="d-block text-muted">
-                        ({{billingData.porcentajeEjecutado | number:'1.0-0'}}%)
-                      </small>
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  <td class="py-2.5 px-3.5 text-right">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black"
+                      [ngClass]="(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) >= 80 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : ((billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) >= 50 
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200' 
+                          : 'bg-rose-50 text-rose-700 border border-rose-200')">
+                      {{ (+(billingData.isPastMonth ? item.porcentajeEjecutadoConCreditos : item.porcentajeEjecutado) || 0) | number:'1.0-0' }}%
+                    </span>
+                    <small *ngIf="billingData.isPastMonth" class="d-block text-[9px] text-slate-400 mt-0.5">
+                      ({{ (+item.porcentajeEjecutado || 0) | number:'1.0-0' }}%)
+                    </small>
+                  </td>
+
+                  <td class="py-2.5 px-3.5 text-center">
+                    <div class="inline-flex items-center gap-1">
+                      <button 
+                        class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors flex items-center justify-center border-0 cursor-pointer"
+                        (click)="openInvoiceModal(item.unidad)" 
+                        title="Ver Facturas de {{ item.unidad }}">
+                        <i class="bi bi-file-earmark-text text-xs"></i>
+                      </button>
+                      <button 
+                        class="w-7 h-7 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-600 transition-colors flex items-center justify-center border-0 cursor-pointer"
+                        (click)="openShipmentModalByMonth(item.unidad)" 
+                        title="Ver Remisiones de {{ item.unidad }}">
+                        <i class="bi bi-box-seam text-xs"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+
+              <tfoot class="bg-slate-50 border-t-2 border-slate-200 font-black text-slate-900">
+                <tr>
+                  <td colspan="2" class="py-3 px-3.5 uppercase text-[11px] text-slate-500">TOTAL CONSOLIDADO:</td>
+                  <td class="py-3 px-3.5 text-right text-slate-700">{{ billingData.totalPresupuesto | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-3 px-3.5 text-right text-emerald-700">{{ billingData.totalReal | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-3 px-3.5 text-right text-slate-700">
+                    {{ (billingData.isPastMonth ? billingData.remisionadoMesActualConCreditos : billingData.remisionadoMesActual) | currency:'$':'symbol':'1.0-0' }}
+                    <small *ngIf="billingData.isPastMonth" class="d-block text-[10px] text-slate-400">
+                      ({{ billingData.remisionadoMesActual | currency:'$':'symbol':'1.0-0' }})
+                    </small>
+                  </td>
+                  <td class="py-3 px-3.5 text-right text-slate-700">{{ billingData.remisionadoMesAnterior | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-3 px-3.5 text-right"
+                    [ngClass]="(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) >= 0 ? 'text-emerald-700' : 'text-rose-700'">
+                    {{ (+(billingData.isPastMonth ? billingData.totalDiferenciaConCreditos : billingData.totalDiferencia) || 0) | currency:'$':'symbol':'1.0-0' }}
+                    <small *ngIf="billingData.isPastMonth" class="d-block text-[10px] text-slate-400">
+                      ({{ (+billingData.totalDiferencia || 0) | currency:'$':'symbol':'1.0-0' }})
+                    </small>
+                  </td>
+                  <td class="py-3 px-3.5 text-right font-black text-indigo-700">
+                    {{ (+(billingData.isPastMonth ? billingData.porcentajeEjecutadoConCreditos : billingData.porcentajeEjecutado) || 0) | number:'1.0-0' }}%
+                    <small *ngIf="billingData.isPastMonth" class="d-block text-[10px] text-slate-400">
+                      ({{ (+billingData.porcentajeEjecutado || 0) | number:'1.0-0' }}%)
+                    </small>
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
       </div>
     </div>
-    </div>
 
-    <!-- Tab: Dashboard de Bodegas (agregar después del tab de billing) -->
-    <div *ngIf="activeTab === 'inventory' && shouldShowTab('inventory')" class="tab-pane active">
-      <h2 class="text-center mb-4">Dashboard de Bodegas</h2>
-
-      <!-- Cargando -->
-      <div *ngIf="loadingWarehouses" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
-        </div>
-        <p class="text-muted mt-3">Cargando datos de inventario...</p>
-      </div>
-
-      <div *ngIf="!loadingWarehouses && warehousesSummary.length > 0">
-        <!-- Indicadores Principales -->
-        <div class="row mb-4">
-          <div class="col-lg-3 col-md-6 mb-3" *ngFor="let warehouse of warehousesSummary">
-            <div class="card border-0 shadow-sm" [class.bg-gradient-info]="warehouse.codigo === 'MP001'" 
-                [class.bg-gradient-success]="warehouse.codigo === 'MP003'"
-                [class.bg-gradient-warning]="warehouse.codigo === 'BT001'">
-              <div class="card-body">
-                <div class="d-flex align-items-center">
-                  <div class="flex-grow-1">
-                    <h6 class="text-muted mb-2">{{warehouse.nombre_bodega}}</h6>
-                    <h3 class="mb-0">{{warehouse.valor_total | currency:'$':'symbol':'1.0-0'}}</h3>
-                    <small class="text-muted">{{warehouse.total_items}} items | {{warehouse.total_existencias | number:'1.0-0'}} unidades</small>
-                  </div>
-                  <i class="bi bi-box-seam" style="font-size: 2rem; opacity: 0.3;"></i>
-                </div>
-                <button class="btn btn-sm btn-outline-primary mt-3 w-100" 
-                        (click)="loadWarehouseItems(warehouse.codigo)">
-                  Ver Detalle
-                </button>
-              </div>
+    <!-- Tab: Dashboard de Bodegas Mejorado -->
+    <div *ngIf="activeTab === 'inventory' && shouldShowTab('inventory')" class="tab-pane active fade show">
+      
+      <!-- 1. Header Banner & Resumen Ejecutivo de Inventario -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 mb-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center shadow-md shadow-amber-100 shrink-0">
+            <i class="bi bi-boxes text-2xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-xl font-black text-slate-900 tracking-tight m-0">Control de Inventario & Bodegas</h2>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                SIESA Inventarios Activo
+              </span>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
+                <i class="bi bi-box-seam text-[10px]"></i>
+                {{ warehousesSummary.length }} Bodegas Monitoreadas
+              </span>
             </div>
+            <p class="text-xs text-slate-500 font-medium m-0 mt-0.5">
+              Existencias físicas, valorización a costo promedio y referencias en almacén
+            </p>
           </div>
         </div>
 
-        <!-- Gráficos de Bodegas -->
-        <div class="row mb-4">
-          <!-- Gráfico: Valor por Bodega -->
-          <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-bar-chart-fill text-primary"></i> Valor Total por Bodega
-                </h5>
-              </div>
-              <div class="card-body">
-                <canvas id="warehouseValueChart" style="max-height: 350px;"></canvas>
-              </div>
-            </div>
+        <div class="flex items-center gap-2 flex-wrap self-end lg:self-auto shrink-0">
+          <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+            <span class="text-[10px] font-black uppercase text-slate-400">Total Inventario:</span>
+            <span class="text-xs font-black text-slate-900">{{ (+totalValorBodegas || 0) | currency:'$':'symbol':'1.0-0' }}</span>
           </div>
-
-          <!-- Gráfico: Distribución de Items -->
-          <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header bg-light border-bottom">
-                <h5 class="mb-0">
-                  <i class="bi bi-pie-chart text-info"></i> Distribución de Items
-                </h5>
-              </div>
-              <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 350px;">
-                <div style="max-width: 300px; width: 100%;">
-                  <canvas id="warehouseItemsChart"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de Items de Bodega Seleccionada -->
-        <div class="card border-0 shadow-sm mb-4" *ngIf="selectedWarehouse">
-          <div class="card-header bg-light border-bottom">
-            <div class="row align-items-center">
-              <div class="col-md-6">
-                <h5 class="mb-0">
-                  <i class="bi bi-table"></i> Items de Bodega: {{selectedWarehouse}}
-                </h5>
-              </div>
-              <div class="col-md-6">
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-search"></i></span>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    placeholder="Buscar por código, referencia o descripción..."
-                    [(ngModel)]="warehouseSearchTerm">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="loadingWarehouseItems" class="card-body text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Cargando...</span>
-            </div>
-          </div>
-
-          <div *ngIf="!loadingWarehouseItems" class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover table-sm">
-                <thead class="table-light">
-                  <tr>
-                    <th>Código</th>
-                    <th>Referencia</th>
-                    <th>Descripción</th>
-                    <th>Color</th>
-                    <th>Talla</th>
-                    <th>Zonas</th>
-                    <th class="text-end">Cantidad</th>
-                    <th class="text-end">Costo Unit.</th>
-                    <th class="text-end">Costo Total</th>
-                    <th>U.M.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of filteredWarehouseItems" class="align-middle">
-                    <td><strong>{{item.id_item}}</strong></td>
-                    <td>{{item.referencia}}</td>
-                    <td>{{item.descripcion}}</td>
-                    <td>{{item.color || '-'}}</td>
-                    <td>{{item.id_talla || '-'}}</td>
-                    <td>
-                      <span *ngFor="let zona of item.zonas" 
-                            class="badge bg-secondary me-1">
-                        {{zona.nombre}}
-                      </span>
-                    </td>
-                    <td class="text-end">{{item.cantidad | number:'1.2-2'}}</td>
-                    <td class="text-end">{{item.costo_prom_unitario | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td class="text-end fw-bold">{{item.costo_prom_total | currency:'$':'symbol':'1.0-0'}}</td>
-                    <td>{{item.unidad_medida}}</td>
-                  </tr>
-                </tbody>
-                <tfoot class="table-light fw-bold" *ngIf="filteredWarehouseItems.length > 0">
-                  <tr>
-                    <td colspan="6" class="text-end">TOTALES:</td>
-                    <td class="text-end">
-                      {{ totalCantidad | number:'1.2-2' }}
-                    </td>
-                    <td></td>
-                    <td class="text-end">
-                      {{ totalCosto | currency:'$':'symbol':'1.0-0' }}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            <div *ngIf="filteredWarehouseItems.length === 0" class="text-center py-5">
-              <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-              <p class="mt-3 text-muted">No se encontraron items</p>
-            </div>
-          </div>
+          <button
+            type="button"
+            (click)="loadWarehousesData(true)"
+            [disabled]="loadingWarehouses"
+            title="Actualizar datos desde SIESA"
+            class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-arrow-clockwise text-amber-600" [class.spin-icon]="loadingWarehouses"></i>
+            <span>{{ loadingWarehouses ? 'Actualizando...' : 'Actualizar' }}</span>
+          </button>
         </div>
       </div>
 
-      <div *ngIf="!loadingWarehouses && warehousesSummary.length === 0" class="text-center py-5">
-        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-        <p class="mt-3 text-muted">No se encontraron datos de bodegas</p>
+      <!-- Barra de progreso discreta cuando actualiza con datos previos visibles -->
+      <div *ngIf="loadingWarehouses && warehousesSummary.length > 0" class="w-full bg-slate-100 h-1 mb-4 rounded-full overflow-hidden">
+        <div class="bg-amber-500 h-1 rounded-full animate-pulse w-full"></div>
+      </div>
+
+      <!-- Skeleton loader inicial -->
+      <div *ngIf="loadingWarehouses && warehousesSummary.length === 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5 animate-pulse">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 h-28" *ngFor="let i of [1,2,3,4]">
+          <div class="h-3 bg-slate-200 rounded w-1/3 mb-3"></div>
+          <div class="h-6 bg-slate-200 rounded w-2/3 mb-2"></div>
+          <div class="h-2 bg-slate-100 rounded w-1/2"></div>
+        </div>
+      </div>
+
+      <!-- Contenido de Bodegas Activo -->
+      <div *ngIf="warehousesSummary.length > 0">
+        <!-- 2. Tarjetas Seleccionables de Bodegas (Grid) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+          <div 
+            *ngFor="let warehouse of warehousesSummary"
+            (click)="loadWarehouseItems(warehouse.codigo)"
+            class="bg-white rounded-2xl border p-4 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer relative group"
+            [ngClass]="selectedWarehouse === warehouse.codigo 
+              ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/15' 
+              : 'border-slate-200/80 hover:border-slate-300'">
+            
+            <div class="flex items-center justify-between mb-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider"
+                [ngClass]="warehouse.codigo === 'MP001' ? 'bg-sky-50 text-sky-700 border border-sky-200' : (warehouse.codigo === 'MP003' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : (warehouse.codigo === 'BT001' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-slate-100 text-slate-700 border border-slate-200'))">
+                {{ warehouse.codigo }}
+              </span>
+              
+              <span 
+                *ngIf="selectedWarehouse === warehouse.codigo" 
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> Seleccionada
+              </span>
+              <div 
+                *ngIf="selectedWarehouse !== warehouse.codigo"
+                class="w-6 h-6 rounded-md bg-slate-50 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
+                <i class="bi bi-chevron-right text-xs"></i>
+              </div>
+            </div>
+
+            <h4 class="text-xs font-black text-slate-800 m-0 mb-1 truncate" [title]="warehouse.nombre_bodega">
+              {{ warehouse.nombre_bodega }}
+            </h4>
+
+            <div class="text-xl font-black text-slate-900 mb-2">
+              {{ (+warehouse.valor_total || 0) | currency:'$':'symbol':'1.0-0' }}
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-500 font-medium pt-2 border-t border-slate-100">
+              <span>{{ warehouse.total_items }} refs</span>
+              <span class="font-bold text-slate-700">{{ (+warehouse.total_existencias || 0) | number:'1.0-0' }} unds</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Gráficos Analíticos de Bodegas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+          <!-- Gráfico 1: Valor por Bodega -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <i class="bi bi-bar-chart-fill text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 m-0">Valor Total por Bodega</h3>
+                  <p class="text-[11px] text-slate-400 font-medium m-0">Consolidado financiero a costo promedio</p>
+                </div>
+              </div>
+            </div>
+            <div class="h-80 relative">
+              <canvas id="warehouseValueChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Distribución de Items -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <i class="bi bi-pie-chart text-sm"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 m-0">Distribución de Referencias</h3>
+                  <p class="text-[11px] text-slate-400 font-medium m-0">Participación de items por almacén</p>
+                </div>
+              </div>
+            </div>
+            <div class="h-80 relative flex items-center justify-center">
+              <canvas id="warehouseItemsChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Tabla de Items de la Bodega Seleccionada -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden mb-5" *ngIf="selectedWarehouse">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <i class="bi bi-table text-base"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-black text-slate-900 m-0">Items en {{ getSelectedWarehouseName() }}</h3>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">
+                    {{ filteredWarehouseItems.length }} de {{ warehouseItems.length }}
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-400 font-medium m-0">Detalle de referencias físicas, tallas, zonas y costos valorizados</p>
+              </div>
+            </div>
+
+            <!-- Buscador de items -->
+            <div class="w-full sm:w-80 relative">
+              <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input 
+                type="text" 
+                [(ngModel)]="warehouseSearchTerm"
+                placeholder="Buscar código, referencia, descripción..."
+                class="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-indigo-400 text-slate-800 transition-colors">
+              <button 
+                *ngIf="warehouseSearchTerm" 
+                (click)="warehouseSearchTerm = ''"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 border-0 bg-transparent cursor-pointer p-0">
+                <i class="bi bi-x-circle-fill text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading state para items -->
+          <div *ngIf="loadingWarehouseItems" class="p-12 text-center">
+            <div class="inline-block w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-slate-500 font-bold mt-3">Consultando referencias en SIESA...</p>
+          </div>
+
+          <!-- Tabla de Items -->
+          <div *ngIf="!loadingWarehouseItems" class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <th class="py-3 px-3.5">Código</th>
+                  <th class="py-3 px-3.5">Referencia</th>
+                  <th class="py-3 px-3.5">Descripción</th>
+                  <th class="py-3 px-2 text-center">Color</th>
+                  <th class="py-3 px-2 text-center">Talla</th>
+                  <th class="py-3 px-3">Zonas</th>
+                  <th class="py-3 px-3.5 text-right">Cantidad</th>
+                  <th class="py-3 px-3.5 text-right">Costo Unit.</th>
+                  <th class="py-3 px-3.5 text-right">Costo Total</th>
+                  <th class="py-3 px-3 text-center">U.M.</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let item of filteredWarehouseItems" class="hover:bg-slate-50/70 transition-colors">
+                  <td class="py-2.5 px-3.5 font-black text-slate-900">{{ item.id_item }}</td>
+                  <td class="py-2.5 px-3.5 font-bold text-slate-700">{{ item.referencia || '-' }}</td>
+                  <td class="py-2.5 px-3.5 text-slate-600 max-w-xs truncate" [title]="item.descripcion">{{ item.descripcion }}</td>
+                  <td class="py-2.5 px-2 text-center">
+                    <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                      {{ item.color || '-' }}
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-2 text-center">
+                    <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      {{ item.id_talla || '-' }}
+                    </span>
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <span *ngFor="let zona of item.zonas" class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 mr-1 mb-0.5">
+                      {{ zona.nombre }}
+                    </span>
+                    <span *ngIf="!item.zonas || item.zonas.length === 0" class="text-slate-300">-</span>
+                  </td>
+                  <td class="py-2.5 px-3.5 text-right font-black text-slate-800">{{ (+item.cantidad || 0) | number:'1.2-2' }}</td>
+                  <td class="py-2.5 px-3.5 text-right font-medium text-slate-500">{{ (+item.costo_prom_unitario || 0) | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-2.5 px-3.5 text-right font-black text-indigo-700">{{ (+item.costo_prom_total || 0) | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td class="py-2.5 px-3 text-center text-slate-400 font-bold uppercase text-[10px]">{{ item.unidad_medida }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="bg-slate-50 border-t-2 border-slate-200 font-black text-slate-900" *ngIf="filteredWarehouseItems.length > 0">
+                <tr>
+                  <td colspan="6" class="py-3 px-3.5 text-right uppercase text-[11px] text-slate-500">Totales Bodega:</td>
+                  <td class="py-3 px-3.5 text-right text-sm text-slate-900">{{ (+totalCantidad || 0) | number:'1.2-2' }}</td>
+                  <td></td>
+                  <td class="py-3 px-3.5 text-right text-sm text-indigo-700">{{ (+totalCosto || 0) | currency:'$':'symbol':'1.0-0' }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div *ngIf="filteredWarehouseItems.length === 0" class="p-12 text-center">
+              <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                <i class="bi bi-search text-xl"></i>
+              </div>
+              <p class="text-xs font-bold text-slate-700 m-0">No se encontraron referencias</p>
+              <p class="text-[11px] text-slate-400 m-0 mt-0.5">Prueba buscando con otro término</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado vacío cuando no hay bodegas -->
+      <div *ngIf="!loadingWarehouses && warehousesSummary.length === 0" class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+          <i class="bi bi-inbox text-xl"></i>
+        </div>
+        <p class="text-xs font-bold text-slate-700 m-0">No se encontraron datos de bodegas</p>
+        <p class="text-[11px] text-slate-400 m-0 mt-0.5">Comprueba la conexión con el servidor SIESA</p>
       </div>
     </div>
 </div>

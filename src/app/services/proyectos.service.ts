@@ -201,6 +201,8 @@ export interface Informe {
   total_tareas?: number;
   tareas_completadas?: number;
   tareas_vencidas?: number;
+  total_evidencias?: number;
+  evidencias?: any[];
   progreso?: number;
   puede_gestionar?: boolean;
   es_creador?: boolean;
@@ -458,11 +460,16 @@ export class ProyectoService {
     return this.http.post(`${this.api}/proyectos/${proyectoId}/calcular-fechas`, { usuario_id: usuarioId, responsables });
   }
 
-  getProyectos(usuarioId: number, filtros?: { estado?: EstadoProyecto; activos?: boolean; es_plantilla?: boolean }): Observable<ApiResponse<Proyecto[]>> {
+  getProyectos(
+    usuarioId: number,
+    filtros?: { estado?: EstadoProyecto; activos?: boolean; es_plantilla?: boolean },
+    vistaMode?: 'member' | 'admin'
+  ): Observable<ApiResponse<Proyecto[]>> {
     let params = new HttpParams().set('usuario_id', usuarioId);
     if (filtros?.estado)  params = params.set('estado', filtros.estado);
     if (filtros?.activos) params = params.set('activos', 'true');
     if (filtros?.es_plantilla !== undefined) params = params.set('es_plantilla', filtros.es_plantilla ? 'true' : 'false');
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
     return this.http.get<ApiResponse<Proyecto[]>>(`${this.api}/proyectos`, { params });
   }
 
@@ -648,7 +655,7 @@ export class ProyectoService {
 
   // ── EVIDENCIAS ────────────────────────────────────────────────────────────
 
-  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea', id: number, historico = false, usuarioId?: number): Observable<ApiResponse<any[]>> {
+  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea' | 'informe', id: number, historico = false, usuarioId?: number): Observable<ApiResponse<any[]>> {
     let params = new HttpParams().set('tipo', tipo);
     if (historico) params = params.set('historico', 'true');
     if (usuarioId) params = params.set('usuario_id', String(usuarioId));
@@ -658,12 +665,13 @@ export class ProyectoService {
       case 'tarea':             endpoint = 'tareas'; break;
       case 'seguimiento_tarea': endpoint = 'seguimiento-tareas'; break;
       case 'informe_tarea':     endpoint = 'informe-tareas'; break;
+      case 'informe':           endpoint = 'informes'; break;
     }
 
     return this.http.get<ApiResponse<any[]>>(`${this.api}/${endpoint}/${id}/evidencias`, { params });
   }
 
-  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea', id: number, archivo: File, usuarioId: number): Observable<any> {
+  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea' | 'informe', id: number, archivo: File, usuarioId: number): Observable<any> {
     const form = new FormData();
     form.append('archivo', archivo);
     form.append('tipo', tipo);
@@ -674,6 +682,7 @@ export class ProyectoService {
       case 'tarea':             endpoint = 'tareas'; break;
       case 'seguimiento_tarea': endpoint = 'seguimiento-tareas'; break;
       case 'informe_tarea':     endpoint = 'informe-tareas'; break;
+      case 'informe':           endpoint = 'informes'; break;
     }
 
     return this.http.post<any>(`${this.api}/${endpoint}/${id}/evidencias`, form);

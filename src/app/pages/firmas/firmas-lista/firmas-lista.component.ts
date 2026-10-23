@@ -659,7 +659,7 @@ export class FirmasListaComponent implements OnInit {
 
     Swal.fire({
       title: '¿Reenviar Invitación?',
-      text: 'Se enviará nuevamente el correo con el enlace directo de firma.',
+      text: 'Se enviará nuevamente el correo de invitación y se renovará automáticamente la vigencia del enlace por 30 días.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, Reenviar',

@@ -217,12 +217,12 @@ export class TerminacionEmpaqueService {
     });
   }
 
-  obtenerEmpaquesPorPV(pv_codigo: string, empacador_id: number): Observable<any[]> {
-    return this.http.post<any[]>(`${this.apiLaravelUrl}/empaque/por-pv`,{pv_codigo,empacador_id});
+  obtenerEmpaquesPorPV(pv_codigo: string | number, empacador_id: number): Observable<any[]> {
+    return this.http.post<any[]>(`${this.apiLaravelUrl}/empaque/por-pv`, { pv_codigo: String(pv_codigo), empacador_id });
   }
 
-  EmpaquesPorPV(pv_codigo: string): Observable<any[]> {
-    return this.http.post<any[]>(`${this.apiLaravelUrl}/empaques/por-pv`,{pv_codigo});
+  EmpaquesPorPV(pv_codigo: string | number): Observable<any[]> {
+    return this.http.post<any[]>(`${this.apiLaravelUrl}/empaques/por-pv`, { pv_codigo: String(pv_codigo) });
   }
 
   actualizarCodigoEmpaque(empaque: any): Observable<any> {
@@ -344,29 +344,38 @@ export class TerminacionEmpaqueService {
     );
   }
 
-  eliminarEmpaqueCompleto(numeroEmpaque: string, pvCodigo: string): Observable<any> {
+  eliminarEmpaqueCompleto(numeroEmpaque: string, pvCodigo: string | number): Observable<any> {
     return this.http.delete<any>(
       `${this.apiLaravelUrl}/empaque/eliminar-completo/${numeroEmpaque}`,
-      { body: { pv_codigo: pvCodigo } }
+      { body: { pv_codigo: String(pvCodigo) } }
     );
   }
 
   actualizarEmpaqueCompleto(datos: any): Observable<any> {
+    if (datos && datos.pv_codigo !== undefined) {
+      datos.pv_codigo = String(datos.pv_codigo);
+    }
     return this.http.put<any>(`${this.apiLaravelUrl}/empaque/actualizar`, datos);
   }
 
   actualizarCampoEmpaque(datos: any): Observable<any> {
+    if (datos && datos.pv_codigo !== undefined) {
+      datos.pv_codigo = String(datos.pv_codigo);
+    }
     return this.http.patch<any>(`${this.apiLaravelUrl}/empaque/campo`, datos);
   }
 
   actualizarCantidadItem(datos: any): Observable<any> {
+    if (datos && datos.pv_codigo !== undefined) {
+      datos.pv_codigo = String(datos.pv_codigo);
+    }
     return this.http.patch<any>(`${this.apiLaravelUrl}/empaque/item/cantidad`, datos);
   }
 
-  getMovimientosPorPV(pvCodigo: string): Observable<any> {
+  getMovimientosPorPV(pvCodigo: string | number): Observable<any> {
     return this.http.post<any>(
       `${this.apiLaravelUrl}/empaque/movimientos-por-pv`,
-      { pv_codigo: pvCodigo }
+      { pv_codigo: String(pvCodigo) }
     );
   }
 

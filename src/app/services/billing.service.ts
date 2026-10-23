@@ -28,24 +28,32 @@ export class BillingService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Obtiene datos de facturación por año, plan y periodo
+   * Obtiene datos de facturación por año, plan y periodo (con soporte para refresh)
    */
-  getBillingData(year: number, plan: string, periodo: number): Observable<BillingDataResponse> {
-    const params = new HttpParams()
+  getBillingData(year: number, plan: string, periodo: number, refresh: boolean = false): Observable<BillingDataResponse> {
+    let params = new HttpParams()
       .set('year', year.toString())
       .set('plan', plan)
       .set('periodo', periodo.toString());
 
+    if (refresh) {
+      params = params.set('refresh', 'true');
+    }
+
     return this.http.get<BillingDataResponse>(`${this.apiUrl}/budget-summary`, { params });
   }
 
-  getPreviousShipmentsDetail(year: number, month: number, unidad?: string): Observable<any> {
+  getPreviousShipmentsDetail(year: number, month: number, unidad?: string, refresh: boolean = false): Observable<any> {
     let params = new HttpParams()
       .set('year', year.toString())
       .set('month', month.toString());
     
     if (unidad) {
       params = params.set('unidad', unidad);
+    }
+
+    if (refresh) {
+      params = params.set('refresh', 'true');
     }
     
     return this.http.get(`${this.apiUrl}/previous-shipments-detail`, { params });

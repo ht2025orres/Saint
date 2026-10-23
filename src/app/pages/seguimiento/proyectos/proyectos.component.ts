@@ -1,5 +1,5 @@
 import {
-  Component, Input, OnInit, OnDestroy,
+  Component, Input, OnInit, OnChanges, SimpleChanges, OnDestroy,
   ChangeDetectionStrategy, ChangeDetectorRef,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
@@ -36,7 +36,7 @@ interface TareaEnriquecida extends Tarea {
   selector:    'app-proyectos',
   templateUrl: './proyectos.component.html',
 })
-export class ProyectosComponent implements OnInit, OnDestroy {
+export class ProyectosComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() usuarioId            = 0;
   @Input() puedeGestionarModulo = false;
@@ -102,6 +102,12 @@ export class ProyectosComponent implements OnInit, OnDestroy {
   // ════════════════════════════════════════════════════════════════
   // LIFECYCLE
   // ════════════════════════════════════════════════════════════════
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['vistaMode'] && !changes['vistaMode'].firstChange) {
+      this.cargarProyectos();
+    }
+  }
 
   ngOnInit(): void {
     this.cargarProyectos();
@@ -262,7 +268,7 @@ export class ProyectosComponent implements OnInit, OnDestroy {
       es_plantilla: this.mostrarPlantillas,
     };
 
-    this.proyServ.getProyectos(this.usuarioId, filtros).subscribe({
+    this.proyServ.getProyectos(this.usuarioId, filtros, this.vistaMode).subscribe({
       next: (res) => {
         this.proyectos = res.data ?? [];
         this.onBusquedaChange();

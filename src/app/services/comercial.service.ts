@@ -123,8 +123,11 @@ export class ComercialService {
 
   // ==================== CLIENTES ====================
 
-  listarClientes(): Observable<{ success: boolean; data: ClienteSiesa[] }> {
-    return this.http.get<any>(`${this.api}/comerciales/clientes`);
+  listarClientes(filtros?: { anios?: number; todos?: boolean }): Observable<{ success: boolean; data: ClienteSiesa[] }> {
+    let params = new HttpParams();
+    if (filtros?.anios !== undefined) params = params.set('anios', filtros.anios.toString());
+    if (filtros?.todos) params = params.set('todos', '1');
+    return this.http.get<any>(`${this.api}/comerciales/clientes`, { params });
   }
 
   buscarClientes(word: string): Observable<{ success: boolean; data: ClienteSiesa[] }> {

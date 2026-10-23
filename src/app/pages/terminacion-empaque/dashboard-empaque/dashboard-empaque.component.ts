@@ -623,7 +623,7 @@ export class DashboardEmpaqueComponent implements OnInit {
 
   cargarEmpaquesPVDetalle(pv: any): void {
     if (!pv || !pv.codigo) return;
-    this.empaqueService.EmpaquesPorPV(pv.codigo).subscribe({
+    this.empaqueService.EmpaquesPorPV(String(pv.codigo)).subscribe({
       next: (res: any) => {
         if (res.success && res.data && res.data.length > 0) {
           this.empaquesPVDetalle = res.data.map(empaque => ({
@@ -643,7 +643,8 @@ export class DashboardEmpaqueComponent implements OnInit {
           this.currentEmpaquesPV = [];
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error al cargar empaques de PV:', err);
         this.empaquesPVDetalle = [];
         this.currentEmpaquesPV = [];
       }
