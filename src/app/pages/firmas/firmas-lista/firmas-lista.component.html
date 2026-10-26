@@ -1,132 +1,191 @@
-<div class="p-3 sm:p-4 lg:p-6 bg-slate-50 min-h-screen font-sans">
-  <div class="max-w-7xl mx-auto flex flex-col gap-4 sm:gap-5">
+<div class="p-4 sm:p-6 bg-slate-50 min-h-screen font-sans">
+  <div class="max-w-7xl mx-auto flex flex-col gap-5">
 
-    <!-- BARRA SUPERIOR DE NAVEGACIÓN Y BÚSQUEDA -->
-    <div class="bg-white rounded-2xl p-3 sm:p-4 lg:p-5 border border-slate-200 shadow-sm flex flex-col gap-3">
+    <!-- BARRA SUPERIOR DE NAVEGACIÓN Y BÚSQUEDA DRIVE STYLE -->
+    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col gap-4">
 
-      <!-- ROW 1: BÚSQUEDA GLOBAL (siempre visible, prominente) -->
-      <div class="relative">
-        <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-        <input type="text" [(ngModel)]="search" (ngModelChange)="onSearchChange()" (keyup.enter)="onSearchChange()"
-          placeholder="Buscar por título, firmante, proceso o descripción..."
-          class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all">
-        <button *ngIf="search" (click)="search = ''; onSearchChange()" type="button"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors">
-          <i class="bi bi-x-circle-fill"></i>
-        </button>
-      </div>
-
-      <!-- ROW 2: BREADCRUMBS + CONTROLES (wrap responsive) -->
-      <div class="flex flex-wrap items-center justify-between gap-2">
+      <!-- BREADCRUMBS Y MODOS DE VISTA -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <!-- BREADCRUMBS -->
-        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700 min-w-0 overflow-x-auto">
+        <div class="flex items-center gap-2 text-xs font-bold text-slate-700 overflow-x-auto">
           <button (click)="limpiarSeleccionCarpeta()" type="button"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-colors whitespace-nowrap shrink-0"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors"
             [ngClass]="!selectedFolderKey ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
             <i class="bi bi-hdd-network-fill text-blue-600"></i>
-            <span class="hidden sm:inline">Mi Unidad (Actas de Firma)</span>
-            <span class="sm:hidden">Mi Unidad</span>
+            <span>Mi Unidad (Actas de Firma)</span>
           </button>
 
           <ng-container *ngIf="selectedFolderKey">
-            <i class="bi bi-chevron-right text-slate-400 text-[10px] shrink-0"></i>
+            <i class="bi bi-chevron-right text-slate-400 text-[10px]"></i>
             <span
-              class="px-2.5 py-1.5 bg-purple-50 text-purple-800 border border-purple-200 rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
+              class="px-3 py-1.5 bg-purple-50 text-purple-800 border border-purple-200 rounded-xl flex items-center gap-1.5">
               <i class="bi bi-folder-fill text-purple-600"></i>
               {{ selectedFolderName }}
             </span>
           </ng-container>
+
+          <ng-container *ngIf="!selectedFolderKey && filtroParticipacion">
+            <i class="bi bi-chevron-right text-slate-400 text-[10px]"></i>
+            <span
+              class="px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl flex items-center gap-1.5">
+              <i class="bi bi-funnel-fill text-blue-600"></i>
+              {{ getParticipacionLabel() }}
+            </span>
+          </ng-container>
         </div>
 
-        <!-- CONTROLES: Papelera + Vistas + Acciones -->
-        <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+        <!-- BOTONES DE MODO DE VISTA Y PAPELERA -->
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
           <!-- Toggle Activos vs Papelera -->
-          <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button (click)="togglePapelera(false)" type="button"
-              class="px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-1"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
               [ngClass]="!verPapelera ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
               <i class="bi bi-file-earmark-check-fill"></i>
-              <span class="hidden xs:inline">Activos</span>
+              <span>Activos</span>
             </button>
             <button (click)="togglePapelera(true)" type="button"
-              class="px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center gap-1"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
               [ngClass]="verPapelera ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-500 hover:text-rose-600'">
               <i class="bi bi-trash-fill"></i>
-              <span class="hidden xs:inline">Papelera</span>
+              <span>Papelera</span>
             </button>
           </div>
 
-          <!-- Selector Modo de Vista Compacto -->
-          <div class="relative">
-            <select [ngModel]="viewMode" (ngModelChange)="switchViewMode($event)"
-              class="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 rounded-lg px-2.5 py-1.5 outline-none focus:border-blue-400 cursor-pointer shadow-2xs transition-colors">
-              <option value="folders">📁 Carpetas</option>
-              <option value="grid">⊞ Cuadrícula</option>
-              <option value="table">☰ Tabla</option>
-            </select>
+          <!-- Modos de Vista -->
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button (click)="switchViewMode('folders')" type="button" title="Vista de Carpetas Drive"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+              [ngClass]="viewMode === 'folders' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-folder-symlink-fill"></i>
+              <span class="hidden md:inline">Carpetas</span>
+            </button>
+            <button (click)="switchViewMode('grid')" type="button" title="Vista de Cuadrícula"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+              [ngClass]="viewMode === 'grid' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-grid-fill"></i>
+              <span class="hidden md:inline">Cuadrícula</span>
+            </button>
+            <button (click)="switchViewMode('table')" type="button" title="Vista de Lista"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+              [ngClass]="viewMode === 'table' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'">
+              <i class="bi bi-list-task"></i>
+              <span class="hidden md:inline">Tabla</span>
+            </button>
           </div>
 
           <!-- Acciones Masivas -->
           <button *ngIf="!verPapelera && selectedDocIds.length > 0" (click)="abrirModalEliminarMasivo()" type="button"
-            class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition-colors flex items-center gap-1">
-            <i class="bi bi-trash"></i> <span class="hidden sm:inline">Deshabilitar</span> ({{ selectedDocIds.length }})
+            class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+            <i class="bi bi-trash"></i> Deshabilitar Seleccionados ({{ selectedDocIds.length }})
           </button>
           <button *ngIf="verPapelera && selectedDocIds.length > 0" (click)="restaurarMasivo()" type="button"
-            class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition-colors flex items-center gap-1">
-            <i class="bi bi-arrow-counterclockwise"></i> <span class="hidden sm:inline">Restaurar</span> ({{ selectedDocIds.length }})
+            class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+            <i class="bi bi-arrow-counterclockwise"></i> Restaurar Seleccionados ({{ selectedDocIds.length }})
           </button>
 
           <button (click)="mostrarModalEtiquetas = true" type="button"
-            class="px-2.5 py-1.5 bg-slate-100 hover:bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1">
-            <i class="bi bi-tags-fill"></i> <span class="hidden md:inline">Etiquetas</span>
+            class="px-3.5 py-2 bg-slate-100 hover:bg-blue-50 text-blue-700 border border-blue-200 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5">
+            <i class="bi bi-tags-fill"></i> Etiquetas
           </button>
 
           <button *ngIf="esAdmin" (click)="sincronizarProcesosFirmantes()" type="button"
             [disabled]="sincronizandoProcesos"
-            title="Actualiza los nombres de departamento/proceso de todos los firmantes"
-            class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50">
+            title="Actualiza los nombres de departamento/proceso de todos los firmantes según su asignación actual en Seguridad"
+            class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 disabled:opacity-50">
             <i class="bi" [ngClass]="sincronizandoProcesos ? 'bi-arrow-repeat animate-spin' : 'bi-diagram-3-fill'"></i>
-            <span class="hidden xl:inline">Sincronizar</span>
+            <span class="hidden lg:inline">Sincronizar Procesos</span>
           </button>
         </div>
       </div>
 
-      <!-- ROW 3: FILTROS (responsivos, en fila horizontal que se adapta) -->
-      <div class="flex flex-wrap items-center gap-2">
-        <select [(ngModel)]="filtroProceso" (ngModelChange)="onFilterChange()"
-          class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-lg px-2.5 py-2 outline-none focus:border-blue-400 min-w-0 flex-1 sm:flex-initial sm:w-auto sm:min-w-[160px]">
-          <option value="">Todos los procesos</option>
-          <option *ngFor="let pr of availableProcesos" [value]="pr">🏢 {{ pr }}</option>
-        </select>
+      <!-- BARRA DE BÚSQUEDA Y FILTROS DENSOS POR AÑO, MES, PROCESO Y ESTADO -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+        <!-- BUSCADOR -->
+        <div class="lg:col-span-3 relative">
+          <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" [(ngModel)]="search" (ngModelChange)="onSearchChange()" (keyup.enter)="onSearchChange()"
+            placeholder="Buscar por título, firmante o proceso..."
+            class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-blue-500">
+        </div>
 
-        <select [(ngModel)]="filtroAnio" (ngModelChange)="onFilterChange()"
-          class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-lg px-2.5 py-2 outline-none focus:border-blue-400 w-[100px] sm:w-auto">
-          <option value="">Año</option>
-          <option *ngFor="let y of availableYears" [value]="y">📅 {{ y }}</option>
-        </select>
+        <!-- FILTRO POR PROCESO DE FIRMANTES -->
+        <div class="lg:col-span-3 flex items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-500">Proceso:</span>
+          <select [(ngModel)]="filtroProceso" (ngModelChange)="onFilterChange()"
+            class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-2.5 py-2 outline-none truncate">
+            <option value="">Todos los procesos</option>
+            <option *ngFor="let pr of availableProcesos" [value]="pr">🏢 {{ pr }}</option>
+          </select>
+        </div>
 
-        <select [(ngModel)]="filtroMes" (ngModelChange)="onFilterChange()"
-          class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-lg px-2.5 py-2 outline-none focus:border-blue-400 w-[120px] sm:w-auto">
-          <option value="">Mes</option>
-          <option *ngFor="let m of mesesList" [value]="m.key">🗓️ {{ m.name }}</option>
-        </select>
+        <!-- FILTRO POR AÑO -->
+        <div class="lg:col-span-2 flex items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-500">Año:</span>
+          <select [(ngModel)]="filtroAnio" (ngModelChange)="onFilterChange()"
+            class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-2.5 py-2 outline-none">
+            <option value="">Todos</option>
+            <option *ngFor="let y of availableYears" [value]="y">📅 {{ y }}</option>
+          </select>
+        </div>
 
-        <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFilterChange()"
-          class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-lg px-2.5 py-2 outline-none focus:border-blue-400 w-[130px] sm:w-auto">
-          <option value="">Estado</option>
-          <option value="COMPLETADO">✅ Completado</option>
-          <option value="EN_PROCESO">⏳ En Proceso</option>
-          <option value="PENDIENTE">📋 Pendiente</option>
-          <option value="RECHAZADO">❌ Rechazado</option>
-        </select>
+        <!-- FILTRO POR MES -->
+        <div class="lg:col-span-2 flex items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-500">Mes:</span>
+          <select [(ngModel)]="filtroMes" (ngModelChange)="onFilterChange()"
+            class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-2.5 py-2 outline-none">
+            <option value="">Todos</option>
+            <option *ngFor="let m of mesesList" [value]="m.key">🗓️ {{ m.name }}</option>
+          </select>
+        </div>
 
-        <!-- Badges de filtros activos -->
-        <ng-container *ngIf="search || estadoFiltro || filtroAnio || filtroMes || filtroProceso || selectedFolderKey">
-          <button (click)="limpiarSeleccionCarpeta()" type="button"
-            class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1">
-            <i class="bi bi-x-circle"></i> Limpiar filtros
-          </button>
-        </ng-container>
+        <!-- FILTRO POR ESTADO -->
+        <div class="lg:col-span-2 flex items-center gap-1.5">
+          <span class="text-[11px] font-bold text-slate-500">Estado:</span>
+          <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFilterChange()"
+            class="w-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-2.5 py-2 outline-none">
+            <option value="">Todos</option>
+            <option value="COMPLETADO">COMPLETADO</option>
+            <option value="EN_PROCESO">EN PROCESO</option>
+            <option value="PENDIENTE">PENDIENTE</option>
+            <option value="RECHAZADO">RECHAZADO</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- FILTROS DE PARTICIPACIÓN RÁPIDA: TODOS | FIRMADOS POR MÍ | PENDIENTES DE MI FIRMA | CREADOS POR MÍ -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 border-t border-slate-100 pt-3">
+        <button (click)="filtrarParticipacion('')" type="button"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+          [ngClass]="filtroParticipacion === '' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+          <i class="bi bi-collection-fill"></i>
+          <span>Todos</span>
+          <span *ngIf="resumenStats" class="px-1.5 py-0.2 rounded-full text-[10px]" [ngClass]="filtroParticipacion === '' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'">{{ resumenStats.total || 0 }}</span>
+        </button>
+
+        <button (click)="filtrarParticipacion('firmados_por_mi')" type="button"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+          [ngClass]="filtroParticipacion === 'firmados_por_mi' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'">
+          <i class="bi bi-patch-check-fill text-emerald-500" [ngClass]="filtroParticipacion === 'firmados_por_mi' ? 'text-white' : 'text-emerald-500'"></i>
+          <span>Firmados por mí</span>
+          <span *ngIf="countMisFirmados !== undefined" class="px-1.5 py-0.2 rounded-full text-[10px]" [ngClass]="filtroParticipacion === 'firmados_por_mi' ? 'bg-emerald-700 text-white' : 'bg-emerald-200 text-emerald-900'">{{ countMisFirmados }}</span>
+        </button>
+
+        <button (click)="filtrarParticipacion('por_firmar')" type="button"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+          [ngClass]="filtroParticipacion === 'por_firmar' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'">
+          <i class="bi bi-pen-fill" [ngClass]="filtroParticipacion === 'por_firmar' ? 'text-white' : 'text-amber-500'"></i>
+          <span>Pendientes de mi firma</span>
+          <span *ngIf="countMisPorFirmar !== undefined" class="px-1.5 py-0.2 rounded-full text-[10px]" [ngClass]="filtroParticipacion === 'por_firmar' ? 'bg-amber-600 text-white' : 'bg-amber-200 text-amber-900'">{{ countMisPorFirmar }}</span>
+        </button>
+
+        <button (click)="filtrarParticipacion('creados_por_mi')" type="button"
+          class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+          [ngClass]="filtroParticipacion === 'creados_por_mi' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200'">
+          <i class="bi bi-file-earmark-person-fill" [ngClass]="filtroParticipacion === 'creados_por_mi' ? 'text-white' : 'text-indigo-500'"></i>
+          <span>Mis solicitudes creadas</span>
+          <span *ngIf="countMisCreados !== undefined" class="px-1.5 py-0.2 rounded-full text-[10px]" [ngClass]="filtroParticipacion === 'creados_por_mi' ? 'bg-indigo-700 text-white' : 'bg-indigo-200 text-indigo-900'">{{ countMisCreados }}</span>
+        </button>
       </div>
 
     </div>
@@ -162,7 +221,8 @@
                   class="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 shadow-xs">{{
                   getCountByEstado('COMPLETADO') }}</span>
               </div>
-              <span class="text-[10px] text-emerald-700 block font-medium mt-0.5 truncate">Todas las firmas estampadas</span>
+              <span class="text-[10px] text-emerald-700 block font-medium mt-0.5 truncate">Todas las firmas
+                estampadas</span>
             </div>
           </div>
 
@@ -178,7 +238,8 @@
                 <span class="text-xs font-black px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 shadow-xs">{{
                   getCountByEstado('EN_PROCESO') }}</span>
               </div>
-              <span class="text-[10px] text-amber-700 block font-medium mt-0.5 truncate">Firmas parciales en espera</span>
+              <span class="text-[10px] text-amber-700 block font-medium mt-0.5 truncate">Firmas parciales en
+                espera</span>
             </div>
           </div>
 
@@ -216,24 +277,76 @@
         </div>
       </div>
 
-      <!-- SECCIÓN B: CARPETAS POR ETIQUETA / PROCESO -->
+      <!-- SECCIÓN B1: CARPETAS COMPARTIDAS CONMIGO -->
+      <div *ngIf="carpetasCompartidasConmigo.length > 0" class="bg-gradient-to-r from-purple-50/50 via-white to-indigo-50/30 rounded-2xl p-5 border border-purple-200/80 shadow-xs">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold text-purple-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="bi bi-people-fill text-purple-600 text-base"></i> Carpetas Compartidas Conmigo
+          </h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+            {{ carpetasCompartidasConmigo.length }} {{ carpetasCompartidasConmigo.length === 1 ? 'carpeta' : 'carpetas' }}
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div *ngFor="let folder of carpetasCompartidasConmigo" (click)="abrirCarpetaEtiqueta(folder)"
+            class="p-3.5 rounded-2xl border border-purple-200 bg-white hover:bg-purple-50/60 hover:border-purple-300 transition-all cursor-pointer flex items-center gap-3 group shadow-2xs relative">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-sm shrink-0 relative"
+              [style.backgroundColor]="folder.color || '#8b5cf6'">
+              <i class="bi bi-folder-symlink-fill"></i>
+              <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white text-purple-700 shadow-xs flex items-center justify-center text-[9px] border border-purple-200">
+                <i class="bi bi-people-fill"></i>
+              </span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="text-xs font-bold text-slate-800 group-hover:text-purple-700 block truncate">{{ folder.nombre }}</span>
+              <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <span class="text-[10px] text-slate-500 font-medium">{{ folder.count }} {{ folder.count === 1 ? 'doc' : 'docs' }}</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-700">{{ folder.mi_rol || 'EDITOR' }}</span>
+              </div>
+              <span *ngIf="folder.creador" class="text-[9px] text-slate-400 block truncate mt-0.5">
+                De: {{ folder.creador.nombres }} {{ folder.creador.apellidos }}
+              </span>
+            </div>
+
+            <!-- Botón para gestionar miembros / compartir -->
+            <button (click)="abrirModalCompartirCarpeta(folder, $event)" title="Gestionar colaboradores"
+              class="w-7 h-7 rounded-lg bg-purple-50 hover:bg-purple-600 hover:text-white text-purple-600 flex items-center justify-center transition-all border border-purple-200/80 shadow-2xs shrink-0">
+              <i class="bi bi-person-plus-fill text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN B2: CARPETAS POR CATEGORÍA / ETIQUETA DE PROCESO -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
         <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
           <i class="bi bi-folder-fill text-amber-500 text-base"></i> Carpetas por Categoría / Etiqueta de Proceso
         </h3>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          <div *ngFor="let folder of carpetasPorEtiqueta" (click)="abrirCarpetaEtiqueta(folder)"
+          <div *ngFor="let folder of carpetasMisEtiquetas" (click)="abrirCarpetaEtiqueta(folder)"
             class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-blue-50/70 hover:border-blue-300 transition-all cursor-pointer flex items-center gap-3 group shadow-2xs">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg shadow-sm shrink-0"
               [style.backgroundColor]="folder.color || '#2563eb'">
-              <i class="bi bi-folder-symlink-fill"></i>
+              <i class="bi bi-folder-fill"></i>
             </div>
             <div class="min-w-0 flex-1">
               <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700 block truncate">{{ folder.nombre }}</span>
-              <span class="text-[10px] text-slate-500 block font-medium">{{ folder.count }} {{ folder.count === 1 ? 'documento' : 'documentos' }}</span>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-[10px] text-slate-500 font-medium">{{ folder.count }} {{ folder.count === 1 ? 'documento' : 'documentos' }}</span>
+                <span *ngIf="folder.total_compartidos > 0" class="text-[9px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                  <i class="bi bi-people-fill text-[8px]"></i> {{ folder.total_compartidos }}
+                </span>
+              </div>
             </div>
-            <i class="bi bi-chevron-right text-slate-400 group-hover:text-blue-600 text-xs"></i>
+
+            <!-- Botón Compartir (solo en carpetas creadas, no en General) -->
+            <button *ngIf="folder.id" (click)="abrirModalCompartirCarpeta(folder, $event)" title="Compartir carpeta con colaboradores"
+              class="w-7 h-7 rounded-lg bg-white/90 hover:bg-blue-600 hover:text-white text-slate-500 flex items-center justify-center transition-all border border-slate-200 shadow-2xs opacity-75 group-hover:opacity-100 shrink-0">
+              <i class="bi bi-person-plus-fill text-xs"></i>
+            </button>
+            <i *ngIf="!folder.id" class="bi bi-chevron-right text-slate-400 group-hover:text-blue-600 text-xs"></i>
           </div>
         </div>
       </div>
@@ -252,8 +365,10 @@
               <i class="bi bi-diagram-3-fill"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700 block truncate">{{ folder.nombre }}</span>
-              <span class="text-[10px] text-slate-500 block font-medium">{{ folder.count }} {{ folder.count === 1 ? 'documento' : 'documentos' }}</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-blue-700 block truncate">{{ folder.nombre
+                }}</span>
+              <span class="text-[10px] text-slate-500 block font-medium">{{ folder.count }} {{ folder.count === 1 ?
+                'documento' : 'documentos' }}</span>
             </div>
             <i class="bi bi-chevron-right text-slate-400 group-hover:text-blue-600 text-xs"></i>
           </div>
@@ -274,8 +389,10 @@
               <i class="bi bi-calendar-event-fill"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-700 block truncate">{{ folder.label }}</span>
-              <span class="text-[10px] text-slate-500 block font-medium">{{ folder.count }} {{ folder.count === 1 ? 'acta' : 'actas' }}</span>
+              <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-700 block truncate">{{ folder.label
+                }}</span>
+              <span class="text-[10px] text-slate-500 block font-medium">{{ folder.count }} {{ folder.count === 1 ?
+                'acta' : 'actas' }}</span>
             </div>
             <i class="bi bi-chevron-right text-slate-400 group-hover:text-indigo-600 text-xs"></i>
           </div>
@@ -296,17 +413,25 @@
     </div>
 
     <!-- =========================================================================== -->
-    <!-- MODO 2: VISTA DE CUADRÍCULA (GRID CARDS OPTIMIZADA) -->
+    <!-- MODO 2: VISTA DE CUADRÍCULA (GRID CARDS) -->
     <!-- =========================================================================== -->
-    <div *ngIf="!loading && viewMode === 'grid' && documentosFiltrados.length > 0"
+    <div *ngIf="!loading && viewMode === 'folders' && !selectedFolderKey && !verPapelera && documentosFiltrados.length > 0"
+      class="flex items-center justify-between pt-1">
+      <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+        <i class="bi bi-file-earmark-text-fill text-blue-600 text-base"></i> Archivos y Documentos en Mi Unidad
+      </h3>
+      <span class="text-xs text-slate-500 font-medium">Mostrando {{ fromItem }} a {{ toItem }} de {{ totalDocs }}</span>
+    </div>
+
+    <div *ngIf="!loading && (viewMode === 'grid' || (viewMode === 'folders' && !selectedFolderKey)) && documentosFiltrados.length > 0"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
       <div *ngFor="let doc of documentosFiltrados"
-        class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
+        class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-4">
 
         <!-- CABECERA DE LA TARJETA -->
-        <div class="flex flex-col gap-2.5">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider" [ngClass]="{
                       'bg-emerald-100 text-emerald-800 border border-emerald-300': doc.estado === 'COMPLETADO',
@@ -317,7 +442,19 @@
                 {{ doc.estado }}
               </span>
 
-              <button (click)="cambiarEtiquetaDocumento(doc)" type="button"
+              <!-- Badge de mi participación como firmante -->
+              <ng-container *ngIf="getMiParticipacion(doc) as miPart">
+                <span *ngIf="miPart.esFirmante && miPart.estado === 'FIRMADO'"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                  <i class="bi bi-patch-check-fill text-emerald-600"></i> Firmado por mí
+                </span>
+                <span *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 animate-pulse shadow-2xs">
+                  <i class="bi bi-pen-fill text-amber-600"></i> Pendiente mi firma
+                </span>
+              </ng-container>
+
+              <button *ngIf="puedeGestionarDoc(doc)" (click)="cambiarEtiquetaDocumento(doc)" type="button"
                 title="Cambiar etiqueta / categoría del documento"
                 class="text-[10px] font-bold px-2.5 py-0.5 rounded-full transition-all flex items-center gap-1 cursor-pointer hover:scale-105 border border-transparent shadow-2xs"
                 [ngClass]="doc.etiqueta ? 'text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300'"
@@ -325,111 +462,150 @@
                 🏷️ {{ doc.etiqueta ? doc.etiqueta.nombre : '+ Asignar Etiqueta' }}
                 <i class="bi bi-pencil-fill text-[8px] ms-0.5"></i>
               </button>
+              <span *ngIf="!puedeGestionarDoc(doc) && doc.etiqueta"
+                class="text-[10px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-2xs flex items-center gap-1"
+                [style.backgroundColor]="doc.etiqueta.color || '#2563eb'">
+                🏷️ {{ doc.etiqueta.nombre }}
+              </span>
             </div>
 
-            <span class="text-[10px] text-slate-400 font-bold whitespace-nowrap">
+            <span class="text-[10px] text-slate-400 font-bold">
               📅 {{ doc.created_at | date:'shortDate' }}
             </span>
           </div>
 
-          <div>
-            <h3 class="text-sm font-bold text-slate-800 leading-snug mb-1">{{ doc.titulo }}</h3>
-            <p *ngIf="doc.descripcion" class="text-xs text-slate-500 line-clamp-2 mb-1.5">{{ doc.descripcion }}</p>
-            <span class="text-[11px] text-slate-400 font-medium block truncate">
-              Solicitado por: <strong class="text-slate-700">{{ doc.nombre_creador }}</strong>
-            </span>
-          </div>
+          <h3 class="text-base font-bold text-slate-800 leading-tight mb-1">{{ doc.titulo }}</h3>
+          <p *ngIf="doc.descripcion" class="text-xs text-slate-500 line-clamp-2 mb-2">{{ doc.descripcion }}</p>
+          <span class="text-[11px] text-slate-400 font-medium">Solicitado por: <strong>{{ doc.nombre_creador
+              }}</strong></span>
+        </div>
 
-          <!-- BARRA DE PROGRESO DE FIRMAS -->
-          <div class="mt-1">
-            <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 mb-1">
-              <span>PROGRESO DE FIRMAS</span>
-              <span>{{ getFirmantesCompletadosCount(doc) }} de {{ getFirmantesActivosCount(doc) }} Completadas</span>
-            </div>
-            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-              <div class="h-full bg-emerald-500 transition-all duration-500 rounded-full"
-                [style.width.%]="(getFirmantesActivosCount(doc) > 0) ? (getFirmantesCompletadosCount(doc) / getFirmantesActivosCount(doc) * 100) : 0">
-              </div>
+        <!-- BARRA DE PROGRESO DE FIRMAS -->
+        <div>
+          <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 mb-1">
+            <span>PROGRESO DE FIRMAS</span>
+            <span>{{ getFirmantesCompletadosCount(doc) }} de {{ getFirmantesActivosCount(doc) }} Completadas</span>
+          </div>
+          <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div class="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+              [style.width.%]="(getFirmantesActivosCount(doc) > 0) ? (getFirmantesCompletadosCount(doc) / getFirmantesActivosCount(doc) * 100) : 0">
             </div>
           </div>
         </div>
 
-        <!-- LISTA DE DESTINATARIOS AGRUPADOS (DISEÑO ESPACIOSO Y COMPACTO) -->
-        <div class="flex flex-col gap-2">
+        <!-- LISTA DE DESTINATARIOS AGRUPADOS POR PERSONA -->
+        <div class="grid grid-cols-1 gap-2.5 max-h-56 overflow-y-auto custom-scrollbar">
           <div *ngFor="let group of getGroupedDestinatarios(doc.destinatarios)"
-            class="p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all shadow-2xs" [ngClass]="{
-                 'bg-emerald-50/60 border-emerald-200': group.estado === 'FIRMADO',
-                 'bg-amber-50/50 border-amber-200': group.estado === 'PENDIENTE',
-                 'bg-rose-50/60 border-rose-200': group.estado === 'RECHAZADO',
-                 'bg-slate-100/70 border-slate-200 opacity-70': group.estado === 'DESHABILITADO'
+            class="p-3 rounded-xl border flex flex-col gap-2 transition-all shadow-xs" [ngClass]="{
+                 'bg-emerald-50/70 border-emerald-200': group.estado === 'FIRMADO',
+                 'bg-amber-50/60 border-amber-200': group.estado === 'PENDIENTE',
+                 'bg-rose-50/70 border-rose-200': group.estado === 'RECHAZADO',
+                 'bg-slate-100/80 border-slate-300 opacity-70': group.estado === 'DESHABILITADO'
                }">
             
-            <!-- FILA 1: NOMBRE + BADGE ESTADO + ACCIONES -->
+            <!-- HEADER DEL FIRMANTE -->
             <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                <i class="bi text-xs shrink-0" [ngClass]="{
-                  'bi-check-circle-fill text-emerald-600': group.estado === 'FIRMADO',
-                  'bi-clock-fill text-amber-500': group.estado === 'PENDIENTE',
-                  'bi-x-circle-fill text-rose-600': group.estado === 'RECHAZADO',
-                  'bi-dash-circle text-slate-400': group.estado === 'DESHABILITADO'
-                }"></i>
-                <span class="font-bold text-slate-800 text-xs truncate" [title]="group.nombre_firmante">
-                  {{ group.nombre_firmante }}
-                </span>
-                <span class="text-[9px] font-bold px-1 py-0.2 rounded border shrink-0"
-                  [ngClass]="group.tipo_correo === 'corporativo' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
-                  {{ group.tipo_correo === 'corporativo' ? 'Corp' : 'Pers' }}
-                </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-slate-800 text-xs truncate">{{ group.nombre_firmante }}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded border" [ngClass]="group.tipo_correo === 'corporativo' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'" [title]="group.tipo_correo === 'corporativo' ? 'Correo Corporativo' : 'Correo Personal'">
+                    {{ group.tipo_correo === 'corporativo' ? 'Corp' : 'Pers' }}
+                  </span>
+                </div>
+                <div class="text-[10px] text-slate-500 truncate" [title]="group.email_destinatario">{{ group.email_destinatario }}</div>
               </div>
 
-              <!-- BOTONES DE ACCIÓN RÁPIDA -->
-              <div class="flex items-center gap-1 shrink-0">
-                <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button"
-                  title="Reenviar correo" class="p-1 hover:bg-amber-100 text-amber-700 rounded transition-colors text-xs">
-                  <i class="bi bi-send-fill"></i>
-                </button>
-                <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button"
-                  title="Editar firmante y recuadros" class="p-1 hover:bg-indigo-100 text-indigo-700 rounded transition-colors text-xs">
-                  <i class="bi bi-pencil-square"></i>
-                </button>
-                <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button"
-                  title="Eliminar firmante" class="p-1 hover:bg-rose-100 text-rose-600 rounded transition-colors text-xs">
-                  <i class="bi bi-trash-fill"></i>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase text-white shadow-2xs" [ngClass]="{
+                        'bg-emerald-600': group.estado === 'FIRMADO',
+                        'bg-amber-500': group.estado === 'PENDIENTE',
+                        'bg-rose-600': group.estado === 'RECHAZADO',
+                        'bg-slate-500': group.estado === 'DESHABILITADO'
+                      }">
+                  {{ group.estado }}
+                </span>
+
+                <button (click)="toggleCollapseGroup(group.key, $event)" type="button" class="p-1 hover:bg-slate-200/60 rounded-lg text-slate-600 text-xs transition-colors" [title]="isGroupCollapsed(group.key) ? 'Expandir firmas' : 'Colapsar firmas'">
+                  <i class="bi" [ngClass]="isGroupCollapsed(group.key) ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
                 </button>
               </div>
             </div>
 
-            <!-- FILA 2: CORREO + BADGES DE PÁGINAS -->
-            <div class="flex items-center justify-between gap-2 text-[10px] text-slate-500">
-              <span class="truncate min-w-0" [title]="group.email_destinatario">{{ group.email_destinatario }}</span>
-              <div class="flex items-center gap-1 shrink-0">
-                <span *ngFor="let box of group.boxes" class="px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200 text-[9px] font-bold">
-                  Pág {{ box.pagina || 1 }}
-                </span>
+            <!-- BOTONES ACCIONES GLOBALES DEL FIRMANTE -->
+            <div class="flex items-center justify-between gap-1 text-[10px] border-t border-slate-200/60 pt-1.5 flex-wrap">
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Botón directo para que el firmante actual firme su propio recuadro -->
+                <button *ngIf="group.estado === 'PENDIENTE' && isMiUsuarioGroup(group)" (click)="abrirFirmarDocumento(group.boxes[0].token_firma)" type="button" class="text-emerald-700 font-extrabold hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  <i class="bi bi-pen-fill"></i> Firmar mi recuadro
+                </button>
+
+                <ng-container *ngIf="puedeGestionarDoc(doc)">
+                  <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button" class="text-blue-600 font-bold hover:underline flex items-center gap-0.5">
+                    <i class="bi bi-send-fill"></i> Reenviar
+                  </button>
+                  <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button" class="text-indigo-600 font-bold hover:underline flex items-center gap-0.5">
+                    <i class="bi bi-pencil-square"></i> Editar ({{ group.boxes.length }})
+                  </button>
+                  <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button" class="text-rose-600 font-bold hover:underline flex items-center gap-0.5" title="Eliminar a este firmante con todos sus recuadros">
+                    <i class="bi bi-trash-fill"></i> Eliminar Firmante
+                  </button>
+                </ng-container>
               </div>
             </div>
 
-            <!-- MOTIVO DE RECHAZO SI EXISTE -->
+            <!-- BADGES DE PAGINAS Y RECUADROS INDIVIDUALES (EXTENDIDO POR DEFECTO) -->
+            <div *ngIf="!isGroupCollapsed(group.key)" class="flex flex-wrap gap-1.5 pt-1">
+              <div *ngFor="let box of group.boxes" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all" [ngClass]="{
+                     'bg-emerald-100/90 text-emerald-800 border-emerald-300': box.estado === 'FIRMADO',
+                     'bg-white text-slate-700 border-slate-300 shadow-2xs': box.estado === 'PENDIENTE',
+                     'bg-rose-100/90 text-rose-800 border-rose-300': box.estado === 'RECHAZADO'
+                   }">
+                <span (click)="puedeGestionarDoc(doc) && abrirModalEditarFirmante(box)" class="flex items-center gap-1" [class.cursor-pointer]="puedeGestionarDoc(doc)" [class.hover:underline]="puedeGestionarDoc(doc)">
+                  <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill text-emerald-600' : 'bi-geo-alt-fill text-indigo-500'"></i>
+                  <span>Pág {{ box.pagina || 1 }}</span>
+                </span>
+                <!-- Botón Reiniciar sólo este recuadro -->
+                <button *ngIf="puedeGestionarDoc(doc)" (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+                <!-- Botón X para eliminar sólo este recuadro -->
+                <button *ngIf="puedeGestionarDoc(doc) && box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <!-- MOTIVOS DE RECHAZO (SI HUBIERA) -->
             <ng-container *ngFor="let box of group.boxes">
-              <div *ngIf="box.estado === 'RECHAZADO' && box.motivo_rechazo" class="p-1.5 bg-rose-100 border border-rose-200 rounded text-rose-900 text-[10px] font-medium leading-tight">
-                <i class="bi bi-info-circle me-1"></i> {{ box.motivo_rechazo }}
+              <div *ngIf="box.estado === 'RECHAZADO' && box.motivo_rechazo" class="p-2 bg-rose-100/90 border border-rose-200 rounded-lg text-rose-900 text-[11px] font-medium leading-tight mt-1">
+                <span class="font-bold text-rose-700 block"><i class="bi bi-x-circle-fill me-1"></i> Motivo (Pág {{ box.pagina }}):</span>
+                {{ box.motivo_rechazo }}
               </div>
             </ng-container>
-
           </div>
         </div>
 
         <!-- FOOTER TARJETA -->
-        <div class="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
-          <button *ngIf="!verPapelera" (click)="abrirModalAgregarFirmante(doc)" type="button"
-            class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1">
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+          <button *ngIf="!verPapelera && puedeGestionarDoc(doc)" (click)="abrirModalAgregarFirmante(doc)" type="button"
+            class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1">
             <i class="bi bi-person-plus-fill"></i> + Firmante
           </button>
-          <div class="flex items-center gap-1.5 ms-auto">
+
+          <!-- Si el usuario tiene firma pendiente en este documento, botón destacado Firmar Ahora -->
+          <ng-container *ngIf="getMiParticipacion(doc) as miPart">
+            <button *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'" (click)="abrirFirmarDocumento(miPart.token)"
+              type="button"
+              class="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1">
+              <i class="bi bi-pen-fill"></i> Firmar Ahora
+            </button>
+          </ng-container>
+
+          <div class="flex items-center gap-2 ms-auto">
             <button (click)="verDetalle(doc)" type="button"
               class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">Detalle</button>
             <button (click)="descargarPdf(doc)" type="button"
-              class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1">
+              class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1">
               <i class="bi bi-download"></i> PDF
             </button>
           </div>
@@ -439,51 +615,71 @@
     </div>
 
     <!-- =========================================================================== -->
-    <!-- MODO 3: VISTA DE TABLA DETALLADA (TABLE VIEW OPTIMIZADA) -->
+    <!-- MODO 3: VISTA DE TABLA DETALLADA (TABLE VIEW) -->
     <!-- =========================================================================== -->
     <div *ngIf="!loading && viewMode === 'table' && documentosFiltrados.length > 0"
       class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse min-w-[850px]">
+        <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr
-              class="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase font-bold text-[10px] tracking-wider">
-              <th class="p-3 w-10 text-center">
+              class="bg-slate-100/80 border-b border-slate-200 text-slate-600 uppercase font-bold text-[10px] tracking-wider">
+              <th class="p-3.5 w-10 text-center">
                 <input type="checkbox" [checked]="selectAllDocs" (change)="toggleSelectAllDocs($event)"
                   class="rounded text-blue-600 focus:ring-blue-500 cursor-pointer">
               </th>
-              <th class="p-3 min-w-[200px]">Documento / Acta</th>
-              <th class="p-3 whitespace-nowrap">Categoría / Etiqueta</th>
-              <th class="p-3 text-center whitespace-nowrap">Estado</th>
-              <th class="p-3 min-w-[240px]">Firmantes</th>
-              <th *ngIf="verPapelera" class="p-3">Motivo / Razón</th>
-              <th class="p-3 whitespace-nowrap">Fecha</th>
-              <th class="p-3 text-right whitespace-nowrap">Acciones</th>
+              <th class="p-3.5">Documento / Acta</th>
+              <th class="p-3.5">Categoría / Etiqueta</th>
+              <th class="p-3.5 text-center">Estado</th>
+              <th class="p-3.5">Firmantes</th>
+              <th *ngIf="verPapelera" class="p-3.5">Motivo / Razón de Deshabilitación</th>
+              <th class="p-3.5">Fecha</th>
+              <th class="p-3.5 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr *ngFor="let doc of documentosFiltrados" class="hover:bg-blue-50/40 transition-colors"
               [class.bg-rose-50]="isDocSelected(doc.id!)">
-              <td class="p-3 text-center">
+              <td class="p-3.5 text-center">
                 <input type="checkbox" [checked]="isDocSelected(doc.id!)" (change)="toggleSelectDoc(doc.id!, $event)"
-                  class="rounded text-blue-600 focus:ring-blue-500 cursor-pointer">
+                  [disabled]="!puedeGestionarDoc(doc)"
+                  class="rounded text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
               </td>
-              <td class="p-3">
-                <div class="font-bold text-slate-800 text-xs leading-snug">{{ doc.titulo }}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Creado por: {{ doc.nombre_creador }}</div>
+              <td class="p-3.5">
+                <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5 flex-wrap">
+                  <span>{{ doc.titulo }}</span>
+                  <ng-container *ngIf="getMiParticipacion(doc) as miPart">
+                    <span *ngIf="miPart.esFirmante && miPart.estado === 'FIRMADO'" class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      ✓ Firmado por mí
+                    </span>
+                    <span *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'" class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                      ✍️ Pendiente mi firma
+                    </span>
+                  </ng-container>
+                </div>
+                <div class="text-[10px] text-slate-400">Creado por: {{ doc.nombre_creador }}</div>
               </td>
-              <td class="p-3 whitespace-nowrap">
-                <button (click)="cambiarEtiquetaDocumento(doc)" type="button"
+              <td class="p-3.5">
+                <button *ngIf="puedeGestionarDoc(doc)" (click)="cambiarEtiquetaDocumento(doc)" type="button"
                   title="Cambiar etiqueta / categoría del documento"
-                  class="text-[10px] font-bold px-2 py-0.5 rounded-full transition-all flex items-center gap-1 cursor-pointer hover:scale-105 border border-transparent shadow-2xs"
+                  class="text-[10px] font-bold px-2.5 py-1 rounded-full transition-all flex items-center gap-1 cursor-pointer hover:scale-105 border border-transparent shadow-2xs"
                   [ngClass]="doc.etiqueta ? 'text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300'"
                   [style.backgroundColor]="doc.etiqueta ? (doc.etiqueta.color || '#2563eb') : null">
-                  🏷️ {{ doc.etiqueta ? doc.etiqueta.nombre : '+ Asignar' }}
+                  🏷️ {{ doc.etiqueta ? doc.etiqueta.nombre : '+ Asignar Etiqueta' }}
                   <i class="bi bi-pencil-fill text-[8px] ms-0.5"></i>
                 </button>
+                <span *ngIf="!puedeGestionarDoc(doc) && doc.etiqueta"
+                  class="text-[10px] font-bold px-2.5 py-1 rounded-full text-white shadow-2xs inline-flex items-center gap-1"
+                  [style.backgroundColor]="doc.etiqueta.color || '#2563eb'">
+                  🏷️ {{ doc.etiqueta.nombre }}
+                </span>
+                <span *ngIf="!puedeGestionarDoc(doc) && !doc.etiqueta"
+                  class="text-[10px] text-slate-400 font-medium italic">
+                  Sin etiqueta
+                </span>
               </td>
-              <td class="p-3 text-center whitespace-nowrap">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase" [ngClass]="{
+              <td class="p-3.5 text-center">
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase" [ngClass]="{
                         'bg-emerald-100 text-emerald-800': doc.estado === 'COMPLETADO',
                         'bg-amber-100 text-amber-800': doc.estado === 'EN_PROCESO',
                         'bg-slate-100 text-slate-700': doc.estado === 'PENDIENTE',
@@ -492,39 +688,37 @@
                   {{ doc.estado }}
                 </span>
               </td>
-              <td class="p-3">
-                <div class="flex flex-col gap-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="font-bold text-slate-700 text-[11px]">{{ getFirmantesCompletadosCount(doc) }}/{{ getFirmantesActivosCount(doc) }} firmados</span>
+              <td class="p-3.5 max-w-[280px]">
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-slate-800 text-[11px]">{{ getFirmantesCompletadosCount(doc) }} / {{
+                      getFirmantesActivosCount(doc) }} firmados</span>
                     <button (click)="verDetalle(doc)" type="button"
                       class="text-[10px] text-blue-600 font-bold hover:underline flex items-center gap-0.5 ms-auto shrink-0">
                       <i class="bi bi-people-fill"></i> Gestionar ({{ doc.destinatarios?.length || 0 }})
                     </button>
                   </div>
-                  <!-- Pills compactas de firmantes (sin saltos de línea desordenados) -->
+                  <!-- Pills interactivas de los firmantes (Top 3 + Chip +N más) -->
                   <div class="flex flex-wrap gap-1 items-center">
-                    <span *ngFor="let group of getGroupedDestinatarios(doc.destinatarios).slice(0, 3)"
-                      (click)="verDetalle(doc); $event.stopPropagation()"
-                      class="px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-transform hover:scale-105 inline-flex items-center gap-1 max-w-[170px] truncate whitespace-nowrap shadow-2xs"
+                    <span *ngFor="let group of getGroupedDestinatarios(doc.destinatarios).slice(0, 3)" (click)="verDetalle(doc); $event.stopPropagation()"
+                      class="px-2 py-0.5 rounded-full text-[9px] font-bold cursor-pointer transition-transform hover:scale-105 inline-flex items-center"
                       [ngClass]="{
                             'bg-emerald-100 text-emerald-800 border border-emerald-300': group.estado === 'FIRMADO',
                             'bg-amber-100 text-amber-800 border border-amber-300': group.estado === 'PENDIENTE',
                             'bg-rose-100 text-rose-800 border border-rose-300': group.estado === 'RECHAZADO',
                             'bg-slate-100 text-slate-600 border border-slate-300': group.estado === 'DESHABILITADO'
                           }"
-                      [title]="group.nombre_firmante + ' (' + group.email_destinatario + ') - ' + group.boxes.length + ' firma(s)'">
-                      <i class="bi text-[9px] shrink-0" [ngClass]="{
+                      [title]="group.nombre_firmante + ' (' + group.boxes.length + ' firma(s) en págs ' + getGroupPagesText(group) + ') - Clic para ver'">
+                      <i class="bi me-0.5" [ngClass]="{
                         'bi-check-circle-fill text-emerald-600': group.estado === 'FIRMADO',
                         'bi-clock-fill text-amber-600': group.estado === 'PENDIENTE',
                         'bi-x-circle-fill text-rose-600': group.estado === 'RECHAZADO',
                         'bi-dash-circle text-slate-500': group.estado === 'DESHABILITADO'
                       }"></i>
-                      <span class="truncate">{{ getShortFirmanteName(group.nombre_firmante) }}</span>
-                      <span class="text-[9px] opacity-75 shrink-0">({{ group.boxes.length }})</span>
+                      {{ group.nombre_firmante }} ({{ group.boxes.length }})
                     </span>
 
-                    <span *ngIf="getGroupedDestinatarios(doc.destinatarios).length > 3"
-                      (click)="verDetalle(doc); $event.stopPropagation()"
+                    <span *ngIf="getGroupedDestinatarios(doc.destinatarios).length > 3" (click)="verDetalle(doc); $event.stopPropagation()"
                       class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors inline-flex items-center gap-0.5"
                       [title]="'Ver todos los ' + getGroupedDestinatarios(doc.destinatarios).length + ' firmantes'">
                       +{{ getGroupedDestinatarios(doc.destinatarios).length - 3 }} más
@@ -532,33 +726,45 @@
                   </div>
                 </div>
               </td>
-              <td *ngIf="verPapelera" class="p-3 max-w-xs">
-                <div class="p-1.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 font-medium text-[11px]">
+              <td *ngIf="verPapelera" class="p-3.5 max-w-xs">
+                <div class="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 font-medium text-[11px]">
                   <i class="bi bi-info-circle me-1"></i> {{ doc.razon_eliminacion || 'Sin motivo' }}
+                  <div *ngIf="doc.fecha_eliminacion" class="text-[9px] text-rose-500 font-bold mt-0.5">
+                    {{ doc.fecha_eliminacion | date:'medium' }}
+                  </div>
                 </div>
               </td>
-              <td class="p-3 text-slate-500 font-medium whitespace-nowrap text-[11px]">
-                {{ doc.created_at | date:'shortDate' }}
+              <td class="p-3.5 text-slate-500 font-medium whitespace-nowrap">
+                {{ doc.created_at | date:'mediumDate' }}
               </td>
-              <td class="p-3 text-right whitespace-nowrap">
-                <div class="flex items-center justify-end gap-1">
-                  <button *ngIf="!verPapelera" (click)="abrirModalAgregarFirmante(doc)" type="button"
+              <td class="p-3.5 text-right whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1.5">
+                  <!-- Botón directo de firma para el usuario si es su turno -->
+                  <ng-container *ngIf="getMiParticipacion(doc) as miPart">
+                    <button *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'" (click)="abrirFirmarDocumento(miPart.token)"
+                      type="button"
+                      class="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-lg shadow-xs flex items-center gap-1">
+                      <i class="bi bi-pen-fill"></i> Firmar
+                    </button>
+                  </ng-container>
+
+                  <button *ngIf="!verPapelera && puedeGestionarDoc(doc)" (click)="abrirModalAgregarFirmante(doc)" type="button"
                     title="Agregar nuevo firmante a este documento"
-                    class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold rounded-lg text-[11px] flex items-center gap-1">
+                    class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold rounded-lg flex items-center gap-1">
                     <i class="bi bi-person-plus-fill"></i> <span class="hidden xl:inline">+ Firmante</span>
                   </button>
                   <button (click)="verDetalle(doc)" type="button"
-                    class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px]">Ver</button>
+                    class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg">Ver</button>
                   <button (click)="descargarPdf(doc)" type="button"
-                    class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-2xs text-[11px]">PDF</button>
-                  <button *ngIf="!verPapelera" (click)="abrirModalEliminarMasivo(doc)" type="button"
+                    class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-xs">PDF</button>
+                  <button *ngIf="!verPapelera && puedeGestionarDoc(doc)" (click)="abrirModalEliminarMasivo(doc)" type="button"
                     title="Mover a Papelera"
-                    class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg text-[11px]">
+                    class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg">
                     <i class="bi bi-trash"></i>
                   </button>
-                  <button *ngIf="verPapelera" (click)="restaurarMasivo(doc)" type="button"
+                  <button *ngIf="verPapelera && puedeGestionarDoc(doc)" (click)="restaurarMasivo(doc)" type="button"
                     title="Restaurar de la Papelera"
-                    class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-2xs text-[11px] flex items-center gap-1">
+                    class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs flex items-center gap-1">
                     <i class="bi bi-arrow-counterclockwise"></i> Restaurar
                   </button>
                 </div>
@@ -572,7 +778,7 @@
     <!-- =========================================================================== -->
     <!-- BARRA DE PAGINACIÓN GLOBAL SAINT (GRID, TABLA & CARPETAS) -->
     <!-- =========================================================================== -->
-    <div *ngIf="!loading && totalDocs > 0 && viewMode !== 'folders'"
+    <div *ngIf="!loading && totalDocs > 0"
       class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
 
       <!-- Informacion de registros y Dropdown items por página -->
@@ -663,11 +869,11 @@
     </div>
 
     <!-- CONTENIDO PRINCIPAL: 2 COLUMNAS (IZQUIERDA: PREVISUALIZADOR PDF, DERECHA: DATOS Y FIRMANTES) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1 min-h-0 overflow-hidden">
 
       <!-- COLUMNA IZQUIERDA: PREVISUALIZADOR INTERACTIVO PDF (7 COLS) -->
       <div
-        class="lg:col-span-7 bg-slate-50 rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col h-[400px] lg:h-full overflow-hidden">
+        class="lg:col-span-7 bg-slate-50 rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col h-full overflow-hidden">
 
         <!-- BARRA NAVEGACIÓN Y ZOOM -->
         <div
@@ -787,7 +993,7 @@
                   [ngClass]="sincronizandoProcesos ? 'bi-arrow-repeat animate-spin' : 'bi-arrow-repeat'"></i> Actualizar
                 Procesos
               </button>
-              <button *ngIf="!verPapelera" (click)="abrirModalAgregarFirmante(selectedDocDetail)" type="button"
+              <button *ngIf="!verPapelera && puedeGestionarDoc(selectedDocDetail)" (click)="abrirModalAgregarFirmante(selectedDocDetail)" type="button"
                 class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1">
                 <i class="bi bi-person-plus-fill"></i> + Firmante
               </button>
@@ -820,12 +1026,20 @@
 
                   <!-- ACCIONES INTERACTIVAS DEL FIRMANTE DENTRO DEL MODAL -->
                   <div class="flex items-center gap-1.5 flex-wrap justify-end">
-                    <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button"
-                      class="text-[10px] text-blue-600 font-bold hover:underline">Reenviar</button>
-                    <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button"
-                      class="text-[10px] text-indigo-600 font-bold hover:underline">Editar ({{ group.boxes.length }})</button>
-                    <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button"
-                      class="text-[10px] text-rose-600 font-bold hover:underline">Eliminar</button>
+                    <!-- Botón directo de firma para el usuario si es su turno -->
+                    <button *ngIf="group.estado === 'PENDIENTE' && isMiUsuarioGroup(group)" (click)="abrirFirmarDocumento(group.boxes[0].token_firma)" type="button"
+                      class="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1">
+                      <i class="bi bi-pen-fill"></i> Firmar Ahora
+                    </button>
+
+                    <ng-container *ngIf="puedeGestionarDoc(selectedDocDetail)">
+                      <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button"
+                        class="text-[10px] text-blue-600 font-bold hover:underline">Reenviar</button>
+                      <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button"
+                        class="text-[10px] text-indigo-600 font-bold hover:underline">Editar ({{ group.boxes.length }})</button>
+                      <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button"
+                        class="text-[10px] text-rose-600 font-bold hover:underline">Eliminar</button>
+                    </ng-container>
                   </div>
                 </div>
               </div>
@@ -837,16 +1051,16 @@
                        'bg-white text-slate-700 border-slate-300 shadow-2xs': box.estado === 'PENDIENTE',
                        'bg-rose-100/90 text-rose-800 border-rose-300': box.estado === 'RECHAZADO'
                      }">
-                  <span (click)="abrirModalEditarFirmante(box)" class="cursor-pointer hover:underline flex items-center gap-1">
+                  <span (click)="puedeGestionarDoc(selectedDocDetail) && abrirModalEditarFirmante(box)" class="flex items-center gap-1" [class.cursor-pointer]="puedeGestionarDoc(selectedDocDetail)" [class.hover:underline]="puedeGestionarDoc(selectedDocDetail)">
                     <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill text-emerald-600' : 'bi-geo-alt-fill text-indigo-500'"></i>
                     <span>Pág {{ box.pagina || 1 }}</span>
                   </span>
                   <!-- Botón Reiniciar sólo este recuadro -->
-                  <button (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
+                  <button *ngIf="puedeGestionarDoc(selectedDocDetail)" (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
                     <i class="bi bi-arrow-counterclockwise"></i>
                   </button>
                   <!-- Botón X para eliminar sólo este recuadro -->
-                  <button *ngIf="box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
+                  <button *ngIf="puedeGestionarDoc(selectedDocDetail) && box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
                     &times;
                   </button>
                 </div>
@@ -873,12 +1087,12 @@
     <!-- FOOTER MODAL -->
     <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 flex-wrap shrink-0">
       <div>
-        <button *ngIf="!verPapelera" (click)="showDetailModal = false; abrirModalEliminarMasivo(selectedDocDetail)"
+        <button *ngIf="!verPapelera && puedeGestionarDoc(selectedDocDetail)" (click)="showDetailModal = false; abrirModalEliminarMasivo(selectedDocDetail)"
           type="button"
           class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
           <i class="bi bi-trash"></i> Deshabilitar y Mover a Papelera
         </button>
-        <button *ngIf="verPapelera" (click)="showDetailModal = false; restaurarMasivo(selectedDocDetail)" type="button"
+        <button *ngIf="verPapelera && puedeGestionarDoc(selectedDocDetail)" (click)="showDetailModal = false; restaurarMasivo(selectedDocDetail)" type="button"
           class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow">
           <i class="bi bi-arrow-counterclockwise"></i> Restaurar de la Papelera
         </button>
@@ -888,6 +1102,11 @@
         <button (click)="showDetailModal = false" type="button"
           class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
           Cerrar
+        </button>
+        <button *ngIf="getMiParticipacion(selectedDocDetail).esFirmante && getMiParticipacion(selectedDocDetail).estado === 'PENDIENTE'"
+          (click)="abrirFirmarDocumento(getMiParticipacion(selectedDocDetail).token)" type="button"
+          class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow">
+          <i class="bi bi-pen-fill"></i> Firmar Ahora
         </button>
         <button (click)="descargarPdf(selectedDocDetail)" type="button"
           class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow">
@@ -939,11 +1158,11 @@
     </div>
 
     <!-- BODY GRID 2 COLUMNAS (IZQ: VISOR PDF + BARRA RECUADROS, DER: FORMULARIO) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-y-auto lg:overflow-hidden min-h-0">
+    <div class="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
 
       <!-- COLUMNA IZQUIERDA: VISOR PDF INTERACTIVO (7 COLS) -->
       <div
-        class="lg:col-span-7 bg-slate-950 p-4 flex flex-col items-center justify-between border-b lg:border-b-0 lg:border-r border-slate-800 overflow-hidden relative min-h-[420px] lg:min-h-0">
+        class="lg:col-span-7 bg-slate-950 p-4 flex flex-col items-center justify-between border-r border-slate-800 overflow-hidden relative">
 
         <!-- CONTROLES DE PÁGINA Y ZOOM -->
         <div
@@ -1292,6 +1511,157 @@
         class="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center gap-1.5">
         <i class="bi bi-trash-fill"></i>
         <span>{{ submittingDelete ? 'Deshabilitando...' : 'Confirmar y Mover a Papelera' }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPARTIR CARPETA / ETIQUETA -->
+<div *ngIf="mostrarModalCompartirCarpeta"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-fade-in">
+  <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 border border-slate-100 max-h-[90vh] overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-sm shrink-0"
+          [style.backgroundColor]="etiquetaParaCompartir?.color || '#8b5cf6'">
+          <i class="bi bi-folder-symlink-fill"></i>
+        </div>
+        <div class="min-w-0">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 truncate">
+            Compartir Carpeta: <span class="text-purple-700 truncate">{{ etiquetaParaCompartir?.nombre }}</span>
+          </h3>
+          <p class="text-[11px] text-slate-500 font-medium">Gestiona qué colaboradores pueden ver, subir y firmar documentos en esta carpeta.</p>
+        </div>
+      </div>
+      <button (click)="cerrarModalCompartirCarpeta()" type="button" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Body: Form to invite -->
+    <div class="flex-1 overflow-y-auto space-y-4 pe-1">
+      <!-- Input de búsqueda y selector de rol -->
+      <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+        <label class="block text-xs font-bold text-slate-700">Agregar colaboradores a la carpeta</label>
+        
+        <div class="relative">
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text"
+                [(ngModel)]="busquedaColaboradorCompartir"
+                (input)="onBusquedaColaboradorCompartirChange()"
+                (focus)="onBusquedaColaboradorCompartirChange()"
+                placeholder="Buscar por nombre o correo corporativo..."
+                class="w-full ps-8 pe-8 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20" />
+              <button *ngIf="busquedaColaboradorCompartir" (click)="limpiarColaboradorCompartir()" type="button"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+                <i class="bi bi-x-circle-fill"></i>
+              </button>
+            </div>
+
+            <!-- Selector de Rol -->
+            <select [(ngModel)]="rolSeleccionadoParaCompartir"
+              class="py-2.5 px-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-purple-500 shrink-0">
+              <option value="EDITOR">Editor (Colaborador)</option>
+              <option value="LECTOR">Lector (Solo vista)</option>
+            </select>
+          </div>
+
+          <!-- Dropdown sugerencias -->
+          <div *ngIf="mostrarDropdownCompartir && colaboradoresFiltradosCompartir.length > 0"
+            class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-48 overflow-y-auto z-20 divide-y divide-slate-100">
+            <div *ngFor="let colab of colaboradoresFiltradosCompartir"
+              (click)="seleccionarColaboradorCompartir(colab)"
+              class="p-2.5 hover:bg-purple-50/70 cursor-pointer flex items-center gap-3 transition-colors">
+              <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0">
+                {{ (colab.nombres || colab.firstName || 'C')[0] }}{{ (colab.apellidos || colab.lastName || '')[0] }}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold text-slate-800 truncate">{{ colab.nombres || colab.firstName }} {{ colab.apellidos || colab.lastName }}</div>
+                <div class="text-[10px] text-slate-500 truncate">{{ colab.correo_corporativo || colab.correo_personal || colab.email }}</div>
+              </div>
+              <i class="bi bi-plus-circle-fill text-purple-600 text-sm shrink-0"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colaborador seleccionado preview & Botón Agregar -->
+        <div *ngIf="colaboradorSeleccionadoParaCompartir" class="flex items-center justify-between p-2.5 bg-purple-50/70 border border-purple-200 rounded-xl">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="bi bi-check-circle-fill text-purple-600 text-sm"></i>
+            <span class="text-xs font-bold text-purple-900 truncate">
+              {{ colaboradorSeleccionadoParaCompartir.nombres || colaboradorSeleccionadoParaCompartir.firstName }}
+              {{ colaboradorSeleccionadoParaCompartir.apellidos || colaboradorSeleccionadoParaCompartir.lastName }}
+            </span>
+            <span class="text-[10px] font-semibold text-purple-700 bg-purple-200/60 px-2 py-0.5 rounded-full shrink-0">
+              {{ rolSeleccionadoParaCompartir === 'EDITOR' ? 'Editor' : 'Lector' }}
+            </span>
+          </div>
+
+          <button (click)="agregarColaboradorCarpeta()" [disabled]="guardandoCompartir" type="button"
+            class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 shrink-0">
+            <i class="bi bi-person-check-fill"></i>
+            <span>{{ guardandoCompartir ? 'Guardando...' : 'Compartir' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de personas con acceso -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="bi bi-people-fill text-slate-400"></i> Personas con acceso
+          </h4>
+          <span class="text-[11px] font-semibold text-slate-500">{{ miembrosCompartidosEtiqueta.length }} miembro(s)</span>
+        </div>
+
+        <div *ngIf="cargandoMiembrosEtiqueta" class="py-6 text-center text-slate-400 text-xs">
+          <i class="bi bi-arrow-repeat animate-spin text-lg block mb-1"></i>
+          Cargando miembros...
+        </div>
+
+        <div *ngIf="!cargandoMiembrosEtiqueta && miembrosCompartidosEtiqueta.length === 0"
+          class="py-6 text-center text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <i class="bi bi-person-x text-2xl block text-slate-300 mb-1"></i>
+          Esta carpeta aún no ha sido compartida con otros colaboradores.
+        </div>
+
+        <div *ngIf="!cargandoMiembrosEtiqueta && miembrosCompartidosEtiqueta.length > 0" class="space-y-2">
+          <div *ngFor="let m of miembrosCompartidosEtiqueta"
+            class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-slate-300 transition-colors">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0">
+                {{ (m.nombres || 'C')[0] }}{{ (m.apellidos || '')[0] }}
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-800 truncate">{{ m.nombres }} {{ m.apellidos }}</div>
+                <div class="text-[10px] text-slate-400 truncate">{{ m.correo_corporativo || m.correo_personal || m.email }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [ngClass]="m.pivot?.rol === 'EDITOR' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'">
+                {{ m.pivot?.rol === 'EDITOR' ? 'Editor' : 'Lector' }}
+              </span>
+
+              <button (click)="removerColaboradorCarpeta(m.id)" type="button" title="Revocar acceso"
+                class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors">
+                <i class="bi bi-trash3-fill text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end pt-3 border-t border-slate-100">
+      <button (click)="cerrarModalCompartirCarpeta()" type="button"
+        class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">
+        Listo
       </button>
     </div>
   </div>
