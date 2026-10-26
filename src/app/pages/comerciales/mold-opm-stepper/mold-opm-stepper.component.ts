@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, DoCheck, SimpleChanges } from '@angular/core';
 import { MoldService, GenericMaterial } from '../../../services/mold.service';
 import Swal from 'sweetalert2';
 
@@ -18,7 +18,7 @@ export interface ZoneConfig {
   templateUrl: './mold-opm-stepper.component.html',
   styleUrls: ['./mold-opm-stepper.component.css']
 })
-export class MoldOpmStepperComponent implements OnInit, OnChanges {
+export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   @Input() item: any;
   @Input() itemIndex: number = 0;
   @Output() onOpmSaved = new EventEmitter<any>();
@@ -98,11 +98,14 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges {
   activePartInModal: any = null;
   modalStep: 'select-part' | 'select-variant' = 'select-part';
 
+  loadedMoldId: number | null = null;
+
   constructor(private moldService: MoldService) {}
 
   ngOnInit(): void {
     const moldId = this.item?.moldId || this.item?.mold_id;
     if (moldId) {
+      this.loadedMoldId = moldId;
       this.loadMoldData(moldId);
     }
     this.loadGenericMaterials();
@@ -111,19 +114,37 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['item'] && !changes['item'].firstChange) {
-      const prevMoldId = changes['item'].previousValue?.moldId || changes['item'].previousValue?.mold_id;
-      const currentMoldId = this.item?.moldId || this.item?.mold_id;
-      if (currentMoldId && currentMoldId !== prevMoldId) {
-        this.loadMoldData(currentMoldId);
-      }
+    const currentMoldId = this.item?.moldId || this.item?.mold_id;
+    if (currentMoldId && currentMoldId !== this.loadedMoldId) {
+      this.cambiarAMolde(currentMoldId);
     }
+  }
+
+  ngDoCheck(): void {
+    const currentMoldId = this.item?.moldId || this.item?.mold_id;
+    if (currentMoldId && currentMoldId !== this.loadedMoldId) {
+      this.cambiarAMolde(currentMoldId);
+    }
+  }
+
+  cambiarAMolde(moldId: number): void {
+    this.loadedMoldId = moldId;
+    this.selectedTypes = {};
+    this.zoneObservations = {};
+    this.activeFloatingZone = null;
+    this.showFloatingZoneModal = false;
+    this.showGeneralPartsModal = false;
+    this.showInventorySearchModal = false;
+    this.opmSuccess = false;
+    this.generatedOpmCode = '';
+    this.loadMoldData(moldId);
   }
 
   // ==================== CARGA DEL MOLDE ====================
 
   loadMoldData(moldId: number): void {
     this.loadingMold = true;
+    this.mold = null; // Limpiar molde previo para evitar mezclas visuales
     this.moldService.getMold(moldId).subscribe({
       next: (res: any) => {
         this.loadingMold = false;

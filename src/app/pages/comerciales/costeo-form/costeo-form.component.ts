@@ -558,7 +558,11 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     item.moldId = mold.id;
     item.moldName = mold.name;
     item.technicalSpecId = null; // Reset spec when changing mold
+    item.opmReference = undefined;
+    item.totalSamTime = 0;
     item.availableMolds = this.allMolds.filter(m => m.mold_category_id === item.categoryId);
+    // Clonar para forzar cambio de referencia y disparar inputs en componentes hijos
+    this.items[this.moldSelectorItemIndex] = { ...item };
     this.saveToLocalStorage();
     this.closeMoldSelector();
   }
@@ -571,7 +575,10 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     item.categoryId = null;
     item.categoryName = '';
     item.technicalSpecId = null;
+    item.opmReference = undefined;
+    item.totalSamTime = 0;
     item.availableMolds = [];
+    this.items[index] = { ...item };
     this.saveToLocalStorage();
   }
 
