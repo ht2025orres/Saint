@@ -95,7 +95,9 @@ const customInitFunctions = () => {
     // Sidebarmenu
     // ==============================================================
     $(function() {
-      $('#sidebarnav').AdminMenu();
+      if (typeof $.fn.AdminMenu === 'function') {
+        $('#sidebarnav').AdminMenu();
+      }
     });
 
     // ==============================================================

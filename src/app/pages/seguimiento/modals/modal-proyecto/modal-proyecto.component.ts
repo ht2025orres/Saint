@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Proyecto } from 'src/app/services/proyectos.service';
+import { SeguimientoStateService } from '../../seguimiento-state.service';
 
 export interface ProyectoForm {
   titulo:               string;
@@ -36,7 +37,15 @@ export class ModalProyectoComponent implements OnChanges {
   get esEdicion(): boolean { return !!this.proyecto; }
   get tituloModal(): string  { return this.esEdicion ? 'Editar Proyecto' : 'Nuevo Proyecto'; }
 
-  constructor(private fb: FormBuilder) {
+  get creadorNombre(): string {
+    if (!this.proyecto) return '';
+    return this.proyecto.creador_nombre || this.state.nombreUsuario(this.proyecto.usuario_creador_id) || (`Usuario #${this.proyecto.usuario_creador_id}`);
+  }
+
+  constructor(
+    private fb: FormBuilder,
+    public state: SeguimientoStateService
+  ) {
     this.form = this.fb.group({
       titulo:               ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
       descripcion:          [''],

@@ -108,8 +108,9 @@ export class DesasignarPvModalComponent implements OnInit {
               Swal.fire('Error', r?.error || 'No se pudo desasignar.', 'error');
             }
           },
-          error: () => {
-            Swal.fire('Error', 'No se pudo desasignar la PV.', 'error');
+          error: (err) => {
+            console.error('Error al desasignar PV:', err);
+            Swal.fire('Error', err?.error?.error || 'No se pudo desasignar la PV.', 'error');
           }
         });
       }

@@ -1,0 +1,883 @@
+<div class="opm-canvas-container" *ngIf="!loadingMold && mold; else loadingState">
+
+  <!-- ==================== HEADER COMPACTO Y MODERNO DEL MOLDE ==================== -->
+  <header class="opm-header">
+    <div class="header-left">
+      <div class="mold-icon-badge">
+        <i class="bi bi-scissors"></i>
+      </div>
+      <div class="mold-titles">
+        <div class="mold-category-tag">
+          <span class="badge-cat"><i class="bi bi-tag-fill"></i> {{ mold.category?.name || 'Prenda' }}</span>
+          <span *ngIf="item.technicalSpecId || item.technical_spec_id || generatedOpmCode" class="badge-opm-code">
+            <i class="bi bi-check-circle-fill"></i> {{ generatedOpmCode || item.opmReference || item.opm_reference || ('OPM ID: ' + (item.technicalSpecId || item.technical_spec_id)) }}
+          </span>
+        </div>
+        <h3 class="mold-name">{{ mold.name }}</h3>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="sam-counter-box" title="Tiempo estándar total de confección acumulado">
+        <span class="sam-label"><i class="bi bi-clock-history"></i> Tiempo SAM</span>
+        <span class="sam-value">{{ totalSamTime }} <small>min</small></span>
+      </div>
+
+      <div class="progress-indicator" title="Zonas configuradas">
+        <span class="progress-text">{{ completedZonesCount }}/{{ totalZonesCount }}</span>
+        <span class="progress-label">zonas</span>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn-action-danger" (click)="onRemoveMold.emit()" title="Desvincular molde">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== CUERPO PRINCIPAL: SIDEBAR COMPACTO + CANVAS FIGURÍN ==================== -->
+  <div class="opm-body">
+
+    <!-- === DESPLEGABLE LATERAL COMPACTO DE ZONAS === -->
+    <aside class="zones-sidebar-compact">
+      <div class="sidebar-header-row">
+        <div class="sidebar-heading">
+          <i class="bi bi-bounding-box-circles"></i>
+          <span>Zonas de la Prenda</span>
+        </div>
+        <span class="zones-status-pill">{{ completedZonesCount }}/{{ totalZonesCount }}</span>
+      </div>
+
+      <p class="sidebar-help-text">Haz clic en una zona o en el figurín para abrir sus opciones:</p>
+
+      <!-- Lista de Zonas Compactas -->
+      <div class="zones-compact-list">
+        <button *ngFor="let zone of zones"
+                type="button"
+                class="zone-compact-btn"
+                [class.zone-ready]="zone.isCompleted"
+                [class.zone-current]="expandedZone === zone.id"
+                (click)="openZoneModal(zone.id)">
+          <div class="zone-btn-icon">
+            <i class="bi" [ngClass]="zone.isCompleted ? 'bi-check-lg' : zone.icon"></i>
+          </div>
+
+          <div class="zone-btn-info">
+            <span class="zone-btn-title">{{ zone.title }}</span>
+            <span class="zone-btn-selected-variant" *ngIf="getSelectedTypeNameForZone(zone)">
+              {{ getSelectedTypeNameForZone(zone) }}
+            </span>
+            <span class="zone-btn-pending" *ngIf="!getSelectedTypeNameForZone(zone)">
+              Pendiente
+            </span>
+          </div>
+
+          <span class="zone-btn-badge" [class.badge-ready]="zone.isCompleted">
+            {{ zone.isCompleted ? 'Listo' : 'Elegir' }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Acceso a Partes Generales & Apliques Opcionales (Transversales) -->
+      <div class="sidebar-general-parts-card" (click)="openGeneralPartsModal()" title="Configurar apliques opcionales, reflectivos, braguetas, bordados...">
+        <div class="general-parts-card-inner">
+          <div class="general-parts-icon-box">
+            <i class="bi bi-gem"></i>
+          </div>
+          <div class="general-parts-card-text">
+            <strong>Partes Generales & Apliques</strong>
+            <small>Braguetas, reflectivos, bordados, vivos...</small>
+          </div>
+          <span class="general-parts-count-tag" [class.tag-active]="activeGeneralPartsCount > 0">
+            {{ activeGeneralPartsCount }} {{ activeGeneralPartsCount === 1 ? 'activo' : 'activos' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Acceso a Conglomerado de Materiales (Telas e Insumos) -->
+      <div class="sidebar-extras-card" (click)="openExtrasModal()" title="Ver y gestionar el conglomerado de materiales requeridos">
+        <div class="extras-card-inner">
+          <i class="bi bi-boxes extras-sparkle"></i>
+          <div class="extras-card-text">
+            <strong>Conglomerado Materiales</strong>
+            <small>{{ consolidatedCount.telas }} Telas · {{ consolidatedCount.insumos }} Insumos</small>
+          </div>
+          <span class="extras-count-tag">{{ consolidatedMaterials.length }} total</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- === CANVAS DEL FIGURÍN (COLUMNA DERECHA) === -->
+    <main class="figurine-stage-column">
+      <div class="figurine-canvas-card">
+
+        <!-- BARRA SUPERIOR DEL CANVAS -->
+        <div class="canvas-top-bar">
+          <div class="active-editing-badge">
+            <span class="live-dot" [class.live-dot-ready]="expandedZone"></span>
+            <span class="editing-text" *ngIf="expandedZone">
+              Zona seleccionada: <strong>{{ getExpandedZoneTitle() }}</strong>
+            </span>
+            <span class="editing-text" *ngIf="!expandedZone">
+              Haz clic en cualquier punto para abrir el selector flotante
+            </span>
+          </div>
+
+          <!-- SELECTOR DE VISTA FRENTE / ESPALDA -->
+          <div class="view-selector-pill">
+            <button type="button"
+                    class="view-btn"
+                    [class.view-btn-active]="activeView === 'front'"
+                    (click)="activeView = 'front'">
+              <i class="bi bi-person"></i> FRENTE
+            </button>
+            <button type="button"
+                    class="view-btn"
+                    [class.view-btn-active]="activeView === 'back'"
+                    (click)="activeView = 'back'">
+              <i class="bi bi-person-fill"></i> ESPALDA
+            </button>
+          </div>
+        </div>
+
+        <!-- ÁREA CENTRAL DEL FIGURÍN (1:1 EXACTO CON admin-tab-diseno) -->
+        <div class="canvas-viewport">
+          <div class="figurine-interactive-wrapper" *ngIf="activeImageUrl">
+            
+            <!-- Imagen base del molde -->
+            <img [src]="activeImageUrl"
+                 [alt]="mold.name || 'Figurín'"
+                 class="garment-render-img"
+                 (error)="onImageError()" />
+
+            <!-- Capa SVG: Líneas delgadas con bordes suaves redondeados. Solo oscuro normal, y VERDE si está listo o seleccionado -->
+            <svg class="garment-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <ng-container *ngFor="let zone of currentActiveZones">
+                <!-- Polígono si tiene path_data -->
+                <polygon *ngIf="zone.path_data && getPolygonPoints(zone.path_data)"
+                         [attr.points]="getPolygonPoints(zone.path_data)"
+                         [attr.fill]="isZoneReadyOrSelected(zone) ? 'rgba(74, 222, 128, 0.12)' : 'rgba(15, 23, 42, 0.05)'"
+                         [attr.stroke]="isZoneReadyOrSelected(zone) ? '#4ade80' : 'rgba(100, 116, 139, 0.3)'"
+                         [attr.stroke-width]="isZoneReadyOrSelected(zone) ? '0.45' : '0.35'"
+                         stroke-linejoin="round"
+                         stroke-linecap="round"
+                         class="svg-zone-poly"
+                         [class.poly-ready]="isZoneReadyOrSelected(zone)"
+                         (click)="onZoneSvgClick(zone); $event.stopPropagation()" />
+
+                <!-- Rectángulo fallback -->
+                <rect *ngIf="!zone.path_data || !getPolygonPoints(zone.path_data)"
+                      [attr.x]="zone.position_x"
+                      [attr.y]="zone.position_y"
+                      [attr.width]="zone.width"
+                      [attr.height]="zone.height"
+                      rx="3"
+                      ry="3"
+                      [attr.fill]="isZoneReadyOrSelected(zone) ? 'rgba(74, 222, 128, 0.12)' : 'rgba(15, 23, 42, 0.05)'"
+                      [attr.stroke]="isZoneReadyOrSelected(zone) ? '#4ade80' : 'rgba(100, 116, 139, 0.3)'"
+                      [attr.stroke-width]="isZoneReadyOrSelected(zone) ? '0.45' : '0.35'"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="svg-zone-poly"
+                      [class.poly-ready]="isZoneReadyOrSelected(zone)"
+                      (click)="onZoneSvgClick(zone); $event.stopPropagation()" />
+              </ng-container>
+            </svg>
+
+            <!-- PUNTOS / HOTSPOTS FLOTANTES EN CADA ZONA (Incluye ambas mangas con su nombre completo) -->
+            <ng-container *ngFor="let zone of currentActiveZones">
+              <div class="zone-hotspot-pin"
+                   [style.left.%]="getZoneCenter(zone).x"
+                   [style.top.%]="getZoneCenter(zone).y"
+                   (click)="onZoneSvgClick(zone); $event.stopPropagation()"
+                   [title]="'Configurar zona: ' + getZoneDisplayName(zone)">
+                <div class="hotspot-badge"
+                     [class.hotspot-green]="isZoneReadyOrSelected(zone)">
+                  <i class="bi" [ngClass]="isZoneReadyOrSelected(zone) ? 'bi-check-circle-fill' : getZoneIcon(zone.zone_type)"></i>
+                  <span class="hotspot-name">{{ getZoneDisplayName(zone) }}</span>
+                  <span class="hotspot-dot"></span>
+                </div>
+              </div>
+            </ng-container>
+
+          </div>
+        </div>
+
+        <!-- PIE DEL CANVAS -->
+        <div class="canvas-bottom-hint">
+          <i class="bi bi-hand-index-thumb"></i>
+          <span>Toca los puntos en la prenda o usa la lista de zonas para abrir el selector de opciones.</span>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ==================== FLOTANTE PEQUEÑO: SELECTOR DE OPCIONES DE LA ZONA ==================== -->
+  <div class="floating-modal-overlay" *ngIf="showFloatingZoneModal && activeFloatingZone" (click)="closeZoneModal()">
+    <div class="floating-modal-dialog" (click)="$event.stopPropagation()">
+      
+      <div class="floating-modal-header">
+        <div class="floating-title-wrap">
+          <div class="floating-icon-box" [class.icon-box-ready]="activeFloatingZone.isCompleted">
+            <i class="bi" [ngClass]="activeFloatingZone.isCompleted ? 'bi-check-lg' : activeFloatingZone.icon"></i>
+          </div>
+          <div>
+            <h4 class="floating-title">{{ activeFloatingZone.title }}</h4>
+            <span class="floating-subtitle">{{ activeFloatingZone.subtitle }}</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeZoneModal()" title="Cerrar ventana">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="floating-modal-body">
+        
+        <!-- Si no hay partes configuradas -->
+        <div *ngIf="activeFloatingZone.parts.length === 0" class="floating-empty-notice">
+          <i class="bi bi-info-circle"></i>
+          <span>No hay opciones configuradas para esta zona en el molde.</span>
+        </div>
+
+        <!-- ==================== PASO 1: SELECCIONAR QUÉ PARTE CONFIGURAR (Si hay más de 1 parte) ==================== -->
+        <div *ngIf="getDisplayPartsForZone(activeFloatingZone).length > 1 && modalStep === 'select-part'" class="parts-step-selection">
+          <div class="parts-step-heading">
+            <span class="step-badge">Paso 1</span>
+            <span class="step-title">Selecciona qué parte deseas configurar:</span>
+          </div>
+
+          <div class="parts-full-cards-grid">
+            <div *ngFor="let part of getDisplayPartsForZone(activeFloatingZone)"
+                 class="part-full-card"
+                 [class.card-configured]="isPartConfigured(part)"
+                 (click)="choosePartToConfigure(part)">
+              <div class="card-part-icon">
+                <i class="bi" [ngClass]="isPartConfigured(part) ? 'bi-check-circle-fill' : 'bi-puzzle'"></i>
+              </div>
+
+              <div class="card-part-info">
+                <div class="card-title-row">
+                  <span class="card-part-name">{{ part.name }}</span>
+                  <span class="card-status-badge" [class.badge-ready]="isPartConfigured(part)">
+                    {{ isPartConfigured(part) ? 'Configurado' : 'Opcional' }}
+                  </span>
+                </div>
+                <span class="card-part-desc" *ngIf="isPartConfigured(part)">
+                  Variación: <strong>{{ getSelectedTypeForPart(part)?.name }}</strong>
+                </span>
+                <span class="card-part-hint" *ngIf="!isPartConfigured(part)">
+                  Toca aquí para elegir su variación &rarr;
+                </span>
+              </div>
+
+              <i class="bi bi-chevron-right card-arrow"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PASO 2: SELECCIONAR VARIACIÓN DE LA PARTE ==================== -->
+        <div *ngIf="activePartInModal && (modalStep === 'select-variant' || getDisplayPartsForZone(activeFloatingZone).length <= 1)" class="variants-step-selection">
+          
+          <!-- Barra para volver a cambiar de parte si la zona tiene varias partes -->
+          <div class="back-to-parts-bar" *ngIf="getDisplayPartsForZone(activeFloatingZone).length > 1">
+            <button type="button" class="btn-back-parts" (click)="backToPartsSelection()">
+              <i class="bi bi-arrow-left"></i> Cambiar parte
+            </button>
+            <span class="current-part-name-tag">{{ activePartInModal.name }}</span>
+          </div>
+
+          <div class="part-caption">
+            <div>
+              <span class="caption-title">{{ activePartInModal.name }}</span>
+              <span class="caption-hint">Selecciona una sola variación para esta parte:</span>
+            </div>
+            <button *ngIf="isPartConfigured(activePartInModal)"
+                    type="button"
+                    class="btn-clear-part"
+                    (click)="unselectTypeForPart(activePartInModal)"
+                    title="No incluir / Quitar esta parte">
+              <i class="bi bi-x-circle"></i> Quitar selección
+            </button>
+          </div>
+
+          <div class="variants-picker-grid">
+            <div *ngFor="let type of activePartInModal.types"
+                 class="variant-pick-card"
+                 [class.pick-selected]="isTypeSelected(activePartInModal.id, type.id)"
+                 (click)="selectTypeForPart(activePartInModal, type)">
+              
+              <div class="pick-radio">
+                <i class="bi bi-check-circle-fill" *ngIf="isTypeSelected(activePartInModal.id, type.id)"></i>
+                <i class="bi bi-circle" *ngIf="!isTypeSelected(activePartInModal.id, type.id)"></i>
+              </div>
+
+              <div class="pick-info">
+                <span class="pick-name">{{ type.name }}</span>
+                <span class="pick-desc" *ngIf="type.technical_description">{{ type.technical_description }}</span>
+              </div>
+
+              <span class="pick-sam-pill" *ngIf="type.total_time">
+                +{{ type.total_time }} min
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- Apliques Opcionales anclados a esta zona -->
+        <div *ngIf="activeFloatingZone && getAnchoredGeneralPartsForZone(activeFloatingZone.id).length > 0" class="anchored-parts-section">
+          <div class="anchored-parts-heading">
+            <i class="bi bi-pin-angle-fill"></i>
+            <span>Apliques anclados a esta zona</span>
+          </div>
+          <div class="anchored-parts-list">
+            <div *ngFor="let gp of getAnchoredGeneralPartsForZone(activeFloatingZone.id)" class="anchored-part-chip">
+              <i class="bi" [ngClass]="gp.icon || 'bi-gem'"></i>
+              <span class="anchored-name">{{ gp.name }}</span>
+              <span class="anchored-variant">{{ selectedGeneralTypes[gp.id]?.name }}</span>
+              <button type="button" class="btn-remove-anchor" (click)="unanchorGeneralPart(gp.id)" title="Desanclar de esta zona">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón para agregar apliques opcionales desde esta zona -->
+        <div class="add-optional-from-zone">
+          <button type="button" class="btn-add-optional" (click)="openGeneralPartsFromZone()">
+            <i class="bi bi-plus-circle"></i> Agregar Aplique Opcional
+          </button>
+        </div>
+
+        <!-- Toggle mangas si aplica -->
+        <div class="floating-toggle-box" *ngIf="activeFloatingZone.id === 'manga'">
+          <label class="toggle-checkbox-label">
+            <input type="checkbox" [(ngModel)]="diferenciarMangas" />
+            <span>Diferenciar diseño entre manga izquierda y derecha</span>
+          </label>
+        </div>
+
+        <!-- Observaciones de la zona -->
+        <div class="floating-obs-wrap">
+          <label class="obs-caption">
+            <i class="bi bi-chat-left-text"></i> Observaciones o especificaciones (Opcional):
+          </label>
+          <textarea class="obs-textarea-input"
+                    rows="2"
+                    placeholder="Ej. Bordado en solapa, pespunte doble, hilo contraste..."
+                    [(ngModel)]="zoneObservations[activeFloatingZone.id]">
+          </textarea>
+        </div>
+
+      </div>
+
+      <div class="floating-modal-footer">
+        <button type="button" class="btn-confirm-zone" (click)="closeZoneModal()">
+          <i class="bi bi-check2"></i> Listo / Confirmar Selección
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 1: PARTES GENERALES & APLIQUES OPCIONALES (Transversales) ==================== -->
+  <div class="floating-modal-overlay" *ngIf="showGeneralPartsModal" (click)="closeGeneralPartsModal()">
+    <div class="floating-modal-dialog modal-dialog-general-parts" (click)="$event.stopPropagation()">
+      
+      <div class="floating-modal-header header-amber">
+        <div class="floating-title-wrap">
+          <div class="floating-icon-box icon-box-amber">
+            <i class="bi bi-gem"></i>
+          </div>
+          <div>
+            <div class="title-with-pill">
+              <h4 class="floating-title">Partes Generales & Apliques Opcionales</h4>
+              <span class="amber-count-pill">{{ activeGeneralPartsCount }} / {{ generalParts.length }}</span>
+            </div>
+            <span class="floating-subtitle">Elementos transversales (braguetas, reflectivos, bordados, marquillas, vivos) aplicables a cualquier prenda.</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeGeneralPartsModal()" title="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="floating-modal-body">
+
+        <!-- ==================== PASO 1: LISTA DE APLIQUES DISPONIBLES ==================== -->
+        <div *ngIf="generalPartsModalStep === 'select-part'" class="parts-step-selection">
+          <div class="parts-step-heading">
+            <span class="step-badge">Apliques</span>
+            <span class="step-title">Selecciona un aplique para configurar su variación:</span>
+          </div>
+
+          <div class="parts-full-cards-grid">
+            <div *ngFor="let part of generalParts"
+                 class="part-full-card"
+                 [class.card-configured]="selectedGeneralTypes[part.id]"
+                 (click)="chooseGeneralPartToConfigure(part)">
+              <div class="card-part-icon">
+                <i class="bi" [ngClass]="selectedGeneralTypes[part.id] ? 'bi-check-circle-fill' : (part.icon || 'bi-gem')"></i>
+              </div>
+
+              <div class="card-part-info">
+                <div class="card-title-row">
+                  <span class="card-part-name">{{ part.name }}</span>
+                  <span class="card-status-badge" [class.badge-ready]="selectedGeneralTypes[part.id]">
+                    {{ selectedGeneralTypes[part.id] ? 'Configurado' : 'Opcional' }}
+                  </span>
+                </div>
+                <span class="card-part-desc" *ngIf="selectedGeneralTypes[part.id]">
+                  Variación: <strong>{{ selectedGeneralTypes[part.id].name }}</strong>
+                  <span *ngIf="generalPartZoneAnchors[part.id]" class="anchor-zone-tag">
+                    <i class="bi bi-pin-angle-fill"></i> {{ getZoneTitle(generalPartZoneAnchors[part.id]) }}
+                  </span>
+                </span>
+                <span class="card-part-hint" *ngIf="!selectedGeneralTypes[part.id]">
+                  {{ part.description || 'Toca aquí para elegir su variación →' }}
+                </span>
+              </div>
+
+              <i class="bi bi-chevron-right card-arrow"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PASO 2: VARIANTES DEL APLIQUE SELECCIONADO ==================== -->
+        <div *ngIf="generalPartsModalStep === 'select-variant' && activeGeneralPartInModal" class="variants-step-selection">
+          
+          <div class="back-to-parts-bar">
+            <button type="button" class="btn-back-parts" (click)="backToGeneralPartsList()">
+              <i class="bi bi-arrow-left"></i> Volver
+            </button>
+            <span class="current-part-name-tag">{{ activeGeneralPartInModal.name }}</span>
+          </div>
+
+          <div class="part-caption">
+            <div>
+              <span class="caption-title">{{ activeGeneralPartInModal.name }}</span>
+              <span class="caption-hint">Selecciona una variación para este aplique:</span>
+            </div>
+            <button *ngIf="selectedGeneralTypes[activeGeneralPartInModal.id]"
+                    type="button"
+                    class="btn-clear-part"
+                    (click)="removeGeneralVariant(activeGeneralPartInModal)"
+                    title="Quitar este aplique">
+              <i class="bi bi-x-circle"></i> Quitar selección
+            </button>
+          </div>
+
+          <!-- Selector de zona para anclar este aplique -->
+          <div class="zone-anchor-box">
+            <div class="anchor-label-row">
+              <span class="anchor-label"><i class="bi bi-pin-angle-fill"></i> Anclar este aplique a una región anatómica:</span>
+              <span class="anchor-active-hint" *ngIf="generalPartZoneAnchors[activeGeneralPartInModal.id]">
+                Anclado a: <strong>{{ getZoneTitle(generalPartZoneAnchors[activeGeneralPartInModal.id]) }}</strong>
+              </span>
+            </div>
+            <div class="anchor-chips">
+              <button *ngFor="let zone of zones"
+                      type="button"
+                      class="anchor-chip"
+                      [class.chip-active]="generalPartZoneAnchors[activeGeneralPartInModal.id] === zone.id"
+                      (click)="anchorGeneralPartToZone(activeGeneralPartInModal.id, zone.id)">
+                <i class="bi" [ngClass]="zone.icon"></i> {{ zone.title }}
+                <i class="bi bi-check-circle-fill chip-check" *ngIf="generalPartZoneAnchors[activeGeneralPartInModal.id] === zone.id"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="variants-picker-grid">
+            <div *ngFor="let type of activeGeneralPartInModal.types"
+                 class="variant-pick-card"
+                 [class.pick-selected]="isGeneralVariantSelected(activeGeneralPartInModal, type)"
+                 (click)="selectGeneralVariant(activeGeneralPartInModal, type)">
+              
+              <div class="pick-radio">
+                <i class="bi bi-check-circle-fill" *ngIf="isGeneralVariantSelected(activeGeneralPartInModal, type)"></i>
+                <i class="bi bi-circle" *ngIf="!isGeneralVariantSelected(activeGeneralPartInModal, type)"></i>
+              </div>
+
+              <div class="pick-info">
+                <span class="pick-name">{{ type.name }}</span>
+                <span class="pick-desc" *ngIf="type.technical_description">{{ type.technical_description }}</span>
+                <div class="variant-materials-row" *ngIf="type.materials && type.materials.length > 0">
+                  <span class="mat-chip" *ngFor="let m of type.materials">{{ m }}</span>
+                </div>
+              </div>
+
+              <span class="pick-sam-pill" *ngIf="type.total_time">
+                +{{ type.total_time }} min
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="floating-modal-footer">
+        <button type="button" class="btn-confirm-general-parts" (click)="closeGeneralPartsModal()">
+          <i class="bi bi-check2"></i> Guardar Apliques & Continuar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: CONGLOMERADO DE MATERIALES (Telas e Insumos) ==================== -->
+  <div class="floating-modal-overlay" *ngIf="showFloatingExtrasModal" (click)="closeExtrasModal()">
+    <div class="floating-modal-dialog modal-dialog-extras" (click)="$event.stopPropagation()">
+      
+      <div class="floating-modal-header">
+        <div class="floating-title-wrap">
+          <div class="floating-icon-box icon-box-extras">
+            <i class="bi bi-boxes"></i>
+          </div>
+          <div>
+            <div class="title-with-pill">
+              <h4 class="floating-title">Conglomerado de Materiales Requeridos</h4>
+              <span class="mat-count-badge">{{ consolidatedMaterials.length }} Requeridos</span>
+            </div>
+            <span class="floating-subtitle">Telas e insumos consolidados automáticamente según las zonas y apliques seleccionados</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeExtrasModal()" title="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="floating-modal-body">
+        
+        <!-- Píldoras de resumen -->
+        <div class="materials-summary-bar">
+          <span class="summary-pill pill-tela"><i class="bi bi-droplet-fill"></i> {{ consolidatedCount.telas }} Telas</span>
+          <span class="summary-pill pill-insumo"><i class="bi bi-box-seam-fill"></i> {{ consolidatedCount.insumos }} Insumos</span>
+        </div>
+
+        <!-- Grupo Telas Consolidadas -->
+        <div class="conglomerate-block" *ngIf="consolidatedCount.telas > 0">
+          <h5 class="conglomerate-block-title"><i class="bi bi-droplet-fill text-indigo"></i> Telas Principales y Secundarias</h5>
+          <div class="conglomerate-items-list">
+            <div *ngFor="let mat of consolidatedTelas; trackBy: trackByMatName" class="conglomerate-card">
+              
+              <div class="conglomerate-card-head">
+                <div class="conglomerate-name-wrap">
+                  <i class="bi bi-droplet-fill text-indigo"></i>
+                  <span class="conglomerate-name">{{ mat.name }}</span>
+
+                  <!-- Botón de exclamación con popover flotante al pasar el cursor o click -->
+                  <div class="sources-info-trigger"
+                       (mouseenter)="activeSourceTooltip = mat.name"
+                       (mouseleave)="activeSourceTooltip = null"
+                       (click)="toggleSourceTooltip(mat.name)">
+                    <span class="sources-exclamation-btn" title="Ver dónde se utiliza este material">
+                      <i class="bi bi-exclamation-circle-fill"></i>
+                      <small class="sources-count-badge">{{ mat.sourceParts.length }}</small>
+                    </span>
+
+                    <div class="sources-popover-box animate-in fade-in" *ngIf="activeSourceTooltip === mat.name">
+                      <div class="popover-header">
+                        <i class="bi bi-geo-alt-fill text-indigo"></i>
+                        <span>Utilizado en ({{ mat.sourceParts.length }} ubicaciones):</span>
+                      </div>
+                      <ul class="popover-list">
+                        <li *ngFor="let src of mat.sourceParts">
+                          <i class="bi bi-check2-circle text-emerald"></i>
+                          <span>{{ src }}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="type-badge badge-tela">TELA</span>
+              </div>
+
+              <!-- Vinculación SIESA / Bodega o Texto Libre -->
+              <div class="conglomerate-material-body">
+                <!-- Tarjeta cuando ya está anclado a un ítem SIESA -->
+                <div *ngIf="materialSiesaBindings[mat.name.toLowerCase()] as siesa" class="siesa-bound-card">
+                  <div class="siesa-bound-left">
+                    <div class="siesa-bound-tag">
+                      <i class="bi bi-link-45deg"></i> Ítem SIESA (Bodega MP001)
+                    </div>
+                    <div class="siesa-bound-title">
+                      <strong class="siesa-ref">{{ siesa.referencia }}</strong>
+                      <span class="siesa-desc">— {{ siesa.descripcion }}</span>
+                    </div>
+                    <div class="siesa-bound-meta" *ngIf="siesa.color || siesa.existencias !== undefined">
+                      <span class="siesa-meta-chip" *ngIf="siesa.color">
+                        <i class="bi bi-palette"></i> Color: {{ siesa.color }}
+                      </span>
+                      <span class="siesa-meta-chip" [class.stock-ok]="siesa.existencias > 0" *ngIf="siesa.existencias !== undefined">
+                        <i class="bi bi-boxes"></i> Stock: {{ siesa.existencias }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="siesa-bound-actions">
+                    <button type="button" class="btn-change-siesa" (click)="openInventoryModalForMaterial(mat)" title="Cambiar ítem SIESA">
+                      <i class="bi bi-arrow-repeat"></i> Cambiar
+                    </button>
+                    <button type="button" class="btn-unlink-siesa" (click)="clearMaterialSiesa(mat.name)" title="Quitar vinculación SIESA (usar texto libre)">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Input de texto libre o notas + botón para buscar en SIESA -->
+                <div class="material-input-group">
+                  <input type="text"
+                         class="conglomerate-note-input"
+                         [placeholder]="materialSiesaBindings[mat.name.toLowerCase()] ? 'Especificación adicional para esta tela (opcional)...' : 'Escribe especificación libre de esta tela (o ancla a SIESA)...'"
+                         [(ngModel)]="materialNotes[mat.name.toLowerCase()]" />
+                  
+                  <button *ngIf="!materialSiesaBindings[mat.name.toLowerCase()]"
+                          type="button"
+                          class="btn-search-siesa"
+                          (click)="openInventoryModalForMaterial(mat)"
+                          title="Buscar y anclar tela en Bodega SIESA">
+                    <i class="bi bi-search"></i>
+                    <span>Bodega SIESA</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Grupo Insumos Consolidados -->
+        <div class="conglomerate-block" *ngIf="consolidatedCount.insumos > 0">
+          <h5 class="conglomerate-block-title"><i class="bi bi-box-seam-fill text-amber"></i> Insumos y Fornituras</h5>
+          <div class="conglomerate-items-list">
+            <div *ngFor="let mat of consolidatedInsumos; trackBy: trackByMatName" class="conglomerate-card">
+              
+              <div class="conglomerate-card-head">
+                <div class="conglomerate-name-wrap">
+                  <i class="bi bi-box-seam-fill text-amber"></i>
+                  <span class="conglomerate-name">{{ mat.name }}</span>
+
+                  <!-- Botón de exclamación con popover flotante al pasar el cursor o click -->
+                  <div class="sources-info-trigger"
+                       (mouseenter)="activeSourceTooltip = mat.name"
+                       (mouseleave)="activeSourceTooltip = null"
+                       (click)="toggleSourceTooltip(mat.name)">
+                    <span class="sources-exclamation-btn" title="Ver dónde se utiliza este insumo">
+                      <i class="bi bi-exclamation-circle-fill"></i>
+                      <small class="sources-count-badge">{{ mat.sourceParts.length }}</small>
+                    </span>
+
+                    <div class="sources-popover-box animate-in fade-in" *ngIf="activeSourceTooltip === mat.name">
+                      <div class="popover-header">
+                        <i class="bi bi-geo-alt-fill text-amber"></i>
+                        <span>Utilizado en ({{ mat.sourceParts.length }} ubicaciones):</span>
+                      </div>
+                      <ul class="popover-list">
+                        <li *ngFor="let src of mat.sourceParts">
+                          <i class="bi bi-check2-circle text-emerald"></i>
+                          <span>{{ src }}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="type-badge badge-insumo">INSUMO</span>
+              </div>
+
+              <!-- Vinculación SIESA / Bodega o Texto Libre -->
+              <div class="conglomerate-material-body">
+                <!-- Tarjeta cuando ya está anclado a un ítem SIESA -->
+                <div *ngIf="materialSiesaBindings[mat.name.toLowerCase()] as siesa" class="siesa-bound-card">
+                  <div class="siesa-bound-left">
+                    <div class="siesa-bound-tag">
+                      <i class="bi bi-link-45deg"></i> Ítem SIESA (Bodega MP001)
+                    </div>
+                    <div class="siesa-bound-title">
+                      <strong class="siesa-ref">{{ siesa.referencia }}</strong>
+                      <span class="siesa-desc">— {{ siesa.descripcion }}</span>
+                    </div>
+                    <div class="siesa-bound-meta" *ngIf="siesa.color || siesa.existencias !== undefined">
+                      <span class="siesa-meta-chip" *ngIf="siesa.color">
+                        <i class="bi bi-palette"></i> Color: {{ siesa.color }}
+                      </span>
+                      <span class="siesa-meta-chip" [class.stock-ok]="siesa.existencias > 0" *ngIf="siesa.existencias !== undefined">
+                        <i class="bi bi-boxes"></i> Stock: {{ siesa.existencias }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="siesa-bound-actions">
+                    <button type="button" class="btn-change-siesa" (click)="openInventoryModalForMaterial(mat)" title="Cambiar ítem SIESA">
+                      <i class="bi bi-arrow-repeat"></i> Cambiar
+                    </button>
+                    <button type="button" class="btn-unlink-siesa" (click)="clearMaterialSiesa(mat.name)" title="Quitar vinculación SIESA (usar texto libre)">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Input de texto libre o notas + botón para buscar en SIESA -->
+                <div class="material-input-group">
+                  <input type="text"
+                         class="conglomerate-note-input"
+                         [placeholder]="materialSiesaBindings[mat.name.toLowerCase()] ? 'Especificación adicional para este insumo (opcional)...' : 'Escribe especificación libre de este insumo (o ancla a SIESA)...'"
+                         [(ngModel)]="materialNotes[mat.name.toLowerCase()]" />
+                  
+                  <button *ngIf="!materialSiesaBindings[mat.name.toLowerCase()]"
+                          type="button"
+                          class="btn-search-siesa"
+                          (click)="openInventoryModalForMaterial(mat)"
+                          title="Buscar y anclar insumo en Bodega SIESA">
+                    <i class="bi bi-search"></i>
+                    <span>Bodega SIESA</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Insumos/Materiales Extras Manuales (Opcional) -->
+        <div class="extras-manual-trigger-box">
+          <button type="button" class="btn-toggle-manual-extras" (click)="showManualExtras = !showManualExtras">
+            <i class="bi" [ngClass]="showManualExtras ? 'bi-dash-circle' : 'bi-plus-circle'"></i>
+            <span>{{ showManualExtras ? 'Ocultar catálogo de extras adicionales' : '+ Agregar materiales extras adicionales' }}</span>
+          </button>
+        </div>
+
+        <div *ngIf="showManualExtras" class="manual-extras-container animate-in fade-in">
+          <h6 class="extras-subheading">Catálogo de Insumos Extras Disponibles</h6>
+          <div class="extras-grid-chips">
+            <div *ngFor="let mat of availableMaterials"
+                 class="extra-tile"
+                 [class.tile-active]="isExtraActive(mat.id)"
+                 (click)="toggleExtra(mat.id)">
+              <i class="bi" [ngClass]="mat.icon || 'bi-box-seam'"></i>
+              <div class="tile-info">
+                <span class="tile-title">{{ mat.name }}</span>
+                <span class="tile-desc">{{ mat.description }}</span>
+              </div>
+              <i class="bi tile-check" [ngClass]="isExtraActive(mat.id) ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="floating-modal-footer">
+        <button type="button" class="btn-confirm-zone" (click)="closeExtrasModal()">
+          <i class="bi bi-check2"></i> Guardar Conglomerado de Materiales
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: BÚSQUEDA Y VINCULACIÓN EN BODEGA SIESA ==================== -->
+  <app-inventory-search-modal
+    *ngIf="showInventorySearchModal"
+    [visible]="showInventorySearchModal"
+    [partName]="inventorySearchTargetMat?.name || 'Material'"
+    [filterType]="inventorySearchFilterType"
+    (onClose)="closeInventoryModal()"
+    (onSelect)="onSelectInventoryItem($event)">
+  </app-inventory-search-modal>
+
+  <!-- ==================== FOOTER INFERIOR: TALLAS Y ACCIÓN DE CONFIRMACIÓN ==================== -->
+  <footer class="tallas-footer-card">
+    <div class="tallas-footer-top">
+      <div class="tallas-heading-wrap">
+        <div class="tallas-icon-box"><i class="bi bi-rulers"></i></div>
+        <div>
+          <h4 class="tallas-title">Tallas y Cantidades de la Muestra</h4>
+          <p class="tallas-subtitle">Define las unidades a confeccionar para la orden</p>
+        </div>
+      </div>
+
+      <div class="quick-preset-bar">
+        <span class="quick-title">Agregar talla:</span>
+        <div class="quick-chips-list">
+          <button *ngFor="let tl of tallasLetra"
+                  type="button"
+                  class="btn-quick-talla"
+                  (click)="addTallaPreset(tl)">
+            + {{ tl }}
+          </button>
+        </div>
+      </div>
+
+      <div class="tallas-total-box">
+        <span class="total-label">Total Prendas</span>
+        <span class="total-number">{{ getItemTotal() }} <small>uds</small></span>
+      </div>
+    </div>
+
+    <!-- MATRIZ DE TALLAS AGREGADAS -->
+    <div class="tallas-matrix-area">
+      <div *ngIf="!item.tallas || item.tallas.length === 0" class="no-tallas-alert">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>Agrega al menos una talla arriba para registrar las cantidades de confección.</span>
+      </div>
+
+      <div *ngIf="item.tallas && item.tallas.length > 0" class="tallas-chips-grid">
+        <div *ngFor="let t of item.tallas; let ti = index" class="talla-chip-item">
+          <div class="talla-chip-top">
+            <span class="talla-name-badge">{{ t.talla }}</span>
+            <button type="button" class="btn-remove-talla" (click)="removeTalla(ti)" title="Quitar talla">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <div class="talla-input-row">
+            <input type="number"
+                   class="talla-number-input"
+                   min="1"
+                   [(ngModel)]="t.cantidad" />
+            <span class="talla-unit">uds</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Talla personalizada -->
+      <div class="custom-talla-bar">
+        <input type="text"
+               class="custom-talla-input"
+               placeholder="Otra talla (ej. 32, 34, 36)..."
+               [(ngModel)]="customTallaInput"
+               (keyup.enter)="addCustomTalla()" />
+        <button type="button" class="btn-add-custom-talla" (click)="addCustomTalla()">
+          <i class="bi bi-plus-lg"></i> Añadir
+        </button>
+      </div>
+    </div>
+
+    <!-- ACCIÓN FINAL: BOTÓN GENERAR OPM -->
+    <div class="final-action-bar">
+      <div *ngIf="opmSuccess" class="opm-success-banner">
+        <i class="bi bi-patch-check-fill text-emerald"></i>
+        <div>
+          <span class="opm-saved-label">OPM Vinculada</span>
+          <span class="opm-saved-code">{{ generatedOpmCode }}</span>
+        </div>
+      </div>
+
+      <button type="button"
+              class="btn-submit-opm"
+              [disabled]="isSavingOpm || getItemTotal() <= 0"
+              (click)="generarOpmFinal()">
+        <i class="bi" [ngClass]="isSavingOpm ? 'bi-hourglass-split' : 'bi-lightning-charge-fill'"></i>
+        <span>{{ isSavingOpm ? 'Generando Ficha Técnica...' : (opmSuccess ? 'Actualizar OPM y Confirmar' : 'Generar OPM y Confirmar Ítem') }}</span>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ESTADO DE CARGA -->
+<ng-template #loadingState>
+  <div class="stepper-loading-box">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Cargando información anatómica del molde y librerías de confección...</p>
+  </div>
+</ng-template>

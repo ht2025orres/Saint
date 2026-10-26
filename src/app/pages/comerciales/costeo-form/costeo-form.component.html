@@ -345,9 +345,17 @@
                     <i class="bi bi-grid-1x2"></i> {{ item.tallas.length }} {{ item.tallas.length === 1 ? 'talla' : 'tallas' }} · {{ getItemTotal(item) | number }} uds.
                   </span>
 
-                  <!-- Badge Molde OPM -->
-                  <span class="badge-tag tag-mold" [class.tag-has-mold]="item.moldId">
-                    <i class="bi bi-bounding-box"></i> {{ item.moldName ? item.moldName : 'Sin Molde' }}
+                  <!-- Badge Molde OPM con acceso directo -->
+                  <button type="button"
+                          *ngIf="item.moldId"
+                          class="badge-tag tag-mold tag-mold-btn"
+                          (click)="goToItemMold(item, i); $event.stopPropagation()"
+                          title="Acceso directo: Configurar Molde & OPM de este ítem">
+                    <i class="bi bi-bounding-box"></i> {{ item.moldName }}
+                    <span class="mold-shortcut-text"><i class="bi bi-arrow-right-short"></i> Ir al Molde</span>
+                  </button>
+                  <span *ngIf="!item.moldId" class="badge-tag tag-mold">
+                    <i class="bi bi-bounding-box"></i> Sin Molde
                   </span>
                   <span *ngIf="item.technicalSpecId" class="badge-tag tag-opm-ok">
                     <i class="bi bi-check2"></i> OPM Ok
@@ -367,27 +375,7 @@
           <!-- Cuerpo Expandible del Ítem con Pestañas Internas (Tallas vs Molde OPM) -->
           <div [hidden]="!item.isExpanded" class="item-body">
             
-            <!-- Segmented Control de Pestañas Internas por Ítem -->
-            <div class="item-tabs-wrapper">
-              <div class="item-tabs-nav">
-                <button class="item-tab-btn" 
-                        [class.active]="!item.activeTab || item.activeTab === 'tallas'"
-                        (click)="item.activeTab = 'tallas'">
-                  <i class="bi bi-rulers"></i> Tallas & Cantidades
-                  <span class="tab-badge" *ngIf="item.tallas.length">{{ item.tallas.length }}</span>
-                </button>
 
-                <button class="item-tab-btn" 
-                        [class.active]="item.activeTab === 'molde'"
-                        (click)="item.activeTab = 'molde'">
-                  <i class="bi bi-bounding-box"></i> Molde & Ficha OPM
-                  <span class="tab-badge-opm" *ngIf="item.technicalSpecId"><i class="bi bi-check-lg"></i></span>
-                </button>
-              </div>
-            </div>
-
-            <!-- CONTENIDO PESTAÑA 1: TALLAS & MUESTRAS -->
-            <div [hidden]="item.activeTab === 'molde'" class="tab-content">
               
               <!-- Fila Superior: Referencia Cliente, Muestras Físicas y Base Siesa -->
               <div class="item-meta-controls-row">
@@ -464,162 +452,183 @@
                 </div>
               </div>
 
-              <!-- Desglose por Tallas (Matriz Sobria y Rápida) -->
-              <div class="tallas-section">
-                <div class="tallas-header">
-                  <div class="tallas-header-left">
-                    <span class="tallas-title">Distribución por Tallas</span>
-                    <span class="tallas-live-counter" *ngIf="getItemTotal(item) > 0">
-                      {{ getItemTotal(item) | number }} uds. totales
-                    </span>
+            <!-- Sección de Molde & Ficha OPM -->
+            <div class="mold-config-container">
+              
+              <!-- Selector Visual Unificado de Molde (Trigger Card) -->
+              <div class="mold-selector-header-box">
+                <!-- Si NO tiene molde seleccionado -->
+                <div *ngIf="!item.moldId" class="empty-mold-picker-card" (click)="openMoldSelector(i)">
+                  <div class="empty-picker-icon">
+                    <i class="bi bi-bounding-box-circles"></i>
                   </div>
-
-                  <div class="tallas-header-actions">
-                    <button type="button" class="btn-add-talla" (click)="addTalla(item)">
-                      <i class="bi bi-plus-lg"></i> Agregar Talla
-                    </button>
+                  <div class="empty-picker-text">
+                    <span class="empty-picker-title">Seleccionar Molde Base (OPM)</span>
+                    <span class="empty-picker-sub">Explora el catálogo visual por categoría y selecciona el figurín base para diseñar la prenda</span>
                   </div>
+                  <button type="button" class="btn-picker-trigger">
+                    <i class="bi bi-grid-3x3-gap-fill"></i> Explorar Moldes
+                  </button>
                 </div>
 
-                <!-- Matriz de Tallas en Fila -->
-                <div *ngIf="item.tallas.length > 0" class="tallas-matrix-container">
-                  <div class="tallas-matrix-grid">
-                    <div *ngFor="let t of item.tallas; let ti = index" class="talla-matrix-cell">
-                      <!-- Cabecera de la celda de talla (Nombre de talla + botón borrar) -->
-                      <div class="talla-matrix-head">
-                        <!-- Selector de talla para ítems libres/nuevos -->
-                        <select *ngIf="!t.siesa_item_ext_rowid" class="talla-matrix-select" [(ngModel)]="t.talla">
-                          <option value="" disabled>Talla...</option>
-                          <optgroup label="Letras">
-                            <option *ngFor="let tl of tallasLetra" [value]="tl">{{ tl }}</option>
-                          </optgroup>
-                          <optgroup label="Numéricas">
-                            <option *ngFor="let tn of tallasNumericas" [value]="tn">{{ tn }}</option>
-                          </optgroup>
-                          <option *ngIf="t.talla && !tallasLetra.includes(t.talla) && !tallasNumericas.includes(t.talla)" [value]="t.talla">
-                            {{ t.talla }}
-                          </option>
-                        </select>
-
-                        <!-- Badge fijo si viene de extensión Siesa -->
-                        <span *ngIf="t.siesa_item_ext_rowid" class="talla-matrix-siesa-label" title="Talla vinculada a Siesa">
-                          {{ t.talla }}
-                        </span>
-
-                        <button type="button" class="talla-matrix-remove" (click)="removeTalla(item, ti)" title="Eliminar talla">
-                          <i class="bi bi-x"></i>
-                        </button>
-                      </div>
-
-                      <!-- Input de cantidad -->
-                      <div class="talla-matrix-body">
-                        <input type="number" 
-                               class="talla-matrix-qty-input" 
-                               [(ngModel)]="t.cantidad" 
-                               min="0" 
-                               placeholder="0" />
-                        <span class="talla-matrix-unit">uds</span>
-                      </div>
+                <!-- Si YA tiene molde seleccionado -->
+                <div *ngIf="item.moldId" class="selected-mold-compact-card">
+                  <div class="selected-mold-info">
+                    <div class="mold-avatar">
+                      <i class="bi bi-palette"></i>
                     </div>
-
-                    <!-- Botón rápido + para añadir otra celda al final -->
-                    <button type="button" 
-                            class="talla-matrix-add-tile" 
-                            (click)="addTalla(item)" 
-                            title="Agregar otra talla a la matriz">
-                      <i class="bi bi-plus-lg"></i>
-                      <span>Talla</span>
+                    <div class="selected-mold-meta">
+                      <div class="selected-mold-category">
+                        <span class="cat-pill"><i class="bi bi-tag"></i> {{ item.categoryName || 'Prenda' }}</span>
+                        <span *ngIf="item.totalSamTime" class="sam-pill" title="Tiempo estándar SAM acumulado">
+                          <i class="bi bi-clock-history"></i> {{ item.totalSamTime }} min
+                        </span>
+                        <span *ngIf="item.technicalSpecId || item.opmReference" class="spec-id-pill">
+                          <i class="bi bi-check-circle-fill"></i> {{ item.opmReference || ('OPM ID: ' + item.technicalSpecId) }}
+                        </span>
+                      </div>
+                      <h4 class="selected-mold-name">{{ item.moldName }}</h4>
+                    </div>
+                  </div>
+                  <div class="selected-mold-actions">
+                    <button type="button" class="btn-change-mold" (click)="openMoldSelector(i)">
+                      <i class="bi bi-arrow-repeat"></i> Cambiar Molde
+                    </button>
+                    <button type="button" class="btn-clear-mold" (click)="clearMoldForItem(i)" title="Quitar molde">
+                      <i class="bi bi-x-lg"></i>
                     </button>
                   </div>
                 </div>
+              </div>
 
-                <div *ngIf="item.tallas.length === 0" class="tallas-empty-hero">
-                  <p class="empty-hero-title">Sin tallas configuradas</p>
-                  <p class="empty-hero-desc">Haz clic en <strong>+ Agregar Talla</strong> para ingresar las cantidades.</p>
+              <!-- Copiar Configuración de otro ítem -->
+              <div *ngIf="getItemsWithMold().length > 0" class="copy-spec-row">
+                <span class="copy-label"><i class="bi bi-clipboard-check"></i> Copiar molde desde:</span>
+                <div class="copy-buttons-list">
+                  <button *ngFor="let src of getItemsWithMold()"
+                          class="btn-copy-spec"
+                          [disabled]="src.index === i"
+                          (click)="copySpecFromItem(src.index, i)">
+                    <i class="bi bi-copy"></i> {{ src.item.descripcion | slice:0:24 }}{{ src.item.descripcion.length > 24 ? '...' : '' }}
+                  </button>
                 </div>
+              </div>
+
+              <!-- Asistente de Diseño por Pasos (Stepper OPM con figurín y tallas integradas) -->
+              <div *ngIf="item.moldId" [id]="'mold-container-' + i" class="spec-generator-wrapper mt-3">
+                <app-mold-opm-stepper
+                  [item]="item"
+                  [itemIndex]="i"
+                  (onOpmSaved)="onItemOpmSaved(i, $event)"
+                  (onChangeMold)="openMoldSelector(i)"
+                  (onRemoveMold)="clearMoldForItem(i)">
+                </app-mold-opm-stepper>
               </div>
             </div>
 
-            <!-- CONTENIDO PESTAÑA 2: MOLDE & FICHA OPM -->
-            <div [hidden]="item.activeTab !== 'molde'" class="tab-content">
-              <div class="mold-config-container">
-                
-                <!-- Selector Visual Unificado de Molde (Trigger Card) -->
-                <div class="mold-selector-header-box">
-                  <!-- Si NO tiene molde seleccionado -->
-                  <div *ngIf="!item.moldId" class="empty-mold-picker-card" (click)="openMoldSelector(i)">
-                    <div class="empty-picker-icon">
-                      <i class="bi bi-bounding-box-circles"></i>
-                    </div>
-                    <div class="empty-picker-text">
-                      <span class="empty-picker-title">Seleccionar Molde Base (OPM)</span>
-                      <span class="empty-picker-sub">Explora el catálogo visual por categoría y selecciona el figurín base</span>
-                    </div>
-                    <button type="button" class="btn-picker-trigger">
-                      <i class="bi bi-grid-3x3-gap-fill"></i> Explorar Moldes
-                    </button>
-                  </div>
+            <!-- Desglose por Tallas (Matriz Rápida y Amplia - Solo si NO tiene molde vinculado) -->
+            <div class="tallas-section mt-3" *ngIf="!item.moldId">
+              <div class="tallas-header">
+                <div class="tallas-header-left">
+                  <span class="tallas-title"><i class="bi bi-grid-3x3-gap"></i> Distribución por Tallas</span>
+                  <span class="tallas-live-counter" *ngIf="getItemTotal(item) > 0">
+                    {{ getItemTotal(item) | number }} uds. totales
+                  </span>
+                </div>
 
-                  <!-- Si YA tiene molde seleccionado -->
-                  <div *ngIf="item.moldId" class="selected-mold-compact-card">
-                    <div class="selected-mold-info">
-                      <div class="mold-avatar">
-                        <i class="bi bi-palette"></i>
-                      </div>
-                      <div class="selected-mold-meta">
-                        <div class="selected-mold-category">
-                          <span class="cat-pill"><i class="bi bi-tag"></i> {{ item.categoryName || 'Prenda' }}</span>
-                          <span *ngIf="item.technicalSpecId" class="spec-id-pill">
-                            <i class="bi bi-check-circle-fill"></i> OPM ID: {{ item.technicalSpecId }}
-                          </span>
-                        </div>
-                        <h4 class="selected-mold-name">{{ item.moldName }}</h4>
-                      </div>
-                    </div>
-                    <div class="selected-mold-actions">
-                      <button type="button" class="btn-change-mold" (click)="openMoldSelector(i)">
-                        <i class="bi bi-arrow-repeat"></i> Cambiar Molde
+                <div class="tallas-header-actions">
+                  <button type="button" class="btn-add-talla" (click)="addTalla(item)">
+                    <i class="bi bi-plus-lg"></i> Agregar Talla
+                  </button>
+                </div>
+              </div>
+
+              <!-- Barra de Tallas Disponibles de Siesa (del catálogo de la prenda) -->
+              <div *ngIf="item.availableExtensions && item.availableExtensions.length > 0" class="siesa-available-bar">
+                <span class="bar-label"><i class="bi bi-tag-fill"></i> Tallas Siesa disponibles:</span>
+                <div class="bar-chips">
+                  <button *ngFor="let ext of item.availableExtensions"
+                          type="button"
+                          class="chip-talla-siesa"
+                          [class.chip-active]="isTallaInItem(item, ext.talla)"
+                          (click)="toggleSiesaTalla(item, ext)"
+                          [title]="isTallaInItem(item, ext.talla) ? 'Talla en la lista (clic para retirar)' : 'Clic para agregar a la matriz'">
+                    <i class="bi" [ngClass]="isTallaInItem(item, ext.talla) ? 'bi-check-circle-fill' : 'bi-plus'"></i>
+                    <span>{{ ext.talla }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Barra Rápida de Tallas Estándar (Letras) para agregar con 1 clic -->
+              <div class="quick-preset-bar">
+                <span class="preset-label">Agregar rápido:</span>
+                <div class="preset-chips">
+                  <button *ngFor="let tl of tallasLetra"
+                          type="button"
+                          class="chip-preset-letter"
+                          [class.chip-already]="isTallaInItem(item, tl)"
+                          (click)="addSpecificTalla(item, tl)"
+                          title="Agregar talla {{ tl }}">
+                    + {{ tl }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Matriz de Tallas en Fila -->
+              <div *ngIf="item.tallas.length > 0" class="tallas-matrix-container">
+                <div class="tallas-matrix-grid">
+                  <div *ngFor="let t of item.tallas; let ti = index" class="talla-matrix-cell">
+                    <!-- Cabecera de la celda de talla (Nombre de talla + botón borrar) -->
+                    <div class="talla-matrix-head">
+                      <!-- Selector de talla para ítems libres/nuevos -->
+                      <select *ngIf="!t.siesa_item_ext_rowid" class="talla-matrix-select" [(ngModel)]="t.talla">
+                        <option value="" disabled>Talla...</option>
+                        <optgroup label="Letras">
+                          <option *ngFor="let tl of tallasLetra" [value]="tl">{{ tl }}</option>
+                        </optgroup>
+                        <optgroup label="Numéricas">
+                          <option *ngFor="let tn of tallasNumericas" [value]="tn">{{ tn }}</option>
+                        </optgroup>
+                        <option *ngIf="t.talla && !tallasLetra.includes(t.talla) && !tallasNumericas.includes(t.talla)" [value]="t.talla">
+                          {{ t.talla }}
+                        </option>
+                      </select>
+
+                      <!-- Badge fijo si viene de extensión Siesa -->
+                      <span *ngIf="t.siesa_item_ext_rowid" class="talla-matrix-siesa-label" title="Talla oficial vinculada a Siesa">
+                        {{ t.talla }}
+                      </span>
+
+                      <button type="button" class="talla-matrix-remove" (click)="removeTalla(item, ti)" title="Eliminar talla">
+                        <i class="bi bi-x"></i>
                       </button>
-                      <button type="button" class="btn-clear-mold" (click)="clearMoldForItem(i)" title="Quitar molde">
-                        <i class="bi bi-x-lg"></i>
-                      </button>
+                    </div>
+
+                    <!-- Input de cantidad -->
+                    <div class="talla-matrix-body">
+                      <input type="number" 
+                             class="talla-matrix-qty-input" 
+                             [(ngModel)]="t.cantidad" 
+                             min="0" 
+                             placeholder="0" />
+                      <span class="talla-matrix-unit">uds</span>
                     </div>
                   </div>
-                </div>
 
-                <!-- Copiar Configuración de otro ítem -->
-                <div *ngIf="getItemsWithMold().length > 0" class="copy-spec-row">
-                  <span class="copy-label"><i class="bi bi-clipboard-check"></i> Copiar molde desde:</span>
-                  <div class="copy-buttons-list">
-                    <button *ngFor="let src of getItemsWithMold()"
-                            class="btn-copy-spec"
-                            [disabled]="src.index === i"
-                            (click)="copySpecFromItem(src.index, i)">
-                      <i class="bi bi-copy"></i> {{ src.item.descripcion | slice:0:24 }}{{ src.item.descripcion.length > 24 ? '...' : '' }}
-                    </button>
-                  </div>
+                  <!-- Botón rápido + para añadir otra celda al final -->
+                  <button type="button" 
+                          class="talla-matrix-add-tile" 
+                          (click)="addTalla(item)" 
+                          title="Agregar otra talla a la matriz">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Talla</span>
+                  </button>
                 </div>
+              </div>
 
-                <!-- Indicador de OPM guardada -->
-                <div *ngIf="item.technicalSpecId" class="spec-saved-badge mt-2">
-                  <i class="bi bi-check-circle-fill"></i>
-                  <span>Especificación OPM Vinculada Exitosamente · Ficha ID: {{ item.technicalSpecId }}</span>
-                </div>
-
-                <!-- Generador Integrado de OPM -->
-                <div *ngIf="item.moldId" class="spec-generator-wrapper mt-3">
-                  <app-spec-generator
-                    [embedded]="true"
-                    [context]="'comercial'"
-                    [itemIndex]="i"
-                    [externalMoldId]="item.moldId"
-                    [technicalSpecId]="item.technicalSpecId"
-                    [initialComponents]="item.draftComponents"
-                    [itemData]="item"
-                    (onComponentsChange)="onItemComponentsChange(i, $event)"
-                    (onSpecSaved)="onItemSpecSaved(i, $event)">
-                  </app-spec-generator>
-                </div>
+              <div *ngIf="item.tallas.length === 0" class="tallas-empty-hero">
+                <p class="empty-hero-title">Sin tallas configuradas</p>
+                <p class="empty-hero-desc">Haz clic en las tallas disponibles arriba o en <strong>+ Agregar Talla</strong> para ingresar las cantidades.</p>
               </div>
             </div>
 

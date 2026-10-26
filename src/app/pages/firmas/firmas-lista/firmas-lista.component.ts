@@ -238,12 +238,24 @@ export class FirmasListaComponent implements OnInit {
     clearTimeout(this.searchTimeout);
     this.searchTimeout = setTimeout(() => {
       this.currentPage = 1;
+      const hasSearch = !!(this.search && this.search.trim());
+      if (hasSearch && this.viewMode === 'folders') {
+        this.viewMode = 'grid';
+      } else if (!hasSearch && this.viewMode === 'grid' && !this.selectedFolderKey && !this.estadoFiltro && !this.filtroAnio && !this.filtroMes && !this.filtroProceso) {
+        this.viewMode = 'folders';
+      }
       this.cargarDocumentos(false);
     }, 400);
   }
 
   onFilterChange(): void {
     this.currentPage = 1;
+    const hasFilters = !!(this.estadoFiltro || this.filtroAnio || this.filtroMes || this.filtroProceso || (this.search && this.search.trim()));
+    if (hasFilters && this.viewMode === 'folders') {
+      this.viewMode = 'grid';
+    } else if (!hasFilters && this.viewMode === 'grid' && !this.selectedFolderKey) {
+      this.viewMode = 'folders';
+    }
     this.cargarDocumentos(false);
   }
 
@@ -1654,6 +1666,13 @@ export class FirmasListaComponent implements OnInit {
     }
     this.currentPage = 1;
     this.cargarDocumentos();
+  }
+
+  getShortFirmanteName(fullName: string): string {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 2) return fullName;
+    return `${parts[0]} ${parts[2] || parts[1]}`;
   }
 
   limpiarSeleccionCarpeta(): void {

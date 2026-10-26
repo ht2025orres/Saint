@@ -46,7 +46,8 @@
             {v:'todos',       l:'Todo'},
             {v:'seguimiento', l:'Seguim.'},
             {v:'proyecto',    l:'Proyectos'},
-            {v:'glpi',        l:'GLPI'}
+            {v:'glpi',        l:'GLPI'},
+            {v:'google',      l:'Calendar'}
           ]"
           (click)="filtroOrigen = f.v; $event.stopPropagation()"
           class="btn-filter"
@@ -77,14 +78,23 @@
       ════════════════════════════════════════════════════════════════════════ -->
       <div *ngIf="!loading" class="nueva-tarea-wrapper" (click)="$event.stopPropagation()">
 
-        <!-- Botón disparador -->
-        <button
-          *ngIf="!showNuevaTarea"
-          (click)="abrirNuevaTarea(); $event.stopPropagation()"
-          class="btn-add-task">
-          <i class="bi bi-plus-lg"></i>
-          Añadir tarea
-        </button>
+        <!-- Botones disparadores -->
+        <div *ngIf="!showNuevaTarea" class="nueva-tarea-btn-row">
+          <button
+            (click)="abrirNuevaTarea(); $event.stopPropagation()"
+            class="btn-add-task">
+            <i class="bi bi-plus-lg"></i>
+            Añadir tarea
+          </button>
+          <button
+            *ngIf="esGestor || esAdmin"
+            (click)="abrirModalGoogleCalendar(); $event.stopPropagation()"
+            class="btn-import-calendar"
+            title="Importar eventos de Google Calendar">
+            <i class="bi bi-google text-danger"></i>
+            <span>Calendar</span>
+          </button>
+        </div>
 
         <!-- Formulario expandido -->
         <div *ngIf="showNuevaTarea"
@@ -209,6 +219,18 @@
       </div>
 
     </div>
+
+    <!-- Modal Importar de Google Calendar -->
+    <app-modal-importar-google
+      [show]="showModalGoogle"
+      [usuarios]="usuarios"
+      [usuarioActualId]="userId"
+      [usuarioActualEmail]="userEmail"
+      [esLiderOGestor]="esGestor || esAdmin"
+      (onCerrar)="showModalGoogle = false"
+      (onImportado)="onTareasGoogleImportadas($event)">
+    </app-modal-importar-google>
+
   </div>
 </ng-container>
 
@@ -321,8 +343,8 @@
     [class.task-card--completado]="tarea.estado === 'completado'">
 
     <div class="task-card__body">
-      <!-- Semáforo / checkbox: SOLO clickeable en tareas de seguimiento -->
-      <button *ngIf="tarea.origen === 'seguimiento'"
+      <!-- Semáforo / checkbox: SOLO clickeable en tareas de seguimiento y google -->
+      <button *ngIf="tarea.origen === 'seguimiento' || tarea.origen === 'google'"
         (click)="completarTarea(tarea); $event.stopPropagation()"
         class="task-semaforo"
         [ngClass]="{
@@ -335,7 +357,7 @@
         <i *ngIf="tarea.estado === 'completado'" class="bi bi-check"></i>
       </button>
       <!-- Dot visual no interactivo para proyecto y GLPI -->
-      <span *ngIf="tarea.origen !== 'seguimiento'"
+      <span *ngIf="tarea.origen !== 'seguimiento' && tarea.origen !== 'google'"
         class="task-semaforo task-semaforo--readonly"
         [ngClass]="{
           'is-completado': tarea.estado === 'completado',
@@ -347,7 +369,7 @@
       </span>
 
       <!-- Info principal -->
-      <div class="task-card__info" (click)="tarea.origen === 'seguimiento' ? editarTarea(tarea) : null; $event.stopPropagation()">
+      <div class="task-card__info" (click)="(tarea.origen === 'seguimiento' || tarea.origen === 'google') ? editarTarea(tarea) : null; $event.stopPropagation()">
 
         <!-- Fila título + badges -->
         <div class="d-flex align-items-center gap-1 flex-wrap">
@@ -363,6 +385,11 @@
           <span *ngIf="tarea.origen === 'glpi'"
             class="badge bg-light text-info border border-info py-0 px-1" style="font-size: 9px; font-weight: normal;">
             <i class="bi bi-ticket-perforated" style="font-size: 8px;"></i> GLPI
+          </span>
+          <span *ngIf="tarea.origen === 'google'"
+            class="badge bg-light text-danger border border-danger-subtle py-0 px-1 d-inline-flex align-items-center gap-1"
+            style="font-size: 9px; font-weight: 500;">
+            <i class="bi bi-google" style="font-size: 8px;"></i> Calendar
           </span>
 
           <!-- Badge estado (solo en_ejecucion, para diferenciar) -->
@@ -414,8 +441,8 @@
       <!-- Botones de acción (visibles en hover) -->
       <div class="task-card__actions">
 
-        <!-- Reasignar: SOLO Gestor sobre tareas de seguimiento -->
-        <div *ngIf="esGestor && tarea.origen === 'seguimiento'" class="position-relative">
+        <!-- Reasignar: SOLO Gestor sobre tareas de seguimiento o google -->
+        <div *ngIf="esGestor && (tarea.origen === 'seguimiento' || tarea.origen === 'google')" class="position-relative">
           <button
             (click)="delegandoTaskId = tarea.origen + '-' + tarea.id; showDelegarPicker = !showDelegarPicker; $event.stopPropagation()"
             class="task-action-btn btn-indigo"
@@ -449,24 +476,24 @@
           </div>
         </div>
 
-        <!-- Completar: SOLO tareas de seguimiento -->
-        <button *ngIf="tarea.origen === 'seguimiento'"
+        <!-- Completar: SOLO tareas de seguimiento o google -->
+        <button *ngIf="tarea.origen === 'seguimiento' || tarea.origen === 'google'"
           (click)="completarTarea(tarea); $event.stopPropagation()"
           class="task-action-btn btn-green"
           title="Completar tarea">
           <i class="bi bi-check-circle"></i>
         </button>
 
-        <!-- Editar (solo tareas de seguimiento propias o Gestor) -->
-        <button *ngIf="tarea.origen === 'seguimiento' && (tarea.usuario_id === userId || esGestor)"
+        <!-- Editar (solo tareas de seguimiento/google propias o Gestor) -->
+        <button *ngIf="(tarea.origen === 'seguimiento' || tarea.origen === 'google') && (tarea.usuario_id === userId || esGestor)"
           (click)="editarTarea(tarea); $event.stopPropagation()"
           class="task-action-btn btn-blue"
           title="Editar">
           <i class="bi bi-pencil"></i>
         </button>
 
-        <!-- Eliminar (solo tareas de seguimiento propias o Gestor) -->
-        <button *ngIf="tarea.origen === 'seguimiento' && (tarea.usuario_id === userId || esGestor)"
+        <!-- Eliminar (solo tareas de seguimiento/google propias o Gestor) -->
+        <button *ngIf="(tarea.origen === 'seguimiento' || tarea.origen === 'google') && (tarea.usuario_id === userId || esGestor)"
           (click)="eliminarTarea(tarea); $event.stopPropagation()"
           class="task-action-btn btn-red"
           title="Eliminar">

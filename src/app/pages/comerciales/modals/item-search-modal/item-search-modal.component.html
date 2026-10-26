@@ -1,47 +1,97 @@
 <div class="modal-overlay" (click)="close()">
   <div class="modal-panel" (click)="$event.stopPropagation()">
+    <!-- Header del Modal -->
     <div class="modal-header">
-      <h2><i class="bi bi-search"></i> Buscar Ítem en Siesa</h2>
-      <button class="btn-close-modal" (click)="close()"><i class="bi bi-x-lg"></i></button>
+      <div class="modal-header-title">
+        <div class="modal-icon"><i class="bi bi-box-seam"></i></div>
+        <div>
+          <h2>Catálogo de Prendas del Cliente</h2>
+          <p class="modal-subtitle">Historial de referencias y tallas disponibles en Siesa</p>
+        </div>
+      </div>
+      <button class="btn-close-modal" (click)="close()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
     </div>
 
+    <!-- Barra de Búsqueda -->
     <div class="modal-search">
       <div class="search-input-group">
         <i class="bi bi-search search-icon"></i>
         <input
           type="text"
           class="search-input"
-          placeholder="Buscar por referencia o descripción..."
+          placeholder="Buscar prenda por referencia o descripción..."
           [(ngModel)]="searchTerm"
           (input)="search()"
           autofocus
         />
+        <button *ngIf="searchTerm" class="btn-clear-term" (click)="searchTerm = ''; search()">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
       </div>
     </div>
 
+    <!-- Cuerpo con Lista Agrupada -->
     <div class="modal-body">
+      <!-- Loading -->
       <div *ngIf="isLoading" class="loading-items">
         <div class="loader-spinner"></div>
-        <p>Cargando ítems...</p>
+        <p>Cargando catálogo del cliente...</p>
       </div>
 
-      <div *ngIf="!isLoading && filteredItems.length > 0" class="items-list">
-        <div *ngFor="let item of filteredItems" class="item-row" (click)="select(item)">
-          <div class="item-main">
-            <span class="item-ref">{{ getRef(item) }}</span>
-            <span class="item-desc">{{ getDesc(item) }}</span>
+      <!-- Lista de Prendas Agrupadas -->
+      <div *ngIf="!isLoading && filteredGroupedItems.length > 0" class="items-list">
+        <div *ngFor="let item of filteredGroupedItems" class="item-card-row" (click)="select(item)">
+          <div class="item-card-header">
+            <div class="item-ref-group">
+              <span class="item-ref"><i class="bi bi-upc"></i> {{ item.referencia }}</span>
+              <span *ngIf="item.color && item.color !== 'NA'" class="item-color-tag">{{ item.color }}</span>
+              <span *ngIf="item.ultima_pv" class="item-pv-tag">Última PV: {{ item.ultima_pv }}</span>
+            </div>
+            <button type="button" class="btn-add-item-action" (click)="select(item); $event.stopPropagation()">
+              <i class="bi bi-plus-lg"></i> Agregar Prenda
+            </button>
           </div>
-          <div class="item-tags">
-            <span *ngIf="item.color" class="tag">{{ item.color }}</span>
-            <span *ngIf="item.talla" class="tag tag-talla">{{ item.talla }}</span>
+
+          <div class="item-desc-text">
+            {{ item.descripcion }}
           </div>
-          <i class="bi bi-plus-circle item-add"></i>
+
+          <!-- Selector de Tallas Disponibles de esta prenda -->
+          <div *ngIf="item.extensiones && item.extensiones.length > 0" class="item-tallas-container" (click)="$event.stopPropagation()">
+            <div class="tallas-label-row">
+              <span class="tallas-label">
+                <i class="bi bi-rulers"></i> Tallas disponibles ({{ item.extensiones.length }}):
+              </span>
+              <div class="tallas-quick-toggle">
+                <button type="button" class="btn-text-toggle" (click)="selectAllTallas(item, true, $event)">Seleccionar todas</button>
+                <span class="toggle-sep">·</span>
+                <button type="button" class="btn-text-toggle" (click)="selectAllTallas(item, false, $event)">Ninguna</button>
+              </div>
+            </div>
+
+            <div class="tallas-chips-list">
+              <button *ngFor="let ext of item.extensiones"
+                      type="button"
+                      class="talla-chip-btn"
+                      [class.selected]="ext.seleccionada"
+                      (click)="toggleTalla(ext, $event)"
+                      [title]="ext.seleccionada ? 'Talla seleccionada (clic para desmarcar)' : 'Clic para incluir esta talla'">
+                <i class="bi" [ngClass]="ext.seleccionada ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                <span>{{ ext.talla }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="!item.extensiones || item.extensiones.length === 0" class="item-no-tallas">
+            <i class="bi bi-info-circle"></i> Sin desglose previo de tallas en Siesa (se podrán asignar en la solicitud).
+          </div>
         </div>
       </div>
 
-      <div *ngIf="!isLoading && filteredItems.length === 0" class="empty-search">
+      <!-- Estado Vacío -->
+      <div *ngIf="!isLoading && filteredGroupedItems.length === 0" class="empty-search">
         <i class="bi bi-inbox"></i>
-        <p>No se encontraron ítems en las últimas PVs</p>
+        <p>No se encontraron prendas coincidentes</p>
         
         <div *ngIf="!isDeepSearch" class="deep-search-suggestion">
           <p class="suggestion-text">¿Deseas realizar una búsqueda más profunda en el historial?</p>

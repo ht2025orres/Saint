@@ -46,7 +46,10 @@ export class GestionEmpacadoresComponent implements OnInit {
 
     this.terminacionEmpaqueService.obtenerPVsPendientes().subscribe({
       next: (res) => this.pvsPendientes = res,
-      error: () => Swal.fire('Error', 'No se pudieron cargar las PVs pendientes.', 'error')
+      error: (err) => {
+        console.error('Error al cargar PVs pendientes:', err);
+        Swal.fire('Error', err?.error?.error || 'No se pudieron cargar las PVs pendientes.', 'error');
+      }
     });
   }
 
@@ -123,10 +126,16 @@ export class GestionEmpacadoresComponent implements OnInit {
             ).subscribe(state => this.currentAsignados = state.currentData);
             console.log('currentAsignados', this.currentAsignados);
           },
-          error: () => Swal.fire('Error', 'No se pudieron cargar las asignaciones.', 'error')
+          error: (err) => {
+            console.error('Error al cargar asignaciones:', err);
+            Swal.fire('Error', err?.error?.error || 'No se pudieron cargar las asignaciones.', 'error');
+          }
         });
       },
-      error: () => Swal.fire('Error', 'No se pudieron cargar los usuarios.', 'error')
+      error: (err) => {
+        console.error('Error al cargar usuarios empacadores:', err);
+        Swal.fire('Error', err?.error?.error || 'No se pudieron cargar los usuarios.', 'error');
+      }
     });
   }
 

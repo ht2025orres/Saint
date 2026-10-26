@@ -217,10 +217,20 @@
             {{ p.descripcion }}
           </p>
 
-          <!-- Fecha límite -->
-          <div *ngIf="p.fecha_limite_entrega" class="flex items-center gap-2 text-xs font-bold text-slate-400 mb-5 bg-slate-50 w-fit px-3 py-1.5 rounded-xl border border-slate-100">
-            <i class="mdi mdi-calendar-blank text-blue-500"></i>
-            <span>{{ p.fecha_limite_entrega | date:'dd MMM, yyyy':'UTC' }}</span>
+          <!-- Metadatos de la tarjeta: Creador + Fecha límite -->
+          <div class="flex flex-wrap items-center gap-2 mb-5">
+            <!-- Creador del proyecto -->
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 shadow-2xs"
+                 [title]="'Creador: ' + (p.creador_nombre || state.nombreUsuario(p.usuario_creador_id) || ('Usuario #' + p.usuario_creador_id))">
+              <i class="mdi mdi-account-circle-outline text-indigo-500 text-sm"></i>
+              <span class="truncate max-w-[170px]">{{ p.creador_nombre || state.nombreUsuario(p.usuario_creador_id) || ('Usuario #' + p.usuario_creador_id) }}</span>
+            </div>
+
+            <!-- Fecha límite -->
+            <div *ngIf="p.fecha_limite_entrega" class="flex items-center gap-2 text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+              <i class="mdi mdi-calendar-blank text-blue-500"></i>
+              <span>{{ p.fecha_limite_entrega | date:'dd MMM, yyyy':'UTC' }}</span>
+            </div>
           </div>
 
           <!-- Estadísticas restauradas grandes -->
@@ -353,6 +363,10 @@
                       class="text-[8px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-black uppercase tracking-widest">
                       Informe Vinculado
                     </span>
+                  </div>
+                  <div class="flex items-center gap-1 mt-0.5 text-[9px] text-slate-400 font-medium">
+                    <i class="mdi mdi-account-circle-outline text-indigo-500"></i>
+                    <span>Creado por: <strong class="text-slate-600">{{ p.creador_nombre || state.nombreUsuario(p.usuario_creador_id) || ('Usuario #' + p.usuario_creador_id) }}</strong></span>
                   </div>
                   <!-- Avatares compactos en lista -->
                   <div *ngIf="(p.responsables?.length ?? 0) > 0" class="flex items-center mt-1">

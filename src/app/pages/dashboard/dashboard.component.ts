@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { MetricsService } from 'src/app/services/metrics.service';
+import { MetricsService, ProduccionFlujoData } from 'src/app/services/metrics.service';
 import { BillingService } from 'src/app/services/billing.service';
 import { InventarioService, BodegaSummary, ItemBodega } from 'src/app/services/inventario.service';
 import { AuthService } from 'src/app/services/auth.service';
@@ -134,7 +134,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showTooltip: Map<string, boolean> = new Map();
   tooltipPosition: Map<string, {top: number, left: number}> = new Map();
   
-  private charts: Map<string, Chart> = new Map();
+  private charts: Map<string, any> = new Map();
   
   Math = Math;
 
@@ -184,10 +184,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  loadPreviousShipmentsDetail(): void {
+  private lastBillingPeriod: string | null = null;
+
+  setTab(tab: string): void {
+    this.activeTab = tab;
+    if (tab === 'billing') {
+      this.loadBillingData(false);
+    } else if (tab === 'inventory') {
+      this.loadWarehousesData(false);
+    } else if (tab === 'production') {
+      this.loadMetrics();
+    }
+  }
+
+  loadPreviousShipmentsDetail(forceRefresh: boolean = false): void {
     this.billingService.getPreviousShipmentsDetail(
       this.selectedYear, 
-      this.selectedMonth
+      this.selectedMonth,
+      undefined,
+      forceRefresh
     ).subscribe({
       next: (data) => {
         this.previousShipmentsDetail.clear();
@@ -216,22 +231,223 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  loadMetrics(): void {
-    this.metricsService.getProcessMetrics().subscribe(data => {
-      this.metrics = data;
+  loadingProduction: boolean = false;
+  produccionData: ProduccionFlujoData = {
+    producido: 3200,
+    terminado: 2900,
+    empacado: 2750,
+    wip_terminacion: 300,
+    wip_empaque: 150,
+    total_wip: 450,
+    eficiencia_terminacion: 91,
+    eficiencia_empaque: 95,
+    eficiencia_global: 86,
+    ops_activas: 12,
+    periodo: 'mes_actual',
+    timestamp: new Date().toISOString()
+  };
+
+  get totalProducido(): number {
+    return this.produccionData?.producido ?? 3200;
+  }
+
+  get totalTerminado(): number {
+    return this.produccionData?.terminado ?? 2900;
+  }
+
+  get totalEmpacado(): number {
+    return this.produccionData?.empacado ?? 2750;
+  }
+
+  get totalWip(): number {
+    return this.produccionData?.total_wip ?? 450;
+  }
+
+  get wipTerminacion(): number {
+    return this.produccionData?.wip_terminacion ?? 300;
+  }
+
+  get wipEmpaque(): number {
+    return this.produccionData?.wip_empaque ?? 150;
+  }
+
+  get avanceTerminacion(): number {
+    return this.produccionData?.eficiencia_terminacion ?? 91;
+  }
+
+  get avanceEmpaque(): number {
+    return this.produccionData?.eficiencia_empaque ?? 95;
+  }
+
+  get eficienciaGlobal(): number {
+    return this.produccionData?.eficiencia_global ?? 86;
+  }
+
+  get opsActivas(): number {
+    return this.produccionData?.ops_activas ?? 12;
+  }
+
+  get retencionTerminacion(): number {
+    if (!this.totalProducido) return 0;
+    return Math.round((this.wipTerminacion / this.totalProducido) * 1000) / 10;
+  }
+
+  get retencionEmpaque(): number {
+    if (!this.totalTerminado) return 0;
+    return Math.round((this.wipEmpaque / this.totalTerminado) * 1000) / 10;
+  }
+
+  loadMetrics(forceRefresh: boolean = false): void {
+    this.loadingProduction = true;
+    this.metricsService.getFlujoPlanta().subscribe({
+      next: (data) => {
+        if (data) {
+          this.produccionData = data;
+        }
+        this.loadingProduction = false;
+        setTimeout(() => this.renderProductionChart(), 120);
+      },
+      error: () => {
+        this.loadingProduction = false;
+        setTimeout(() => this.renderProductionChart(), 120);
+      }
     });
   }
 
-  loadBillingData(): void {
-    this.loading = true;
+  renderProductionChart(): void {
+    const canvas = document.getElementById('productionFlowChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    if (this.charts.has('productionFlow')) {
+      this.charts.get('productionFlow')?.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const d = this.produccionData;
+    const entradas = [d.producido, d.producido, d.terminado];
+    const salidas = [d.producido, d.terminado, d.empacado];
+    const wip = [0, d.wip_terminacion, d.wip_empaque];
+
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['1. Confección (Producción)', '2. Terminación & Acabados', '3. Empaque & P.T.'],
+        datasets: [
+          {
+            label: 'Entradas (Recibidas)',
+            data: entradas,
+            backgroundColor: 'rgba(59, 130, 246, 0.85)',
+            borderColor: '#2563eb',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: 'Salidas (Procesadas)',
+            data: salidas,
+            backgroundColor: 'rgba(16, 185, 129, 0.85)',
+            borderColor: '#059669',
+            borderWidth: 1.5,
+            borderRadius: 6
+          },
+          {
+            label: 'En Proceso (WIP)',
+            data: wip,
+            backgroundColor: 'rgba(245, 158, 11, 0.85)',
+            borderColor: '#d97706',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              font: { size: 11, weight: 'bold' },
+              color: '#475569'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            padding: 10,
+            callbacks: {
+              label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toLocaleString('es-CO')} prendas`
+            }
+          },
+          datalabels: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+            ticks: {
+              font: { size: 11 },
+              color: '#64748b',
+              callback: (value) => (value as number).toLocaleString('es-CO')
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11, weight: 'bold' },
+              color: '#334155'
+            }
+          }
+        }
+      }
+    });
+
+    this.charts.set('productionFlow', chart);
+  }
+
+  private billingDataCache: Map<string, BillingData> = new Map();
+  private warehouseItemsCache: Map<string, ItemBodega[]> = new Map();
+
+  get totalValorBodegas(): number {
+    if (!this.warehousesSummary || this.warehousesSummary.length === 0) return 0;
+    return this.warehousesSummary.reduce((sum, w) => sum + (parseFloat(w.valor_total as any) || 0), 0);
+  }
+
+  get totalItemsBodegas(): number {
+    if (!this.warehousesSummary || this.warehousesSummary.length === 0) return 0;
+    return this.warehousesSummary.reduce((sum, w) => sum + (parseFloat(w.total_items as any) || 0), 0);
+  }
+
+  get totalExistenciasBodegas(): number {
+    if (!this.warehousesSummary || this.warehousesSummary.length === 0) return 0;
+    return this.warehousesSummary.reduce((sum, w) => sum + (parseFloat(w.total_existencias as any) || 0), 0);
+  }
+
+  loadBillingData(forceRefresh: boolean = false): void {
     const periodo = parseInt(`${this.selectedYear}${this.selectedMonth.toString().padStart(2, '0')}`);
+    const cacheKey = `${this.selectedYear}-${this.selectedPlan}-${periodo}`;
+
+    // Si ya tenemos los datos en caché en memoria y no es forzado, mostrar de inmediato sin espera
+    if (!forceRefresh && this.billingDataCache.has(cacheKey)) {
+      this.billingData = this.billingDataCache.get(cacheKey)!;
+      this.lastBillingPeriod = cacheKey;
+      setTimeout(() => this.renderAllCharts(), 60);
+      return;
+    }
+
+    this.loading = true;
+    this.lastBillingPeriod = cacheKey;
     
-    this.billingService.getBillingData(this.selectedYear, this.selectedPlan, periodo).subscribe({
+    this.billingService.getBillingData(this.selectedYear, this.selectedPlan, periodo, forceRefresh).subscribe({
       next: (data) => {
         this.billingData = data;
+        this.billingDataCache.set(cacheKey, data);
         this.loading = false;
-        this.loadPreviousShipmentsDetail();
-        setTimeout(() => this.renderAllCharts(), 100);
+        this.loadPreviousShipmentsDetail(forceRefresh);
+        setTimeout(() => this.renderAllCharts(), 60);
       },
       error: (error) => {
         console.error('Error loading billing data:', error);
@@ -240,14 +456,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // NUEVOS MÉTODOS PARA BODEGAS
-  loadWarehousesData(): void {
+  getSelectedWarehouseName(): string {
+    const w = this.warehousesSummary.find(item => item.codigo === this.selectedWarehouse);
+    return w ? w.nombre_bodega : (this.selectedWarehouse || 'Sin selección');
+  }
+
+  // MÉTODOS PARA BODEGAS
+  loadWarehousesData(forceRefresh: boolean = false): void {
+    // Si ya tenemos bodegas cargadas y no es refresco forzado, evitar re-consultar
+    if (!forceRefresh && this.warehousesSummary && this.warehousesSummary.length > 0) {
+      if (!this.selectedWarehouse && this.warehousesSummary.length > 0) {
+        this.loadWarehouseItems(this.warehousesSummary[0].codigo);
+      }
+      setTimeout(() => this.renderWarehouseCharts(), 60);
+      return;
+    }
+
     this.loadingWarehouses = true;
-    this.inventoryService.getWarehousesSummary().subscribe({
+    this.inventoryService.getWarehousesSummary(forceRefresh).subscribe({
       next: (data) => {
-        this.warehousesSummary = data;
+        const list = Array.isArray(data) ? data : ((data as any)?.data || []);
+        const sanitized = list.map(w => ({
+          ...w,
+          valor_total: parseFloat(w.valor_total as any) || 0,
+          total_items: parseInt(w.total_items as any, 10) || 0,
+          total_existencias: parseFloat(w.total_existencias as any) || 0
+        }));
+        this.warehousesSummary = sanitized;
         this.loadingWarehouses = false;
-        setTimeout(() => this.renderWarehouseCharts(), 100);
+        if (!this.selectedWarehouse && sanitized.length > 0) {
+          this.loadWarehouseItems(sanitized[0].codigo);
+        }
+        setTimeout(() => this.renderWarehouseCharts(), 60);
       },
       error: (error) => {
         console.error('Error loading warehouses data:', error);
@@ -258,14 +498,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadWarehouseItems(codigoBodega: string): void {
     this.selectedWarehouse = codigoBodega;
+
+    if (this.warehouseItemsCache.has(codigoBodega)) {
+      this.warehouseItems = this.warehouseItemsCache.get(codigoBodega)!;
+      return;
+    }
+
     this.loadingWarehouseItems = true;
     this.inventoryService.getWarehouseItems(codigoBodega).subscribe({
       next: (data) => {
-        this.warehouseItems = data;
+        const list = Array.isArray(data) ? data : ((data as any)?.data || []);
+        const sanitized = list.map(item => ({
+          ...item,
+          cantidad: parseFloat(item.cantidad as any) || 0,
+          costo_prom_unitario: parseFloat(item.costo_prom_unitario as any) || 0,
+          costo_prom_total: parseFloat(item.costo_prom_total as any) || 0
+        }));
+        this.warehouseItems = sanitized;
+        this.warehouseItemsCache.set(codigoBodega, sanitized);
         this.loadingWarehouseItems = false;
       },
       error: (error) => {
         console.error('Error loading warehouse items:', error);
+        this.warehouseItems = [];
         this.loadingWarehouseItems = false;
       }
     });
@@ -283,18 +538,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   renderWarehouseCharts(): void {
-    if (this.warehousesSummary.length === 0) return;
+    if (!this.warehousesSummary || this.warehousesSummary.length === 0) return;
     
-    // Destruir gráficos anteriores de bodegas
-    if (this.charts.has('warehouseValue')) {
-      this.charts.get('warehouseValue')?.destroy();
-    }
-    if (this.charts.has('warehouseItems')) {
-      this.charts.get('warehouseItems')?.destroy();
-    }
+    // Destruir únicamente gráficos de bodegas para no afectar producción ni facturación
+    ['warehouseValue', 'warehouseItems'].forEach(key => {
+      this.charts.get(key)?.destroy();
+      this.charts.delete(key);
+    });
     
-    this.renderWarehouseValueChart();
-    this.renderWarehouseItemsChart();
+    requestAnimationFrame(() => {
+      this.renderWarehouseValueChart();
+      this.renderWarehouseItemsChart();
+    });
   }
 
   renderWarehouseValueChart(): void {
@@ -311,37 +566,56 @@ export class DashboardComponent implements OnInit, OnDestroy {
         datasets: [{
           label: 'Valor Total Inventario',
           data: this.warehousesSummary.map(w => w.valor_total),
-          backgroundColor: 'rgba(54, 162, 235, 0.8)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 2,
-          borderRadius: 5
+          backgroundColor: '#6366f1',
+          hoverBackgroundColor: '#4f46e5',
+          borderRadius: 8,
+          borderSkipped: false
         }]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
             padding: 12,
+            cornerRadius: 8,
             callbacks: {
-              label: (context) => `$${(context.parsed.y as number).toLocaleString('es-CO')}`
+              label: (context) => ` Valor Total: $${(context.parsed.y as number).toLocaleString('es-CO')}`
             }
           },
           datalabels: {
             anchor: 'end',
             align: 'top',
-            formatter: (value) => '$' + value.toLocaleString('es-CO'),
-            color: '#000',
-            font: { weight: 'bold', size: 11 }
+            formatter: (value) => {
+              const num = Number(value) || 0;
+              return '$' + (num >= 1000000 ? (num / 1000000).toFixed(1) + 'M' : num.toLocaleString('es-CO'));
+            },
+            color: '#475569',
+            font: { weight: 'bold', size: 10 }
           }
         },
         scales: {
           y: {
             beginAtZero: true,
+            grid: { color: 'rgba(241, 245, 249, 1)' },
             ticks: {
-              callback: (value) => '$' + (value as number).toLocaleString('es-CO')
+              color: '#64748b',
+              font: { size: 10 },
+              callback: (value) => {
+                const num = Number(value) || 0;
+                return '$' + (num >= 1000000 ? (num / 1000000).toFixed(0) + 'M' : num.toLocaleString('es-CO'));
+              }
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#334155',
+              font: { size: 11, weight: 'bold' }
             }
           }
         }
@@ -359,7 +633,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const config: ChartConfiguration = {
+    const config: ChartConfiguration<'doughnut'> = {
       type: 'doughnut',
       data: {
         labels: this.warehousesSummary.map(w => w.nombre_bodega),
@@ -367,30 +641,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
           label: 'Total Items',
           data: this.warehousesSummary.map(w => w.total_items),
           backgroundColor: [
-            'rgba(255, 99, 132, 0.8)',
-            'rgba(54, 162, 235, 0.8)',
-            'rgba(255, 206, 86, 0.8)',
-            'rgba(75, 192, 192, 0.8)'
+            '#6366f1', // Indigo
+            '#0ea5e9', // Sky
+            '#10b981', // Emerald
+            '#f59e0b', // Amber
+            '#ec4899', // Pink
+            '#8b5cf6'  // Purple
           ],
-          borderWidth: 2
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 6
         }]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
         plugins: {
           legend: {
-            position: 'bottom'
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              font: { size: 11, weight: 'bold' },
+              color: '#475569',
+              padding: 12
+            }
           },
           tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
+            padding: 12,
+            cornerRadius: 8,
             callbacks: {
-              label: (context) => `${context.label}: ${context.parsed} items`
+              label: (context) => ` ${context.label}: ${(context.parsed as number).toLocaleString('es-CO')} referencias`
             }
           },
           datalabels: {
             color: '#fff',
-            font: { weight: 'bold', size: 13 },
-            formatter: (value) => value + ' items'
+            font: { weight: 'bold', size: 11 },
+            formatter: (value, ctx) => {
+              const total = (ctx.chart.data.datasets[0].data as number[]).reduce((a, b) => a + b, 0);
+              const pct = total ? Math.round((Number(value) / total) * 100) : 0;
+              return pct >= 8 ? `${pct}%` : '';
+            }
           }
         }
       }
@@ -440,15 +735,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get totalCantidad(): number {
-    return this.filteredWarehouseItems
-      ? this.filteredWarehouseItems.reduce((sum, item) => sum + item.cantidad, 0)
-      : 0;
+    if (!this.filteredWarehouseItems || this.filteredWarehouseItems.length === 0) return 0;
+    return this.filteredWarehouseItems.reduce((sum, item) => sum + (parseFloat(item.cantidad as any) || 0), 0);
   }
 
   get totalCosto(): number {
-    return this.filteredWarehouseItems
-      ? this.filteredWarehouseItems.reduce((sum, item) => sum + item.costo_prom_total, 0)
-      : 0;
+    if (!this.filteredWarehouseItems || this.filteredWarehouseItems.length === 0) return 0;
+    return this.filteredWarehouseItems.reduce((sum, item) => sum + (parseFloat(item.costo_prom_total as any) || 0), 0);
   }
 
   openInvoiceModal(unidad?: string): void {
@@ -705,13 +998,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
   renderAllCharts(): void {
     if (!this.billingData) return;
     
-    this.charts.forEach(chart => chart.destroy());
-    this.charts.clear();
+    // Destruir únicamente los gráficos de facturación para no afectar los otros tabs
+    ['comparison', 'execution', 'variation', 'difference'].forEach(key => {
+      this.charts.get(key)?.destroy();
+      this.charts.delete(key);
+    });
     
-    this.renderComparisonChart();
-    this.renderExecutionPercentageChart();
-    this.renderVariationChart();
-    this.renderDifferenceTrendChart();
+    requestAnimationFrame(() => {
+      this.renderComparisonChart();
+      this.renderExecutionPercentageChart();
+      setTimeout(() => {
+        this.renderVariationChart();
+        this.renderDifferenceTrendChart();
+      }, 40);
+    });
   }
 
   renderComparisonChart(): void {
@@ -728,51 +1028,76 @@ export class DashboardComponent implements OnInit, OnDestroy {
         labels: units.map(u => u.descripcion),
         datasets: [
           {
-            label: 'Presupuesto',
+            label: 'Presupuesto Meta',
             data: units.map(u => u.presupuesto),
-            backgroundColor: 'rgba(54, 162, 235, 0.8)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 2,
-            borderRadius: 5
+            backgroundColor: '#6366f1',
+            hoverBackgroundColor: '#4f46e5',
+            borderRadius: 6,
+            borderSkipped: false
           },
           {
-            label: 'Facturado Real',
+            label: 'Facturación Real',
             data: units.map(u => u.real),
-            backgroundColor: 'rgba(75, 192, 192, 0.8)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 2,
-            borderRadius: 5
+            backgroundColor: '#10b981',
+            hoverBackgroundColor: '#059669',
+            borderRadius: 6,
+            borderSkipped: false
           }
         ]
       },
       options: {
         indexAxis: 'y',
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             position: 'top',
-            labels: { font: { size: 12, weight: 'bold' } }
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              font: { size: 11, weight: 'bold' },
+              color: '#475569',
+              padding: 14
+            }
           },
           tooltip: {
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
             padding: 12,
+            cornerRadius: 8,
             callbacks: {
-              label: (context) => `${context.dataset.label}: $${context.parsed.x.toLocaleString('es-CO')}`
+              label: (context) => ` ${context.dataset.label}: $${(context.parsed.x as number).toLocaleString('es-CO')}`
             }
           },
           datalabels: {
             anchor: 'end',
             align: 'right',
-            formatter: (value) => '$' + value.toLocaleString('es-CO'),
-            color: '#000',
-            font: { weight: 'bold', size: 10 }
+            formatter: (value) => {
+              const num = Number(value) || 0;
+              return '$' + (num >= 1000000 ? (num / 1000000).toFixed(0) + 'M' : num.toLocaleString('es-CO'));
+            },
+            color: '#475569',
+            font: { weight: 'bold', size: 9 }
           }
         },
         scales: {
           x: {
+            grid: { color: 'rgba(241, 245, 249, 1)' },
             ticks: {
-              callback: (value) => '$' + (value as number).toLocaleString('es-CO')
+              color: '#64748b',
+              font: { size: 10 },
+              callback: (value) => {
+                const num = Number(value) || 0;
+                return '$' + (num >= 1000000 ? (num / 1000000).toFixed(0) + 'M' : num.toLocaleString('es-CO'));
+              }
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              color: '#334155',
+              font: { size: 11, weight: 'bold' }
             }
           }
         }
@@ -790,44 +1115,58 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const percentage = this.billingData.porcentajeEjecutado;
-    const remaining = 100 - percentage;
+    const percentage = this.billingData.isPastMonth && this.billingData.porcentajeEjecutadoConCreditos !== undefined
+      ? this.billingData.porcentajeEjecutadoConCreditos
+      : this.billingData.porcentajeEjecutado;
+    const remaining = Math.max(0, 100 - percentage);
 
-    let color = 'rgba(75, 192, 75, 0.8)';
+    let color = '#10b981';
     if (percentage < 50) {
-      color = 'rgba(255, 99, 99, 0.8)';
-    } else if (percentage < 75) {
-      color = 'rgba(255, 193, 7, 0.8)';
+      color = '#f43f5e';
+    } else if (percentage < 80) {
+      color = '#f59e0b';
     }
 
-    const config: ChartConfiguration = {
+    const config: ChartConfiguration<'doughnut'> = {
       type: 'doughnut',
       data: {
         labels: ['Ejecutado', 'Pendiente'],
         datasets: [{
           data: [percentage, remaining],
-          backgroundColor: [color, 'rgba(200, 200, 200, 0.3)'],
-          borderColor: [color, 'rgba(200, 200, 200, 1)'],
-          borderWidth: 2
+          backgroundColor: [color, '#f1f5f9'],
+          borderWidth: 0,
+          hoverOffset: 4
         }]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { font: { size: 12, weight: 'bold' } }
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              font: { size: 11, weight: 'bold' },
+              color: '#475569',
+              padding: 12
+            }
           },
           tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
+            padding: 10,
+            cornerRadius: 8,
             callbacks: {
-              label: (context) => `${context.label}: ${context.parsed}%`
+              label: (context) => ` ${context.label}: ${(context.parsed as number).toFixed(1)}%`
             }
           },
           datalabels: {
-            color: '#fff',
-            font: { weight: 'bold', size: 14 },
-            formatter: (value) => value.toFixed(1) + '%'
+            color: (context) => context.dataIndex === 0 ? '#0f172a' : 'transparent',
+            font: { weight: 'bold', size: 15 },
+            formatter: (value, context) => context.dataIndex === 0 ? `${Number(value).toFixed(1)}%` : ''
           }
         }
       }
@@ -846,10 +1185,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const units = this.billingData.detalleUnidades;
     
-    const colors = units.map(u => 
-      u.porcentajeEjecutado >= 80 ? 'rgba(75, 192, 75, 0.8)' :
-      u.porcentajeEjecutado >= 50 ? 'rgba(255, 193, 7, 0.8)' :
-      'rgba(255, 99, 99, 0.8)'
+    const colors = units.map(u => {
+      const pct = this.billingData?.isPastMonth && u.porcentajeEjecutadoConCreditos !== undefined
+        ? u.porcentajeEjecutadoConCreditos
+        : u.porcentajeEjecutado;
+      return pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#f43f5e';
+    });
+
+    const values = units.map(u => 
+      this.billingData?.isPastMonth && u.porcentajeEjecutadoConCreditos !== undefined
+        ? u.porcentajeEjecutadoConCreditos
+        : u.porcentajeEjecutado
     );
 
     const config: ChartConfiguration = {
@@ -858,40 +1204,50 @@ export class DashboardComponent implements OnInit, OnDestroy {
         labels: units.map(u => u.descripcion),
         datasets: [{
           label: '% Ejecución',
-          data: units.map(u => u.porcentajeEjecutado),
+          data: values,
           backgroundColor: colors,
-          borderColor: colors.map(c => c.replace('0.8', '1')),
-          borderWidth: 2,
-          borderRadius: 5
+          borderRadius: 6,
+          borderSkipped: false
         }]
       },
       options: {
-        indexAxis: 'x',
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
             padding: 12,
+            cornerRadius: 8,
             callbacks: {
-              label: (context) => `${context.parsed.y.toFixed(2)}%`
+              label: (context) => ` Ejecución: ${(context.parsed.y as number).toFixed(1)}%`
             }
           },
           datalabels: {
             anchor: 'end',
             align: 'top',
-            formatter: (value) => value.toFixed(1) + '%',
-            color: '#000',
-            font: { weight: 'bold', size: 11 }
+            formatter: (value) => `${Number(value).toFixed(0)}%`,
+            color: '#475569',
+            font: { weight: 'bold', size: 10 }
           }
         },
         scales: {
           y: {
             beginAtZero: true,
-            max: 100,
+            grid: { color: 'rgba(241, 245, 249, 1)' },
             ticks: {
-              callback: (value) => (value as number) + '%'
+              color: '#64748b',
+              font: { size: 10 },
+              callback: (value) => `${value}%`
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#334155',
+              font: { size: 11, weight: 'bold' }
             }
           }
         }
@@ -910,46 +1266,68 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!ctx) return;
 
     const units = this.billingData.detalleUnidades;
-    const colors = units.map(u => u.diferencia >= 0 ? 'rgba(75, 192, 75, 0.8)' : 'rgba(255, 99, 99, 0.8)');
+    const values = units.map(u => 
+      this.billingData?.isPastMonth && u.diferenciaConCreditos !== undefined 
+        ? u.diferenciaConCreditos 
+        : u.diferencia
+    );
+    const colors = values.map(v => v >= 0 ? '#10b981' : '#f43f5e');
 
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
         labels: units.map(u => u.descripcion),
         datasets: [{
-          label: 'Diferencia ($)',
-          data: units.map(u => u.diferencia),
+          label: 'Diferencia / Margen ($)',
+          data: values,
           backgroundColor: colors,
-          borderColor: colors.map(c => c.replace('0.8', '1')),
-          borderWidth: 2,
-          borderRadius: 5
+          borderRadius: 6,
+          borderSkipped: false
         }]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
-        indexAxis: 'x',
+        maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
             padding: 12,
+            cornerRadius: 8,
             callbacks: {
-              label: (context) => `$${(context.parsed.y as number).toLocaleString('es-CO')}`
+              label: (context) => ` Diferencia: $${(context.parsed.y as number).toLocaleString('es-CO')}`
             }
           },
           datalabels: {
             anchor: 'end',
             align: (context) => (context.dataset.data as number[])[context.dataIndex] >= 0 ? 'top' : 'bottom',
-            formatter: (value) => '$' + (value as number).toLocaleString('es-CO'),
-            color: '#000',
-            font: { weight: 'bold', size: 10 }
+            formatter: (value) => {
+              const num = Number(value) || 0;
+              return '$' + (Math.abs(num) >= 1000000 ? (num / 1000000).toFixed(1) + 'M' : num.toLocaleString('es-CO'));
+            },
+            color: '#475569',
+            font: { weight: 'bold', size: 9 }
           }
         },
         scales: {
           y: {
+            grid: { color: 'rgba(241, 245, 249, 1)' },
             ticks: {
-              callback: (value) => '$' + (value as number).toLocaleString('es-CO')
+              color: '#64748b',
+              font: { size: 10 },
+              callback: (value) => {
+                const num = Number(value) || 0;
+                return '$' + (Math.abs(num) >= 1000000 ? (num / 1000000).toFixed(0) + 'M' : num.toLocaleString('es-CO'));
+              }
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#334155',
+              font: { size: 11, weight: 'bold' }
             }
           }
         }

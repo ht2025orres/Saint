@@ -13,7 +13,7 @@ export type Semaforo        = 'rojo' | 'amarillo' | 'verde' | 'gris';
 export type NivelDisplay    = 'gestor' | 'admin' | 'editor' | 'colaborador' | 'lector';
 export type NivelTarea      = 'admin' | 'parcial' | 'basico' | 'sin_acceso';
 
-export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi' | 'compromiso';
+export type OrigenTarea = 'seguimiento' | 'proyecto' | 'glpi' | 'compromiso' | 'google';
 export type FuenteTarea = OrigenTarea;
 
 export type EstadoInforme      = 'abierto' | 'en_proceso' | 'cerrado';
@@ -43,6 +43,24 @@ export interface TareaConsolidada {
   usuario_id:           number;
   prioridad?:           number;
   proyecto_nombre?:     string;
+  google_event_id?:     string | null;
+}
+
+export interface GoogleCalendarEventoImport {
+  id: string;
+  summary: string;
+  description?: string | null;
+  location?: string | null;
+  start: string;
+  end?: string;
+  ya_importado: boolean;
+  tarea_id?: number | null;
+  tarea_estado?: string | null;
+  // Campos para control en UI
+  seleccionado?: boolean;
+  responsable_id?: number;
+  fecha_limite?: string;
+  notas?: string;
 }
 
 export interface TareasConsolidadasResponse {
@@ -120,6 +138,7 @@ export interface Proyecto {
   id: number; titulo: string; descripcion?: string;
   estado: EstadoProyecto; fecha_limite_entrega?: string;
   usuario_creador_id: number;
+  creador_nombre?: string;
   proceso_id?: number; proceso_nombre?: string;
   es_plantilla?: boolean;
   total_actividades?: number; total_tareas?: number;
@@ -182,6 +201,8 @@ export interface Informe {
   total_tareas?: number;
   tareas_completadas?: number;
   tareas_vencidas?: number;
+  total_evidencias?: number;
+  evidencias?: any[];
   progreso?: number;
   puede_gestionar?: boolean;
   es_creador?: boolean;
@@ -269,6 +290,12 @@ export interface SeguimientoTarea {
   reunion_fecha?: string;
   reunion_titulo?: string;
   reunion_descripcion?: string;
+  google_event_id?: string;
+  origen?: string;
+  actividad_titulo?: string;
+  es_creada_por_gestor?: boolean;
+  evidencia?: string;
+  has_evidencia?: boolean;
 }
 
 // ── INTERFACES FLUJOS DIARIOS ─────────────────────────────────────────────────
@@ -312,7 +339,7 @@ export interface FlujoDiario {
   updated_at:          string;
 }
 
-export type ApiResponse<T> = { success: boolean; data: T };
+export type ApiResponse<T> = { success: boolean; data?: T; message?: string; items?: any[]; creadas?: number; duplicadas?: number };
 export type ApiMessage     = { success: boolean; message: string };
 
 @Injectable({ providedIn: 'root' })
@@ -348,6 +375,45 @@ export class ProyectoService {
       params = params.set('vista_mode', vistaMode);
     }
     return this.http.get<TareasConsolidadasResponse>(`${this.api}/tareas-consolidadas`, { params });
+  }
+
+  // ── GOOGLE CALENDAR TAREAS ────────────────────────────────────────────────
+
+  getGoogleCalendarEventsToImport(
+    email?: string,
+    timeMin?: string,
+    timeMax?: string,
+    maxResults?: number
+  ): Observable<{ success: boolean; user_email: string; total: number; items: GoogleCalendarEventoImport[]; message?: string }> {
+    let params = new HttpParams();
+    if (email) params = params.set('email', email);
+    if (timeMin) params = params.set('timeMin', timeMin);
+    if (timeMax) params = params.set('timeMax', timeMax);
+    if (maxResults) params = params.set('maxResults', maxResults.toString());
+    return this.http.get<{ success: boolean; user_email: string; total: number; items: GoogleCalendarEventoImport[]; message?: string }>(
+      `${this.api}/google/calendar/events-to-import`,
+      { params }
+    );
+  }
+
+  importarTareasGoogle(eventos: {
+    google_event_id: string;
+    titulo: string;
+    descripcion?: string;
+    fecha_limite_entrega?: string;
+    responsable_id: number;
+    notas?: string;
+  }[]): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(
+      `${this.api}/google/calendar/import-tasks`,
+      { eventos }
+    ).pipe(tap(() => this.notifyRefresh()));
+  }
+
+  getGoogleAuthUrl(): Observable<{ success: boolean; auth_url: string; message?: string }> {
+    return this.http.get<{ success: boolean; auth_url: string; message?: string }>(
+      `${this.api}/google/auth-url`
+    );
   }
 
   // ── SEMÁFOROS ─────────────────────────────────────────────────────────────
@@ -394,11 +460,16 @@ export class ProyectoService {
     return this.http.post(`${this.api}/proyectos/${proyectoId}/calcular-fechas`, { usuario_id: usuarioId, responsables });
   }
 
-  getProyectos(usuarioId: number, filtros?: { estado?: EstadoProyecto; activos?: boolean; es_plantilla?: boolean }): Observable<ApiResponse<Proyecto[]>> {
+  getProyectos(
+    usuarioId: number,
+    filtros?: { estado?: EstadoProyecto; activos?: boolean; es_plantilla?: boolean },
+    vistaMode?: 'member' | 'admin'
+  ): Observable<ApiResponse<Proyecto[]>> {
     let params = new HttpParams().set('usuario_id', usuarioId);
     if (filtros?.estado)  params = params.set('estado', filtros.estado);
     if (filtros?.activos) params = params.set('activos', 'true');
     if (filtros?.es_plantilla !== undefined) params = params.set('es_plantilla', filtros.es_plantilla ? 'true' : 'false');
+    if (vistaMode) params = params.set('vista_mode', vistaMode);
     return this.http.get<ApiResponse<Proyecto[]>>(`${this.api}/proyectos`, { params });
   }
 
@@ -584,7 +655,7 @@ export class ProyectoService {
 
   // ── EVIDENCIAS ────────────────────────────────────────────────────────────
 
-  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea', id: number, historico = false, usuarioId?: number): Observable<ApiResponse<any[]>> {
+  getEvidencias(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea' | 'informe', id: number, historico = false, usuarioId?: number): Observable<ApiResponse<any[]>> {
     let params = new HttpParams().set('tipo', tipo);
     if (historico) params = params.set('historico', 'true');
     if (usuarioId) params = params.set('usuario_id', String(usuarioId));
@@ -594,12 +665,13 @@ export class ProyectoService {
       case 'tarea':             endpoint = 'tareas'; break;
       case 'seguimiento_tarea': endpoint = 'seguimiento-tareas'; break;
       case 'informe_tarea':     endpoint = 'informe-tareas'; break;
+      case 'informe':           endpoint = 'informes'; break;
     }
 
     return this.http.get<ApiResponse<any[]>>(`${this.api}/${endpoint}/${id}/evidencias`, { params });
   }
 
-  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea', id: number, archivo: File, usuarioId: number): Observable<any> {
+  subirEvidencia(tipo: 'tarea' | 'seguimiento_tarea' | 'informe_tarea' | 'informe', id: number, archivo: File, usuarioId: number): Observable<any> {
     const form = new FormData();
     form.append('archivo', archivo);
     form.append('tipo', tipo);
@@ -610,6 +682,7 @@ export class ProyectoService {
       case 'tarea':             endpoint = 'tareas'; break;
       case 'seguimiento_tarea': endpoint = 'seguimiento-tareas'; break;
       case 'informe_tarea':     endpoint = 'informe-tareas'; break;
+      case 'informe':           endpoint = 'informes'; break;
     }
 
     return this.http.post<any>(`${this.api}/${endpoint}/${id}/evidencias`, form);

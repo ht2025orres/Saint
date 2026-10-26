@@ -7,7 +7,7 @@ import { OrdenCompraService } from '../../../services/orden-compra.service';
 import { FileService } from '../../../services/file.service';
 import { PaginationService, PaginationState } from '../../../shared/pagination/pagination.service';
 import { generarHtmlDetalleOrdenCompra } from '../../../shared/templates/orden-compra-popup.template';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription, forkJoin, of, catchError } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface ClienteConPendientes extends ClienteSiesa {
@@ -23,8 +23,12 @@ interface ClienteConPendientes extends ClienteSiesa {
 })
 export class ClienteListComponent implements OnInit, OnDestroy {
   // Tabs: solicitudes | clientes | ordenes
-  viewMode: 'solicitudes' | 'clientes' | 'ordenes' = 'solicitudes';
+  viewMode: 'solicitudes' | 'clientes' | 'ordenes' = 'clientes';
   showAllClientes = false;
+  filtroClientesTipo: 'todos' | 'pendientes' = 'todos';
+  periodoActividadAnios: number = 1;
+  totalClientesConPendientes = 0;
+  todosClientesConPendientes: ClienteConPendientes[] = [];
 
   // Clientes
   clientes: ClienteSiesa[] = [];
@@ -118,11 +122,15 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadTailwind();
     this.setupPopupHandlers();
-    const mode = this.route.snapshot.data['mode'];
+    const mode = this.route.snapshot.data['mode'] || this.route.snapshot.queryParams['tab'];
     if (mode === 'solicitudes') {
       this.viewMode = 'solicitudes';
       this.loadSolicitudes();
+    } else if (mode === 'ordenes') {
+      this.viewMode = 'ordenes';
+      this.loadOrdenes();
     } else {
+      this.viewMode = 'clientes';
       this.loadAllData();
     }
   }
@@ -167,14 +175,32 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   // ==================== LOAD ALL DATA ====================
   loadAllData(): void {
     this.isLoading = true;
+    const filter = this.periodoActividadAnios > 0 ? { anios: this.periodoActividadAnios } : { todos: true };
     forkJoin({
-      solicitudes: this.comercialService.listarSolicitudes(),
-      ordenes: this.ordenCompraService.obtenerOrdenes()
+      clientes: this.comercialService.listarClientes(filter).pipe(
+        catchError((err) => {
+          console.warn('No se pudo obtener el directorio de clientes:', err);
+          return of({ success: false, data: [] });
+        })
+      ),
+      solicitudes: this.comercialService.listarSolicitudes().pipe(
+        catchError((err) => {
+          console.warn('No se pudieron obtener las solicitudes:', err);
+          return of({ success: false, data: [] });
+        })
+      ),
+      ordenes: this.ordenCompraService.obtenerOrdenes().pipe(
+        catchError((err) => {
+          console.warn('No se pudieron obtener las órdenes de compra:', err);
+          return of({ success: false, data: [] });
+        })
+      )
     }).subscribe({
       next: (results) => {
+        this.clientes = results.clientes.data || [];
         this.solicitudes = results.solicitudes.data || [];
         this.ordenes = results.ordenes.data || [];
-        this.buildClientesConPendientes();
+        this.buildClientesData();
         this.computeKPIs();
         this.applyClienteFilters();
         this.applySolicitudFilters();
@@ -194,52 +220,91 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     });
   }
 
-  private buildClientesConPendientes(): void {
+  private buildClientesData(): void {
     const clienteMap = new Map<string, ClienteConPendientes>();
+    const clienteIdMap = new Map<number, ClienteConPendientes>();
 
-    // Count pending solicitudes per client
+    // 1. Poblamos inicialmente con todos los clientes de Siesa
+    for (const c of this.clientes) {
+      const item: ClienteConPendientes = {
+        id: c.id,
+        nit: c.nit || '',
+        razon_social: c.razon_social,
+        solicitudes_pendientes: 0,
+        oc_pendientes: 0,
+        en_costeo: 0,
+      };
+      if (c.id) clienteIdMap.set(c.id, item);
+      if (c.razon_social) clienteMap.set(c.razon_social.trim().toLowerCase(), item);
+    }
+
+    // 2. Contar solicitudes pendientes por cliente
     const pendientesEstados = ['BORRADOR', 'ENVIADO'];
     for (const sol of this.solicitudes) {
       if (pendientesEstados.includes(sol.estado || '') || sol.estado_costeo === 'EN_PROCESO' || sol.estado_muestra === 'EN_PROCESO') {
-        const key = sol.cliente_nombre || 'Sin nombre';
-        if (!clienteMap.has(key)) {
-          clienteMap.set(key, {
-            id: sol.cliente_id,
+        const nameKey = (sol.cliente_nombre || '').trim().toLowerCase();
+        let target = sol.cliente_id ? clienteIdMap.get(sol.cliente_id) : undefined;
+        if (!target && nameKey) target = clienteMap.get(nameKey);
+
+        if (!target) {
+          target = {
+            id: sol.cliente_id || 0,
             nit: sol.cliente_nit || '',
-            razon_social: sol.cliente_nombre,
+            razon_social: sol.cliente_nombre || 'Sin nombre',
             solicitudes_pendientes: 0,
             oc_pendientes: 0,
             en_costeo: 0,
-          });
+          };
+          if (sol.cliente_id) clienteIdMap.set(sol.cliente_id, target);
+          if (nameKey) clienteMap.set(nameKey, target);
         }
-        const c = clienteMap.get(key)!;
-        c.solicitudes_pendientes++;
+
+        target.solicitudes_pendientes++;
         if (sol.estado_costeo === 'EN_PROCESO') {
-          c.en_costeo++;
+          target.en_costeo++;
         }
       }
     }
 
-    // Count pending OC per client
+    // 3. Contar OC pendientes por cliente
     for (const oc of this.ordenes) {
       if (oc.estado === 'PENDIENTE') {
-        const key = oc.cliente || 'Sin nombre';
-        if (!clienteMap.has(key)) {
-          clienteMap.set(key, {
+        const nameKey = (oc.cliente || '').trim().toLowerCase();
+        let target = nameKey ? clienteMap.get(nameKey) : undefined;
+        if (!target) {
+          target = {
             id: 0,
             nit: '',
-            razon_social: oc.cliente,
+            razon_social: oc.cliente || 'Sin nombre',
             solicitudes_pendientes: 0,
             oc_pendientes: 0,
             en_costeo: 0,
-          });
+          };
+          if (nameKey) clienteMap.set(nameKey, target);
         }
-        clienteMap.get(key)!.oc_pendientes++;
+        target.oc_pendientes++;
       }
     }
 
-    this.clientesConPendientes = Array.from(clienteMap.values())
-      .sort((a, b) => (b.solicitudes_pendientes + b.oc_pendientes) - (a.solicitudes_pendientes + a.oc_pendientes));
+    // 4. Lista consolidada
+    const list = Array.from(new Set([...clienteIdMap.values(), ...clienteMap.values()]));
+
+    // Ordenar: primero aquellos con trámites pendientes, luego alfabéticamente
+    list.sort((a, b) => {
+      const pendA = a.solicitudes_pendientes + a.oc_pendientes;
+      const pendB = b.solicitudes_pendientes + b.oc_pendientes;
+      if (pendB !== pendA) return pendB - pendA;
+      return (a.razon_social || '').localeCompare(b.razon_social || '');
+    });
+
+    this.todosClientesConPendientes = list;
+    this.totalClientesConPendientes = list.filter(c => (c.solicitudes_pendientes > 0 || c.oc_pendientes > 0 || c.en_costeo > 0)).length;
+    this.clientesConPendientes = this.todosClientesConPendientes;
+  }
+
+  // Compatibilidad hacia atrás
+  private buildClientesConPendientes(): void {
+    this.buildClientesData();
   }
 
   private computeKPIs(): void {
@@ -280,7 +345,13 @@ export class ClienteListComponent implements OnInit, OnDestroy {
         this.applyOrdenFilters();
       }
     }
-    if (mode === 'clientes' && this.clientesConPendientes.length === 0) this.loadAllData();
+    if (mode === 'clientes') {
+      if (this.todosClientesConPendientes.length === 0) {
+        this.loadAllData();
+      } else {
+        this.applyClienteFilters();
+      }
+    }
   }
 
   filterByTipo(tipo: '' | 'costeo' | 'muestra'): void {
@@ -298,29 +369,46 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   // ==================== CLIENTES ====================
   loadClientes(): void {
     this.isLoading = true;
-    this.comercialService.listarClientes().subscribe({
+    const filter = this.periodoActividadAnios > 0 ? { anios: this.periodoActividadAnios } : { todos: true };
+    this.comercialService.listarClientes(filter).subscribe({
       next: (res) => {
         this.clientes = res.data || [];
-        if (this.showAllClientes) {
-          this.clientesConPendientes = this.clientes.map(c => ({
-            ...c,
-            solicitudes_pendientes: 0,
-            oc_pendientes: 0,
-            en_costeo: 0,
-          }));
-        }
+        this.buildClientesData();
         this.applyClienteFilters();
         this.isLoading = false;
       },
-      error: () => {
-        Swal.fire('Error', 'No se pudieron cargar los clientes', 'error');
+      error: (err) => {
+        console.warn('Error al cargar clientes:', err);
+        Swal.fire({
+          icon: 'warning',
+          title: 'Aviso',
+          text: 'No se pudo actualizar el directorio de Siesa en este momento. Se mantienen los clientes con solicitudes u órdenes.',
+          timer: 3500,
+          showConfirmButton: false,
+          timerProgressBar: true
+        });
         this.isLoading = false;
       }
     });
   }
 
+  cambiarPeriodoActividad(anios: number): void {
+    this.periodoActividadAnios = Number(anios);
+    this.loadClientes();
+  }
+
+  setFiltroClientesTipo(tipo: 'todos' | 'pendientes'): void {
+    this.filtroClientesTipo = tipo;
+    this.applyClienteFilters();
+  }
+
   applyClienteFilters(): void {
-    let result = [...this.clientesConPendientes];
+    let result = [...this.todosClientesConPendientes];
+
+    if (this.filtroClientesTipo === 'pendientes') {
+      result = result.filter(c => (c.solicitudes_pendientes > 0 || c.oc_pendientes > 0 || c.en_costeo > 0));
+    }
+
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       result = result.filter(c =>

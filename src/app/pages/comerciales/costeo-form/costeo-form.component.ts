@@ -27,10 +27,13 @@ interface LocalItem {
   moldId: number | null;
   moldName: string;
   technicalSpecId: number | null;
+  opmReference?: string;
+  totalSamTime?: number;
   specExpanded: boolean;
   availableMolds: any[];
   activeTab?: 'tallas' | 'molde';
   draftComponents?: any[]; // Store in-progress OPM components
+  availableExtensions?: { talla: string; rawTalla?: string; siesa_item_ext_rowid?: number | null; color?: string }[];
 }
 
 @Component({
@@ -300,6 +303,33 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
   // ==================== ITEMS ====================
 
   addItemFromSiesa(item: any): void {
+    // 1. Desglose inicial de tallas seleccionadas
+    let tallas: { talla: string; cantidad: number; siesa_item_ext_rowid?: number | null }[] = [];
+
+    if (item.extensiones && Array.isArray(item.extensiones)) {
+      const seleccionadas = item.extensiones.filter((e: any) => e.seleccionada !== false);
+      const fuente = seleccionadas.length > 0 ? seleccionadas : item.extensiones;
+      tallas = fuente.map((e: any) => ({
+        talla: this.cleanTalla(e.talla),
+        cantidad: 0,
+        siesa_item_ext_rowid: e.siesa_item_ext_rowid || e.f121_rowid || null
+      }));
+    } else if (item.talla) {
+      tallas = [{
+        talla: this.cleanTalla(item.talla),
+        cantidad: 0,
+        siesa_item_ext_rowid: item.f121_rowid || item.rowid_item_ext || null
+      }];
+    }
+
+    // 2. Guardar extensiones completas para activar/desactivar tallas con un clic
+    const availableExtensions = (item.todasExtensiones || item.extensiones || []).map((e: any) => ({
+      talla: this.cleanTalla(e.talla),
+      rawTalla: e.rawTalla || e.talla,
+      siesa_item_ext_rowid: e.siesa_item_ext_rowid || e.f121_rowid || null,
+      color: e.color
+    }));
+
     this.items.push({
       descripcion: item.f120_descripcion || item.descripcion || '',
       item_cliente: '',
@@ -307,11 +337,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       siesa_item_ext_rowid: item.f121_rowid || item.rowid_item_ext || null,
       siesa_referencia: item.f120_referencia || item.referencia || '',
       cantidad_muestra: 0,
-      tallas: item.talla ? [{
-        talla: this.cleanTalla(item.talla),
-        cantidad: 0,
-        siesa_item_ext_rowid: item.f121_rowid || item.rowid_item_ext
-      }] : [],
+      tallas: tallas,
       isNew: false,
       isExpanded: true,
       ref_siesa_item_rowid: null,
@@ -325,8 +351,10 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       specExpanded: false,
       availableMolds: [],
       activeTab: 'tallas',
+      availableExtensions: availableExtensions.length > 0 ? availableExtensions : undefined
     });
     this.showItemSearch = false;
+    this.saveToLocalStorage();
     // Auto-suggest category for new item
     this.suggestCategoryForItem(this.items.length - 1);
   }
@@ -636,6 +664,51 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       this.items[index].draftComponents = components;
       this.saveToLocalStorage();
     }
+  }
+
+  onItemOpmSaved(index: number, event: any): void {
+    const item = this.items[index];
+    if (!item) return;
+    item.technicalSpecId = event.technicalSpecId;
+    item.opmReference = event.reference;
+    item.totalSamTime = event.samTime;
+    if (event.tallas && Array.isArray(event.tallas) && event.tallas.length > 0) {
+      item.tallas = event.tallas;
+    }
+    this.saveToLocalStorage();
+  }
+
+  goToItemMold(item: any, index: number): void {
+    if (!item) return;
+    item.isExpanded = true;
+    setTimeout(() => {
+      const el = document.getElementById(`mold-container-${index}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  }
+
+  isTallaInItem(item: LocalItem, talla: string): boolean {
+    if (!item.tallas) return false;
+    const cleanTarget = this.cleanTalla(talla);
+    return item.tallas.some(t => this.cleanTalla(t.talla) === cleanTarget);
+  }
+
+  toggleSiesaTalla(item: LocalItem, ext: { talla: string; siesa_item_ext_rowid?: number | null }): void {
+    if (!item.tallas) item.tallas = [];
+    const cleanTarget = this.cleanTalla(ext.talla);
+    const idx = item.tallas.findIndex(t => this.cleanTalla(t.talla) === cleanTarget);
+    if (idx >= 0) {
+      item.tallas.splice(idx, 1);
+    } else {
+      item.tallas.push({
+        talla: cleanTarget,
+        cantidad: 0,
+        siesa_item_ext_rowid: ext.siesa_item_ext_rowid
+      });
+    }
+    this.saveToLocalStorage();
   }
 
   onItemSpecSaved(index: number, specId: number): void {
@@ -1137,6 +1210,8 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
 
   cleanTalla(talla: string | null | undefined): string {
     if (!talla) return '';
-    return talla.replace(/^\/+/, '').trim();
+    const trimmed = talla.trim();
+    const cleaned = trimmed.replace(/^\d+[\.\s\/\-]+/, '').replace(/^\/+/, '').trim();
+    return cleaned || trimmed;
   }
 }

@@ -863,17 +863,13 @@
                 </div>
                 <button type="button" class="btn-close btn-close-white shadow-none" (click)="cerrarConfiguradorPrenda()"></button>
             </div>
-            <div class="modal-body p-0 flex-grow-1 overflow-hidden" *ngIf="mostrarModalConfiguradorPrenda && moldIdSeleccionado">
-                <app-spec-generator
-                    [embedded]="true"
-                    [context]="'comercial'"
-                    [externalMoldId]="moldIdSeleccionado"
-                    [technicalSpecId]="technicalSpecIdSeleccionado"
-                    [initialComponents]="itemSeleccionadoParaConfigurar?.draftComponents"
-                    [itemData]="itemSeleccionadoParaConfigurar"
-                    (onComponentsChange)="onItemComponentsChange($event)"
-                    (onSpecSaved)="onSpecSavedParaItem($event)">
-                </app-spec-generator>
+            <div class="modal-body p-3 flex-grow-1 overflow-auto bg-slate-100" *ngIf="mostrarModalConfiguradorPrenda && moldIdSeleccionado">
+                <app-mold-opm-stepper
+                    [item]="itemSeleccionadoParaConfigurar"
+                    (onOpmSaved)="onStepperOpmGuardada($event)"
+                    (onChangeMold)="mostrarModalMolde = true"
+                    (onRemoveMold)="cerrarConfiguradorPrenda()">
+                </app-mold-opm-stepper>
             </div>
         </div>
     </div>

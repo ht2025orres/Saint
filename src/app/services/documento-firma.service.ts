@@ -9,6 +9,13 @@ export interface DocumentoFirmaEtiqueta {
   proceso_id?: number;
   color?: string;
   proceso?: any;
+  creador_id?: number;
+  creador?: any;
+  es_propietario?: boolean;
+  es_compartida_conmigo?: boolean;
+  mi_rol?: 'PROPIETARIO' | 'EDITOR' | 'LECTOR';
+  total_compartidos?: number;
+  miembros_compartidos?: any[];
 }
 
 export interface DocumentoFirma {
@@ -69,12 +76,14 @@ export class DocumentoFirmaService {
     perPage: number = 500,
     anio: string = '',
     mes: string = '',
-    proceso: string = ''
+    proceso: string = '',
+    participacion: string = ''
   ): Observable<any> {
     let url = `${this.baseUrl}/documento-firmas?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}&estado=${encodeURIComponent(estado)}&etiqueta_id=${encodeURIComponent(etiquetaId)}&papelera=${papelera ? 1 : 0}`;
     if (anio) url += `&anio=${encodeURIComponent(anio)}`;
     if (mes) url += `&mes=${encodeURIComponent(mes)}`;
     if (proceso) url += `&proceso=${encodeURIComponent(proceso)}`;
+    if (participacion) url += `&participacion=${encodeURIComponent(participacion)}`;
     return this.http.get<any>(url);
   }
 
@@ -142,6 +151,21 @@ export class DocumentoFirmaService {
   /** Eliminar etiqueta */
   eliminarEtiqueta(id: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/documento-firmas/etiquetas/${id}`);
+  }
+
+  /** Obtener miembros con acceso a una carpeta compartida */
+  getMiembrosEtiqueta(etiquetaId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/documento-firmas/etiquetas/${etiquetaId}/miembros`);
+  }
+
+  /** Compartir carpeta con colaboradores */
+  compartirEtiqueta(etiquetaId: number, colaboradores: { colaborador_id: number, rol?: string }[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/documento-firmas/etiquetas/${etiquetaId}/compartir`, { colaboradores });
+  }
+
+  /** Remover acceso de un colaborador a una carpeta compartida */
+  removerCompartidoEtiqueta(etiquetaId: number, colaboradorId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/documento-firmas/etiquetas/${etiquetaId}/compartir/${colaboradorId}`);
   }
 
   /** Reenviar correo de invitación */
