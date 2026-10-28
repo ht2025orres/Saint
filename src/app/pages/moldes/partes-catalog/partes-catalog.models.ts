@@ -12,12 +12,13 @@ export interface SharedOperation {
 }
 
 export interface AnatomicalRegion {
-  id: string;
+  id: string | number;
   value: string;
   label: string;
   color: string;
   icon: string;
   description: string;
+  is_structural?: boolean;
   nature?: 'structural' | 'overlay';
 }
 

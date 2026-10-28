@@ -23,7 +23,10 @@
         <span class="sam-value">{{ totalSamTime }} <small>min</small></span>
       </div>
 
-      <div class="progress-indicator" title="Zonas configuradas">
+      <div class="progress-indicator" title="Zonas configuradas"
+           [class.indicator-neutral]="completedZonesCount === 0"
+           [class.indicator-partial]="completedZonesCount > 0 && completedZonesCount < totalZonesCount"
+           [class.indicator-complete]="completedZonesCount === totalZonesCount && totalZonesCount > 0">
         <span class="progress-text">{{ completedZonesCount }}/{{ totalZonesCount }}</span>
         <span class="progress-label">zonas</span>
       </div>
@@ -46,7 +49,12 @@
           <i class="bi bi-bounding-box-circles"></i>
           <span>Zonas de la Prenda</span>
         </div>
-        <span class="zones-status-pill">{{ completedZonesCount }}/{{ totalZonesCount }}</span>
+        <span class="zones-status-pill"
+              [class.pill-neutral]="completedZonesCount === 0"
+              [class.pill-partial]="completedZonesCount > 0 && completedZonesCount < totalZonesCount"
+              [class.pill-complete]="completedZonesCount === totalZonesCount && totalZonesCount > 0">
+          {{ completedZonesCount }}/{{ totalZonesCount }}
+        </span>
       </div>
 
       <p class="sidebar-help-text">Haz clic en una zona o en el figurín para abrir sus opciones:</p>
@@ -60,7 +68,7 @@
                 [class.zone-current]="expandedZone === zone.id"
                 (click)="openZoneModal(zone.id)">
           <div class="zone-btn-icon">
-            <i class="bi" [ngClass]="zone.isCompleted ? 'bi-check-lg' : zone.icon"></i>
+            <i class="bi" [ngClass]="zone.isCompleted ? 'bi-check-lg' : (!zone.isCompleted && completedZonesCount > 0 ? 'bi-exclamation-circle-fill' : zone.icon)"></i>
           </div>
 
           <div class="zone-btn-info">
@@ -366,7 +374,8 @@
           <textarea class="obs-textarea-input"
                     rows="2"
                     placeholder="Ej. Bordado en solapa, pespunte doble, hilo contraste..."
-                    [(ngModel)]="zoneObservations[activeFloatingZone.id]">
+                    [(ngModel)]="zoneObservations[activeFloatingZone.id]"
+                    (ngModelChange)="triggerAutoSave()">
           </textarea>
         </div>
 
@@ -566,13 +575,13 @@
                   <i class="bi bi-droplet-fill text-indigo"></i>
                   <span class="conglomerate-name">{{ mat.name }}</span>
 
-                  <!-- Botón de exclamación con popover flotante al pasar el cursor o click -->
+                  <!-- Botón informativo / consulta de ubicaciones con popover flotante -->
                   <div class="sources-info-trigger"
                        (mouseenter)="activeSourceTooltip = mat.name"
                        (mouseleave)="activeSourceTooltip = null"
                        (click)="toggleSourceTooltip(mat.name)">
-                    <span class="sources-exclamation-btn" title="Ver dónde se utiliza este material">
-                      <i class="bi bi-exclamation-circle-fill"></i>
+                    <span class="sources-exclamation-btn" title="Consultar dónde se utiliza esta tela ({{ mat.sourceParts.length }} componentes)">
+                      <i class="bi bi-info-circle-fill"></i>
                       <small class="sources-count-badge">{{ mat.sourceParts.length }}</small>
                     </span>
 
@@ -630,7 +639,8 @@
                   <input type="text"
                          class="conglomerate-note-input"
                          [placeholder]="materialSiesaBindings[mat.name.toLowerCase()] ? 'Especificación adicional para esta tela (opcional)...' : 'Escribe especificación libre de esta tela (o ancla a SIESA)...'"
-                         [(ngModel)]="materialNotes[mat.name.toLowerCase()]" />
+                         [(ngModel)]="materialNotes[mat.name.toLowerCase()]"
+                         (ngModelChange)="triggerAutoSave()" />
                   
                   <button *ngIf="!materialSiesaBindings[mat.name.toLowerCase()]"
                           type="button"
@@ -658,13 +668,13 @@
                   <i class="bi bi-box-seam-fill text-amber"></i>
                   <span class="conglomerate-name">{{ mat.name }}</span>
 
-                  <!-- Botón de exclamación con popover flotante al pasar el cursor o click -->
+                  <!-- Botón informativo / consulta de ubicaciones con popover flotante -->
                   <div class="sources-info-trigger"
                        (mouseenter)="activeSourceTooltip = mat.name"
                        (mouseleave)="activeSourceTooltip = null"
                        (click)="toggleSourceTooltip(mat.name)">
-                    <span class="sources-exclamation-btn" title="Ver dónde se utiliza este insumo">
-                      <i class="bi bi-exclamation-circle-fill"></i>
+                    <span class="sources-exclamation-btn" title="Consultar dónde se utiliza este insumo ({{ mat.sourceParts.length }} componentes)">
+                      <i class="bi bi-info-circle-fill"></i>
                       <small class="sources-count-badge">{{ mat.sourceParts.length }}</small>
                     </span>
 
@@ -722,7 +732,8 @@
                   <input type="text"
                          class="conglomerate-note-input"
                          [placeholder]="materialSiesaBindings[mat.name.toLowerCase()] ? 'Especificación adicional para este insumo (opcional)...' : 'Escribe especificación libre de este insumo (o ancla a SIESA)...'"
-                         [(ngModel)]="materialNotes[mat.name.toLowerCase()]" />
+                         [(ngModel)]="materialNotes[mat.name.toLowerCase()]"
+                         (ngModelChange)="triggerAutoSave()" />
                   
                   <button *ngIf="!materialSiesaBindings[mat.name.toLowerCase()]"
                           type="button"
@@ -833,7 +844,8 @@
             <input type="number"
                    class="talla-number-input"
                    min="1"
-                   [(ngModel)]="t.cantidad" />
+                   [(ngModel)]="t.cantidad"
+                   (ngModelChange)="triggerAutoSave()" />
             <span class="talla-unit">uds</span>
           </div>
         </div>
@@ -852,9 +864,9 @@
       </div>
     </div>
 
-    <!-- ACCIÓN FINAL: BOTÓN GENERAR OPM -->
+    <!-- BARRA INFERIOR DE ESTADO Y AUTOGUARDADO (SIN BOTÓN MANUAL) -->
     <div class="final-action-bar">
-      <div *ngIf="opmSuccess" class="opm-success-banner">
+      <div *ngIf="opmSuccess || generatedOpmCode" class="opm-success-banner">
         <i class="bi bi-patch-check-fill text-emerald"></i>
         <div>
           <span class="opm-saved-label">OPM Vinculada</span>
@@ -862,13 +874,17 @@
         </div>
       </div>
 
-      <button type="button"
-              class="btn-submit-opm"
-              [disabled]="isSavingOpm || getItemTotal() <= 0"
-              (click)="generarOpmFinal()">
-        <i class="bi" [ngClass]="isSavingOpm ? 'bi-hourglass-split' : 'bi-lightning-charge-fill'"></i>
-        <span>{{ isSavingOpm ? 'Generando Ficha Técnica...' : (opmSuccess ? 'Actualizar OPM y Confirmar' : 'Generar OPM y Confirmar Ítem') }}</span>
-      </button>
+      <div class="autosave-status-pill">
+        <span *ngIf="autoSaveStatus === 'saving' || isSavingOpm" class="status-badge-saving">
+          <i class="bi bi-arrow-repeat animate-spin"></i> Guardando cambios automáticamente...
+        </span>
+        <span *ngIf="autoSaveStatus === 'saved' && !isSavingOpm" class="status-badge-saved">
+          <i class="bi bi-check2-circle"></i> Todos los cambios guardados
+        </span>
+        <span *ngIf="autoSaveStatus === 'error' && !isSavingOpm" class="status-badge-error">
+          <i class="bi bi-exclamation-circle"></i> Error al autoguardar
+        </span>
+      </div>
     </div>
   </footer>
 

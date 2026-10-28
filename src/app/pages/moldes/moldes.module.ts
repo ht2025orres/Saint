@@ -16,6 +16,7 @@ import { ModalAddPartComponent } from './modals/modal-add-part/modal-add-part.co
 import { ModalCategoryManagerComponent } from './modals/modal-category-manager/modal-category-manager.component';
 import { ModalInsumosAgrupadosComponent } from './modals/modal-insumos-agrupados/modal-insumos-agrupados.component';
 import { ModalVariantesMoldeComponent } from './modals/modal-variantes-molde/modal-variantes-molde.component';
+import { MoldOpmStepperComponent } from '../comerciales/mold-opm-stepper/mold-opm-stepper.component';
 
 // Subcomponentes y Modales de Moldes Admin
 import { ModalZoneSelectorComponent } from './moldes-admin/modals/modal-zone-selector/modal-zone-selector.component';
@@ -69,7 +70,8 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     CatalogTabRegionesComponent,
     CatalogTabOperacionesComponent,
     SpecTabDisenoComponent,
-    SpecTabEstructuraComponent
+    SpecTabEstructuraComponent,
+    MoldOpmStepperComponent
   ],
   imports: [
     CommonModule,
@@ -87,7 +89,8 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     ModalAddPartComponent,
     ModalCategoryManagerComponent,
     ModalInsumosAgrupadosComponent,
-    ModalVariantesMoldeComponent
+    ModalVariantesMoldeComponent,
+    MoldOpmStepperComponent
   ]
 })
 export class MoldesModule { }

@@ -132,6 +132,7 @@ export class PartesCatalogComponent implements OnInit {
     if (tabParam && ['partes', 'regiones', 'maquinaria', 'operaciones'].includes(tabParam)) {
       this.activeTab = tabParam as any;
     }
+    this.loadRegions();
     this.loadParts();
     this.loadMachines();
   }
@@ -436,9 +437,28 @@ export class PartesCatalogComponent implements OnInit {
     this.activeTab = 'partes';
   }
 
+  loadRegions(forceRefresh: boolean = false): void {
+    this.moldService.getAnatomicalRegions(undefined, forceRefresh).subscribe({
+      next: (res: any) => {
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          this.regions = res.data.map((r: any) => ({
+            id: r.id,
+            value: r.value,
+            label: r.label,
+            color: r.color || '#3b82f6',
+            icon: r.icon || 'bi-bounding-box-circles',
+            description: r.description || '',
+            is_structural: r.is_structural
+          }));
+        }
+      },
+      error: (err) => console.warn('Error al cargar regiones anatómicas del backend', err)
+    });
+  }
+
   openCreateRegionModal(): void {
     this.isEditingRegion = false;
-    this.regionForm = { id: '', value: '', label: '', color: '#3b82f6', icon: 'bi-bounding-box-circles', description: '' };
+    this.regionForm = { id: '', value: '', label: '', color: '#3b82f6', icon: 'bi-bounding-box-circles', description: '', is_structural: true };
     this.isRegionModalOpen = true;
   }
 
@@ -452,15 +472,38 @@ export class PartesCatalogComponent implements OnInit {
     if (!this.regionForm.label.trim()) return;
     if (!this.regionForm.value) {
       this.regionForm.value = this.regionForm.label.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      this.regionForm.id = this.regionForm.value;
     }
-    const idx = this.regions.findIndex(r => r.id === this.regionForm.id || r.value === this.regionForm.value);
-    if (idx !== -1) {
-      this.regions[idx] = { ...this.regionForm };
-    } else {
-      this.regions.push({ ...this.regionForm });
-    }
-    this.isRegionModalOpen = false;
+
+    const payload = {
+      label: this.regionForm.label,
+      value: this.regionForm.value,
+      color: this.regionForm.color,
+      icon: this.regionForm.icon,
+      description: this.regionForm.description,
+      is_structural: this.regionForm.is_structural !== undefined ? this.regionForm.is_structural : true
+    };
+
+    const isExistingNumericId = typeof this.regionForm.id === 'number';
+    const req$ = isExistingNumericId
+      ? this.moldService.updateAnatomicalRegion(this.regionForm.id as number, payload)
+      : this.moldService.createAnatomicalRegion(payload);
+
+    req$.subscribe({
+      next: () => {
+        Swal.fire({
+          icon: 'success',
+          title: 'Guardado',
+          text: 'Región anatómica guardada con éxito',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        this.loadRegions(true);
+        this.isRegionModalOpen = false;
+      },
+      error: (err) => {
+        Swal.fire('Error', err?.error?.error || 'No se pudo guardar la región anatómica', 'error');
+      }
+    });
   }
 
   getRegionLabel(zoneKey: string): string {

@@ -1,0 +1,101 @@
+<div class="modal-backdrop-custom" (click)="close()">
+  <div class="mold-modal-container" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="mold-modal-header">
+      <div class="mold-modal-title-group">
+        <div class="modal-icon-badge"><i class="bi bi-grid-3x3-gap"></i></div>
+        <div>
+          <h3 class="mold-modal-title">Seleccionar Molde Base</h3>
+          <p class="mold-modal-sub" *ngIf="itemDescription">
+            Para: <strong>{{ itemDescription }}</strong>
+          </p>
+        </div>
+      </div>
+      <button class="btn-close-modal" (click)="close()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="mold-modal-body">
+      <!-- Filter Bar: Search + Category Pills -->
+      <div class="modal-filter-bar">
+        <div class="modal-search-box">
+          <i class="bi bi-search"></i>
+          <input type="text"
+                 class="modal-search-input"
+                 placeholder="Buscar molde por nombre o palabra clave..."
+                 [(ngModel)]="searchQuery"
+                 autofocus />
+          <button *ngIf="searchQuery" class="btn-clear-search" (click)="searchQuery = ''"><i class="bi bi-x-circle-fill"></i></button>
+        </div>
+
+        <div class="modal-category-pills">
+          <button type="button"
+                  class="modal-cat-pill"
+                  [class.active]="selectedCategoryId === null"
+                  (click)="selectedCategoryId = null">
+            <span>Todos</span>
+            <span class="cat-pill-count">{{ allMolds.length }}</span>
+          </button>
+          <button *ngFor="let cat of categories"
+                  type="button"
+                  class="modal-cat-pill"
+                  [class.active]="selectedCategoryId === cat.id"
+                  (click)="selectedCategoryId = cat.id">
+            <span>{{ cat.name }}</span>
+            <span class="cat-pill-count">{{ getCategoryMoldCount(cat.id) }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Molds Cards Container -->
+      <div class="mold-cards-grid-container">
+        <!-- Loading State -->
+        <div *ngIf="isLoadingMolds" class="mold-modal-loading">
+          <div class="spinner-sm"></div>
+          <span>Cargando catálogo de moldes...</span>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!isLoadingMolds && filteredMolds.length === 0" class="mold-modal-empty">
+          <i class="bi bi-bounding-box-circles"></i>
+          <p class="empty-title">No se encontraron moldes</p>
+          <p class="empty-sub">Prueba seleccionando otra categoría o cambiando el término de búsqueda.</p>
+        </div>
+
+        <!-- Grid of Molds -->
+        <div *ngIf="!isLoadingMolds && filteredMolds.length > 0" class="modal-molds-grid">
+          <div *ngFor="let m of filteredMolds" 
+               class="modal-mold-card"
+               [class.selected]="selectedMoldId === m.id"
+               (click)="selectMold(m)">
+            
+            <div class="modal-mold-img-wrapper">
+              <img *ngIf="getMoldPreviewImage(m)" [src]="getMoldPreviewImage(m)" [alt]="m.name" class="modal-mold-img" />
+              <div *ngIf="!getMoldPreviewImage(m)" class="modal-mold-placeholder">
+                <i class="bi bi-palette2"></i>
+              </div>
+              <span class="mold-parts-tag" *ngIf="m.parts?.length">
+                <i class="bi bi-puzzle"></i> {{ m.parts.length }} partes
+              </span>
+              <span class="mold-selected-check" *ngIf="selectedMoldId === m.id">
+                <i class="bi bi-check-circle-fill"></i> Seleccionado
+              </span>
+            </div>
+
+            <div class="modal-mold-info">
+              <div class="modal-mold-category-tag">{{ m.category?.name || 'Prenda' }}</div>
+              <h4 class="modal-mold-title">{{ m.name }}</h4>
+              <p class="modal-mold-desc" *ngIf="m.description">{{ m.description }}</p>
+              <div class="modal-mold-footer">
+                <span class="btn-select-mold-pill">
+                  <i class="bi bi-check2"></i> Seleccionar
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

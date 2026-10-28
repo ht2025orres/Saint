@@ -1,0 +1,283 @@
+<div class="floating-modal-overlay" *ngIf="activeZoneCol" (click)="close()">
+  <div class="floating-modal-dialog" (click)="$event.stopPropagation()">
+    
+    <!-- Cabecera del Flotante Dinámica según Paso -->
+    <div class="floating-modal-header" [class.header-amber]="zoneModalStep === 'select-optional' || zoneModalStep === 'select-optional-variant'">
+      <div class="floating-title-wrap">
+        <!-- Paso 1 o 2: Zona Anatómica Base -->
+        <ng-container *ngIf="zoneModalStep !== 'select-optional' && zoneModalStep !== 'select-optional-variant'">
+          <div class="floating-icon-box" [class.icon-box-ready]="item && isPartConfigured(activePartInModal || activeZoneDisplayParts[0])">
+            <i class="bi" [ngClass]="(item && isPartConfigured(activePartInModal || activeZoneDisplayParts[0])) ? 'bi-check-lg' : 'bi-bullseye'"></i>
+          </div>
+          <div>
+            <h4 class="floating-title">{{ activeZoneTitle }}</h4>
+            <span class="floating-subtitle">{{ activeZoneSubtitle }}</span>
+          </div>
+        </ng-container>
+
+        <!-- Paso 3: Apliques Opcionales -->
+        <ng-container *ngIf="zoneModalStep === 'select-optional'">
+          <button type="button" class="btn-header-back" (click)="backFromOptionals()" title="Volver a {{ activeZoneTitle }}">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <div class="floating-icon-box icon-box-amber">
+            <i class="bi bi-gem"></i>
+          </div>
+          <div>
+            <h4 class="floating-title">Apliques Opcionales</h4>
+            <span class="floating-subtitle">Anclar a: {{ activeZoneTitle }}</span>
+          </div>
+        </ng-container>
+
+        <!-- Paso 4: Variación de Aplique -->
+        <ng-container *ngIf="zoneModalStep === 'select-optional-variant' && activeOptionalPart">
+          <button type="button" class="btn-header-back" (click)="backToOptionalsList()" title="Volver a lista de apliques">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <div class="floating-icon-box icon-box-amber">
+            <i class="bi" [ngClass]="activeOptionalPart.icon || 'bi-gem'"></i>
+          </div>
+          <div>
+            <h4 class="floating-title">{{ activeOptionalPart.name }}</h4>
+            <span class="floating-subtitle">Selecciona variación para: {{ activeZoneTitle }}</span>
+          </div>
+        </ng-container>
+      </div>
+
+      <button type="button" class="btn-close-modal" (click)="close()" title="Cerrar ventana">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="floating-modal-body">
+      
+      <!-- Indicador de Carga -->
+      <div *ngIf="isLoadingZoneParts" class="flex flex-col items-center justify-center py-8 text-slate-400 gap-2">
+        <div class="animate-spin rounded-full h-7 w-7 border-2 border-slate-700 border-t-transparent"></div>
+        <span class="text-xs font-bold text-slate-500">Cargando opciones anatómicas...</span>
+      </div>
+
+      <!-- Si no hay partes configuradas para este molde -->
+      <div *ngIf="!isLoadingZoneParts && activeZoneDisplayParts.length === 0" class="floating-empty-notice">
+        <i class="bi bi-info-circle text-slate-400 text-base"></i>
+        <span>No hay opciones configuradas para esta zona en el molde seleccionado.</span>
+      </div>
+
+      <!-- PASO 1: SELECCIONAR QUÉ PARTE CONFIGURAR (Si hay más de 1 parte en la zona) -->
+      <div *ngIf="!isLoadingZoneParts && activeZoneDisplayParts.length > 1 && zoneModalStep === 'select-part'" class="parts-step-selection">
+        <div class="parts-step-heading">
+          <span class="step-badge">Paso 1</span>
+          <span class="step-title">Selecciona qué parte deseas configurar:</span>
+        </div>
+
+        <div class="parts-full-cards-grid">
+          <div *ngFor="let part of activeZoneDisplayParts"
+               class="part-full-card"
+               [class.card-configured]="isPartConfigured(part)"
+               (click)="choosePart(part)">
+            <div class="card-part-icon">
+              <i class="bi" [ngClass]="isPartConfigured(part) ? 'bi-check-circle-fill' : 'bi-puzzle'"></i>
+            </div>
+
+            <div class="card-part-info">
+              <div class="card-title-row">
+                <span class="card-part-name">{{ part.name }}</span>
+                <span class="card-status-badge" [class.badge-ready]="isPartConfigured(part)">
+                  {{ isPartConfigured(part) ? 'Configurado' : 'Opcional' }}
+                </span>
+              </div>
+              <span class="card-part-desc" *ngIf="isPartConfigured(part)">
+                Variación: <strong>{{ getSelectedVariantName(part) }}</strong>
+              </span>
+              <span class="card-part-hint" *ngIf="!isPartConfigured(part)">
+                Toca aquí para elegir su variación &rarr;
+              </span>
+            </div>
+
+            <i class="bi bi-chevron-right card-arrow"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: SELECCIONAR VARIACIÓN DE LA PARTE (Único paso visible de la zona) -->
+      <div *ngIf="!isLoadingZoneParts && activePartInModal && zoneModalStep === 'select-variant'" class="variants-step-selection">
+        
+        <!-- Botón de retorno si la zona tiene varias partes -->
+        <div class="back-to-parts-bar" *ngIf="activeZoneDisplayParts.length > 1">
+          <button type="button" class="btn-back-parts" (click)="backToParts()">
+            <i class="bi bi-arrow-left"></i> Cambiar parte
+          </button>
+          <span class="current-part-name-tag">{{ activePartInModal.name }}</span>
+        </div>
+
+        <div class="part-caption">
+          <div>
+            <span class="caption-title">{{ activePartInModal.name }}</span>
+            <span class="caption-hint">Selecciona una sola variación para esta parte:</span>
+          </div>
+          <button *ngIf="isPartConfigured(activePartInModal)"
+                  type="button"
+                  class="btn-clear-part"
+                  (click)="unselectVariant(activePartInModal)"
+                  title="No incluir / Quitar esta parte">
+            <i class="bi bi-x-circle"></i> Quitar selección
+          </button>
+        </div>
+
+        <!-- Grilla de Variantes -->
+        <div class="variants-picker-grid">
+          <div *ngFor="let type of activePartInModal.types"
+               class="variant-pick-card"
+               [class.pick-selected]="isTypeSelected(activePartInModal, type)"
+               (click)="selectVariant(activePartInModal, type)">
+            
+            <div class="pick-radio">
+              <i class="bi bi-check-circle-fill" *ngIf="isTypeSelected(activePartInModal, type)"></i>
+              <i class="bi bi-circle" *ngIf="!isTypeSelected(activePartInModal, type)"></i>
+            </div>
+
+            <div class="pick-info">
+              <span class="pick-name">{{ type.name }}</span>
+              <span class="pick-desc" *ngIf="type.technical_description">{{ type.technical_description }}</span>
+            </div>
+
+            <span class="pick-sam-pill" *ngIf="type.total_time || type.estimated_time">
+              +{{ type.total_time || type.estimated_time }} min
+            </span>
+          </div>
+        </div>
+
+        <!-- Apliques anclados a esta zona -->
+        <div class="anchored-parts-section" *ngIf="anchoredGeneralParts && anchoredGeneralParts.length > 0">
+          <div class="anchored-parts-heading">
+            <i class="bi bi-paperclip"></i>
+            <span>Apliques anclados a esta zona</span>
+          </div>
+          <div class="anchored-parts-list">
+            <div *ngFor="let gp of anchoredGeneralParts" class="anchored-part-chip">
+              <i class="bi" [ngClass]="gp.icon || 'bi-gem'"></i>
+              <span class="anchored-name">{{ gp.name }}</span>
+              <span class="anchored-variant">{{ gp.selected_type_name || gp.technical_spec || gp.name }}</span>
+              <span class="anchored-sam-pill" *ngIf="gp.estimated_time || gp.total_time">
+                +{{ gp.estimated_time || gp.total_time }} min
+              </span>
+              <button type="button" class="btn-remove-anchor" (click)="removeAnchor(gp)" title="Desanclar de esta zona">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón para agregar apliques opcionales desde esta zona -->
+        <div class="add-optional-from-zone">
+          <button type="button" class="btn-add-optional" (click)="addOptional()">
+            <i class="bi bi-plus-circle"></i> Agregar Aplique Opcional
+          </button>
+        </div>
+
+        <!-- Observaciones de la zona -->
+        <div class="floating-obs-wrap">
+          <label class="obs-caption">
+            <i class="bi bi-chat-left-text"></i> Observaciones o especificaciones (Opcional):
+          </label>
+          <textarea class="obs-textarea-input"
+                    rows="2"
+                    placeholder="Ej. Bordado en solapa, pespunte doble, hilo contraste..."
+                    [ngModel]="observation"
+                    (ngModelChange)="onObsChange($event)">
+          </textarea>
+        </div>
+
+      </div>
+
+      <!-- ==================== PASO 3: LISTA DE APLIQUES OPCIONALES ==================== -->
+      <div *ngIf="zoneModalStep === 'select-optional'" class="parts-step-selection">
+        <div class="parts-step-heading optional-heading">
+          <span class="step-badge badge-amber"><i class="bi bi-plus-circle-fill"></i></span>
+          <span class="step-title">Selecciona un aplique transversal para anclar:</span>
+        </div>
+        <p class="optional-hint">Elementos opcionales aplicables a {{ activeZoneTitle }}.</p>
+
+        <div class="parts-full-cards-grid">
+          <div *ngFor="let part of availableOptionalParts"
+               class="part-full-card"
+               [class.card-configured]="isOptionalPartConfigured(part)"
+               (click)="chooseOptionalPart(part)">
+            <div class="card-part-icon">
+              <i class="bi" [ngClass]="isOptionalPartConfigured(part) ? 'bi-check-circle-fill' : (part.icon || 'bi-gem')"></i>
+            </div>
+
+            <div class="card-part-info">
+              <div class="card-title-row">
+                <span class="card-part-name">{{ part.name }}</span>
+                <span class="card-status-badge" [class.badge-ready]="isOptionalPartConfigured(part)">
+                  {{ isOptionalPartConfigured(part) ? 'Configurado' : 'Opcional' }}
+                </span>
+              </div>
+              <span class="card-part-desc" *ngIf="isOptionalPartConfigured(part)">
+                Variación: <strong>{{ getOptionalSelectedTypeName(part) }}</strong>
+              </span>
+              <span class="card-part-hint" *ngIf="!isOptionalPartConfigured(part)">
+                {{ part.description || 'Toca aquí para elegir su variación →' }}
+              </span>
+            </div>
+
+            <i class="bi bi-chevron-right card-arrow"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PASO 4: VARIANTES DEL APLIQUE OPCIONAL SELECCIONADO ==================== -->
+      <div *ngIf="zoneModalStep === 'select-optional-variant' && activeOptionalPart" class="variants-step-selection">
+        <div class="part-caption">
+          <div>
+            <span class="caption-title">{{ activeOptionalPart.name }}</span>
+            <span class="caption-hint">Selecciona una variación para anclar a {{ activeZoneTitle }}:</span>
+          </div>
+          <button *ngIf="isOptionalPartConfigured(activeOptionalPart)"
+                  type="button"
+                  class="btn-clear-part"
+                  (click)="removeOptionalPart(activeOptionalPart)"
+                  title="Quitar este aplique">
+            <i class="bi bi-x-circle"></i> Quitar selección
+          </button>
+        </div>
+
+        <div class="variants-picker-grid">
+          <div *ngFor="let type of activeOptionalPart.types"
+               class="variant-pick-card"
+               [class.pick-selected]="isOptionalTypeSelected(activeOptionalPart, type)"
+               (click)="selectOptionalVariant(activeOptionalPart, type)">
+
+            <div class="pick-radio">
+              <i class="bi bi-check-circle-fill" *ngIf="isOptionalTypeSelected(activeOptionalPart, type)"></i>
+              <i class="bi bi-circle" *ngIf="!isOptionalTypeSelected(activeOptionalPart, type)"></i>
+            </div>
+
+            <div class="pick-info">
+              <span class="pick-name">{{ type.name }}</span>
+              <span class="pick-desc" *ngIf="type.technical_description">{{ type.technical_description }}</span>
+              <div class="variant-materials-row" *ngIf="type.materials && type.materials.length > 0">
+                <span class="mat-chip" *ngFor="let m of type.materials">{{ m }}</span>
+              </div>
+            </div>
+
+            <span class="pick-sam-pill" *ngIf="type.total_time">
+              +{{ type.total_time }} min
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer de Confirmación (solo visible en los pasos principales de la zona) -->
+    <div class="floating-modal-footer" *ngIf="zoneModalStep === 'select-variant' || zoneModalStep === 'select-part'">
+      <button type="button" class="btn-confirm-zone" (click)="confirm()">
+        <i class="bi bi-check2"></i> Listo / Confirmar Selección
+      </button>
+    </div>
+
+  </div>
+</div>
+

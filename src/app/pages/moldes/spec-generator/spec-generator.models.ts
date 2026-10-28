@@ -56,5 +56,4 @@ export const ZONE_TYPE_OPTIONS: ZoneTypeOption[] = [
   { value: 'espalda', label: 'Espalda y Almilla', color: '#ec4899', icon: 'bi-border-all' },
   { value: 'pretina', label: 'Cintura y Pretina', color: '#06b6d4', icon: 'bi-bounding-box-circles' },
   { value: 'pierna_bota', label: 'Piernas y Bota', color: '#64748b', icon: 'bi-arrows-vertical' },
-  { value: 'general', label: 'Acabados y General', color: '#94a3b8', icon: 'bi-gem' },
 ];

@@ -102,6 +102,15 @@ export interface Solicitud {
   items_count?: number;
   versiones_count?: number;
   usuario_creacion?: number;
+  usuario_creacion_nombre?: string;
+  creador?: {
+    id: number;
+    nombres?: string;
+    apellidos?: string;
+    name?: string;
+    cargo?: string;
+    correo?: string;
+  };
   created_at?: string;
   updated_at?: string;
 }
@@ -270,6 +279,13 @@ export class ComercialService {
 
   despacharMaterial(id: number, data: any): Observable<{ success: boolean; data: any; message: string }> {
     return this.http.post<any>(`${this.api}/abastecimiento/materiales/${id}/despacho`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
+  despacharTodosMateriales(solicitudId: number, data: any = {}): Observable<{ success: boolean; data?: any; message: string }> {
+    return this.http.post<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/despacho-todos`, {
       ...data,
       usuario_id: this.uid()
     });

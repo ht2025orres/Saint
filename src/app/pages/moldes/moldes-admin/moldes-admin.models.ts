@@ -78,12 +78,4 @@ export const ZONE_TYPE_OPTIONS: ZoneTypeOption[] = [
     description: 'Tiros delanteros, traseros, botas y dobladillos',
     opcionalesEjemplo: 'Opcionales: Bolsillos tipo cargo, cremalleras en bota'
   },
-  { 
-    value: 'general', 
-    label: 'Acabados y General', 
-    color: '#94a3b8', 
-    icon: 'bi-gem', 
-    description: 'Bordados, marquillas, costuras de refuerzo, braguetas y acabados transversales',
-    opcionalesEjemplo: 'Opcionales: Bragueta figurada, costuras de 2 agujas, etiquetas'
-  },
 ];

@@ -1,0 +1,39 @@
+<div class="modal-backdrop-custom" *ngIf="item" (click)="close()">
+  <div class="mold-modal-container max-w-6xl w-[95%]" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="mold-modal-header bg-gradient-to-r from-slate-900 to-indigo-950 text-white border-b-0 py-3.5">
+      <div class="mold-modal-title-group">
+        <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30 flex items-center justify-center">
+          <i class="bi bi-palette2 text-lg"></i>
+        </div>
+        <div>
+          <h3 class="mold-modal-title text-white font-extrabold text-base">
+            {{ item.descripcion }}
+          </h3>
+          <p class="mold-modal-sub text-purple-200/80 text-xs font-medium">
+            Molde: <strong>{{ item.moldName }}</strong> · Tiempo SAM: <strong>{{ item.totalSamTime || 0 }} min</strong>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" class="btn-picker-trigger py-1 px-3 text-xs" (click)="close()">
+          <i class="bi bi-check2"></i> Aplicar y Volver a Tabla
+        </button>
+        <button class="btn-close-modal text-white hover:bg-white/10" (click)="close()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="mold-modal-body p-4 sm:p-6 bg-slate-50/50 max-h-[82vh] overflow-y-auto">
+      <app-mold-opm-stepper
+        *ngIf="item.moldId"
+        [item]="item"
+        [itemIndex]="itemIndex"
+        (onOpmSaved)="handleOpmSaved($event)"
+        (onChangeMold)="handleChangeMold()"
+        (onRemoveMold)="handleRemoveMold()">
+      </app-mold-opm-stepper>
+    </div>
+  </div>
+</div>
+

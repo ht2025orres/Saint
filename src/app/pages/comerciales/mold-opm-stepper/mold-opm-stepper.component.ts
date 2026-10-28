@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, DoCheck, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, DoCheck, OnDestroy, SimpleChanges } from '@angular/core';
 import { MoldService, GenericMaterial } from '../../../services/mold.service';
 import Swal from 'sweetalert2';
 
@@ -18,7 +18,7 @@ export interface ZoneConfig {
   templateUrl: './mold-opm-stepper.component.html',
   styleUrls: ['./mold-opm-stepper.component.css']
 })
-export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
+export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDestroy {
   @Input() item: any;
   @Input() itemIndex: number = 0;
   @Output() onOpmSaved = new EventEmitter<any>();
@@ -83,6 +83,8 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   isSavingOpm = false;
   opmSuccess = false;
   generatedOpmCode = '';
+  autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+  autoSaveTimer: any = null;
 
   // Tallas disponibles
   tallasLetra: string[] = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
@@ -99,6 +101,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   modalStep: 'select-part' | 'select-variant' = 'select-part';
 
   loadedMoldId: number | null = null;
+  private cachedSpecPartsForRestoration: any[] = [];
 
   constructor(private moldService: MoldService) {}
 
@@ -111,6 +114,23 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
     this.loadGenericMaterials();
     this.loadGeneralParts();
     this.recalculateConsolidatedMaterials();
+  }
+
+  ngOnDestroy(): void {
+    if (this.autoSaveTimer) {
+      clearTimeout(this.autoSaveTimer);
+      this.autoSaveTimer = null;
+    }
+  }
+
+  triggerAutoSave(): void {
+    if (this.autoSaveTimer) {
+      clearTimeout(this.autoSaveTimer);
+    }
+    this.autoSaveStatus = 'saving';
+    this.autoSaveTimer = setTimeout(() => {
+      this.generarOpmFinal(true);
+    }, 600);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -179,70 +199,300 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
    * Construye dinámicamente las zonas de diseño según las partes del molde.
    * Ya no es un stepper lineal, son zonas expandibles en cualquier orden.
    */
+  /**
+   * Determina la familia anatómica del molde cargado (SUPERIOR, INFERIOR, COMPLETA o GENERAL)
+   */
+  get anatomicalFamily(): 'SUPERIOR' | 'INFERIOR' | 'COMPLETA' | 'GENERAL' {
+    if (!this.mold) return 'SUPERIOR';
+    const catName = (this.mold.category?.name || this.item?.categoryName || '').toUpperCase();
+    const moldName = (this.mold.name || this.item?.moldName || '').toUpperCase();
+    const text = `${catName} ${moldName}`;
+
+    if (text.includes('OVEROL') || text.includes('ENTERIZO') || text.includes('MAMELUCO') || text.includes('TRAJE')) {
+      return 'COMPLETA';
+    }
+    if (text.includes('PANTALON') || text.includes('PANTALÓN') || text.includes('BERMUDA') || 
+        text.includes('JEAN') || text.includes('FALDA') || text.includes('SHORT') || text.includes('JOGGER')) {
+      return 'INFERIOR';
+    }
+    if (text.includes('CAMISA') || text.includes('POLO') || text.includes('CHAQUETA') || 
+        text.includes('CHALECO') || text.includes('BLUSA') || text.includes('CAMISETA') || 
+        text.includes('CAMIBUSO') || text.includes('SUETER') || text.includes('CHOMPA')) {
+      return 'SUPERIOR';
+    }
+    const catId = this.mold.mold_category_id || this.mold.category_id || this.mold.id_product_category;
+    if (catId === 1 || catId === 3) return 'SUPERIOR';
+    if (catId === 4) return 'INFERIOR';
+    if (catId === 2) return 'COMPLETA';
+    return 'SUPERIOR';
+  }
+
+  /**
+   * Construye dinámicamente las zonas de diseño según la anatomía real de la prenda
+   * y las partes que efectivamente están habilitadas/configuradas en el molde.
+   */
   buildDynamicZones(): void {
     if (!this.mold) return;
 
     const parts = this.mold.parts || [];
+    const family = this.anatomicalFamily;
+    const moldNameUpper = (this.mold.name || '').toUpperCase();
+    const hasCapucha = moldNameUpper.includes('CAPUCHA') || moldNameUpper.includes('CAPOTA');
 
-    const cuelloParts = parts.filter((p: any) => this.matchZone(p, 'cuello'));
-    const pechoParts = parts.filter((p: any) => this.matchZone(p, 'pecho'));
-    const mangaParts = parts.filter((p: any) => this.matchZone(p, 'manga'));
-    const espaldaParts = parts.filter((p: any) => this.matchZone(p, 'espalda'));
-    const pretinaParts = parts.filter((p: any) => this.matchZone(p, 'pretina'));
+    let candidateZones: ZoneConfig[] = [];
 
-    this.zones = [
-      {
-        id: 'cuello',
-        title: 'Cuello / Solapa',
-        subtitle: 'Tipo de cuello y acabado',
-        icon: 'bi-bullseye',
-        view: 'front',
-        zoneType: 'cuello',
-        parts: cuelloParts,
-        isCompleted: false
-      },
-      {
-        id: 'pecho',
-        title: 'Pechera y Delantero',
-        subtitle: 'Cartera, botones y bolsillos',
-        icon: 'bi-columns',
-        view: 'front',
-        zoneType: 'pecho',
-        parts: pechoParts,
-        isCompleted: false
-      },
-      {
-        id: 'manga',
-        title: 'Mangas y Puños',
-        subtitle: 'Largo, puño y guardapolvo',
-        icon: 'bi-layers',
-        view: 'front',
-        zoneType: 'manga',
-        parts: mangaParts,
-        isCompleted: false
-      },
-      {
-        id: 'espalda',
-        title: 'Espalda y Almilla',
-        subtitle: 'Corte posterior y tablones',
-        icon: 'bi-border-all',
-        view: 'back',
-        zoneType: 'espalda',
-        parts: espaldaParts,
-        isCompleted: false
-      },
-      {
-        id: 'pretina',
-        title: 'Cintura y Pretina',
-        subtitle: 'Terminación inferior y botones',
-        icon: 'bi-bounding-box-circles',
-        view: 'front',
-        zoneType: 'pretina',
-        parts: pretinaParts,
-        isCompleted: false
-      }
-    ];
+    if (family === 'INFERIOR') {
+      candidateZones = [
+        {
+          id: 'pretina',
+          title: 'Pretina & Pasadores',
+          subtitle: 'Tipo de pretina, elásticos y pasadores',
+          icon: 'bi-bounding-box-circles',
+          view: 'front',
+          zoneType: 'pretina',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'tiro',
+          title: 'Tiro & Bragueta',
+          subtitle: 'Bragueta, tiro y cierre frontal',
+          icon: 'bi-arrows-collapse',
+          view: 'front',
+          zoneType: 'tiro',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'bolsillo_del',
+          title: 'Bolsillos Laterales',
+          subtitle: 'Bolsillos delanteros, diagonales o relojera',
+          icon: 'bi-columns',
+          view: 'front',
+          zoneType: 'bolsillo_del',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'bolsillo_tras',
+          title: 'Bolsillos Traseros',
+          subtitle: 'Bolsillos posteriores, de ribete o parche',
+          icon: 'bi-border-all',
+          view: 'back',
+          zoneType: 'bolsillo_tras',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'bota',
+          title: 'Bota & Ruedo',
+          subtitle: 'Bota recta, bota tubo y dobladillo inferior',
+          icon: 'bi-arrows-vertical',
+          view: 'front',
+          zoneType: 'pierna_bota',
+          parts: [],
+          isCompleted: false
+        }
+      ];
+    } else if (family === 'COMPLETA') {
+      candidateZones = [
+        {
+          id: 'cuello',
+          title: hasCapucha ? 'Capota / Cuello' : 'Cuello / Capota',
+          subtitle: 'Tipo de cuello o capota de protección',
+          icon: 'bi-bullseye',
+          view: 'front',
+          zoneType: 'cuello',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'pecho',
+          title: 'Pecho & Cierre',
+          subtitle: 'Cierre principal de doble vía o cremallera frontal',
+          icon: 'bi-columns',
+          view: 'front',
+          zoneType: 'pecho',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'manga',
+          title: 'Mangas & Puños',
+          subtitle: 'Largo de manga, puños elásticos o ajustables',
+          icon: 'bi-layers',
+          view: 'front',
+          zoneType: 'manga',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'cintura',
+          title: 'Cintura & Elástico',
+          subtitle: 'Ajuste elástico o cinturón en pretina',
+          icon: 'bi-bounding-box-circles',
+          view: 'front',
+          zoneType: 'cintura',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'bota',
+          title: 'Pierna & Bota',
+          subtitle: 'Terminación de bota y refuerzos',
+          icon: 'bi-arrows-vertical',
+          view: 'front',
+          zoneType: 'pierna_bota',
+          parts: [],
+          isCompleted: false
+        }
+      ];
+    } else if (family === 'GENERAL') {
+      candidateZones = [
+        {
+          id: 'zona1',
+          title: 'Zona Superior / Frente',
+          subtitle: 'Parte superior o delantera de la prenda',
+          icon: 'bi-bullseye',
+          view: 'front',
+          zoneType: 'zona1',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'zona2',
+          title: 'Mangas / Laterales',
+          subtitle: 'Extremidades o costados laterales',
+          icon: 'bi-layers',
+          view: 'front',
+          zoneType: 'zona2',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'zona3',
+          title: 'Espalda / Trasero',
+          subtitle: 'Parte posterior o trasera',
+          icon: 'bi-border-all',
+          view: 'back',
+          zoneType: 'zona3',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'zona4',
+          title: 'Terminación Inferior',
+          subtitle: 'Ruedos, pretina o acabado inferior',
+          icon: 'bi-bounding-box-circles',
+          view: 'front',
+          zoneType: 'zona4',
+          parts: [],
+          isCompleted: false
+        }
+      ];
+    } else {
+      // SUPERIOR
+      candidateZones = [
+        {
+          id: 'cuello',
+          title: hasCapucha ? 'Capota / Cuello' : 'Cuello / Solapa',
+          subtitle: hasCapucha ? 'Tipo de capota, cuello y acabados' : 'Tipo de cuello y acabado',
+          icon: 'bi-bullseye',
+          view: 'front',
+          zoneType: 'cuello',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'pecho',
+          title: 'Pechera y Delantero',
+          subtitle: 'Cartera, botones y bolsillos frontales',
+          icon: 'bi-columns',
+          view: 'front',
+          zoneType: 'pecho',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'manga',
+          title: 'Mangas y Puños',
+          subtitle: 'Largo, puño y guardapolvo',
+          icon: 'bi-layers',
+          view: 'front',
+          zoneType: 'manga',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'espalda',
+          title: 'Espalda y Almilla',
+          subtitle: 'Corte posterior y tablones',
+          icon: 'bi-border-all',
+          view: 'back',
+          zoneType: 'espalda',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'pretina',
+          title: 'Cintura y Ruedo',
+          subtitle: 'Terminación inferior y ruedo',
+          icon: 'bi-bounding-box-circles',
+          view: 'front',
+          zoneType: 'pretina',
+          parts: [],
+          isCompleted: false
+        },
+        {
+          id: 'tiro',
+          title: 'Bragueta & Figurado',
+          subtitle: 'Bragueta delantera, aletilla y figurado',
+          icon: 'bi-arrows-collapse',
+          view: 'front',
+          zoneType: 'tiro',
+          parts: [],
+          isCompleted: false
+        }
+      ];
+    }
 
+    // Distribuir partes entre las zonas candidatas
+    candidateZones.forEach(zone => {
+      zone.parts = parts.filter((p: any) => this.matchZone(p, zone.id));
+    });
+
+    // Conservar solo las zonas que efectivamente tienen partes configuradas
+    let activeZones = candidateZones.filter(z => z.parts.length > 0);
+
+    // Identificar partes no asignadas a ninguna candidata
+    const assignedPartIds = new Set();
+    activeZones.forEach(z => z.parts.forEach(p => assignedPartIds.add(p.id)));
+    const unassignedParts = parts.filter(p => !assignedPartIds.has(p.id));
+
+    if (unassignedParts.length > 0) {
+      const customGroups = new Map();
+      unassignedParts.forEach(p => {
+        const groupName = p.zone_name || p.name || 'Otras Partes';
+        if (!customGroups.has(groupName)) customGroups.set(groupName, []);
+        customGroups.get(groupName).push(p);
+      });
+
+      customGroups.forEach((cParts, cName) => {
+        const sampleView = (cParts[0]?.view === 'back') ? 'back' : 'front';
+        activeZones.push({
+          id: 'custom_' + cName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+          title: cName,
+          subtitle: 'Partes específicas configuradas en este molde',
+          icon: 'bi-scissors',
+          view: sampleView,
+          zoneType: 'custom',
+          parts: cParts,
+          isCompleted: false
+        });
+      });
+    }
+
+    this.zones = activeZones.length > 0 ? activeZones : candidateZones;
     this.refreshZoneCompletion();
   }
 
@@ -254,31 +504,97 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
     const code = (partOrZone.code || '').toLowerCase();
 
     const allText = `${name} ${zoneName} ${zoneType} ${code}`;
+    const family = this.anatomicalFamily;
 
-    if (zoneTarget === 'cuello') {
-      return allText.includes('cuel') || allText.includes('solap') || allText.includes('collar') || allText.includes('cue');
+    if (zoneTarget.startsWith('custom_')) {
+      const targetSlug = zoneTarget.replace('custom_', '');
+      const currentSlug = (zoneName || name).toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return currentSlug.includes(targetSlug) || targetSlug.includes(currentSlug);
     }
-    if (zoneTarget === 'pecho') {
-      return allText.includes('pech') || allText.includes('delan') || allText.includes('carter') || allText.includes('bolsill') ||
-             allText.includes('frente') || allText.includes('botón') || allText.includes('boton') || allText.includes('cierre') ||
-             allText.includes('car') || allText.includes('bol');
+
+    if (family === 'INFERIOR') {
+      if (zoneTarget === 'pretina') {
+        return allText.includes('pret') || allText.includes('pasador') || allText.includes('cint');
+      }
+      if (zoneTarget === 'tiro') {
+        return allText.includes('braguet') || allText.includes('tiro') || allText.includes('cremallera') || allText.includes('figura');
+      }
+      if (zoneTarget === 'bolsillo_del') {
+        const isBolsillo = allText.includes('bolsill') || allText.includes('later') || allText.includes('relojer') || allText.includes('boca') || allText.includes('delan');
+        const isTrasero = allText.includes('post') || allText.includes('tras') || allText.includes('ribete') || allText.includes('espal');
+        const isTiro = allText.includes('braguet') || allText.includes('tiro');
+        return isBolsillo && !isTrasero && !isTiro;
+      }
+      if (zoneTarget === 'bolsillo_tras') {
+        return allText.includes('post') || allText.includes('tras') || allText.includes('ribete') || allText.includes('parche');
+      }
+      if (zoneTarget === 'bota') {
+        return allText.includes('bota') || allText.includes('pierna') || allText.includes('rued') || allText.includes('dobl');
+      }
+      return false;
     }
-    if (zoneTarget === 'manga') {
-      return allText.includes('mang') || allText.includes('puñ') || allText.includes('sleeve') || allText.includes('mga');
+
+    if (family === 'SUPERIOR') {
+      if (zoneTarget === 'cuello') {
+        return allText.includes('cuel') || allText.includes('solap') || allText.includes('collar') || allText.includes('capot') || allText.includes('capuch') || allText.includes('cue');
+      }
+      if (zoneTarget === 'tiro' || zoneTarget === 'bragueta') {
+        return allText.includes('braguet') || allText.includes('figura');
+      }
+      if (zoneTarget === 'pecho') {
+        return (allText.includes('pech') || allText.includes('delan') || allText.includes('carter') || allText.includes('bolsill') ||
+               allText.includes('frente') || allText.includes('botón') || allText.includes('boton') || allText.includes('cierre') ||
+               allText.includes('car') || (allText.includes('bol') && !allText.includes('espal'))) &&
+               !allText.includes('braguet') && !allText.includes('figura');
+      }
+      if (zoneTarget === 'manga') {
+        return allText.includes('mang') || allText.includes('puñ') || allText.includes('sleeve') || allText.includes('mga');
+      }
+      if (zoneTarget === 'espalda') {
+        return allText.includes('espal') || allText.includes('almill') || allText.includes('post') || allText.includes('tras') || allText.includes('esp');
+      }
+      if (zoneTarget === 'pretina' || zoneTarget === 'cintura') {
+        return allText.includes('pret') || allText.includes('cint') || allText.includes('dobl') || allText.includes('rued') || allText.includes('faldon');
+      }
+      return false;
     }
-    if (zoneTarget === 'espalda') {
-      return allText.includes('espal') || allText.includes('almill') || allText.includes('post') || allText.includes('tras') || allText.includes('esp');
+
+    if (family === 'COMPLETA') {
+      if (zoneTarget === 'cuello') {
+        return allText.includes('cuel') || allText.includes('capot') || allText.includes('capuch') || allText.includes('solap');
+      }
+      if (zoneTarget === 'pecho') {
+        return allText.includes('pech') || allText.includes('delan') || allText.includes('cierre') || allText.includes('cremallera');
+      }
+      if (zoneTarget === 'manga') {
+        return allText.includes('mang') || allText.includes('puñ');
+      }
+      if (zoneTarget === 'cintura') {
+        return allText.includes('cint') || allText.includes('pret') || allText.includes('elast');
+      }
+      if (zoneTarget === 'bota') {
+        return allText.includes('bota') || allText.includes('pierna') || allText.includes('rued');
+      }
+      return false;
     }
-    if (zoneTarget === 'pretina') {
-      return allText.includes('pret') || allText.includes('cint') || allText.includes('dobl') || allText.includes('rued') || allText.includes('bot') || allText.includes('prt');
+
+    if (zoneTarget === 'zona1') {
+      return allText.includes('cuel') || allText.includes('pech') || allText.includes('frente') || allText.includes('base');
     }
+    if (zoneTarget === 'zona2') {
+      return allText.includes('mang') || allText.includes('cint') || allText.includes('corte');
+    }
+    if (zoneTarget === 'zona3') {
+      return allText.includes('espal') || allText.includes('tras') || allText.includes('post');
+    }
+    if (zoneTarget === 'zona4') {
+      return allText.includes('rued') || allText.includes('bota') || allText.includes('pret');
+    }
+
     return false;
   }
 
-  /**
-   * Consolida partes idénticas o gemelas (como manga izquierda y derecha) para que compartan selector.
-   */
-  getDisplayPartsForZone(zone: ZoneConfig): any[] {
+    getDisplayPartsForZone(zone: ZoneConfig): any[] {
     if (!zone || !zone.parts || zone.parts.length === 0) return [];
 
     // Si es manga y no se quieren diferenciar, agruparlas en un solo selector compartido
@@ -323,8 +639,16 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
 
   getZoneCanonicalKey(zone: any): string {
     const allText = `${zone.zone_type || ''} ${zone.name || ''}`.toLowerCase();
+    const family = this.anatomicalFamily;
+    if (family === 'INFERIOR') {
+      if (allText.includes('pret') || allText.includes('pasador') || allText.includes('cint')) return 'pretina';
+      if (allText.includes('braguet') || allText.includes('tiro')) return 'tiro';
+      if (allText.includes('bota') || allText.includes('pierna') || allText.includes('rued')) return 'bota';
+      if (allText.includes('post') || allText.includes('tras') || allText.includes('ribete')) return 'bolsillo_tras';
+      if (allText.includes('bolsill') || allText.includes('delan') || allText.includes('later')) return 'bolsillo_del';
+    }
     if (allText.includes('mang') || allText.includes('puñ')) return 'manga';
-    if (allText.includes('cuel') || allText.includes('solap')) return 'cuello';
+    if (allText.includes('cuel') || allText.includes('solap') || allText.includes('cap')) return 'cuello';
     if (allText.includes('pech') || allText.includes('delan') || allText.includes('carter')) return 'pecho';
     if (allText.includes('espal') || allText.includes('almill')) return 'espalda';
     if (allText.includes('pret') || allText.includes('cint')) return 'pretina';
@@ -332,9 +656,247 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   }
 
   restoreExistingSelections(): void {
-    if (this.item?.opmReference || this.item?.technicalSpecId) {
-      this.generatedOpmCode = this.item.opmReference || `OPM-REG-${this.item.technicalSpecId}`;
+    const specId = this.item?.technicalSpecId || this.item?.technical_spec_id || this.item?.technical_spec?.id;
+    const opmRef = this.item?.opmReference || this.item?.opm_reference || this.item?.technical_spec?.reference;
+
+    if (opmRef || specId) {
+      this.generatedOpmCode = opmRef || `OPM-${specId}`;
       this.opmSuccess = true;
+    }
+
+    // Auto-vincular tela principal y materiales SOLO si NO hay ficha técnica previa guardada.
+    // Si ya existe una ficha técnica, las vinculaciones se restauran desde restoreMaterials(parts)
+    // para respetar las acciones del usuario (como desvincular una tela).
+    const hasExistingSpec = specId || (Array.isArray(this.item?.technical_spec?.parts) && this.item.technical_spec.parts.length > 0);
+
+    if (!hasExistingSpec) {
+      // Auto-vincular tela principal si el ítem ya contiene referencia de tela de SIESA (del costeo o solicitud previa)
+      const itemTelaRef = this.item?.ref_siesa_referencia;
+      const itemTelaDesc = this.item?.ref_siesa_descripcion;
+      if (itemTelaRef && !this.materialSiesaBindings['tela principal']) {
+        this.materialSiesaBindings['tela principal'] = {
+          id_item: itemTelaRef,
+          referencia: itemTelaRef,
+          descripcion: itemTelaDesc || itemTelaRef,
+          color: this.item?.siesa_color || '',
+          is_fabric: true
+        };
+      }
+
+      // Auto-vincular materiales previos si vienen en el ítem (solo primera vez)
+      if (Array.isArray(this.item?.materiales) && this.item.materiales.length > 0) {
+        this.item.materiales.forEach((m: any) => {
+          const ref = m.siesa_referencia || m.siesa_id_item;
+          if (ref) {
+            const desc = m.siesa_descripcion || m.descripcion_personalizada || ref;
+            const isTela = m.tipo_material === 'TELA' || (desc || '').toLowerCase().includes('tela');
+            const targetKey = isTela ? 'tela principal' : (m.descripcion_personalizada || desc).toLowerCase().trim();
+            if (!this.materialSiesaBindings[targetKey]) {
+              this.materialSiesaBindings[targetKey] = {
+                id_item: ref,
+                referencia: ref,
+                descripcion: desc,
+                color: m.siesa_color || '',
+                is_fabric: isTela
+              };
+            }
+          }
+        });
+      }
+    }
+
+    // 1. Si el ítem ya contiene las partes en technical_spec
+    const existingParts = this.item?.technical_spec?.parts;
+    if (Array.isArray(existingParts) && existingParts.length > 0) {
+      this.applySpecPartsRestoration(existingParts);
+    } else if (specId) {
+      // 2. Si no vienen parts directamente en el objeto pero hay specId, consultar al backend
+      this.moldService.getTechnicalSpec(specId).subscribe({
+        next: (res: any) => {
+          const specData = res?.data || res;
+          if (specData) {
+            if (specData.reference) {
+              this.generatedOpmCode = specData.reference;
+            }
+            if (Array.isArray(specData.parts) && specData.parts.length > 0) {
+              this.applySpecPartsRestoration(specData.parts);
+            }
+          }
+        },
+        error: (err: any) => {
+          console.warn('No se pudo cargar la ficha técnica previa para restauración:', err);
+        }
+      });
+    }
+  }
+
+  /**
+   * Aplica la restauración de variantes, observaciones, partes generales y materiales guardados
+   */
+  applySpecPartsRestoration(parts: any[]): void {
+    if (!parts || !Array.isArray(parts)) return;
+    this.cachedSpecPartsForRestoration = parts;
+
+    let mangaTypesSeen = new Set<string>();
+    let mangaCount = 0;
+
+    for (const p of parts) {
+      const itemType = p.item_type || 'parte';
+
+      if (itemType === 'parte') {
+        const rawPartId = p.mold_part_id ? Number(p.mold_part_id) : null;
+        const targetTypeId = (p.mold_part_type_id || p.selected_type_id) ? Number(p.mold_part_type_id || p.selected_type_id) : null;
+        const targetTypeName = (p.selected_type_name || '').toLowerCase().trim();
+        const targetTech = (p.technical_spec || '').toLowerCase().trim();
+        const partName = (p.name || '').toLowerCase().trim();
+
+        // Restaurar observación de zona si viene client_spec
+        if (p.client_spec && typeof p.client_spec === 'string' && p.client_spec.trim()) {
+          const obsText = p.client_spec.trim();
+          let matchedZone = this.zones.find(z =>
+            (p.zone_name && (z.title.toLowerCase().includes(p.zone_name.toLowerCase()) || p.zone_name.toLowerCase().includes(z.id))) ||
+            z.parts.some(pt => rawPartId && Number(pt.id) === rawPartId) ||
+            z.parts.some(pt => (pt.name || '').toLowerCase().trim() === partName)
+          );
+          if (!matchedZone) {
+            matchedZone = this.zones.find(z => this.matchZone({ name: partName, zone_name: p.zone_name }, z.id));
+          }
+          if (matchedZone) {
+            this.zoneObservations[matchedZone.id] = obsText;
+          }
+        }
+
+        // Buscar la parte correspondiente en las zonas del molde
+        let matchedPart: any = null;
+        for (const zone of this.zones) {
+          matchedPart = zone.parts.find(pt =>
+            (rawPartId && Number(pt.id) === rawPartId) ||
+            (partName && (pt.name || '').toLowerCase().trim() === partName)
+          );
+          if (matchedPart) break;
+        }
+
+        if (matchedPart) {
+          const partIdToUse = matchedPart.id;
+          const availableTypes = matchedPart.types || [];
+
+          let matchedType = availableTypes.find((t: any) =>
+            (targetTypeId && Number(t.id) === targetTypeId) ||
+            (targetTypeName && (t.name || '').toLowerCase().trim() === targetTypeName) ||
+            (targetTech && (t.technical_description || '').toLowerCase().trim() === targetTech) ||
+            (targetTech && (t.name || '').toLowerCase().trim() === targetTech)
+          );
+
+          if (!matchedType && targetTech) {
+            matchedType = availableTypes.find((t: any) =>
+              t.technical_description && targetTech.includes((t.technical_description || '').toLowerCase().trim())
+            );
+          }
+
+          if (matchedType) {
+            this.selectedTypes[partIdToUse] = matchedType;
+          } else if (targetTypeName || targetTypeId || targetTech) {
+            this.selectedTypes[partIdToUse] = {
+              id: targetTypeId || partIdToUse,
+              name: p.selected_type_name || p.technical_spec || matchedPart.name,
+              technical_description: p.technical_spec || p.selected_type_name,
+              total_time: Number(p.estimated_time) || 0
+            };
+          }
+
+          if (this.matchZone(matchedPart, 'manga')) {
+            mangaCount++;
+            if (this.selectedTypes[partIdToUse]) {
+              mangaTypesSeen.add(this.selectedTypes[partIdToUse].name || String(this.selectedTypes[partIdToUse].id));
+            }
+          }
+        }
+      }
+    }
+
+    if (mangaCount > 1 && mangaTypesSeen.size > 1) {
+      this.diferenciarMangas = true;
+    }
+
+    this.restoreGeneralParts(parts);
+    this.restoreMaterials(parts);
+    this.refreshZoneCompletion();
+    this.recalculateConsolidatedMaterials();
+  }
+
+  restoreGeneralParts(parts: any[]): void {
+    if (!parts || !Array.isArray(parts)) return;
+    for (const p of parts) {
+      if ((p.item_type || 'parte') === 'parte_general') {
+        const pName = (p.name || '').toLowerCase().trim();
+        const selName = (p.selected_type_name || '').toLowerCase().trim();
+        const targetTech = (p.technical_spec || '').toLowerCase().trim();
+
+        const matchedGenPart = this.generalParts.find(gp =>
+          (gp.name || '').toLowerCase().trim() === pName ||
+          (p.name && (gp.code || '').toLowerCase().trim() === (p.name || '').toLowerCase().trim()) ||
+          (gp.types && gp.types.some((gt: any) => (gt.name || '').toLowerCase().trim() === selName))
+        );
+
+        if (matchedGenPart) {
+          let matchedVariant = (matchedGenPart.types || []).find((gt: any) =>
+            (selName && (gt.name || '').toLowerCase().trim() === selName) ||
+            (targetTech && (gt.technical_description || '').toLowerCase().trim() === targetTech)
+          );
+
+          if (!matchedVariant) {
+            matchedVariant = {
+              id: matchedGenPart.id * 10 + 1,
+              name: p.selected_type_name || p.name,
+              technical_description: p.technical_spec,
+              total_time: Number(p.estimated_time) || 0
+            };
+          }
+
+          this.selectedGeneralTypes[matchedGenPart.id] = matchedVariant;
+          if (p.zone_name) {
+            const zoneObj = this.zones.find(z => z.title === p.zone_name || z.id === p.zone_name);
+            this.generalPartZoneAnchors[matchedGenPart.id] = zoneObj ? zoneObj.id : p.zone_name;
+          }
+        }
+      }
+    }
+
+    // Restaurar materiales guardados en la ficha técnica (telas e insumos)
+    this.restoreMaterials(parts);
+    this.recalculateConsolidatedMaterials();
+    this.refreshZoneCompletion();
+  }
+
+  restoreMaterials(parts: any[]): void {
+    if (!parts || !Array.isArray(parts)) return;
+    for (const p of parts) {
+      if (p.item_type === 'material') {
+        const matKey = (p.name || '').toLowerCase().trim();
+        if (p.client_spec) {
+          this.materialNotes[matKey] = p.client_spec;
+        }
+        if (p.inventory_reference) {
+          this.materialSiesaBindings[matKey] = {
+            id_item: p.inventory_reference,
+            referencia: p.inventory_reference,
+            descripcion: p.inventory_description || p.selected_type_name || '',
+            color: '',
+            is_fabric: (p.selected_type_name || '').toLowerCase().includes('tela') || matKey.includes('tela')
+          };
+        } else {
+          // Si la ficha técnica guardada tiene inventory_reference = null,
+          // asegurar que NO quede un binding viejo (el usuario desvinculó)
+          delete this.materialSiesaBindings[matKey];
+        }
+        const foundExtra = this.availableMaterials.find(m => m.name.toLowerCase().trim() === matKey);
+        if (foundExtra) {
+          this.selectedExtras[foundExtra.id] = {
+            active: true,
+            notes: p.client_spec || ''
+          };
+        }
+      }
     }
   }
 
@@ -377,15 +939,51 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   }
 
   getZoneDisplayName(zone: any): string {
+    if (!zone) return 'Zona';
+
+    // 1. Coincidencia directa con una de las zonas activas del molde
     const matched = this.zones.find(z => this.matchZone(zone, z.id));
     if (matched) return matched.title;
-    const allText = `${zone.zone_type || ''} ${zone.name || ''}`.toLowerCase();
-    if (allText.includes('mang')) return 'Mangas y Puños';
-    if (allText.includes('pech') || allText.includes('delan')) return 'Pechera y Delantero';
-    if (allText.includes('cuel') || allText.includes('solap')) return 'Cuello / Solapa';
-    if (allText.includes('pret') || allText.includes('cint')) return 'Cintura y Pretina';
-    if (allText.includes('espal')) return 'Espalda y Almilla';
-    return zone.name || zone.zone_type || 'Zona';
+
+    // 2. Si el objeto trae un nombre amigable propio
+    const rawName = (zone.name || '').trim();
+    const allText = `${zone.zone_type || ''} ${rawName}`.toLowerCase();
+    const family = this.anatomicalFamily;
+
+    if (family === 'INFERIOR') {
+      if (allText.includes('braguet') || allText.includes('tiro')) return 'Tiro & Bragueta';
+      if (allText.includes('pret') || allText.includes('pasador') || allText.includes('cint')) return 'Pretina & Pasadores';
+      if (allText.includes('bota') || allText.includes('pierna') || allText.includes('rued')) return 'Bota & Ruedo';
+      if (allText.includes('post') || allText.includes('tras') || allText.includes('ribete') || allText.includes('parche')) return 'Bolsillos Traseros';
+      if (allText.includes('bolsill') || allText.includes('later') || allText.includes('relojer') || allText.includes('delan')) return 'Bolsillos Laterales';
+      if (rawName && rawName.length > 2) return rawName;
+      return 'Zona Inferior';
+    }
+
+    if (family === 'SUPERIOR') {
+      if (allText.includes('capuch') || allText.includes('capot')) return 'Capota / Cuello';
+      if (allText.includes('cuel') || allText.includes('solap')) return 'Cuello / Solapa';
+      if (allText.includes('mang') || allText.includes('puñ')) return 'Mangas y Puños';
+      if (allText.includes('pech') || allText.includes('delan') || allText.includes('carter')) return 'Pechera y Delantero';
+      if (allText.includes('espal') || allText.includes('almill')) return 'Espalda y Almilla';
+      if (allText.includes('pret') || allText.includes('cint') || allText.includes('rued')) return 'Cintura y Ruedo';
+      if (allText.includes('gen') || allText.includes('acab')) return 'Acabados & Apliques';
+      if (rawName && rawName.length > 2) return rawName;
+      return 'Zona de Prenda';
+    }
+
+    if (family === 'COMPLETA') {
+      if (allText.includes('capuch') || allText.includes('capot') || allText.includes('cuel')) return 'Cuello / Capota';
+      if (allText.includes('pech') || allText.includes('cierre') || allText.includes('delan')) return 'Pecho & Cierre';
+      if (allText.includes('mang') || allText.includes('puñ')) return 'Mangas & Puños';
+      if (allText.includes('cint') || allText.includes('pret')) return 'Cintura & Elástico';
+      if (allText.includes('bota') || allText.includes('pierna')) return 'Pierna & Bota';
+      if (rawName && rawName.length > 2) return rawName;
+      return 'Zona Overol';
+    }
+
+    if (rawName && rawName.length > 2) return rawName;
+    return zone.zone_type || 'Zona';
   }
 
   getSelectedTypeForPart(part: any): any {
@@ -453,10 +1051,16 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
         } else {
           this.generalParts = canonical;
         }
+        if (this.cachedSpecPartsForRestoration && this.cachedSpecPartsForRestoration.length > 0) {
+          this.restoreGeneralParts(this.cachedSpecPartsForRestoration);
+        }
         this.recalculateConsolidatedMaterials();
       },
       error: () => {
         this.generalParts = canonical;
+        if (this.cachedSpecPartsForRestoration && this.cachedSpecPartsForRestoration.length > 0) {
+          this.restoreGeneralParts(this.cachedSpecPartsForRestoration);
+        }
         this.recalculateConsolidatedMaterials();
       }
     });
@@ -578,11 +1182,13 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
       }, 300);
     }
     this.recalculateConsolidatedMaterials();
+    this.triggerAutoSave();
   }
 
   removeGeneralVariant(part: any): void {
     delete this.selectedGeneralTypes[part.id];
     this.recalculateConsolidatedMaterials();
+    this.triggerAutoSave();
   }
 
   anchorGeneralPartToZone(partId: number, zoneId: string): void {
@@ -614,7 +1220,9 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   }
 
   isGeneralVariantSelected(part: any, variant: any): boolean {
-    return this.selectedGeneralTypes[part.id]?.id === variant.id;
+    const sel = this.selectedGeneralTypes[part.id];
+    if (!sel) return false;
+    return Number(sel.id) === Number(variant.id);
   }
 
   get activeGeneralPartsCount(): number {
@@ -640,6 +1248,8 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
 
   closeExtrasModal(): void {
     this.showFloatingExtrasModal = false;
+    this.recalculateConsolidatedMaterials();
+    this.generarOpmFinal(true);
   }
 
   recalculateConsolidatedMaterials(): void {
@@ -765,11 +1375,23 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
       };
     }
     this.closeInventoryModal();
+    this.recalculateConsolidatedMaterials();
+    this.triggerAutoSave();
   }
 
   clearMaterialSiesa(matName: string): void {
     const key = matName.toLowerCase();
     delete this.materialSiesaBindings[key];
+    // Si es la Tela Principal, limpiar también las refs en el item
+    // para que no se re-inyecten al restaurar
+    if (key === 'tela principal' || key.includes('tela principal')) {
+      if (this.item) {
+        this.item.ref_siesa_referencia = null;
+        this.item.ref_siesa_descripcion = null;
+      }
+    }
+    this.recalculateConsolidatedMaterials();
+    this.triggerAutoSave();
   }
 
   toggleSourceTooltip(matName: string): void {
@@ -872,6 +1494,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
 
     this.refreshZoneCompletion();
     this.recalculateConsolidatedMaterials();
+    this.triggerAutoSave();
 
     // Auto-close the zone modal after selecting a variant
     setTimeout(() => {
@@ -880,7 +1503,9 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   }
 
   isTypeSelected(partId: number, typeId: number): boolean {
-    return this.selectedTypes[partId]?.id === typeId;
+    const sel = this.selectedTypes[partId];
+    if (!sel) return false;
+    return Number(sel.id) === Number(typeId);
   }
 
   // Helper para distinguir partes de cartera vs bolsillos en zona Pecho
@@ -900,6 +1525,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
     if (this.selectedExtras[materialId]) {
       this.selectedExtras[materialId].active = !this.selectedExtras[materialId].active;
       this.recalculateConsolidatedMaterials();
+      this.triggerAutoSave();
     }
   }
 
@@ -1016,21 +1642,26 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
 
   getZoneIcon(zoneType?: string): string {
     const t = (zoneType || '').toLowerCase();
-    if (t.includes('cue') || t.includes('sol')) return 'bi-bullseye';
+    if (t.includes('cue') || t.includes('sol') || t.includes('cap')) return 'bi-bullseye';
+    if (t.includes('tiro') || t.includes('braguet')) return 'bi-arrows-collapse';
+    if (t.includes('bota') || t.includes('pierna')) return 'bi-arrows-vertical';
     if (t.includes('pech') || t.includes('delan') || t.includes('car') || t.includes('bol')) return 'bi-columns';
     if (t.includes('man') || t.includes('puñ')) return 'bi-layers';
-    if (t.includes('esp') || t.includes('alm')) return 'bi-border-all';
-    if (t.includes('pret') || t.includes('cin') || t.includes('bot')) return 'bi-bounding-box-circles';
+    if (t.includes('esp') || t.includes('alm') || t.includes('tras') || t.includes('post')) return 'bi-border-all';
+    if (t.includes('pret') || t.includes('cin')) return 'bi-bounding-box-circles';
+    if (t.includes('gen') || t.includes('acab')) return 'bi-gem';
     return 'bi-bounding-box';
   }
 
   getZoneColor(zoneType?: string): string {
     const t = (zoneType || '').toLowerCase();
-    if (t.includes('cue')) return '#6366f1';
+    if (t.includes('cue') || t.includes('cap')) return '#6366f1';
+    if (t.includes('tiro') || t.includes('braguet')) return '#0284c7';
     if (t.includes('pech') || t.includes('delan')) return '#0ea5e9';
     if (t.includes('man')) return '#8b5cf6';
-    if (t.includes('esp')) return '#f59e0b';
+    if (t.includes('esp') || t.includes('post') || t.includes('tras')) return '#f59e0b';
     if (t.includes('pret') || t.includes('cin')) return '#10b981';
+    if (t.includes('bota') || t.includes('pierna')) return '#14b8a6';
     return '#64748b';
   }
 
@@ -1041,6 +1672,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
     const existing = this.item.tallas.find((t: any) => t.talla === tallaStr);
     if (!existing) {
       this.item.tallas.push({ talla: tallaStr, cantidad: 1 });
+      this.triggerAutoSave();
     }
   }
 
@@ -1054,6 +1686,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
   removeTalla(index: number): void {
     if (this.item.tallas) {
       this.item.tallas.splice(index, 1);
+      this.triggerAutoSave();
     }
   }
 
@@ -1064,20 +1697,27 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
 
   // ==================== GENERACIÓN FINAL DE OPM ====================
 
-  generarOpmFinal(): void {
+  generarOpmFinal(silent: boolean = false): void {
     if (!this.mold) return;
 
     if (!this.item.tallas || this.item.tallas.length === 0 || this.getItemTotal() <= 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Faltan tallas y cantidades',
-        text: 'Por favor asigna al menos una talla con cantidad mayor a cero antes de generar la OPM.',
-        confirmButtonColor: '#4f46e5'
-      });
-      return;
+      if (silent) {
+        this.item.tallas = [{ talla: this.item.talla || 'M', cantidad: this.item.cantidad_muestra || 1 }];
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Faltan tallas y cantidades',
+          text: 'Por favor asigna al menos una talla con cantidad mayor a cero antes de generar la OPM.',
+          confirmButtonColor: '#4f46e5'
+        });
+        return;
+      }
     }
 
     this.isSavingOpm = true;
+    if (silent) {
+      this.autoSaveStatus = 'saving';
+    }
 
     // Estructurar el array de partes para TechnicalSpecController
     const partsPayload: any[] = [];
@@ -1140,14 +1780,16 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
       const siesaDesc = siesa
         ? `${siesa.descripcion}${siesa.color ? ' (Color: ' + siesa.color + ')' : ''}`
         : null;
+      const originParts = Array.from(mat.sourceParts);
+      const originStr = originParts.length > 0 ? originParts.join(' | ') : 'Prenda Base';
       return {
         name: mat.name,
         selected_type_name: siesa ? siesa.referencia : mat.type,
-        zone_name: mat.sourceParts.join(', '),
+        zone_name: originStr,
         item_type: 'material',
         technical_spec: siesa
           ? `[SIESA: ${siesa.referencia}] ${siesaDesc}`
-          : `Origen: ${mat.sourceParts.join(', ')}`,
+          : `Origen: ${originStr}`,
         client_spec: note,
         estimated_time: 0,
         inventory_reference: siesa ? siesa.referencia : null,
@@ -1164,7 +1806,12 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
       parts: [...partsPayload, ...generalPartsPayload, ...consolidatedPayload],
     };
 
-    this.moldService.createTechnicalSpec(payload).subscribe({
+    const specId = this.item?.technicalSpecId || this.item?.technical_spec_id || this.item?.technical_spec?.id;
+    const saveRequest$ = specId
+      ? this.moldService.updateTechnicalSpec(specId, payload)
+      : this.moldService.createTechnicalSpec(payload);
+
+    saveRequest$.subscribe({
       next: (res: any) => {
         this.isSavingOpm = false;
         if (res?.success && res?.data) {
@@ -1178,32 +1825,52 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck {
           this.item.moldId = this.mold.id;
           this.item.mold_id = this.mold.id;
           this.item.totalSamTime = this.totalSamTime;
+          this.item.technical_spec = spec;
+          this.autoSaveStatus = 'saved';
 
-          Swal.fire({
-            icon: 'success',
-            title: '¡OPM Generada Exitosamente!',
-            html: `Se ha registrado la ficha técnica <strong>${spec.reference}</strong> vinculada a este ítem con un tiempo SAM de <strong>${this.totalSamTime} min</strong>.`,
-            confirmButtonColor: '#4f46e5'
-          });
+          if (!silent) {
+            Swal.fire({
+              icon: 'success',
+              title: specId ? '¡OPM Actualizada Exitosamente!' : '¡OPM Generada Exitosamente!',
+              html: `Se ha registrado la ficha técnica <strong>${spec.reference}</strong> vinculada a este ítem con un tiempo SAM de <strong>${this.totalSamTime} min</strong>.`,
+              confirmButtonColor: '#4f46e5'
+            });
+          }
 
           this.onOpmSaved.emit({
+            itemId: this.item?.id || this.item?.solicitud_item_id,
             itemIndex: this.itemIndex,
             technicalSpecId: spec.id,
             reference: spec.reference,
             samTime: this.totalSamTime,
             tallas: this.item.tallas,
+            materials: this.consolidatedMaterials.map(mat => {
+              const key = mat.name.toLowerCase();
+              const siesa = this.materialSiesaBindings[key];
+              const note = this.materialNotes[key] || mat.notes || '';
+              return {
+                name: mat.name,
+                type: mat.type,
+                sourceParts: mat.sourceParts,
+                note: note,
+                siesa: siesa || null
+              };
+            })
           });
         }
       },
       error: (err: any) => {
         this.isSavingOpm = false;
+        this.autoSaveStatus = 'error';
         console.error('Error al generar OPM:', err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error al generar OPM',
-          text: err.error?.error || err.message || 'No se pudo registrar la OPM en pruebas.',
-          confirmButtonColor: '#ef4444'
-        });
+        if (!silent) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error al generar OPM',
+            text: err.error?.error || err.message || 'No se pudo registrar la OPM en pruebas.',
+            confirmButtonColor: '#ef4444'
+          });
+        }
       }
     });
   }

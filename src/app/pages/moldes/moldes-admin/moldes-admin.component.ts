@@ -186,6 +186,7 @@ export class MoldesAdminComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadAnatomicalRegions();
     this.loadMoldCategories();
     this.loadMoldMachines();
     this.loadGarmentPartsCatalog();
@@ -261,6 +262,24 @@ export class MoldesAdminComponent implements OnInit {
         }
       },
       error: () => Swal.fire('Error', 'No se pudo cargar la información del molde', 'error')
+    });
+  }
+
+  loadAnatomicalRegions(): void {
+    this.moldService.getAnatomicalRegions(true).subscribe({
+      next: (res: any) => {
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          this.zoneTypeOptions = res.data.map((r: any) => ({
+            value: r.value,
+            label: r.label,
+            color: r.color || '#3b82f6',
+            icon: r.icon || 'bi-bounding-box-circles',
+            description: r.description || '',
+            opcionalesEjemplo: r.opcionales_ejemplo || ''
+          }));
+        }
+      },
+      error: (err) => console.warn('No se pudieron cargar regiones anatómicas del backend, usando defaults', err)
     });
   }
 

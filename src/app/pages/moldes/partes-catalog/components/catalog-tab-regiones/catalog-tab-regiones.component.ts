@@ -22,12 +22,12 @@ export class CatalogTabRegionesComponent {
 
   getStructuralRegions(): AnatomicalRegion[] {
     if (!this.regions) return [];
-    return this.regions.filter(r => r.value !== 'general' && r.nature !== 'overlay');
+    return this.regions.filter(r => r.value !== 'general' && r.nature !== 'overlay' && r.is_structural !== false);
   }
 
   getGeneralRegion(): AnatomicalRegion | undefined {
     if (!this.regions) return undefined;
-    return this.regions.find(r => r.value === 'general' || r.nature === 'overlay');
+    return this.regions.find(r => r.value === 'general' || r.nature === 'overlay' || r.is_structural === false);
   }
 
   getGeneralParts(): any[] {

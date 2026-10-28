@@ -39,6 +39,7 @@ export class MoldService {
   private zonePartsCache = new Map<string, any>();
   private allPartsCache$: Observable<any> | null = null;
   private machinesCache$: Observable<any> | null = null;
+  private regionsCache$: Observable<any> | null = null;
 
   constructor(private http: HttpClient) { }
 
@@ -56,6 +57,7 @@ export class MoldService {
     this.zonePartsCache.clear();
     this.allPartsCache$ = null;
     this.machinesCache$ = null;
+    this.regionsCache$ = null;
   }
 
   // ==================== MOLDS ====================
@@ -109,6 +111,46 @@ export class MoldService {
 
   deleteMold(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/molds/${id}`);
+  }
+
+  // ==================== ANATOMICAL REGIONS ====================
+
+  getAnatomicalRegions(isStructural?: boolean, forceRefresh: boolean = false): Observable<any> {
+    let params = new HttpParams();
+    if (isStructural !== undefined) {
+      params = params.set('is_structural', isStructural.toString());
+    }
+
+    if (isStructural === undefined && !forceRefresh && this.regionsCache$) {
+      return this.regionsCache$;
+    }
+
+    const req$ = this.http.get(`${this.apiUrl}/anatomical-regions`, { params });
+
+    if (isStructural === undefined) {
+      this.regionsCache$ = req$.pipe(shareReplay(1));
+      return this.regionsCache$;
+    }
+
+    return req$;
+  }
+
+  createAnatomicalRegion(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/anatomical-regions`, data).pipe(
+      tap(() => { this.regionsCache$ = null; })
+    );
+  }
+
+  updateAnatomicalRegion(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/anatomical-regions/${id}`, data).pipe(
+      tap(() => { this.regionsCache$ = null; })
+    );
+  }
+
+  deleteAnatomicalRegion(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/anatomical-regions/${id}`).pipe(
+      tap(() => { this.regionsCache$ = null; })
+    );
   }
 
   // ==================== MOLD MACHINES ====================

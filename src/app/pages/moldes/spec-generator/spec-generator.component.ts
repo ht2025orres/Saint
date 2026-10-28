@@ -322,7 +322,24 @@ export class SpecGeneratorComponent implements OnInit, OnChanges, OnDestroy {
       }
     }
 
+    this.loadAnatomicalRegions();
     this.startAutoSave();
+  }
+
+  loadAnatomicalRegions(): void {
+    this.moldService.getAnatomicalRegions(true).subscribe({
+      next: (res: any) => {
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          this.zoneTypeOptions = res.data.map((r: any) => ({
+            value: r.value,
+            label: r.label,
+            color: r.color || '#3b82f6',
+            icon: r.icon || 'bi-bounding-box-circles'
+          }));
+        }
+      },
+      error: () => {}
+    });
   }
 
   ngOnDestroy(): void {

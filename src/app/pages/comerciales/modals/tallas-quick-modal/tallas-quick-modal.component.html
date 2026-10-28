@@ -1,0 +1,96 @@
+<div class="modal-backdrop-custom" *ngIf="item" (click)="close()">
+  <div class="mold-modal-container max-w-xl w-[95%]" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="mold-modal-header bg-slate-50 border-b border-slate-200 py-3">
+      <div class="mold-modal-title-group">
+        <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+          <i class="bi bi-grid-3x3-gap-fill text-sm"></i>
+        </div>
+        <div>
+          <h3 class="mold-modal-title text-sm font-black text-slate-800">
+            Distribución de Tallas: {{ item.descripcion }}
+          </h3>
+          <span class="text-[11px] text-slate-400 font-medium">Ingresa las unidades a fabricar por cada talla</span>
+        </div>
+      </div>
+      <button class="btn-close-modal" (click)="close()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-5 space-y-4">
+      <!-- Selector de escala + Chips para agregar tallas rápidas -->
+      <div class="space-y-2 pb-3 border-b border-slate-100">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span class="text-[11px] font-bold text-slate-500 uppercase">Tallas Rápidas:</span>
+          
+          <!-- Pestañas de Escala (Letras vs Numéricas) para evitar desbordamiento -->
+          <div class="inline-flex rounded-lg p-0.5 bg-slate-100 border border-slate-200 text-[10px] font-bold">
+            <button type="button" 
+                    (click)="activeScale = 'letras'"
+                    class="px-2 py-0.5 rounded-md transition-all cursor-pointer"
+                    [ngClass]="activeScale === 'letras' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Letras (XS - 3XL)
+            </button>
+            <button type="button" 
+                    (click)="activeScale = 'numeros'"
+                    class="px-2 py-0.5 rounded-md transition-all cursor-pointer"
+                    [ngClass]="activeScale === 'numeros' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-800'">
+              Numéricas (28 - 46)
+            </button>
+          </div>
+        </div>
+
+        <!-- Chips de tallas de la escala activa con wrap que nunca se sale -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button *ngFor="let t of currentTallasList" 
+                  type="button" 
+                  (click)="addTalla(t)"
+                  class="px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                  [ngClass]="isTallaSelected(t) 
+                    ? 'bg-blue-50 border-blue-400 text-blue-700' 
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700'">
+            <i class="bi" [ngClass]="isTallaSelected(t) ? 'bi-check2' : 'bi-plus'"></i>
+            {{ t }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Matriz de tallas actuales -->
+      <div *ngIf="item.tallas && item.tallas.length > 0" class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto p-1">
+        <div *ngFor="let t of item.tallas; let ti = index" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 focus-within:bg-white transition-all shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-xs text-slate-900">{{ t.talla }}</span>
+            <button type="button" (click)="removeTalla(ti)" class="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded-md transition-colors cursor-pointer" title="Eliminar talla">
+              <i class="bi bi-x-lg text-[10px]"></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-1">
+            <input type="number" 
+                   [(ngModel)]="t.cantidad" 
+                   (ngModelChange)="onQuantityChange()"
+                   (focus)="$event.target.select()"
+                   min="0" 
+                   class="w-full text-center font-bold font-mono text-sm border border-slate-200 rounded-lg p-1 bg-white focus:outline-none focus:border-blue-500" />
+            <span class="text-[10px] text-slate-400 font-bold">uds</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!item.tallas || item.tallas.length === 0" class="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+        <p class="text-xs font-bold text-slate-500 mb-0">No hay tallas agregadas. Haz clic en las tallas arriba para agregarlas.</p>
+      </div>
+
+      <!-- Resumen de Total -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-bold">Total Prenda:</span>
+          <span class="text-base font-black text-slate-900 font-mono">{{ getItemTotal() | number }} uds</span>
+        </div>
+        <button type="button" (click)="close()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-sm cursor-pointer hover:shadow-md transition-all flex items-center gap-1.5">
+          <i class="bi bi-check2"></i> Listo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

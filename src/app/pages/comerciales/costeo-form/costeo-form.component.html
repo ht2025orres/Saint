@@ -5,7 +5,7 @@
       <button class="btn-back" (click)="goBack()" title="Volver"><i class="bi bi-arrow-left"></i></button>
       <div class="header-info">
         <div class="header-title-group">
-          <h1 class="page-title">{{ isEditMode ? 'Editar Solicitud de Pedido' : 'Nueva Solicitud de Pedido' }}</h1>
+          <h1 class="page-title">{{ isEditMode ? 'Editar OPM' : 'Nueva OPM' }}</h1>
           <span class="draft-auto-saved" title="Los cambios se guardan automáticamente en tu navegador">
             <i class="bi bi-cloud-check"></i> Borrador Guardado
           </span>
@@ -316,322 +316,305 @@
         </div>
       </div>
 
-      <!-- Lista de Ítems Inteligentes -->
-      <div *ngIf="items.length > 0" class="items-list">
-        <div *ngFor="let item of items; let i = index" class="item-card" [class.expanded]="item.isExpanded">
-          
-          <!-- Encabezado de la Tarjeta del Ítem -->
-          <div class="item-header" (click)="toggleItem(item)">
-            <div class="item-left">
-              <span class="item-index">{{ i + 1 }}</span>
-              <div class="item-info">
-                <div class="item-title-row">
-                  <span class="item-desc" [title]="item.descripcion">{{ item.descripcion }}</span>
-                </div>
-                <div class="item-meta-badges">
-                  <!-- Badge Siesa / Nuevo -->
-                  <span *ngIf="item.siesa_referencia" class="badge-tag tag-siesa">
-                    <i class="bi bi-upc"></i> Siesa: {{ item.siesa_referencia }}
-                  </span>
-                  <span *ngIf="item.isNew" class="badge-tag tag-new">
-                    <i class="bi bi-sparkles"></i> Nuevo
-                  </span>
-                  <span *ngIf="item.ref_siesa_referencia" class="badge-tag tag-ref">
-                    <i class="bi bi-link-45deg"></i> Base: {{ item.ref_siesa_referencia }}
-                  </span>
+      <!-- Tabla Matricial de Ítems & OPM -->
+      <!-- BARRA DE CONTROL COMPACTA: FILTRO Y ORDENAMIENTO -->
+      <div *ngIf="items.length > 0" class="flex items-center justify-between gap-2 mb-2.5 px-0.5 flex-wrap">
+        <div class="flex items-center gap-2">
+          <!-- Dropdown Compacto de Filtrado por Región -->
+          <div class="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 shadow-2xs text-xs">
+            <i class="bi bi-funnel text-slate-600 text-[11px]"></i>
+            <span class="text-slate-400 font-bold text-[11px]">Región:</span>
+            <select [(ngModel)]="selectedFamilyFilter" (ngModelChange)="rebuildAnatomicalGroups()" class="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer pr-1 text-xs">
+              <option value="TODAS">Todas ({{ getFamilyItemCount('TODAS') }})</option>
+              <option *ngIf="getFamilyItemCount('SUPERIOR') > 0" value="SUPERIOR">👔 Superiores ({{ getFamilyItemCount('SUPERIOR') }})</option>
+              <option *ngIf="getFamilyItemCount('INFERIOR') > 0" value="INFERIOR">👖 Inferiores ({{ getFamilyItemCount('INFERIOR') }})</option>
+              <option *ngIf="getFamilyItemCount('COMPLETA') > 0" value="COMPLETA">🦺 Overoles ({{ getFamilyItemCount('COMPLETA') }})</option>
+              <option *ngIf="getFamilyItemCount('GENERAL') > 0" value="GENERAL">📦 Otras ({{ getFamilyItemCount('GENERAL') }})</option>
+              <option *ngIf="getFamilyItemCount('SIN_MOLDE') > 0" value="SIN_MOLDE">⚠️ Sin Molde ({{ getFamilyItemCount('SIN_MOLDE') }})</option>
+            </select>
+          </div>
 
-                  <!-- Badge Tallas -->
-                  <span class="badge-tag tag-tallas" [class.tag-has-tallas]="item.tallas.length > 0">
-                    <i class="bi bi-grid-1x2"></i> {{ item.tallas.length }} {{ item.tallas.length === 1 ? 'talla' : 'tallas' }} · {{ getItemTotal(item) | number }} uds.
-                  </span>
+          <!-- Dropdown Compacto de Ordenamiento -->
+          <div class="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 shadow-2xs text-xs">
+            <i class="bi bi-arrow-down-up text-slate-400 text-[11px]"></i>
+            <span class="text-slate-400 font-bold text-[11px]">Orden:</span>
+            <select [(ngModel)]="anatomicalSortOrder" (ngModelChange)="rebuildAnatomicalGroups()" class="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer pr-1 text-xs">
+              <option value="family">Región Anatómica</option>
+              <option value="qty">Cantidad (uds)</option>
+              <option value="sam">Tiempo SAM</option>
+            </select>
+          </div>
+        </div>
 
-                  <!-- Badge Molde OPM con acceso directo -->
-                  <button type="button"
-                          *ngIf="item.moldId"
-                          class="badge-tag tag-mold tag-mold-btn"
-                          (click)="goToItemMold(item, i); $event.stopPropagation()"
-                          title="Acceso directo: Configurar Molde & OPM de este ítem">
-                    <i class="bi bi-bounding-box"></i> {{ item.moldName }}
-                    <span class="mold-shortcut-text"><i class="bi bi-arrow-right-short"></i> Ir al Molde</span>
-                  </button>
-                  <span *ngIf="!item.moldId" class="badge-tag tag-mold">
-                    <i class="bi bi-bounding-box"></i> Sin Molde
-                  </span>
-                  <span *ngIf="item.technicalSpecId" class="badge-tag tag-opm-ok">
-                    <i class="bi bi-check2"></i> OPM Ok
-                  </span>
-                </div>
-              </div>
+        <!-- Conteo de prendas -->
+        <span class="text-[11px] text-slate-400 font-medium">
+          {{ getTotalFilteredItems() }} {{ getTotalFilteredItems() === 1 ? 'prenda' : 'prendas' }} en lista
+        </span>
+      </div>
+
+      <!-- Tablas Matriciales Agrupadas por Región Anatómica (Diseño Compacto) -->
+      <div *ngIf="items.length > 0" class="space-y-3 mb-4">
+        <div *ngFor="let group of anatomicalGroups; trackBy: trackByGroupId" class="space-y-1">
+          <!-- Subtítulo de Familia Anatómica (Super Compacto: 1 sola línea) -->
+          <div class="flex items-center justify-between px-3 py-1.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <i class="bi" [ngClass]="group.icon"></i>
+                {{ group.title }}
+              </span>
+              <span class="text-[10px] px-2 py-0.2 rounded-full font-bold border" [ngClass]="group.badgeClass">
+                {{ group.items.length }} {{ group.items.length === 1 ? 'prenda' : 'prendas' }}
+              </span>
             </div>
-
-            <div class="item-right">
-              <button class="btn-icon btn-delete" (click)="removeItem(i); $event.stopPropagation()" title="Eliminar ítem">
-                <i class="bi bi-trash3"></i>
-              </button>
-              <i class="bi expand-icon" [ngClass]="item.isExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            <div class="flex items-center gap-2.5 text-[11px] font-mono">
+              <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.2 rounded border border-slate-200">
+                Total: {{ group.totalUds | number }} uds
+              </span>
+              <span *ngIf="group.totalSam > 0" class="font-bold text-slate-600 bg-white px-2 py-0.2 rounded border border-slate-200">
+                SAM: {{ group.totalSam | number:'1.1-2' }} min
+              </span>
             </div>
           </div>
 
-          <!-- Cuerpo Expandible del Ítem con Pestañas Internas (Tallas vs Molde OPM) -->
-          <div [hidden]="!item.isExpanded" class="item-body">
-            
-
-              
-              <!-- Fila Superior: Referencia Cliente, Muestras Físicas y Base Siesa -->
-              <div class="item-meta-controls-row">
-                <!-- Ref Cliente -->
-                <div class="meta-field-group">
-                  <label class="meta-field-label">
-                    <i class="bi bi-tag"></i> Ref. Cliente / Código Interno
-                  </label>
-                  <input class="form-input form-input-sm meta-input" 
-                         [(ngModel)]="item.item_cliente" 
-                         placeholder="Ej: REF-CLIENTE-2025" />
-                </div>
-
-                <!-- Muestras de Aprobación (Solo si requiereMuestra es true en datos generales) -->
-                <div class="meta-field-group sample-group" *ngIf="requiereMuestra">
-                  <div class="meta-label-wrapper">
-                    <label class="meta-field-label">
-                      <i class="bi bi-scissors"></i> Muestras Previas
-                    </label>
-                    <span class="sample-note">Para aprobación</span>
-                  </div>
-                  <div class="sample-input-box">
-                    <input type="number" class="form-input form-input-sm sample-input" 
-                           [(ngModel)]="item.cantidad_muestra" min="0" placeholder="0" />
-                    <span class="sample-unit">uds</span>
-                  </div>
-                </div>
-
-                <!-- Vinculación de Ítem de Referencia Siesa (Solo si es ítem nuevo) -->
-                <div *ngIf="item.isNew" class="meta-field-group ref-siesa-group">
-                  <label class="meta-field-label">
-                    <i class="bi bi-link-45deg"></i> Base de Costeo (Catálogo Siesa)
-                  </label>
-
-                  <div *ngIf="item.ref_siesa_item_rowid" class="ref-siesa-badge-card">
-                    <div class="ref-siesa-badge-info">
-                      <span class="ref-siesa-code">{{ item.ref_siesa_referencia }}</span>
-                      <span class="ref-siesa-desc">{{ item.ref_siesa_descripcion }}</span>
+          <!-- Tabla específica para este grupo anatómico (Compacta) -->
+          <div class="overflow-x-auto rounded-xl border border-slate-200/90 shadow-2xs bg-white">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-slate-600 font-extrabold uppercase tracking-wider text-[9.5px] border-b border-slate-200">
+                  <th class="py-2 px-2.5 w-8 text-center">#</th>
+                  <th class="py-2 px-2.5 w-24 text-center">Prenda</th>
+                  <th class="py-2 px-2.5 min-w-[150px]">Descripción / Ref</th>
+                  <!-- COLUMNAS ESPECÍFICAS DE ESTA REGIÓN ANATÓMICA -->
+                  <th *ngFor="let col of group.columns" class="py-2 px-2 text-center min-w-[110px]" [title]="col.tooltip">
+                    {{ col.label }}
+                  </th>
+                  <th *ngIf="group.columns.length === 0" class="py-2 px-4 text-center text-slate-400 font-bold min-w-[280px]">
+                    Partes Anatómicas & Variantes
+                  </th>
+                  <th class="py-2 px-2 text-center min-w-[110px]">Tallas</th>
+                  <th class="py-2 px-2 w-16 text-center">SAM</th>
+                  <th class="py-2 px-2.5 w-24 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let entry of group.items; trackBy: trackByItemOriginalIndex" [ngClass]="getItemRowClass(entry.item, group.columns)">
+                  <!-- 0. Índice original con indicador de estado -->
+                  <td class="py-2 px-2.5 text-center font-bold text-slate-400 text-xs">
+                    <div class="flex flex-col items-center justify-center gap-0.5">
+                      <span>{{ entry.originalIndex + 1 }}</span>
+                      <ng-container *ngIf="entry.item.moldId && group.columns.length > 0">
+                        <ng-container *ngIf="getItemCompletionStatus(entry.item, group.columns) as compStatus">
+                          <!-- Sin empezar: sin color -->
+                          <span *ngIf="compStatus.status === 'sin_empezar'" 
+                                class="text-[7.5px] px-1 py-0.2 rounded font-medium bg-slate-100 text-slate-400 border border-slate-200" 
+                                title="Sin empezar">
+                            0/{{ compStatus.totalApplicable }}
+                          </span>
+                          <!-- Parcial: amarillo recalcando lo faltante -->
+                          <span *ngIf="compStatus.status === 'parcial'" 
+                                class="text-[7.5px] px-1 py-0.2 rounded font-bold bg-amber-100 text-amber-800 border border-amber-300" 
+                                title="Faltan {{ compStatus.totalApplicable - compStatus.configured }} zonas por configurar">
+                            {{ compStatus.configured }}/{{ compStatus.totalApplicable }}
+                          </span>
+                          <!-- Completo: verde muy clarito -->
+                          <span *ngIf="compStatus.status === 'completo'" 
+                                class="text-[7.5px] px-1 py-0.2 rounded font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" 
+                                title="100% configurado">
+                            ✓
+                          </span>
+                        </ng-container>
+                      </ng-container>
                     </div>
-                    <button class="btn-icon btn-clear-ref" (click)="clearRefItem(item)" title="Quitar vinculación">
-                      <i class="bi bi-x-circle-fill"></i>
-                    </button>
-                  </div>
+                  </td>
 
-                  <div *ngIf="!item.ref_siesa_item_rowid" class="ref-siesa-picker-wrapper">
-                    <button *ngIf="refSearchingIndex !== i" class="btn-open-ref-picker" (click)="openRefSearch(i)">
-                      <i class="bi bi-search"></i> Vincular ítem similar de Siesa
-                    </button>
-
-                    <div *ngIf="refSearchingIndex === i" class="ref-search-inline-box">
-                      <div class="ref-search-input-group">
-                        <i class="bi bi-search"></i>
-                        <input type="text"
-                               class="form-input form-input-sm"
-                               placeholder="Buscar referencia o nombre..."
-                               [(ngModel)]="refSearchQuery"
-                               (input)="searchRefItems()"
-                               autofocus />
-                        <button class="btn-icon btn-cancel-ref" (click)="closeRefSearch()"><i class="bi bi-x-lg"></i></button>
-                      </div>
-
-                      <div *ngIf="isSearchingRef" class="ref-search-loading">
-                        <i class="bi bi-hourglass-split"></i> Buscando en catálogo Siesa...
-                      </div>
-
-                      <div *ngIf="refSearchResults.length > 0" class="ref-search-results">
-                        <div *ngFor="let ref of refSearchResults" class="ref-result-item" (click)="selectRefItem(ref)">
-                          <span class="ref-result-code">{{ ref.f120_referencia || ref.f120_id }}</span>
-                          <span class="ref-result-desc">{{ ref.f120_descripcion || ref.f120_descripcion_corta }}</span>
+                  <!-- 1. Miniatura y Molde con Lupa (Compacto) -->
+                  <td class="py-2 px-2 text-center">
+                    <div class="flex flex-col items-center justify-center gap-0.5">
+                      <div class="relative group cursor-pointer w-10 h-10 rounded-lg border border-slate-200 bg-white shadow-2xs hover:shadow-sm hover:border-blue-400 flex items-center justify-center p-0.5 transition-all overflow-hidden shrink-0"
+                           (click)="openFigurinModal(entry.originalIndex)"
+                           title="Clic para abrir el figurín interactivo y detalle de prenda">
+                        <img *ngIf="getItemThumbnail(entry.item)" [src]="getItemThumbnail(entry.item)" class="w-full h-full object-contain" alt="Molde" />
+                        <div *ngIf="!getItemThumbnail(entry.item)" class="w-full h-full flex items-center justify-center text-slate-300">
+                          <i class="bi bi-palette2 text-sm"></i>
+                        </div>
+                        <div class="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white rounded-lg">
+                          <i class="bi bi-search text-[10px]"></i>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-            <!-- Sección de Molde & Ficha OPM -->
-            <div class="mold-config-container">
-              
-              <!-- Selector Visual Unificado de Molde (Trigger Card) -->
-              <div class="mold-selector-header-box">
-                <!-- Si NO tiene molde seleccionado -->
-                <div *ngIf="!item.moldId" class="empty-mold-picker-card" (click)="openMoldSelector(i)">
-                  <div class="empty-picker-icon">
-                    <i class="bi bi-bounding-box-circles"></i>
-                  </div>
-                  <div class="empty-picker-text">
-                    <span class="empty-picker-title">Seleccionar Molde Base (OPM)</span>
-                    <span class="empty-picker-sub">Explora el catálogo visual por categoría y selecciona el figurín base para diseñar la prenda</span>
-                  </div>
-                  <button type="button" class="btn-picker-trigger">
-                    <i class="bi bi-grid-3x3-gap-fill"></i> Explorar Moldes
-                  </button>
-                </div>
-
-                <!-- Si YA tiene molde seleccionado -->
-                <div *ngIf="item.moldId" class="selected-mold-compact-card">
-                  <div class="selected-mold-info">
-                    <div class="mold-avatar">
-                      <i class="bi bi-palette"></i>
-                    </div>
-                    <div class="selected-mold-meta">
-                      <div class="selected-mold-category">
-                        <span class="cat-pill"><i class="bi bi-tag"></i> {{ item.categoryName || 'Prenda' }}</span>
-                        <span *ngIf="item.totalSamTime" class="sam-pill" title="Tiempo estándar SAM acumulado">
-                          <i class="bi bi-clock-history"></i> {{ item.totalSamTime }} min
-                        </span>
-                        <span *ngIf="item.technicalSpecId || item.opmReference" class="spec-id-pill">
-                          <i class="bi bi-check-circle-fill"></i> {{ item.opmReference || ('OPM ID: ' + item.technicalSpecId) }}
-                        </span>
-                      </div>
-                      <h4 class="selected-mold-name">{{ item.moldName }}</h4>
-                    </div>
-                  </div>
-                  <div class="selected-mold-actions">
-                    <button type="button" class="btn-change-mold" (click)="openMoldSelector(i)">
-                      <i class="bi bi-arrow-repeat"></i> Cambiar Molde
-                    </button>
-                    <button type="button" class="btn-clear-mold" (click)="clearMoldForItem(i)" title="Quitar molde">
-                      <i class="bi bi-x-lg"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Copiar Configuración de otro ítem -->
-              <div *ngIf="getItemsWithMold().length > 0" class="copy-spec-row">
-                <span class="copy-label"><i class="bi bi-clipboard-check"></i> Copiar molde desde:</span>
-                <div class="copy-buttons-list">
-                  <button *ngFor="let src of getItemsWithMold()"
-                          class="btn-copy-spec"
-                          [disabled]="src.index === i"
-                          (click)="copySpecFromItem(src.index, i)">
-                    <i class="bi bi-copy"></i> {{ src.item.descripcion | slice:0:24 }}{{ src.item.descripcion.length > 24 ? '...' : '' }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Asistente de Diseño por Pasos (Stepper OPM con figurín y tallas integradas) -->
-              <div *ngIf="item.moldId" [id]="'mold-container-' + i" class="spec-generator-wrapper mt-3">
-                <app-mold-opm-stepper
-                  [item]="item"
-                  [itemIndex]="i"
-                  (onOpmSaved)="onItemOpmSaved(i, $event)"
-                  (onChangeMold)="openMoldSelector(i)"
-                  (onRemoveMold)="clearMoldForItem(i)">
-                </app-mold-opm-stepper>
-              </div>
-            </div>
-
-            <!-- Desglose por Tallas (Matriz Rápida y Amplia - Solo si NO tiene molde vinculado) -->
-            <div class="tallas-section mt-3" *ngIf="!item.moldId">
-              <div class="tallas-header">
-                <div class="tallas-header-left">
-                  <span class="tallas-title"><i class="bi bi-grid-3x3-gap"></i> Distribución por Tallas</span>
-                  <span class="tallas-live-counter" *ngIf="getItemTotal(item) > 0">
-                    {{ getItemTotal(item) | number }} uds. totales
-                  </span>
-                </div>
-
-                <div class="tallas-header-actions">
-                  <button type="button" class="btn-add-talla" (click)="addTalla(item)">
-                    <i class="bi bi-plus-lg"></i> Agregar Talla
-                  </button>
-                </div>
-              </div>
-
-              <!-- Barra de Tallas Disponibles de Siesa (del catálogo de la prenda) -->
-              <div *ngIf="item.availableExtensions && item.availableExtensions.length > 0" class="siesa-available-bar">
-                <span class="bar-label"><i class="bi bi-tag-fill"></i> Tallas Siesa disponibles:</span>
-                <div class="bar-chips">
-                  <button *ngFor="let ext of item.availableExtensions"
-                          type="button"
-                          class="chip-talla-siesa"
-                          [class.chip-active]="isTallaInItem(item, ext.talla)"
-                          (click)="toggleSiesaTalla(item, ext)"
-                          [title]="isTallaInItem(item, ext.talla) ? 'Talla en la lista (clic para retirar)' : 'Clic para agregar a la matriz'">
-                    <i class="bi" [ngClass]="isTallaInItem(item, ext.talla) ? 'bi-check-circle-fill' : 'bi-plus'"></i>
-                    <span>{{ ext.talla }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Barra Rápida de Tallas Estándar (Letras) para agregar con 1 clic -->
-              <div class="quick-preset-bar">
-                <span class="preset-label">Agregar rápido:</span>
-                <div class="preset-chips">
-                  <button *ngFor="let tl of tallasLetra"
-                          type="button"
-                          class="chip-preset-letter"
-                          [class.chip-already]="isTallaInItem(item, tl)"
-                          (click)="addSpecificTalla(item, tl)"
-                          title="Agregar talla {{ tl }}">
-                    + {{ tl }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Matriz de Tallas en Fila -->
-              <div *ngIf="item.tallas.length > 0" class="tallas-matrix-container">
-                <div class="tallas-matrix-grid">
-                  <div *ngFor="let t of item.tallas; let ti = index" class="talla-matrix-cell">
-                    <!-- Cabecera de la celda de talla (Nombre de talla + botón borrar) -->
-                    <div class="talla-matrix-head">
-                      <!-- Selector de talla para ítems libres/nuevos -->
-                      <select *ngIf="!t.siesa_item_ext_rowid" class="talla-matrix-select" [(ngModel)]="t.talla">
-                        <option value="" disabled>Talla...</option>
-                        <optgroup label="Letras">
-                          <option *ngFor="let tl of tallasLetra" [value]="tl">{{ tl }}</option>
-                        </optgroup>
-                        <optgroup label="Numéricas">
-                          <option *ngFor="let tn of tallasNumericas" [value]="tn">{{ tn }}</option>
-                        </optgroup>
-                        <option *ngIf="t.talla && !tallasLetra.includes(t.talla) && !tallasNumericas.includes(t.talla)" [value]="t.talla">
-                          {{ t.talla }}
-                        </option>
-                      </select>
-
-                      <!-- Badge fijo si viene de extensión Siesa -->
-                      <span *ngIf="t.siesa_item_ext_rowid" class="talla-matrix-siesa-label" title="Talla oficial vinculada a Siesa">
-                        {{ t.talla }}
-                      </span>
-
-                      <button type="button" class="talla-matrix-remove" (click)="removeTalla(item, ti)" title="Eliminar talla">
-                        <i class="bi bi-x"></i>
+                      <button *ngIf="entry.item.moldId" 
+                              type="button" 
+                              (click)="openMoldSelector(entry.originalIndex)" 
+                              class="text-[8.5px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-1 py-0.2 rounded border border-slate-300 truncate max-w-[90px] cursor-pointer"
+                              [title]="entry.item.moldName + ' (Cambiar)'">
+                        {{ entry.item.moldName }}
+                      </button>
+                      <button *ngIf="!entry.item.moldId" 
+                              type="button" 
+                              (click)="openMoldSelector(entry.originalIndex)" 
+                              class="text-[8.5px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-1 py-0.2 rounded border border-amber-300 cursor-pointer">
+                        + Molde
                       </button>
                     </div>
+                  </td>
 
-                    <!-- Input de cantidad -->
-                    <div class="talla-matrix-body">
-                      <input type="number" 
-                             class="talla-matrix-qty-input" 
-                             [(ngModel)]="t.cantidad" 
-                             min="0" 
-                             placeholder="0" />
-                      <span class="talla-matrix-unit">uds</span>
+                  <!-- 2. Descripción e Ítem (Editable al dar clic) -->
+                  <td class="py-2 px-2.5">
+                    <!-- Modo Edición Inline -->
+                    <div *ngIf="editingItemIndex === entry.originalIndex" 
+                         (click)="$event.stopPropagation()" 
+                         class="space-y-1.5 p-1.5 bg-slate-50 border border-slate-300 rounded-lg shadow-2xs">
+                      <div>
+                        <label class="text-[9px] font-bold text-slate-800 block mb-0.5">Nombre / Prenda:</label>
+                        <input type="text"
+                               [(ngModel)]="editDescTemp"
+                               (keyup.enter)="saveEditItem(entry.originalIndex, $event)"
+                               (keyup.escape)="cancelEditItem($event)"
+                               class="w-full text-xs font-bold px-2 py-1 bg-white border border-slate-300 rounded focus:outline-blue-600 shadow-2xs"
+                               placeholder="Nombre prenda..." />
+                      </div>
+                      <div>
+                        <label class="text-[9px] font-bold text-slate-600 block mb-0.5">Ref. Cliente / SIESA:</label>
+                        <input type="text"
+                               [(ngModel)]="editRefTemp"
+                               (keyup.enter)="saveEditItem(entry.originalIndex, $event)"
+                               (keyup.escape)="cancelEditItem($event)"
+                               class="w-full text-[11px] font-mono px-2 py-0.5 bg-white border border-slate-300 rounded focus:outline-blue-600"
+                               placeholder="Ref cliente..." />
+                      </div>
+                      <div class="flex items-center justify-end gap-1 pt-0.5">
+                        <button type="button"
+                                (click)="cancelEditItem($event)"
+                                class="px-2 py-0.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded transition-colors cursor-pointer">
+                          Cancelar
+                        </button>
+                        <button type="button"
+                                (click)="saveEditItem(entry.originalIndex, $event)"
+                                class="px-2.5 py-0.5 text-[10px] font-bold text-white bg-slate-800 hover:bg-slate-900 rounded shadow-2xs transition-colors cursor-pointer flex items-center gap-1">
+                          <i class="bi bi-check-lg"></i> Guardar
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <!-- Botón rápido + para añadir otra celda al final -->
-                  <button type="button" 
-                          class="talla-matrix-add-tile" 
-                          (click)="addTalla(item)" 
-                          title="Agregar otra talla a la matriz">
-                    <i class="bi bi-plus-lg"></i>
-                    <span>Talla</span>
-                  </button>
-                </div>
-              </div>
+                    <!-- Modo Vista (Clic para editar) -->
+                    <div *ngIf="editingItemIndex !== entry.originalIndex"
+                         (click)="startEditItem(entry.originalIndex, $event)"
+                         class="group cursor-pointer p-1 -m-1 rounded-lg hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
+                         title="Clic para editar descripción y referencia">
+                      <div class="flex items-center justify-between gap-1">
+                        <span class="font-extrabold text-slate-900 text-xs block leading-tight truncate max-w-[170px]" [title]="entry.item.descripcion">
+                          {{ entry.item.descripcion }}
+                        </span>
+                        <i class="bi bi-pencil-square text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"></i>
+                      </div>
+                      <div class="flex items-center gap-1 flex-wrap mt-0.5">
+                        <span *ngIf="entry.item.siesa_referencia" class="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-slate-700 font-mono font-bold text-[9px]">
+                          {{ entry.item.siesa_referencia }}
+                        </span>
+                        <span *ngIf="entry.item.isNew" class="px-1 py-0.2 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold text-[9px]">
+                          Nuevo
+                        </span>
+                        <span *ngIf="entry.item.item_cliente" class="text-[9px] text-slate-500 font-mono">
+                          Ref: {{ entry.item.item_cliente }}
+                        </span>
+                        <span *ngIf="!entry.item.item_cliente && !entry.item.siesa_referencia" class="text-[9px] text-slate-300 italic">
+                          + Ref
+                        </span>
+                      </div>
+                    </div>
+                  </td>
 
-              <div *ngIf="item.tallas.length === 0" class="tallas-empty-hero">
-                <p class="empty-hero-title">Sin tallas configuradas</p>
-                <p class="empty-hero-desc">Haz clic en las tallas disponibles arriba o en <strong>+ Agregar Talla</strong> para ingresar las cantidades.</p>
-              </div>
-            </div>
+                  <!-- 3..N CELDAS DE LAS REGIONES EXACTAS DE ESTE GRUPO ANATÓMICO (Abre Selector Flotante de Variantes) -->
+                  <td *ngFor="let col of group.columns" class="py-2 px-1.5 text-center">
+                    <ng-container *ngIf="getItemZoneSelectionForColumn(entry.item, col) as zoneSel">
+                      <button *ngIf="!zoneSel.notApplicable"
+                              type="button" 
+                              (click)="openZoneVariantsModal(entry.originalIndex, col)"
+                              class="w-full py-1 px-1.5 rounded-md border text-[10.5px] flex items-center justify-between gap-1 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+                              [ngClass]="getZonePillClassForCol(entry.item, col, group.columns)"
+                              [title]="col.label + ': ' + zoneSel.name + (getItemCompletionStatus(entry.item, group.columns).status === 'parcial' && !zoneSel.isConfigured ? ' (Falta configurar esta zona)' : '')">
+                        
+                        <!-- 1. Completo: verde muy clarito con check -->
+                        <span *ngIf="zoneSel.isConfigured" class="truncate text-left flex items-center gap-1 font-bold text-emerald-800">
+                          <i class="bi bi-check-lg text-emerald-600 text-[10px] shrink-0"></i>
+                          <span class="truncate">{{ zoneSel.name }}</span>
+                        </span>
 
+                        <!-- 2. Parcial: recalca lo faltante en amarillo -->
+                        <span *ngIf="!zoneSel.isConfigured && getItemCompletionStatus(entry.item, group.columns).status === 'parcial'" 
+                              class="truncate text-left flex items-center gap-1 font-bold text-amber-900">
+                          <i class="bi bi-exclamation-circle-fill text-amber-500 text-[9px] shrink-0"></i>
+                          <span class="truncate">Falta</span>
+                        </span>
+
+                        <!-- 3. Sin empezar: sin color, neutro -->
+                        <span *ngIf="!zoneSel.isConfigured && getItemCompletionStatus(entry.item, group.columns).status !== 'parcial'" 
+                              class="truncate text-left text-slate-400">
+                          Por definir
+                        </span>
+
+                        <!-- Indicador sutil de aplique opcional anclado -->
+                        <span *ngIf="getItemZoneOptionalCount(entry.item, col) as optCount"
+                              class="shrink-0 inline-flex items-center gap-0.5 text-amber-600/85 hover:text-amber-700"
+                              [title]="optCount === 1 ? 'Tiene 1 aplique opcional anclado' : 'Tiene ' + optCount + ' apliques opcionales anclados'">
+                          <i class="bi bi-gem text-[8.5px]"></i>
+                          <span *ngIf="optCount > 1" class="text-[8px] font-bold">{{ optCount }}</span>
+                        </span>
+
+                        <i class="bi bi-chevron-right text-[8px] shrink-0 opacity-40"></i>
+                      </button>
+                      <span *ngIf="zoneSel.notApplicable" class="text-[9.5px] text-slate-300 italic font-mono block text-center" title="No aplica a este modelo">
+                        —
+                      </span>
+                    </ng-container>
+                  </td>
+
+                  <!-- Si el grupo no tiene columnas anatómicas (ej. SIN_MOLDE) -->
+                  <td *ngIf="group.columns.length === 0" class="py-2 px-3 text-center">
+                    <div class="inline-flex items-center gap-1.5 py-1 px-3 bg-amber-50/80 border border-dashed border-amber-300/80 rounded-lg text-amber-800 text-[11px] font-medium">
+                      <i class="bi bi-info-circle-fill text-amber-500"></i>
+                      <span>Sin molde asignado · Selecciona un molde en <strong>+ Molde</strong> para habilitar sus opciones</span>
+                    </div>
+                  </td>
+
+                  <!-- Tallas & Cantidad (Compacto) -->
+                  <td class="py-2 px-1.5 text-center">
+                    <button type="button"
+                            (click)="openTallasQuickModal(entry.originalIndex)"
+                            class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5 text-xs font-black"
+                            title="Editar tallas y cantidades">
+                      <span>{{ getItemTotal(entry.item) | number }} uds</span>
+                      <span class="text-[9.5px] font-normal text-slate-500">({{ entry.item.tallas.length }}T)</span>
+                    </button>
+                  </td>
+
+                  <!-- SAM -->
+                  <td class="py-2 px-1.5 text-center">
+                    <span class="font-mono font-bold text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-[11px] inline-block">
+                      {{ entry.item.totalSamTime || 0 }}m
+                    </span>
+                  </td>
+
+                  <!-- Acciones (Compacto: Duplicar y Eliminar) -->
+                  <td class="py-2 px-2.5 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                      <button type="button" 
+                              (click)="duplicateItem(entry.originalIndex)" 
+                              class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+                              title="Duplicar">
+                        <i class="bi bi-copy text-[10px]"></i>
+                      </button>
+                      <button type="button" 
+                              (click)="removeItem(entry.originalIndex)" 
+                              class="w-6 h-6 rounded-md bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer"
+                              title="Eliminar">
+                        <i class="bi bi-trash3 text-[10px]"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -660,112 +643,23 @@
 
       <button class="btn-save btn-hero-save" (click)="save()" [disabled]="isSaving">
         <i class="bi" [ngClass]="isSaving ? 'bi-hourglass-split' : 'bi-check-circle-fill'"></i>
-        {{ isSaving ? 'Guardando Solicitud...' : (isEditMode ? 'Guardar Cambios de Solicitud' : 'Finalizar y Crear Solicitud') }}
+        {{ isSaving ? 'Guardando OPM...' : (isEditMode ? 'Guardar Cambios de OPM' : 'Finalizar y Crear OPM') }}
       </button>
     </div>
   </div>
 
   <!-- Modal Selector Visual de Moldes -->
-  <div *ngIf="showMoldSelectorModal" class="modal-backdrop-custom" (click)="closeMoldSelector()">
-    <div class="mold-modal-container" (click)="$event.stopPropagation()">
-      <!-- Modal Header -->
-      <div class="mold-modal-header">
-        <div class="mold-modal-title-group">
-          <div class="modal-icon-badge"><i class="bi bi-grid-3x3-gap"></i></div>
-          <div>
-            <h3 class="mold-modal-title">Seleccionar Molde Base</h3>
-            <p class="mold-modal-sub" *ngIf="moldSelectorItemIndex !== null">
-              Para: <strong>{{ items[moldSelectorItemIndex].descripcion }}</strong>
-            </p>
-          </div>
-        </div>
-        <button class="btn-close-modal" (click)="closeMoldSelector()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="mold-modal-body">
-        <!-- Filter Bar: Search + Category Pills -->
-        <div class="modal-filter-bar">
-          <div class="modal-search-box">
-            <i class="bi bi-search"></i>
-            <input type="text"
-                   class="modal-search-input"
-                   placeholder="Buscar molde por nombre o palabra clave..."
-                   [(ngModel)]="moldSearchQuery"
-                   autofocus />
-            <button *ngIf="moldSearchQuery" class="btn-clear-search" (click)="moldSearchQuery = ''"><i class="bi bi-x-circle-fill"></i></button>
-          </div>
-
-          <div class="modal-category-pills">
-            <button type="button"
-                    class="modal-cat-pill"
-                    [class.active]="selectedModalCategoryId === null"
-                    (click)="selectedModalCategoryId = null">
-              <span>Todos</span>
-              <span class="cat-pill-count">{{ allMolds.length }}</span>
-            </button>
-            <button *ngFor="let cat of categories"
-                    type="button"
-                    class="modal-cat-pill"
-                    [class.active]="selectedModalCategoryId === cat.id"
-                    (click)="selectedModalCategoryId = cat.id">
-              <span>{{ cat.name }}</span>
-              <span class="cat-pill-count">{{ getCategoryMoldCount(cat.id) }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Molds Cards Container -->
-        <div class="mold-cards-grid-container">
-          <!-- Loading State -->
-          <div *ngIf="isLoadingMolds" class="mold-modal-loading">
-            <div class="spinner-sm"></div>
-            <span>Cargando catálogo de moldes...</span>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="!isLoadingMolds && filteredModalMolds.length === 0" class="mold-modal-empty">
-            <i class="bi bi-bounding-box-circles"></i>
-            <p class="empty-title">No se encontraron moldes</p>
-            <p class="empty-sub">Prueba seleccionando otra categoría o cambiando el término de búsqueda.</p>
-          </div>
-
-          <!-- Grid of Molds -->
-          <div *ngIf="!isLoadingMolds && filteredModalMolds.length > 0" class="modal-molds-grid">
-            <div *ngFor="let m of filteredModalMolds" 
-                 class="modal-mold-card"
-                 [class.selected]="moldSelectorItemIndex !== null && items[moldSelectorItemIndex]?.moldId === m.id"
-                 (click)="selectMoldFromModal(m)">
-              
-              <div class="modal-mold-img-wrapper">
-                <img *ngIf="getMoldPreviewImage(m)" [src]="getMoldPreviewImage(m)" [alt]="m.name" class="modal-mold-img" />
-                <div *ngIf="!getMoldPreviewImage(m)" class="modal-mold-placeholder">
-                  <i class="bi bi-palette2"></i>
-                </div>
-                <span class="mold-parts-tag" *ngIf="m.parts?.length">
-                  <i class="bi bi-puzzle"></i> {{ m.parts.length }} partes
-                </span>
-                <span class="mold-selected-check" *ngIf="moldSelectorItemIndex !== null && items[moldSelectorItemIndex]?.moldId === m.id">
-                  <i class="bi bi-check-circle-fill"></i> Seleccionado
-                </span>
-              </div>
-
-              <div class="modal-mold-info">
-                <div class="modal-mold-category-tag">{{ m.category?.name || 'Prenda' }}</div>
-                <h4 class="modal-mold-title">{{ m.name }}</h4>
-                <p class="modal-mold-desc" *ngIf="m.description">{{ m.description }}</p>
-                <div class="modal-mold-footer">
-                  <span class="btn-select-mold-pill">
-                    <i class="bi bi-check2"></i> Seleccionar
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-mold-selector-modal
+    *ngIf="showMoldSelectorModal"
+    [itemDescription]="moldSelectorItemIndex !== null ? items[moldSelectorItemIndex].descripcion : ''"
+    [selectedMoldId]="moldSelectorItemIndex !== null ? items[moldSelectorItemIndex].moldId : null"
+    [categories]="categories"
+    [allMolds]="allMolds"
+    [isLoadingMolds]="isLoadingMolds"
+    [initialCategoryId]="selectedModalCategoryId"
+    (onSelect)="selectMoldFromModal($event)"
+    (onClose)="closeMoldSelector()">
+  </app-mold-selector-modal>
 
   <!-- Modal de Búsqueda Siesa -->
   <app-item-search-modal
@@ -774,4 +668,53 @@
     (onSelect)="addItemFromSiesa($event)"
     (onClose)="showItemSearch = false">
   </app-item-search-modal>
+
+  <!-- Modal Visor & Editor de Figurín (OPM) -->
+  <app-figurin-opm-modal
+    *ngIf="showFigurinModal && activeFigurinItem"
+    [item]="activeFigurinItem"
+    [itemIndex]="activeFigurinItemIndex || 0"
+    (onOpmSaved)="onItemOpmSavedFromModal($event)"
+    (onChangeMold)="openMoldSelectorFromModal()"
+    (onRemoveMold)="clearMoldFromModal()"
+    (onClose)="closeFigurinModal()">
+  </app-figurin-opm-modal>
+
+  <!-- Modal Rápido de Tallas y Cantidades -->
+  <app-tallas-quick-modal
+    *ngIf="showTallasQuickModal && activeTallasItemIndex !== null && items[activeTallasItemIndex]"
+    [item]="items[activeTallasItemIndex]"
+    [tallasLetra]="tallasLetra"
+    [tallasNumericas]="tallasNumericas"
+    (onAddTalla)="addSpecificTalla(items[activeTallasItemIndex], $event)"
+    (onRemoveTalla)="removeTalla(items[activeTallasItemIndex], $event)"
+    (onTallasChanged)="saveToLocalStorage()"
+    (onClose)="closeTallasQuickModal()">
+  </app-tallas-quick-modal>
+
+  <!-- ==================== SELECTOR FLOTANTE DE VARIANTES DE ZONA (DIRECTO DESDE LA TABLA) ==================== -->
+  <app-zone-variants-modal
+    *ngIf="showZoneVariantsModal && activeZoneCol"
+    [activeZoneCol]="activeZoneCol"
+    [activeZoneTitle]="activeZoneTitle"
+    [activeZoneSubtitle]="activeZoneSubtitle"
+    [activeZoneDisplayParts]="activeZoneDisplayParts"
+    [activePartInModal]="activePartInModal"
+    [zoneModalStep]="zoneModalStep"
+    [isLoadingZoneParts]="isLoadingZoneParts"
+    [item]="activeZoneItemIndex !== null ? items[activeZoneItemIndex] : null"
+    [observation]="activeZoneObservation"
+    [anchoredGeneralParts]="activeZoneAnchoredParts"
+    (onChoosePart)="choosePartInZoneModal($event)"
+    (onBackToParts)="backToZonePartsList()"
+    (onSelectVariant)="selectVariantForPart($event.part, $event.type)"
+    (onUnselectVariant)="unselectVariantForPart($event)"
+    (onObservationChange)="updateActiveZoneObservation($event)"
+    (onAddOptional)="addOptionalFromZoneModal()"
+    (onRemoveAnchor)="removeAnchoredPartFromZoneModal($event)"
+    (onSelectOptionalVariant)="selectOptionalVariantFromZoneModal($event)"
+    (onConfirm)="closeZoneVariantsModal()"
+    (onClose)="closeZoneVariantsModal()">
+  </app-zone-variants-modal>
+
 </div>

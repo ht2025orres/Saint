@@ -1,38 +1,49 @@
-<div class="p-6 bg-slate-50 min-h-screen">
+<div class="px-3 sm:px-6 py-3.5 bg-slate-50 min-h-screen">
   <!-- SPINNER -->
   <div *ngIf="isLoading" class="p-16 text-center">
     <div class="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
     <p class="text-xs font-bold text-slate-500">Cargando detalle de la muestra...</p>
   </div>
 
-  <div *ngIf="!isLoading && muestra" class="max-w-7xl mx-auto space-y-6">
+  <div *ngIf="!isLoading && muestra" class="max-w-[1680px] w-full mx-auto space-y-3">
     
-    <!-- BARRA SUPERIOR / CABECERA -->
-    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex justify-between items-center flex-wrap gap-4">
-      <div class="flex items-center gap-3">
-        <button (click)="goBack()" class="w-10 h-10 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border border-slate-200 flex items-center justify-center transition-all shadow-2xs">
-          <i class="bi bi-arrow-left text-lg font-bold"></i>
+    <!-- BARRA SUPERIOR / CABECERA COMPACTA -->
+    <div class="bg-white rounded-2xl px-4 py-2.5 sm:py-3 border border-slate-200/80 shadow-2xs flex justify-between items-center flex-wrap gap-2.5">
+      <div class="flex items-center gap-3 min-w-0">
+        <button (click)="goBack()" title="Volver al listado" class="w-8 h-8 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border border-slate-200 flex items-center justify-center transition-all shadow-2xs shrink-0 cursor-pointer">
+          <i class="bi bi-arrow-left text-base font-bold"></i>
         </button>
-        <div>
+        <div class="min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-black rounded-full uppercase tracking-wider">
-              Módulo de Muestras & Taller Técnico
+            <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-[9px] font-black rounded-full uppercase tracking-wider shrink-0">
+              Muestras & Taller Técnico
             </span>
-            <span class="text-xs font-bold text-slate-400">·</span>
-            <h1 class="text-xl font-black text-slate-900 tracking-tight mb-0">{{ muestra.codigo }}</h1>
+            <span class="text-xs font-bold text-slate-300">·</span>
+            <h1 class="text-base sm:text-lg font-black text-slate-900 tracking-tight mb-0 truncate">{{ muestra.codigo }}</h1>
           </div>
-          <p class="text-xs text-slate-500 font-medium mt-1 mb-0 flex items-center gap-1.5 flex-wrap">
-            <i class="bi bi-building text-purple-600"></i>
-            <strong class="text-slate-800 font-bold">{{ muestra.cliente_nombre }}</strong>
-            <span *ngIf="muestra.cliente_nit" class="text-slate-400 font-mono">(NIT: {{ muestra.cliente_nit }})</span>
-            <span *ngIf="muestra.created_at" class="text-slate-400">· Creado: {{ muestra.created_at | date:'dd/MM/yyyy' }}</span>
+          <p class="text-xs text-slate-500 font-medium mt-0.5 mb-0 flex items-center gap-2 flex-wrap">
+            <span class="flex items-center gap-1 text-slate-800 font-bold">
+              <i class="bi bi-building text-purple-600"></i>
+              {{ muestra.cliente_nombre }}
+            </span>
+            <span *ngIf="muestra.cliente_nit" class="text-slate-400 font-mono text-[11px]">(NIT: {{ muestra.cliente_nit }})</span>
+            
+            <!-- Creador / Responsable de la carga -->
+            <span *ngIf="muestra.usuario_creacion_nombre || muestra.creador" class="text-slate-600 text-[11px] flex items-center gap-1 font-semibold bg-purple-50/80 px-2 py-0.5 rounded-md border border-purple-200/60">
+              <i class="bi bi-person-badge-fill text-purple-700"></i>
+              <span class="text-slate-500 font-normal">Creado por:</span>
+              <span class="text-purple-950 font-black">{{ muestra.usuario_creacion_nombre || muestra.creador?.name || (muestra.creador?.nombres ? (muestra.creador?.nombres + ' ' + (muestra.creador?.apellidos || '')) : '') }}</span>
+              <span *ngIf="muestra.creador?.cargo" class="text-purple-600/80 text-[10px] font-medium">· {{ muestra.creador.cargo }}</span>
+            </span>
+
+            <span *ngIf="muestra.created_at" class="text-slate-400 text-[11px]">· Creado: {{ muestra.created_at | date:'dd/MM/yyyy' }}</span>
           </p>
         </div>
       </div>
 
       <!-- ESTADO Y ACCIONES DE FLUJO -->
-      <div class="flex items-center gap-3 flex-wrap">
-        <span class="px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-2xs border flex items-center gap-1.5"
+      <div class="flex items-center gap-2 flex-wrap shrink-0">
+        <span class="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-2xs border flex items-center gap-1.5"
               [ngClass]="{
                 'bg-amber-50 text-amber-800 border-amber-200': !muestra.estado_muestra || muestra.estado_muestra === 'PENDIENTE',
                 'bg-indigo-50 text-indigo-800 border-indigo-200': muestra.estado_muestra === 'EN_PROCESO',
@@ -48,78 +59,93 @@
 
         <button *ngIf="!muestra.estado_muestra || muestra.estado_muestra === 'PENDIENTE'"
                 (click)="cambiarEstadoMuestra('EN_PROCESO')"
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-play-circle-fill"></i> Iniciar Confección
         </button>
 
         <button *ngIf="muestra.estado_muestra === 'EN_PROCESO'"
                 (click)="cambiarEstadoMuestra('COMPLETADO')"
-                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-check-circle-fill"></i> Completar Muestra
         </button>
       </div>
     </div>
 
-    <!-- TARJETAS DE INFORMACIÓN CLAVE Y TIEMPOS SAM -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- TARJETAS DE INFORMACIÓN CLAVE (KPIS COMPACTAS) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
       
       <!-- 1. Fecha Entrega -->
-      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-lg flex-shrink-0">
+      <div class="bg-white rounded-xl px-3.5 py-2.5 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center text-sm flex-shrink-0">
           <i class="bi bi-calendar-check-fill"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Entrega de Muestra</span>
-          <div class="text-sm font-black text-slate-800 truncate">
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Entrega de Muestra</span>
+          <div class="text-xs sm:text-sm font-black text-slate-800 truncate">
             {{ (muestra.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'No asignada' }}
           </div>
         </div>
       </div>
 
       <!-- 2. Cantidad / Prendas -->
-      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg flex-shrink-0">
+      <div class="bg-white rounded-xl px-3.5 py-2.5 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-sm flex-shrink-0">
           <i class="bi bi-scissors"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Ítems a Muestrear</span>
-          <div class="text-sm font-black text-slate-800 truncate">
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Ítems a Muestrear</span>
+          <div class="text-xs sm:text-sm font-black text-slate-800 truncate">
             {{ muestra.items?.length || 0 }} Ítems ({{ getTotalUnidades() }} Uds)
           </div>
         </div>
       </div>
 
       <!-- 3. TIEMPO TOTAL SAM -->
-      <div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-2xl p-4 text-white shadow-md flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm text-purple-200 flex items-center justify-center text-lg flex-shrink-0">
+      <div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl px-3.5 py-2.5 text-white shadow-xs flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm text-purple-200 flex items-center justify-center text-sm flex-shrink-0">
           <i class="bi bi-stopwatch-fill"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[10px] font-black text-purple-200 uppercase tracking-wider block">Tiempo Total SAM (Est.)</span>
-          <div class="text-base font-black text-white truncate">
+          <span class="text-[9px] font-black text-purple-200 uppercase tracking-wider block">Tiempo Total SAM (Est.)</span>
+          <div class="text-xs sm:text-sm font-black text-white truncate">
             {{ getSolicitudTotalTime() | number:'1.2-2' }} min
           </div>
         </div>
       </div>
 
       <!-- 4. Especificación Empaque -->
-      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-pink-50 text-pink-700 flex items-center justify-center text-lg flex-shrink-0">
+      <div class="bg-white rounded-xl px-3.5 py-2.5 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-pink-50 text-pink-700 flex items-center justify-center text-sm flex-shrink-0">
           <i class="bi bi-box-seam-fill"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Empaque / Despacho</span>
-          <div class="text-sm font-black text-slate-800 truncate">
-            {{ muestra.material_empaque || 'Estándar' }} / {{ muestra.tipo_empaque || 'Bolsa Individual' }}
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Empaque / Despacho</span>
+          <div class="text-xs sm:text-sm font-black text-slate-800 truncate" [title]="(muestra.material_empaque || 'Estándar') + ' / ' + (muestra.tipo_empaque || 'Bolsa Individual')">
+            {{ muestra.material_empaque || 'Estándar' }} / {{ muestra.tipo_empaque || 'Individual' }}
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- OBSERVACIONES GENERALES DE LA MUESTRA (SUBIDAS AQUÍ ARRIBA) -->
+    <div *ngIf="muestra.observaciones" class="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3 shadow-2xs flex items-start gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5 shadow-2xs">
+        <i class="bi bi-chat-left-text-fill"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <span class="text-[10px] font-black uppercase tracking-wider text-amber-900 block mb-0.5">
+          Observaciones Generales de la Solicitud / Muestra:
+        </span>
+        <p class="text-xs text-slate-700 font-medium leading-relaxed mb-0">
+          {{ muestra.observaciones }}
+        </p>
       </div>
     </div>
 
     <!-- ═════════════════════════════════════════════════════════════════════════ -->
     <!-- PANEL DE INSUMOS, TELAS Y TRAZABILIDAD DE ABASTECIMIENTO                 -->
     <!-- ═════════════════════════════════════════════════════════════════════════ -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 space-y-3.5">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-3">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shadow-sm">
@@ -156,6 +182,9 @@
         <div class="flex items-center gap-2">
           <button (click)="loadMateriales()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer" title="Recargar materiales">
             <i class="bi bi-arrow-clockwise text-sm" [class.animate-spin]="isLoadingMateriales"></i>
+          </button>
+          <button (click)="despacharTodosLosMateriales()" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all" title="Registrar entrega o despacho total de insumos">
+            <i class="bi bi-truck text-xs"></i> Despachar Insumos
           </button>
           <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all">
             <i class="bi bi-plus-circle-fill"></i> + Agregar Insumo / Tela
@@ -203,96 +232,202 @@
         </button>
       </div>
 
-      <div *ngIf="!isLoadingMateriales && materialesData.materiales?.length > 0" class="overflow-x-auto">
+      <div *ngIf="!isLoadingMateriales && materialesAgrupados && materialesAgrupados.length > 0" class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
+              <th class="p-2.5 w-7 text-center"></th>
               <th class="p-2.5">Tipo / Grupo</th>
-              <th class="p-2.5">Descripción / Referencia</th>
-              <th class="p-2.5">Color</th>
+              <th class="p-2.5">Material & Especificación</th>
+              <th class="p-2.5 text-center" title="Número de prendas que requieren este material">Prendas</th>
+              <th class="p-2.5 text-center">Estado Definición</th>
               <th class="p-2.5 text-center">Requerido</th>
               <th class="p-2.5 text-center">Entregado</th>
               <th class="p-2.5 text-center">Estado Entrega</th>
-              <th class="p-2.5">Origen / Asignado Por</th>
               <th class="p-2.5 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr *ngFor="let mat of materialesData.materiales" class="hover:bg-slate-50 transition-colors">
-              <td class="p-2.5 font-bold">
-                <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black"
-                      [ngClass]="{
-                        'bg-purple-100 text-purple-800': mat.tipo_material === 'TELA',
-                        'bg-blue-100 text-blue-800': mat.tipo_material === 'INSUMO',
-                        'bg-slate-100 text-slate-700': mat.tipo_material === 'AVIO'
-                      }">
-                  {{ mat.tipo_material }}
-                </span>
-                <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{ mat.grupo_insumo }}</span>
-              </td>
-              <td class="p-2.5">
-                <div class="font-bold text-slate-800">{{ mat.siesa_descripcion || mat.descripcion_personalizada }}</div>
-                <div *ngIf="mat.siesa_referencia" class="text-[10px] text-indigo-600 font-mono">
-                  Ref SIESA: {{ mat.siesa_referencia }}
-                </div>
-              </td>
-              <td class="p-2.5 text-slate-600">
-                {{ mat.siesa_color || 'Estándar' }}
-              </td>
-              <td class="p-2.5 text-center font-bold text-slate-800 font-mono">
-                {{ mat.cantidad_requerida }} {{ mat.unidad_medida }}
-              </td>
-              <td class="p-2.5 text-center font-bold font-mono" [ngClass]="{
-                'text-emerald-700 font-black': (mat.cantidad_entregada || 0) >= (mat.cantidad_requerida || 0),
-                'text-amber-700': (mat.cantidad_entregada || 0) > 0 && (mat.cantidad_entregada || 0) < (mat.cantidad_requerida || 0),
-                'text-slate-400': (mat.cantidad_entregada || 0) === 0
-              }">
-                {{ mat.cantidad_entregada || 0 }} {{ mat.unidad_medida }}
-              </td>
-              <td class="p-2.5 text-center">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border inline-flex items-center gap-1"
-                      [ngClass]="{
-                        'bg-emerald-50 text-emerald-800 border-emerald-300': mat.estado_entrega === 'ENTREGADO',
-                        'bg-amber-50 text-amber-800 border-amber-300': mat.estado_entrega === 'PARCIAL',
-                        'bg-rose-50 text-rose-800 border-rose-300': mat.estado_entrega === 'NO_DISPONIBLE',
-                        'bg-slate-100 text-slate-600 border-slate-200': mat.estado_entrega === 'PENDIENTE'
-                      }">
-                  <i class="bi bi-circle-fill text-[6px]" [ngClass]="{
-                    'text-emerald-500': mat.estado_entrega === 'ENTREGADO',
-                    'text-amber-500': mat.estado_entrega === 'PARCIAL',
-                    'text-rose-500': mat.estado_entrega === 'NO_DISPONIBLE',
-                    'text-slate-400': mat.estado_entrega === 'PENDIENTE'
-                  }"></i>
-                  {{ mat.estado_entrega }}
-                </span>
-                <span *ngIf="mat.fecha_entrega" class="text-[9px] text-slate-400 block font-normal mt-0.5">
-                  {{ mat.fecha_entrega | date:'dd/MM HH:mm' }}
-                </span>
-              </td>
-              <td class="p-2.5 text-slate-500 text-[11px]">
-                <span class="font-bold text-slate-700 block">{{ mat.creado_por_rol || 'GENERAL' }}</span>
-                <span *ngIf="mat.creador?.name" class="text-[10px] text-slate-400">{{ mat.creador.name }}</span>
-              </td>
-              <td class="p-2.5 text-right">
-                <div class="flex items-center justify-end gap-1">
-                  <!-- Botón Despacho Rápido -->
-                  <button (click)="abrirModalDespacho(mat)" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1" title="Registrar entrega">
-                    <i class="bi bi-truck"></i> Despachar
+            <ng-container *ngFor="let mat of materialesAgrupados">
+              <!-- FILA PRINCIPAL DEL MATERIAL -->
+              <tr class="hover:bg-purple-50/30 transition-colors" [class.bg-purple-50]="isMaterialExpanded(mat.key)">
+                <!-- 1. Botón expandir acordeón -->
+                <td class="p-2.5 text-center">
+                  <button type="button"
+                          (click)="toggleMaterialExpansion(mat.key, $event)"
+                          class="w-6 h-6 rounded-md hover:bg-slate-200 text-slate-500 hover:text-purple-700 flex items-center justify-center transition-transform cursor-pointer"
+                          [class.rotate-90]="isMaterialExpanded(mat.key)"
+                          title="Ver en qué prendas y partes se usa este material">
+                    <i class="bi bi-chevron-right text-xs"></i>
                   </button>
-                  <!-- Botón Eliminar -->
-                  <button (click)="eliminarMaterial(mat.id)" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer" title="Eliminar insumo">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
+                </td>
+
+                <!-- 2. Tipo / Grupo -->
+                <td class="p-2.5 font-bold">
+                  <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black"
+                        [ngClass]="{
+                          'bg-purple-100 text-purple-800': mat.tipo_material === 'TELA',
+                          'bg-blue-100 text-blue-800': mat.tipo_material === 'INSUMO',
+                          'bg-slate-100 text-slate-700': mat.tipo_material === 'AVIO'
+                        }">
+                    {{ mat.tipo_material }}
+                  </span>
+                  <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{ mat.grupo_insumo }}</span>
+                </td>
+
+                <!-- 3. Material & Especificación -->
+                <td class="p-2.5">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-black text-slate-900 text-xs">{{ mat.nombre }}</span>
+                  </div>
+
+                  <!-- Detalle según estado de definición -->
+                  <div *ngIf="mat.estadoDefinicion === 'SIESA'" class="text-[11px] text-slate-600 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span class="font-mono text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200 text-[10px]">
+                      Ref: {{ mat.siesa_referencia }}
+                    </span>
+                    <span class="font-medium text-slate-800">{{ mat.siesa_descripcion }}</span>
+                    <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px]">· Color: {{ mat.siesa_color }}</span>
+                  </div>
+
+                  <div *ngIf="mat.estadoDefinicion === 'MANUAL'" class="text-[11px] text-slate-700 italic mt-0.5 flex items-center gap-1">
+                    <i class="bi bi-pencil-fill text-[9px] text-blue-500"></i>
+                    <span>{{ mat.descripcion_personalizada }}</span>
+                  </div>
+
+                  <div *ngIf="mat.estadoDefinicion === 'PENDIENTE'" class="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-0.5">
+                    <i class="bi bi-exclamation-triangle-fill text-amber-500 text-[10px]"></i>
+                    <span>Falta definir qué ítem exacto será (vincular a SIESA o especificar)</span>
+                  </div>
+                </td>
+
+                <!-- 4. Prendas (SOLO NÚMERO) -->
+                <td class="p-2.5 text-center">
+                  <div class="flex items-center justify-center">
+                    <button type="button"
+                            (click)="toggleMaterialExpansion(mat.key, $event)"
+                            class="w-7 h-7 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-black text-xs flex items-center justify-center border border-purple-200 shadow-2xs transition-all cursor-pointer"
+                            [title]="'Presente en ' + mat.prendasCount + ' prenda(s). Clic para desplegar partes.'">
+                      {{ mat.prendasCount }}
+                    </button>
+                  </div>
+                </td>
+
+                <!-- 5. Estado de Definición (Badge) -->
+                <td class="p-2.5 text-center">
+                  <span *ngIf="mat.estadoDefinicion === 'SIESA'"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
+                    <i class="bi bi-check-circle-fill text-[8px] text-emerald-600"></i> SIESA
+                  </span>
+                  <span *ngIf="mat.estadoDefinicion === 'MANUAL'"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-300 inline-flex items-center gap-1">
+                    <i class="bi bi-pencil-fill text-[8px] text-blue-600"></i> Manual
+                  </span>
+                  <span *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 inline-flex items-center gap-1">
+                    <i class="bi bi-exclamation-triangle-fill text-[8px] text-amber-600"></i> Por Definir
+                  </span>
+                </td>
+
+                <!-- 6. Requerido -->
+                <td class="p-2.5 text-center font-bold text-slate-800 font-mono">
+                  {{ mat.cantidad_requerida_total }} {{ mat.unidad_medida }}
+                </td>
+
+                <!-- 7. Entregado -->
+                <td class="p-2.5 text-center font-bold font-mono" [ngClass]="{
+                  'text-emerald-700 font-black': (mat.cantidad_entregada_total || 0) >= (mat.cantidad_requerida_total || 0),
+                  'text-amber-700': (mat.cantidad_entregada_total || 0) > 0 && (mat.cantidad_entregada_total || 0) < (mat.cantidad_requerida_total || 0),
+                  'text-slate-400': (mat.cantidad_entregada_total || 0) === 0
+                }">
+                  {{ mat.cantidad_entregada_total || 0 }} {{ mat.unidad_medida }}
+                </td>
+
+                <!-- 8. Estado Entrega -->
+                <td class="p-2.5 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border inline-flex items-center gap-1"
+                        [ngClass]="{
+                          'bg-emerald-50 text-emerald-800 border-emerald-300': mat.estadoEntrega === 'ENTREGADO',
+                          'bg-amber-50 text-amber-800 border-amber-300': mat.estadoEntrega === 'PARCIAL',
+                          'bg-slate-100 text-slate-600 border-slate-200': mat.estadoEntrega === 'PENDIENTE'
+                        }">
+                    <i class="bi bi-circle-fill text-[6px]" [ngClass]="{
+                      'text-emerald-500': mat.estadoEntrega === 'ENTREGADO',
+                      'text-amber-500': mat.estadoEntrega === 'PARCIAL',
+                      'text-slate-400': mat.estadoEntrega === 'PENDIENTE'
+                    }"></i>
+                    {{ mat.estadoEntrega }}
+                  </span>
+                </td>
+
+                <!-- 9. Acciones -->
+                <td class="p-2.5 text-right">
+                  <div class="flex items-center justify-end">
+                    <!-- Botón Vincular si falta por definir -->
+                    <button *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
+                            (click)="abrirModalDefinirMaterial(mat)"
+                            class="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-[10px] font-black cursor-pointer transition-all flex items-center gap-1 shadow-2xs hover:shadow-xs"
+                            title="Vincular con ítem de SIESA o especificar">
+                      <i class="bi bi-link-45deg text-xs"></i> Vincular Ítem
+                    </button>
+
+                    <!-- Botón Editar Vínculo si ya está definido -->
+                    <button *ngIf="mat.estadoDefinicion !== 'PENDIENTE'"
+                            (click)="abrirModalDefinirMaterial(mat)"
+                            class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                            title="Modificar vinculación de SIESA o especificación">
+                      <i class="bi bi-pencil-square text-xs"></i> Editar Vínculo
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- FILA EXPANDIDA: DESGLOSE DE PRENDAS Y PARTES (ACORDEÓN) -->
+              <tr *ngIf="isMaterialExpanded(mat.key)" class="bg-gradient-to-r from-purple-50/50 via-slate-50 to-indigo-50/30 border-b border-purple-200/80">
+                <td colspan="9" class="p-3 pl-10 pr-4">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                      <span class="text-[11px] font-black text-purple-950 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="bi bi-diagram-3-fill text-purple-600"></i>
+                        Desglose de Uso en Prendas (Presente en {{ mat.prendasCount }} prenda{{ mat.prendasCount !== 1 ? 's' : '' }})
+                      </span>
+                      <span class="text-[10px] text-slate-500 italic font-medium">
+                        Partes de corte y confección donde aplica este material
+                      </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      <div *ngFor="let p of mat.prendasDesglose" class="p-3 bg-white rounded-xl border border-purple-200/90 shadow-2xs space-y-2">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5 flex-wrap">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                            <i class="bi bi-tag-fill text-purple-600 text-xs"></i>
+                            <span class="text-xs font-black text-slate-900 truncate">{{ p.prendaNombre }}</span>
+                            <span *ngIf="p.prendaReferencia" class="text-[10px] text-slate-400 font-mono">({{ p.prendaReferencia }})</span>
+                          </div>
+                          <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-black rounded-md flex-shrink-0">
+                            📌 {{ p.cantidadPartes }} parte{{ p.cantidadPartes !== 1 ? 's' : '' }} en esta prenda
+                          </span>
+                        </div>
+
+                        <!-- Lista de partes de la prenda -->
+                        <div class="flex flex-wrap gap-1.5 pt-0.5">
+                          <span *ngFor="let part of p.partes" class="px-2 py-1 bg-slate-50 hover:bg-purple-50 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 flex items-center gap-1 transition-colors">
+                            <i class="bi bi-puzzle text-[10px] text-purple-500"></i> {{ part }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
       </div>
     </div>
 
     <!-- SECCIÓN DE ÍTEMS Y FICHAS TÉCNICAS OPM -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 space-y-3.5">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
@@ -350,40 +485,45 @@
             </div>
           </div>
 
-          <!-- TARJETA TÉCNICA OPM INTEGRADA -->
-          <div *ngIf="item.mold || item.technical_spec" class="p-4 bg-gradient-to-r from-purple-50/80 via-white to-slate-50 border border-purple-200/90 rounded-2xl flex items-center justify-between flex-wrap gap-4 shadow-2xs">
+          <!-- TARJETA TÉCNICA OPM INTEGRADA (ESTILO DILIGENCIAMIENTO LIMPIO) -->
+          <div *ngIf="item.mold || item.technical_spec" class="p-3.5 sm:p-4 bg-white border border-slate-200/90 hover:border-purple-300 rounded-2xl flex items-center justify-between flex-wrap gap-3.5 shadow-2xs transition-all">
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="w-11 h-11 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0 shadow-md">
-                <i class="bi bi-diagram-3-fill text-xl"></i>
+              <!-- Avatar moderno consistente -->
+              <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 border border-purple-200/80 flex items-center justify-center flex-shrink-0 text-lg shadow-2xs">
+                <i class="bi bi-scissors"></i>
               </div>
               
               <div class="min-w-0 space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-black text-xs text-purple-950 uppercase tracking-wide truncate">
-                    Molde: {{ item.mold?.name || 'Molde Base Asignado' }}
-                  </span>
-                  <span *ngIf="item.mold?.category?.name" class="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-[9px] font-black uppercase">
+                  <!-- Tag Categoría -->
+                  <span *ngIf="item.mold?.category?.name" class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <i class="bi bi-tag-fill text-[9px] text-slate-400"></i>
                     {{ item.mold.category.name }}
                   </span>
-                  <span class="px-2.5 py-0.5 rounded text-[9px] font-black uppercase border flex items-center gap-1 shadow-2xs"
+
+                  <!-- Pastilla Tiempo SAM -->
+                  <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-200/80 text-indigo-700 rounded-md text-[10px] font-bold flex items-center gap-1">
+                    <i class="bi bi-clock-history text-indigo-500"></i>
+                    {{ getItemTotalTime(item) | number:'1.2-2' }} min SAM
+                  </span>
+
+                  <!-- Badge Estado OPM -->
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border flex items-center gap-1 shadow-2xs"
                         [ngClass]="getOpmBadgeInfo(item).bgClass">
                     <i class="bi" [ngClass]="getOpmBadgeInfo(item).icon"></i>
                     {{ getOpmBadgeInfo(item).label }}
                   </span>
                 </div>
 
-                <div class="flex items-center gap-3 text-xs flex-wrap">
-                  <!-- TIEMPO SAM PRENDA -->
-                  <span class="px-2.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-md text-[11px] font-black flex items-center gap-1">
-                    <i class="bi bi-stopwatch-fill text-indigo-600"></i>
-                    Tiempo SAM: {{ getItemTotalTime(item) | number:'1.2-2' }} min
-                  </span>
-                  
-                  <span class="text-slate-500 font-medium text-[11px]">
+                <!-- Nombre del Molde / Prenda -->
+                <div class="flex items-baseline gap-2 flex-wrap">
+                  <h4 class="text-sm font-extrabold text-slate-900 mb-0 tracking-tight">
+                    {{ item.mold?.name || 'Molde Base Asignado' }}
+                  </h4>
+                  <span class="text-xs text-slate-500 font-medium">
                     · {{ getAllItemParts(item).length }} componente{{ getAllItemParts(item).length !== 1 ? 's' : '' }} configurados
                   </span>
-                  
-                  <span class="text-slate-400 font-mono text-[11px]" *ngIf="item.technical_spec?.reference">
+                  <span class="text-xs text-indigo-600 font-mono font-semibold" *ngIf="item.technical_spec?.reference">
                     · Ficha: {{ item.technical_spec.reference }}
                   </span>
                 </div>
@@ -392,14 +532,18 @@
 
             <!-- Botones de Acción Técnica -->
             <div class="flex items-center gap-2 flex-wrap flex-shrink-0">
+              <!-- Botón Primario: Diligenciar / Modificar OPM -->
               <button (click)="openEditOpmModal(item); $event.stopPropagation()"
-                      class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                <i class="bi bi-pencil-square text-sm"></i> Diligenciar / Modificar OPM
+                      class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                <i class="bi bi-pencil-square text-sm"></i>
+                <span>Diligenciar / Modificar OPM</span>
               </button>
               
+              <!-- Botón Secundario: Ver Ficha OPM & Técnica -->
               <button (click)="openOpmModal(item)"
-                      class="px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-extrabold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                <i class="bi bi-diagram-3 text-sm"></i> Ver Ficha OPM & Técnica
+                      class="px-3.5 py-2 bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-800 border border-slate-200 hover:border-purple-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                <i class="bi bi-diagram-3 text-sm text-purple-600"></i>
+                <span>Ver Ficha OPM & Técnica</span>
               </button>
             </div>
           </div>
@@ -408,14 +552,6 @@
       </div>
     </div>
 
-    <!-- SECCIÓN DE OBSERVACIONES DE DESARROLLO / CLIENTE -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6" *ngIf="muestra.observaciones">
-      <div class="flex items-center gap-2 mb-2">
-        <i class="bi bi-chat-left-text-fill text-purple-600"></i>
-        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Observaciones Generales de la Muestra</h3>
-      </div>
-      <p class="text-xs text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200/80 leading-relaxed font-medium mb-0">{{ muestra.observaciones }}</p>
-    </div>
 
   </div>
 
@@ -742,8 +878,11 @@
 
                 <!-- SIESA details -->
                 <div *ngIf="mat.siesaRef || mat.siesaDesc" class="mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] flex items-baseline gap-1">
-                  <span class="font-bold text-indigo-600">SIESA:</span>
-                  <span class="text-slate-700 truncate">{{ mat.siesaRef ? (mat.siesaRef + ' - ') : '' }}{{ mat.siesaDesc }}</span>
+                  <span class="font-bold text-indigo-600 shrink-0">SIESA:</span>
+                  <span class="text-slate-700 truncate" [title]="(mat.siesaRef ? (mat.siesaRef + ' - ') : '') + (mat.siesaDesc || '')">{{ mat.siesaRef ? (mat.siesaRef + ' - ') : '' }}{{ mat.siesaDesc }}</span>
+                </div>
+                <div *ngIf="mat.comment" class="mt-1 text-[10px] text-slate-500 italic">
+                  <i class="bi bi-chat-left-dots text-[9px] text-purple-500 mr-1"></i>{{ mat.comment }}
                 </div>
               </div>
 
@@ -1239,9 +1378,15 @@
                       {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
                     </span>
                   </div>
-                  <div class="text-[10px] text-slate-500 flex items-center justify-between">
+                  <div class="text-[10px] text-slate-500 flex items-center justify-between flex-wrap gap-1">
                     <span>Usado en: <strong>{{ mat.sourceParts.join(', ') }}</strong></span>
                     <span *ngIf="mat.siesaRef" class="font-mono text-indigo-700 font-bold">SIESA: {{ mat.siesaRef }}</span>
+                  </div>
+                  <div *ngIf="mat.siesaDesc" class="text-[10px] text-slate-600 truncate" [title]="mat.siesaDesc">
+                    {{ mat.siesaDesc }}
+                  </div>
+                  <div *ngIf="mat.comment" class="text-[10px] text-slate-500 italic">
+                    <i class="bi bi-chat-left-dots text-[9px] text-purple-500 mr-1"></i>{{ mat.comment }}
                   </div>
                 </div>
 
@@ -1274,62 +1419,44 @@
   </div>
 
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
-  <!-- MODAL EDICIÓN TÉCNICA OPM EN MUESTRAS (Integrado con SpecGenerator)       -->
+  <!-- MODAL: DILIGENCIAR / MODIFICAR OPM (ESTRUCTURA IDÉNTICA A COMERCIALES)     -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <div *ngIf="isEditingOpmSpec && editingOpmItem" class="opm-modal-overlay" (click)="closeEditOpmModal()">
-    <div class="opm-modal-container bg-white p-5 rounded-3xl flex flex-col overflow-hidden max-w-6xl w-full h-[92vh]" (click)="$event.stopPropagation()">
+    <div class="opm-modal-container bg-white p-4 sm:p-5 rounded-3xl flex flex-col overflow-hidden max-w-[1600px] w-[96vw] h-[94vh] shadow-2xl border border-slate-200" (click)="$event.stopPropagation()">
       
       <!-- Cabecera del Editor OPM -->
-      <div class="flex items-center justify-between pb-3.5 mb-2 border-b border-slate-200 flex-shrink-0">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center text-xl shadow-md">
-            <i class="bi bi-gear-wide-connected"></i>
+      <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-200/80 flex-shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center text-lg shadow-sm flex-shrink-0">
+            <i class="bi bi-pencil-square"></i>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-[9px] font-black uppercase rounded">Edición Técnica OPM</span>
-              <h2 class="text-sm font-black text-slate-900 uppercase tracking-wide mb-0">{{ editingOpmItem.descripcion }}</h2>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-black uppercase rounded-md tracking-wider">
+                Diligenciamiento Técnico OPM
+              </span>
+              <span *ngIf="editingOpmItem.mold?.name" class="text-xs font-bold text-slate-500">
+                · Molde: {{ editingOpmItem.mold?.name }}
+              </span>
             </div>
-            <p class="text-xs text-purple-700 font-semibold mb-0">
-              Molde Base: {{ editingOpmItem.mold?.name || 'Molde Asignado' }}
-              <span *ngIf="editingOpmItem.technical_spec?.id" class="text-slate-400 font-mono"> · Ficha SPEC-{{ editingOpmItem.technical_spec.id }}</span>
-            </p>
+            <h2 class="text-sm sm:text-base font-black text-slate-900 tracking-tight mb-0 truncate">
+              {{ editingOpmItem.descripcion }}
+            </h2>
           </div>
         </div>
-        <button (click)="closeEditOpmModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer">
+        <button (click)="closeEditOpmModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs" title="Cerrar modal">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
-      <!-- Cuerpo del Editor: Generador de Fichas Técnicas -->
+      <!-- Stepper OPM Idéntico a cuando se diligencia la prenda -->
       <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        <app-spec-generator
-          #specGenRef
-          [embedded]="true"
-          [context]="'muestras'"
+        <app-mold-opm-stepper
+          #stepperComponent
+          [item]="editingOpmItem"
           [itemIndex]="0"
-          [externalMoldId]="editingOpmItem.mold_id || editingOpmItem.mold?.id"
-          [technicalSpecId]="editingOpmItem.technical_spec_id || editingOpmItem.technical_spec?.id"
-          [initialComponents]="editingOpmItem.technical_spec?.parts || editingOpmItem.mold?.parts"
-          [itemData]="editingOpmItem"
-          [solicitudData]="muestra"
-          (onSpecSaved)="onOpmSpecSaved($event)">
-        </app-spec-generator>
-      </div>
-
-      <!-- Pie del Editor con Guardado -->
-      <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-shrink-0 mt-2 rounded-2xl">
-        <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-          <i class="bi bi-cloud-check-fill text-emerald-600 text-sm"></i>
-          <span>Las modificaciones de operaciones, tiempos SAM e insumos se sincronizan automáticamente.</span>
-        </span>
-        <div class="flex items-center gap-2">
-          <button (click)="closeEditOpmModal()" [disabled]="isSavingOpm" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
-            <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" *ngIf="isSavingOpm"></span>
-            <i class="bi bi-check-circle-fill" *ngIf="!isSavingOpm"></i>
-            {{ isSavingOpm ? 'Guardando cambios...' : 'Guardar y Cerrar' }}
-          </button>
-        </div>
+          (onOpmSaved)="onOpmSavedFromStepper($event)">
+        </app-mold-opm-stepper>
       </div>
 
     </div>
@@ -1613,4 +1740,6 @@
   </div>
 
 </div>
+
+
 
