@@ -1301,6 +1301,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     cloned.opmReference = undefined;
     cloned.isExpanded = false;
     this.items.splice(index + 1, 0, cloned);
+    this.rebuildAnatomicalGroups();
     this.saveToLocalStorage();
     const Toast = Swal.mixin({
       toast: true,
