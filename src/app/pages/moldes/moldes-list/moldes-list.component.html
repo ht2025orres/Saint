@@ -1,19 +1,37 @@
 <div class="moldes-container">
-  <!-- Header -->
-  <div class="moldes-header">
-    <div class="header-left">
-      <h1><i class="bi bi-grid-3x3-gap"></i> Gestión de Moldes</h1>
-      <p class="subtitle">Administra categorías, moldes base, y genera OPMs o Fichas Técnicas</p>
-    </div>
-    <div class="header-actions">
-      <button class="btn-outline-custom" (click)="showCategoryManager = true" *ngIf="canManageCategories">
-        <i class="bi bi-folder-plus"></i> Categorías
-      </button>
-      <button class="btn-primary-custom" (click)="goToCreate()" *ngIf="canCreate">
-        <i class="bi bi-plus-lg"></i> Nuevo Molde
-      </button>
-    </div>
+  <!-- Pestañas Principales: Librería de Moldes vs Generador de OPMs -->
+  <div class="moldes-main-nav">
+    <button type="button" 
+            class="main-nav-tab" 
+            [class.main-nav-tab-active]="activeMainTab === 'libreria'" 
+            (click)="activeMainTab = 'libreria'">
+      <i class="bi bi-grid-3x3-gap-fill"></i> Librería de Moldes
+    </button>
+    <button type="button" 
+            class="main-nav-tab" 
+            [class.main-nav-tab-active]="activeMainTab === 'opm'" 
+            (click)="activeMainTab = 'opm'">
+      <i class="bi bi-lightning-charge-fill text-amber-500"></i> Generador de OPM (Prendas y Fichas)
+    </button>
   </div>
+
+  <!-- ==================== VISTA 1: LIBRERÍA DE MOLDES ==================== -->
+  <ng-container *ngIf="activeMainTab === 'libreria'">
+    <!-- Header -->
+    <div class="moldes-header">
+      <div class="header-left">
+        <h1><i class="bi bi-grid-3x3-gap"></i> Gestión de Moldes</h1>
+        <p class="subtitle">Administra categorías, moldes base, y genera OPMs o Fichas Técnicas</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-outline-custom" (click)="showCategoryManager = true" *ngIf="canManageCategories">
+          <i class="bi bi-folder-plus"></i> Categorías
+        </button>
+        <button class="btn-primary-custom" (click)="goToCreate()" *ngIf="canCreate">
+          <i class="bi bi-plus-lg"></i> Nuevo Molde
+        </button>
+      </div>
+    </div>
 
   <!-- Category Filter Tabs -->
   <div class="category-tabs" *ngIf="categories.length > 0">
@@ -97,39 +115,20 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- Category Manager Modal -->
-<app-modal-category-manager
-  *ngIf="showCategoryManager"
-  (onClose)="showCategoryManager = false"
-  (onCategoriesChanged)="onCategoriesChanged()">
-</app-modal-category-manager>
+  <!-- Category Manager Modal -->
+  <app-modal-category-manager
+    *ngIf="showCategoryManager"
+    (onClose)="showCategoryManager = false"
+    (onCategoriesChanged)="onCategoriesChanged()">
+  </app-modal-category-manager>
+  </ng-container>
 
-<!-- Modal Configurador Visual / Stepper OPM -->
-<div class="modal fade" [class.show]="mostrarModalConfiguradorOpm" [style.display]="mostrarModalConfiguradorOpm ? 'block' : 'none'" tabindex="-1" style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); z-index: 1070;">
-  <div class="modal-dialog modal-fullscreen my-0 p-3" style="max-height: 100vh;">
-    <div class="modal-content shadow-2xl border-0 rounded-4 overflow-hidden d-flex flex-column h-100 bg-slate-50">
-      <div class="modal-header border-0 py-2.5 px-4 text-white flex-shrink-0" style="background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4338ca 100%);">
-        <div class="d-flex align-items-center gap-2.5">
-          <div class="rounded-3 bg-white/20 p-2 d-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px;">
-            <i class="bi bi-palette2 fs-5"></i>
-          </div>
-          <div>
-            <h6 class="modal-title fw-bold mb-0 text-white">Generar OPM desde Molde Base</h6>
-            <small class="text-white-50">Configura partes, zonas y tallas para generar la Orden de Producción de Muestra (OPM)</small>
-          </div>
-        </div>
-        <button type="button" class="btn-close btn-close-white shadow-none" (click)="cerrarConfiguradorOpm()"></button>
-      </div>
-      <div class="modal-body p-3 flex-grow-1 overflow-auto bg-slate-100" *ngIf="mostrarModalConfiguradorOpm && selectedMoldForOpm">
-        <app-mold-opm-stepper
-          [item]="selectedMoldForOpm"
-          (onOpmSaved)="onOpmSaved($event)"
-          (onChangeMold)="cerrarConfiguradorOpm()"
-          (onRemoveMold)="cerrarConfiguradorOpm()">
-        </app-mold-opm-stepper>
-      </div>
-    </div>
-  </div>
+  <!-- ==================== VISTA 2: GENERADOR DE OPM (TABLA MATRICIAL) ==================== -->
+  <ng-container *ngIf="activeMainTab === 'opm'">
+    <app-opm-matrix-table
+      #opmTableRef
+      (onBackToLibreria)="switchToLibreria()">
+    </app-opm-matrix-table>
+  </ng-container>
 </div>

@@ -17,6 +17,12 @@ import { ModalCategoryManagerComponent } from './modals/modal-category-manager/m
 import { ModalInsumosAgrupadosComponent } from './modals/modal-insumos-agrupados/modal-insumos-agrupados.component';
 import { ModalVariantesMoldeComponent } from './modals/modal-variantes-molde/modal-variantes-molde.component';
 import { MoldOpmStepperComponent } from '../comerciales/mold-opm-stepper/mold-opm-stepper.component';
+import { ItemSearchModalComponent } from '../comerciales/modals/item-search-modal/item-search-modal.component';
+import { MoldSelectorModalComponent } from '../comerciales/modals/mold-selector-modal/mold-selector-modal.component';
+import { FigurinOpmModalComponent } from '../comerciales/modals/figurin-opm-modal/figurin-opm-modal.component';
+import { TallasQuickModalComponent } from '../comerciales/modals/tallas-quick-modal/tallas-quick-modal.component';
+import { ZoneVariantsModalComponent } from '../comerciales/modals/zone-variants-modal/zone-variants-modal.component';
+import { OpmMatrixTableComponent } from './opm-matrix-table/opm-matrix-table.component';
 
 // Subcomponentes y Modales de Moldes Admin
 import { ModalZoneSelectorComponent } from './moldes-admin/modals/modal-zone-selector/modal-zone-selector.component';
@@ -73,7 +79,13 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     CatalogTabOperacionesComponent,
     SpecTabDisenoComponent,
     SpecTabEstructuraComponent,
-    MoldOpmStepperComponent
+    MoldOpmStepperComponent,
+    ItemSearchModalComponent,
+    MoldSelectorModalComponent,
+    FigurinOpmModalComponent,
+    TallasQuickModalComponent,
+    ZoneVariantsModalComponent,
+    OpmMatrixTableComponent
   ],
   imports: [
     CommonModule,
@@ -92,7 +104,13 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     ModalCategoryManagerComponent,
     ModalInsumosAgrupadosComponent,
     ModalVariantesMoldeComponent,
-    MoldOpmStepperComponent
+    MoldOpmStepperComponent,
+    ItemSearchModalComponent,
+    MoldSelectorModalComponent,
+    FigurinOpmModalComponent,
+    TallasQuickModalComponent,
+    ZoneVariantsModalComponent,
+    OpmMatrixTableComponent
   ]
 })
 export class MoldesModule { }

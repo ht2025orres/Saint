@@ -1,7 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
+import { OpmMatrixTableComponent } from '../opm-matrix-table/opm-matrix-table.component';
 
 @Component({
   selector: 'app-moldes-list',
@@ -9,6 +10,11 @@ import { AuthService } from '../../../services/auth.service';
   styleUrls: ['./moldes-list.component.css']
 })
 export class MoldesListComponent implements OnInit {
+  @ViewChild('opmTableRef') opmTableRef?: OpmMatrixTableComponent;
+
+  // Vista principal: 'libreria' o 'opm' (Generador de OPMs)
+  activeMainTab: 'libreria' | 'opm' = 'libreria';
+
   molds: any[] = [];
   loading = false;
   errorMessage = '';
@@ -18,13 +24,10 @@ export class MoldesListComponent implements OnInit {
   selectedCategoryId: number | null = null;
   showCategoryManager = false;
 
-  // Configurador OPM Stepper Modal
-  mostrarModalConfiguradorOpm: boolean = false;
-  selectedMoldForOpm: any = null;
-
   constructor(
     private moldService: MoldService,
     private router: Router,
+    private route: ActivatedRoute,
     public authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -46,6 +49,16 @@ export class MoldesListComponent implements OnInit {
   ngOnInit(): void {
     this.loadCategories();
     this.loadMolds();
+
+    // Comprobar parámetros de URL si viene directamente a OPM
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] === 'opm') {
+        this.activeMainTab = 'opm';
+        if (params['moldId']) {
+          this.goToGenerateOpm(Number(params['moldId']));
+        }
+      }
+    });
   }
 
   // ==================== CATEGORIES ====================
@@ -121,28 +134,22 @@ export class MoldesListComponent implements OnInit {
 
   goToGenerateOpm(moldId: number): void {
     const mold = this.molds.find(m => m.id === moldId);
-    this.selectedMoldForOpm = {
-      moldId: moldId,
-      mold_id: moldId,
-      moldName: mold?.name || '',
-      categoryName: this.getCategoryName(mold),
-      descripcion: mold?.name ? `OPM Molde - ${mold.name}` : 'OPM Molde Base',
-      talla: 'M',
-      cantidad_muestra: 1,
-      tallas: [{ talla: 'M', cantidad: 1 }]
-    };
-    this.mostrarModalConfiguradorOpm = true;
+    this.activeMainTab = 'opm';
     this.cdr.detectChanges();
+    setTimeout(() => {
+      if (this.opmTableRef) {
+        if (mold) {
+          this.opmTableRef.addMoldItem(mold);
+        } else if (moldId) {
+          this.opmTableRef.addMoldById(moldId);
+        }
+      }
+    }, 80);
   }
 
-  cerrarConfiguradorOpm(): void {
-    this.mostrarModalConfiguradorOpm = false;
-    this.selectedMoldForOpm = null;
+  switchToLibreria(): void {
+    this.activeMainTab = 'libreria';
     this.cdr.detectChanges();
-  }
-
-  onOpmSaved(event: any): void {
-    this.cerrarConfiguradorOpm();
   }
 
   goToGenerateFicha(moldId: number): void {

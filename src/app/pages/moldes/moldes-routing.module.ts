@@ -4,13 +4,15 @@ import { MoldesListComponent } from './moldes-list/moldes-list.component';
 import { MoldesAdminComponent } from './moldes-admin/moldes-admin.component';
 import { SpecGeneratorComponent } from './spec-generator/spec-generator.component';
 import { PartesCatalogComponent } from './partes-catalog/partes-catalog.component';
+import { OpmMatrixTableComponent } from './opm-matrix-table/opm-matrix-table.component';
 
 const routes: Routes = [
   { path: '', component: MoldesListComponent },
   { path: 'partes', component: PartesCatalogComponent },
   { path: 'admin', component: MoldesAdminComponent },
   { path: 'admin/:id', component: MoldesAdminComponent },
-  { path: 'opm-generator/:id', component: SpecGeneratorComponent, data: { mode: 'opm' } },
+  { path: 'opm-generator', component: OpmMatrixTableComponent },
+  { path: 'opm-generator/:id', component: OpmMatrixTableComponent },
   { path: 'ficha-generator/:id', component: SpecGeneratorComponent, data: { mode: 'ficha' } },
 ];
 

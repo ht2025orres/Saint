@@ -7,12 +7,7 @@ import { ClienteListComponent } from './cliente-list/cliente-list.component';
 import { ClienteItemsComponent } from './cliente-items/cliente-items.component';
 import { CosteoFormComponent } from './costeo-form/costeo-form.component';
 import { CosteoDetailComponent } from './costeo-detail/costeo-detail.component';
-import { ItemSearchModalComponent } from './modals/item-search-modal/item-search-modal.component';
 import { MoldSelectModalComponent } from './modals/mold-select-modal/mold-select-modal.component';
-import { MoldSelectorModalComponent } from './modals/mold-selector-modal/mold-selector-modal.component';
-import { FigurinOpmModalComponent } from './modals/figurin-opm-modal/figurin-opm-modal.component';
-import { TallasQuickModalComponent } from './modals/tallas-quick-modal/tallas-quick-modal.component';
-import { ZoneVariantsModalComponent } from './modals/zone-variants-modal/zone-variants-modal.component';
 import { SolicitudCapturaComponent } from './solicitud-captura/solicitud-captura.component';
 import { OrdenCompraComponent } from './ordenes-compra/orden-compra.component';
 import { DetalleOcModalComponent } from './ordenes-compra/modals/detalle-oc-modal/detalle-oc-modal.component';
@@ -27,12 +22,7 @@ import { MoldesModule } from '../moldes/moldes.module';
     ClienteItemsComponent,
     CosteoFormComponent,
     CosteoDetailComponent,
-    ItemSearchModalComponent,
     MoldSelectModalComponent,
-    MoldSelectorModalComponent,
-    FigurinOpmModalComponent,
-    TallasQuickModalComponent,
-    ZoneVariantsModalComponent,
     SolicitudCapturaComponent,
     OrdenCompraComponent,
     DetalleOcModalComponent,
