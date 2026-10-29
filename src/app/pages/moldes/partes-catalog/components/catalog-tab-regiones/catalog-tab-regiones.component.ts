@@ -12,11 +12,14 @@ export class CatalogTabRegionesComponent {
 
   @Output() createRegion = new EventEmitter<void>();
   @Output() editRegion = new EventEmitter<AnatomicalRegion>();
+  @Output() deleteRegion = new EventEmitter<AnatomicalRegion>();
   @Output() createPartForRegion = new EventEmitter<string>();
   @Output() filterByRegion = new EventEmitter<string>();
   @Output() viewRegionCatalog = new EventEmitter<AnatomicalRegion | string>();
   @Output() editPart = new EventEmitter<any>();
   @Output() deletePart = new EventEmitter<any>();
+  @Output() assignPartsToRegion = new EventEmitter<AnatomicalRegion | string>();
+  @Output() unassignPart = new EventEmitter<{ part: any; regionValue: string }>();
 
   expandedPartIds: Set<any> = new Set();
 
@@ -32,12 +35,17 @@ export class CatalogTabRegionesComponent {
 
   getGeneralParts(): any[] {
     if (!this.allMasterParts) return [];
-    return this.allMasterParts.filter(p => p.zone === 'general');
+    return this.allMasterParts.filter(p => (p.zones && p.zones.includes('general')) || p.zone === 'general');
   }
 
   getPartsForRegion(regionValue: string): any[] {
     if (!this.allMasterParts) return [];
-    return this.allMasterParts.filter(p => p.zone === regionValue);
+    return this.allMasterParts.filter(p => (p.zones && p.zones.includes(regionValue)) || p.zone === regionValue);
+  }
+
+  getPartRegionsCount(part: any): number {
+    if (part && part.zones && Array.isArray(part.zones)) return part.zones.length;
+    return (part && part.zone) ? 1 : 0;
   }
 
   toggleExpandPart(part: any): void {

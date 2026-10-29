@@ -210,8 +210,38 @@ export class ModalParteFormComponent implements OnInit {
     'Fuera de producción por temporada'
   ];
 
+  isZoneSelected(zoneValue: string): boolean {
+    if (this.partForm && this.partForm.zones && Array.isArray(this.partForm.zones)) {
+      return this.partForm.zones.includes(zoneValue);
+    }
+    return this.partForm?.zone === zoneValue;
+  }
+
+  toggleZone(zoneValue: string): void {
+    if (!this.partForm.zones || !Array.isArray(this.partForm.zones)) {
+      this.partForm.zones = this.partForm.zone ? [this.partForm.zone] : [];
+    }
+    const idx = this.partForm.zones.indexOf(zoneValue);
+    if (idx >= 0) {
+      if (this.partForm.zones.length > 1) {
+        this.partForm.zones.splice(idx, 1);
+      }
+    } else {
+      this.partForm.zones.push(zoneValue);
+    }
+    this.partForm.zone = this.partForm.zones[0] || 'general';
+    this.selectZone.emit(this.partForm.zone);
+  }
+
+  getSelectedRegions(): AnatomicalRegion[] {
+    const zones = this.partForm?.zones && Array.isArray(this.partForm.zones) && this.partForm.zones.length > 0
+      ? this.partForm.zones
+      : (this.partForm?.zone ? [this.partForm.zone] : []);
+    return this.regions.filter(r => zones.includes(r.value));
+  }
+
   getSelectedRegion(): AnatomicalRegion | undefined {
-    return this.regions.find(r => r.value === this.partForm.zone);
+    return this.getSelectedRegions()[0] || this.regions.find(r => r.value === this.partForm.zone);
   }
 
   isModalVariantExpanded(type: any, index?: number): boolean {

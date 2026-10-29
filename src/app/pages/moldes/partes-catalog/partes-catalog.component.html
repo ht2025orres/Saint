@@ -123,7 +123,10 @@
     [allMasterParts]="allMasterParts"
     (createRegion)="openCreateRegionModal()"
     (editRegion)="openEditRegionModal($event)"
+    (deleteRegion)="deleteRegion($event)"
     (createPartForRegion)="openCreateModal($event)"
+    (assignPartsToRegion)="openAssignModal($event)"
+    (unassignPart)="unassignPartFromRegion($event)"
     (filterByRegion)="filterByRegionAndSwitchTab($event)"
     (viewRegionCatalog)="openRegionPartsModal($event)"
     (editPart)="openEditModal($event)"
@@ -206,6 +209,7 @@
   [isEditing]="isEditingRegion"
   [regionForm]="regionForm"
   (saveRegion)="saveRegion()"
+  (deleteRegion)="deleteRegion($event)"
   (closeRegion)="isRegionModalOpen = false">
 </app-modal-region-form>
 
@@ -241,3 +245,12 @@
   (editPart)="openEditModal($event)"
   (deletePart)="deletePart($event)">
 </app-modal-region-parts>
+
+<!-- MODAL 6: Asignar Partes Existentes a una Región -->
+<app-modal-assign-parts
+  [isOpen]="isAssignModalOpen"
+  [region]="selectedRegionForAssign"
+  [allMasterParts]="allMasterParts"
+  (close)="closeAssignModal()"
+  (assign)="onAssignParts($event)">
+</app-modal-assign-parts>

@@ -31,6 +31,7 @@ import { ModalRegionFormComponent } from './partes-catalog/modals/modal-region-f
 import { ModalMaquinaFormComponent } from './partes-catalog/modals/modal-maquina-form/modal-maquina-form.component';
 import { ModalStandardOpFormComponent } from './partes-catalog/modals/modal-standard-op-form/modal-standard-op-form.component';
 import { ModalRegionPartsComponent } from './partes-catalog/modals/modal-region-parts/modal-region-parts.component';
+import { ModalAssignPartsComponent } from './partes-catalog/modals/modal-assign-parts/modal-assign-parts.component';
 import { CatalogTabPartesComponent } from './partes-catalog/components/catalog-tab-partes/catalog-tab-partes.component';
 import { CatalogTabRegionesComponent } from './partes-catalog/components/catalog-tab-regiones/catalog-tab-regiones.component';
 import { CatalogTabOperacionesComponent } from './partes-catalog/components/catalog-tab-operaciones/catalog-tab-operaciones.component';
@@ -66,6 +67,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     ModalMaquinaFormComponent,
     ModalStandardOpFormComponent,
     ModalRegionPartsComponent,
+    ModalAssignPartsComponent,
     CatalogTabPartesComponent,
     CatalogTabRegionesComponent,
     CatalogTabOperacionesComponent,

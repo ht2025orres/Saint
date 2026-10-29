@@ -201,12 +201,25 @@
                             title="Editar Parte y Variantes">
                       <i class="bi bi-pencil text-[11px]"></i>
                     </button>
+                    <button type="button" 
+                            (click)="unassignPart.emit({ part: p, regionValue: reg.value })"
+                            class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                            title="Desvincular de esta región (permanece disponible en el catálogo global)">
+                      <i class="bi bi-link-45deg text-xs"></i>
+                    </button>
                   </div>
                 </div>
 
                 <!-- Métricas de la Parte: Variantes y Tiempo -->
                 <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
-                  <span>{{ p.types?.length || 0 }} {{ (p.types?.length === 1) ? 'variante' : 'variantes' }}</span>
+                  <div class="flex items-center gap-1.5">
+                    <span>{{ p.types?.length || 0 }} {{ (p.types?.length === 1) ? 'variante' : 'variantes' }}</span>
+                    <span *ngIf="getPartRegionsCount(p) > 1" 
+                          class="px-1.5 py-0.2 rounded text-[8px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100"
+                          title="Parte compartida en {{ getPartRegionsCount(p) }} regiones">
+                      {{ getPartRegionsCount(p) }} zonas
+                    </span>
+                  </div>
                   <span class="font-mono font-bold text-indigo-700">⏱ {{ calculatePartTotalTime(p) | number:'1.2-2' }} min SAM</span>
                 </div>
 
@@ -229,21 +242,40 @@
 
             <!-- Estado Vacío en la Región -->
             <div *ngIf="getPartsForRegion(reg.value).length === 0" 
-                 class="py-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                 class="py-4 px-2 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-2">
               <p class="text-[11px] text-slate-400 font-medium">Sin partes asignadas a esta región</p>
-              <button (click)="createPartForRegion.emit(reg.value)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 mt-1 cursor-pointer">
-                + Crear primera parte
-              </button>
+              <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                <button (click)="assignPartsToRegion.emit(reg)" 
+                        class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-black transition flex items-center gap-1 cursor-pointer shadow-2xs">
+                  <i class="bi bi-box-arrow-in-down"></i>
+                  <span>Asignar Existente</span>
+                </button>
+                <button (click)="createPartForRegion.emit(reg.value)" 
+                        class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer">
+                  <i class="bi bi-plus-lg"></i>
+                  <span>Crear Nueva</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Acciones de Región en el Footer -->
         <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 mt-2">
-          <button (click)="createPartForRegion.emit(reg.value)" class="text-xs font-black text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer">
-            <i class="bi bi-plus-circle text-xs"></i>
-            <span>+ Agregar Parte</span>
-          </button>
+          <div class="flex items-center gap-1">
+            <button (click)="assignPartsToRegion.emit(reg)" 
+                    class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[11px] font-black transition flex items-center gap-1 cursor-pointer"
+                    title="Asignar partes existentes del catálogo a esta región">
+              <i class="bi bi-plus-square text-xs"></i>
+              <span>Asignar</span>
+            </button>
+            <button (click)="createPartForRegion.emit(reg.value)" 
+                    class="px-2 py-1 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                    title="Crear una parte nueva desde cero">
+              <i class="bi bi-plus-lg text-[10px]"></i>
+              <span>Nueva</span>
+            </button>
+          </div>
           
           <div class="flex items-center gap-1">
             <button (click)="viewRegionCatalog.emit(reg)" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-black transition flex items-center gap-1 cursor-pointer" title="Ver Catálogo Completo de la Región en Modal">
@@ -252,6 +284,9 @@
             </button>
             <button (click)="editRegion.emit(reg)" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer" title="Editar Información de la Región">
               <i class="bi bi-pencil text-xs"></i>
+            </button>
+            <button (click)="deleteRegion.emit(reg)" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer" title="Eliminar Región Anatómica">
+              <i class="bi bi-trash text-xs"></i>
             </button>
           </div>
         </div>

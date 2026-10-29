@@ -145,7 +145,9 @@ export class PartesCatalogComponent implements OnInit {
 
   get filteredParts(): any[] {
     let list = this.allMasterParts || [];
-    if (this.selectedZoneFilter) list = list.filter(p => p.zone === this.selectedZoneFilter);
+    if (this.selectedZoneFilter) {
+      list = list.filter(p => (p.zones && p.zones.includes(this.selectedZoneFilter)) || p.zone === this.selectedZoneFilter);
+    }
     if (this.searchTerm.trim()) {
       const q = this.searchTerm.toLowerCase().trim();
       list = list.filter(p =>
@@ -164,6 +166,10 @@ export class PartesCatalogComponent implements OnInit {
   isGeneralPartsModal = false;
   regionModalParts: any[] = [];
 
+  // Modal para asignar partes existentes a una región
+  isAssignModalOpen = false;
+  selectedRegionForAssign: AnatomicalRegion | null = null;
+
   loadParts(forceRefresh = false): void {
     this.isLoading = true;
     this.moldService.getGarmentParts(undefined, true, undefined, forceRefresh).subscribe({
@@ -173,7 +179,7 @@ export class PartesCatalogComponent implements OnInit {
         this.syncSharedOperationsFromParts();
         if (this.selectedRegionForPartsModal) {
           const zoneVal = this.selectedRegionForPartsModal.value;
-          this.regionModalParts = this.allMasterParts.filter(p => p.zone === zoneVal);
+          this.regionModalParts = this.allMasterParts.filter(p => (p.zones && p.zones.includes(zoneVal)) || p.zone === zoneVal);
         }
         this.isLoading = false;
       },
@@ -196,19 +202,105 @@ export class PartesCatalogComponent implements OnInit {
           icon: 'bi-gem',
           description: 'Elementos transversales (Logos, Bordados, Cintas Reflectivas, Marquillas, Estampados, Vivos).'
         };
-        this.regionModalParts = this.allMasterParts.filter(p => p.zone === 'general');
+        this.regionModalParts = this.allMasterParts.filter(p => (p.zones && p.zones.includes('general')) || p.zone === 'general');
       } else {
         const found = this.regions.find(r => r.value === regOrValue);
         this.selectedRegionForPartsModal = found || null;
         this.isGeneralPartsModal = false;
-        this.regionModalParts = this.allMasterParts.filter(p => p.zone === regOrValue);
+        this.regionModalParts = this.allMasterParts.filter(p => (p.zones && p.zones.includes(regOrValue)) || p.zone === regOrValue);
       }
     } else {
       this.selectedRegionForPartsModal = regOrValue;
       this.isGeneralPartsModal = (regOrValue.value === 'general');
-      this.regionModalParts = this.allMasterParts.filter(p => p.zone === regOrValue.value);
+      this.regionModalParts = this.allMasterParts.filter(p => (p.zones && p.zones.includes(regOrValue.value)) || p.zone === regOrValue.value);
     }
     this.isRegionPartsModalOpen = true;
+  }
+
+  openAssignModal(regOrValue: AnatomicalRegion | string): void {
+    if (typeof regOrValue === 'string') {
+      if (regOrValue === 'general') {
+        this.selectedRegionForAssign = {
+          id: 'general',
+          value: 'general',
+          label: 'Partes Generales & Apliques',
+          color: '#f59e0b',
+          icon: 'bi-gem',
+          description: 'Elementos transversales'
+        };
+      } else {
+        this.selectedRegionForAssign = this.regions.find(r => r.value === regOrValue) || null;
+      }
+    } else {
+      this.selectedRegionForAssign = regOrValue;
+    }
+    this.isAssignModalOpen = true;
+  }
+
+  closeAssignModal(): void {
+    this.isAssignModalOpen = false;
+    this.selectedRegionForAssign = null;
+  }
+
+  onAssignParts(partIds: number[]): void {
+    if (!this.selectedRegionForAssign || partIds.length === 0) return;
+    const regionVal = this.selectedRegionForAssign.value;
+    const regionLabel = this.selectedRegionForAssign.label;
+
+    this.moldService.assignPartsToRegion(regionVal, partIds).subscribe({
+      next: (res: any) => {
+        this.closeAssignModal();
+        this.loadParts(true);
+        Swal.fire({
+          title: 'Partes asignadas',
+          text: `Se asignaron ${partIds.length} parte(s) a "${regionLabel}".`,
+          icon: 'success',
+          toast: true,
+          position: 'top-end',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      },
+      error: (err: any) => {
+        Swal.fire('Error', err.error?.error || 'No se pudieron asignar las partes a la región', 'error');
+      }
+    });
+  }
+
+  unassignPartFromRegion(event: { part: any; regionValue: string }): void {
+    const { part, regionValue } = event;
+    const regionObj = this.regions.find(r => r.value === regionValue);
+    const regLabel = regionObj ? regionObj.label : regionValue;
+
+    Swal.fire({
+      title: '¿Desvincular parte?',
+      text: `¿Deseas quitar "${part.name}" de la región "${regLabel}"? La parte seguirá existiendo en el catálogo global.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, desvincular',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#e11d48'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.moldService.unassignPartFromRegion(part.id, regionValue).subscribe({
+          next: () => {
+            this.loadParts(true);
+            Swal.fire({
+              title: 'Parte desvinculada',
+              text: `"${part.name}" fue desvinculada de ${regLabel}.`,
+              icon: 'success',
+              toast: true,
+              position: 'top-end',
+              timer: 2500,
+              showConfirmButton: false
+            });
+          },
+          error: (err: any) => {
+            Swal.fire('Error', err.error?.error || 'No se pudo desvincular la parte', 'error');
+          }
+        });
+      }
+    });
   }
 
   closeRegionPartsModal(): void {
@@ -241,13 +333,15 @@ export class PartesCatalogComponent implements OnInit {
   openCreateModal(zone?: string): void {
     this.isEditing = false;
     this.selectedPart = null;
+    const initialZone = zone || this.selectedZoneFilter || 'manga';
     this.partForm = {
       id: null,
       name: '',
       code: '',
       description: '',
       icon: 'bi-box-seam',
-      zone: zone || this.selectedZoneFilter || 'manga',
+      zone: initialZone,
+      zones: [initialZone],
       is_active: true,
       types: [
         { name: 'Estándar', description: '', technical_description: '', materials: ['Tela Principal', 'Hilo de Confección'], total_time: 0, is_active: true, disabled_reason: '', _isExpanded: true, operations: [] }
@@ -260,6 +354,9 @@ export class PartesCatalogComponent implements OnInit {
     this.isEditing = true;
     this.selectedPart = part;
     this.partForm = JSON.parse(JSON.stringify(part));
+    if (!this.partForm.zones || this.partForm.zones.length === 0) {
+      this.partForm.zones = part.zone ? [part.zone] : [];
+    }
     if (!this.partForm.types || this.partForm.types.length === 0) {
       this.partForm.types = [
         { name: 'Estándar', description: '', technical_description: '', materials: ['Tela Principal', 'Hilo de Confección'], total_time: 0, is_active: true, disabled_reason: '', _isExpanded: true, operations: [] }
@@ -285,12 +382,17 @@ export class PartesCatalogComponent implements OnInit {
       return;
     }
 
+    const selectedZones = this.partForm.zones && this.partForm.zones.length > 0
+      ? this.partForm.zones
+      : (this.partForm.zone ? [this.partForm.zone] : ['general']);
+
     const payload = {
       name: this.partForm.name.trim(),
       code: this.partForm.code?.trim() || null,
       description: this.partForm.description?.trim() || null,
       icon: this.partForm.icon || 'bi-box-seam',
-      zone: this.partForm.zone || 'general',
+      zone: selectedZones[0] || 'general',
+      zones: selectedZones,
       is_active: this.partForm.is_active !== undefined ? this.partForm.is_active : true,
       types: (this.partForm.types || []).map((t: any) => ({
         id: t.id,
@@ -502,6 +604,53 @@ export class PartesCatalogComponent implements OnInit {
       },
       error: (err) => {
         Swal.fire('Error', err?.error?.error || 'No se pudo guardar la región anatómica', 'error');
+      }
+    });
+  }
+
+  deleteRegion(region: AnatomicalRegion): void {
+    if (!region) return;
+
+    // Verificar si tiene partes asignadas
+    const assignedParts = this.allMasterParts.filter(p => p.zone === region.value);
+    if (assignedParts.length > 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No se puede eliminar',
+        text: `La región "${region.label}" tiene ${assignedParts.length} parte(s) asignada(s) en el catálogo. Reasigna o elimina esas partes antes de eliminar la región.`,
+        confirmButtonColor: '#4f46e5'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Eliminar región anatómica?',
+      text: `¿Estás seguro de eliminar "${region.label}"? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const idToDelete = region.id || region.value;
+        this.moldService.deleteAnatomicalRegion(idToDelete).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Eliminada',
+              text: `La región "${region.label}" ha sido eliminada.`,
+              timer: 1500,
+              showConfirmButton: false
+            });
+            this.isRegionModalOpen = false;
+            this.loadRegions(true);
+          },
+          error: (err) => {
+            Swal.fire('Error', err?.error?.error || 'No se pudo eliminar la región anatómica', 'error');
+          }
+        });
       }
     });
   }

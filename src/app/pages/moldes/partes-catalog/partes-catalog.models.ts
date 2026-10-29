@@ -42,6 +42,7 @@ export interface GarmentPart {
   description?: string;
   icon?: string;
   zone?: string;
+  zones?: string[];
   is_active?: boolean;
   types?: GarmentPartType[];
 }

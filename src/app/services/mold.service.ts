@@ -141,13 +141,13 @@ export class MoldService {
     );
   }
 
-  updateAnatomicalRegion(id: number, data: any): Observable<any> {
+  updateAnatomicalRegion(id: number | string, data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/anatomical-regions/${id}`, data).pipe(
       tap(() => { this.regionsCache$ = null; })
     );
   }
 
-  deleteAnatomicalRegion(id: number): Observable<any> {
+  deleteAnatomicalRegion(id: number | string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/anatomical-regions/${id}`).pipe(
       tap(() => { this.regionsCache$ = null; })
     );
@@ -237,6 +237,21 @@ export class MoldService {
 
   deleteGarmentPart(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/garment-parts/${id}`).pipe(
+      tap(() => this.clearGarmentPartsCache())
+    );
+  }
+
+  assignPartsToRegion(regionValue: string, partIds: number[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/garment-parts/assign-to-region`, {
+      region_value: regionValue,
+      part_ids: partIds
+    }).pipe(
+      tap(() => this.clearGarmentPartsCache())
+    );
+  }
+
+  unassignPartFromRegion(partId: number, regionValue: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/garment-parts/${partId}/unassign-region/${regionValue}`).pipe(
       tap(() => this.clearGarmentPartsCache())
     );
   }
