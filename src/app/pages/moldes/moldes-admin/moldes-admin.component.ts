@@ -472,8 +472,13 @@ export class MoldesAdminComponent implements OnInit {
   selectZoneTypeAndConfirm(type: string): void {
     this.pendingZoneType = type;
     this.pendingZoneColor = this.getZoneColor(type);
-    if (this.editingZoneIndex !== null) this.confirmZoneEdit();
+    if (this.editingZoneIndex !== null) this.confirmZoneEdit(true);
     else this.confirmZoneCreation();
+  }
+
+  onSelectZoneType(type: string): void {
+    this.pendingZoneType = type;
+    this.pendingZoneColor = this.getZoneColor(type);
   }
 
   confirmZoneCreation(): void {
@@ -523,7 +528,7 @@ export class MoldesAdminComponent implements OnInit {
     this.showZoneNameModal = true;
   }
 
-  confirmZoneEdit(): void {
+  confirmZoneEdit(openPartsDrawer: boolean = false): void {
     if (this.editingZoneIndex === null || this.editingZoneIndex < 0) return;
     const zone = this.zones[this.editingZoneIndex];
     const oldName = zone.name;
@@ -533,13 +538,21 @@ export class MoldesAdminComponent implements OnInit {
 
     if (oldName && oldName !== zone.name) {
       this.parts.forEach(p => {
-        if (p.zone_name === oldName || (zone.id && p.mold_zone_id === zone.id)) p.zone_name = zone.name;
+        if (p.zone_name === oldName || (zone.id && p.mold_zone_id === zone.id)) {
+          p.zone_name = zone.name;
+          p.zone_type = zone.zone_type;
+        }
       });
     }
 
+    const savedZone = zone;
     this.editingZoneIndex = null;
     this.showZoneNameModal = false;
     this.saveDraft();
+
+    if (openPartsDrawer) {
+      this.openZonePartsDrawer(savedZone);
+    }
   }
 
   removeZone(index: number): void {
@@ -574,14 +587,48 @@ export class MoldesAdminComponent implements OnInit {
 
     this.moldService.getGarmentPartsByZone(zoneType).subscribe({
       next: (res: any) => {
-        this.zoneCatalogParts = res.data || [];
+        const serverParts = res.data || [];
+        this.zoneCatalogParts = this.mergeZonePartsWithExisting(serverParts, zone);
         this.loadingZoneCatalog = false;
       },
       error: () => {
-        this.zoneCatalogParts = this.globalGarmentPartsCatalog.filter((p: any) => !p.zone || p.zone === zoneType || p.zone === 'general');
+        const fallback = this.globalGarmentPartsCatalog.filter((p: any) => !p.zone || p.zone === zoneType || p.zone === 'general');
+        this.zoneCatalogParts = this.mergeZonePartsWithExisting(fallback, zone);
         this.loadingZoneCatalog = false;
       }
     });
+  }
+
+  mergeZonePartsWithExisting(catalogParts: any[], zone: MoldZone): any[] {
+    const list = [...(catalogParts || [])];
+    const zName = (zone.name || '').toLowerCase().trim();
+    const zType = (zone.zone_type || '').toLowerCase().trim();
+
+    const existingInZone = (this.parts || []).filter(p => {
+      return (zone.id && p.mold_zone_id && p.mold_zone_id === zone.id) ||
+        (p.zone_name && zName && p.zone_name.toLowerCase().trim() === zName) ||
+        (p.zone_type && zType && p.zone_type.toLowerCase().trim() === zType);
+    });
+
+    for (const ep of existingInZone) {
+      const alreadyInCatalog = list.some(cp =>
+        (ep.garment_part_id && Number(cp.id) === Number(ep.garment_part_id)) ||
+        (cp.name && ep.name && cp.name.toLowerCase().trim() === ep.name.toLowerCase().trim())
+      );
+      if (!alreadyInCatalog) {
+        list.push({
+          id: ep.garment_part_id || (ep.id ? -ep.id : Math.floor(Math.random() * -10000)),
+          name: ep.name,
+          code: (ep as any).code || '',
+          icon: ep.icon || 'bi-puzzle',
+          zone: zone.zone_type || 'general',
+          description: ep.description || '',
+          types: ep.types || []
+        });
+      }
+    }
+
+    return list;
   }
 
   closeZonePartsDrawer(): void {

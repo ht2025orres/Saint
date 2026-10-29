@@ -56,7 +56,7 @@
     </div>
 
     <!-- Footer con Acciones -->
-    <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-wrap gap-2">
       <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
         <span class="w-2.5 h-2.5 rounded-full" [style.backgroundColor]="getZoneColor(pendingZoneType)"></span>
         {{ getZoneLabel(pendingZoneType) }}
@@ -67,9 +67,16 @@
           Cancelar
         </button>
         <button type="button" 
+                *ngIf="isEdit"
                 (click)="onConfirm()"
-                class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition-all cursor-pointer">
-          {{ isEdit ? 'Actualizar Región' : 'Confirmar y Ver Partes' }}
+                class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer">
+          Solo Guardar Región
+        </button>
+        <button type="button" 
+                (click)="isEdit ? onConfirmAndConfigureParts() : onConfirm()"
+                class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-1.5">
+          <i class="bi bi-sliders text-xs"></i>
+          <span>{{ isEdit ? 'Actualizar y Configurar Partes' : 'Confirmar y Ver Partes' }}</span>
         </button>
       </div>
     </div>

@@ -13,14 +13,20 @@ export class ModalZoneSelectorComponent {
 
   @Output() selectZoneType = new EventEmitter<string>();
   @Output() confirm = new EventEmitter<void>();
+  @Output() confirmAndConfigureParts = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
 
   onSelectOption(type: string): void {
+    this.pendingZoneType = type;
     this.selectZoneType.emit(type);
   }
 
   onConfirm(): void {
     this.confirm.emit();
+  }
+
+  onConfirmAndConfigureParts(): void {
+    this.confirmAndConfigureParts.emit();
   }
 
   onCancel(): void {

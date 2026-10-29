@@ -65,21 +65,28 @@
               <p class="text-[11px] font-black text-slate-800 truncate group-hover:text-indigo-700 transition-colors">{{ zone.name }}</p>
               <div class="flex items-center gap-1.5 mt-0.5">
                 <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">{{ getZoneLabel(zone.zone_type) }}</span>
-                <span class="text-[8px] font-bold px-1.5 py-0.2 rounded-full"
-                      [ngClass]="getPartsCountForZone(zone) > 0 ? 'bg-emerald-100 text-emerald-700 font-black' : 'bg-slate-100 text-slate-400'">
+                <span class="text-[8px] font-bold px-1.5 py-0.2 rounded-full cursor-pointer hover:ring-1 hover:ring-indigo-400 transition-all"
+                      (click)="openZoneDrawer.emit(zone); $event.stopPropagation()"
+                      title="Clic para configurar partes y variantes"
+                      [ngClass]="getPartsCountForZone(zone) > 0 ? 'bg-emerald-100 text-emerald-700 font-black' : 'bg-slate-100 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'">
+                  <i class="bi bi-sliders mr-0.5"></i>
                   {{ getPartsCountForZone(zone) }} {{ getPartsCountForZone(zone) === 1 ? 'parte' : 'partes' }}
                 </span>
               </div>
             </div>
           </div>
           <div class="flex items-center gap-1" *ngIf="!isReadOnly">
+            <button class="w-6 h-6 flex items-center justify-center rounded-lg text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white transition-all cursor-pointer shadow-2xs" 
+                    (click)="openZoneDrawer.emit(zone); $event.stopPropagation()" title="Configurar Partes y Variantes Habilitadas">
+              <i class="bi bi-sliders text-xs"></i>
+            </button>
             <button class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-100/60 transition-all cursor-pointer" 
                     (click)="selectZoneForVertexEdit.emit(zone); $event.stopPropagation()" title="Modificar Puntos / Vértices">
               <i class="bi bi-vector-pen text-xs"></i>
             </button>
             <button class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-100/60 transition-all cursor-pointer" 
-                    (click)="editZone.emit(zone); $event.stopPropagation()" title="Editar Región / Color">
-              <i class="bi bi-pencil text-xs"></i>
+                    (click)="editZone.emit(zone); $event.stopPropagation()" title="Cambiar Región Anatómica">
+              <i class="bi bi-palette text-xs"></i>
             </button>
             <button class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer" 
                     (click)="deleteZone.emit(zone); $event.stopPropagation()" title="Eliminar Zona">
@@ -375,13 +382,17 @@
                 <span class="text-[9px] font-black uppercase text-white tracking-wider truncate max-w-[120px]">{{ zone.name }}</span>
                 
                 <div class="flex items-center gap-0.5 ml-1" *ngIf="!isReadOnly">
+                  <button class="w-3.5 h-3.5 flex items-center justify-center rounded text-white/95 hover:text-white hover:bg-black/30 transition-all cursor-pointer"
+                          (click)="openZoneDrawer.emit(zone); $event.stopPropagation()" title="Configurar Partes y Variantes">
+                    <i class="bi bi-sliders text-[8px]"></i>
+                  </button>
                   <button class="w-3.5 h-3.5 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-black/20 transition-all cursor-pointer"
                           (click)="selectZoneForVertexEdit.emit(zone); $event.stopPropagation()" title="Modificar Puntos de la Zona">
                     <i class="bi bi-vector-pen text-[8px]"></i>
                   </button>
                   <button class="w-3.5 h-3.5 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-black/20 transition-all cursor-pointer"
-                          (click)="editZone.emit(zone); $event.stopPropagation()" title="Editar Zona">
-                    <i class="bi bi-pencil text-[8px]"></i>
+                          (click)="editZone.emit(zone); $event.stopPropagation()" title="Cambiar Región">
+                    <i class="bi bi-palette text-[8px]"></i>
                   </button>
                   <button class="w-3.5 h-3.5 flex items-center justify-center rounded text-rose-200 hover:text-white hover:bg-rose-700/60 transition-all cursor-pointer"
                           (click)="deleteZone.emit(zone); $event.stopPropagation()" title="Eliminar Zona">
