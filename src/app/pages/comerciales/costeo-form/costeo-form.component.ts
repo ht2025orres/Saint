@@ -36,6 +36,7 @@ export interface LocalItem {
   draftComponents?: any[]; // Store in-progress OPM components
   zoneObservations?: { [zoneKey: string]: string };
   availableExtensions?: { talla: string; rawTalla?: string; siesa_item_ext_rowid?: number | null; color?: string }[];
+  technical_spec?: any;
 }
 
 export type AnatomicalFamily = 'SUPERIOR' | 'INFERIOR' | 'COMPLETA' | 'GENERAL' | 'SIN_MOLDE';
@@ -295,6 +296,48 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
           const categoryName = moldObj?.category?.name || '';
           const moldName = moldObj?.name || '';
 
+          if (moldId && moldObj) {
+            this.cachedMoldsMap[moldId] = moldObj;
+          }
+
+          const techSpec = it.technical_spec || null;
+          const specParts = techSpec?.parts || [];
+          const draftComponents = specParts.length > 0
+            ? specParts.map((p: any) => ({
+                id: p.id,
+                mold_part_id: p.mold_part_id,
+                mold_part_type_id: p.mold_part_type_id,
+                selected_type_name: p.selected_type_name || '',
+                name: p.name,
+                zone_name: p.zone_name,
+                item_type: p.item_type || 'parte',
+                client_spec: p.client_spec || '',
+                technical_spec: p.technical_spec || '',
+                estimated_time: parseFloat(p.estimated_time) || 0,
+                position_x: p.position_x !== null ? parseFloat(p.position_x) : null,
+                position_y: p.position_y !== null ? parseFloat(p.position_y) : null,
+                inventory_reference: p.inventory_reference || null,
+                inventory_description: p.inventory_description || null
+              }))
+            : undefined;
+
+          const zoneObservations: { [zoneKey: string]: string } = {};
+          if (specParts.length > 0) {
+            specParts.forEach((p: any) => {
+              if (p.zone_name && p.client_spec) {
+                zoneObservations[p.zone_name] = p.client_spec;
+              }
+            });
+          }
+
+          let totalSamTime: number | undefined = undefined;
+          if (techSpec?.total_estimated_time !== undefined && techSpec.total_estimated_time !== null) {
+            totalSamTime = Math.round(parseFloat(techSpec.total_estimated_time) * 100) / 100;
+          } else if (draftComponents && draftComponents.length > 0) {
+            const sum = draftComponents.reduce((acc: number, c: any) => acc + (Number(c.estimated_time) || 0), 0);
+            totalSamTime = Math.round(sum * 100) / 100;
+          }
+
           return {
             descripcion: it.descripcion,
             item_cliente: it.item_cliente || '',
@@ -313,6 +356,11 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
             moldId: moldId,
             moldName: moldName,
             technicalSpecId: specId,
+            opmReference: techSpec?.reference || undefined,
+            totalSamTime: totalSamTime,
+            draftComponents: draftComponents,
+            zoneObservations: Object.keys(zoneObservations).length > 0 ? zoneObservations : undefined,
+            technical_spec: techSpec,
             specExpanded: false,
             availableMolds: [],
           };
@@ -343,16 +391,20 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     if (!this.items || this.items.length === 0) return;
     this.items.forEach((item, index) => {
       if (item.moldId) {
-        if (!item.categoryId) {
+        const cached = this.cachedMoldsMap[item.moldId];
+        const hasFullParts = cached?.parts?.some((p: any) => (p.types && p.types.length > 0) || (p.garment_part?.types && p.garment_part.types.length > 0));
+        if (!item.categoryId || !hasFullParts) {
           this.moldService.getMold(item.moldId).subscribe({
             next: (res: any) => {
               if (res.data) {
                 const mold = res.data;
                 item.moldName = mold.name;
                 item.categoryId = mold.mold_category_id || mold.id_product_category || mold.category_id || null;
+                this.cachedMoldsMap[item.moldId!] = mold;
                 if (item.categoryId) {
                   this.loadMoldsForItem(index);
                 }
+                this.rebuildAnatomicalGroups();
               }
             },
             error: () => {}
@@ -360,6 +412,47 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         } else {
           this.loadMoldsForItem(index);
         }
+      }
+
+      // Si el ítem tiene technicalSpecId pero sus componentes no estaban en el payload inicial, hidratarlos desde la API
+      if (item.technicalSpecId && (!item.draftComponents || item.draftComponents.length === 0)) {
+        this.moldService.getTechnicalSpec(item.technicalSpecId).subscribe({
+          next: (res: any) => {
+            if (res && res.data) {
+              const spec = res.data;
+              item.technical_spec = spec;
+              item.opmReference = spec.reference || item.opmReference;
+              const parts = spec.parts || [];
+              if (parts.length > 0) {
+                item.draftComponents = parts.map((p: any) => ({
+                  id: p.id,
+                  mold_part_id: p.mold_part_id,
+                  mold_part_type_id: p.mold_part_type_id,
+                  selected_type_name: p.selected_type_name || '',
+                  name: p.name,
+                  zone_name: p.zone_name,
+                  item_type: p.item_type || 'parte',
+                  client_spec: p.client_spec || '',
+                  technical_spec: p.technical_spec || '',
+                  estimated_time: parseFloat(p.estimated_time) || 0,
+                  position_x: p.position_x !== null ? parseFloat(p.position_x) : null,
+                  position_y: p.position_y !== null ? parseFloat(p.position_y) : null,
+                  inventory_reference: p.inventory_reference || null,
+                  inventory_description: p.inventory_description || null
+                }));
+                if (!item.zoneObservations) item.zoneObservations = {};
+                parts.forEach((p: any) => {
+                  if (p.zone_name && p.client_spec) {
+                    item.zoneObservations![p.zone_name] = p.client_spec;
+                  }
+                });
+                this.recalculateItemSam(item);
+                this.rebuildAnatomicalGroups();
+              }
+            }
+          },
+          error: (err) => console.warn(`No se pudo cargar ficha técnica ${item.technicalSpecId}`, err)
+        });
       }
     });
   }
@@ -951,17 +1044,21 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
 
     // 1. Check in item.draftComponents PRIMERO (para reflejar cambios inmediatos desde la tabla o el modal)
     if (item.draftComponents && item.draftComponents.length > 0) {
-      const dMatch = item.draftComponents.find((p: any) => {
+      const configuredMatch = item.draftComponents.find((p: any) => {
+        if (p.item_type === 'material') return false;
+        const text = `${p.zone_name || ''} ${p.name || ''}`.toLowerCase();
+        return !!p.selected_type_name && col.keywords.some(k => text.includes(k.toLowerCase()));
+      });
+      if (configuredMatch) {
+        return { name: configuredMatch.selected_type_name, isConfigured: true, samTime: configuredMatch.estimated_time };
+      }
+      const anyMatch = item.draftComponents.find((p: any) => {
         if (p.item_type === 'material') return false;
         const text = `${p.zone_name || ''} ${p.name || ''}`.toLowerCase();
         return col.keywords.some(k => text.includes(k.toLowerCase()));
       });
-      if (dMatch) {
-        if (dMatch.selected_type_name) {
-          return { name: dMatch.selected_type_name, isConfigured: true, samTime: dMatch.estimated_time };
-        } else {
-          return { name: 'Por definir', isConfigured: false };
-        }
+      if (anyMatch) {
+        return { name: 'Por definir', isConfigured: false };
       }
     }
 
@@ -971,10 +1068,10 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       const match = parts.find((p: any) => {
         if (p.item_type === 'material') return false;
         const text = `${p.zone_name || ''} ${p.name || ''}`.toLowerCase();
-        return col.keywords.some(k => text.includes(k.toLowerCase()));
+        return !!p.selected_type_name && col.keywords.some(k => text.includes(k.toLowerCase()));
       });
-      if (match && match.selected_type_name) {
-        return { name: match.selected_type_name, isConfigured: true, samTime: match.estimated_time };
+      if (match) {
+        return { name: match.selected_type_name, isConfigured: true, samTime: parseFloat(match.estimated_time) || 0 };
       }
     }
 

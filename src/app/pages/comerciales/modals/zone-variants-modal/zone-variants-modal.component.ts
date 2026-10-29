@@ -148,7 +148,11 @@ export class ZoneVariantsModalComponent {
     if (!this.item) return false;
     const comps = this.item.draftComponents || (this.item as any).technical_spec?.parts || [];
     const pids = [part.id, ...(part.siblingPartIds || [])];
-    const found = comps.find((c: any) => pids.includes(Number(c.mold_part_id)));
+    const pName = (part.name || '').toLowerCase().trim();
+    const found = comps.find((c: any) =>
+      (c.mold_part_id && pids.includes(Number(c.mold_part_id))) ||
+      (pName && c.name && c.name.toLowerCase().trim() === pName)
+    );
     return !!(found && found.selected_type_name);
   }
 
@@ -156,7 +160,11 @@ export class ZoneVariantsModalComponent {
     if (!this.item || !part || !type) return false;
     const comps = this.item.draftComponents || (this.item as any).technical_spec?.parts || [];
     const pids = [part.id, ...(part.siblingPartIds || [])];
-    const found = comps.find((c: any) => pids.includes(Number(c.mold_part_id)));
+    const pName = (part.name || '').toLowerCase().trim();
+    const found = comps.find((c: any) =>
+      (c.mold_part_id && pids.includes(Number(c.mold_part_id))) ||
+      (pName && c.name && c.name.toLowerCase().trim() === pName)
+    );
     if (!found) return false;
     return Number(found.mold_part_type_id) === Number(type.id) ||
            (found.selected_type_name && found.selected_type_name.toLowerCase().trim() === (type.name || '').toLowerCase().trim());
@@ -166,7 +174,11 @@ export class ZoneVariantsModalComponent {
     if (!this.item) return '';
     const comps = this.item.draftComponents || (this.item as any).technical_spec?.parts || [];
     const pids = [part.id, ...(part.siblingPartIds || [])];
-    const found = comps.find((c: any) => pids.includes(Number(c.mold_part_id)));
+    const pName = (part.name || '').toLowerCase().trim();
+    const found = comps.find((c: any) =>
+      (c.mold_part_id && pids.includes(Number(c.mold_part_id))) ||
+      (pName && c.name && c.name.toLowerCase().trim() === pName)
+    );
     return found?.selected_type_name || '';
   }
 }
