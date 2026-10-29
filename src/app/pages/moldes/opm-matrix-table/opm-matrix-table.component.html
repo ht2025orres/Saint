@@ -13,10 +13,7 @@
       </div>
 
       <div class="item-actions flex items-center gap-2 flex-wrap">
-        <button class="btn-action-primary" (click)="showItemSearch = true">
-          <i class="bi bi-search"></i> Catálogo / Histórico Siesa
-        </button>
-        <button class="btn-action-secondary" (click)="showNewItemForm = !showNewItemForm">
+        <button class="btn-action-primary" (click)="showNewItemForm = !showNewItemForm">
           <i class="bi bi-plus-lg"></i> Ítem Nuevo
         </button>
         <button *ngIf="items.length > 0" class="btn-action-outline-danger" (click)="clearDraft()" title="Limpiar borrador">
@@ -118,7 +115,7 @@
       </div>
       <h3 class="text-base font-bold text-slate-800 mb-1">Aún no hay prendas agregadas para generar OPM</h3>
       <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">
-        Puedes seleccionar un molde desde la Librería de Moldes, agregar una prenda nueva manualmente o importar ítems del catálogo Siesa.
+        Puedes seleccionar un molde desde la Librería de Moldes o agregar una prenda nueva manualmente.
       </p>
       <div class="flex items-center justify-center gap-3">
         <button type="button" class="btn-action-primary" (click)="onBackToLibreria.emit()">
@@ -370,14 +367,6 @@
     (onSelect)="onMoldSelected($event)"
     (onClose)="closeMoldSelector()">
   </app-mold-selector-modal>
-
-  <!-- Modal Búsqueda de Catálogo Siesa -->
-  <app-item-search-modal
-    *ngIf="showItemSearch"
-    [clienteId]="null"
-    (onSelect)="onItemFromCatalogSelected($event)"
-    (onClose)="showItemSearch = false">
-  </app-item-search-modal>
 
   <!-- Modal Visor & Editor de Figurín (OPM Stepper 2D) -->
   <app-figurin-opm-modal

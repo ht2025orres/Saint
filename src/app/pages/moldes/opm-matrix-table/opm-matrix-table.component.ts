@@ -116,9 +116,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
   showMoldSelectorModal = false;
   moldSelectorItemIndex: number | null = null;
 
-  // Modal de Búsqueda de Catálogo / Siesa
-  showItemSearch = false;
-
   // Guardando OPM global
   isSavingGlobalOpm = false;
 
@@ -1132,41 +1129,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
     this.rebuildAnatomicalGroups();
     this.saveToLocalStorage();
     this.closeMoldSelector();
-  }
-
-  // ==================== CATÁLOGO / SIESA ====================
-
-  onItemFromCatalogSelected(event: any): void {
-    const newItem: LocalItem = {
-      descripcion: event.descripcion || event.referencia || 'Ítem Importado',
-      item_cliente: event.referencia || '',
-      siesa_item_rowid: event.f120_rowid || null,
-      siesa_item_ext_rowid: null,
-      siesa_referencia: event.referencia || '',
-      cantidad_muestra: 1,
-      tallas: (event.extensiones && event.extensiones.length > 0)
-        ? event.extensiones.map((e: any) => ({ talla: e.talla || 'M', cantidad: 1, siesa_item_ext_rowid: e.f121_rowid || null }))
-        : [{ talla: 'M', cantidad: 1 }],
-      isNew: false,
-      isExpanded: false,
-      ref_siesa_item_rowid: null,
-      ref_siesa_referencia: '',
-      ref_siesa_descripcion: '',
-      categoryId: null,
-      categoryName: '',
-      moldId: null,
-      moldName: '',
-      technicalSpecId: null,
-      totalSamTime: 0,
-      specExpanded: false,
-      availableMolds: [],
-      draftComponents: []
-    };
-
-    this.items.push(newItem);
-    this.showItemSearch = false;
-    this.rebuildAnatomicalGroups();
-    this.saveToLocalStorage();
   }
 
   // ==================== GENERACIÓN FINAL DE OPMS ====================
