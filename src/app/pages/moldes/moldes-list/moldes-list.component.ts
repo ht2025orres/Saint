@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
@@ -18,10 +18,15 @@ export class MoldesListComponent implements OnInit {
   selectedCategoryId: number | null = null;
   showCategoryManager = false;
 
+  // Configurador OPM Stepper Modal
+  mostrarModalConfiguradorOpm: boolean = false;
+  selectedMoldForOpm: any = null;
+
   constructor(
     private moldService: MoldService,
     private router: Router,
-    public authService: AuthService
+    public authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   // ==================== PERMISSIONS ====================
@@ -115,7 +120,29 @@ export class MoldesListComponent implements OnInit {
   }
 
   goToGenerateOpm(moldId: number): void {
-    this.router.navigate(['/moldes/opm-generator', moldId]);
+    const mold = this.molds.find(m => m.id === moldId);
+    this.selectedMoldForOpm = {
+      moldId: moldId,
+      mold_id: moldId,
+      moldName: mold?.name || '',
+      categoryName: this.getCategoryName(mold),
+      descripcion: mold?.name ? `OPM Molde - ${mold.name}` : 'OPM Molde Base',
+      talla: 'M',
+      cantidad_muestra: 1,
+      tallas: [{ talla: 'M', cantidad: 1 }]
+    };
+    this.mostrarModalConfiguradorOpm = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarConfiguradorOpm(): void {
+    this.mostrarModalConfiguradorOpm = false;
+    this.selectedMoldForOpm = null;
+    this.cdr.detectChanges();
+  }
+
+  onOpmSaved(event: any): void {
+    this.cerrarConfiguradorOpm();
   }
 
   goToGenerateFicha(moldId: number): void {
