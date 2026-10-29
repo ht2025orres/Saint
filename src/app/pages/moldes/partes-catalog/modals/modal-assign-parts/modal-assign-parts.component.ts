@@ -91,3 +91,4 @@ export class ModalAssignPartsComponent implements OnChanges {
     return parseFloat(total.toFixed(2));
   }
 }
+

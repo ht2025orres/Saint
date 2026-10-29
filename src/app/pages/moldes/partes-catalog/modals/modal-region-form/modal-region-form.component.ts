@@ -19,6 +19,7 @@ export class ModalRegionFormComponent {
   };
 
   @Output() saveRegion = new EventEmitter<void>();
+  @Output() deleteRegion = new EventEmitter<AnatomicalRegion>();
   @Output() closeRegion = new EventEmitter<void>();
 
   colorOptions: string[] = [
@@ -37,6 +38,10 @@ export class ModalRegionFormComponent {
       this.generateSlugFromLabel();
     }
     this.saveRegion.emit();
+  }
+
+  onDelete(): void {
+    this.deleteRegion.emit(this.regionForm);
   }
 
   onClose(): void {
