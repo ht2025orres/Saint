@@ -188,7 +188,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
 
   // ==================== PERSISTENCIA LOCAL STORAGE ====================
 
-  private saveToLocalStorage(): void {
+  saveToLocalStorage(): void {
     try {
       const payload = {
         items: this.items,
@@ -201,7 +201,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
     }
   }
 
-  private restoreFromLocalStorage(): void {
+  restoreFromLocalStorage(): void {
     try {
       const raw = localStorage.getItem(this.STORAGE_KEY);
       if (!raw) return;
