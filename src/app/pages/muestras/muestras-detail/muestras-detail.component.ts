@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, ViewChild } from '@angular/core';
+import { Component, OnInit, Inject, ViewChild, HostListener } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ComercialService, Solicitud } from '../../../services/comercial.service';
@@ -1543,6 +1543,79 @@ export class MuestrasDetailComponent implements OnInit {
     { id: 'PT001', name: 'Producto Terminado' }
   ];
   modalDestinoPrenda: 'all' | 'specific' = 'all';
+  isPrendaDropdownOpen: boolean = false;
+  prendaSearchQuery: string = '';
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.isPrendaDropdownOpen) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.custom-prenda-dropdown-container')) {
+        this.isPrendaDropdownOpen = false;
+      }
+    }
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onKeydownHandler(event: KeyboardEvent): void {
+    if (this.isPrendaDropdownOpen) {
+      this.isPrendaDropdownOpen = false;
+    }
+  }
+
+  get prendasFiltradas(): any[] {
+    if (!this.muestra?.items?.length) return [];
+    const q = (this.prendaSearchQuery || '').trim().toLowerCase();
+    if (!q) return this.muestra.items;
+    return this.muestra.items.filter((item: any, idx: number) => {
+      const textDesc = (item.descripcion || '').toLowerCase();
+      const textRef = (item.siesa_referencia || '').toLowerCase();
+      const textCliente = (item.item_cliente || '').toLowerCase();
+      const textIndex = `prenda ${idx + 1}`.toLowerCase();
+      return textDesc.includes(q) || textRef.includes(q) || textCliente.includes(q) || textIndex.includes(q);
+    });
+  }
+
+  getPrendaSeleccionada(): any {
+    if (!this.muestra?.items?.length || !this.nuevoMaterial?.solicitud_item_id) return null;
+    return this.muestra.items.find((it: any) => it.id === this.nuevoMaterial.solicitud_item_id) || null;
+  }
+
+  getPrendaIndex(prendaId: any): number {
+    if (!this.muestra?.items?.length) return -1;
+    return this.muestra.items.findIndex((it: any) => it.id === prendaId);
+  }
+
+  togglePrendaDropdown(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isPrendaDropdownOpen = !this.isPrendaDropdownOpen;
+    if (this.isPrendaDropdownOpen) {
+      this.prendaSearchQuery = '';
+    }
+  }
+
+  seleccionarPrendaDropdown(item: any, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.nuevoMaterial.solicitud_item_id = item.id;
+    this.isPrendaDropdownOpen = false;
+    this.prendaSearchQuery = '';
+  }
+
+  seleccionarDestinoPrenda(tipo: 'all' | 'specific'): void {
+    this.modalDestinoPrenda = tipo;
+    if (tipo === 'all') {
+      this.nuevoMaterial.solicitud_item_id = null;
+      this.isPrendaDropdownOpen = false;
+    } else {
+      if (!this.nuevoMaterial.solicitud_item_id && this.muestra?.items?.length) {
+        this.nuevoMaterial.solicitud_item_id = this.muestra.items[0].id;
+      }
+    }
+  }
 
   // Edición Inline de Requerido en la tabla
   editingRequeridoKey: string | null = null;
@@ -2034,6 +2107,8 @@ export class MuestrasDetailComponent implements OnInit {
 
   cerrarModalMaterial(): void {
     this.showMaterialModal = false;
+    this.isPrendaDropdownOpen = false;
+    this.prendaSearchQuery = '';
   }
 
   setMaterialModalTab(tab: 'siesa' | 'manual'): void {
