@@ -38,7 +38,7 @@ export class MuestrasDetailComponent implements OnInit {
 
   readonly ZONE_METADATA: Record<string, { label: string; icon: string; bgClass: string; color: string }> = {
     'cuello': { label: 'Cuello y Solapa', icon: 'bi-gem', bgClass: 'bg-indigo-500', color: '#6366f1' },
-    'manga': { label: 'Mangas y Puños', icon: 'bi-layers-fill', bgClass: 'bg-purple-500', color: '#8b5cf6' },
+    'manga': { label: 'Mangas y Puños', icon: 'bi-layers-fill', bgClass: 'bg-slate-600', color: '#475569' },
     'pecho': { label: 'Pechera y Delantero', icon: 'bi-columns', bgClass: 'bg-emerald-500', color: '#10b981' },
     'espalda': { label: 'Espalda y Almilla', icon: 'bi-border-all', bgClass: 'bg-pink-500', color: '#ec4899' },
     'pretina': { label: 'Cintura y Pretina', icon: 'bi-bounding-box-circles', bgClass: 'bg-cyan-500', color: '#06b6d4' },
