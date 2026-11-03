@@ -1522,6 +1522,14 @@ export class MuestrasDetailComponent implements OnInit {
   siesaSearchResults: any[] = [];
   isSearchingSiesa = false;
   siesaSelectedCategory: string = 'TODOS';
+  siesaCategorias: string[] = ['TODOS', 'TELAS', 'BOTONES', 'HILOS', 'CREMALLERAS', 'ELASTICOS', 'AVIOS'];
+  modalDestinoPrenda: 'all' | 'specific' = 'all';
+
+  // Edición Inline de Requerido en la tabla
+  editingRequeridoKey: string | null = null;
+  editingRequeridoValue: number = 0;
+  editingRequeridoUnidad: string = 'UND';
+  isSavingInlineRequerido: boolean = false;
 
   nuevoMaterial: any = {
     id: null,
@@ -1653,9 +1661,19 @@ export class MuestrasDetailComponent implements OnInit {
       if (!rawName && m.siesa_descripcion) rawName = m.siesa_descripcion;
       if (!rawName) rawName = 'Insumo';
 
-      const key = rawName.toLowerCase().trim();
+      // Diferenciación de telas: Si una tela está asignada a una prenda específica,
+      // se agrupa por prenda para permitir telas principales distintas por cada prenda.
+      let key = rawName.toLowerCase().trim();
+      if (m.tipo_material === 'TELA') {
+        if (m.solicitud_item_id) {
+          key = `tela_item_${m.solicitud_item_id}`;
+        } else {
+          key = `tela_global_${(m.siesa_referencia || 'general').toLowerCase().trim()}`;
+        }
+      }
 
       if (!map.has(key)) {
+        const itemObj = m.solicitud_item_id ? (this.muestra?.items || []).find((i: any) => i.id === m.solicitud_item_id) : null;
         map.set(key, {
           key: key,
           nombre: rawName,
@@ -1670,7 +1688,13 @@ export class MuestrasDetailComponent implements OnInit {
           descripcion_personalizada: m.descripcion_personalizada || null,
           creado_por_rol: m.creado_por_rol || 'INGENIERIA',
           rawItems: [],
-          prendasMap: new Map<number, any>()
+          prendasMap: new Map<number, any>(),
+          esPorPrenda: !!m.solicitud_item_id,
+          prendaAsignada: itemObj ? {
+            id: itemObj.id,
+            descripcion: itemObj.descripcion,
+            siesa_referencia: itemObj.siesa_referencia
+          } : null
         });
       }
 
@@ -1738,7 +1762,7 @@ export class MuestrasDetailComponent implements OnInit {
       }
 
       const prendasDesglose = Array.from(g.prendasMap.values());
-      const prendasCount = prendasDesglose.length || 1;
+      const prendasCount = prendasDesglose.length || (g.esPorPrenda ? 1 : (this.muestra?.items?.length || 1));
 
       let estadoEntrega = 'PENDIENTE';
       if (g.cantidad_entregada_total >= g.cantidad_requerida_total && g.cantidad_requerida_total > 0) {
@@ -1759,14 +1783,119 @@ export class MuestrasDetailComponent implements OnInit {
     });
   }
 
+  // ==================== EDICIÓN INLINE DE REQUERIDO ====================
+
+  iniciarEdicionRequerido(mat: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.editingRequeridoKey = mat.key;
+    this.editingRequeridoValue = Number(mat.cantidad_requerida_total) || 1;
+    this.editingRequeridoUnidad = mat.unidad_medida || (mat.tipo_material === 'TELA' ? 'METROS' : 'UND');
+  }
+
+  cancelarEdicionRequerido(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.editingRequeridoKey = null;
+  }
+
+  guardarEdicionRequerido(mat: any, event?: Event): void {
+    if (event) event.stopPropagation();
+    const val = Number(this.editingRequeridoValue);
+    if (!val || val <= 0) {
+      Swal.fire('Atención', 'La cantidad requerida debe ser mayor a 0', 'warning');
+      return;
+    }
+
+    this.isSavingInlineRequerido = true;
+    const nuevaCantidad = val;
+    const nuevaUnidad = this.editingRequeridoUnidad;
+
+    if (mat.firstTrackingId) {
+      this.comercialService.actualizarMaterial(mat.firstTrackingId, {
+        cantidad_requerida: nuevaCantidad,
+        unidad_medida: nuevaUnidad
+      }).subscribe({
+        next: () => {
+          this.isSavingInlineRequerido = false;
+          this.editingRequeridoKey = null;
+          mat.cantidad_requerida_total = nuevaCantidad;
+          mat.unidad_medida = nuevaUnidad;
+          if (mat.firstTrackingItem) {
+            mat.firstTrackingItem.cantidad_requerida = nuevaCantidad;
+            mat.firstTrackingItem.unidad_medida = nuevaUnidad;
+          }
+          const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+          });
+          Toast.fire({
+            icon: 'success',
+            title: `Requerido: ${nuevaCantidad} ${nuevaUnidad}`
+          });
+          this.loadMateriales(false);
+        },
+        error: (err) => {
+          this.isSavingInlineRequerido = false;
+          Swal.fire('Error', err.error?.message || 'No se pudo actualizar el requerimiento', 'error');
+        }
+      });
+    } else {
+      const itemsToUpdate = (mat.rawItems && mat.rawItems.length > 0) ? mat.rawItems : [mat];
+      const payload = {
+        materiales: itemsToUpdate.map((ri: any) => ({
+          id: ri.id,
+          solicitud_item_id: ri.solicitud_item_id,
+          nombre_material: mat.nombre,
+          tipo_material: mat.tipo_material,
+          cantidad_requerida: nuevaCantidad,
+          unidad_medida: nuevaUnidad,
+          siesa_referencia: mat.siesa_referencia,
+          siesa_descripcion: mat.siesa_descripcion,
+          siesa_color: mat.siesa_color,
+          descripcion_personalizada: mat.descripcion_personalizada || mat.nombre
+        })),
+        creado_por_rol: 'INGENIERIA'
+      };
+
+      this.comercialService.guardarMateriales(this.solicitudId, payload).subscribe({
+        next: () => {
+          this.isSavingInlineRequerido = false;
+          this.editingRequeridoKey = null;
+          mat.cantidad_requerida_total = nuevaCantidad;
+          mat.unidad_medida = nuevaUnidad;
+          const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+          });
+          Toast.fire({
+            icon: 'success',
+            title: `Requerido: ${nuevaCantidad} ${nuevaUnidad}`
+          });
+          this.loadMateriales(false);
+        },
+        error: (err) => {
+          this.isSavingInlineRequerido = false;
+          Swal.fire('Error', err.error?.message || 'No se pudo actualizar el requerimiento', 'error');
+        }
+      });
+    }
+  }
+
   abrirModalDefinirMaterial(mat: any): void {
     const rawItem = mat.firstTrackingItem || mat.rawItems?.[0] || null;
     const rawId = rawItem?.id || null;
-    const itemId = rawItem?.solicitud_item_id || mat.prendasDesglose?.[0]?.itemId || null;
+    const itemId = mat.prendaAsignada?.id || rawItem?.solicitud_item_id || mat.prendasDesglose?.[0]?.itemId || null;
+
+    this.modalDestinoPrenda = (mat.esPorPrenda && itemId) ? 'specific' : 'all';
 
     this.nuevoMaterial = {
       id: rawId,
-      solicitud_item_id: itemId,
+      solicitud_item_id: this.modalDestinoPrenda === 'specific' ? itemId : null,
       nombre_material: mat.nombre,
       tipo_material: mat.tipo_material,
       grupo_insumo: mat.grupo_insumo,
@@ -1781,19 +1910,34 @@ export class MuestrasDetailComponent implements OnInit {
       unidad_medida: mat.unidad_medida || (mat.tipo_material === 'TELA' ? 'METROS' : 'UND'),
     };
 
-    let searchQ = mat.nombre;
-    const lower = mat.nombre.toLowerCase();
-    if (lower.includes('tela principal')) searchQ = 'DRIL';
-    else if (lower.includes('entretela')) searchQ = 'ENTRETELA';
-    else if (lower.includes('hilo')) searchQ = 'HILO';
-    else if (lower.includes('cierre') || lower.includes('cremallera')) searchQ = 'CIERRE';
-    else if (lower.includes('broche')) searchQ = 'BROCHE';
-    else if (lower.includes('elástico') || lower.includes('elastico')) searchQ = 'ELASTICO';
-    else if (lower.includes('botón') || lower.includes('boton')) searchQ = 'BOTON';
+    let searchQ = mat.siesa_referencia || mat.nombre;
+    const lower = (mat.nombre || '').toLowerCase();
+    if (lower.includes('tela principal')) {
+      searchQ = mat.siesa_referencia || 'DRIL';
+      this.siesaSelectedCategory = 'TELAS';
+    } else if (lower.includes('entretela')) {
+      searchQ = mat.siesa_referencia || 'ENTRETELA';
+      this.siesaSelectedCategory = 'TELAS';
+    } else if (lower.includes('hilo')) {
+      searchQ = mat.siesa_referencia || 'HILO';
+      this.siesaSelectedCategory = 'HILOS';
+    } else if (lower.includes('cierre') || lower.includes('cremallera')) {
+      searchQ = mat.siesa_referencia || 'CIERRE';
+      this.siesaSelectedCategory = 'CREMALLERAS';
+    } else if (lower.includes('broche')) {
+      searchQ = mat.siesa_referencia || 'BROCHE';
+      this.siesaSelectedCategory = 'BOTONES';
+    } else if (lower.includes('elástico') || lower.includes('elastico')) {
+      searchQ = mat.siesa_referencia || 'ELASTICO';
+      this.siesaSelectedCategory = 'ELASTICOS';
+    } else if (lower.includes('botón') || lower.includes('boton')) {
+      searchQ = mat.siesa_referencia || 'BOTON';
+      this.siesaSelectedCategory = 'BOTONES';
+    }
 
     this.siesaSearchQuery = searchQ;
     this.siesaSearchResults = [];
-    this.materialModalTab = mat.siesa_referencia ? 'siesa' : 'siesa';
+    this.materialModalTab = 'siesa';
     this.showMaterialModal = true;
     this.buscarInsumosSiesa();
   }
@@ -1818,6 +1962,7 @@ export class MuestrasDetailComponent implements OnInit {
   }
 
   abrirModalAgregarMaterial(solicitudItemId: number | null = null, tipo: 'TELA' | 'INSUMO' = 'INSUMO'): void {
+    this.modalDestinoPrenda = solicitudItemId ? 'specific' : 'all';
     this.nuevoMaterial = {
       id: null,
       solicitud_item_id: solicitudItemId,
@@ -1831,10 +1976,11 @@ export class MuestrasDetailComponent implements OnInit {
       siesa_id_color: '',
       siesa_color: '',
       descripcion_personalizada: '',
-      cantidad_requerida: 1,
+      cantidad_requerida: tipo === 'TELA' ? 45 : 1,
       unidad_medida: tipo === 'TELA' ? 'METROS' : 'UND',
     };
-    this.siesaSearchQuery = '';
+    this.siesaSelectedCategory = tipo === 'TELA' ? 'TELAS' : 'TODOS';
+    this.siesaSearchQuery = tipo === 'TELA' ? 'DRIL' : '';
     this.siesaSearchResults = [];
     this.materialModalTab = 'siesa';
     this.showMaterialModal = true;
@@ -1853,6 +1999,46 @@ export class MuestrasDetailComponent implements OnInit {
   toggleSiesaStock(): void {
     this.siesaSoloConStock = !this.siesaSoloConStock;
     this.buscarInsumosSiesa();
+  }
+
+  filtrarCategoriaSiesa(cat: string): void {
+    this.siesaSelectedCategory = cat;
+    if (cat === 'TELAS') {
+      this.siesaSearchQuery = 'DRIL';
+    } else if (cat === 'BOTONES') {
+      this.siesaSearchQuery = 'BOTON';
+    } else if (cat === 'HILOS') {
+      this.siesaSearchQuery = 'HILO';
+    } else if (cat === 'CREMALLERAS') {
+      this.siesaSearchQuery = 'CIERRE';
+    } else if (cat === 'ELASTICOS') {
+      this.siesaSearchQuery = 'ELASTICO';
+    } else if (cat === 'AVIOS') {
+      this.siesaSearchQuery = 'ETIQUETA';
+    } else {
+      this.siesaSearchQuery = '';
+    }
+    this.buscarInsumosSiesa();
+  }
+
+  limpiarBusquedaSiesa(): void {
+    this.siesaSearchQuery = '';
+    this.buscarInsumosSiesa();
+  }
+
+  deseleccionarItemSiesa(): void {
+    this.nuevoMaterial.siesa_id_item = '';
+    this.nuevoMaterial.siesa_referencia = '';
+    this.nuevoMaterial.siesa_descripcion = '';
+    this.nuevoMaterial.siesa_id_color = '';
+    this.nuevoMaterial.siesa_color = '';
+    this.nuevoMaterial.descripcion_personalizada = '';
+  }
+
+  ajustarCantidadRequeridaModal(delta: number): void {
+    const cur = Number(this.nuevoMaterial.cantidad_requerida) || 0;
+    const nextVal = Math.max(0.1, Math.round((cur + delta) * 10) / 10);
+    this.nuevoMaterial.cantidad_requerida = nextVal;
   }
 
   buscarInsumosSiesa(): void {
@@ -1880,12 +2066,12 @@ export class MuestrasDetailComponent implements OnInit {
     this.nuevoMaterial.siesa_descripcion = item.descripcion;
     this.nuevoMaterial.siesa_id_color = item.id_color;
     this.nuevoMaterial.siesa_color = item.color;
-    if (!this.nuevoMaterial.nombre_material) {
+    if (!this.nuevoMaterial.nombre_material || this.nuevoMaterial.nombre_material === 'Insumo') {
       this.nuevoMaterial.nombre_material = item.es_tela ? 'Tela Principal' : item.descripcion;
     }
     this.nuevoMaterial.tipo_material = item.es_tela ? 'TELA' : 'INSUMO';
     this.nuevoMaterial.grupo_insumo = item.grupo;
-    this.nuevoMaterial.unidad_medida = item.es_tela ? 'METROS' : 'UND';
+    this.nuevoMaterial.unidad_medida = item.es_tela ? 'METROS' : (this.nuevoMaterial.unidad_medida || 'UND');
     this.nuevoMaterial.descripcion_personalizada = `${item.referencia} - ${item.descripcion} (${item.color || 'ESTÁNDAR'})`;
   }
 
@@ -1905,8 +2091,26 @@ export class MuestrasDetailComponent implements OnInit {
       return;
     }
 
+    const esTela = this.nuevoMaterial.tipo_material === 'TELA';
+    const esTodasPrendas = this.modalDestinoPrenda === 'all' || !this.nuevoMaterial.solicitud_item_id;
+
+    let materialesPayload: any[] = [];
+    if (esTela && esTodasPrendas && this.muestra?.items?.length) {
+      // Guardar tela principal para cada prenda de la muestra para que queden vinculadas
+      materialesPayload = this.muestra.items.map((it: any) => ({
+        ...this.nuevoMaterial,
+        id: undefined,
+        solicitud_item_id: it.id,
+      }));
+    } else {
+      materialesPayload = [{
+        ...this.nuevoMaterial,
+        solicitud_item_id: esTodasPrendas ? null : this.nuevoMaterial.solicitud_item_id
+      }];
+    }
+
     const payload = {
-      materiales: [this.nuevoMaterial],
+      materiales: materialesPayload,
       creado_por_rol: 'INGENIERIA'
     };
 
@@ -1925,12 +2129,19 @@ export class MuestrasDetailComponent implements OnInit {
           title: isEditing ? 'Material definido y vinculado' : 'Material agregado'
         });
 
-        // Si se vinculó Tela Principal con SIESA, actualizar también el ítem localmente
-        if (this.nuevoMaterial.tipo_material === 'TELA' && this.nuevoMaterial.siesa_referencia && this.nuevoMaterial.solicitud_item_id) {
-          const itemMatch = (this.muestra?.items || []).find((i: any) => i.id === this.nuevoMaterial.solicitud_item_id);
-          if (itemMatch) {
-            itemMatch.ref_siesa_referencia = this.nuevoMaterial.siesa_referencia;
-            itemMatch.ref_siesa_descripcion = this.nuevoMaterial.siesa_descripcion;
+        // Si se vinculó Tela Principal con SIESA, actualizar también los ítems localmente
+        if (esTela && this.nuevoMaterial.siesa_referencia) {
+          if (esTodasPrendas && this.muestra?.items?.length) {
+            this.muestra.items.forEach((i: any) => {
+              i.ref_siesa_referencia = this.nuevoMaterial.siesa_referencia;
+              i.ref_siesa_descripcion = this.nuevoMaterial.siesa_descripcion;
+            });
+          } else if (this.nuevoMaterial.solicitud_item_id) {
+            const itemMatch = (this.muestra?.items || []).find((i: any) => i.id === this.nuevoMaterial.solicitud_item_id);
+            if (itemMatch) {
+              itemMatch.ref_siesa_referencia = this.nuevoMaterial.siesa_referencia;
+              itemMatch.ref_siesa_descripcion = this.nuevoMaterial.siesa_descripcion;
+            }
           }
         }
 
