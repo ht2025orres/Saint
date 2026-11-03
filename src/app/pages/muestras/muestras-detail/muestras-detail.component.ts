@@ -1521,9 +1521,27 @@ export class MuestrasDetailComponent implements OnInit {
   siesaSoloConStock: boolean = true;
   siesaSearchQuery: string = '';
   siesaSearchResults: any[] = [];
+  siesaGroupedItems: any[] = [];
+  siesaFilteredGroupedItems: any[] = [];
   isSearchingSiesa = false;
+  siesaIsLoaded = false;
   siesaSelectedCategory: string = 'TODOS';
   siesaCategorias: string[] = ['TODOS', 'TELAS', 'BOTONES', 'HILOS', 'CREMALLERAS', 'ELASTICOS', 'AVIOS'];
+  siesaGruposDisponibles = [
+    { id: '', label: 'TODOS', icon: 'bi-grid-fill' },
+    { id: 'TELAS', label: 'TELAS', icon: 'bi-droplet-fill' },
+    { id: 'BOTONES', label: 'BOTONES', icon: 'bi-record-circle-fill' },
+    { id: 'HILOS Y HILAZAS', label: 'HILOS', icon: 'bi-border-style' },
+    { id: 'CIERRES', label: 'CIERRES', icon: 'bi-distribute-vertical' },
+    { id: 'SESGOS Y CINTAS', label: 'SESGOS Y CINTAS', icon: 'bi-slash-square-fill' },
+    { id: 'RESORTES Y ELÁSTICOS', label: 'ELÁSTICOS', icon: 'bi-water' },
+    { id: 'OTROS INSUMOS', label: 'OTROS', icon: 'bi-box-seam' }
+  ];
+  siesaSelectedBodega: string = 'MP001';
+  siesaBodegas = [
+    { id: 'MP001', name: 'Materia Prima' },
+    { id: 'PT001', name: 'Producto Terminado' }
+  ];
   modalDestinoPrenda: 'all' | 'specific' = 'all';
 
   // Edición Inline de Requerido en la tabla
@@ -1957,6 +1975,9 @@ export class MuestrasDetailComponent implements OnInit {
 
     this.siesaSearchQuery = searchQ;
     this.siesaSearchResults = [];
+    this.siesaGroupedItems = [];
+    this.siesaFilteredGroupedItems = [];
+    this.siesaIsLoaded = false;
     this.materialModalTab = 'siesa';
     this.showMaterialModal = true;
     this.buscarInsumosSiesa();
@@ -2003,6 +2024,9 @@ export class MuestrasDetailComponent implements OnInit {
     this.siesaSelectedCategory = tipo === 'TELA' ? 'TELAS' : 'TODOS';
     this.siesaSearchQuery = tipo === 'TELA' ? 'DRIL' : '';
     this.siesaSearchResults = [];
+    this.siesaGroupedItems = [];
+    this.siesaFilteredGroupedItems = [];
+    this.siesaIsLoaded = false;
     this.materialModalTab = 'siesa';
     this.showMaterialModal = true;
     this.buscarInsumosSiesa();
@@ -2024,21 +2048,6 @@ export class MuestrasDetailComponent implements OnInit {
 
   filtrarCategoriaSiesa(cat: string): void {
     this.siesaSelectedCategory = cat;
-    if (cat === 'TELAS') {
-      this.siesaSearchQuery = 'DRIL';
-    } else if (cat === 'BOTONES') {
-      this.siesaSearchQuery = 'BOTON';
-    } else if (cat === 'HILOS') {
-      this.siesaSearchQuery = 'HILO';
-    } else if (cat === 'CREMALLERAS') {
-      this.siesaSearchQuery = 'CIERRE';
-    } else if (cat === 'ELASTICOS') {
-      this.siesaSearchQuery = 'ELASTICO';
-    } else if (cat === 'AVIOS') {
-      this.siesaSearchQuery = 'ETIQUETA';
-    } else {
-      this.siesaSearchQuery = '';
-    }
     this.buscarInsumosSiesa();
   }
 
@@ -2064,21 +2073,114 @@ export class MuestrasDetailComponent implements OnInit {
 
   buscarInsumosSiesa(): void {
     this.isSearchingSiesa = true;
+    const grupoParam = this.siesaSelectedCategory !== 'TODOS' ? this.siesaSelectedCategory : undefined;
     this.comercialService.buscarInsumosSiesa({
       q: this.siesaSearchQuery,
       con_stock: this.siesaSoloConStock,
-      bodega: 'MP001',
-      grupo: this.siesaSelectedCategory !== 'TODOS' ? this.siesaSelectedCategory : undefined
+      bodega: this.siesaSelectedBodega,
+      grupo: grupoParam
     }).subscribe({
-      next: (res) => {
-        this.siesaSearchResults = res.data || [];
+      next: (res: any) => {
+        const rawGrouped = res.data?.grouped || {};
+        const itemsList: any[] = [];
+
+        // Flatten grouped response to card list
+        Object.keys(rawGrouped).forEach(grpKey => {
+          const grpItems = rawGrouped[grpKey] || [];
+          grpItems.forEach((gi: any) => {
+            const colores = (gi.colores || []).map((c: any) => ({
+              ...c,
+              total_existencias: Number(c.total_existencias) || 0
+            }));
+            const defaultColor = colores.find((c: any) => c.total_existencias > 0) || colores[0];
+            itemsList.push({
+              insumo: gi.insumo || gi.referencia_base,
+              referencia_base: gi.referencia_base,
+              es_tela: !!gi.es_tela,
+              grupo: grpKey,
+              colores: colores,
+              selectedColor: defaultColor
+            });
+          });
+        });
+
+        // Fallback: build from raw_items if grouped is empty
+        if (itemsList.length === 0 && res.data?.raw_items) {
+          const mapByName: { [key: string]: any } = {};
+          (res.data.raw_items || []).forEach((r: any) => {
+            const key = r.descripcion || r.referencia;
+            if (!mapByName[key]) {
+              mapByName[key] = {
+                insumo: key,
+                referencia_base: r.referencia,
+                es_tela: !!r.es_tela,
+                grupo: r.grupo || 'OTROS',
+                colores: []
+              };
+            }
+            mapByName[key].colores.push({
+              ...r,
+              total_existencias: Number(r.total_existencias) || 0
+            });
+          });
+          Object.values(mapByName).forEach((gi: any) => {
+            gi.selectedColor = gi.colores.find((c: any) => c.total_existencias > 0) || gi.colores[0];
+            itemsList.push(gi);
+          });
+        }
+
+        this.siesaGroupedItems = itemsList;
+        // Also keep flat for backward compat
+        this.siesaSearchResults = res.data?.raw_items || [];
+        this.siesaFilterGroupedResults();
+        this.siesaIsLoaded = true;
         this.isSearchingSiesa = false;
       },
       error: () => {
+        this.siesaGroupedItems = [];
+        this.siesaFilteredGroupedItems = [];
         this.siesaSearchResults = [];
+        this.siesaIsLoaded = true;
         this.isSearchingSiesa = false;
       }
     });
+  }
+
+  siesaFilterGroupedResults(): void {
+    const q = (this.siesaSearchQuery || '').toLowerCase().trim();
+    this.siesaFilteredGroupedItems = this.siesaGroupedItems.filter(item => {
+      if (!q) return true;
+      const matchBase = (item.insumo || '').toLowerCase().includes(q) ||
+                        (item.referencia_base || '').toLowerCase().includes(q);
+      const matchColor = (item.colores || []).some((c: any) => (c.color || '').toLowerCase().includes(q) || (c.id_item || '').toString().includes(q));
+      return matchBase || matchColor;
+    });
+  }
+
+  onSiesaColorChange(item: any, colorVariant: any): void {
+    item.selectedColor = colorVariant;
+  }
+
+  seleccionarMaterialGrouped(item: any): void {
+    const sel = item.selectedColor || item.colores?.[0];
+    if (!sel) return;
+    this.nuevoMaterial.siesa_id_item = sel.id_item;
+    this.nuevoMaterial.siesa_referencia = sel.referencia;
+    this.nuevoMaterial.siesa_descripcion = sel.descripcion || item.insumo;
+    this.nuevoMaterial.siesa_id_color = sel.id_color;
+    this.nuevoMaterial.siesa_color = sel.color;
+    if (!this.nuevoMaterial.nombre_material || this.nuevoMaterial.nombre_material === 'Insumo') {
+      this.nuevoMaterial.nombre_material = item.es_tela ? 'Tela Principal' : (sel.descripcion || item.insumo);
+    }
+    this.nuevoMaterial.tipo_material = item.es_tela ? 'TELA' : 'INSUMO';
+    this.nuevoMaterial.grupo_insumo = item.grupo;
+    this.nuevoMaterial.unidad_medida = item.es_tela ? 'METROS' : (this.nuevoMaterial.unidad_medida || 'UND');
+    this.nuevoMaterial.descripcion_personalizada = `${sel.referencia} - ${sel.descripcion || item.insumo} (${sel.color || 'ESTÁNDAR'})`;
+  }
+
+  siesaSetGroup(groupId: string): void {
+    this.siesaSelectedCategory = groupId || 'TODOS';
+    this.buscarInsumosSiesa();
   }
 
   seleccionarInsumoSiesa(item: any): void {

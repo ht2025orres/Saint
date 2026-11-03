@@ -1557,303 +1557,299 @@
   <!-- MODAL: AGREGAR INSUMO / TELA (SIESA O MANUAL)                            -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <div *ngIf="showMaterialModal" class="opm-modal-overlay" (click)="cerrarModalMaterial()">
-    <div class="opm-modal-container bg-white p-5 sm:p-6 rounded-3xl flex flex-col overflow-hidden max-w-3xl w-full max-h-[92vh] shadow-2xl border border-slate-100" (click)="$event.stopPropagation()">
+    <div class="opm-modal-container bg-white rounded-[28px] flex flex-col overflow-hidden max-w-[1100px] w-[95%] max-h-[92vh] shadow-2xl border border-slate-100" (click)="$event.stopPropagation()">
       
-      <!-- Cabecera -->
-      <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-200/80 flex-shrink-0">
+      <!-- ═══ CABECERA OSCURA ═══ -->
+      <div class="p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 flex-shrink-0 rounded-t-[28px]">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-white flex items-center justify-center text-xl shadow-md">
-            <i class="bi bi-boxes"></i>
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400">
+            <i class="bi bi-boxes text-xl"></i>
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 bg-amber-100 text-amber-900 text-[9px] font-black uppercase tracking-wider rounded-md">Abastecimiento</span>
-              <h2 class="text-sm font-black text-slate-900 uppercase tracking-wide mb-0">Asignar Requerimiento de Material</h2>
-            </div>
-            <p class="text-xs text-slate-500 font-medium mb-0">Selecciona desde el inventario SIESA o escribe una especificación libre para confección.</p>
+            <h3 class="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2 mb-0">
+              <span>Asignar Requerimiento de Material</span>
+              <span class="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 text-[9px] font-black rounded-full uppercase">Stock en Vivo</span>
+            </h3>
+            <p class="text-[11px] text-slate-400 font-medium mb-0">Selecciona desde el inventario SIESA o escribe una especificación libre para confección.</p>
           </div>
         </div>
-        <button (click)="cerrarModalMaterial()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer">
-          <i class="bi bi-x-lg"></i>
-        </button>
+        <div class="flex items-center gap-3">
+          <!-- Selector Bodega -->
+          <div class="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+            <i class="bi bi-building text-slate-400"></i>
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Bodega:</span>
+            <select [(ngModel)]="siesaSelectedBodega" (change)="buscarInsumosSiesa()"
+                    class="bg-transparent font-black text-white text-xs outline-none cursor-pointer">
+              <option *ngFor="let b of siesaBodegas" [value]="b.id" class="bg-slate-900 text-white">{{ b.id }} - {{ b.name }}</option>
+            </select>
+          </div>
+          <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer" (click)="cerrarModalMaterial()">
+            <i class="bi bi-x-lg text-sm"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- TABS: SIESA vs MANUAL -->
-      <div class="flex border-b border-slate-200 mb-3 flex-shrink-0">
+      <!-- ═══ TABS: SIESA vs MANUAL ═══ -->
+      <div class="flex border-b border-slate-200 flex-shrink-0">
         <button (click)="setMaterialModalTab('siesa')"
-                class="pb-2.5 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [ngClass]="materialModalTab === 'siesa' ? 'border-amber-500 text-amber-600 font-black' : 'border-transparent text-slate-400 hover:text-slate-600'">
-          <i class="bi bi-database-check"></i> Catálogo SIESA (Inventario & Bodega)
+                class="pb-2.5 px-5 pt-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
+                [ngClass]="materialModalTab === 'siesa' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+          <i class="bi bi-database-check"></i> Catálogo SIESA
         </button>
         <button (click)="setMaterialModalTab('manual')"
-                class="pb-2.5 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [ngClass]="materialModalTab === 'manual' ? 'border-amber-500 text-amber-600 font-black' : 'border-transparent text-slate-400 hover:text-slate-600'">
-          <i class="bi bi-pencil-square"></i> Especificación Libre / Genérica
+                class="pb-2.5 px-5 pt-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
+                [ngClass]="materialModalTab === 'manual' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+          <i class="bi bi-pencil-square"></i> Especificación Libre
         </button>
       </div>
 
-      <!-- CUERPO MODAL CON SCROLL -->
-      <div class="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1 custom-scrollbar">
+      <!-- ═══ MODO SIESA ═══ -->
+      <ng-container *ngIf="materialModalTab === 'siesa'">
 
-        <!-- MODO SIESA -->
-        <div *ngIf="materialModalTab === 'siesa'" class="space-y-3">
-          
-          <!-- FILTROS Y CHIPS DE BÚSQUEDA SIESA -->
-          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-2.5">
-            <!-- Barra de búsqueda con botón de limpiar -->
-            <div class="flex items-center gap-2 flex-wrap">
-              <div class="relative flex-1 min-w-[220px]">
-                <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                <input type="text"
-                       [(ngModel)]="siesaSearchQuery"
-                       (keyup.enter)="buscarInsumosSiesa()"
-                       placeholder="Buscar por referencia o descripción (ej: DRIL, INDIGO, BOTON, HILO, CIERRE)..."
-                       class="w-full pl-8 pr-8 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium shadow-2xs">
-                <button *ngIf="siesaSearchQuery"
-                        type="button"
-                        (click)="limpiarBusquedaSiesa()"
-                        class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
-                  <i class="bi bi-x-circle-fill"></i>
+        <!-- Barra de Búsqueda & Toggle Stock -->
+        <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-2.5 flex-shrink-0">
+          <div class="flex-1 relative min-w-[200px]">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" [(ngModel)]="siesaSearchQuery" (input)="siesaFilterGroupedResults()" (keyup.enter)="buscarInsumosSiesa()"
+                   placeholder="Buscar por ID, referencia, nombre, color..."
+                   class="w-full pl-8 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:border-amber-500 outline-none transition-all shadow-2xs" />
+            <button *ngIf="siesaSearchQuery" type="button" (click)="siesaSearchQuery = ''; buscarInsumosSiesa()"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          </div>
+          <button (click)="buscarInsumosSiesa()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5 transition-all">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+          <button (click)="toggleSiesaStock()"
+                  class="px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer"
+                  [ngClass]="siesaSoloConStock ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'">
+            <i class="bi" [ngClass]="siesaSoloConStock ? 'bi-check2-circle' : 'bi-circle'"></i>
+            <span>Solo con Stock</span>
+          </button>
+        </div>
+
+        <!-- Tabs de Categorías -->
+        <div class="px-3 py-2 bg-white border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
+          <button *ngFor="let g of siesaGruposDisponibles"
+                  (click)="siesaSetGroup(g.id)"
+                  class="px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                  [ngClass]="(siesaSelectedCategory === g.label || (siesaSelectedCategory === 'TODOS' && g.id === '')) ? 'bg-amber-500 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+            <i class="bi" [ngClass]="g.icon"></i>
+            <span>{{ g.label }}</span>
+          </button>
+        </div>
+
+        <!-- Resumen de Material Seleccionado -->
+        <div *ngIf="nuevoMaterial.siesa_referencia"
+             class="mx-3 mt-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 rounded-2xl flex items-center justify-between gap-3 shadow-2xs flex-shrink-0">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+              <i class="bi bi-check-lg"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-900">
+                  {{ nuevoMaterial.tipo_material }} SELECCIONADO
+                </span>
+                <span class="font-mono text-xs font-black text-emerald-950">Ref: {{ nuevoMaterial.siesa_referencia }}</span>
+              </div>
+              <p class="text-xs font-bold text-slate-800 truncate mb-0 mt-0.5">
+                {{ nuevoMaterial.siesa_descripcion }} <span *ngIf="nuevoMaterial.siesa_color" class="text-slate-500 font-normal">({{ nuevoMaterial.siesa_color }})</span>
+              </p>
+            </div>
+          </div>
+          <button type="button" (click)="deseleccionarItemSiesa()"
+                  class="px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-lg text-[10px] font-black border border-slate-200 transition-all cursor-pointer flex-shrink-0">
+            <i class="bi bi-x-lg mr-1"></i> Cambiar
+          </button>
+        </div>
+
+        <!-- Área de Resultados con scroll -->
+        <div class="flex-1 min-h-0 overflow-y-auto p-3 bg-slate-50/50 custom-scrollbar">
+
+          <!-- Estado de Carga -->
+          <div *ngIf="isSearchingSiesa" class="flex flex-col items-center justify-center py-16">
+            <div class="w-8 h-8 border-3 border-slate-200 border-t-amber-500 rounded-full animate-spin mb-3"></div>
+            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-0">Consultando Inventario en SIESA...</p>
+          </div>
+
+          <!-- Sin Resultados -->
+          <div *ngIf="!isSearchingSiesa && siesaFilteredGroupedItems.length === 0 && siesaIsLoaded" class="flex flex-col items-center justify-center py-14 text-center">
+            <div class="w-14 h-14 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-300 text-2xl mb-3">
+              <i class="bi bi-inboxes"></i>
+            </div>
+            <p class="text-sm font-black text-slate-700 uppercase tracking-wider mb-0.5">No se encontraron materiales</p>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mb-0">Intenta buscar con otros términos o cambia la categoría.</p>
+          </div>
+
+          <!-- Grid de Tarjetas Agrupadas -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3" *ngIf="!isSearchingSiesa && siesaFilteredGroupedItems.length > 0">
+            <div *ngFor="let item of siesaFilteredGroupedItems"
+                 class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between gap-2.5"
+                 [ngClass]="nuevoMaterial.siesa_referencia && item.selectedColor && nuevoMaterial.siesa_referencia === item.selectedColor.referencia && nuevoMaterial.siesa_id_color === item.selectedColor.id_color ? 'ring-2 ring-amber-400 border-amber-400 bg-amber-50/30' : ''">
+
+              <!-- Card Header -->
+              <div>
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider"
+                          [ngClass]="item.es_tela ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-amber-100 text-amber-800 border border-amber-200'">
+                      <i class="bi" [ngClass]="item.es_tela ? 'bi-droplet-fill' : 'bi-box-seam'"></i>
+                      {{ item.grupo || (item.es_tela ? 'TELA' : 'INSUMO') }}
+                    </span>
+                    <span class="text-[10px] font-mono font-bold text-slate-400">Ref: {{ item.referencia_base }}</span>
+                  </div>
+                  <span class="text-[10px] font-bold text-slate-500 shrink-0">
+                    <i class="bi bi-palette text-amber-500"></i> {{ item.colores?.length || 0 }} color(es)
+                  </span>
+                </div>
+                <h4 class="text-xs font-black text-slate-900 leading-snug">{{ item.insumo }}</h4>
+              </div>
+
+              <!-- Selector de Color & Stock -->
+              <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5">
+                <div class="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  <span>Seleccionar Color:</span>
+                  <span *ngIf="item.selectedColor"
+                        class="px-2 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1"
+                        [ngClass]="item.selectedColor.total_existencias > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                    <i class="bi" [ngClass]="item.selectedColor.total_existencias > 0 ? 'bi-check-circle-fill text-emerald-500' : 'bi-x-circle-fill text-rose-500'"></i>
+                    {{ item.selectedColor.total_existencias > 0 ? ('Disponible: ' + (item.selectedColor.total_existencias | number:'1.0-2') + (item.es_tela ? ' mts' : ' unds')) : 'Sin Existencias' }}
+                  </span>
+                </div>
+                <select [ngModel]="item.selectedColor"
+                        (ngModelChange)="onSiesaColorChange(item, $event)"
+                        class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:border-amber-500 outline-none transition-all cursor-pointer">
+                  <option *ngFor="let col of item.colores" [ngValue]="col">
+                    {{ col.color || 'ÚNICO' }} — Stock: {{ col.total_existencias | number:'1.0-2' }} {{ item.es_tela ? 'mts' : 'unds' }} ({{ col.total_existencias > 0 ? 'DISPONIBLE' : 'AGOTADO' }})
+                  </option>
+                </select>
+              </div>
+
+              <!-- Footer: ID Item + Botón Seleccionar -->
+              <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                <div class="text-[10px] text-slate-400 font-mono" *ngIf="item.selectedColor">
+                  ID Item: <strong class="text-slate-700">{{ item.selectedColor.id_item }}</strong>
+                </div>
+                <button (click)="seleccionarMaterialGrouped(item)"
+                        class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 ml-auto cursor-pointer">
+                  <i class="bi bi-check2"></i>
+                  <span>Seleccionar Material</span>
                 </button>
               </div>
-              <button (click)="buscarInsumosSiesa()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5 transition-all">
-                <i class="bi bi-search" [class.animate-spin]="isSearchingSiesa"></i> Buscar
-              </button>
             </div>
+          </div>
 
-            <!-- CHIPS RÁPIDOS POR CATEGORÍA -->
-            <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
-              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-1">Filtro rápido:</span>
-              <button *ngFor="let cat of siesaCategorias"
-                      type="button"
-                      (click)="filtrarCategoriaSiesa(cat)"
-                      class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border shadow-2xs"
-                      [ngClass]="siesaSelectedCategory === cat ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-slate-600 hover:bg-slate-100 border-slate-200'">
-                {{ cat }}
-              </button>
-            </div>
+        </div>
 
-            <!-- TOGGLE: STOCK DISPONIBLE VS CATÁLOGO COMPLETO -->
-            <div class="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-slate-200/60 text-[11px]">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-600">Existencias:</span>
-                <button (click)="toggleSiesaStock()"
-                        class="px-2.5 py-1 rounded-lg font-black text-[10px] transition-all flex items-center gap-1.5 cursor-pointer"
-                        [ngClass]="siesaSoloConStock ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-700 border border-slate-300'">
-                  <i class="bi" [ngClass]="siesaSoloConStock ? 'bi-check-circle-fill text-emerald-600' : 'bi-archive-fill text-slate-500'"></i>
-                  {{ siesaSoloConStock ? '✓ Con Stock en Bodega (MP001)' : '📦 Catálogo Histórico Completo' }}
+      </ng-container>
+
+      <!-- ═══ MODO MANUAL ═══ -->
+      <ng-container *ngIf="materialModalTab === 'manual'">
+        <div class="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar">
+          <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div>
+              <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1.5">Tipo de Material</label>
+              <div class="grid grid-cols-3 gap-2">
+                <button type="button"
+                        (click)="nuevoMaterial.tipo_material = 'INSUMO'; nuevoMaterial.unidad_medida = 'UND'"
+                        class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
+                        [ngClass]="nuevoMaterial.tipo_material === 'INSUMO' ? 'bg-blue-50 border-blue-400 text-blue-800 shadow-xs ring-1 ring-blue-300' : 'bg-white border-slate-200 text-slate-600'">
+                  Insumo / Fornitura
+                </button>
+                <button type="button"
+                        (click)="nuevoMaterial.tipo_material = 'TELA'; nuevoMaterial.unidad_medida = 'METROS'"
+                        class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
+                        [ngClass]="nuevoMaterial.tipo_material === 'TELA' ? 'bg-purple-50 border-purple-400 text-purple-800 shadow-xs ring-1 ring-purple-300' : 'bg-white border-slate-200 text-slate-600'">
+                  Tela Principal / Tejido
+                </button>
+                <button type="button"
+                        (click)="nuevoMaterial.tipo_material = 'AVIO'; nuevoMaterial.unidad_medida = 'UND'"
+                        class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
+                        [ngClass]="nuevoMaterial.tipo_material === 'AVIO' ? 'bg-slate-100 border-slate-400 text-slate-800 shadow-xs ring-1 ring-slate-300' : 'bg-white border-slate-200 text-slate-600'">
+                  Avío / Etiqueta / Empaque
                 </button>
               </div>
-              <span class="text-slate-400 italic font-medium text-[10px]">
-                {{ siesaSoloConStock ? 'Mostrando ítems con existencias actuales > 0' : 'Mostrando todos los registros del maestro de materiales' }}
-              </span>
+            </div>
+            <div>
+              <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">Descripción / Especificación Técnica</label>
+              <input type="text"
+                     [(ngModel)]="nuevoMaterial.descripcion_personalizada"
+                     placeholder="Ej: Botón pasta 4 huecos café, Dril Vulcano Azul Noche, Cremallera invisible..."
+                     class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium shadow-2xs">
             </div>
           </div>
-
-          <!-- RESUMEN DE MATERIAL ACTUALMENTE SELECCIONADO -->
-          <div *ngIf="nuevoMaterial.siesa_referencia"
-               class="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
-                <i class="bi bi-check-lg"></i>
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-900">
-                    {{ nuevoMaterial.tipo_material }} SELECCIONADO
-                  </span>
-                  <span class="font-mono text-xs font-black text-emerald-950">Ref: {{ nuevoMaterial.siesa_referencia }}</span>
-                </div>
-                <p class="text-xs font-bold text-slate-800 truncate mb-0 mt-0.5">
-                  {{ nuevoMaterial.siesa_descripcion }} <span *ngIf="nuevoMaterial.siesa_color" class="text-slate-500 font-normal">({{ nuevoMaterial.siesa_color }})</span>
-                </p>
-              </div>
-            </div>
-            <button type="button"
-                    (click)="deseleccionarItemSiesa()"
-                    class="px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-lg text-[10px] font-black border border-slate-200 transition-all cursor-pointer flex-shrink-0"
-                    title="Deseleccionar ítem">
-              <i class="bi bi-x-lg mr-1"></i> Cambiar
-            </button>
-          </div>
-
-          <!-- ESTADO DE CARGA SIESA -->
-          <div *ngIf="isSearchingSiesa" class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200">
-            <div class="w-7 h-7 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p class="text-xs text-slate-600 font-bold mb-0">Consultando base de datos e inventarios en SIESA...</p>
-          </div>
-
-          <!-- ESTADO SIN RESULTADOS -->
-          <div *ngIf="!isSearchingSiesa && siesaSearchResults.length === 0" class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-            <i class="bi bi-search text-slate-300 text-2xl block mb-1.5"></i>
-            <p class="text-xs text-slate-600 font-bold mb-0.5">No se encontraron materiales con ese criterio.</p>
-            <p class="text-[11px] text-slate-400 mb-0">Prueba con palabras clave como <span class="font-mono text-purple-600 font-bold">DRIL</span>, <span class="font-mono text-purple-600 font-bold">BOTON</span>, o desmarca el filtro de stock.</p>
-          </div>
-
-          <!-- LISTA DE RESULTADOS SIESA -->
-          <div *ngIf="!isSearchingSiesa && siesaSearchResults.length > 0" class="space-y-1.5 max-h-56 overflow-y-auto border border-slate-200 rounded-2xl p-2 bg-slate-50/50 custom-scrollbar">
-            <div *ngFor="let item of siesaSearchResults"
-                 (click)="seleccionarInsumoSiesa(item)"
-                 class="p-2.5 rounded-xl bg-white hover:bg-amber-50/70 border transition-all cursor-pointer flex items-center justify-between gap-3 shadow-2xs"
-                 [ngClass]="nuevoMaterial.siesa_referencia === item.referencia && nuevoMaterial.siesa_id_color === item.id_color ? 'border-amber-500 ring-2 ring-amber-300 bg-amber-50/90' : 'border-slate-200'">
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase"
-                        [ngClass]="item.es_tela ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'">
-                    {{ item.es_tela ? 'TELA' : 'INSUMO' }}
-                  </span>
-                  <span class="font-mono text-indigo-700 font-black text-xs">{{ item.referencia }}</span>
-                  <span *ngIf="item.grupo" class="text-[10px] text-slate-400 font-semibold">· {{ item.grupo }}</span>
-                </div>
-                <p class="text-xs font-bold text-slate-800 mb-0 truncate mt-0.5">{{ item.descripcion }}</p>
-                <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-0.5">
-                  <span *ngIf="item.color">Color: <strong>{{ item.color }}</strong></span>
-                  <span *ngIf="item.id_bodega">Bodega: <strong>{{ item.id_bodega }}</strong></span>
-                  <span *ngIf="item.stock_disponible !== undefined" class="font-mono font-bold" [ngClass]="item.stock_disponible > 0 ? 'text-emerald-700 font-black' : 'text-slate-400'">
-                    Stock: {{ item.stock_disponible | number:'1.2-2' }}
-                  </span>
-                </div>
-              </div>
-              <div class="flex-shrink-0 text-amber-500" *ngIf="nuevoMaterial.siesa_referencia === item.referencia && nuevoMaterial.siesa_id_color === item.id_color">
-                <i class="bi bi-check-circle-fill text-xl"></i>
-              </div>
-            </div>
-          </div>
-
         </div>
+      </ng-container>
 
-        <!-- MODO MANUAL -->
-        <div *ngIf="materialModalTab === 'manual'" class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-          <div>
-            <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1.5">Tipo de Material</label>
-            <div class="grid grid-cols-3 gap-2">
-              <button type="button"
-                      (click)="nuevoMaterial.tipo_material = 'INSUMO'; nuevoMaterial.unidad_medida = 'UND'"
-                      class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
-                      [ngClass]="nuevoMaterial.tipo_material === 'INSUMO' ? 'bg-blue-50 border-blue-400 text-blue-800 shadow-xs ring-1 ring-blue-300' : 'bg-white border-slate-200 text-slate-600'">
-                Insumo / Fornitura
+      <!-- ═══ BARRA INFERIOR COMPACTA: Prenda + Cantidad + Guardar ═══ -->
+      <div class="border-t border-slate-200 bg-white px-4 py-3 flex-shrink-0">
+        <!-- Fila compacta: Prenda destino + Cantidad + Unidad -->
+        <div class="flex items-center gap-3 flex-wrap mb-3">
+          <!-- Prenda destino segmentado compacto -->
+          <div class="flex items-center gap-1.5">
+            <i class="bi bi-tag-fill text-purple-600 text-xs"></i>
+            <span class="text-[10px] font-black text-slate-500 uppercase">Destino:</span>
+            <div class="flex bg-slate-100 rounded-lg p-0.5">
+              <button type="button" (click)="modalDestinoPrenda = 'all'; nuevoMaterial.solicitud_item_id = null"
+                      class="px-2.5 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                      [ngClass]="modalDestinoPrenda === 'all' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'">
+                🌐 Todas (Global)
               </button>
-              <button type="button"
-                      (click)="nuevoMaterial.tipo_material = 'TELA'; nuevoMaterial.unidad_medida = 'METROS'"
-                      class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
-                      [ngClass]="nuevoMaterial.tipo_material === 'TELA' ? 'bg-purple-50 border-purple-400 text-purple-800 shadow-xs ring-1 ring-purple-300' : 'bg-white border-slate-200 text-slate-600'">
-                Tela Principal / Tejido
-              </button>
-              <button type="button"
-                      (click)="nuevoMaterial.tipo_material = 'AVIO'; nuevoMaterial.unidad_medida = 'UND'"
-                      class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
-                      [ngClass]="nuevoMaterial.tipo_material === 'AVIO' ? 'bg-slate-100 border-slate-400 text-slate-800 shadow-xs ring-1 ring-slate-300' : 'bg-white border-slate-200 text-slate-600'">
-                Avío / Etiqueta / Empaque
+              <button type="button" (click)="modalDestinoPrenda = 'specific'; nuevoMaterial.solicitud_item_id = nuevoMaterial.solicitud_item_id || muestra?.items?.[0]?.id || null"
+                      class="px-2.5 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                      [ngClass]="modalDestinoPrenda === 'specific' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'">
+                👕 Prenda Específica
               </button>
             </div>
           </div>
 
-          <div>
-            <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">Descripción / Especificación Técnica</label>
-            <input type="text"
-                   [(ngModel)]="nuevoMaterial.descripcion_personalizada"
-                   placeholder="Ej: Botón pasta 4 huecos café, Dril Vulcano Azul Noche, Cremallera invisible..."
-                   class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium shadow-2xs">
-          </div>
-        </div>
+          <!-- Selector de prenda si es específica -->
+          <select *ngIf="modalDestinoPrenda === 'specific'" [(ngModel)]="nuevoMaterial.solicitud_item_id"
+                  class="px-2 py-1 text-[11px] bg-white border border-purple-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-400 font-bold text-slate-800 max-w-[220px]">
+            <option *ngFor="let item of muestra?.items; let i = index" [ngValue]="item.id">
+              Prenda {{ i + 1 }}: {{ item.descripcion }}
+            </option>
+          </select>
 
-        <!-- SECCIÓN DE ASIGNACIÓN A PRENDAS (MANEJO DE TELAS COMPARTIDAS VS INDIVIDUALES) -->
-        <div class="p-4 bg-purple-50/50 rounded-2xl border border-purple-200/80 space-y-2.5">
-          <div class="flex items-center justify-between flex-wrap gap-2">
-            <label class="text-xs font-black text-purple-950 uppercase tracking-wider flex items-center gap-1.5 mb-0">
-              <i class="bi bi-tag-fill text-purple-600"></i>
-              Prenda Destino de este Requerimiento
-            </label>
-            <span class="text-[10px] text-purple-700 font-semibold italic">
-              {{ nuevoMaterial.tipo_material === 'TELA' ? 'Define si es tela para todas las camisas o para una específica' : 'Asigna a toda la muestra o a una prenda en particular' }}
-            </span>
-          </div>
+          <!-- Separador -->
+          <div class="w-px h-6 bg-slate-200"></div>
 
-          <!-- Selector Segmentado: Todas vs Específica -->
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button"
-                    (click)="modalDestinoPrenda = 'all'; nuevoMaterial.solicitud_item_id = null"
-                    class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    [ngClass]="modalDestinoPrenda === 'all' ? 'bg-purple-600 text-white border-purple-700 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
-              <i class="bi bi-collection"></i>
-              <span>Todas las Prendas (Global)</span>
-            </button>
-            
-            <button type="button"
-                    (click)="modalDestinoPrenda = 'specific'; nuevoMaterial.solicitud_item_id = nuevoMaterial.solicitud_item_id || muestra?.items?.[0]?.id || null"
-                    class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                    [ngClass]="modalDestinoPrenda === 'specific' ? 'bg-purple-600 text-white border-purple-700 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">
-              <i class="bi bi-tag"></i>
-              <span>Prenda Específica</span>
-            </button>
-          </div>
-
-          <!-- Dropdown si seleccionó prenda específica -->
-          <div *ngIf="modalDestinoPrenda === 'specific'" class="pt-1.5">
-            <label class="text-[11px] font-bold text-slate-600 block mb-1">Selecciona la prenda destinataria:</label>
-            <select [(ngModel)]="nuevoMaterial.solicitud_item_id"
-                    class="w-full px-3 py-2 text-xs bg-white border border-purple-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 font-bold text-slate-800 shadow-2xs">
-              <option *ngFor="let item of muestra?.items; let i = index" [ngValue]="item.id">
-                Prenda {{ i + 1 }}: {{ item.descripcion }} ({{ item.cantidad_muestra }} uds)
-              </option>
-            </select>
-          </div>
-
-          <!-- Aviso explicativo -->
-          <p class="text-[11px] text-slate-500 mb-0 pt-0.5">
-            <span *ngIf="modalDestinoPrenda === 'all'">
-              📌 Se aplicará a todas las prendas de la solicitud. Si es Tela Principal, unificará la tela de todas las camisas.
-            </span>
-            <span *ngIf="modalDestinoPrenda === 'specific'">
-              👕 Se aplicará exclusivamente a esta prenda. Permite que cada prenda tenga su propia tela principal o insumos independientes.
-            </span>
-          </p>
-        </div>
-
-        <!-- CAMPOS DE CANTIDAD REQUERIDA Y UNIDAD DE MEDIDA -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-black text-slate-700 uppercase tracking-wider mb-0">Cantidad Requerida</label>
-              <!-- Botones rápidos de ajuste -->
-              <div class="flex items-center gap-1">
-                <button type="button" (click)="ajustarCantidadRequeridaModal(-1)" class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer">-1</button>
-                <button type="button" (click)="ajustarCantidadRequeridaModal(1)" class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer">+1</button>
-                <button type="button" (click)="ajustarCantidadRequeridaModal(5)" class="w-5 h-5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-black cursor-pointer">+5</button>
-                <button type="button" (click)="ajustarCantidadRequeridaModal(10)" class="w-6 h-5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-black cursor-pointer">+10</button>
-              </div>
+          <!-- Cantidad compacta -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-black text-slate-500 uppercase">Cantidad:</span>
+            <div class="flex items-center gap-0.5">
+              <button type="button" (click)="ajustarCantidadRequeridaModal(-1)" class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer flex items-center justify-center">-1</button>
+              <input type="number" [(ngModel)]="nuevoMaterial.cantidad_requerida" min="0.1" step="0.5"
+                     class="w-16 px-1.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400 font-black font-mono text-center">
+              <button type="button" (click)="ajustarCantidadRequeridaModal(1)" class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer flex items-center justify-center">+1</button>
+              <button type="button" (click)="ajustarCantidadRequeridaModal(5)" class="w-5 h-5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-black cursor-pointer flex items-center justify-center">+5</button>
+              <button type="button" (click)="ajustarCantidadRequeridaModal(10)" class="w-6 h-5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-black cursor-pointer flex items-center justify-center">+10</button>
             </div>
-            <input type="number"
-                   [(ngModel)]="nuevoMaterial.cantidad_requerida"
-                   min="0.1"
-                   step="0.5"
-                   class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 font-black font-mono shadow-2xs">
           </div>
 
-          <div>
-            <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">Unidad de Medida</label>
-            <select [(ngModel)]="nuevoMaterial.unidad_medida"
-                    class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 font-bold text-slate-800 shadow-2xs">
-              <option value="METROS">Metros (MTR) - Ideal para Telas</option>
-              <option value="UND">Unidades (UND) - Botones, Broches, Cierres</option>
-              <option value="CONOS">Conos / Tubos - Hilos</option>
-              <option value="KILOS">Kilos (KG)</option>
-              <option value="DOCENAS">Docenas</option>
-              <option value="ROLLOS">Rollos</option>
-            </select>
-          </div>
+          <!-- Unidad -->
+          <select [(ngModel)]="nuevoMaterial.unidad_medida"
+                  class="px-2 py-1 text-[11px] bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400 font-bold text-slate-800">
+            <option value="METROS">Metros (MTR)</option>
+            <option value="UND">Unidades (UND)</option>
+            <option value="CONOS">Conos</option>
+            <option value="KILOS">Kilos (KG)</option>
+            <option value="DOCENAS">Docenas</option>
+            <option value="ROLLOS">Rollos</option>
+          </select>
         </div>
 
-      </div>
-
-      <!-- Pie con Guardar -->
-      <div class="flex items-center justify-between pt-3.5 mt-2 border-t border-slate-200 flex-shrink-0">
-        <button (click)="cerrarModalMaterial()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
-          Cancelar
-        </button>
-        <button (click)="guardarNuevoMaterial()" class="px-7 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
-          <i class="bi bi-check-circle-fill"></i> Guardar Requerimiento
-        </button>
+        <!-- Botones Cancelar / Guardar -->
+        <div class="flex items-center justify-between">
+          <button (click)="cerrarModalMaterial()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="guardarNuevoMaterial()" class="px-7 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-2 cursor-pointer">
+            <i class="bi bi-check-circle-fill"></i> Guardar Requerimiento
+          </button>
+        </div>
       </div>
 
     </div>
