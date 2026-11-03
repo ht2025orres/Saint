@@ -1288,6 +1288,7 @@ export class MuestrasDetailComponent implements OnInit {
             next: (mRes) => {
               if (mRes.success && mRes.data) {
                 this.materialesData = mRes.data;
+                this.actualizarMaterialesAgrupados();
               }
             }
           });
@@ -1640,9 +1641,19 @@ export class MuestrasDetailComponent implements OnInit {
     return { cantidadPartes: list.length || 1, partes: list.length ? list : ['Prenda Base'] };
   }
 
-  get materialesAgrupados(): any[] {
+  // Lista de materiales agrupados para la tabla (propiedad estable en memoria para evitar bucles de change detection)
+  materialesAgrupados: any[] = [];
+
+  trackByMaterialKey(index: number, mat: any): string {
+    return mat ? mat.key : index.toString();
+  }
+
+  actualizarMaterialesAgrupados(): void {
     const rawList = this.materialesData?.materiales || [];
-    if (!rawList.length) return [];
+    if (!rawList.length) {
+      this.materialesAgrupados = [];
+      return;
+    }
 
     const map = new Map<string, any>();
 
@@ -1749,7 +1760,7 @@ export class MuestrasDetailComponent implements OnInit {
       }
     }
 
-    return Array.from(map.values()).map(g => {
+    this.materialesAgrupados = Array.from(map.values()).map(g => {
       const hasSiesa = !!g.siesa_referencia;
       const descLimpia = (g.descripcion_personalizada || '').trim();
       const hasSpecificManualDesc = descLimpia && descLimpia.toLowerCase() !== g.nombre.toLowerCase();
@@ -1786,19 +1797,28 @@ export class MuestrasDetailComponent implements OnInit {
   // ==================== EDICIÓN INLINE DE REQUERIDO ====================
 
   iniciarEdicionRequerido(mat: any, event?: Event): void {
-    if (event) event.stopPropagation();
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     this.editingRequeridoKey = mat.key;
     this.editingRequeridoValue = Number(mat.cantidad_requerida_total) || 1;
     this.editingRequeridoUnidad = mat.unidad_medida || (mat.tipo_material === 'TELA' ? 'METROS' : 'UND');
   }
 
   cancelarEdicionRequerido(event?: Event): void {
-    if (event) event.stopPropagation();
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     this.editingRequeridoKey = null;
   }
 
   guardarEdicionRequerido(mat: any, event?: Event): void {
-    if (event) event.stopPropagation();
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     const val = Number(this.editingRequeridoValue);
     if (!val || val <= 0) {
       Swal.fire('Atención', 'La cantidad requerida debe ser mayor a 0', 'warning');
@@ -1949,6 +1969,7 @@ export class MuestrasDetailComponent implements OnInit {
       next: (res) => {
         if (res.success && res.data) {
           this.materialesData = res.data;
+          this.actualizarMaterialesAgrupados();
           if (shouldSync) {
             this.syncExistingTechnicalSpecMaterials();
           }
