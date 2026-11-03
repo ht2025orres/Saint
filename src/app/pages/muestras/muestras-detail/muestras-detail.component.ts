@@ -2157,7 +2157,7 @@ export class MuestrasDetailComponent implements OnInit {
 
   ajustarCantidadRequeridaModal(delta: number): void {
     const cur = Number(this.nuevoMaterial.cantidad_requerida) || 0;
-    const nextVal = Math.max(0.1, Math.round((cur + delta) * 10) / 10);
+    const nextVal = Math.max(1, Math.round(cur + delta));
     this.nuevoMaterial.cantidad_requerida = nextVal;
   }
 
