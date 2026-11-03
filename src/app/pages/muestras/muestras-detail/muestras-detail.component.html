@@ -1801,10 +1801,16 @@
 
           <!-- Selector Personalizado con Buscador de Prenda Específica -->
           <div *ngIf="modalDestinoPrenda === 'specific'" class="relative custom-prenda-dropdown-container">
+            
+            <!-- Backdrop invisible para capturar cualquier clic fuera en toda la pantalla/modal -->
+            <div *ngIf="isPrendaDropdownOpen"
+                 class="fixed inset-0 z-40 bg-transparent"
+                 (click)="cerrarPrendaDropdown($event)"></div>
+
             <!-- Botón Trigger Personalizado -->
             <button type="button"
                     (click)="togglePrendaDropdown($event)"
-                    class="px-3 py-1.5 bg-white hover:bg-blue-50/40 border border-blue-200 hover:border-blue-400 focus:border-blue-600 rounded-xl text-xs font-bold text-slate-800 transition-all flex items-center gap-2 shadow-2xs cursor-pointer select-none min-w-[220px] max-w-[340px] text-left">
+                    class="relative z-50 px-3 py-1.5 bg-white hover:bg-blue-50/40 border border-blue-200 hover:border-blue-400 focus:border-blue-600 rounded-xl text-xs font-bold text-slate-800 transition-all flex items-center gap-2 shadow-2xs cursor-pointer select-none min-w-[220px] max-w-[340px] text-left">
               <span class="w-4 h-4 rounded bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center shrink-0">
                 #{{ getPrendaIndex(nuevoMaterial.solicitud_item_id) + 1 }}
               </span>
@@ -1824,6 +1830,7 @@
                 <div class="relative">
                   <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                   <input type="text"
+                         id="prendaSearchInputId"
                          [(ngModel)]="prendaSearchQuery"
                          (click)="$event.stopPropagation()"
                          placeholder="Buscar por nombre, ref..."

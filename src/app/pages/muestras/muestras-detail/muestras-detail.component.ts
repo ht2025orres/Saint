@@ -1588,16 +1588,31 @@ export class MuestrasDetailComponent implements OnInit {
 
   togglePrendaDropdown(event?: MouseEvent): void {
     if (event) {
+      event.preventDefault();
       event.stopPropagation();
     }
     this.isPrendaDropdownOpen = !this.isPrendaDropdownOpen;
     if (this.isPrendaDropdownOpen) {
       this.prendaSearchQuery = '';
+      setTimeout(() => {
+        const input = document.getElementById('prendaSearchInputId');
+        if (input) input.focus();
+      }, 50);
     }
+  }
+
+  cerrarPrendaDropdown(event?: MouseEvent): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.isPrendaDropdownOpen = false;
+    this.prendaSearchQuery = '';
   }
 
   seleccionarPrendaDropdown(item: any, event?: MouseEvent): void {
     if (event) {
+      event.preventDefault();
       event.stopPropagation();
     }
     this.nuevoMaterial.solicitud_item_id = item.id;
