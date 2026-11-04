@@ -1167,13 +1167,23 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
     this._cachedAnatomicalGroups = result;
   }
 
-  getItemThumbnail(item: LocalItem): string | null {
+  getItemThumbnail(item: LocalItem): string {
+    if (!item) return '';
     if (item.imagenReferenciaUrl) return item.imagenReferenciaUrl;
     if (item.moldId) {
-      const mold = this.allMolds.find(m => m.id === item.moldId) || this.cachedMoldsMap[item.moldId];
-      if (mold && mold.photo_url) return mold.photo_url;
+      const mold = this.cachedMoldsMap[item.moldId] || this.allMolds.find(m => m.id === item.moldId);
+      if (mold) {
+        if (mold.image_signed_url) return mold.image_signed_url;
+        if (mold.front_image_signed_url) return mold.front_image_signed_url;
+        if (mold.front_image_url) return mold.front_image_url;
+        if (mold.photo_url) return mold.photo_url;
+      }
     }
-    return null;
+    if (item.categoryId) {
+      const cat = this.categories.find(c => c.id === item.categoryId);
+      if (cat?.image_signed_url) return cat.image_signed_url;
+    }
+    return '';
   }
 
   getItemTotal(item: LocalItem): number {
