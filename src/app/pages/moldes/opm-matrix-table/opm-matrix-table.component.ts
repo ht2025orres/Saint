@@ -327,27 +327,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       archivos: []
     };
 
-    if (mold.parts && Array.isArray(mold.parts)) {
-      newItem.draftComponents = mold.parts
-        .filter((p: any) => p.default_type_id || (p.types && p.types.length > 0))
-        .map((p: any) => {
-          const defType = p.types ? p.types.find((t: any) => t.id === p.default_type_id) || p.types[0] : null;
-          return {
-            mold_part_id: p.id,
-            mold_part_type_id: defType ? defType.id : null,
-            selected_type_name: defType ? defType.name : '',
-            name: p.name,
-            zone_name: p.anatomical_region || p.family || '',
-            item_type: 'parte_molde',
-            technical_spec: defType ? defType.technical_description : '',
-            client_spec: '',
-            estimated_time: defType ? defType.estimated_time || 0 : 0,
-            position_x: null,
-            position_y: null
-          };
-        });
-    }
-
     this.items.push(newItem);
     this.saveData();
     this.rebuildAnatomicalGroups();
@@ -524,29 +503,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
     item.opmReference = undefined;
 
     this.cachedMoldsMap[mold.id] = mold;
-
-    if (mold.parts && Array.isArray(mold.parts)) {
-      item.draftComponents = mold.parts
-        .filter((p: any) => p.default_type_id || (p.types && p.types.length > 0))
-        .map((p: any) => {
-          const defType = p.types ? p.types.find((t: any) => t.id === p.default_type_id) || p.types[0] : null;
-          return {
-            mold_part_id: p.id,
-            mold_part_type_id: defType ? defType.id : null,
-            selected_type_name: defType ? defType.name : '',
-            name: p.name,
-            zone_name: p.anatomical_region || p.family || '',
-            item_type: 'parte_molde',
-            technical_spec: defType ? defType.technical_description : '',
-            client_spec: '',
-            estimated_time: defType ? defType.estimated_time || 0 : 0,
-            position_x: null,
-            position_y: null
-          };
-        });
-    } else {
-      item.draftComponents = [];
-    }
+    item.draftComponents = [];
 
     this.closeMoldSelector();
     this.saveData();
@@ -1003,20 +960,8 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       }
     }
 
-    const mold = item.moldId ? this.cachedMoldsMap[item.moldId] : null;
-    const parts = (mold && mold.parts) ? mold.parts : [];
-    if (parts.length > 0) {
-      const match = parts.find((p: any) => {
-        const region = (p.anatomical_region || p.family || '').toLowerCase();
-        const pName = (p.name || '').toLowerCase();
-        return col.keywords.some(k => region.includes(k) || pName.includes(k));
-      });
-      if (match) {
-        return { name: match.selected_type_name, isConfigured: true, samTime: parseFloat(match.estimated_time) || 0 };
-      }
-    }
-
     if (item.moldId) {
+      const mold = this.cachedMoldsMap[item.moldId] || this.allMolds.find(m => m.id === item.moldId);
       if (mold && mold.parts && mold.parts.length > 0) {
         const hasPartInMold = mold.parts.some((p: any) => {
           const region = (p.anatomical_region || p.family || '').toLowerCase();

@@ -1,18 +1,26 @@
 <div class="moldes-container">
-  <!-- Pestañas Principales: Librería de Moldes vs Generador de OPMs -->
-  <div class="moldes-main-nav">
-    <button type="button" 
-            class="main-nav-tab" 
-            [class.main-nav-tab-active]="activeMainTab === 'libreria'" 
-            (click)="activeMainTab = 'libreria'">
-      <i class="bi bi-grid-3x3-gap-fill"></i> Librería de Moldes
-    </button>
-    <button type="button" 
-            class="main-nav-tab" 
-            [class.main-nav-tab-active]="activeMainTab === 'opm'" 
-            (click)="activeMainTab = 'opm'">
-      <i class="bi bi-lightning-charge-fill text-amber-500"></i> Generador de OPM (Prendas y Fichas)
-    </button>
+  <!-- Barra de Navegación Superior: Librería de Moldes vs Generador de OPMs -->
+  <div class="moldes-nav-wrapper">
+    <div class="moldes-main-nav">
+      <button type="button" 
+              class="main-nav-tab" 
+              [class.main-nav-tab-active]="activeMainTab === 'libreria'" 
+              (click)="activeMainTab = 'libreria'">
+        <i class="bi bi-grid-3x3-gap-fill tab-icon"></i>
+        <span class="tab-label">Librería de Moldes</span>
+        <span class="tab-badge" *ngIf="molds && molds.length > 0">{{ molds.length }}</span>
+      </button>
+      <button type="button" 
+              class="main-nav-tab" 
+              [class.main-nav-tab-active]="activeMainTab === 'opm'" 
+              (click)="activeMainTab = 'opm'">
+        <i class="bi bi-lightning-charge-fill tab-icon text-amber-500"></i>
+        <span class="tab-label">Generador de OPM & Fichas</span>
+        <span class="tab-badge tab-badge-accent" *ngIf="opmTableRef && opmTableRef.items && opmTableRef.items.length > 0">
+          {{ opmTableRef.items.length }} {{ opmTableRef.items.length === 1 ? 'prenda' : 'prendas' }}
+        </span>
+      </button>
+    </div>
   </div>
 
   <!-- ==================== VISTA 1: LIBRERÍA DE MOLDES ==================== -->
