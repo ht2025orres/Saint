@@ -19,12 +19,12 @@ export class FileService {
   /**
    * Subir archivo a S3
    */
-  uploadFile(file: File, path: string): Observable<{ success: boolean; url: string }> {
+  uploadFile(file: File, path: string): Observable<{ success: boolean; url: string; temporary_url?: string }> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('path', path);
 
-    return this.http.post<{ success: boolean; url: string }>(
+    return this.http.post<{ success: boolean; url: string; temporary_url?: string }>(
       `${this.apiUrl}/files/upload`,
       formData
     );

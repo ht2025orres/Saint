@@ -519,6 +519,20 @@
                         <span *ngIf="!entry.item.item_cliente && !entry.item.siesa_referencia" class="text-[9px] text-slate-300 italic">
                           + Ref
                         </span>
+
+                        <!-- Acceso rápido a Observaciones y Archivos -->
+                        <button type="button" 
+                                (click)="openItemNotesModal(entry.originalIndex); $event.stopPropagation()"
+                                class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] transition-all cursor-pointer border"
+                                [ngClass]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0))
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 font-bold'
+                                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-100 font-medium'"
+                                [title]="entry.item.observaciones || 'Observación / Archivos de prenda'">
+                          <i class="bi" [ngClass]="(entry.item.archivos && entry.item.archivos.length > 0) ? 'bi-paperclip text-blue-600' : 'bi-chat-left-text text-slate-400'"></i>
+                          <span *ngIf="!entry.item.observaciones && (!entry.item.archivos || entry.item.archivos.length === 0)">+ Obs / Archivos</span>
+                          <span *ngIf="entry.item.observaciones && (!entry.item.archivos || entry.item.archivos.length === 0)" class="truncate max-w-[110px]">{{ entry.item.observaciones }}</span>
+                          <span *ngIf="entry.item.archivos && entry.item.archivos.length > 0">{{ entry.item.archivos.length }} adj.</span>
+                        </button>
                       </div>
                     </div>
                   </td>
@@ -594,9 +608,22 @@
                     </span>
                   </td>
 
-                  <!-- Acciones (Compacto: Duplicar y Eliminar) -->
+                  <!-- Acciones (Compacto: Notas/Archivos, Duplicar y Eliminar) -->
                   <td class="py-2 px-2.5 text-right">
                     <div class="flex items-center justify-end gap-1">
+                      <button type="button" 
+                              (click)="openItemNotesModal(entry.originalIndex)" 
+                              class="relative w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer"
+                              [ngClass]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)) 
+                                ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-300' 
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
+                              [title]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)) 
+                                ? 'Observaciones y archivos adjuntos (' + (entry.item.archivos?.length || 0) + ')' 
+                                : 'Agregar observaciones o archivos a esta prenda'">
+                        <i class="bi bi-paperclip text-[11px]"></i>
+                        <span *ngIf="entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)" 
+                              class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-600 border border-white"></span>
+                      </button>
                       <button type="button" 
                               (click)="duplicateItem(entry.originalIndex)" 
                               class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
@@ -715,5 +742,136 @@
     (onConfirm)="closeZoneVariantsModal()"
     (onClose)="closeZoneVariantsModal()">
   </app-zone-variants-modal>
+
+  <!-- ==================== MODAL DE OBSERVACIONES & ARCHIVOS POR PRENDA (BUCKET S3) ==================== -->
+  <div class="modal-backdrop-custom" *ngIf="showItemNotesModal && getActiveNotesItem()" (click)="closeItemNotesModal()">
+    <div class="mold-modal-container max-w-2xl w-[95%]" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="mold-modal-header bg-slate-50 border-b border-slate-200 py-3.5 px-5">
+        <div class="mold-modal-title-group">
+          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center">
+            <i class="bi bi-journal-text text-lg"></i>
+          </div>
+          <div>
+            <h3 class="mold-modal-title text-sm font-black text-slate-800">
+              Observaciones & Archivos de Prenda
+            </h3>
+            <span class="text-[11px] text-slate-500 font-medium">
+              {{ getActiveNotesItem()?.descripcion }}
+              <span *ngIf="getActiveNotesItem()?.siesa_referencia" class="font-mono text-slate-400 font-bold">({{ getActiveNotesItem()?.siesa_referencia }})</span>
+            </span>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="closeItemNotesModal()" title="Cerrar"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 space-y-5 max-h-[78vh] overflow-y-auto">
+        <!-- 1. Observación / Descripción de la prenda -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="bi bi-chat-left-text text-blue-600"></i>
+              Observaciones / Especificaciones de la Prenda:
+            </label>
+            <span class="text-[10px] text-slate-400">Instrucciones generales de taller o confección</span>
+          </div>
+          <textarea [(ngModel)]="getActiveNotesItem()!.observaciones"
+                    rows="3"
+                    class="w-full text-xs text-slate-800 p-3 bg-white border border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none"
+                    placeholder="Ej. Bordado de logo corporativo en pecho izquierdo de 8x4 cm, pespunte triple en tiros, tela antifluido color azul oscuro..."></textarea>
+        </div>
+
+        <!-- 2. Subida de archivos al Bucket S3 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="bi bi-paperclip text-blue-600"></i>
+              Documentos & Imágenes Adjuntas:
+            </label>
+            <span class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              {{ getActiveNotesItem()?.archivos?.length || 0 }} {{ (getActiveNotesItem()?.archivos?.length === 1) ? 'archivo' : 'archivos' }}
+            </span>
+          </div>
+
+          <!-- Dropzone / Input Selector -->
+          <div class="border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/30 rounded-xl p-4 text-center transition-all cursor-pointer group"
+               (click)="itemFileInput.click()">
+            <input type="file" multiple #itemFileInput (change)="onItemFilesSelected($event)" class="hidden"
+                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" />
+            
+            <div *ngIf="!isUploadingItemFile" class="flex flex-col items-center justify-center gap-1.5">
+              <div class="w-10 h-10 rounded-full bg-white shadow-2xs border border-slate-200 group-hover:border-blue-300 text-blue-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                <i class="bi bi-cloud-arrow-up text-lg"></i>
+              </div>
+              <div class="text-xs font-bold text-slate-700">
+                Haz clic para subir o arrastra archivos aquí
+              </div>
+              <p class="text-[10.5px] text-slate-400">
+                Imágenes (JPG, PNG, WEBP), Fichas Técnicas o Documentos (PDF, Word, Excel) · Se almacenan de forma segura en AWS S3
+              </p>
+            </div>
+
+            <!-- Spinner de subida en progreso -->
+            <div *ngIf="isUploadingItemFile" class="flex flex-col items-center justify-center py-2 gap-2 text-blue-600">
+              <div class="animate-spin rounded-full h-7 w-7 border-2 border-blue-600 border-t-transparent"></div>
+              <span class="text-xs font-bold">Subiendo archivo al bucket S3...</span>
+            </div>
+          </div>
+
+          <!-- Lista de archivos subidos -->
+          <div *ngIf="getActiveNotesItem()?.archivos && getActiveNotesItem()!.archivos!.length > 0" class="space-y-2 pt-1">
+            <div *ngFor="let arch of getActiveNotesItem()!.archivos; let fi = index" 
+                 class="flex items-center justify-between p-2.5 bg-white border border-slate-200 hover:border-slate-300 rounded-xl transition-all shadow-2xs group">
+              <!-- Info del archivo -->
+              <div class="flex items-center gap-3 min-w-0 pr-2">
+                <!-- Thumbnail si es imagen o icono -->
+                <div class="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img *ngIf="isImageFile(arch.tipo, arch.nombre) && arch.url_descarga" [src]="arch.url_descarga" class="w-full h-full object-cover" alt="Preview" />
+                  <i *ngIf="!isImageFile(arch.tipo, arch.nombre) || !arch.url_descarga" class="bi text-lg" [ngClass]="getFileIconClass(arch.tipo, arch.nombre)"></i>
+                </div>
+                <div class="min-w-0">
+                  <span class="text-xs font-bold text-slate-800 block truncate" [title]="arch.nombre">{{ arch.nombre }}</span>
+                  <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                    <span class="font-mono">{{ formatFileSize(arch.size) }}</span>
+                    <span>·</span>
+                    <span class="uppercase font-bold text-[9px] text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200">
+                      {{ arch.nombre.split('.').pop() || 'Archivo' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acciones del archivo: Ver/Descargar & Eliminar -->
+              <div class="flex items-center gap-1.5 shrink-0">
+                <a *ngIf="arch.url_descarga" [href]="arch.url_descarga" target="_blank" rel="noopener noreferrer"
+                   class="px-2.5 py-1 text-xs font-bold rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                   title="Ver / Descargar">
+                  <i class="bi bi-box-arrow-up-right text-[10px]"></i> Ver
+                </a>
+                <button type="button" (click)="removeItemFile(fi)"
+                        class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Eliminar archivo">
+                  <i class="bi bi-trash3 text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Si no hay archivos aún -->
+          <div *ngIf="!getActiveNotesItem()?.archivos || getActiveNotesItem()!.archivos!.length === 0" class="text-center py-3 text-slate-400 text-xs italic">
+            Sin archivos adjuntos para esta prenda todavía.
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button type="button" class="btn-picker-trigger py-1 px-4 text-xs font-bold" (click)="closeItemNotesModal()">
+          <i class="bi bi-check2"></i> Listo / Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
 
 </div>
