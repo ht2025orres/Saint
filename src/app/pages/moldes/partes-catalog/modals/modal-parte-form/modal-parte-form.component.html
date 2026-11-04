@@ -249,15 +249,49 @@
               </div>
 
               <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                <!-- Botón de Estado / Inhabilitar Variante -->
-                <button type="button" 
-                        (click)="toggleVariantActive(t)"
-                        class="px-2.5 py-1.5 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                        [ngClass]="t.is_active !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'"
-                        [title]="t.is_active !== false ? 'Variante disponible. Clic para inhabilitar' : 'Variante no disponible. Clic para reactivar'">
-                  <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="t.is_active !== false ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                  <span>{{ t.is_active !== false ? 'Disponible' : 'Inhabilitada' }}</span>
-                </button>
+                <!-- Si tiene 1 región asignada: Botón directo Habilitada / Excluida en esa región (borde punteado si excluida) -->
+                <ng-container *ngIf="getSelectedRegions().length === 1">
+                  <button type="button" 
+                          (click)="toggleRegionVariant(getSelectedRegions()[0].value, t)"
+                          class="px-2.5 py-1.5 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 cursor-pointer shadow-2xs select-none"
+                          [ngClass]="!isVariantDisabledInRegion(getSelectedRegions()[0].value, t) 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
+                            : 'bg-slate-100 text-slate-500 border border-dashed border-slate-300 hover:bg-slate-200'"
+                          [title]="!isVariantDisabledInRegion(getSelectedRegions()[0].value, t) ? 'Variante habilitada en esta región. Clic para inhabilitar' : 'Variante excluida de esta región. Clic para reactivar'">
+                    <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="!isVariantDisabledInRegion(getSelectedRegions()[0].value, t) ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                    <span [class.line-through]="isVariantDisabledInRegion(getSelectedRegions()[0].value, t)">
+                      {{ !isVariantDisabledInRegion(getSelectedRegions()[0].value, t) ? 'Habilitada en ' + getSelectedRegions()[0].label : 'Excluida en ' + getSelectedRegions()[0].label }}
+                    </span>
+                  </button>
+                </ng-container>
+
+                <!-- Si tiene múltiples regiones asignadas: Pastillas por cada región para habilitar/inhabilitar individualmente -->
+                <ng-container *ngIf="getSelectedRegions().length > 1">
+                  <div class="flex items-center gap-1 flex-wrap">
+                    <button *ngFor="let reg of getSelectedRegions()"
+                            type="button" 
+                            (click)="toggleRegionVariant(reg.value, t)"
+                            class="px-2 py-1 rounded-lg text-[9px] font-black transition flex items-center gap-1 cursor-pointer select-none"
+                            [ngClass]="!isVariantDisabledInRegion(reg.value, t)
+                              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+                              : 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 hover:bg-slate-200 line-through'"
+                            [title]="!isVariantDisabledInRegion(reg.value, t) ? 'Habilitada en ' + reg.label + '. Clic para excluir' : 'Excluida en ' + reg.label + '. Clic para habilitar'">
+                      <i class="bi" [ngClass]="!isVariantDisabledInRegion(reg.value, t) ? 'bi-check-circle-fill text-indigo-600' : 'bi-x-circle text-slate-400'"></i>
+                      <span>{{ reg.label }}</span>
+                    </button>
+                  </div>
+                </ng-container>
+
+                <!-- Si no tiene regiones asignadas aún -->
+                <ng-container *ngIf="getSelectedRegions().length === 0">
+                  <button type="button" 
+                          (click)="toggleVariantActive(t)"
+                          class="px-2.5 py-1.5 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          [ngClass]="t.is_active !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border border-dashed border-slate-300 hover:bg-slate-200'">
+                    <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="t.is_active !== false ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                    <span>{{ t.is_active !== false ? 'Habilitada' : 'Inhabilitada' }}</span>
+                  </button>
+                </ng-container>
 
                 <!-- Botón Colapsar / Extender Operaciones -->
                 <button type="button" 
@@ -274,17 +308,12 @@
               </div>
             </div>
 
-            <!-- Banner de Inhabilitación si está inactiva -->
-            <div *ngIf="t.is_active === false" class="bg-rose-50/90 border border-rose-200 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs animate-in fade-in">
-              <div class="flex items-center gap-2 min-w-0">
-                <i class="bi bi-exclamation-triangle-fill text-rose-600 text-xs shrink-0"></i>
-                <span class="text-[11px] text-rose-800 font-medium truncate">
-                  <strong>Motivo:</strong> {{ t.disabled_reason || 'No disponible temporalmente' }}
-                </span>
-              </div>
-              <button type="button" (click)="openEditDisableReason(t)" class="text-[10px] font-bold text-rose-700 hover:text-rose-900 underline shrink-0 cursor-pointer">
-                Cambiar motivo
-              </button>
+            <!-- Aviso informativo solo si está inactiva a nivel global (desde Partes y Variantes) -->
+            <div *ngIf="t.is_active === false" class="bg-rose-50/90 border border-rose-200 rounded-xl p-2.5 flex items-center gap-2 text-xs animate-in fade-in">
+              <i class="bi bi-slash-circle-fill text-rose-500 text-xs shrink-0"></i>
+              <span class="text-[11px] text-rose-800 font-medium">
+                <strong>Inactiva en catálogo global:</strong> {{ t.disabled_reason || 'No disponible' }}
+              </span>
             </div>
 
             <!-- Fila de Descripciones en Tarjetas Interactivas con Espacio Dedicado -->
@@ -702,70 +731,7 @@
   </div>
 </div>
 
-<!-- ════════════════════ SUBMODAL 3: INHABILITAR VARIANTE CON MOTIVO ════════════════════ -->
-<div *ngIf="isDisableReasonModalOpen" class="fixed inset-0 z-[1450] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-  <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-    
-    <!-- Header Submodal -->
-    <div class="p-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center text-sm font-black shrink-0">
-          <i class="bi bi-slash-circle"></i>
-        </div>
-        <div>
-          <h3 class="text-sm font-black text-slate-900">Inhabilitar Variante</h3>
-          <p class="text-[11px] text-slate-500 font-medium">Variante: <strong>{{ selectedVariantForModal?.name || 'Variante' }}</strong></p>
-        </div>
-      </div>
-      <button (click)="closeDisableReasonModal()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white transition cursor-pointer">
-        <i class="bi bi-x-lg text-sm"></i>
-      </button>
-    </div>
 
-    <!-- Body Submodal -->
-    <div class="p-4 space-y-3.5 overflow-y-auto overflow-x-hidden max-h-[60vh]">
-      <p class="text-xs text-slate-600 font-medium">
-        Indica el motivo por el cual esta variante no está disponible actualmente en cotizaciones u OPM:
-      </p>
-
-      <!-- Motivos Rápidos -->
-      <div class="space-y-1.5">
-        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Motivos Frecuentes:</span>
-        <div class="flex flex-wrap gap-1.5">
-          <button 
-            *ngFor="let reason of quickDisableReasons" 
-            type="button" 
-            (click)="selectQuickReason(reason)"
-            class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer"
-            [ngClass]="tempDisableReason === reason ? 'bg-rose-600 text-white font-black' : 'bg-slate-100 hover:bg-rose-100 text-slate-700'">
-            {{ reason }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Textarea personalizado -->
-      <div class="space-y-1">
-        <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500">Detalle del Motivo:</label>
-        <textarea 
-          [(ngModel)]="tempDisableReason" 
-          rows="3" 
-          placeholder="Escribe el motivo detallado..."
-          class="w-full p-2.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition leading-relaxed resize-none"></textarea>
-      </div>
-    </div>
-
-    <!-- Footer Submodal -->
-    <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
-      <button (click)="closeDisableReasonModal()" class="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer">
-        Cancelar
-      </button>
-      <button (click)="confirmDisableVariant()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer">
-        Confirmar Inhabilitación
-      </button>
-    </div>
-
-  </div>
-</div>
 
 <!-- Modal de Gestión / CRUD del Catálogo Maestro de Materiales -->
 <app-modal-gestion-materiales

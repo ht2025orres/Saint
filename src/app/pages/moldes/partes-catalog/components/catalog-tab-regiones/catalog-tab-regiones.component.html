@@ -79,8 +79,11 @@
 
         <!-- Badges de Métricas de la Parte -->
         <div class="flex items-center justify-between text-[10px] pt-2 border-t border-slate-200/60">
-          <span class="font-bold text-slate-500">
+          <span class="font-bold text-slate-500 hover:text-amber-700 cursor-pointer select-none" 
+                (click)="toggleExpandPart(part)" 
+                title="Clic para ver o alternar variantes habilitadas">
             {{ getRegionActiveVariantsCount(part, 'general') }} de {{ part.types?.length || 0 }} activas
+            <i class="bi ml-0.5 text-[9px]" [ngClass]="isPartExpanded(part) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
           </span>
           <span class="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
             ⏱ {{ calculatePartTotalTime(part) | number:'1.2-2' }} min SAM
@@ -242,10 +245,13 @@
 
                 <!-- Métricas de la Parte: Variantes y Tiempo -->
                 <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
-                  <div class="flex items-center gap-1.5">
-                    <span class="font-bold text-slate-700">
+                  <div class="flex items-center gap-1.5 cursor-pointer hover:text-indigo-600 select-none" 
+                       (click)="toggleExpandPart(p)" 
+                       title="Clic para ver o alternar variantes habilitadas">
+                    <span class="font-bold text-slate-700 hover:text-indigo-600">
                       {{ getRegionActiveVariantsCount(p, reg.value) }} de {{ p.types?.length || 0 }} activas
                     </span>
+                    <i class="bi text-[9px] text-slate-400" [ngClass]="isPartExpanded(p) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                     <span *ngIf="getPartRegionsCount(p) > 1" 
                           class="px-1.5 py-0.2 rounded text-[8px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100"
                           title="Parte compartida en {{ getPartRegionsCount(p) }} regiones">

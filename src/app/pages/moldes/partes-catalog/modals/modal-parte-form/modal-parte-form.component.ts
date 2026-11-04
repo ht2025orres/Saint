@@ -199,17 +199,8 @@ export class ModalParteFormComponent implements OnInit {
   // Submodales Dedicados
   isBasicDescModalOpen = false;
   isTechDescModalOpen = false;
-  isDisableReasonModalOpen = false;
   selectedVariantForModal: any = null;
   tempText = '';
-  tempDisableReason = '';
-  quickDisableReasons: string[] = [
-    'Falta de material / insumo',
-    'Maquinaria especializada en mantenimiento',
-    'Descontinuada temporalmente por patronaje',
-    'No homologada para dotación actual',
-    'Fuera de producción por temporada'
-  ];
 
   isZoneSelected(zoneValue: string): boolean {
     if (this.partForm && this.partForm.zones && Array.isArray(this.partForm.zones)) {
@@ -313,85 +304,73 @@ export class ModalParteFormComponent implements OnInit {
     this.selectedVariantForModal = null;
   }
 
-  // --- Submodal: Inhabilitar / Habilitar Variante ---
-  toggleVariantActive(type: any): void {
-    const isCurrentlyActive = !(type.is_active === false || type.is_active === 0 || type.is_active === '0' || type.is_active === 'false');
-    if (!isCurrentlyActive) {
-      // Re-habilitar directamente
-      type.is_active = true;
-      type.disabled_reason = null;
+  // --- Gestión de Variantes por Región Anatómica (Habilitar / Inhabilitar sin pedir razón) ---
+  isVariantDisabledInRegion(regionValue: string, type: any): boolean {
+    if (!this.partForm?.partRegions) return false;
+    const pr = this.partForm.partRegions.find((r: any) => r.region_value === regionValue);
+    if (!pr || !pr.disabled_variant_ids) return false;
+    const vId = type.id;
+    return pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId));
+  }
 
-      // Si la parte y la variante ya existen en base de datos, persistir de inmediato
-      if (this.partForm?.id && type.id) {
-        this.moldService.updateGarmentPartTypeStatus(this.partForm.id, type.id, true, null).subscribe({
-          next: () => {
-            Swal.fire({
-              title: 'Variante habilitada',
-              text: `"${type.name}" ahora está disponible globalmente.`,
-              icon: 'success',
-              toast: true,
-              position: 'top-end',
-              timer: 2500,
-              showConfirmButton: false
-            });
-          },
-          error: (err: any) => {
-            console.error('Error al habilitar variante:', err);
-          }
-        });
+  toggleRegionVariant(regionValue: string, type: any): void {
+    if (!this.partForm) return;
+
+    if (!this.partForm.partRegions) {
+      this.partForm.partRegions = [];
+    }
+    let pr = this.partForm.partRegions.find((r: any) => r.region_value === regionValue);
+    if (!pr) {
+      pr = { garment_part_id: this.partForm.id, region_value: regionValue, disabled_variant_ids: [] };
+      this.partForm.partRegions.push(pr);
+    }
+    if (!pr.disabled_variant_ids || !Array.isArray(pr.disabled_variant_ids)) {
+      pr.disabled_variant_ids = [];
+    }
+
+    const vId = type.id;
+    const isCurrentlyDisabled = pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId));
+    const willBeDisabled = !isCurrentlyDisabled;
+
+    // Actualización local inmediata
+    if (willBeDisabled) {
+      if (!pr.disabled_variant_ids.includes(vId)) {
+        pr.disabled_variant_ids.push(vId);
       }
     } else {
-      // Abrir modal para capturar motivo
-      this.selectedVariantForModal = type;
-      this.tempDisableReason = type.disabled_reason || '';
-      this.isDisableReasonModalOpen = true;
+      pr.disabled_variant_ids = pr.disabled_variant_ids.filter((id: any) => id != vId && id != Number(vId));
+    }
+
+    // Persistir si la parte y la variante ya existen en base de datos
+    if (this.partForm.id && vId) {
+      this.moldService.toggleRegionVariant(this.partForm.id, regionValue, vId, willBeDisabled).subscribe({
+        next: (res) => {
+          pr.disabled_variant_ids = res.disabled_variant_ids || [];
+          const regLabel = this.regions.find(r => r.value === regionValue)?.label || regionValue;
+          Swal.fire({
+            title: willBeDisabled ? 'Variante excluida en región' : 'Variante habilitada en región',
+            text: `"${type.name}" ${willBeDisabled ? 'no estará disponible' : 'estará disponible'} en ${regLabel}.`,
+            icon: willBeDisabled ? 'info' : 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 2200,
+            showConfirmButton: false
+          });
+        },
+        error: (err) => {
+          console.error('Error al alternar variante en región:', err);
+        }
+      });
     }
   }
 
-  openEditDisableReason(type: any): void {
-    this.selectedVariantForModal = type;
-    this.tempDisableReason = type.disabled_reason || '';
-    this.isDisableReasonModalOpen = true;
-  }
-
-  selectQuickReason(reason: string): void {
-    this.tempDisableReason = reason;
-  }
-
-  confirmDisableVariant(): void {
-    if (this.selectedVariantForModal) {
-      const reason = this.tempDisableReason.trim() || 'No disponible temporalmente';
-      this.selectedVariantForModal.is_active = false;
-      this.selectedVariantForModal.disabled_reason = reason;
-
-      // Si la parte y la variante ya existen en base de datos, persistir de inmediato
-      if (this.partForm?.id && this.selectedVariantForModal.id) {
-        const typeName = this.selectedVariantForModal.name;
-        this.moldService.updateGarmentPartTypeStatus(this.partForm.id, this.selectedVariantForModal.id, false, reason).subscribe({
-          next: () => {
-            Swal.fire({
-              title: 'Variante inhabilitada',
-              text: `"${typeName}" marcada como no disponible: ${reason}`,
-              icon: 'warning',
-              toast: true,
-              position: 'top-end',
-              timer: 3000,
-              showConfirmButton: false
-            });
-          },
-          error: (err: any) => {
-            console.error('Error al inhabilitar variante:', err);
-          }
-        });
-      }
+  toggleVariantActive(type: any): void {
+    const selectedRegions = this.getSelectedRegions();
+    if (selectedRegions.length >= 1) {
+      this.toggleRegionVariant(selectedRegions[0].value, type);
+    } else {
+      type.is_active = !(type.is_active === false || type.is_active === 0 || type.is_active === '0' || type.is_active === 'false');
     }
-    this.isDisableReasonModalOpen = false;
-    this.selectedVariantForModal = null;
-  }
-
-  closeDisableReasonModal(): void {
-    this.isDisableReasonModalOpen = false;
-    this.selectedVariantForModal = null;
   }
 
   onAddVariant(): void {
