@@ -304,7 +304,6 @@
             <select [(ngModel)]="anatomicalSortOrder" (ngModelChange)="rebuildAnatomicalGroups()" class="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer pr-1 text-xs">
               <option value="family">Región Anatómica</option>
               <option value="qty">Cantidad (uds)</option>
-              <option value="sam">Tiempo SAM</option>
             </select>
           </div>
         </div>
@@ -333,9 +332,6 @@
               <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.2 rounded border border-slate-200">
                 Total: {{ group.totalUds | number }} uds
               </span>
-              <span *ngIf="group.totalSam > 0" class="font-bold text-slate-600 bg-white px-2 py-0.2 rounded border border-slate-200">
-                SAM: {{ group.totalSam | number:'1.1-2' }} min
-              </span>
             </div>
           </div>
 
@@ -355,7 +351,6 @@
                     Partes Anatómicas & Variantes
                   </th>
                   <th class="py-2 px-2 text-center min-w-[110px]">Tallas</th>
-                  <th class="py-2 px-2 w-16 text-center">SAM</th>
                   <th class="py-2 px-2.5 w-24 text-right">Acciones</th>
                 </tr>
               </thead>
@@ -549,13 +544,6 @@
                       <span>{{ getItemTotal(entry.item) | number }} uds</span>
                       <span class="text-[9.5px] font-normal text-slate-500">({{ entry.item.tallas.length }}T)</span>
                     </button>
-                  </td>
-
-                  <!-- SAM -->
-                  <td class="py-2 px-1.5 text-center">
-                    <span class="font-mono font-bold text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-[11px] inline-block">
-                      {{ entry.item.totalSamTime || 0 }}m
-                    </span>
                   </td>
 
                   <!-- Acciones (Compacto: Notas/Archivos, Duplicar y Eliminar) -->
