@@ -1,5 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { AnatomicalRegion } from '../../partes-catalog.component';
+import { MoldService } from '../../../../../services/mold.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-catalog-tab-partes',
@@ -30,6 +32,21 @@ export class CatalogTabPartesComponent {
   // Mini búsqueda y control por tarjeta
   cardSearchTerms: { [partId: number]: string } = {};
   showCardSearch: { [partId: number]: boolean } = {};
+
+  // Submodal de Inhabilitación Global con Motivo
+  isDisableReasonModalOpen = false;
+  selectedVariantForModal: any = null;
+  selectedPartForModal: any = null;
+  tempDisableReason = '';
+  quickDisableReasons: string[] = [
+    'Falta de material / insumo',
+    'Maquinaria especializada en mantenimiento',
+    'Descontinuada temporalmente por patronaje',
+    'No homologada para dotación actual',
+    'Fuera de producción por temporada'
+  ];
+
+  constructor(private moldService: MoldService) {}
 
   toggleCardSearch(partId: number): void {
     this.showCardSearch[partId] = !this.showCardSearch[partId];
@@ -115,6 +132,75 @@ export class CatalogTabPartesComponent {
   onSelectFilter(zone: string): void {
     this.selectRegion.emit(zone);
     this.showRegionFilterDropdown = false;
+  }
+
+  // --- Submodal de Inhabilitación Global con Motivo ---
+  openDisableVariantModal(part: any, type: any): void {
+    this.selectedPartForModal = part;
+    this.selectedVariantForModal = type;
+    this.tempDisableReason = type.disabled_reason || '';
+    this.isDisableReasonModalOpen = true;
+  }
+
+  selectQuickReason(reason: string): void {
+    this.tempDisableReason = reason;
+  }
+
+  closeDisableReasonModal(): void {
+    this.isDisableReasonModalOpen = false;
+    this.selectedVariantForModal = null;
+    this.selectedPartForModal = null;
+  }
+
+  confirmDisableVariant(): void {
+    if (!this.selectedVariantForModal || !this.selectedPartForModal) return;
+    const reason = this.tempDisableReason.trim() || 'No disponible temporalmente';
+    const type = this.selectedVariantForModal;
+    const part = this.selectedPartForModal;
+
+    type.is_active = false;
+    type.disabled_reason = reason;
+
+    if (part.id && type.id) {
+      this.moldService.updateGarmentPartTypeStatus(part.id, type.id, false, reason).subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Variante inhabilitada',
+            text: `"${type.name}" inhabilitada a nivel general por: ${reason}`,
+            icon: 'warning',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        },
+        error: (err: any) => console.error('Error inhabilitando variante:', err)
+      });
+    }
+
+    this.closeDisableReasonModal();
+  }
+
+  enableVariant(part: any, type: any): void {
+    type.is_active = true;
+    type.disabled_reason = null;
+
+    if (part.id && type.id) {
+      this.moldService.updateGarmentPartTypeStatus(part.id, type.id, true, null).subscribe({
+        next: () => {
+          Swal.fire({
+            title: 'Variante habilitada',
+            text: `"${type.name}" ahora está disponible a nivel general.`,
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            timer: 2500,
+            showConfirmButton: false
+          });
+        },
+        error: (err: any) => console.error('Error habilitando variante:', err)
+      });
+    }
   }
 }
 

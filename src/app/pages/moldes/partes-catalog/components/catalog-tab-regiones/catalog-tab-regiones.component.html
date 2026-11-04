@@ -80,7 +80,7 @@
         <!-- Badges de Métricas de la Parte -->
         <div class="flex items-center justify-between text-[10px] pt-2 border-t border-slate-200/60">
           <span class="font-bold text-slate-500">
-            {{ part.types?.length || 0 }} {{ (part.types?.length === 1) ? 'variante' : 'variantes' }}
+            {{ getRegionActiveVariantsCount(part, 'general') }} de {{ part.types?.length || 0 }} activas
           </span>
           <span class="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
             ⏱ {{ calculatePartTotalTime(part) | number:'1.2-2' }} min SAM
@@ -88,19 +88,49 @@
         </div>
 
         <!-- Desglose en Línea de Variantes (Expandible) -->
-        <div *ngIf="isPartExpanded(part)" class="mt-2 pt-2 border-t border-dashed border-amber-200 space-y-1.5 bg-amber-50/50 p-2.5 rounded-lg animate-in fade-in">
-          <div class="text-[9px] font-black uppercase text-amber-900 tracking-wider">Variantes Disponibles:</div>
-          <div *ngFor="let v of part.types; let vi = index" class="p-1.5 bg-white rounded-md border border-amber-100 flex items-center justify-between gap-1 text-[10px]">
+        <div *ngIf="isPartExpanded(part)" class="mt-2 pt-2 border-t border-dashed border-amber-200 space-y-1.5 bg-amber-50/50 p-2.5 rounded-xl animate-in fade-in">
+          <div class="flex items-center justify-between pb-0.5 text-[9px] font-black uppercase tracking-wider">
+            <span class="text-amber-900">Variantes en Apliques:</span>
+            <span class="text-slate-400 font-bold">Clic para habilitar/excluir</span>
+          </div>
+          <div *ngFor="let v of part.types; let vi = index" 
+               (click)="toggleRegionVariantState(part, 'general', v, $event)"
+               class="p-2 rounded-lg border flex items-center justify-between gap-1 text-[10px] transition cursor-pointer select-none"
+               [ngClass]="isVariantGloballyDisabled(v)
+                 ? 'bg-rose-50/60 border-rose-200 opacity-60 cursor-not-allowed'
+                 : isVariantDisabledInRegion(part, 'general', v)
+                   ? 'bg-white/70 border-dashed border-slate-300 opacity-70 hover:opacity-100 hover:bg-white'
+                   : 'bg-white border-amber-200 shadow-2xs hover:border-amber-400'">
             <div class="flex items-center gap-1.5 min-w-0 flex-1">
-              <span class="w-4 h-4 rounded bg-amber-500 text-white flex items-center justify-center text-[8px] font-black shrink-0">{{ vi + 1 }}</span>
-              <span class="font-bold text-slate-800 truncate">{{ v.name }}</span>
-              <span *ngIf="v.is_active === false" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded shrink-0" [title]="v.disabled_reason || 'Inactiva'">Inactiva</span>
-              <!-- Materiales resumidos -->
-              <span *ngIf="v.materials && v.materials.length > 0" class="text-[8px] text-amber-800 bg-amber-100/70 px-1.5 py-0.2 rounded font-bold shrink-0 hidden sm:inline">
-                {{ v.materials.join(', ') }}
+              <span class="w-4 h-4 rounded text-white flex items-center justify-center text-[8px] font-black shrink-0"
+                    [ngClass]="isVariantGloballyDisabled(v) ? 'bg-rose-500' : isVariantDisabledInRegion(part, 'general', v) ? 'bg-slate-400' : 'bg-amber-500'">
+                {{ vi + 1 }}
+              </span>
+              <span class="font-bold truncate" [ngClass]="isVariantGloballyDisabled(v) ? 'text-rose-900 line-through' : isVariantDisabledInRegion(part, 'general', v) ? 'text-slate-500 line-through' : 'text-slate-800'">
+                {{ v.name }}
+              </span>
+
+              <!-- Badge Inactiva Global -->
+              <span *ngIf="isVariantGloballyDisabled(v)" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded shrink-0" [title]="v.disabled_reason || 'Inactiva globalmente'">
+                Inactiva Global: {{ v.disabled_reason || 'Sin motivo' }}
+              </span>
+
+              <!-- Badge Excluida en Región -->
+              <span *ngIf="!isVariantGloballyDisabled(v) && isVariantDisabledInRegion(part, 'general', v)" class="text-[8px] font-black text-slate-500 bg-slate-200 px-1.5 py-0.2 rounded shrink-0">
+                Excluida
+              </span>
+
+              <!-- Badge Habilitada -->
+              <span *ngIf="!isVariantGloballyDisabled(v) && !isVariantDisabledInRegion(part, 'general', v)" class="text-[8px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded shrink-0">
+                Habilitada
               </span>
             </div>
-            <span class="font-mono text-slate-500 shrink-0 text-[9px]">{{ v.operations?.length || 0 }} ops • {{ calculateTypeTotalTime(v) }}m</span>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="font-mono text-slate-400 text-[9px]">{{ calculateTypeTotalTime(v) }}m</span>
+              <i class="bi text-sm" 
+                 [ngClass]="isVariantGloballyDisabled(v) ? 'bi-slash-circle text-rose-400' : isVariantDisabledInRegion(part, 'general', v) ? 'bi-toggle2-off text-slate-400' : 'bi-toggle2-on text-amber-600'"></i>
+            </div>
           </div>
         </div>
 
@@ -213,7 +243,9 @@
                 <!-- Métricas de la Parte: Variantes y Tiempo -->
                 <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
                   <div class="flex items-center gap-1.5">
-                    <span>{{ p.types?.length || 0 }} {{ (p.types?.length === 1) ? 'variante' : 'variantes' }}</span>
+                    <span class="font-bold text-slate-700">
+                      {{ getRegionActiveVariantsCount(p, reg.value) }} de {{ p.types?.length || 0 }} activas
+                    </span>
                     <span *ngIf="getPartRegionsCount(p) > 1" 
                           class="px-1.5 py-0.2 rounded text-[8px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100"
                           title="Parte compartida en {{ getPartRegionsCount(p) }} regiones">
@@ -224,15 +256,49 @@
                 </div>
 
                 <!-- Desglose en Línea de Variantes (Expandible) -->
-                <div *ngIf="isPartExpanded(p)" class="pt-2 border-t border-dashed border-indigo-200 space-y-1 bg-white p-2 rounded-lg animate-in fade-in">
-                  <div class="text-[9px] font-black uppercase text-indigo-900 tracking-wider">Variantes de {{ p.name }}:</div>
-                  <div *ngFor="let v of p.types; let vi = index" class="p-1.5 bg-slate-50 rounded border border-slate-100 flex items-center justify-between gap-1 text-[10px]">
-                    <div class="flex items-center gap-1 min-w-0">
-                      <span class="w-4 h-4 rounded bg-indigo-600 text-white flex items-center justify-center text-[8px] font-black shrink-0">{{ vi + 1 }}</span>
-                      <span class="font-bold text-slate-800 truncate">{{ v.name }}</span>
-                      <span *ngIf="v.is_active === false" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded" [title]="v.disabled_reason || 'Inactiva'">Inactiva</span>
+                <div *ngIf="isPartExpanded(p)" class="pt-2 border-t border-dashed border-indigo-200 space-y-1.5 bg-slate-50/80 p-2.5 rounded-xl animate-in fade-in">
+                  <div class="flex items-center justify-between pb-0.5 text-[9px] font-black uppercase tracking-wider">
+                    <span class="text-indigo-950">Variantes en {{ reg.label }}:</span>
+                    <span class="text-slate-400 font-bold">Clic para habilitar/excluir</span>
+                  </div>
+                  <div *ngFor="let v of p.types; let vi = index" 
+                       (click)="toggleRegionVariantState(p, reg.value, v, $event)"
+                       class="p-2 rounded-lg border flex items-center justify-between gap-1 text-[10px] transition cursor-pointer select-none"
+                       [ngClass]="isVariantGloballyDisabled(v)
+                         ? 'bg-rose-50/60 border-rose-200 opacity-60 cursor-not-allowed'
+                         : isVariantDisabledInRegion(p, reg.value, v)
+                           ? 'bg-white/70 border-dashed border-slate-300 opacity-70 hover:opacity-100 hover:bg-white'
+                           : 'bg-white border-indigo-200 shadow-2xs hover:border-indigo-400'">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span class="w-4 h-4 rounded text-white flex items-center justify-center text-[8px] font-black shrink-0"
+                            [ngClass]="isVariantGloballyDisabled(v) ? 'bg-rose-500' : isVariantDisabledInRegion(p, reg.value, v) ? 'bg-slate-400' : 'bg-indigo-600'">
+                        {{ vi + 1 }}
+                      </span>
+                      <span class="font-bold truncate" [ngClass]="isVariantGloballyDisabled(v) ? 'text-rose-900 line-through' : isVariantDisabledInRegion(p, reg.value, v) ? 'text-slate-500 line-through' : 'text-slate-800'">
+                        {{ v.name }}
+                      </span>
+
+                      <!-- Badge Inactiva Global -->
+                      <span *ngIf="isVariantGloballyDisabled(v)" class="text-[8px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded shrink-0" [title]="v.disabled_reason || 'Inactiva globalmente'">
+                        Inactiva Global: {{ v.disabled_reason || 'Sin motivo' }}
+                      </span>
+
+                      <!-- Badge Excluida en Región -->
+                      <span *ngIf="!isVariantGloballyDisabled(v) && isVariantDisabledInRegion(p, reg.value, v)" class="text-[8px] font-black text-slate-500 bg-slate-200 px-1.5 py-0.2 rounded shrink-0">
+                        Excluida
+                      </span>
+
+                      <!-- Badge Habilitada -->
+                      <span *ngIf="!isVariantGloballyDisabled(v) && !isVariantDisabledInRegion(p, reg.value, v)" class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded shrink-0">
+                        Habilitada
+                      </span>
                     </div>
-                    <span class="font-mono text-slate-500 shrink-0">{{ v.operations?.length || 0 }} ops • {{ calculateTypeTotalTime(v) }}m</span>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <span class="font-mono text-slate-400 text-[9px]">{{ calculateTypeTotalTime(v) }}m</span>
+                      <i class="bi text-sm" 
+                         [ngClass]="isVariantGloballyDisabled(v) ? 'bi-slash-circle text-rose-400' : isVariantDisabledInRegion(p, reg.value, v) ? 'bi-toggle2-off text-slate-400' : 'bi-toggle2-on text-emerald-600'"></i>
+                    </div>
                   </div>
                 </div>
 

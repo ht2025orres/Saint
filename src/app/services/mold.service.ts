@@ -265,6 +265,15 @@ export class MoldService {
     );
   }
 
+  toggleRegionVariant(partId: number, regionValue: string, variantId: any, isDisabled: boolean): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/garment-parts/${partId}/regions/${regionValue}/toggle-variant`, {
+      variant_id: variantId,
+      is_disabled: isDisabled
+    }).pipe(
+      tap(() => this.clearGarmentPartsCache())
+    );
+  }
+
   // ==================== SIESA INSUMOS AGRUPADOS ====================
 
   getGroupedInsumos(query: string = '', grupo: string = '', conStock: boolean = false, bodega: string = 'MP001'): Observable<any> {

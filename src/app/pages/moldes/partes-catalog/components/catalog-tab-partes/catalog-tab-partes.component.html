@@ -261,9 +261,22 @@
               <div class="flex items-center gap-1.5 min-w-0 flex-1">
                 <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="t.is_active !== false ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                 <span class="text-xs font-bold text-slate-800 truncate" [title]="t.name">{{ t.name }}</span>
-                <span *ngIf="t.is_active === false" class="text-[8px] uppercase tracking-wider font-black px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 shrink-0" [title]="t.disabled_reason || 'Inactiva'">
-                  Inactiva
-                </span>
+
+                <!-- Botón de Inhabilitación Global con Motivo -->
+                <button *ngIf="t.is_active !== false" 
+                        type="button"
+                        (click)="openDisableVariantModal(part, t); $event.stopPropagation()"
+                        class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition cursor-pointer shrink-0"
+                        title="Disponible globalmente. Clic para inhabilitar con motivo">
+                  Disponible
+                </button>
+                <button *ngIf="t.is_active === false" 
+                        type="button"
+                        (click)="enableVariant(part, t); $event.stopPropagation()"
+                        class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 hover:bg-emerald-50 hover:text-emerald-700 transition cursor-pointer shrink-0"
+                        [title]="'Inactiva: ' + (t.disabled_reason || 'Sin motivo') + '. Clic para reactivar'">
+                  Inactiva ({{ t.disabled_reason || 'Motivo' }})
+                </button>
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
                 <span class="text-[11px] font-mono font-black text-indigo-600">
@@ -331,4 +344,69 @@
     </button>
   </div>
 
+</div>
+
+<!-- ════════════════════ SUBMODAL: INHABILITAR VARIANTE CON MOTIVO (NIVEL GENERAL) ════════════════════ -->
+<div *ngIf="isDisableReasonModalOpen" class="fixed inset-0 z-[1450] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+  <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+    
+    <!-- Header Submodal -->
+    <div class="p-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center text-sm font-black shrink-0">
+          <i class="bi bi-slash-circle"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Inhabilitar Variante (General)</h3>
+          <p class="text-[11px] text-slate-500 font-medium">Variante: <strong>{{ selectedVariantForModal?.name || 'Variante' }}</strong></p>
+        </div>
+      </div>
+      <button (click)="closeDisableReasonModal()" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-white transition cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Body Submodal -->
+    <div class="p-4 space-y-3.5 overflow-y-auto overflow-x-hidden max-h-[60vh]">
+      <p class="text-xs text-slate-600 font-medium">
+        Indica el motivo por el cual esta variante no está disponible actualmente en cotizaciones u OPM a nivel general:
+      </p>
+
+      <!-- Motivos Rápidos -->
+      <div class="space-y-1.5">
+        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Motivos Frecuentes:</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button 
+            *ngFor="let reason of quickDisableReasons" 
+            type="button" 
+            (click)="selectQuickReason(reason)"
+            class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer"
+            [ngClass]="tempDisableReason === reason ? 'bg-rose-600 text-white font-black' : 'bg-slate-100 hover:bg-rose-100 text-slate-700'">
+            {{ reason }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Textarea personalizado -->
+      <div class="space-y-1">
+        <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500">Detalle del Motivo:</label>
+        <textarea 
+          [(ngModel)]="tempDisableReason" 
+          rows="3" 
+          placeholder="Escribe el motivo detallado..."
+          class="w-full p-2.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none transition leading-relaxed resize-none"></textarea>
+      </div>
+    </div>
+
+    <!-- Footer Submodal -->
+    <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+      <button (click)="closeDisableReasonModal()" class="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer">
+        Cancelar
+      </button>
+      <button (click)="confirmDisableVariant()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition cursor-pointer">
+        Confirmar Inhabilitación
+      </button>
+    </div>
+
+  </div>
 </div>
