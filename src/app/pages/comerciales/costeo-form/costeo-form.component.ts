@@ -2339,14 +2339,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     return item.tallas.reduce((ts, t) => ts + (Number(t.cantidad) || 0), 0);
   }
 
-  get totalDiscrepancy(): number {
-    return (this.cantidadPorEntrega || 0) - this.totalUnidades;
-  }
-
-  get hasTotalDiscrepancy(): boolean {
-    return (this.cantidadPorEntrega || 0) > 0 && this.totalUnidades > 0 && this.totalDiscrepancy !== 0;
-  }
-
   cleanTalla(talla: string | null | undefined): string {
     if (!talla) return '';
     const trimmed = talla.trim();

@@ -217,19 +217,6 @@
         <span class="calc-formula">({{ cantidadPorEntrega | number }} uds. × {{ entregasAnual }} entregas)</span>
       </div>
 
-      <!-- Alerta de Discrepancia de Unidades (Sección 0) -->
-      <div *ngIf="hasTotalDiscrepancy" class="discrepancy-banner warning">
-        <div class="discrepancy-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <div class="discrepancy-info">
-          <span class="discrepancy-title">Discrepancia con el desglose de tallas</span>
-          <span class="discrepancy-text">
-            La cantidad por entrega es <strong>{{ cantidadPorEntrega | number }} uds.</strong>, pero las tallas suman <strong>{{ totalUnidades | number }} uds.</strong>
-            <span *ngIf="totalDiscrepancy > 0"> (Faltan {{ totalDiscrepancy | number }} uds. por asignar)</span>
-            <span *ngIf="totalDiscrepancy < 0"> (Exceso de {{ -totalDiscrepancy | number }} uds.)</span>
-          </span>
-        </div>
-      </div>
-
       <!-- Observaciones Generales -->
       <div class="form-group mt-3">
         <label><i class="bi bi-chat-left-text"></i> Observaciones o Notas Adicionales</label>
@@ -261,33 +248,6 @@
           <button class="btn-action-secondary" (click)="showNewItemForm = !showNewItemForm">
             <i class="bi bi-plus-lg"></i> Ítem Nuevo
           </button>
-        </div>
-      </div>
-
-      <!-- Banner de Resumen de Unidades y Discrepancia (Sección 1) -->
-      <div *ngIf="cantidadPorEntrega > 0 || totalUnidades > 0" class="units-summary-bar" 
-           [class.has-warning]="hasTotalDiscrepancy" 
-           [class.is-matched]="!hasTotalDiscrepancy && cantidadPorEntrega > 0 && totalUnidades === cantidadPorEntrega">
-        <div class="units-summary-content">
-          <div class="units-stat">
-            <span class="units-label">Objetivo de entrega:</span>
-            <span class="units-value">{{ cantidadPorEntrega | number }} uds.</span>
-          </div>
-          <div class="units-arrow"><i class="bi bi-arrow-right"></i></div>
-          <div class="units-stat">
-            <span class="units-label">Total en tallas:</span>
-            <span class="units-value" [class.text-danger]="hasTotalDiscrepancy" [class.text-success]="!hasTotalDiscrepancy && cantidadPorEntrega > 0 && totalUnidades === cantidadPorEntrega">
-              {{ totalUnidades | number }} uds.
-            </span>
-          </div>
-        </div>
-        <div class="units-status-badge warning-badge" *ngIf="hasTotalDiscrepancy">
-          <i class="bi bi-exclamation-triangle"></i>
-          <span *ngIf="totalDiscrepancy > 0">Faltan {{ totalDiscrepancy | number }} uds.</span>
-          <span *ngIf="totalDiscrepancy < 0">Exceso de {{ -totalDiscrepancy | number }} uds.</span>
-        </div>
-        <div class="units-status-badge matched-badge" *ngIf="!hasTotalDiscrepancy && cantidadPorEntrega > 0 && totalUnidades === cantidadPorEntrega">
-          <i class="bi bi-check2"></i> Cantidades cuadradas
         </div>
       </div>
 
