@@ -1,0 +1,138 @@
+<div class="modal-backdrop-custom" *ngIf="item" (click)="close()">
+  <div class="modal-dialog-custom" (click)="$event.stopPropagation()">
+    
+    <!-- Header del Modal -->
+    <div class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-400/30 flex items-center justify-center">
+          <i class="bi bi-journal-text text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-white leading-tight">
+            Observaciones & Archivos de la Prenda
+          </h3>
+          <p class="text-xs text-slate-300 flex items-center gap-1.5 mt-0.5">
+            <span class="font-bold text-white">{{ item.descripcion }}</span>
+            <span *ngIf="item.siesa_referencia" class="font-mono text-slate-400 font-semibold">({{ item.siesa_referencia }})</span>
+          </p>
+        </div>
+      </div>
+      <button type="button" 
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              (click)="close()" 
+              title="Cerrar">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Cuerpo del Modal -->
+    <div class="p-6 space-y-6 overflow-y-auto bg-slate-50/40 flex-1">
+      
+      <!-- 1. Observación / Descripción de la prenda -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <i class="bi bi-chat-left-text-fill text-blue-600"></i>
+            Observaciones o Especificaciones:
+          </label>
+          <span class="text-[10px] text-slate-400">Instrucciones de confección o diseño</span>
+        </div>
+        <textarea [(ngModel)]="item.observaciones"
+                  rows="3"
+                  class="w-full text-xs text-slate-800 p-3 bg-slate-50/50 border border-slate-200 rounded-lg focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none resize-none font-medium"
+                  placeholder="Ej. Bordado de logo corporativo en pecho izquierdo de 8x4 cm, pespunte triple en tiros, tela antifluido color azul oscuro..."></textarea>
+      </div>
+
+      <!-- 2. Subida de archivos al Bucket S3 -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <i class="bi bi-paperclip text-blue-600"></i>
+            Imágenes & Documentos Adjuntos:
+          </label>
+          <span class="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+            {{ item.archivos?.length || 0 }} {{ (item.archivos?.length === 1) ? 'archivo' : 'archivos' }}
+          </span>
+        </div>
+
+        <!-- Dropzone / Input Selector -->
+        <div class="border-2 border-dashed border-slate-200 hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/20 rounded-xl p-5 text-center transition-all cursor-pointer group"
+             (click)="fileInput.click()">
+          <input type="file" multiple #fileInput (change)="onFilesSelected($event)" class="hidden"
+                 accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" />
+          
+          <div *ngIf="!isUploading" class="flex flex-col items-center justify-center gap-1.5">
+            <div class="w-11 h-11 rounded-full bg-white shadow-2xs border border-slate-200 group-hover:border-blue-400 text-blue-600 flex items-center justify-center transition-transform group-hover:scale-105">
+              <i class="bi bi-cloud-arrow-up-fill text-xl"></i>
+            </div>
+            <div class="text-xs font-bold text-slate-700">
+              Haz clic para seleccionar o arrastra archivos aquí
+            </div>
+            <p class="text-[10.5px] text-slate-400">
+              Imágenes (JPG, PNG, WEBP), Fichas Técnicas o Documentos (PDF, Word, Excel) · Almacenado seguro en AWS S3
+            </p>
+          </div>
+
+          <!-- Spinner de subida en progreso -->
+          <div *ngIf="isUploading" class="flex flex-col items-center justify-center py-3 gap-2 text-blue-600">
+            <div class="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+            <span class="text-xs font-bold text-slate-700">Subiendo archivo a AWS S3...</span>
+          </div>
+        </div>
+
+        <!-- Lista de archivos subidos -->
+        <div *ngIf="item.archivos && item.archivos.length > 0" class="space-y-2 pt-1">
+          <div *ngFor="let arch of item.archivos; let fi = index" 
+               class="flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs">
+            <!-- Info del archivo -->
+            <div class="flex items-center gap-3 min-w-0 pr-2">
+              <!-- Thumbnail si es imagen o icono -->
+              <div class="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                <img *ngIf="isImageFile(arch.tipo, arch.nombre) && arch.url_descarga" [src]="arch.url_descarga" class="w-full h-full object-cover" alt="Preview" />
+                <i *ngIf="!isImageFile(arch.tipo, arch.nombre) || !arch.url_descarga" class="bi text-lg" [ngClass]="getFileIconClass(arch.tipo, arch.nombre)"></i>
+              </div>
+              <div class="min-w-0">
+                <span class="text-xs font-bold text-slate-800 block truncate" [title]="arch.nombre">{{ arch.nombre }}</span>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                  <span class="font-mono">{{ formatFileSize(arch.size) }}</span>
+                  <span>·</span>
+                  <span class="uppercase font-bold text-[9px] text-slate-600 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                    {{ arch.nombre.split('.').pop() || 'Archivo' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones del archivo: Ver/Descargar & Eliminar -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <a *ngIf="arch.url_descarga" [href]="arch.url_descarga" target="_blank" rel="noopener noreferrer"
+                 class="px-2.5 py-1 text-xs font-bold rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                 title="Ver / Descargar">
+                <i class="bi bi-box-arrow-up-right text-[10px]"></i> Ver
+              </a>
+              <button type="button" (click)="removeFile(fi)"
+                      class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                      title="Eliminar archivo">
+                <i class="bi bi-trash3 text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Si no hay archivos aún -->
+        <div *ngIf="!item.archivos || item.archivos.length === 0" class="text-center py-2 text-slate-400 text-xs italic">
+          Sin archivos adjuntos para esta prenda aún.
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer del Modal -->
+    <div class="px-6 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
+      <button type="button" 
+              class="px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5" 
+              (click)="close()">
+        <i class="bi bi-check2"></i> Listo / Guardar
+      </button>
+    </div>
+  </div>
+</div>
