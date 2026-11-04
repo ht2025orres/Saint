@@ -43,7 +43,21 @@ export class ZoneVariantsModalComponent {
 
   isVariantDisabled(type: any): boolean {
     if (!type) return false;
-    return type.is_active === false || type.is_disabled === true;
+    if (type.is_active === false || type.is_disabled === true) return true;
+
+    // Verificar si la variante está inhabilitada en la región anatómica activa
+    if (this.activePartInModal && this.activeZoneCol) {
+      const zoneKey = this.activeZoneCol.key;
+      const pr = (this.activePartInModal.partRegions || []).find((r: any) => r.region_value === zoneKey);
+      if (pr && Array.isArray(pr.disabled_variant_ids)) {
+        const vId = type.id;
+        if (pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   getVariantDisabledReason(type: any): string {
@@ -54,6 +68,19 @@ export class ZoneVariantsModalComponent {
     if (type.is_disabled === true) {
       return 'No disponible en este molde';
     }
+
+    // Razón si está excluida en esta región específica
+    if (this.activePartInModal && this.activeZoneCol) {
+      const zoneKey = this.activeZoneCol.key;
+      const pr = (this.activePartInModal.partRegions || []).find((r: any) => r.region_value === zoneKey);
+      if (pr && Array.isArray(pr.disabled_variant_ids)) {
+        const vId = type.id;
+        if (pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId))) {
+          return 'No disponible para esta región';
+        }
+      }
+    }
+
     return '';
   }
 
