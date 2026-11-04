@@ -364,7 +364,7 @@ export class PartesCatalogComponent implements OnInit {
     } else {
       this.partForm.types.forEach((t: any, idx: number) => {
         t._isExpanded = (idx === 0);
-        if (t.is_active === undefined) t.is_active = true;
+        t.is_active = !(t.is_active === false || t.is_active === 0 || t.is_active === '0' || t.is_active === 'false');
         if (!t.materials || t.materials.length === 0) t.materials = ['Tela Principal', 'Hilo de Confección'];
       });
     }
@@ -394,23 +394,26 @@ export class PartesCatalogComponent implements OnInit {
       zone: selectedZones[0] || 'general',
       zones: selectedZones,
       is_active: this.partForm.is_active !== undefined ? this.partForm.is_active : true,
-      types: (this.partForm.types || []).map((t: any) => ({
-        id: t.id,
-        name: t.name,
-        description: t.description || null,
-        technical_description: t.technical_description || null,
-        materials: t.materials && Array.isArray(t.materials) ? t.materials : ['Tela Principal', 'Hilo de Confección'],
-        total_time: (t.operations || []).reduce((acc: number, o: any) => acc + (parseFloat(o.execution_time) || 0), 0),
-        is_active: t.is_active !== undefined ? !!t.is_active : true,
-        disabled_reason: !t.is_active ? (t.disabled_reason || null) : null,
-        operations: (t.operations || []).map((op: any) => ({
-          id: op.id,
-          mold_machine_id: op.mold_machine_id,
-          machine_name: op.machine_name || 'PLANA',
-          operation_name: op.operation_name,
-          execution_time: parseFloat(op.execution_time) || 0
-        }))
-      }))
+      types: (this.partForm.types || []).map((t: any) => {
+        const isActive = !(t.is_active === false || t.is_active === 0 || t.is_active === '0' || t.is_active === 'false');
+        return {
+          id: t.id,
+          name: t.name,
+          description: t.description || null,
+          technical_description: t.technical_description || null,
+          materials: t.materials && Array.isArray(t.materials) ? t.materials : ['Tela Principal', 'Hilo de Confección'],
+          total_time: (t.operations || []).reduce((acc: number, o: any) => acc + (parseFloat(o.execution_time) || 0), 0),
+          is_active: isActive,
+          disabled_reason: !isActive ? (t.disabled_reason || 'No disponible temporalmente') : null,
+          operations: (t.operations || []).map((op: any) => ({
+            id: op.id,
+            mold_machine_id: op.mold_machine_id,
+            machine_name: op.machine_name || 'PLANA',
+            operation_name: op.operation_name,
+            execution_time: parseFloat(op.execution_time) || 0
+          }))
+        };
+      })
     };
 
     const action$ = this.isEditing && this.partForm.id

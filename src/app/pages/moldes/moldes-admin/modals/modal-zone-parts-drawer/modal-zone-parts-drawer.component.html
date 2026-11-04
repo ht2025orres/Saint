@@ -280,21 +280,31 @@
                   
                   <div *ngFor="let vt of mp.types"
                        (click)="toggleVariantState(mp, vt, $event)"
-                       class="rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 cursor-pointer relative group border-2"
-                       [ngClass]="isVariantActive(vt) 
-                         ? 'bg-gradient-to-br from-white via-white to-emerald-50/30 border-emerald-500/50 hover:border-emerald-600 shadow-2xs hover:shadow-md' 
-                         : 'bg-slate-100/70 border-dashed border-slate-300 opacity-70 hover:opacity-100 hover:bg-white hover:border-slate-400'">
+                       class="rounded-2xl p-3.5 flex flex-col justify-between transition-all duration-200 relative group border-2"
+                       [ngClass]="vt.is_active === false 
+                         ? 'bg-rose-50/40 border-rose-200/80 opacity-60 cursor-not-allowed'
+                         : isVariantActive(vt)
+                           ? 'bg-gradient-to-br from-white via-white to-emerald-50/30 border-emerald-500/50 hover:border-emerald-600 shadow-2xs hover:shadow-md cursor-pointer' 
+                           : 'bg-slate-100/70 border-dashed border-slate-300 opacity-70 hover:opacity-100 hover:bg-white hover:border-slate-400 cursor-pointer'">
                     
                     <!-- Fila Superior de la Variante: Estado + Tiempo SAM -->
                     <div>
                       <div class="flex items-center justify-between gap-1.5 mb-2">
                         <!-- Chip de Estado -->
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-2xs"
+                        <span *ngIf="vt.is_active === false"
+                              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs"
+                              [title]="vt.disabled_reason || 'Inhabilitada en catálogo maestro'">
+                          <i class="bi bi-slash-circle text-[10px] text-rose-600"></i>
+                          Inhabilitada en Catálogo
+                        </span>
+
+                        <span *ngIf="vt.is_active !== false"
+                              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-2xs"
                               [ngClass]="isVariantActive(vt) 
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
-                                : 'bg-rose-100 text-rose-800 border border-rose-200'">
-                          <i class="bi text-[10px]" [ngClass]="isVariantActive(vt) ? 'bi-check-circle-fill text-emerald-600' : 'bi-x-circle-fill text-rose-600'"></i>
-                          {{ isVariantActive(vt) ? 'Habilitada' : 'Excluida' }}
+                                : 'bg-slate-200 text-slate-700 border border-slate-300'">
+                          <i class="bi text-[10px]" [ngClass]="isVariantActive(vt) ? 'bi-check-circle-fill text-emerald-600' : 'bi-dash-circle text-slate-500'"></i>
+                          {{ isVariantActive(vt) ? 'Habilitada en Zona' : 'Excluida en Zona' }}
                         </span>
 
                         <!-- Badge de Tiempo SAM -->
@@ -307,7 +317,7 @@
 
                       <!-- Nombre y Descripción de la Variante -->
                       <h5 class="text-xs font-black leading-snug tracking-tight mb-1"
-                          [ngClass]="isVariantActive(vt) ? 'text-slate-900 group-hover:text-emerald-950' : 'text-slate-500 line-through'">
+                          [ngClass]="vt.is_active === false ? 'text-rose-900 line-through' : (isVariantActive(vt) ? 'text-slate-900 group-hover:text-emerald-950' : 'text-slate-500 line-through')">
                         {{ vt.name }}
                       </h5>
 
@@ -325,19 +335,31 @@
 
                     <!-- Fila Inferior: Botón / Switch Interactivo -->
                     <div class="mt-3 pt-2.5 border-t flex items-center justify-between"
-                         [ngClass]="isVariantActive(vt) ? 'border-emerald-100' : 'border-slate-200'">
+                         [ngClass]="vt.is_active === false ? 'border-rose-100' : (isVariantActive(vt) ? 'border-emerald-100' : 'border-slate-200')">
                       
-                      <span class="text-[10px] font-black flex items-center gap-1.5"
-                            [ngClass]="isVariantActive(vt) ? 'text-emerald-700' : 'text-slate-500'">
-                        <i class="bi text-lg" [ngClass]="isVariantActive(vt) ? 'bi-toggle2-on text-emerald-600' : 'bi-toggle2-off text-slate-400'"></i>
-                        <span>{{ isVariantActive(vt) ? 'Disponible en OPM' : 'No Disponible' }}</span>
-                      </span>
+                      <!-- Si está inactiva a nivel global de catálogo -->
+                      <ng-container *ngIf="vt.is_active === false">
+                        <span class="text-[9px] font-bold text-rose-700 flex items-center gap-1 truncate" [title]="vt.disabled_reason || 'Inhabilitada en catálogo maestro'">
+                          <i class="bi bi-exclamation-triangle-fill text-rose-500"></i>
+                          <span>Motivo: {{ vt.disabled_reason || 'No disponible' }}</span>
+                        </span>
+                        <span class="text-[8px] font-black uppercase text-rose-400 shrink-0">Catálogo</span>
+                      </ng-container>
 
-                      <span class="text-[9px] font-black transition flex items-center gap-0.5"
-                            [ngClass]="isVariantActive(vt) ? 'text-slate-400 group-hover:text-rose-600' : 'text-indigo-600 group-hover:text-indigo-800'">
-                        <i class="bi" [ngClass]="isVariantActive(vt) ? 'bi-dash-circle' : 'bi-plus-circle'"></i>
-                        <span>{{ isVariantActive(vt) ? 'Excluir' : 'Habilitar' }}</span>
-                      </span>
+                      <!-- Si está activa a nivel de catálogo, configurable por zona -->
+                      <ng-container *ngIf="vt.is_active !== false">
+                        <span class="text-[10px] font-black flex items-center gap-1.5"
+                              [ngClass]="isVariantActive(vt) ? 'text-emerald-700' : 'text-slate-500'">
+                          <i class="bi text-lg" [ngClass]="isVariantActive(vt) ? 'bi-toggle2-on text-emerald-600' : 'bi-toggle2-off text-slate-400'"></i>
+                          <span>{{ isVariantActive(vt) ? 'Disponible en Zona' : 'Excluida en Zona' }}</span>
+                        </span>
+
+                        <span class="text-[9px] font-black transition flex items-center gap-0.5"
+                              [ngClass]="isVariantActive(vt) ? 'text-slate-400 group-hover:text-rose-600' : 'text-indigo-600 group-hover:text-indigo-800'">
+                          <i class="bi" [ngClass]="isVariantActive(vt) ? 'bi-dash-circle' : 'bi-plus-circle'"></i>
+                          <span>{{ isVariantActive(vt) ? 'Excluir' : 'Habilitar' }}</span>
+                        </span>
+                      </ng-container>
                     </div>
 
                   </div>

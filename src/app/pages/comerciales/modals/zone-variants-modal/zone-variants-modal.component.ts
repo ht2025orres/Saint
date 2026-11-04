@@ -41,7 +41,24 @@ export class ZoneVariantsModalComponent {
     this.onBackToParts.emit();
   }
 
+  isVariantDisabled(type: any): boolean {
+    if (!type) return false;
+    return type.is_active === false || type.is_disabled === true;
+  }
+
+  getVariantDisabledReason(type: any): string {
+    if (!type) return '';
+    if (type.is_active === false) {
+      return type.disabled_reason || 'Inhabilitada en catálogo';
+    }
+    if (type.is_disabled === true) {
+      return 'No disponible en este molde';
+    }
+    return '';
+  }
+
   selectVariant(part: any, type: any): void {
+    if (this.isVariantDisabled(type)) return;
     this.onSelectVariant.emit({ part, type });
   }
 

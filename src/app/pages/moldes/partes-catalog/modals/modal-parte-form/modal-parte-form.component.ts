@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnInit, 
 import { AnatomicalRegion, SharedOperation } from '../../partes-catalog.component';
 import { IconOption, DEFAULT_ICONS, DEFAULT_ICON_CATEGORIES } from '../../partes-catalog.models';
 import { MoldService, GenericMaterial } from '../../../../../services/mold.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-modal-parte-form',
@@ -314,10 +315,31 @@ export class ModalParteFormComponent implements OnInit {
 
   // --- Submodal: Inhabilitar / Habilitar Variante ---
   toggleVariantActive(type: any): void {
-    if (type.is_active === false) {
+    const isCurrentlyActive = !(type.is_active === false || type.is_active === 0 || type.is_active === '0' || type.is_active === 'false');
+    if (!isCurrentlyActive) {
       // Re-habilitar directamente
       type.is_active = true;
       type.disabled_reason = null;
+
+      // Si la parte y la variante ya existen en base de datos, persistir de inmediato
+      if (this.partForm?.id && type.id) {
+        this.moldService.updateGarmentPartTypeStatus(this.partForm.id, type.id, true, null).subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Variante habilitada',
+              text: `"${type.name}" ahora está disponible globalmente.`,
+              icon: 'success',
+              toast: true,
+              position: 'top-end',
+              timer: 2500,
+              showConfirmButton: false
+            });
+          },
+          error: (err: any) => {
+            console.error('Error al habilitar variante:', err);
+          }
+        });
+      }
     } else {
       // Abrir modal para capturar motivo
       this.selectedVariantForModal = type;
@@ -338,8 +360,30 @@ export class ModalParteFormComponent implements OnInit {
 
   confirmDisableVariant(): void {
     if (this.selectedVariantForModal) {
+      const reason = this.tempDisableReason.trim() || 'No disponible temporalmente';
       this.selectedVariantForModal.is_active = false;
-      this.selectedVariantForModal.disabled_reason = this.tempDisableReason.trim() || 'No disponible temporalmente';
+      this.selectedVariantForModal.disabled_reason = reason;
+
+      // Si la parte y la variante ya existen en base de datos, persistir de inmediato
+      if (this.partForm?.id && this.selectedVariantForModal.id) {
+        const typeName = this.selectedVariantForModal.name;
+        this.moldService.updateGarmentPartTypeStatus(this.partForm.id, this.selectedVariantForModal.id, false, reason).subscribe({
+          next: () => {
+            Swal.fire({
+              title: 'Variante inhabilitada',
+              text: `"${typeName}" marcada como no disponible: ${reason}`,
+              icon: 'warning',
+              toast: true,
+              position: 'top-end',
+              timer: 3000,
+              showConfirmButton: false
+            });
+          },
+          error: (err: any) => {
+            console.error('Error al inhabilitar variante:', err);
+          }
+        });
+      }
     }
     this.isDisableReasonModalOpen = false;
     this.selectedVariantForModal = null;

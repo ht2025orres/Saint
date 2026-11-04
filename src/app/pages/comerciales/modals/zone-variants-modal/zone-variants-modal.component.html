@@ -129,19 +129,26 @@
           <div *ngFor="let type of activePartInModal.types"
                class="variant-pick-card"
                [class.pick-selected]="isTypeSelected(activePartInModal, type)"
-               (click)="selectVariant(activePartInModal, type)">
+               [class.pick-disabled]="isVariantDisabled(type)"
+               [title]="getVariantDisabledReason(type)"
+               (click)="!isVariantDisabled(type) && selectVariant(activePartInModal, type)">
             
             <div class="pick-radio">
-              <i class="bi bi-check-circle-fill" *ngIf="isTypeSelected(activePartInModal, type)"></i>
-              <i class="bi bi-circle" *ngIf="!isTypeSelected(activePartInModal, type)"></i>
+              <i class="bi bi-slash-circle-fill text-rose-500" *ngIf="isVariantDisabled(type)"></i>
+              <i class="bi bi-check-circle-fill" *ngIf="!isVariantDisabled(type) && isTypeSelected(activePartInModal, type)"></i>
+              <i class="bi bi-circle" *ngIf="!isVariantDisabled(type) && !isTypeSelected(activePartInModal, type)"></i>
             </div>
 
             <div class="pick-info">
-              <span class="pick-name">{{ type.name }}</span>
+              <span class="pick-name" [class.line-through]="isVariantDisabled(type)">{{ type.name }}</span>
               <span class="pick-desc" *ngIf="type.technical_description">{{ type.technical_description }}</span>
+              <span class="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-1 w-fit" *ngIf="isVariantDisabled(type)">
+                <i class="bi bi-exclamation-circle-fill text-[9px]"></i>
+                {{ getVariantDisabledReason(type) }}
+              </span>
             </div>
 
-            <span class="pick-sam-pill" *ngIf="type.total_time || type.estimated_time">
+            <span class="pick-sam-pill" *ngIf="!isVariantDisabled(type) && (type.total_time || type.estimated_time)">
               +{{ type.total_time || type.estimated_time }} min
             </span>
           </div>

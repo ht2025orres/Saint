@@ -201,9 +201,12 @@ export class ModalZonePartsDrawerComponent {
       event.stopPropagation();
     }
     if (this.isReadOnly || !vt) return;
-    const currentlyActive = this.isVariantActive(vt);
-    vt.is_disabled = currentlyActive;
-    vt.is_active = !currentlyActive;
+    // Si la variante está inhabilitada en el catálogo maestro con motivo, no puede habilitarse en la zona
+    if (vt.is_active === false) {
+      return;
+    }
+    // Alternar solo el estado específico de inclusión en esta zona anatómica del molde
+    vt.is_disabled = !vt.is_disabled;
     this.toggleVariant.emit({ part, typeId: vt.id || vt.name });
   }
 
@@ -213,8 +216,9 @@ export class ModalZonePartsDrawerComponent {
     }
     if (this.isReadOnly || !part || !part.types) return;
     part.types.forEach((t: any) => {
-      t.is_disabled = false;
-      t.is_active = true;
+      if (t.is_active !== false) {
+        t.is_disabled = false;
+      }
     });
     this.toggleVariant.emit({ part, typeId: -1 });
   }
@@ -226,7 +230,6 @@ export class ModalZonePartsDrawerComponent {
     if (this.isReadOnly || !part || !part.types) return;
     part.types.forEach((t: any) => {
       t.is_disabled = true;
-      t.is_active = false;
     });
     this.toggleVariant.emit({ part, typeId: -1 });
   }

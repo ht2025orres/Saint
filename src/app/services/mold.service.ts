@@ -256,6 +256,15 @@ export class MoldService {
     );
   }
 
+  updateGarmentPartTypeStatus(partId: number, typeId: number, isActive: boolean, disabledReason?: string | null): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/garment-parts/${partId}/types/${typeId}/status`, {
+      is_active: isActive,
+      disabled_reason: disabledReason
+    }).pipe(
+      tap(() => this.clearGarmentPartsCache())
+    );
+  }
+
   // ==================== SIESA INSUMOS AGRUPADOS ====================
 
   getGroupedInsumos(query: string = '', grupo: string = '', conStock: boolean = false, bodega: string = 'MP001'): Observable<any> {
