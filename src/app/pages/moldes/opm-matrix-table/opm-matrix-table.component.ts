@@ -1,10 +1,18 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MoldService } from '../../../services/mold.service';
 import Swal from 'sweetalert2';
 import { CANONICAL_OPTIONAL_PARTS, OptionalPart, OptionalPartType } from '../../comerciales/modals/canonical-optional-parts';
 
 export type AnatomicalFamily = 'SUPERIOR' | 'INFERIOR' | 'COMPLETA' | 'GENERAL' | 'SIN_MOLDE';
+
+export interface ItemArchivo {
+  nombre: string;
+  url: string;
+  temporary_url?: string;
+  tipo: string;
+  tamano?: number;
+}
 
 export interface LocalItem {
   descripcion: string;
@@ -31,6 +39,10 @@ export interface LocalItem {
   activeTab?: 'tallas' | 'molde';
   draftComponents?: any[];
   zoneObservations?: { [zoneKey: string]: string };
+  observaciones?: string;
+  archivos?: ItemArchivo[];
+  archivos_urls?: string[];
+  imagenReferenciaUrl?: string;
 }
 
 export interface AnatomicalColumn {
@@ -58,16 +70,25 @@ export interface AnatomicalGroup {
   templateUrl: './opm-matrix-table.component.html',
   styleUrls: ['./opm-matrix-table.component.css']
 })
-export class OpmMatrixTableComponent implements OnInit, OnDestroy {
+export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
+  @Input() mode: 'solicitud' | 'moldes' = 'moldes';
+  @Input() items: LocalItem[] = [];
+  @Output() itemsChange = new EventEmitter<LocalItem[]>();
+
+  @Input() allMolds: any[] = [];
+  @Input() categories: any[] = [];
+  @Input() clienteId: number | null = null;
+  @Input() isSaving: boolean = false;
+  @Input() isEditMode: boolean = false;
+
   @Input() preloadedMoldId: number | null = null;
   @Output() onBackToLibreria = new EventEmitter<void>();
+  @Output() onBackToGeneral = new EventEmitter<void>();
+  @Output() onSaveSolicitud = new EventEmitter<void>();
 
   private readonly STORAGE_KEY = 'saint_moldes_opm_matrix_draft';
   private autoSaveTimer: any = null;
 
-  items: LocalItem[] = [];
-  allMolds: any[] = [];
-  categories: any[] = [];
   cachedMoldsMap: { [id: number]: any } = {};
 
   isLoading = false;
@@ -75,13 +96,16 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
 
   // Filtros y ordenamiento
   selectedFamilyFilter: 'TODAS' | AnatomicalFamily = 'TODAS';
-  anatomicalSortOrder: 'family' | 'qty' | 'sam' = 'family';
+  anatomicalSortOrder: 'family' | 'qty' = 'family';
   _cachedAnatomicalGroups: AnatomicalGroup[] = [];
 
   // Nuevo item inline
   showNewItemForm = false;
   newItemDesc = '';
   newItemRef = '';
+
+  // Buscador de Siesa
+  showItemSearch = false;
 
   // Edición inline de descripción y referencia
   editingItemIndex: number | null = null;
@@ -115,8 +139,13 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
   // Modal Selector de Molde Base
   showMoldSelectorModal = false;
   moldSelectorItemIndex: number | null = null;
+  selectedModalCategoryId: number | null = null;
 
-  // Guardando OPM global
+  // Modal de Notas & Archivos por Prenda
+  showItemNotesModal = false;
+  activeNotesItemIndex: number | null = null;
+
+  // Guardando OPM global en modo moldes
   isSavingGlobalOpm = false;
 
   constructor(
@@ -127,15 +156,40 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadCategories();
-    this.loadAllMolds(() => {
-      this.restoreFromLocalStorage();
-      const routeMoldId = this.route.snapshot.params['id'] || this.route.snapshot.queryParams['moldId'];
-      const targetId = this.preloadedMoldId || (routeMoldId ? Number(routeMoldId) : null);
-      if (targetId) {
-        this.addMoldById(targetId);
+    if (this.mode === 'solicitud') {
+      if (!this.allMolds || this.allMolds.length === 0) {
+        this.loadAllMolds();
+      } else {
+        this.allMolds.forEach(m => this.cachedMoldsMap[m.id] = m);
       }
-    });
+      if (!this.categories || this.categories.length === 0) {
+        this.loadCategories();
+      }
+      this.rebuildAnatomicalGroups();
+    } else {
+      this.loadCategories();
+      this.loadAllMolds(() => {
+        this.restoreFromLocalStorage();
+        const routeMoldId = this.route.snapshot.params['id'] || this.route.snapshot.queryParams['moldId'];
+        const targetId = this.preloadedMoldId || (routeMoldId ? Number(routeMoldId) : null);
+        if (targetId) {
+          this.addMoldById(targetId);
+        }
+      });
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['items']) {
+      this.rebuildAnatomicalGroups();
+    }
+    if (changes['allMolds'] && this.allMolds) {
+      this.allMolds.forEach(m => this.cachedMoldsMap[m.id] = m);
+      this.rebuildAnatomicalGroups();
+    }
+    if (changes['categories'] && this.categories) {
+      this.rebuildAnatomicalGroups();
+    }
   }
 
   handleBack(): void {
@@ -183,9 +237,18 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ==================== PERSISTENCIA LOCAL STORAGE ====================
+  // ==================== PERSISTENCIA Y SINCRONIZACIÓN ====================
+
+  saveData(): void {
+    if (this.mode === 'solicitud') {
+      this.itemsChange.emit(this.items);
+    } else {
+      this.saveToLocalStorage();
+    }
+  }
 
   saveToLocalStorage(): void {
+    if (this.mode === 'solicitud') return;
     try {
       const payload = {
         items: this.items,
@@ -199,48 +262,46 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
   }
 
   restoreFromLocalStorage(): void {
+    if (this.mode === 'solicitud') return;
     try {
       const raw = localStorage.getItem(this.STORAGE_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      if (parsed?.items && Array.isArray(parsed.items) && parsed.items.length > 0) {
+      if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
         this.items = parsed.items;
-        this.selectedFamilyFilter = parsed.selectedFamilyFilter || 'TODAS';
-        this.anatomicalSortOrder = parsed.anatomicalSortOrder || 'family';
+        if (parsed.selectedFamilyFilter) this.selectedFamilyFilter = parsed.selectedFamilyFilter;
+        if (parsed.anatomicalSortOrder) this.anatomicalSortOrder = parsed.anatomicalSortOrder;
         this.rebuildAnatomicalGroups();
       }
     } catch (e) {
-      console.warn('Error restaurando borrador de OPM', e);
+      console.warn('No se pudo restaurar borrador de localStorage', e);
     }
   }
 
   clearDraft(): void {
     Swal.fire({
-      title: '¿Limpiar tabla de prendas?',
-      text: 'Se eliminarán las prendas en borrador de esta tabla.',
+      title: '¿Limpiar tabla?',
+      text: 'Se eliminarán todas las prendas configuradas en este borrador.',
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Sí, limpiar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444'
-    }).then(res => {
-      if (res.isConfirmed) {
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (r.isConfirmed) {
         this.items = [];
-        localStorage.removeItem(this.STORAGE_KEY);
+        this.saveData();
         this.rebuildAnatomicalGroups();
       }
     });
   }
 
-  // ==================== GESTIÓN DE ÍTEMS / PRENDAS ====================
+  // ==================== AGREGAR ÍTEMS ====================
 
-  public addMoldItem(mold: any): void {
-    if (!mold) return;
-    this.cachedMoldsMap[mold.id] = mold;
-
-    // Verificar si ya existe este molde o agregar uno nuevo
+  addMoldItem(mold: any): void {
     const newItem: LocalItem = {
-      descripcion: mold.name || 'Nueva Prenda',
+      descripcion: mold.name,
       item_cliente: '',
       siesa_item_rowid: null,
       siesa_item_ext_rowid: null,
@@ -252,33 +313,44 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
       ref_siesa_item_rowid: null,
       ref_siesa_referencia: '',
       ref_siesa_descripcion: '',
-      categoryId: mold.mold_category_id || mold.id_product_category || null,
+      categoryId: mold.category_id || null,
       categoryName: mold.category?.name || '',
       moldId: mold.id,
       moldName: mold.name,
       technicalSpecId: null,
       totalSamTime: 0,
       specExpanded: false,
-      availableMolds: [mold],
-      draftComponents: []
+      availableMolds: [],
+      draftComponents: [],
+      zoneObservations: {},
+      observaciones: '',
+      archivos: []
     };
 
-    this.items.push(newItem);
-    this.recalculateItemSam(newItem);
-    this.rebuildAnatomicalGroups();
-    this.saveToLocalStorage();
+    if (mold.parts && Array.isArray(mold.parts)) {
+      newItem.draftComponents = mold.parts
+        .filter((p: any) => p.default_type_id || (p.types && p.types.length > 0))
+        .map((p: any) => {
+          const defType = p.types ? p.types.find((t: any) => t.id === p.default_type_id) || p.types[0] : null;
+          return {
+            mold_part_id: p.id,
+            mold_part_type_id: defType ? defType.id : null,
+            selected_type_name: defType ? defType.name : '',
+            name: p.name,
+            zone_name: p.anatomical_region || p.family || '',
+            item_type: 'parte_molde',
+            technical_spec: defType ? defType.technical_description : '',
+            client_spec: '',
+            estimated_time: defType ? defType.estimated_time || 0 : 0,
+            position_x: null,
+            position_y: null
+          };
+        });
+    }
 
-    const Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 2000,
-      timerProgressBar: true
-    });
-    Toast.fire({
-      icon: 'success',
-      title: `Molde "${mold.name}" agregado a la lista de OPMs`
-    });
+    this.items.push(newItem);
+    this.saveData();
+    this.rebuildAnatomicalGroups();
   }
 
   addMoldById(moldId: number): void {
@@ -320,129 +392,583 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
       totalSamTime: 0,
       specExpanded: false,
       availableMolds: [],
-      draftComponents: []
+      draftComponents: [],
+      zoneObservations: {},
+      observaciones: '',
+      archivos: []
     };
 
     this.items.push(newItem);
     this.newItemDesc = '';
     this.newItemRef = '';
     this.showNewItemForm = false;
+    this.saveData();
     this.rebuildAnatomicalGroups();
-    this.saveToLocalStorage();
+  }
+
+  addItemFromSiesa(siesaItem: any): void {
+    const defaultCat = this.categories.length > 0 ? this.categories[0] : null;
+    const newItem: LocalItem = {
+      descripcion: siesaItem.descripcion || siesaItem.f120_descripcion || 'Ítem desde Siesa',
+      item_cliente: siesaItem.referencia || siesaItem.f120_id || '',
+      siesa_item_rowid: siesaItem.rowid || siesaItem.f120_rowid || null,
+      siesa_item_ext_rowid: siesaItem.rowid_item_ext || null,
+      siesa_referencia: siesaItem.referencia || siesaItem.f120_id || '',
+      cantidad_muestra: 1,
+      tallas: [],
+      isNew: false,
+      isExpanded: true,
+      ref_siesa_item_rowid: siesaItem.rowid || siesaItem.f120_rowid || null,
+      ref_siesa_referencia: siesaItem.referencia || siesaItem.f120_id || '',
+      ref_siesa_descripcion: siesaItem.descripcion || siesaItem.f120_descripcion || '',
+      categoryId: defaultCat?.id || null,
+      categoryName: defaultCat?.name || '',
+      moldId: null,
+      moldName: '',
+      technicalSpecId: null,
+      specExpanded: false,
+      availableMolds: [],
+      draftComponents: [],
+      zoneObservations: {},
+      observaciones: '',
+      archivos: []
+    };
+
+    this.items.push(newItem);
+    this.showItemSearch = false;
+    this.saveData();
+    this.rebuildAnatomicalGroups();
   }
 
   duplicateItem(index: number): void {
-    const original = this.items[index];
-    if (!original) return;
-    const cloned: LocalItem = JSON.parse(JSON.stringify(original));
-    cloned.descripcion = `${original.descripcion} (Copia)`;
+    const orig = this.items[index];
+    if (!orig) return;
+
+    const cloned: LocalItem = JSON.parse(JSON.stringify(orig));
     cloned.technicalSpecId = null;
     cloned.opmReference = undefined;
-    cloned.isExpanded = false;
-    this.items.splice(index + 1, 0, cloned);
-    this.rebuildAnatomicalGroups();
-    this.saveToLocalStorage();
+    cloned.descripcion = cloned.descripcion + ' (Copia)';
 
-    const Toast = Swal.mixin({
-      toast: true,
-      position: 'top-end',
-      showConfirmButton: false,
-      timer: 1800,
-      timerProgressBar: true
-    });
-    Toast.fire({
-      icon: 'success',
-      title: 'Prenda duplicada'
-    });
+    this.items.splice(index + 1, 0, cloned);
+    this.saveData();
+    this.rebuildAnatomicalGroups();
   }
 
   removeItem(index: number): void {
-    this.items.splice(index, 1);
-    this.rebuildAnatomicalGroups();
-    this.saveToLocalStorage();
-  }
-
-  getItemTotal(item: LocalItem): number {
-    if (!item?.tallas) return 0;
-    return item.tallas.reduce((acc, t) => acc + (parseInt(t.cantidad as any, 10) || 0), 0);
-  }
-
-  get totalPrendas(): number {
-    return this.items.length;
-  }
-
-  get totalUnidades(): number {
-    return this.items.reduce((acc, it) => acc + this.getItemTotal(it), 0);
-  }
-
-  get totalSam(): number {
-    return this.items.reduce((acc, it) => acc + (it.totalSamTime || 0), 0);
+    Swal.fire({
+      title: '¿Eliminar prenda?',
+      text: `Se quitará "${this.items[index]?.descripcion || 'esta prenda'}" de la lista.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.items.splice(index, 1);
+        this.saveData();
+        this.rebuildAnatomicalGroups();
+      }
+    });
   }
 
   // ==================== EDICIÓN INLINE ====================
 
   startEditItem(index: number, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
+    if (event) event.stopPropagation();
     this.editingItemIndex = index;
-    this.editDescTemp = this.items[index]?.descripcion || '';
-    this.editRefTemp = this.items[index]?.item_cliente || '';
+    this.editDescTemp = this.items[index].descripcion || '';
+    this.editRefTemp = this.items[index].item_cliente || this.items[index].siesa_referencia || '';
   }
 
   saveEditItem(index: number, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-    const item = this.items[index];
-    if (item && this.editDescTemp.trim()) {
-      item.descripcion = this.editDescTemp.trim();
-      item.item_cliente = this.editRefTemp.trim();
-      this.saveToLocalStorage();
+    if (event) event.stopPropagation();
+    if (this.items[index] && this.editDescTemp.trim()) {
+      this.items[index].descripcion = this.editDescTemp.trim();
+      this.items[index].item_cliente = this.editRefTemp.trim();
+      this.editingItemIndex = null;
+      this.saveData();
       this.rebuildAnatomicalGroups();
     }
-    this.editingItemIndex = null;
   }
 
   cancelEditItem(event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
+    if (event) event.stopPropagation();
     this.editingItemIndex = null;
   }
 
-  // ==================== FAMILIAS & MATRIZ ANATÓMICA ====================
+  // ==================== SELECTOR DE MOLDE ====================
+
+  openMoldSelector(index: number): void {
+    this.moldSelectorItemIndex = index;
+    this.selectedModalCategoryId = this.items[index]?.categoryId || null;
+    this.showMoldSelectorModal = true;
+  }
+
+  closeMoldSelector(): void {
+    this.showMoldSelectorModal = false;
+    this.moldSelectorItemIndex = null;
+  }
+
+  onMoldSelected(mold: any): void {
+    if (this.moldSelectorItemIndex === null) return;
+    const item = this.items[this.moldSelectorItemIndex];
+    if (!item) return;
+
+    item.moldId = mold.id;
+    item.moldName = mold.name;
+    item.categoryId = mold.category_id || item.categoryId;
+    item.categoryName = mold.category?.name || item.categoryName;
+    item.technicalSpecId = null;
+    item.opmReference = undefined;
+
+    this.cachedMoldsMap[mold.id] = mold;
+
+    if (mold.parts && Array.isArray(mold.parts)) {
+      item.draftComponents = mold.parts
+        .filter((p: any) => p.default_type_id || (p.types && p.types.length > 0))
+        .map((p: any) => {
+          const defType = p.types ? p.types.find((t: any) => t.id === p.default_type_id) || p.types[0] : null;
+          return {
+            mold_part_id: p.id,
+            mold_part_type_id: defType ? defType.id : null,
+            selected_type_name: defType ? defType.name : '',
+            name: p.name,
+            zone_name: p.anatomical_region || p.family || '',
+            item_type: 'parte_molde',
+            technical_spec: defType ? defType.technical_description : '',
+            client_spec: '',
+            estimated_time: defType ? defType.estimated_time || 0 : 0,
+            position_x: null,
+            position_y: null
+          };
+        });
+    } else {
+      item.draftComponents = [];
+    }
+
+    this.closeMoldSelector();
+    this.saveData();
+    this.rebuildAnatomicalGroups();
+  }
+
+  // ==================== FIGURÍN OPM ====================
+
+  openFigurinModal(index: number): void {
+    const item = this.items[index];
+    if (!item) return;
+
+    if (!item.moldId) {
+      this.openMoldSelector(index);
+      return;
+    }
+
+    this.activeFigurinItemIndex = index;
+    this.activeFigurinItem = { ...item };
+    this.showFigurinModal = true;
+  }
+
+  closeFigurinModal(): void {
+    this.showFigurinModal = false;
+    this.activeFigurinItemIndex = null;
+    this.activeFigurinItem = null;
+    this.saveData();
+    this.rebuildAnatomicalGroups();
+  }
+
+  onItemOpmSavedFromModal(event: any): void {
+    if (this.activeFigurinItemIndex !== null) {
+      const item = this.items[this.activeFigurinItemIndex];
+      if (item) {
+        item.technicalSpecId = event.technicalSpecId;
+        item.opmReference = event.reference;
+        item.totalSamTime = event.samTime;
+        if (event.tallas && Array.isArray(event.tallas) && event.tallas.length > 0) {
+          item.tallas = event.tallas;
+        }
+      }
+      this.saveData();
+      this.rebuildAnatomicalGroups();
+    }
+  }
+
+  openMoldSelectorFromModal(): void {
+    if (this.activeFigurinItemIndex !== null) {
+      this.openMoldSelector(this.activeFigurinItemIndex);
+    }
+  }
+
+  clearMoldFromModal(): void {
+    if (this.activeFigurinItemIndex !== null) {
+      const item = this.items[this.activeFigurinItemIndex];
+      if (item) {
+        item.moldId = null;
+        item.moldName = '';
+        item.technicalSpecId = null;
+        item.draftComponents = [];
+      }
+      this.closeFigurinModal();
+      this.saveData();
+      this.rebuildAnatomicalGroups();
+    }
+  }
+
+  // ==================== TALLAS RÁPIDAS ====================
+
+  openTallasQuickModal(index: number): void {
+    this.activeTallasItemIndex = index;
+    this.showTallasQuickModal = true;
+  }
+
+  closeTallasQuickModal(): void {
+    this.showTallasQuickModal = false;
+    this.activeTallasItemIndex = null;
+    this.saveData();
+  }
+
+  addSpecificTalla(item: LocalItem, talla: string): void {
+    if (!item.tallas) item.tallas = [];
+    const exists = item.tallas.find(t => t.talla === talla);
+    if (!exists) {
+      item.tallas.push({ talla, cantidad: 1 });
+      this.saveData();
+    }
+  }
+
+  removeTalla(item: LocalItem, ti: number): void {
+    if (item.tallas && item.tallas[ti]) {
+      item.tallas.splice(ti, 1);
+      this.saveData();
+    }
+  }
+
+  // ==================== NOTAS Y ARCHIVOS ====================
+
+  openItemNotesModal(index: number): void {
+    this.activeNotesItemIndex = index;
+    this.showItemNotesModal = true;
+  }
+
+  closeItemNotesModal(): void {
+    this.showItemNotesModal = false;
+    this.activeNotesItemIndex = null;
+    this.saveData();
+  }
+
+  // ==================== MODAL DE ZONAS & VARIANTES ====================
+
+  openZoneVariantsModal(itemIndex: number, col: AnatomicalColumn): void {
+    const item = this.items[itemIndex];
+    if (!item) return;
+
+    if (!item.moldId) {
+      Swal.fire({
+        title: 'Prenda sin molde',
+        text: 'Primero debes asignar un molde base a esta prenda para configurar sus partes anatómicas.',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        confirmButtonText: 'Seleccionar Molde',
+        cancelButtonText: 'Cancelar'
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.openMoldSelector(itemIndex);
+        }
+      });
+      return;
+    }
+
+    this.activeZoneItemIndex = itemIndex;
+    this.activeZoneCol = col;
+    this.activeZoneTitle = col.label;
+    this.activeZoneSubtitle = `Configura ${col.label.toLowerCase()} para "${item.descripcion}"`;
+    this.activeZoneObservation = (item.zoneObservations && item.zoneObservations[col.key]) || '';
+
+    if (!this.activeZoneObservation && item.draftComponents) {
+      const match = item.draftComponents.find((c: any) =>
+        (c.zone_name === col.key || (col.keywords && col.keywords.some(k => (c.name || '').toLowerCase().includes(k)))) && c.client_spec
+      );
+      if (match) {
+        this.activeZoneObservation = match.client_spec;
+      }
+    }
+
+    this.refreshActiveZoneAnchoredParts(item, col);
+
+    if (!item.draftComponents) {
+      item.draftComponents = [];
+    }
+
+    const mold = this.cachedMoldsMap[item.moldId];
+    if (mold && mold.parts) {
+      const matchedParts = mold.parts.filter((p: any) => {
+        const region = (p.anatomical_region || p.family || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        return col.keywords.some(k => region.includes(k) || pName.includes(k));
+      });
+
+      this.activeZoneDisplayParts = this.getDisplayPartsForZone(matchedParts);
+
+      if (this.activeZoneDisplayParts.length > 1) {
+        this.zoneModalStep = 'select-part';
+        this.activePartInModal = null;
+      } else if (this.activeZoneDisplayParts.length === 1) {
+        this.zoneModalStep = 'select-variant';
+        this.activePartInModal = this.activeZoneDisplayParts[0];
+      } else {
+        this.zoneModalStep = 'select-optional';
+        this.activePartInModal = null;
+      }
+
+      this.showZoneVariantsModal = true;
+    } else {
+      this.isLoadingZoneParts = true;
+      this.showZoneVariantsModal = true;
+      this.moldService.getMold(item.moldId).subscribe({
+        next: (res: any) => {
+          this.isLoadingZoneParts = false;
+          if (res?.success && res?.data) {
+            const loadedMold = res.data;
+            this.cachedMoldsMap[item.moldId!] = loadedMold;
+            const matchedParts = (loadedMold.parts || []).filter((p: any) => {
+              const region = (p.anatomical_region || p.family || '').toLowerCase();
+              const pName = (p.name || '').toLowerCase();
+              return col.keywords.some(k => region.includes(k) || pName.includes(k));
+            });
+
+            this.activeZoneDisplayParts = this.getDisplayPartsForZone(matchedParts);
+
+            if (this.activeZoneDisplayParts.length > 1) {
+              this.zoneModalStep = 'select-part';
+              this.activePartInModal = null;
+            } else if (this.activeZoneDisplayParts.length === 1) {
+              this.zoneModalStep = 'select-variant';
+              this.activePartInModal = this.activeZoneDisplayParts[0];
+            } else {
+              this.zoneModalStep = 'select-optional';
+              this.activePartInModal = null;
+            }
+          }
+        },
+        error: () => {
+          this.isLoadingZoneParts = false;
+        }
+      });
+    }
+  }
+
+  closeZoneVariantsModal(): void {
+    this.showZoneVariantsModal = false;
+    this.activeZoneItemIndex = null;
+    this.activeZoneCol = null;
+    this.activePartInModal = null;
+    this.zoneModalStep = 'select-part';
+    this.saveData();
+    this.rebuildAnatomicalGroups();
+  }
+
+  refreshActiveZoneAnchoredParts(item: LocalItem, col: AnatomicalColumn): void {
+    if (!item.draftComponents) {
+      this.activeZoneAnchoredParts = [];
+      return;
+    }
+
+    this.activeZoneAnchoredParts = item.draftComponents.filter((c: any) => {
+      if (c.item_type !== 'parte_general') return false;
+      if (c.zone_name === col.key) return true;
+      const cName = (c.name || '').toLowerCase();
+      return col.keywords && col.keywords.some(k => cName.includes(k));
+    });
+  }
+
+  getItemZoneOptionalCount(item: LocalItem, col: AnatomicalColumn): number {
+    if (!item.draftComponents) return 0;
+    return item.draftComponents.filter((c: any) => {
+      if (c.item_type !== 'parte_general') return false;
+      if (c.zone_name === col.key) return true;
+      const cName = (c.name || '').toLowerCase();
+      return col.keywords && col.keywords.some(k => cName.includes(k));
+    }).length;
+  }
+
+  updateActiveZoneObservation(obs: string): void {
+    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
+    const item = this.items[this.activeZoneItemIndex];
+    if (!item) return;
+
+    if (!item.zoneObservations) {
+      item.zoneObservations = {};
+    }
+    item.zoneObservations[this.activeZoneCol.key] = obs;
+    this.activeZoneObservation = obs;
+
+    if (item.draftComponents && item.draftComponents.length > 0) {
+      const col = this.activeZoneCol;
+      item.draftComponents.forEach((c: any) => {
+        const matchesZone = c.zone_name === col.key ||
+          (col.keywords && col.keywords.some(k => (c.name || '').toLowerCase().includes(k)));
+        if (matchesZone) {
+          c.client_spec = obs;
+        }
+      });
+    }
+
+    this.saveData();
+  }
+
+  addOptionalFromZoneModal(): void {
+    this.zoneModalStep = 'select-optional';
+  }
+
+  removeAnchoredPartFromZoneModal(gp: any): void {
+    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
+    const item = this.items[this.activeZoneItemIndex];
+    if (!item || !item.draftComponents) return;
+
+    item.draftComponents = item.draftComponents.filter((c: any) => {
+      if (c === gp) return false;
+      if (gp.item_type === 'parte_general' && c.item_type === 'parte_general' &&
+          (c.name || '').toLowerCase().trim() === (gp.name || '').toLowerCase().trim()) {
+        return false;
+      }
+      return true;
+    });
+
+    this.refreshActiveZoneAnchoredParts(item, this.activeZoneCol);
+    this.saveData();
+  }
+
+  selectOptionalVariantFromZoneModal(event: { part: any; type: any }): void {
+    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
+    const item = this.items[this.activeZoneItemIndex];
+    if (!item) return;
+
+    if (!item.draftComponents) item.draftComponents = [];
+
+    const partName = (event.part.name || '').toLowerCase().trim();
+    item.draftComponents = item.draftComponents.filter((c: any) =>
+      !(c.item_type === 'parte_general' && (c.name || '').toLowerCase().trim() === partName)
+    );
+
+    item.draftComponents.push({
+      mold_part_id: null,
+      mold_part_type_id: null,
+      selected_type_name: event.type.name,
+      name: event.part.name,
+      zone_name: this.activeZoneCol.key,
+      item_type: 'parte_general',
+      technical_spec: event.type.technical_description || event.type.name,
+      client_spec: this.activeZoneObservation || '',
+      estimated_time: event.type.total_time || 0,
+      position_x: null,
+      position_y: null
+    });
+
+    this.refreshActiveZoneAnchoredParts(item, this.activeZoneCol);
+    this.saveData();
+  }
+
+  choosePartInZoneModal(part: any): void {
+    this.activePartInModal = part;
+    this.zoneModalStep = 'select-variant';
+  }
+
+  backToZonePartsList(): void {
+    this.activePartInModal = null;
+    this.zoneModalStep = this.activeZoneDisplayParts.length > 1 ? 'select-part' : 'select-optional';
+  }
+
+  getDisplayPartsForZone(parts: any[]): any[] {
+    if (!parts || parts.length === 0) return [];
+    const result: any[] = [];
+    const seenNames = new Set<string>();
+
+    for (const p of parts) {
+      const canonicalKey = (p.name || '').toLowerCase().trim();
+      if (!seenNames.has(canonicalKey)) {
+        seenNames.add(canonicalKey);
+        result.push(p);
+      }
+    }
+    return result;
+  }
+
+  selectVariantForPart(part: any, type: any): void {
+    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
+    const item = this.items[this.activeZoneItemIndex];
+    if (!item) return;
+
+    if (!item.draftComponents) item.draftComponents = [];
+
+    const compObj: any = {
+      mold_part_id: part.id,
+      mold_part_type_id: type.id,
+      selected_type_name: type.name,
+      name: part.name,
+      zone_name: this.activeZoneCol.key,
+      item_type: 'parte_molde',
+      technical_spec: type.technical_description || '',
+      client_spec: this.activeZoneObservation || '',
+      estimated_time: type.estimated_time || type.total_time || 0,
+      position_x: null,
+      position_y: null
+    };
+
+    const existingIdx = item.draftComponents.findIndex((c: any) =>
+      c.mold_part_id === part.id ||
+      (c.item_type === 'parte_molde' && (c.name || '').toLowerCase().trim() === (part.name || '').toLowerCase().trim())
+    );
+
+    if (existingIdx >= 0) {
+      if (!compObj.client_spec && item.draftComponents[existingIdx].client_spec) {
+        compObj.client_spec = item.draftComponents[existingIdx].client_spec;
+      }
+      item.draftComponents[existingIdx] = compObj;
+    } else {
+      item.draftComponents.push(compObj);
+    }
+
+    this.saveData();
+  }
+
+  unselectVariantForPart(part: any): void {
+    if (this.activeZoneItemIndex === null) return;
+    const item = this.items[this.activeZoneItemIndex];
+    if (!item || !item.draftComponents) return;
+
+    item.draftComponents = item.draftComponents.filter((c: any) =>
+      !(c.mold_part_id === part.id ||
+        (c.item_type === 'parte_molde' && (c.name || '').toLowerCase().trim() === (part.name || '').toLowerCase().trim()))
+    );
+
+    this.saveData();
+  }
+
+  // ==================== LÓGICA ANATÓMICA Y GRUPOS ====================
 
   getAnatomicalFamilyForItem(item: LocalItem): AnatomicalFamily {
-    if (!item || !item.moldId) return 'SIN_MOLDE';
-
-    const mold = this.allMolds.find(m => m.id === item.moldId) || this.cachedMoldsMap[item.moldId];
-    const moldCat = (mold?.category?.name || item.categoryName || '').toUpperCase();
-    const moldName = (mold?.name || item.moldName || '').toUpperCase();
-    const moldText = `${moldCat} ${moldName}`;
-
-    if (moldText.includes('OVEROL') || moldText.includes('ENTERIZO') || moldText.includes('MAMELUCO') || moldText.includes('TRAJE')) {
-      return 'COMPLETA';
-    }
-    if (moldText.includes('PANTALON') || moldText.includes('PANTALÓN') || moldText.includes('BERMUDA') ||
-        moldText.includes('JEAN') || moldText.includes('FALDA') || moldText.includes('SHORT') || moldText.includes('JOGGER')) {
-      return 'INFERIOR';
-    }
-    if (moldText.includes('CAMISA') || moldText.includes('POLO') || moldText.includes('CHAQUETA') ||
-        moldText.includes('CHALECO') || moldText.includes('BLUSA') || moldText.includes('CAMISETA') ||
-        moldText.includes('CAMIBUSO') || moldText.includes('SUETER') || moldText.includes('CHOMPA')) {
-      return 'SUPERIOR';
+    if (!item.moldId) {
+      return 'SIN_MOLDE';
     }
 
-    const catId = mold?.mold_category_id || mold?.category_id || mold?.id_product_category || item.categoryId;
-    if (catId === 1 || catId === 3) return 'SUPERIOR';
-    if (catId === 4) return 'INFERIOR';
-    if (catId === 2) return 'COMPLETA';
+    const mold = this.cachedMoldsMap[item.moldId];
+    if (mold) {
+      const catName = ((mold.category && mold.category.name) || mold.category_name || item.categoryName || '').toUpperCase();
+      const mName = (mold.name || '').toUpperCase();
+      const combined = `${catName} ${mName}`;
 
-    return 'SUPERIOR';
+      if (combined.includes('OVEROL') || combined.includes('ENTERIZO') || combined.includes('BATA')) return 'COMPLETA';
+      if (combined.includes('PANTALON') || combined.includes('JEAN') || combined.includes('BERMUDA') || combined.includes('FALDA') || combined.includes('SHORT')) return 'INFERIOR';
+      if (combined.includes('CAMISA') || combined.includes('CAMISETA') || combined.includes('POLO') || combined.includes('CHALECO') || combined.includes('CHAQUETA') || combined.includes('BLUSA')) return 'SUPERIOR';
+    }
+
+    const desc = (item.descripcion || '').toUpperCase();
+    if (desc.includes('OVEROL') || desc.includes('ENTERIZO') || desc.includes('BATA')) return 'COMPLETA';
+    if (desc.includes('PANTALON') || desc.includes('JEAN') || desc.includes('BERMUDA') || desc.includes('FALDA') || desc.includes('SHORT')) return 'INFERIOR';
+    if (desc.includes('CAMISA') || desc.includes('CAMISETA') || desc.includes('POLO') || desc.includes('CHALECO') || desc.includes('CHAQUETA') || desc.includes('BLUSA')) return 'SUPERIOR';
+
+    return 'GENERAL';
   }
 
   getFamilyItemCount(family: 'TODAS' | AnatomicalFamily): number {
@@ -454,189 +980,61 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
     return this.anatomicalGroups.reduce((acc, g) => acc + g.items.length, 0);
   }
 
-  get anatomicalGroups(): AnatomicalGroup[] {
-    return this._cachedAnatomicalGroups;
-  }
-
-  rebuildAnatomicalGroups(): void {
-    const rawItems = this.items.map((item, originalIndex) => ({ item, originalIndex }));
-
-    const baseCandidatesByFamily: { [key in AnatomicalFamily]: { title: string; subtitle: string; icon: string; badgeClass: string; borderClass: string; columns: AnatomicalColumn[] } } = {
-      SUPERIOR: {
-        title: 'Prendas Superiores (Torso)',
-        subtitle: 'Camisas, Polos, Chaquetas, Chalecos, Blusas y Camibusos',
-        icon: 'bi-person-badge',
-        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
-        borderClass: 'border-slate-200',
-        columns: [
-          { key: 'cuello', label: 'Cuello / Solapa', tooltip: 'Tipo de cuello, solapa o capota', keywords: ['cuel', 'solap', 'collar', 'capot', 'capuch'] },
-          { key: 'pecho', label: 'Pechera / Delantero', tooltip: 'Cartera, botones y bolsillos frontales', keywords: ['pech', 'delan', 'carter', 'bolsill', 'frente', 'boton', 'cierre'] },
-          { key: 'manga', label: 'Mangas & Puños', tooltip: 'Largo de manga, puño y guardapolvo', keywords: ['mang', 'puñ', 'sleeve', 'mga'] },
-          { key: 'espalda', label: 'Espalda & Almilla', tooltip: 'Almilla, pliegues y corte posterior', keywords: ['espal', 'almill', 'post', 'tras', 'esp'] },
-          { key: 'cintura', label: 'Cintura & Ruedo', tooltip: 'Dobladillo inferior y pretina', keywords: ['cint', 'rued', 'faldon', 'dobl', 'pret'] },
-        ]
-      },
-      INFERIOR: {
-        title: 'Prendas Inferiores (Piernas)',
-        subtitle: 'Pantalones, Bermudas, Jeans, Faldas y Shorts',
-        icon: 'bi-columns-gap',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        borderClass: 'border-emerald-100',
-        columns: [
-          { key: 'pretina', label: 'Pretina & Pasadores', tooltip: 'Tipo de pretina, pasadores y botón principal', keywords: ['pret', 'pasador', 'cint'] },
-          { key: 'tiro', label: 'Tiro & Bragueta', tooltip: 'Cierre de cremallera, botones o tiro delantero', keywords: ['braguet', 'tiro', 'cierre', 'cremallera', 'figura'] },
-          { key: 'bolsillo_del', label: 'Bolsillos Laterales', tooltip: 'Bolsillos diagonales, relojera o parche delantero', keywords: ['bolsill', 'delan', 'later', 'relojer', 'boca'] },
-          { key: 'bolsillo_tras', label: 'Bolsillos Traseros', tooltip: 'Bolsillos de ribete, ojal o parche posterior', keywords: ['tras', 'post', 'ribete', 'espal', 'parche'] },
-          { key: 'bota', label: 'Bota & Ruedo', tooltip: 'Bota recta, entubada o dobladillo inferior', keywords: ['bota', 'rued', 'pierna', 'dobl'] },
-        ]
-      },
-      COMPLETA: {
-        title: 'Prendas de Cuerpo Completo',
-        subtitle: 'Overoles, Enterizos, Mamelucos y Trajes',
-        icon: 'bi-shield-shaded',
-        badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
-        borderClass: 'border-amber-100',
-        columns: [
-          { key: 'cuello', label: 'Cuello / Capota', tooltip: 'Cuello o capota de protección', keywords: ['cuel', 'capot', 'solap'] },
-          { key: 'pecho', label: 'Pecho & Cierre', tooltip: 'Cierre principal de doble vía o solapa', keywords: ['pech', 'delan', 'cierre', 'cremallera'] },
-          { key: 'manga', label: 'Mangas & Puños', tooltip: 'Mangas, puños elásticos o ajustables', keywords: ['mang', 'puñ'] },
-          { key: 'cintura', label: 'Cintura & Elástico', tooltip: 'Ajuste elástico o cinturón en pretina', keywords: ['cint', 'pret', 'elast'] },
-          { key: 'bota', label: 'Pierna & Bota', tooltip: 'Terminación de bota y refuerzos', keywords: ['bota', 'pierna', 'rued'] },
-        ]
-      },
-      GENERAL: {
-        title: 'Otras Prendas & Accesorios',
-        subtitle: 'Prendas en especificación libre con molde',
-        icon: 'bi-box-seam',
-        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
-        borderClass: 'border-slate-100',
-        columns: [
-          { key: 'zona1', label: 'Zona Superior / Frente', tooltip: 'Zona principal delantera', keywords: ['cuel', 'pech', 'frente', 'base'] },
-          { key: 'zona2', label: 'Mangas / Laterales', tooltip: 'Extremidades o laterales', keywords: ['manga', 'cint', 'corte'] },
-          { key: 'zona3', label: 'Espalda / Trasero', tooltip: 'Espalda o cara posterior', keywords: ['espal', 'tras', 'post'] },
-          { key: 'zona4', label: 'Terminación Inferior', tooltip: 'Ruedos, botas o pretina', keywords: ['rued', 'bota', 'pret'] },
-        ]
-      },
-      SIN_MOLDE: {
-        title: 'Prendas Pendientes de Molde',
-        subtitle: 'Prendas sin molde base vinculado (haz clic en + Molde para definirlo)',
-        icon: 'bi-exclamation-triangle-fill',
-        badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
-        borderClass: 'border-amber-200',
-        columns: []
-      }
-    };
-
-    const groupsMap = new Map<AnatomicalFamily, { item: LocalItem; originalIndex: number }[]>();
-    (['SUPERIOR', 'INFERIOR', 'COMPLETA', 'GENERAL', 'SIN_MOLDE'] as AnatomicalFamily[]).forEach(k => groupsMap.set(k, []));
-
-    rawItems.forEach(ri => {
-      const family = this.getAnatomicalFamilyForItem(ri.item);
-      groupsMap.get(family)?.push(ri);
-    });
-
-    const result: AnatomicalGroup[] = [];
-
-    (['SUPERIOR', 'INFERIOR', 'COMPLETA', 'GENERAL', 'SIN_MOLDE'] as AnatomicalFamily[]).forEach(fam => {
-      let gItems = groupsMap.get(fam) || [];
-      if (gItems.length === 0) return;
-
-      if (this.selectedFamilyFilter !== 'TODAS' && this.selectedFamilyFilter !== fam) {
-        return;
-      }
-
-      if (this.anatomicalSortOrder === 'qty') {
-        gItems = [...gItems].sort((a, b) => this.getItemTotal(b.item) - this.getItemTotal(a.item));
-      } else if (this.anatomicalSortOrder === 'sam') {
-        gItems = [...gItems].sort((a, b) => (b.item.totalSamTime || 0) - (a.item.totalSamTime || 0));
-      }
-
-      const totalUds = gItems.reduce((acc, x) => acc + this.getItemTotal(x.item), 0);
-      const totalSam = gItems.reduce((acc, x) => acc + (x.item.totalSamTime || 0), 0);
-      const cfg = baseCandidatesByFamily[fam];
-
-      let dynamicCols: AnatomicalColumn[] = [];
-
-      if (fam === 'SIN_MOLDE') {
-        dynamicCols = [];
-      } else {
-        const moldsInGroup: any[] = [];
-        gItems.forEach(entry => {
-          if (entry.item.moldId) {
-            const m = this.cachedMoldsMap[entry.item.moldId] || this.allMolds.find(x => x.id === entry.item.moldId);
-            if (m && !moldsInGroup.some(existing => existing.id === m.id)) {
-              moldsInGroup.push(m);
-            }
-          }
-        });
-
-        if (moldsInGroup.length === 0) {
-          dynamicCols = cfg.columns;
-        } else {
-          const allPartsInGroup: any[] = moldsInGroup.flatMap(m => m.parts || []);
-
-          dynamicCols = cfg.columns.filter(col => {
-            return allPartsInGroup.some(p => {
-              const text = `${p.name || ''} ${p.zone_name || ''} ${p.zone_type || ''} ${p.code || ''}`.toLowerCase();
-              return col.keywords.some(k => text.includes(k.toLowerCase()));
-            });
-          });
-
-          if (dynamicCols.length === 0) {
-            dynamicCols = cfg.columns;
-          }
-        }
-      }
-
-      result.push({
-        id: fam,
-        title: cfg.title,
-        subtitle: cfg.subtitle,
-        icon: cfg.icon,
-        badgeClass: cfg.badgeClass,
-        borderClass: cfg.borderClass,
-        columns: dynamicCols,
-        items: gItems,
-        totalUds,
-        totalSam
-      });
-    });
-
-    this._cachedAnatomicalGroups = result;
-  }
-
   getItemZoneSelectionForColumn(item: LocalItem, col: AnatomicalColumn): { name: string; isConfigured: boolean; samTime?: number; notApplicable?: boolean } {
     if (!item) return { name: 'Por definir', isConfigured: false };
 
     if (item.draftComponents && item.draftComponents.length > 0) {
-      const dMatch = item.draftComponents.find((p: any) => {
-        if (p.item_type === 'material') return false;
-        const text = `${p.zone_name || ''} ${p.name || ''}`.toLowerCase();
-        return col.keywords.some(k => text.includes(k.toLowerCase()));
+      const configuredMatch = item.draftComponents.find((c: any) => {
+        if (c.zone_name === col.key) return !!c.selected_type_name;
+        if (col.keywords && col.keywords.some(k => (c.name || '').toLowerCase().includes(k))) return !!c.selected_type_name;
+        return false;
       });
-      if (dMatch) {
-        if (dMatch.selected_type_name) {
-          return { name: dMatch.selected_type_name, isConfigured: true, samTime: dMatch.estimated_time };
-        } else {
-          return { name: 'Por definir', isConfigured: false };
-        }
+      if (configuredMatch) {
+        return { name: configuredMatch.selected_type_name, isConfigured: true, samTime: configuredMatch.estimated_time };
+      }
+
+      const anyMatch = item.draftComponents.find((c: any) => {
+        if (c.zone_name === col.key) return true;
+        if (col.keywords && col.keywords.some(k => (c.name || '').toLowerCase().includes(k))) return true;
+        return false;
+      });
+      if (anyMatch) {
+        return { name: anyMatch.selected_type_name || anyMatch.name || 'Personalizado', isConfigured: !!anyMatch.selected_type_name, samTime: anyMatch.estimated_time };
+      }
+    }
+
+    const mold = item.moldId ? this.cachedMoldsMap[item.moldId] : null;
+    const parts = (mold && mold.parts) ? mold.parts : [];
+    if (parts.length > 0) {
+      const match = parts.find((p: any) => {
+        const region = (p.anatomical_region || p.family || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        return col.keywords.some(k => region.includes(k) || pName.includes(k));
+      });
+      if (match) {
+        return { name: match.selected_type_name, isConfigured: true, samTime: parseFloat(match.estimated_time) || 0 };
       }
     }
 
     if (item.moldId) {
-      const mold = this.cachedMoldsMap[item.moldId] || this.allMolds.find(m => m.id === item.moldId);
       if (mold && mold.parts && mold.parts.length > 0) {
-        const hasPart = mold.parts.some((p: any) => {
-          const text = `${p.name || ''} ${p.zone_name || ''} ${p.zone_type || ''} ${p.code || ''}`.toLowerCase();
-          return col.keywords.some(k => text.includes(k.toLowerCase()));
+        const hasPartInMold = mold.parts.some((p: any) => {
+          const region = (p.anatomical_region || p.family || '').toLowerCase();
+          const pName = (p.name || '').toLowerCase();
+          return col.keywords.some(k => region.includes(k) || pName.includes(k));
         });
-        if (!hasPart) {
-          return { name: 'No aplica', isConfigured: false, notApplicable: true };
+        if (!hasPartInMold) {
+          return { name: '—', isConfigured: false, notApplicable: true };
         }
       }
     }
 
     return { name: 'Por definir', isConfigured: false };
+  }
+
+  isZoneColConfigured(item: LocalItem, col: AnatomicalColumn): boolean {
+    const sel = this.getItemZoneSelectionForColumn(item, col);
+    return sel.isConfigured && !sel.notApplicable;
   }
 
   getItemCompletionStatus(item: LocalItem, groupColumns: AnatomicalColumn[]): { totalApplicable: number; configured: number; status: 'sin_empezar' | 'parcial' | 'completo' } {
@@ -667,52 +1065,183 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
   }
 
   getItemRowClass(item: LocalItem, groupColumns: AnatomicalColumn[]): string {
-    const s = this.getItemCompletionStatus(item, groupColumns);
-    if (s.status === 'parcial') {
-      return 'bg-amber-50/20 hover:bg-amber-50/35 border-l-4 border-l-amber-400 transition-colors';
+    if (!item.moldId) {
+      return 'bg-amber-50/20 hover:bg-amber-50/40 border-l-2 border-l-amber-400';
     }
-    if (s.status === 'completo') {
-      return 'bg-emerald-50/20 hover:bg-emerald-50/35 border-l-4 border-l-emerald-400 transition-colors';
+    const status = this.getItemCompletionStatus(item, groupColumns).status;
+    if (status === 'completo') {
+      return 'bg-emerald-50/15 hover:bg-emerald-50/30 border-l-2 border-l-emerald-500';
     }
-    return 'bg-white hover:bg-slate-50/70 border-l-4 border-l-transparent transition-colors';
+    if (status === 'parcial') {
+      return 'bg-amber-50/25 hover:bg-amber-50/45 border-l-2 border-l-amber-500';
+    }
+    return 'hover:bg-slate-50/80 border-l-2 border-l-transparent';
   }
 
   getZonePillClassForCol(item: LocalItem, col: AnatomicalColumn, groupColumns?: AnatomicalColumn[]): string {
     const sel = this.getItemZoneSelectionForColumn(item, col);
     if (sel.notApplicable) {
-      return 'bg-slate-50/60 text-slate-300 border-dashed border-slate-200 cursor-not-allowed';
+      return 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-60';
     }
     if (sel.isConfigured) {
-      return 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold hover:bg-emerald-100 hover:border-emerald-400 shadow-2xs';
+      return 'bg-emerald-50/80 text-emerald-900 border-emerald-300 hover:bg-emerald-100/90 hover:border-emerald-400 font-medium';
     }
-
-    if (groupColumns && groupColumns.length > 0) {
-      const s = this.getItemCompletionStatus(item, groupColumns);
-      if (s.status === 'parcial') {
-        return 'bg-amber-50 text-amber-900 border-amber-300 font-bold hover:bg-amber-100 hover:border-amber-400 ring-1 ring-amber-300/80 shadow-2xs';
+    if (groupColumns) {
+      const compStatus = this.getItemCompletionStatus(item, groupColumns);
+      if (compStatus.status === 'parcial') {
+        return 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 font-bold';
       }
     }
+    return 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300';
+  }
 
-    return 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600 hover:bg-slate-50 shadow-2xs';
+  get anatomicalGroups(): AnatomicalGroup[] {
+    return this._cachedAnatomicalGroups;
+  }
+
+  rebuildAnatomicalGroups(): void {
+    const baseCandidatesByFamily: { [key in AnatomicalFamily]: { title: string; subtitle: string; icon: string; badgeClass: string; borderClass: string; columns: AnatomicalColumn[] } } = {
+      SUPERIOR: {
+        title: 'Prendas Superiores (Torso)',
+        subtitle: 'Camisas, polos, chaquetas, chalecos, batas superiores',
+        icon: 'bi-person-badge',
+        badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        borderClass: 'border-indigo-100',
+        columns: [
+          { key: 'cuello', label: 'Cuello / Solapa', tooltip: 'Tipo de cuello, tirilla, solapa o escote', keywords: ['cuell', 'solap', 'escote', 'tirilla'] },
+          { key: 'pechera', label: 'Pechera / Delantero', tooltip: 'Pechera, botonadura, tapas y cruce frontal', keywords: ['pecher', 'botonadur', 'delanter', 'cruc'] },
+          { key: 'mangas', label: 'Mangas & Puños', tooltip: 'Manga corta, larga, puños y charreteras', keywords: ['mang', 'puñ', 'sisa'] },
+          { key: 'espalda', label: 'Espalda & Almilla', tooltip: 'Almilla, fuelles, canesú y pinzas traseras', keywords: ['espald', 'almill', 'canes'] },
+          { key: 'cintura', label: 'Cintura & Ruedo', tooltip: 'Ruedo inferior, fajón, aberturas laterales', keywords: ['rued', 'cintur', 'fajon', 'abertur'] }
+        ]
+      },
+      INFERIOR: {
+        title: 'Prendas Inferiores (Piernas)',
+        subtitle: 'Pantalones, jeans, bermudas, faldas, shorts',
+        icon: 'bi-columns',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        borderClass: 'border-emerald-100',
+        columns: [
+          { key: 'pretina', label: 'Pretina & Pasadores', tooltip: 'Pretina elástica, pasadores, botón y cierre', keywords: ['pretin', 'pasador', 'fajon'] },
+          { key: 'tiro', label: 'Tiro & Cremallera', tooltip: 'Tiro delantero, trasero, gavilán y cierre', keywords: ['tiro', 'cremaller', 'gavilan', 'braguet'] },
+          { key: 'bolsillos_del', label: 'Bolsillos Delanteros', tooltip: 'Bolsillo relojero, sesgado, parche, curvo', keywords: ['bolsillo del', 'delanter', 'relojer', 'sesgad'] },
+          { key: 'bolsillos_tra', label: 'Bolsillos Traseros', tooltip: 'Bolsillo ojal, parche trasero, tapa trasera', keywords: ['bolsillo tra', 'traser', 'ojal'] },
+          { key: 'bota', label: 'Bota & Ruedo', tooltip: 'Ancho de bota, dobladillo, puño elástico bota', keywords: ['bota', 'rued', 'dobladill'] }
+        ]
+      },
+      COMPLETA: {
+        title: 'Prendas Enterizas (Cuerpo Completo)',
+        subtitle: 'Overoles industriales, enterizos, trajes de protección',
+        icon: 'bi-shield-shaded',
+        badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+        borderClass: 'border-purple-100',
+        columns: [
+          { key: 'cuello', label: 'Cuello & Capota', tooltip: 'Cuello camisero, chino, nerú o capota integrada', keywords: ['cuell', 'capot'] },
+          { key: 'cierre_frontal', label: 'Cierre Frontal', tooltip: 'Cremallera doble vía, solapa con velcro o broches', keywords: ['cierr', 'cremaller', 'solap', 'pecher'] },
+          { key: 'mangas', label: 'Mangas & Puños', tooltip: 'Mangas, puño elástico o con broche', keywords: ['mang', 'puñ'] },
+          { key: 'cintura', label: 'Cintura / Ajuste', tooltip: 'Elástico en espalda, pasadores o cinturón', keywords: ['cintur', 'elastic', 'ajust'] },
+          { key: 'piernas_bota', label: 'Piernas & Bota', tooltip: 'Bolsillos cargo, rodilleras, bota con cierre/elástico', keywords: ['piern', 'bota', 'cargo', 'rodiller'] }
+        ]
+      },
+      GENERAL: {
+        title: 'Otras Prendas & Accesorios',
+        subtitle: 'Gorras, delantales, chalecos tácticos y dotación general',
+        icon: 'bi-grid-fill',
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+        borderClass: 'border-slate-200',
+        columns: [
+          { key: 'estructura', label: 'Estructura Principal', tooltip: 'Cuerpo o estructura base de la prenda', keywords: ['cuerp', 'estructur', 'delanter', 'frente'] },
+          { key: 'ajustes', label: 'Ajustes & Cierres', tooltip: 'Broches, elásticos, cremalleras o correas', keywords: ['ajust', 'cierr', 'correa', 'broch'] },
+          { key: 'bolsillos', label: 'Bolsillos & Compartimentos', tooltip: 'Bolsillos utilitarios o de parche', keywords: ['bolsill', 'compart'] },
+          { key: 'terminaciones', label: 'Terminaciones & Vivos', tooltip: 'Ribetes, sesgos, reflectivos, vivos', keywords: ['termin', 'sesg', 'ribet', 'reflect'] }
+        ]
+      },
+      SIN_MOLDE: {
+        title: 'Prendas Sin Molde Base Asignado',
+        subtitle: 'Asigna un molde para configurar automáticamente sus zonas anatómicas',
+        icon: 'bi-exclamation-triangle-fill',
+        badgeClass: 'bg-amber-50 text-amber-800 border-amber-300',
+        borderClass: 'border-amber-200',
+        columns: []
+      }
+    };
+
+    const indexedItems = this.items.map((it, originalIndex) => ({ item: it, originalIndex }));
+    const groupsMap = new Map<AnatomicalFamily, { item: LocalItem; originalIndex: number }[]>();
+    (['SUPERIOR', 'INFERIOR', 'COMPLETA', 'GENERAL', 'SIN_MOLDE'] as AnatomicalFamily[]).forEach(k => groupsMap.set(k, []));
+
+    indexedItems.forEach(ri => {
+      const family = this.getAnatomicalFamilyForItem(ri.item);
+      groupsMap.get(family)?.push(ri);
+    });
+
+    const result: AnatomicalGroup[] = [];
+
+    (['SUPERIOR', 'INFERIOR', 'COMPLETA', 'GENERAL', 'SIN_MOLDE'] as AnatomicalFamily[]).forEach(fam => {
+      let gItems = groupsMap.get(fam) || [];
+      if (this.selectedFamilyFilter !== 'TODAS' && this.selectedFamilyFilter !== fam) {
+        return;
+      }
+      if (gItems.length === 0) return;
+
+      if (this.anatomicalSortOrder === 'qty') {
+        gItems = [...gItems].sort((a, b) => this.getItemTotal(b.item) - this.getItemTotal(a.item));
+      }
+
+      const totalUds = gItems.reduce((acc, x) => acc + this.getItemTotal(x.item), 0);
+      const baseInfo = baseCandidatesByFamily[fam];
+
+      let dynamicCols: AnatomicalColumn[] = [];
+      if (fam !== 'SIN_MOLDE') {
+        dynamicCols = baseInfo.columns.filter(col => {
+          return gItems.some(entry => {
+            const sel = this.getItemZoneSelectionForColumn(entry.item, col);
+            return !sel.notApplicable;
+          });
+        });
+
+        if (dynamicCols.length === 0) {
+          dynamicCols = baseInfo.columns;
+        }
+      }
+
+      result.push({
+        id: fam,
+        title: baseInfo.title,
+        subtitle: baseInfo.subtitle,
+        icon: baseInfo.icon,
+        badgeClass: baseInfo.badgeClass,
+        borderClass: baseInfo.borderClass,
+        columns: dynamicCols,
+        items: gItems,
+        totalUds,
+        totalSam: 0
+      });
+    });
+
+    this._cachedAnatomicalGroups = result;
   }
 
   getItemThumbnail(item: LocalItem): string | null {
-    if (!item?.moldId) return null;
-    const mold = this.cachedMoldsMap[item.moldId] || this.allMolds.find(m => m.id === item.moldId);
-    if (!mold) return null;
-    return mold.image_signed_url || mold.front_image_signed_url || mold.front_image_url || null;
+    if (item.imagenReferenciaUrl) return item.imagenReferenciaUrl;
+    if (item.moldId) {
+      const mold = this.allMolds.find(m => m.id === item.moldId) || this.cachedMoldsMap[item.moldId];
+      if (mold && mold.photo_url) return mold.photo_url;
+    }
+    return null;
   }
 
-  getItemZoneOptionalCount(item: LocalItem, col: AnatomicalColumn): number {
-    if (!item || !item.draftComponents || item.draftComponents.length === 0) return 0;
-    const colKey = col.key.toLowerCase();
-    const colLabel = col.label.toLowerCase();
-    return item.draftComponents.filter((c: any) =>
-      c.item_type === 'parte_general' && (
-        (c.zone_name && c.zone_name.toLowerCase() === colKey) ||
-        (c.zone_name && c.zone_name.toLowerCase() === colLabel)
-      )
-    ).length;
+  getItemTotal(item: LocalItem): number {
+    if (!item || !item.tallas) return 0;
+    return item.tallas.reduce((ts, t) => ts + (Number(t.cantidad) || 0), 0);
+  }
+
+  get totalPrendas(): number {
+    return this.items.length;
+  }
+
+  get totalUnidades(): number {
+    return this.items.reduce((acc, it) => acc + this.getItemTotal(it), 0);
   }
 
   trackByGroupId(index: number, group: AnatomicalGroup): string {
@@ -723,415 +1252,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
     return entry.originalIndex;
   }
 
-  // ==================== MODAL DE VARIANTES DE ZONA ====================
-
-  openZoneVariantsModal(itemIndex: number, col: AnatomicalColumn): void {
-    const item = this.items[itemIndex];
-    if (!item) return;
-
-    if (!item.moldId) {
-      Swal.fire({
-        title: 'Molde no seleccionado',
-        text: 'Para elegir las variaciones de esta prenda, selecciona primero su molde base.',
-        icon: 'info',
-        confirmButtonText: 'Seleccionar Molde',
-        confirmButtonColor: '#4f46e5',
-        showCancelButton: true,
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          this.openMoldSelector(itemIndex);
-        }
-      });
-      return;
-    }
-
-    this.activeZoneItemIndex = itemIndex;
-    this.activeZoneCol = col;
-    this.activeZoneTitle = col.label;
-    this.activeZoneSubtitle = col.tooltip;
-    this.activeZoneDisplayParts = [];
-    this.activePartInModal = null;
-    this.zoneModalStep = 'select-part';
-    this.showZoneVariantsModal = true;
-    this.isLoadingZoneParts = true;
-
-    this.activeZoneObservation = (item.zoneObservations && item.zoneObservations[col.key]) || '';
-    this.refreshActiveZoneAnchoredParts(item, col);
-
-    if (!item.draftComponents) {
-      item.draftComponents = [];
-    }
-
-    const processMoldParts = (moldData: any) => {
-      this.isLoadingZoneParts = false;
-      const allParts = moldData.parts || [];
-      const matched = allParts.filter((p: any) => {
-        const text = `${p.zone_name || ''} ${p.zone_type || ''} ${p.name || ''} ${p.code || ''}`.toLowerCase();
-        return col.keywords.some(k => text.includes(k.toLowerCase()));
-      });
-
-      this.activeZoneDisplayParts = this.getDisplayPartsForZone(matched);
-
-      if (this.activeZoneDisplayParts.length > 1) {
-        this.zoneModalStep = 'select-part';
-        this.activePartInModal = null;
-      } else if (this.activeZoneDisplayParts.length === 1) {
-        this.zoneModalStep = 'select-variant';
-        this.activePartInModal = this.activeZoneDisplayParts[0];
-      }
-    };
-
-    if (this.cachedMoldsMap[item.moldId]) {
-      processMoldParts(this.cachedMoldsMap[item.moldId]);
-    } else {
-      this.moldService.getMold(item.moldId).subscribe({
-        next: (res: any) => {
-          if (res?.success && res?.data) {
-            this.cachedMoldsMap[item.moldId!] = res.data;
-            processMoldParts(res.data);
-          } else {
-            this.isLoadingZoneParts = false;
-          }
-        },
-        error: () => {
-          this.isLoadingZoneParts = false;
-        }
-      });
-    }
-  }
-
-  closeZoneVariantsModal(): void {
-    this.showZoneVariantsModal = false;
-    this.activeZoneItemIndex = null;
-    this.activeZoneCol = null;
-    this.activeZoneDisplayParts = [];
-    this.activePartInModal = null;
-    this.zoneModalStep = 'select-part';
-    this.activeZoneObservation = '';
-    this.activeZoneAnchoredParts = [];
-    this.saveToLocalStorage();
-  }
-
-  refreshActiveZoneAnchoredParts(item: LocalItem, col: AnatomicalColumn): void {
-    if (!item.draftComponents) {
-      this.activeZoneAnchoredParts = [];
-      return;
-    }
-    const colKey = col.key.toLowerCase();
-    const colLabel = col.label.toLowerCase();
-    this.activeZoneAnchoredParts = item.draftComponents.filter((c: any) =>
-      c.item_type === 'parte_general' && (
-        (c.zone_name && c.zone_name.toLowerCase() === colKey) ||
-        (c.zone_name && c.zone_name.toLowerCase() === colLabel)
-      )
-    ).map((c: any) => {
-      const match = CANONICAL_OPTIONAL_PARTS.find(p => (p.name || '').toLowerCase().trim() === (c.name || '').toLowerCase().trim());
-      const variantMatch = match?.types?.find(t => (t.name || '').toLowerCase().trim() === (c.selected_type_name || '').toLowerCase().trim());
-      return {
-        ...c,
-        icon: c.icon || (match ? match.icon : 'bi-gem'),
-        estimated_time: c.estimated_time !== undefined && c.estimated_time !== null && c.estimated_time !== 0
-          ? c.estimated_time
-          : (variantMatch?.total_time || 0)
-      };
-    });
-  }
-
-  getDisplayPartsForZone(parts: any[]): any[] {
-    if (!parts || parts.length === 0) return [];
-    const unique: any[] = [];
-    const seen = new Set<string>();
-
-    for (const p of parts) {
-      const cleanName = (p.name || '').toLowerCase().trim();
-      if (!seen.has(cleanName)) {
-        seen.add(cleanName);
-        const siblings = parts.filter(x => (x.name || '').toLowerCase().trim() === cleanName);
-        unique.push({
-          ...p,
-          isConsolidated: siblings.length > 1,
-          siblingPartIds: siblings.map(s => s.id)
-        });
-      }
-    }
-    return unique;
-  }
-
-  choosePartInZoneModal(part: any): void {
-    this.activePartInModal = part;
-    this.zoneModalStep = 'select-variant';
-  }
-
-  backToZonePartsList(): void {
-    this.activePartInModal = null;
-    this.zoneModalStep = 'select-part';
-  }
-
-  selectVariantForPart(part: any, type: any): void {
-    if (this.activeZoneItemIndex === null) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item) return;
-
-    if (!item.draftComponents) item.draftComponents = [];
-
-    const pids = [part.id, ...(part.siblingPartIds || [])];
-    pids.forEach(pid => {
-      const existingIdx = item.draftComponents!.findIndex((c: any) => Number(c.mold_part_id) === Number(pid));
-      const compObj = {
-        mold_part_id: pid,
-        mold_part_type_id: type.id,
-        selected_type_name: type.name,
-        name: part.name,
-        zone_name: this.activeZoneTitle,
-        item_type: 'parte',
-        technical_spec: type.technical_description || type.name,
-        client_spec: this.activeZoneObservation || '',
-        estimated_time: Number(type.total_time || type.estimated_time) || 0,
-        position_x: part.position_x || null,
-        position_y: part.position_y || null
-      };
-      if (existingIdx >= 0) {
-        item.draftComponents![existingIdx] = compObj;
-      } else {
-        item.draftComponents!.push(compObj);
-      }
-    });
-
-    this.recalculateItemSam(item);
-    this.saveToLocalStorage();
-    this.closeZoneVariantsModal();
-    this.rebuildAnatomicalGroups();
-  }
-
-  unselectVariantForPart(part: any): void {
-    if (this.activeZoneItemIndex === null) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item || !item.draftComponents) return;
-
-    const pids = [part.id, ...(part.siblingPartIds || [])];
-    item.draftComponents = item.draftComponents.filter((c: any) => !pids.includes(Number(c.mold_part_id)));
-
-    this.recalculateItemSam(item);
-    this.saveToLocalStorage();
-    this.rebuildAnatomicalGroups();
-  }
-
-  updateActiveZoneObservation(obs: string): void {
-    this.activeZoneObservation = obs;
-    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item) return;
-
-    if (!item.zoneObservations) item.zoneObservations = {};
-    item.zoneObservations[this.activeZoneCol.key] = obs;
-
-    if (item.draftComponents) {
-      const col = this.activeZoneCol;
-      item.draftComponents.forEach((c: any) => {
-        const text = `${c.zone_name || ''} ${c.name || ''}`.toLowerCase();
-        if (col.keywords.some(k => text.includes(k.toLowerCase()))) {
-          c.client_spec = obs;
-        }
-      });
-    }
-    this.saveToLocalStorage();
-  }
-
-  addOptionalFromZoneModal(): void {
-    const itemIndex = this.activeZoneItemIndex;
-    this.closeZoneVariantsModal();
-    if (itemIndex !== null) {
-      this.openFigurinModal(itemIndex);
-    }
-  }
-
-  removeAnchoredPartFromZoneModal(gp: any): void {
-    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item || !item.draftComponents) return;
-
-    item.draftComponents = item.draftComponents.filter((c: any) => {
-      if (c === gp) return false;
-      if (gp.item_type === 'parte_general' && c.item_type === 'parte_general' &&
-          (c.name || '').toLowerCase().trim() === (gp.name || '').toLowerCase().trim()) {
-        return false;
-      }
-      return true;
-    });
-
-    this.recalculateItemSam(item);
-    this.refreshActiveZoneAnchoredParts(item, this.activeZoneCol);
-    this.saveToLocalStorage();
-  }
-
-  selectOptionalVariantFromZoneModal(event: { part: any; type: any }): void {
-    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item) return;
-
-    if (!item.draftComponents) item.draftComponents = [];
-
-    const partName = (event.part.name || '').toLowerCase().trim();
-    item.draftComponents = item.draftComponents.filter((c: any) =>
-      !(c.item_type === 'parte_general' && (c.name || '').toLowerCase().trim() === partName)
-    );
-
-    item.draftComponents.push({
-      mold_part_id: null,
-      mold_part_type_id: null,
-      selected_type_name: event.type.name,
-      name: event.part.name,
-      zone_name: this.activeZoneCol!.key,
-      item_type: 'parte_general',
-      technical_spec: event.type.technical_description || event.type.name,
-      client_spec: '',
-      estimated_time: event.type.total_time || 0,
-      position_x: null,
-      position_y: null
-    });
-
-    this.recalculateItemSam(item);
-    this.refreshActiveZoneAnchoredParts(item, this.activeZoneCol!);
-    this.saveToLocalStorage();
-  }
-
-  recalculateItemSam(item: LocalItem): void {
-    if (!item.draftComponents || item.draftComponents.length === 0) {
-      item.totalSamTime = 0;
-      return;
-    }
-    const total = item.draftComponents.reduce((acc: number, c: any) => acc + (Number(c.estimated_time) || 0), 0);
-    item.totalSamTime = Math.round(total * 100) / 100;
-  }
-
-  // ==================== MODAL FIGURÍN OPM (2D STEPPER) ====================
-
-  openFigurinModal(index: number): void {
-    const item = this.items[index];
-    if (!item) return;
-
-    if (!item.moldId) {
-      this.openMoldSelector(index);
-      return;
-    }
-
-    this.activeFigurinItemIndex = index;
-    this.activeFigurinItem = { ...item };
-    this.showFigurinModal = true;
-  }
-
-  closeFigurinModal(): void {
-    this.showFigurinModal = false;
-    this.activeFigurinItemIndex = null;
-    this.activeFigurinItem = null;
-    this.saveToLocalStorage();
-    this.rebuildAnatomicalGroups();
-  }
-
-  onItemOpmSavedFromModal(event: any): void {
-    if (this.activeFigurinItemIndex !== null) {
-      const item = this.items[this.activeFigurinItemIndex];
-      if (item) {
-        item.technicalSpecId = event.technicalSpecId;
-        item.opmReference = event.reference;
-        item.totalSamTime = event.samTime;
-        if (event.tallas && Array.isArray(event.tallas) && event.tallas.length > 0) {
-          item.tallas = event.tallas;
-        }
-      }
-      this.saveToLocalStorage();
-      this.rebuildAnatomicalGroups();
-    }
-  }
-
-  openMoldSelectorFromModal(): void {
-    if (this.activeFigurinItemIndex !== null) {
-      this.openMoldSelector(this.activeFigurinItemIndex);
-    }
-  }
-
-  clearMoldFromModal(): void {
-    if (this.activeFigurinItemIndex !== null) {
-      const item = this.items[this.activeFigurinItemIndex];
-      if (item) {
-        item.moldId = null;
-        item.moldName = '';
-        item.draftComponents = [];
-        item.totalSamTime = 0;
-      }
-      this.closeFigurinModal();
-    }
-  }
-
-  // ==================== MODAL RÁPIDO DE TALLAS ====================
-
-  openTallasQuickModal(index: number): void {
-    this.activeTallasItemIndex = index;
-    this.showTallasQuickModal = true;
-  }
-
-  closeTallasQuickModal(): void {
-    this.showTallasQuickModal = false;
-    this.activeTallasItemIndex = null;
-    this.saveToLocalStorage();
-    this.rebuildAnatomicalGroups();
-  }
-
-  addSpecificTalla(item: LocalItem, talla: string): void {
-    if (!item.tallas) item.tallas = [];
-    const existing = item.tallas.find(t => t.talla === talla);
-    if (!existing) {
-      item.tallas.push({ talla, cantidad: 1 });
-    }
-    this.saveToLocalStorage();
-    this.rebuildAnatomicalGroups();
-  }
-
-  removeTalla(item: LocalItem, index: number): void {
-    if (item.tallas && item.tallas.length > index) {
-      item.tallas.splice(index, 1);
-    }
-    this.saveToLocalStorage();
-    this.rebuildAnatomicalGroups();
-  }
-
-  // ==================== MODAL SELECTOR DE MOLDE ====================
-
-  openMoldSelector(index: number): void {
-    this.moldSelectorItemIndex = index;
-    this.showMoldSelectorModal = true;
-  }
-
-  closeMoldSelector(): void {
-    this.showMoldSelectorModal = false;
-    this.moldSelectorItemIndex = null;
-  }
-
-  onMoldSelected(mold: any): void {
-    if (this.moldSelectorItemIndex === null) return;
-    const item = this.items[this.moldSelectorItemIndex];
-    if (!item) return;
-
-    item.moldId = mold.id;
-    item.moldName = mold.name;
-    item.categoryId = mold.mold_category_id || mold.id_product_category || null;
-    item.categoryName = mold.category?.name || '';
-    item.draftComponents = [];
-    item.technicalSpecId = null;
-    this.cachedMoldsMap[mold.id] = mold;
-
-    if (this.activeFigurinItemIndex === this.moldSelectorItemIndex) {
-      this.activeFigurinItem = { ...item };
-    }
-
-    this.recalculateItemSam(item);
-    this.rebuildAnatomicalGroups();
-    this.saveToLocalStorage();
-    this.closeMoldSelector();
-  }
-
-  // ==================== GENERACIÓN FINAL DE OPMS ====================
+  // ==================== GENERAR TODAS LAS OPMS (MODO MOLDES) ====================
 
   async generarTodasLasOpms(): Promise<void> {
     if (this.items.length === 0) {
@@ -1139,19 +1260,18 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
         icon: 'warning',
         title: 'Sin prendas',
         text: 'Agrega al menos una prenda antes de generar OPMs.',
-        confirmButtonColor: '#4f46e5'
+        confirmButtonColor: '#2563eb'
       });
       return;
     }
 
-    // Validar que todas tengan molde
     const sinMolde = this.items.filter(it => !it.moldId);
     if (sinMolde.length > 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Faltan moldes por vincular',
         text: `Hay ${sinMolde.length} prenda(s) sin molde base asignado. Asígnales un molde antes de continuar.`,
-        confirmButtonColor: '#4f46e5'
+        confirmButtonColor: '#2563eb'
       });
       return;
     }
@@ -1166,7 +1286,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
         const payload = {
           mold_id: it.moldId,
           description: `OPM - ${it.descripcion || 'Prenda'}`,
-          technical_description: `Molde: ${it.moldName}. SAM: ${it.totalSamTime || 0} min.`,
+          technical_description: `Molde: ${it.moldName}.`,
           parts: it.draftComponents || []
         };
 
@@ -1186,7 +1306,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
     }
 
     this.isSavingGlobalOpm = false;
-    this.saveToLocalStorage();
+    this.saveData();
     this.rebuildAnatomicalGroups();
 
     if (exitosas > 0) {
@@ -1195,13 +1315,13 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy {
         title: '¡OPMs Procesadas!',
         html: `Se han registrado exitosamente <strong>${exitosas}</strong> Ficha(s) Técnica(s) / OPM.<br>` +
               (errores.length > 0 ? `<br><small class="text-danger">Hubo errores en: ${errores.join(', ')}</small>` : ''),
-        confirmButtonColor: '#4f46e5'
+        confirmButtonColor: '#2563eb'
       });
     } else {
       Swal.fire({
         icon: 'error',
-        title: 'Error al procesar OPMs',
-        text: 'No se pudo guardar ninguna OPM en el sistema.',
+        title: 'Error al generar OPMs',
+        text: 'No se pudo guardar ninguna especificación técnica. Revisa la consola o intenta más tarde.',
         confirmButtonColor: '#ef4444'
       });
     }

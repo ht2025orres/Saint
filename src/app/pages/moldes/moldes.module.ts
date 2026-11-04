@@ -22,6 +22,7 @@ import { MoldSelectorModalComponent } from '../comerciales/modals/mold-selector-
 import { FigurinOpmModalComponent } from '../comerciales/modals/figurin-opm-modal/figurin-opm-modal.component';
 import { TallasQuickModalComponent } from '../comerciales/modals/tallas-quick-modal/tallas-quick-modal.component';
 import { ZoneVariantsModalComponent } from '../comerciales/modals/zone-variants-modal/zone-variants-modal.component';
+import { ItemNotesModalComponent } from '../comerciales/modals/item-notes-modal/item-notes-modal.component';
 import { OpmMatrixTableComponent } from './opm-matrix-table/opm-matrix-table.component';
 
 // Subcomponentes y Modales de Moldes Admin
@@ -85,6 +86,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     FigurinOpmModalComponent,
     TallasQuickModalComponent,
     ZoneVariantsModalComponent,
+    ItemNotesModalComponent,
     OpmMatrixTableComponent
   ],
   imports: [
@@ -110,6 +112,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     FigurinOpmModalComponent,
     TallasQuickModalComponent,
     ZoneVariantsModalComponent,
+    ItemNotesModalComponent,
     OpmMatrixTableComponent
   ]
 })

@@ -4,61 +4,43 @@
     <div class="section-header-row">
       <div>
         <div class="flex items-center gap-3">
-          <button type="button" class="btn-back-libreria" (click)="handleBack()" title="Volver a la Librería de Moldes">
+          <button *ngIf="mode === 'moldes'" type="button" class="btn-back-libreria" (click)="handleBack()" title="Volver a la Librería de Moldes">
             <i class="bi bi-arrow-left"></i>
           </button>
-          <h2 class="section-title"><i class="bi bi-box-seam"></i> Ítems de la Solicitud / OPM</h2>
+          <h2 class="section-title">
+            <i class="bi bi-box-seam"></i> {{ mode === 'solicitud' ? 'Ítems de la Solicitud' : 'Ítems de la Solicitud / OPM' }}
+          </h2>
         </div>
         <p class="section-desc">Configura prendas, distribución de tallas y ficha técnica de molde (OPM).</p>
       </div>
 
       <div class="item-actions flex items-center gap-2 flex-wrap">
-        <button class="btn-action-primary" (click)="showNewItemForm = !showNewItemForm">
+        <button class="btn-action-primary" (click)="showItemSearch = true">
+          <i class="bi bi-search"></i> Catálogo / Histórico Siesa
+        </button>
+        <button class="btn-action-secondary" (click)="showNewItemForm = !showNewItemForm">
           <i class="bi bi-plus-lg"></i> Ítem Nuevo
         </button>
-        <button *ngIf="items.length > 0" class="btn-action-outline-danger" (click)="clearDraft()" title="Limpiar borrador">
+        <button *ngIf="mode === 'moldes' && items.length > 0" class="btn-action-outline-danger" (click)="clearDraft()" title="Limpiar borrador">
           <i class="bi bi-trash3"></i> Limpiar
         </button>
-        <button *ngIf="items.length > 0" class="btn-action-save-opm" (click)="generarTodasLasOpms()" [disabled]="isSavingGlobalOpm">
+        <button *ngIf="mode === 'moldes' && items.length > 0" class="btn-action-save-opm" (click)="generarTodasLasOpms()" [disabled]="isSavingGlobalOpm">
           <i class="bi" [ngClass]="isSavingGlobalOpm ? 'bi-hourglass-split animate-spin' : 'bi-lightning-charge-fill'"></i>
           <span>{{ isSavingGlobalOpm ? 'Guardando OPMs...' : 'Generar / Guardar OPMs' }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Resumen Compacto de Prendas, Unidades y SAM -->
-    <div *ngIf="items.length > 0" class="units-summary-bar">
-      <div class="units-summary-content">
-        <div class="units-stat">
-          <span class="units-label">Prendas en lista:</span>
-          <span class="units-value">{{ totalPrendas }}</span>
-        </div>
-        <div class="units-arrow"><i class="bi bi-arrow-right"></i></div>
-        <div class="units-stat">
-          <span class="units-label">Total Unidades:</span>
-          <span class="units-value font-mono font-bold">{{ totalUnidades | number }} uds</span>
-        </div>
-        <div class="units-arrow"><i class="bi bi-arrow-right"></i></div>
-        <div class="units-stat">
-          <span class="units-label">Tiempo SAM Total:</span>
-          <span class="units-value font-mono font-bold text-indigo-700">{{ totalSam | number:'1.1-2' }} min</span>
-        </div>
-      </div>
-      <div class="units-status-badge matched-badge">
-        <i class="bi bi-check-circle-fill"></i> Modo Configuración Activo
-      </div>
-    </div>
-
-    <!-- Formulario Inline para Ítem Nuevo -->
-    <div *ngIf="showNewItemForm" class="new-item-form-card">
+    <!-- Formulario para Ítem Nuevo -->
+    <div *ngIf="showNewItemForm" class="new-item-form-card mb-4">
       <div class="new-item-header">
         <i class="bi bi-plus-circle"></i>
-        <span>Agregar Ítem Nuevo a la Tabla</span>
+        <span>Agregar Ítem Nuevo a la Lista</span>
       </div>
       <div class="new-item-grid">
         <div class="form-group">
-          <label>Descripción de la prenda / producto *</label>
-          <input class="form-input" [(ngModel)]="newItemDesc" placeholder="Ej: Camisa Manga Larga Oxford Con Puño Redondo" autofocus (keyup.enter)="addNewItem()" />
+          <label>Descripción del producto *</label>
+          <input class="form-input" [(ngModel)]="newItemDesc" placeholder="Ej: Camisa manga larga Oxford con puño redondo" autofocus (keyup.enter)="addNewItem()" />
         </div>
         <div class="form-group">
           <label>Ref. Cliente / Código (opcional)</label>
@@ -73,10 +55,10 @@
       </div>
     </div>
 
-    <!-- ==================== BARRA DE CONTROL: FILTRO Y ORDENAMIENTO ==================== -->
+    <!-- BARRA DE CONTROL COMPACTA: FILTRO Y ORDENAMIENTO -->
     <div *ngIf="items.length > 0" class="flex items-center justify-between gap-2 mb-2.5 px-0.5 flex-wrap">
       <div class="flex items-center gap-2">
-        <!-- Dropdown de Filtrado por Región -->
+        <!-- Dropdown Compacto de Filtrado por Región -->
         <div class="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 shadow-2xs text-xs">
           <i class="bi bi-funnel text-slate-600 text-[11px]"></i>
           <span class="text-slate-400 font-bold text-[11px]">Región:</span>
@@ -90,14 +72,13 @@
           </select>
         </div>
 
-        <!-- Dropdown de Ordenamiento -->
+        <!-- Dropdown Compacto de Ordenamiento -->
         <div class="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 shadow-2xs text-xs">
           <i class="bi bi-arrow-down-up text-slate-400 text-[11px]"></i>
           <span class="text-slate-400 font-bold text-[11px]">Orden:</span>
           <select [(ngModel)]="anatomicalSortOrder" (ngModelChange)="rebuildAnatomicalGroups()" class="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer pr-1 text-xs">
             <option value="family">Región Anatómica</option>
             <option value="qty">Cantidad (uds)</option>
-            <option value="sam">Tiempo SAM</option>
           </select>
         </div>
       </div>
@@ -108,29 +89,10 @@
       </span>
     </div>
 
-    <!-- ==================== ESTADO VACÍO ==================== -->
-    <div *ngIf="items.length === 0" class="empty-items-placeholder text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-2xl bg-white">
-      <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-inner">
-        <i class="bi bi-box-seam text-2xl"></i>
-      </div>
-      <h3 class="text-base font-bold text-slate-800 mb-1">Aún no hay prendas agregadas para generar OPM</h3>
-      <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">
-        Puedes seleccionar un molde desde la Librería de Moldes o agregar una prenda nueva manualmente.
-      </p>
-      <div class="flex items-center justify-center gap-3">
-        <button type="button" class="btn-action-primary" (click)="onBackToLibreria.emit()">
-          <i class="bi bi-grid-3x3-gap"></i> Ir a Librería de Moldes
-        </button>
-        <button type="button" class="btn-action-secondary" (click)="showNewItemForm = true">
-          <i class="bi bi-plus-lg"></i> Crear Ítem Manual
-        </button>
-      </div>
-    </div>
-
-    <!-- ==================== TABLAS MATRICIALES POR FAMILIA ANATÓMICA ==================== -->
+    <!-- Tablas Matriciales Agrupadas por Región Anatómica (Diseño Compacto) -->
     <div *ngIf="items.length > 0" class="space-y-3 mb-4">
       <div *ngFor="let group of anatomicalGroups; trackBy: trackByGroupId" class="space-y-1">
-        <!-- Subtítulo de Familia Anatómica (1 sola línea) -->
+        <!-- Subtítulo de Familia Anatómica (Super Compacto: 1 sola línea) -->
         <div class="flex items-center justify-between px-3 py-1.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
           <div class="flex items-center gap-2">
             <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
@@ -145,13 +107,10 @@
             <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.2 rounded border border-slate-200">
               Total: {{ group.totalUds | number }} uds
             </span>
-            <span *ngIf="group.totalSam > 0" class="font-bold text-slate-600 bg-white px-2 py-0.2 rounded border border-slate-200">
-              SAM: {{ group.totalSam | number:'1.1-2' }} min
-            </span>
           </div>
         </div>
 
-        <!-- Tabla específica para este grupo anatómico -->
+        <!-- Tabla específica para este grupo anatómico (Compacta) -->
         <div class="overflow-x-auto rounded-xl border border-slate-200/90 shadow-2xs bg-white">
           <table class="w-full text-left text-xs border-collapse">
             <thead>
@@ -159,7 +118,7 @@
                 <th class="py-2 px-2.5 w-8 text-center">#</th>
                 <th class="py-2 px-2.5 w-24 text-center">Prenda</th>
                 <th class="py-2 px-2.5 min-w-[150px]">Descripción / Ref</th>
-                <!-- Columnas dinámicas de zonas -->
+                <!-- COLUMNAS ESPECÍFICAS DE ESTA REGIÓN ANATÓMICA -->
                 <th *ngFor="let col of group.columns" class="py-2 px-2 text-center min-w-[110px]" [title]="col.tooltip">
                   {{ col.label }}
                 </th>
@@ -167,25 +126,33 @@
                   Partes Anatómicas & Variantes
                 </th>
                 <th class="py-2 px-2 text-center min-w-[110px]">Tallas</th>
-                <th class="py-2 px-2 w-16 text-center">SAM</th>
                 <th class="py-2 px-2.5 w-24 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr *ngFor="let entry of group.items; trackBy: trackByItemOriginalIndex" [ngClass]="getItemRowClass(entry.item, group.columns)">
-                <!-- 0. Índice con estado de avance -->
+                <!-- 0. Índice original con indicador de estado -->
                 <td class="py-2 px-2.5 text-center font-bold text-slate-400 text-xs">
                   <div class="flex flex-col items-center justify-center gap-0.5">
                     <span>{{ entry.originalIndex + 1 }}</span>
                     <ng-container *ngIf="entry.item.moldId && group.columns.length > 0">
                       <ng-container *ngIf="getItemCompletionStatus(entry.item, group.columns) as compStatus">
-                        <span *ngIf="compStatus.status === 'sin_empezar'" class="text-[7.5px] px-1 py-0.2 rounded font-medium bg-slate-100 text-slate-400 border border-slate-200" title="Sin empezar">
+                        <!-- Sin empezar: sin color -->
+                        <span *ngIf="compStatus.status === 'sin_empezar'" 
+                              class="text-[7.5px] px-1 py-0.2 rounded font-medium bg-slate-100 text-slate-400 border border-slate-200" 
+                              title="Sin empezar">
                           0/{{ compStatus.totalApplicable }}
                         </span>
-                        <span *ngIf="compStatus.status === 'parcial'" class="text-[7.5px] px-1 py-0.2 rounded font-bold bg-amber-100 text-amber-800 border border-amber-300" title="Faltan {{ compStatus.totalApplicable - compStatus.configured }} zonas por configurar">
+                        <!-- Parcial: amarillo recalcando lo faltante -->
+                        <span *ngIf="compStatus.status === 'parcial'" 
+                              class="text-[7.5px] px-1 py-0.2 rounded font-bold bg-amber-100 text-amber-800 border border-amber-300" 
+                              title="Faltan {{ compStatus.totalApplicable - compStatus.configured }} zonas por configurar">
                           {{ compStatus.configured }}/{{ compStatus.totalApplicable }}
                         </span>
-                        <span *ngIf="compStatus.status === 'completo'" class="text-[7.5px] px-1 py-0.2 rounded font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="100% configurado">
+                        <!-- Completo: verde muy clarito -->
+                        <span *ngIf="compStatus.status === 'completo'" 
+                              class="text-[7.5px] px-1 py-0.2 rounded font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" 
+                              title="100% configurado">
                           ✓
                         </span>
                       </ng-container>
@@ -193,12 +160,12 @@
                   </div>
                 </td>
 
-                <!-- 1. Miniatura y Molde (Clic abre Figurín OPM) -->
+                <!-- 1. Miniatura y Molde con Lupa (Compacto) -->
                 <td class="py-2 px-2 text-center">
                   <div class="flex flex-col items-center justify-center gap-0.5">
                     <div class="relative group cursor-pointer w-10 h-10 rounded-lg border border-slate-200 bg-white shadow-2xs hover:shadow-sm hover:border-blue-400 flex items-center justify-center p-0.5 transition-all overflow-hidden shrink-0"
                          (click)="openFigurinModal(entry.originalIndex)"
-                         title="Clic para abrir el figurín interactivo y detalle 2D">
+                         title="Clic para abrir el figurín interactivo y detalle de prenda">
                       <img *ngIf="getItemThumbnail(entry.item)" [src]="getItemThumbnail(entry.item)" class="w-full h-full object-contain" alt="Molde" />
                       <div *ngIf="!getItemThumbnail(entry.item)" class="w-full h-full flex items-center justify-center text-slate-300">
                         <i class="bi bi-palette2 text-sm"></i>
@@ -208,16 +175,16 @@
                       </div>
                     </div>
 
-                    <button *ngIf="entry.item.moldId"
-                            type="button"
-                            (click)="openMoldSelector(entry.originalIndex)"
+                    <button *ngIf="entry.item.moldId" 
+                            type="button" 
+                            (click)="openMoldSelector(entry.originalIndex)" 
                             class="text-[8.5px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-1 py-0.2 rounded border border-slate-300 truncate max-w-[90px] cursor-pointer"
                             [title]="entry.item.moldName + ' (Cambiar)'">
                       {{ entry.item.moldName }}
                     </button>
-                    <button *ngIf="!entry.item.moldId"
-                            type="button"
-                            (click)="openMoldSelector(entry.originalIndex)"
+                    <button *ngIf="!entry.item.moldId" 
+                            type="button" 
+                            (click)="openMoldSelector(entry.originalIndex)" 
                             class="text-[8.5px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-1 py-0.2 rounded border border-amber-300 cursor-pointer">
                       + Molde
                     </button>
@@ -226,24 +193,47 @@
 
                 <!-- 2. Descripción e Ítem (Editable al dar clic) -->
                 <td class="py-2 px-2.5">
-                  <div *ngIf="editingItemIndex === entry.originalIndex" (click)="$event.stopPropagation()" class="space-y-1.5 p-1.5 bg-slate-50 border border-slate-300 rounded-lg shadow-2xs">
+                  <!-- Modo Edición Inline -->
+                  <div *ngIf="editingItemIndex === entry.originalIndex" 
+                       (click)="$event.stopPropagation()" 
+                       class="space-y-1.5 p-1.5 bg-slate-50 border border-slate-300 rounded-lg shadow-2xs">
                     <div>
                       <label class="text-[9px] font-bold text-slate-800 block mb-0.5">Nombre / Prenda:</label>
-                      <input type="text" [(ngModel)]="editDescTemp" (keyup.enter)="saveEditItem(entry.originalIndex, $event)" (keyup.escape)="cancelEditItem($event)" class="w-full text-xs font-bold px-2 py-1 bg-white border border-slate-300 rounded focus:outline-blue-600 shadow-2xs" placeholder="Nombre prenda..." />
+                      <input type="text"
+                             [(ngModel)]="editDescTemp"
+                             (keyup.enter)="saveEditItem(entry.originalIndex, $event)"
+                             (keyup.escape)="cancelEditItem($event)"
+                             class="w-full text-xs font-bold px-2 py-1 bg-white border border-slate-300 rounded focus:outline-blue-600 shadow-2xs"
+                             placeholder="Nombre prenda..." />
                     </div>
                     <div>
                       <label class="text-[9px] font-bold text-slate-600 block mb-0.5">Ref. Cliente / SIESA:</label>
-                      <input type="text" [(ngModel)]="editRefTemp" (keyup.enter)="saveEditItem(entry.originalIndex, $event)" (keyup.escape)="cancelEditItem($event)" class="w-full text-[11px] font-mono px-2 py-0.5 bg-white border border-slate-300 rounded focus:outline-blue-600" placeholder="Ref cliente..." />
+                      <input type="text"
+                             [(ngModel)]="editRefTemp"
+                             (keyup.enter)="saveEditItem(entry.originalIndex, $event)"
+                             (keyup.escape)="cancelEditItem($event)"
+                             class="w-full text-[11px] font-mono px-2 py-0.5 bg-white border border-slate-300 rounded focus:outline-blue-600"
+                             placeholder="Ref cliente..." />
                     </div>
                     <div class="flex items-center justify-end gap-1 pt-0.5">
-                      <button type="button" (click)="cancelEditItem($event)" class="px-2 py-0.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded transition-colors cursor-pointer">Cancelar</button>
-                      <button type="button" (click)="saveEditItem(entry.originalIndex, $event)" class="px-2.5 py-0.5 text-[10px] font-bold text-white bg-slate-800 hover:bg-slate-900 rounded shadow-2xs transition-colors cursor-pointer flex items-center gap-1">
+                      <button type="button"
+                              (click)="cancelEditItem($event)"
+                              class="px-2 py-0.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 rounded transition-colors cursor-pointer">
+                        Cancelar
+                      </button>
+                      <button type="button"
+                              (click)="saveEditItem(entry.originalIndex, $event)"
+                              class="px-2.5 py-0.5 text-[10px] font-bold text-white bg-slate-800 hover:bg-slate-900 rounded shadow-2xs transition-colors cursor-pointer flex items-center gap-1">
                         <i class="bi bi-check-lg"></i> Guardar
                       </button>
                     </div>
                   </div>
 
-                  <div *ngIf="editingItemIndex !== entry.originalIndex" (click)="startEditItem(entry.originalIndex, $event)" class="group cursor-pointer p-1 -m-1 rounded-lg hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200" title="Clic para editar descripción y referencia">
+                  <!-- Modo Vista (Clic para editar) -->
+                  <div *ngIf="editingItemIndex !== entry.originalIndex"
+                       (click)="startEditItem(entry.originalIndex, $event)"
+                       class="group cursor-pointer p-1 -m-1 rounded-lg hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
+                       title="Clic para editar descripción y referencia">
                     <div class="flex items-center justify-between gap-1">
                       <span class="font-extrabold text-slate-900 text-xs block leading-tight truncate max-w-[170px]" [title]="entry.item.descripcion">
                         {{ entry.item.descripcion }}
@@ -263,42 +253,43 @@
                       <span *ngIf="!entry.item.item_cliente && !entry.item.siesa_referencia" class="text-[9px] text-slate-300 italic">
                         + Ref
                       </span>
-                      <span *ngIf="entry.item.opmReference" class="px-1 py-0.2 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-[9px]">
-                        OPM: {{ entry.item.opmReference }}
-                      </span>
                     </div>
                   </div>
                 </td>
 
-                <!-- 3..N Celdas de las Zonas Anatómicas (Clic abre Selector de Variantes) -->
+                <!-- 3..N CELDAS DE LAS REGIONES EXACTAS DE ESTE GRUPO ANATÓMICO -->
                 <td *ngFor="let col of group.columns" class="py-2 px-1.5 text-center">
                   <ng-container *ngIf="getItemZoneSelectionForColumn(entry.item, col) as zoneSel">
                     <button *ngIf="!zoneSel.notApplicable"
-                            type="button"
+                            type="button" 
                             (click)="openZoneVariantsModal(entry.originalIndex, col)"
                             class="w-full py-1 px-1.5 rounded-md border text-[10.5px] flex items-center justify-between gap-1 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
                             [ngClass]="getZonePillClassForCol(entry.item, col, group.columns)"
-                            [title]="col.label + ': ' + zoneSel.name">
-
-                      <!-- 1. Configurada: Verde -->
+                            [title]="col.label + ': ' + zoneSel.name + (getItemCompletionStatus(entry.item, group.columns).status === 'parcial' && !zoneSel.isConfigured ? ' (Falta configurar esta zona)' : '')">
+                      
+                      <!-- 1. Completo: verde muy clarito con check -->
                       <span *ngIf="zoneSel.isConfigured" class="truncate text-left flex items-center gap-1 font-bold text-emerald-800">
                         <i class="bi bi-check-lg text-emerald-600 text-[10px] shrink-0"></i>
                         <span class="truncate">{{ zoneSel.name }}</span>
                       </span>
 
-                      <!-- 2. Falta: Amarillo -->
-                      <span *ngIf="!zoneSel.isConfigured && getItemCompletionStatus(entry.item, group.columns).status === 'parcial'" class="truncate text-left flex items-center gap-1 font-bold text-amber-900">
+                      <!-- 2. Parcial: recalca lo faltante en amarillo -->
+                      <span *ngIf="!zoneSel.isConfigured && getItemCompletionStatus(entry.item, group.columns).status === 'parcial'" 
+                            class="truncate text-left flex items-center gap-1 font-bold text-amber-900">
                         <i class="bi bi-exclamation-circle-fill text-amber-500 text-[9px] shrink-0"></i>
                         <span class="truncate">Falta</span>
                       </span>
 
-                      <!-- 3. Sin empezar: Neutro -->
-                      <span *ngIf="!zoneSel.isConfigured && getItemCompletionStatus(entry.item, group.columns).status !== 'parcial'" class="truncate text-left text-slate-400">
+                      <!-- 3. Sin empezar: sin color, neutro -->
+                      <span *ngIf="!zoneSel.isConfigured && getItemCompletionStatus(entry.item, group.columns).status !== 'parcial'" 
+                            class="truncate text-left text-slate-400">
                         Por definir
                       </span>
 
-                      <!-- Indicador de aplique opcional anclado -->
-                      <span *ngIf="getItemZoneOptionalCount(entry.item, col) as optCount" class="shrink-0 inline-flex items-center gap-0.5 text-amber-600/85 hover:text-amber-700" [title]="optCount + ' aplique(s) anclado(s)'">
+                      <!-- Indicador sutil de aplique opcional anclado -->
+                      <span *ngIf="getItemZoneOptionalCount(entry.item, col) as optCount"
+                            class="shrink-0 inline-flex items-center gap-0.5 text-amber-600/85 hover:text-amber-700"
+                            [title]="optCount === 1 ? 'Tiene 1 aplique opcional anclado' : 'Tiene ' + optCount + ' apliques opcionales anclados'">
                         <i class="bi bi-gem text-[8.5px]"></i>
                         <span *ngIf="optCount > 1" class="text-[8px] font-bold">{{ optCount }}</span>
                       </span>
@@ -311,37 +302,52 @@
                   </ng-container>
                 </td>
 
-                <!-- Sin molde asignado -->
+                <!-- Si el grupo no tiene columnas anatómicas (ej. SIN_MOLDE) -->
                 <td *ngIf="group.columns.length === 0" class="py-2 px-3 text-center">
                   <div class="inline-flex items-center gap-1.5 py-1 px-3 bg-amber-50/80 border border-dashed border-amber-300/80 rounded-lg text-amber-800 text-[11px] font-medium">
                     <i class="bi bi-info-circle-fill text-amber-500"></i>
-                    <span>Sin molde asignado · Haz clic en <strong>+ Molde</strong> para asociarlo</span>
+                    <span>Sin molde asignado · Selecciona un molde en <strong>+ Molde</strong> para habilitar sus opciones</span>
                   </div>
                 </td>
 
-                <!-- Tallas & Cantidad -->
+                <!-- Tallas & Cantidad (Compacto) -->
                 <td class="py-2 px-1.5 text-center">
-                  <button type="button" (click)="openTallasQuickModal(entry.originalIndex)" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5 text-xs font-black" title="Editar tallas y cantidades">
+                  <button type="button"
+                          (click)="openTallasQuickModal(entry.originalIndex)"
+                          class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5 text-xs font-black"
+                          title="Editar tallas y cantidades">
                     <span>{{ getItemTotal(entry.item) | number }} uds</span>
                     <span class="text-[9.5px] font-normal text-slate-500">({{ entry.item.tallas.length }}T)</span>
                   </button>
                 </td>
 
-                <!-- SAM -->
-                <td class="py-2 px-1.5 text-center">
-                  <span class="font-mono font-bold text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-[11px] inline-block">
-                    {{ entry.item.totalSamTime || 0 }}m
-                  </span>
-                </td>
-
-                <!-- Acciones -->
+                <!-- Acciones (Compacto: Notas/Archivos, Duplicar y Eliminar) -->
                 <td class="py-2 px-2.5 text-right">
                   <div class="flex items-center justify-end gap-1">
-                    <button type="button" (click)="duplicateItem(entry.originalIndex)" class="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Duplicar prenda">
-                      <i class="bi bi-copy text-xs"></i>
+                    <button type="button" 
+                            (click)="openItemNotesModal(entry.originalIndex)" 
+                            class="relative w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer border"
+                            [ngClass]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)) 
+                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-300 shadow-2xs' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-200/60'"
+                            [title]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)) 
+                              ? 'Observaciones y archivos adjuntos (' + (entry.item.archivos?.length || 0) + ')' 
+                              : 'Observaciones y archivos de la prenda'">
+                      <i class="bi bi-paperclip text-[11px]"></i>
+                      <span *ngIf="entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)" 
+                            class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 border border-white"></span>
                     </button>
-                    <button type="button" (click)="removeItem(entry.originalIndex)" class="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Eliminar prenda">
-                      <i class="bi bi-trash text-xs"></i>
+                    <button type="button" 
+                            (click)="duplicateItem(entry.originalIndex)" 
+                            class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+                            title="Duplicar">
+                      <i class="bi bi-copy text-[10px]"></i>
+                    </button>
+                    <button type="button" 
+                            (click)="removeItem(entry.originalIndex)" 
+                            class="w-6 h-6 rounded-md bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer"
+                            title="Eliminar">
+                      <i class="bi bi-trash3 text-[10px]"></i>
                     </button>
                   </div>
                 </td>
@@ -351,6 +357,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Estado Vacío -->
+    <div *ngIf="items.length === 0 && !showNewItemForm" class="empty-items-box">
+      <div class="empty-icon-circle"><i class="bi bi-box-seam"></i></div>
+      <h3>No hay prendas agregadas</h3>
+      <p>Busca referencias en el catálogo de Siesa o agrega un ítem nuevo personalizado.</p>
+      <div class="empty-actions">
+        <button class="btn-action-primary" (click)="showItemSearch = true">
+          <i class="bi bi-search"></i> Buscar en Siesa
+        </button>
+        <button class="btn-action-secondary" (click)="showNewItemForm = true">
+          <i class="bi bi-plus-lg"></i> Crear Ítem Nuevo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegación y Acciones del Pie (solo en modo solicitud comercial) -->
+  <div class="section-actions flex items-center justify-between gap-3 mt-4" *ngIf="mode === 'solicitud'">
+    <button type="button" class="btn-prev" (click)="onBackToGeneral.emit()">
+      <i class="bi bi-arrow-left"></i> Volver a Datos Generales & Empaque
+    </button>
+
+    <button type="button" class="btn-save btn-hero-save" (click)="onSaveSolicitud.emit()" [disabled]="isSaving">
+      <i class="bi" [ngClass]="isSaving ? 'bi-hourglass-split' : 'bi-check-circle-fill'"></i>
+      {{ isSaving ? 'Guardando OPM...' : (isEditMode ? 'Guardar Cambios de OPM' : 'Finalizar y Crear OPM') }}
+    </button>
   </div>
 
   <!-- ==================== MODALES COMPARTIDOS ==================== -->
@@ -363,10 +396,18 @@
     [categories]="categories"
     [allMolds]="allMolds"
     [isLoadingMolds]="isLoadingMolds"
-    [initialCategoryId]="items[moldSelectorItemIndex]?.categoryId || null"
+    [initialCategoryId]="selectedModalCategoryId"
     (onSelect)="onMoldSelected($event)"
     (onClose)="closeMoldSelector()">
   </app-mold-selector-modal>
+
+  <!-- Modal de Búsqueda Siesa -->
+  <app-item-search-modal
+    *ngIf="showItemSearch"
+    [clienteId]="clienteId"
+    (onSelect)="addItemFromSiesa($event)"
+    (onClose)="showItemSearch = false">
+  </app-item-search-modal>
 
   <!-- Modal Visor & Editor de Figurín (OPM Stepper 2D) -->
   <app-figurin-opm-modal
@@ -387,7 +428,7 @@
     [tallasNumericas]="tallasNumericas"
     (onAddTalla)="addSpecificTalla(items[activeTallasItemIndex], $event)"
     (onRemoveTalla)="removeTalla(items[activeTallasItemIndex], $event)"
-    (onTallasChanged)="saveToLocalStorage()"
+    (onTallasChanged)="saveData()"
     (onClose)="closeTallasQuickModal()">
   </app-tallas-quick-modal>
 
@@ -415,4 +456,12 @@
     (onConfirm)="closeZoneVariantsModal()"
     (onClose)="closeZoneVariantsModal()">
   </app-zone-variants-modal>
+
+  <!-- Modal de Observaciones & Archivos por Prenda -->
+  <app-item-notes-modal
+    *ngIf="showItemNotesModal && activeNotesItemIndex !== null && items[activeNotesItemIndex]"
+    [item]="items[activeNotesItemIndex]"
+    (onClose)="closeItemNotesModal()"
+    (onSave)="saveData()">
+  </app-item-notes-modal>
 </div>
