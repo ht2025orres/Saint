@@ -38,7 +38,8 @@ export class ModalRegionPartsComponent {
     if (!part || !variant) return false;
     if (this.isVariantGloballyDisabled(variant)) return true;
     const rVal = this.currentRegionValue;
-    const pr = (part.partRegions || []).find((r: any) => r.region_value === rVal);
+    const regions = part.part_regions || part.partRegions || [];
+    const pr = regions.find((r: any) => r.region_value === rVal);
     if (!pr || !pr.disabled_variant_ids) return false;
     const vId = variant.id || variant.name;
     return pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId));
@@ -50,11 +51,14 @@ export class ModalRegionPartsComponent {
     if (this.isVariantGloballyDisabled(variant)) return;
 
     const rVal = this.currentRegionValue;
-    let pr = (part.partRegions || []).find((r: any) => r.region_value === rVal);
+    if (!part.part_regions) part.part_regions = part.partRegions || [];
+    if (!part.partRegions) part.partRegions = part.part_regions;
+
+    let pr = part.part_regions.find((r: any) => r.region_value === rVal);
     if (!pr) {
-      if (!part.partRegions) part.partRegions = [];
       pr = { garment_part_id: part.id, region_value: rVal, disabled_variant_ids: [] };
-      part.partRegions.push(pr);
+      part.part_regions.push(pr);
+      if (part.partRegions !== part.part_regions) part.partRegions.push(pr);
     }
     if (!pr.disabled_variant_ids || !Array.isArray(pr.disabled_variant_ids)) {
       pr.disabled_variant_ids = [];
@@ -74,7 +78,11 @@ export class ModalRegionPartsComponent {
 
     if (part.id) {
       this.moldService.toggleRegionVariant(part.id, rVal, vId, newDisabledState).subscribe({
-        next: () => {},
+        next: (res: any) => {
+          if (res && res.disabled_variant_ids) {
+            pr.disabled_variant_ids = res.disabled_variant_ids;
+          }
+        },
         error: (err: any) => console.error('Error toggling region variant in modal:', err)
       });
     }

@@ -48,7 +48,8 @@ export class ZoneVariantsModalComponent {
     // Verificar si la variante está inhabilitada en la región anatómica activa
     if (this.activePartInModal && this.activeZoneCol) {
       const zoneKey = this.activeZoneCol.key;
-      const pr = (this.activePartInModal.partRegions || []).find((r: any) => r.region_value === zoneKey);
+      const regions = this.activePartInModal.part_regions || this.activePartInModal.partRegions || [];
+      const pr = regions.find((r: any) => r.region_value === zoneKey);
       if (pr && Array.isArray(pr.disabled_variant_ids)) {
         const vId = type.id;
         if (pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId))) {
@@ -72,7 +73,8 @@ export class ZoneVariantsModalComponent {
     // Razón si está excluida en esta región específica
     if (this.activePartInModal && this.activeZoneCol) {
       const zoneKey = this.activeZoneCol.key;
-      const pr = (this.activePartInModal.partRegions || []).find((r: any) => r.region_value === zoneKey);
+      const regions = this.activePartInModal.part_regions || this.activePartInModal.partRegions || [];
+      const pr = regions.find((r: any) => r.region_value === zoneKey);
       if (pr && Array.isArray(pr.disabled_variant_ids)) {
         const vId = type.id;
         if (pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId))) {

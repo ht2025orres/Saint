@@ -306,8 +306,9 @@ export class ModalParteFormComponent implements OnInit {
 
   // --- Gestión de Variantes por Región Anatómica (Habilitar / Inhabilitar sin pedir razón) ---
   isVariantDisabledInRegion(regionValue: string, type: any): boolean {
-    if (!this.partForm?.partRegions) return false;
-    const pr = this.partForm.partRegions.find((r: any) => r.region_value === regionValue);
+    if (!this.partForm) return false;
+    const regions = this.partForm.part_regions || this.partForm.partRegions || [];
+    const pr = regions.find((r: any) => r.region_value === regionValue);
     if (!pr || !pr.disabled_variant_ids) return false;
     const vId = type.id;
     return pr.disabled_variant_ids.includes(vId) || pr.disabled_variant_ids.includes(Number(vId));
@@ -316,13 +317,20 @@ export class ModalParteFormComponent implements OnInit {
   toggleRegionVariant(regionValue: string, type: any): void {
     if (!this.partForm) return;
 
-    if (!this.partForm.partRegions) {
-      this.partForm.partRegions = [];
+    if (!this.partForm.part_regions) {
+      this.partForm.part_regions = this.partForm.partRegions || [];
     }
-    let pr = this.partForm.partRegions.find((r: any) => r.region_value === regionValue);
+    if (!this.partForm.partRegions) {
+      this.partForm.partRegions = this.partForm.part_regions;
+    }
+
+    let pr = this.partForm.part_regions.find((r: any) => r.region_value === regionValue);
     if (!pr) {
       pr = { garment_part_id: this.partForm.id, region_value: regionValue, disabled_variant_ids: [] };
-      this.partForm.partRegions.push(pr);
+      this.partForm.part_regions.push(pr);
+      if (this.partForm.partRegions !== this.partForm.part_regions) {
+        this.partForm.partRegions.push(pr);
+      }
     }
     if (!pr.disabled_variant_ids || !Array.isArray(pr.disabled_variant_ids)) {
       pr.disabled_variant_ids = [];
