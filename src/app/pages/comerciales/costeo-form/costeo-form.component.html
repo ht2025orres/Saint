@@ -520,22 +520,6 @@
                           + Ref
                         </span>
                       </div>
-
-                      <!-- Acceso rápido a Observaciones y Archivos -->
-                      <div class="mt-1 flex items-center gap-1.5 flex-wrap">
-                        <button type="button" 
-                                (click)="openItemNotesModal(entry.originalIndex); $event.stopPropagation()"
-                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] transition-all cursor-pointer border"
-                                [ngClass]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0))
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 font-bold'
-                                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-100 font-medium'"
-                                [title]="entry.item.observaciones || 'Observación / Archivos de la prenda'">
-                          <i class="bi" [ngClass]="(entry.item.archivos && entry.item.archivos.length > 0) ? 'bi-paperclip text-blue-600' : 'bi-chat-left-text text-slate-400'"></i>
-                          <span *ngIf="!entry.item.observaciones && (!entry.item.archivos || entry.item.archivos.length === 0)">+ Obs / Archivos</span>
-                          <span *ngIf="entry.item.observaciones" class="truncate max-w-[120px]">{{ entry.item.observaciones }}</span>
-                          <span *ngIf="entry.item.archivos && entry.item.archivos.length > 0" class="text-blue-800 font-extrabold ml-0.5">({{ entry.item.archivos.length }})</span>
-                        </button>
-                      </div>
                     </div>
                   </td>
 
@@ -615,16 +599,16 @@
                     <div class="flex items-center justify-end gap-1">
                       <button type="button" 
                               (click)="openItemNotesModal(entry.originalIndex)" 
-                              class="relative w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer"
+                              class="relative w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer border"
                               [ngClass]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)) 
-                                ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-300' 
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-300 shadow-2xs' 
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-200/60'"
                               [title]="(entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)) 
                                 ? 'Observaciones y archivos adjuntos (' + (entry.item.archivos?.length || 0) + ')' 
-                                : 'Agregar observaciones o archivos a esta prenda'">
+                                : 'Observaciones y archivos de la prenda'">
                         <i class="bi bi-paperclip text-[11px]"></i>
                         <span *ngIf="entry.item.observaciones || (entry.item.archivos && entry.item.archivos.length > 0)" 
-                              class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-600 border border-white"></span>
+                              class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 border border-white"></span>
                       </button>
                       <button type="button" 
                               (click)="duplicateItem(entry.originalIndex)" 

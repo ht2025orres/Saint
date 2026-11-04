@@ -15,7 +15,7 @@ export class ItemNotesModalComponent implements OnInit {
 
   isUploading = false;
 
-  constructor(private fileService: FileService) {}
+  constructor(private fileService: FileService) { }
 
   ngOnInit(): void {
     if (this.item) {
@@ -99,7 +99,7 @@ export class ItemNotesModalComponent implements OnInit {
         this.onSave.emit();
         if (file.path) {
           this.fileService.deleteFile(file.path).subscribe({
-            error: () => {}
+            error: () => { }
           });
         }
       }
@@ -130,3 +130,4 @@ export class ItemNotesModalComponent implements OnInit {
     return 'bi-file-earmark-text text-slate-500';
   }
 }
+
