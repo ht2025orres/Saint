@@ -2120,7 +2120,7 @@ export class MuestrasDetailComponent implements OnInit {
             icon: 'success',
             title: `Requerido: ${nuevaCantidad} ${nuevaUnidad}`
           });
-          this.loadMateriales(false);
+          this.loadMateriales(false, true);
         },
         error: (err) => {
           this.isSavingInlineRequerido = false;
@@ -2162,7 +2162,7 @@ export class MuestrasDetailComponent implements OnInit {
             icon: 'success',
             title: `Requerido: ${nuevaCantidad} ${nuevaUnidad}`
           });
-          this.loadMateriales(false);
+          this.loadMateriales(false, true);
         },
         error: (err) => {
           this.isSavingInlineRequerido = false;
@@ -2231,9 +2231,11 @@ export class MuestrasDetailComponent implements OnInit {
     this.buscarInsumosSiesa();
   }
 
-  loadMateriales(shouldSync: boolean = true): void {
+  loadMateriales(shouldSync: boolean = true, isSilent: boolean = false): void {
     if (!this.solicitudId) return;
-    this.isLoadingMateriales = true;
+    if (!isSilent && (!this.materialesAgrupados || this.materialesAgrupados.length === 0)) {
+      this.isLoadingMateriales = true;
+    }
     this.comercialService.listarMaterialesSolicitud(this.solicitudId).subscribe({
       next: (res) => {
         if (res.success && res.data) {
@@ -2303,7 +2305,7 @@ export class MuestrasDetailComponent implements OnInit {
               timer: 2000,
               showConfirmButton: false
             });
-            this.loadMateriales(false);
+            this.loadMateriales(false, true);
           },
           error: () => {
             Swal.fire('Error', 'No se pudo actualizar el costo de logística', 'error');
@@ -2652,8 +2654,23 @@ export class MuestrasDetailComponent implements OnInit {
           }
         }
 
+        // Actualización optimista inmediata en la fila sin parpadeo de pantalla
+        if (this.materialesAgrupados) {
+          const targetMat = this.materialesAgrupados.find(m =>
+            (this.nuevoMaterial.id && (m.firstTrackingId === this.nuevoMaterial.id || m.rawItems?.some((ri: any) => ri.id === this.nuevoMaterial.id))) ||
+            m.nombre === this.nuevoMaterial.nombre_material
+          );
+          if (targetMat) {
+            targetMat.siesa_referencia = this.nuevoMaterial.siesa_referencia;
+            targetMat.siesa_descripcion = this.nuevoMaterial.siesa_descripcion;
+            targetMat.siesa_color = this.nuevoMaterial.siesa_color;
+            targetMat.descripcion_personalizada = this.nuevoMaterial.descripcion_personalizada;
+            targetMat.estadoDefinicion = this.nuevoMaterial.siesa_referencia ? 'SIESA' : 'MANUAL';
+          }
+        }
+
         this.cerrarModalMaterial();
-        this.loadMateriales(false);
+        this.loadMateriales(false, true);
       },
       error: (err) => {
         Swal.fire('Error', err.error?.message || 'No se pudo guardar el material', 'error');
@@ -2687,7 +2704,7 @@ export class MuestrasDetailComponent implements OnInit {
               icon: 'success',
               title: 'Todos los materiales han sido despachados'
             });
-            this.loadMateriales(false);
+            this.loadMateriales(false, true);
           },
           error: (err) => {
             Swal.fire('Error', err.error?.message || 'No se pudo registrar el despacho general', 'error');
