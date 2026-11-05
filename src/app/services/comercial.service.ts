@@ -313,6 +313,10 @@ export class ComercialService {
     });
   }
 
+  consultarOpmSiesa(solicitudId: number): Observable<{ success: boolean; data: { encontrado: boolean; siesa_opm_consecutivo?: string; auto_anclado?: boolean; fuente?: string } }> {
+    return this.http.get<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/consultar-opm-siesa`);
+  }
+
   listarSolicitudesAbastecimiento(filtros?: any): Observable<{ success: boolean; data: any[]; pagination: any }> {
     let params = new HttpParams();
     if (filtros) {

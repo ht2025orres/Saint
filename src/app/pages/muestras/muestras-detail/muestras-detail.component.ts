@@ -84,12 +84,42 @@ export class MuestrasDetailComponent implements OnInit {
         this.muestra = res.data;
         if (!silent) this.isLoading = false;
         this.loadMateriales();
+        this.verificarOpmSiesaAutomatica();
       },
       error: () => {
         if (!silent) {
           Swal.fire('Error', 'No se pudo cargar el detalle de la muestra', 'error');
           this.isLoading = false;
         }
+      }
+    });
+  }
+
+  verificarOpmSiesaAutomatica(): void {
+    if (!this.solicitudId) return;
+    // Si ya cuenta con OPM anclada, no se requiere auto-consulta
+    if (this.muestra?.siesa_opm_consecutivo) return;
+
+    this.comercialService.consultarOpmSiesa(this.solicitudId).subscribe({
+      next: (res) => {
+        if (res.success && res.data?.encontrado && res.data?.siesa_opm_consecutivo) {
+          if (this.muestra) {
+            this.muestra.siesa_opm_consecutivo = res.data.siesa_opm_consecutivo;
+          }
+          if (res.data.auto_anclado) {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: `OPM #${res.data.siesa_opm_consecutivo} vinculada automáticamente`,
+              showConfirmButton: false,
+              timer: 3000
+            });
+          }
+        }
+      },
+      error: () => {
+        // Silencioso para no interrumpir el flujo del usuario si SIESA no responde
       }
     });
   }
@@ -1575,7 +1605,7 @@ export class MuestrasDetailComponent implements OnInit {
 
   getClaseAntiguedadCosto(mat: any): string {
     if (mat.fuente_costo === 'LOGISTICA') {
-      return 'bg-purple-50 text-purple-700 border-purple-200';
+      return 'bg-blue-50 text-blue-700 border-blue-200';
     }
     const d = mat.antiguedad_dias;
     const est = mat.estado_costo;
@@ -2312,15 +2342,19 @@ export class MuestrasDetailComponent implements OnInit {
 
   abrirModalAnclarOpm(): void {
     if (!this.solicitudId) return;
+    const opmActual = this.muestra?.siesa_opm_consecutivo || '';
     Swal.fire({
-      title: 'Anclar Consecutivo OPM SIESA',
-      text: 'Ingrese el número oficial de la OPM generado en SIESA tras la importación:',
+      title: opmActual ? 'Cambiar Consecutivo OPM SIESA' : 'Anclar Consecutivo OPM SIESA',
+      text: opmActual
+        ? `Actualmente anclado a la OPM #${opmActual}. Ingrese el nuevo consecutivo oficial de SIESA:`
+        : 'Ingrese el número oficial de la OPM generado en SIESA tras la importación:',
       input: 'text',
-      inputPlaceholder: 'Ej: OPM-0010452 o 10452',
+      inputValue: opmActual,
+      inputPlaceholder: 'Ej: 10452 o OPM-0010452',
       showCancelButton: true,
-      confirmButtonText: 'Anclar OPM',
+      confirmButtonText: opmActual ? 'Actualizar OPM' : 'Anclar OPM',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#2563eb',
       inputValidator: (val) => {
         if (!val || !val.trim()) {
           return 'Debe ingresar el consecutivo devuelto por SIESA';
@@ -2329,15 +2363,19 @@ export class MuestrasDetailComponent implements OnInit {
       }
     }).then(result => {
       if (result.isConfirmed && result.value) {
-        this.comercialService.anclarOpmSiesa(this.solicitudId, result.value.trim()).subscribe({
+        const nuevoConsecutivo = result.value.trim();
+        this.comercialService.anclarOpmSiesa(this.solicitudId, nuevoConsecutivo).subscribe({
           next: () => {
+            if (this.muestra) {
+              this.muestra.siesa_opm_consecutivo = nuevoConsecutivo;
+            }
             Swal.fire({
               icon: 'success',
               title: 'OPM Anclada',
-              text: `La solicitud y sus prendas quedaron vinculadas a la OPM "${result.value.trim()}".`,
-              confirmButtonColor: '#4f46e5'
+              text: `La solicitud y sus prendas quedaron vinculadas a la OPM "${nuevoConsecutivo}".`,
+              confirmButtonColor: '#2563eb'
             });
-            this.loadSolicitud();
+            this.loadSolicitud(true);
           },
           error: () => {
             Swal.fire('Error', 'No se pudo anclar el consecutivo OPM en Saint', 'error');

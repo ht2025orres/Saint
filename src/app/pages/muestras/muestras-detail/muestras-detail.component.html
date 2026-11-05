@@ -78,6 +78,31 @@
           class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-check-circle-fill"></i> Completar Muestra
         </button>
+
+        <!-- OPM SIESA ANCLADA O ACCION DE ANCLAJE -->
+        <div *ngIf="muestra?.siesa_opm_consecutivo"
+          class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50/90 border border-blue-200 text-blue-950 rounded-xl text-xs font-bold shadow-2xs">
+          <span class="inline-flex items-center gap-1 text-blue-700">
+            <i class="bi bi-link-45deg text-sm"></i>
+            <span class="text-[10px] font-black uppercase tracking-wider text-blue-500">OPM SIESA:</span>
+          </span>
+          <span class="font-mono font-black text-blue-900 bg-white px-2 py-0.5 rounded-md border border-blue-200 shadow-2xs">
+            #{{ muestra.siesa_opm_consecutivo }}
+          </span>
+          <button type="button" (click)="abrirModalAnclarOpm()"
+            title="Cambiar consecutivo de OPM SIESA"
+            class="text-blue-600 hover:text-blue-800 hover:bg-blue-100 px-1.5 py-0.5 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold">
+            <i class="bi bi-pencil"></i> Cambiar
+          </button>
+        </div>
+
+        <button *ngIf="!muestra?.siesa_opm_consecutivo"
+          type="button"
+          (click)="abrirModalAnclarOpm()"
+          class="px-3.5 py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 hover:border-blue-400 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+          title="Anclar número oficial de OPM generado por SIESA">
+          <i class="bi bi-link-45deg text-blue-600"></i> Anclar OPM SIESA
+        </button>
       </div>
     </div>
 
@@ -197,15 +222,9 @@
             <i class="bi bi-arrow-clockwise text-sm" [class.animate-spin]="isLoadingMateriales"></i>
           </button>
           <button (click)="generarPlanoSiesa()"
-            class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-500/20 flex items-center gap-1.5 cursor-pointer transition-all"
+            class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
             title="Descargar archivo plano formateado para importar OPM en SIESA">
             <i class="bi bi-file-earmark-arrow-down-fill text-xs"></i> Plano SIESA
-          </button>
-          <button (click)="abrirModalAnclarOpm()"
-            class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
-            title="Anclar número de OPM generado por SIESA">
-            <i class="bi bi-link-45deg text-xs"></i> {{ muestra?.siesa_opm_consecutivo ? ('OPM: ' +
-            muestra.siesa_opm_consecutivo) : 'Anclar OPM' }}
           </button>
           <button (click)="despacharTodosLosMateriales()"
             class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
@@ -278,10 +297,10 @@
             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'TODOS' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'">{{ materialesAgrupados.length }}</span>
           </button>
           <button type="button" (click)="materialFiltroActivo = 'TELAS'"
-            [ngClass]="materialFiltroActivo === 'TELAS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-indigo-50 border border-slate-200'"
+            [ngClass]="materialFiltroActivo === 'TELAS' ? 'bg-sky-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-sky-50 border border-slate-200'"
             class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
             <i class="bi bi-layers-fill text-xs"></i> Telas & Tejidos
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'TELAS' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-700'">{{ conteoTelas }}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'TELAS' ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-700'">{{ conteoTelas }}</span>
           </button>
           <button type="button" (click)="materialFiltroActivo = 'INSUMOS'"
             [ngClass]="materialFiltroActivo === 'INSUMOS' ? 'bg-slate-700 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
@@ -325,7 +344,12 @@
           <tbody class="divide-y divide-slate-100">
             <ng-container *ngFor="let mat of materialesFiltrados; trackBy: trackByMaterialKey">
               <!-- FILA PRINCIPAL DEL MATERIAL -->
-              <tr class="hover:bg-blue-50/30 transition-colors" [ngClass]="{'bg-blue-50': isMaterialExpanded(mat.key)}">
+              <tr class="transition-colors border-b border-slate-100" [ngClass]="{
+                'bg-blue-50/70': isMaterialExpanded(mat.key),
+                'bg-emerald-50/30 hover:bg-emerald-50/60': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'ENTREGADO',
+                'bg-amber-50/25 hover:bg-amber-50/50': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'PARCIAL',
+                'hover:bg-slate-50/80': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'PENDIENTE'
+              }">
                 <!-- 1. Botón expandir acordeón -->
                 <td class="p-2.5 text-center">
                   <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
@@ -339,10 +363,10 @@
                 <!-- 2. Tipo / Grupo -->
                 <td class="p-2.5 font-bold">
                   <div *ngIf="mat.tipo_material === 'TELA'">
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-indigo-50 text-indigo-700 border border-indigo-200 inline-flex items-center gap-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
                       <i class="bi bi-layers-fill text-[9px]"></i> TELA
                     </span>
-                    <span class="text-[10px] text-indigo-600 font-bold block mt-0.5">
+                    <span class="text-[10px] text-blue-600 font-semibold block mt-0.5">
                       {{ mat.rol_tela === 'COMBINACION' ? 'Combinación' : (mat.rol_tela === 'FORRO' ? 'Forro' : 'Tela Base') }}
                     </span>
                   </div>
@@ -365,7 +389,7 @@
                     <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'PRINCIPAL'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                       Tela Base
                     </span>
-                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'COMBINACION'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'COMBINACION'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
                       Combinación
                     </span>
                     <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'FORRO'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
@@ -511,7 +535,7 @@
                       </span>
                       <!-- Botón para que Logística edite el costo -->
                       <button type="button" (click)="editarCostoLogistica(mat, $event)"
-                        class="w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-colors cursor-pointer"
+                        class="w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-colors cursor-pointer"
                         title="Ajustar costo de logística">
                         <i class="bi bi-pencil-square text-[10px]"></i>
                       </button>
