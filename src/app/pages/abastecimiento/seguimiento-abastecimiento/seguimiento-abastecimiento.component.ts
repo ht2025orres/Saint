@@ -178,8 +178,213 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
     this.expandedSolicitudId = this.expandedSolicitudId === solicitudId ? null : solicitudId;
   }
 
-  verDetalleMuestra(solicitudId: number): void {
-    this.router.navigate(['/muestras/detalle', solicitudId]);
+  // ==================== OPERACIÓN LOGÍSTICA: LISTO PARA RECOGER & COSTOS ====================
+
+  toggleListoParaRecoger(mat: any, sol?: any): void {
+    const yaEstaListo = mat.estado_entrega === 'ENTREGADO';
+    const nuevoEstado = yaEstaListo ? 'PENDIENTE' : 'ENTREGADO';
+    const nuevaCant = yaEstaListo ? 0 : (mat.cantidad_requerida || 1);
+
+    const payload = {
+      cantidad_despachada: nuevaCant,
+      modo_despacho: 'fijar',
+      es_entrega_total: !yaEstaListo,
+      estado_entrega: nuevoEstado,
+      observaciones_despacho: yaEstaListo ? 'Desmarcado de listo para recoger' : 'Marcado listo para recoger en bodega'
+    };
+
+    this.comercialService.despacharMaterial(mat.id, payload).subscribe({
+      next: () => {
+        mat.estado_entrega = nuevoEstado;
+        mat.cantidad_entregada = nuevaCant;
+        mat.fecha_ultimo_despacho = yaEstaListo ? null : new Date().toISOString();
+
+        if (sol && sol.materiales) {
+          const total = sol.materiales.length;
+          const entregados = sol.materiales.filter((m: any) => m.estado_entrega === 'ENTREGADO').length;
+          const parciales = sol.materiales.filter((m: any) => m.estado_entrega === 'PARCIAL').length;
+          const pendientes = total - entregados - parciales;
+          const porcentaje = total > 0 ? Math.round((entregados / total) * 100) : 0;
+          let semaforo = 'PENDIENTE';
+          if (total > 0 && entregados === total) semaforo = 'COMPLETO';
+          else if (entregados > 0 || parciales > 0) semaforo = 'PARCIAL';
+
+          sol.metricas_abastecimiento = {
+            total_materiales: total,
+            entregados,
+            parciales,
+            pendientes,
+            porcentaje_entrega: porcentaje,
+            semaforo
+          };
+        }
+
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1800,
+          timerProgressBar: true
+        });
+        Toast.fire({
+          icon: yaEstaListo ? 'info' : 'success',
+          title: yaEstaListo ? 'Vuelto a pendiente' : '¡Listo para recoger en bodega!'
+        });
+      },
+      error: (err) => {
+        Swal.fire('Error', err.error?.message || 'No se pudo actualizar el estado', 'error');
+      }
+    });
+  }
+
+  marcarTodosListosParaRecoger(sol: any): void {
+    if (!sol?.id) return;
+
+    Swal.fire({
+      title: '¿Marcar todos listos para recoger?',
+      html: `
+        <div class="text-left text-xs space-y-2">
+          <p>Se marcarán como <strong>alistados y listos para recoger</strong> todos los materiales de la solicitud <strong>${sol.codigo || ('SOL-' + sol.id)}</strong>.</p>
+          <p class="text-slate-500 mb-0 font-medium">Taller de confección podrá pasar por todos los insumos a bodega.</p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, marcar todos listos',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#059669'
+    }).then((res) => {
+      if (res.isConfirmed) {
+        this.comercialService.despacharTodosMateriales(sol.id).subscribe({
+          next: () => {
+            if (sol.materiales) {
+              sol.materiales.forEach((m: any) => {
+                m.estado_entrega = 'ENTREGADO';
+                m.cantidad_entregada = m.cantidad_requerida;
+                m.fecha_ultimo_despacho = new Date().toISOString();
+              });
+              sol.metricas_abastecimiento = {
+                total_materiales: sol.materiales.length,
+                entregados: sol.materiales.length,
+                parciales: 0,
+                pendientes: 0,
+                porcentaje_entrega: 100,
+                semaforo: 'COMPLETO'
+              };
+            }
+
+            Swal.fire({
+              title: '¡Todos Listos!',
+              text: 'Todos los materiales han quedado marcados como listos para recoger en bodega.',
+              icon: 'success',
+              timer: 1800,
+              showConfirmButton: false
+            });
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo marcar todos', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  editarCostoManual(mat: any): void {
+    const costoActual = mat.costo_vigente_final || mat.ultimo_costo_siesa || '';
+
+    Swal.fire({
+      title: 'Ajustar Costo Vigente (Logística)',
+      html: `
+        <div class="text-left text-xs space-y-2 mb-3">
+          <p class="font-bold text-slate-800 mb-0.5">Ítem: ${mat.nombre_material || mat.siesa_descripcion || 'Insumo'}</p>
+          <p class="text-slate-500 font-mono text-[11px] mb-1">Ref SIESA: ${mat.siesa_referencia || 'N/A'}</p>
+          <div class="text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+            <i class="bi bi-info-circle-fill mr-1"></i>
+            Si el precio del sistema está sin movimientos o desactualizado, digita el costo unitario real.
+          </div>
+        </div>
+      `,
+      input: 'number',
+      inputValue: costoActual,
+      inputPlaceholder: 'Ingresa el costo unitario en COP',
+      inputAttributes: {
+        min: '0',
+        step: '0.01'
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Guardar Costo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+      inputValidator: (val) => {
+        if (!val || Number(val) < 0) {
+          return 'Ingresa un costo válido mayor o igual a 0';
+        }
+        return null;
+      }
+    }).then((res) => {
+      if (res.isConfirmed && res.value !== undefined) {
+        const nuevoCosto = Number(res.value);
+        this.comercialService.actualizarCostoLogistica(mat.id, {
+          costo_vigente_logistica: nuevoCosto,
+          notas: 'Ajustado manualmente por Logística'
+        }).subscribe({
+          next: () => {
+            mat.costo_vigente_final = nuevoCosto;
+            mat.costo_vigente_logistica = nuevoCosto;
+            mat.fuente_costo = 'LOGISTICA';
+            mat.estado_costo = 'VIGENTE';
+
+            const Toast = Swal.mixin({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 2000,
+              timerProgressBar: true
+            });
+            Toast.fire({
+              icon: 'success',
+              title: 'Costo actualizado correctamente'
+            });
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo actualizar el costo', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  getClaseAntiguedadCosto(mat: any): string {
+    if (mat.fuente_costo === 'LOGISTICA') {
+      return 'bg-blue-50 text-blue-700 border-blue-200';
+    }
+    const estado = mat.estado_costo || 'SIN_MOVIMIENTO';
+    switch (estado) {
+      case 'VIGENTE':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'ALERTA':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'DESACTUALIZADO':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-slate-50 text-slate-500 border-slate-200';
+    }
+  }
+
+  getTextoAntiguedadCosto(mat: any): string {
+    if (mat.fuente_costo === 'LOGISTICA') {
+      return 'Fijado Logística';
+    }
+    const dias = mat.antiguedad_dias;
+    if (dias === null || dias === undefined) {
+      return 'Sin movimiento';
+    }
+    if (dias === 0) return 'Hoy';
+    if (dias === 1) return 'Hace 1 día';
+    if (dias < 30) return `Hace ${dias} días`;
+    const meses = Math.floor(dias / 30);
+    if (meses === 1) return 'Hace 1 mes';
+    return `Hace ${meses} meses`;
   }
 
   // ==================== DESPACHO DE MATERIALES ====================

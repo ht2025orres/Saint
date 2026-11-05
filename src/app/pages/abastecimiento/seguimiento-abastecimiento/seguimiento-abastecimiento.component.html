@@ -281,13 +281,6 @@
               <i class="bi" [ngClass]="expandedSolicitudId === sol.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
               <span>{{ expandedSolicitudId === sol.id ? 'Ocultar' : 'Ver Insumos' }}</span>
             </button>
-
-            <!-- Botón ir a ficha técnica / muestra -->
-            <button (click)="verDetalleMuestra(sol.id)"
-                    class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
-                    title="Ver ficha técnica completa en Muestras">
-              <i class="bi bi-arrow-up-right text-xs"></i>
-            </button>
           </div>
         </div>
 
@@ -302,12 +295,22 @@
               </span>
             </div>
 
-            <!-- Botón rápido para agregar insumo adicional a esta muestra -->
-            <button (click)="abrirModalAgregarMaterial(sol.id)"
-                    class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs">
-              <i class="bi bi-plus-lg text-xs"></i>
-              <span>Agregar Insumo / Tela</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <!-- Botón Marcar todos listos para recoger -->
+              <button (click)="marcarTodosListosParaRecoger(sol)"
+                      class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      title="Marcar todos los insumos de esta muestra como listos para recoger">
+                <i class="bi bi-check2-all text-xs"></i>
+                <span>Marcar Todos Listos</span>
+              </button>
+
+              <!-- Botón rápido para agregar insumo adicional a esta muestra -->
+              <button (click)="abrirModalAgregarMaterial(sol.id)"
+                      class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                <i class="bi bi-plus-lg text-xs"></i>
+                <span>Agregar Insumo / Tela</span>
+              </button>
+            </div>
           </div>
 
           <!-- Si no tiene materiales registrados -->
@@ -326,12 +329,10 @@
                 <tr>
                   <th class="py-2.5 px-3">Tipo / Grupo</th>
                   <th class="py-2.5 px-3">Referencia / Descripción</th>
-                  <th class="py-2.5 px-3">Color / Variante</th>
+                  <th class="py-2.5 px-3">Zona / Bodega</th>
                   <th class="py-2.5 px-3 text-center">Req.</th>
-                  <th class="py-2.5 px-3 text-center">Entregado</th>
-                  <th class="py-2.5 px-3 text-center">Pendiente</th>
+                  <th class="py-2.5 px-3">Costo Unitario</th>
                   <th class="py-2.5 px-3 text-center">Estado</th>
-                  <th class="py-2.5 px-3">Último Despacho</th>
                   <th class="py-2.5 px-3 text-right">Acción</th>
                 </tr>
               </thead>
@@ -355,24 +356,26 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap mt-0.5">
                       <span *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400">
-                        Para prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
+                        Prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
                       </span>
-                      <!-- Zona física en bodega para picking -->
-                      <span *ngIf="mat.ubicacion_principal"
-                            class="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-700 bg-indigo-50/80 px-1.5 py-0.2 rounded border border-indigo-200"
-                            title="Ubicación física en bodega para picking de materiales">
-                        <i class="bi bi-geo-alt-fill text-[8px] text-indigo-500"></i> {{ mat.ubicacion_principal }}
+                      <span *ngIf="mat.siesa_color" class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                        {{ mat.siesa_color }}
                       </span>
                     </div>
                   </td>
 
-                  <!-- Color -->
+                  <!-- Zona / Bodega -->
                   <td class="py-2.5 px-3">
-                    <span *ngIf="mat.siesa_color" class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700">
-                      <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                      {{ mat.siesa_color }}
+                    <span *ngIf="mat.ubicacion_principal"
+                          class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs"
+                          title="Ubicación física en bodega para picking de materiales">
+                      <i class="bi bi-geo-alt-fill text-indigo-500 text-xs"></i>
+                      <span>{{ mat.ubicacion_principal }}</span>
                     </span>
-                    <span *ngIf="!mat.siesa_color" class="text-slate-400 text-[11px] italic">Estándar</span>
+                    <span *ngIf="!mat.ubicacion_principal" class="text-slate-400 text-[11px] italic">
+                      Sin zona
+                    </span>
                   </td>
 
                   <!-- Cant Requerida -->
@@ -380,55 +383,44 @@
                     {{ mat.cantidad_requerida }} <span class="text-[10px] text-slate-400">{{ mat.unidad_medida }}</span>
                   </td>
 
-                  <!-- Cant Entregada -->
-                  <td class="py-2.5 px-3 text-center font-bold"
-                      [ngClass]="{
-                        'text-emerald-600 font-black': mat.estado_entrega === 'ENTREGADO',
-                        'text-amber-600': mat.estado_entrega === 'PARCIAL',
-                        'text-slate-400': mat.estado_entrega === 'PENDIENTE'
-                      }">
-                    {{ mat.cantidad_entregada || 0 }} <span class="text-[10px]">{{ mat.unidad_medida }}</span>
+                  <!-- Costo Unitario con semáforo y ajuste manual -->
+                  <td class="py-2.5 px-3">
+                    <div class="flex items-center justify-between gap-1.5">
+                      <div>
+                        <div class="font-bold text-slate-900 text-xs">
+                          {{ mat.costo_vigente_final ? ('$' + (mat.costo_vigente_final | number:'1.0-2')) : 'Sin costo' }}
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold border mt-0.5"
+                              [ngClass]="getClaseAntiguedadCosto(mat)">
+                          <i class="bi bi-clock-history text-[8px]"></i>
+                          {{ getTextoAntiguedadCosto(mat) }}
+                        </span>
+                      </div>
+                      <button (click)="editarCostoManual(mat)"
+                              class="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                              title="Ajustar costo manualmente en Logística">
+                        <i class="bi bi-pencil-square text-xs"></i>
+                      </button>
+                    </div>
                   </td>
 
-                  <!-- Saldo Pendiente -->
-                  <td class="py-2.5 px-3 text-center font-mono font-bold text-rose-600">
-                    {{ (mat.cantidad_requerida - (mat.cantidad_entregada || 0)) > 0 ? (mat.cantidad_requerida - (mat.cantidad_entregada || 0)) : 0 }}
-                  </td>
-
-                  <!-- Badge Estado Semáforo -->
+                  <!-- Estado Listo para Recoger / Pendiente -->
                   <td class="py-2.5 px-3 text-center">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
-                          [ngClass]="{
-                            'bg-emerald-100 text-emerald-800 border border-emerald-200': mat.estado_entrega === 'ENTREGADO',
-                            'bg-amber-100 text-amber-800 border border-amber-200': mat.estado_entrega === 'PARCIAL',
-                            'bg-rose-100 text-rose-800 border border-rose-200': mat.estado_entrega === 'PENDIENTE',
-                            'bg-slate-100 text-slate-600 border border-slate-200': mat.estado_entrega === 'NO_DISPONIBLE'
-                          }">
-                      <i class="bi" [ngClass]="{
-                        'bi-check-circle-fill text-emerald-600': mat.estado_entrega === 'ENTREGADO',
-                        'bi-circle-half text-amber-600': mat.estado_entrega === 'PARCIAL',
-                        'bi-exclamation-circle text-rose-600': mat.estado_entrega === 'PENDIENTE',
-                        'bi-slash-circle text-slate-400': mat.estado_entrega === 'NO_DISPONIBLE'
-                      }"></i>
-                      {{ mat.estado_entrega }}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
+                          [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'">
+                      <i class="bi" [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bi-check2-circle text-emerald-600' : 'bi-clock text-amber-600'"></i>
+                      {{ mat.estado_entrega === 'ENTREGADO' ? 'Listo' : 'Pendiente' }}
                     </span>
                   </td>
 
-                  <!-- Último Despacho -->
-                  <td class="py-2.5 px-3 text-[10px] text-slate-500">
-                    <div *ngIf="mat.fecha_ultimo_despacho">
-                      <span class="font-semibold text-slate-700">{{ mat.fecha_ultimo_despacho | date:'dd/MM HH:mm' }}</span>
-                      <span *ngIf="mat.usuario_despachador" class="block text-slate-400">por {{ mat.usuario_despachador.firstName }}</span>
-                    </div>
-                    <span *ngIf="!mat.fecha_ultimo_despacho" class="text-slate-400 italic">Sin entregas</span>
-                  </td>
-
                   <!-- Acciones -->
-                  <td class="py-2.5 px-3 text-right space-x-1">
-                    <button (click)="abrirModalDespacho(mat, sol)"
-                            class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition cursor-pointer shadow-2xs"
-                            title="Registrar entrega de material">
-                      <i class="bi bi-truck mr-1 text-[10px]"></i>Despachar
+                  <td class="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
+                    <button (click)="toggleListoParaRecoger(mat, sol)"
+                            class="px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer shadow-2xs inline-flex items-center gap-1"
+                            [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'"
+                            [title]="mat.estado_entrega === 'ENTREGADO' ? 'Click para volver a pendiente' : 'Click para marcar listo para recoger'">
+                      <i class="bi" [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bi-check2 text-xs' : 'bi-box-seam text-xs'"></i>
+                      <span>{{ mat.estado_entrega === 'ENTREGADO' ? 'Listo' : 'Listo para recoger' }}</span>
                     </button>
                     <button (click)="eliminarMaterial(mat.id)"
                             class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
