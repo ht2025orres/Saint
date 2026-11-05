@@ -100,6 +100,8 @@ export interface Solicitud {
   imagen_referencia_url?: string;
   estado?: string;
   siesa_opm_consecutivo?: string | null;
+  siesa_rqt_consecutivo?: string | null;
+  liberado_logistica?: boolean;
   mold_id?: number | null;
   items?: SolicitudItem[];
   versiones?: SolicitudVersion[];
@@ -324,6 +326,13 @@ export class ComercialService {
   anclarRqtSiesa(solicitudId: number, siesaRqtConsecutivo: string): Observable<any> {
     return this.http.put<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/anclar-rqt-siesa`, {
       siesa_rqt_consecutivo: siesaRqtConsecutivo,
+      usuario_id: this.uid()
+    });
+  }
+
+  liberarSolicitudLogistica(solicitudId: number, materialIds?: number[]): Observable<any> {
+    return this.http.put<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/liberar-logistica`, {
+      material_ids: materialIds || [],
       usuario_id: this.uid()
     });
   }

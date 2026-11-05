@@ -2729,6 +2729,55 @@ export class MuestrasDetailComponent implements OnInit {
     });
   }
 
+  isEnviandoLogistica = false;
+
+  enviarALogistica(): void {
+    if (!this.solicitudId) return;
+
+    const definidos = (this.materialesAgrupados || []).filter(m => m.estadoDefinicion !== 'PENDIENTE').length;
+    const pendientes = (this.materialesAgrupados || []).filter(m => m.estadoDefinicion === 'PENDIENTE').length;
+
+    Swal.fire({
+      title: '¿Enviar a Logística / Abastecimiento?',
+      html: `
+        <div class="text-left text-xs space-y-2">
+          <p>Se habilitará esta solicitud en el panel de Logística para que puedan iniciar el alistamiento y picking en bodega.</p>
+          <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+            <p class="text-emerald-700 font-bold mb-0">✓ ${definidos} material(es) aprobados y listos para alistar</p>
+            ${pendientes > 0 ? `<p class="text-amber-600 font-medium mb-0">⚠️ ${pendientes} material(es) pendientes (Logística no los verá hasta que los vincules)</p>` : '<p class="text-slate-500 mb-0 font-medium">Todos los materiales están completos.</p>'}
+          </div>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar a Logística',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.isEnviandoLogistica = true;
+        this.comercialService.liberarSolicitudLogistica(this.solicitudId).subscribe({
+          next: (res) => {
+            this.isEnviandoLogistica = false;
+            if (this.muestra) {
+              this.muestra.liberado_logistica = true;
+            }
+            Swal.fire({
+              title: '¡Enviado a Logística!',
+              text: res.message || 'La solicitud ya es visible para Logística con sus materiales aprobados.',
+              icon: 'success'
+            });
+            this.loadMateriales(false, true);
+          },
+          error: (err) => {
+            this.isEnviandoLogistica = false;
+            Swal.fire('Error', err.error?.message || 'No se pudo enviar a logística', 'error');
+          }
+        });
+      }
+    });
+  }
+
   eliminarMaterial(id: number): void {
     Swal.fire({
       title: '¿Eliminar material?',

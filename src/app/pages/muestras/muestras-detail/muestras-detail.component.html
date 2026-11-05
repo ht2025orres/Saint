@@ -226,6 +226,24 @@
             title="Descargar archivo plano formateado para importar OPM en SIESA">
             <i class="bi bi-file-earmark-arrow-down-fill text-xs"></i> Plano SIESA
           </button>
+
+          <!-- Botón / Estado de Envío a Logística -->
+          <button *ngIf="!muestra?.liberado_logistica && !muestra?.siesa_opm_consecutivo"
+            type="button"
+            (click)="enviarALogistica()"
+            [disabled]="isEnviandoLogistica"
+            class="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Habilitar y enviar los materiales aprobados a Logística para alistamiento en bodega">
+            <i class="bi" [ngClass]="isEnviandoLogistica ? 'bi-arrow-repeat animate-spin' : 'bi-send-check-fill'"></i>
+            <span>Enviar a Logística</span>
+          </button>
+
+          <span *ngIf="muestra?.liberado_logistica || muestra?.siesa_opm_consecutivo"
+            class="px-3 py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-black shadow-2xs inline-flex items-center gap-1.5"
+            title="Esta solicitud ya fue enviada a Logística y está disponible en bodega">
+            <i class="bi bi-check-circle-fill text-emerald-600"></i> En Logística
+          </span>
+
           <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')"
             class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all">
             <i class="bi bi-plus-circle-fill"></i> + Agregar Insumo / Tela
