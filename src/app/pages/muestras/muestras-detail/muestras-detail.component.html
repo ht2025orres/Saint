@@ -325,20 +325,20 @@
 
       <div *ngIf="!isLoadingMateriales && materialesAgrupados && materialesAgrupados.length > 0"
         class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
+        <table class="w-full text-left text-xs border-collapse table-fixed">
           <thead>
             <tr
               class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
-              <th class="p-2.5 w-7 text-center"></th>
-              <th class="p-2.5">Tipo / Grupo</th>
+              <th class="p-2.5 w-8 text-center"></th>
+              <th class="p-2.5 w-28">Tipo / Grupo</th>
               <th class="p-2.5">Material & Especificación</th>
-              <th class="p-2.5 text-center" title="Número de prendas que requieren este material">Prendas</th>
-              <th class="p-2.5 text-center">Estado Definición</th>
-              <th class="p-2.5 text-center">Requerido</th>
-              <th class="p-2.5 text-center">Entregado</th>
-              <th class="p-2.5 text-center">Costo Unit. (Kardex / Logística)</th>
-              <th class="p-2.5 text-center">Estado Entrega</th>
-              <th class="p-2.5 text-right">Acciones</th>
+              <th class="p-2.5 w-44 text-center" title="Número de prendas que requieren este material">Prendas</th>
+              <th class="p-2.5 w-28 text-center">Estado Definición</th>
+              <th class="p-2.5 w-28 text-center">Requerido</th>
+              <th class="p-2.5 w-28 text-center">Entregado</th>
+              <th class="p-2.5 w-36 text-center">Costo Unitario</th>
+              <th class="p-2.5 w-28 text-center">Estado Entrega</th>
+              <th class="p-2.5 w-28 text-right pr-3">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -351,9 +351,9 @@
                 'hover:bg-slate-50/80': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'PENDIENTE'
               }">
                 <!-- 1. Botón expandir acordeón -->
-                <td class="p-2.5 text-center">
+                <td class="p-2.5 text-center align-middle">
                   <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
-                    class="w-6 h-6 rounded-md hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-transform cursor-pointer"
+                    class="w-6 h-6 rounded-md hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-transform cursor-pointer mx-auto"
                     [class.rotate-90]="isMaterialExpanded(mat.key)"
                     title="Ver en qué prendas y partes se usa este material">
                     <i class="bi bi-chevron-right text-xs"></i>
@@ -361,9 +361,9 @@
                 </td>
 
                 <!-- 2. Tipo / Grupo -->
-                <td class="p-2.5 font-bold">
+                <td class="p-2.5 font-bold align-middle">
                   <div *ngIf="mat.tipo_material === 'TELA'">
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                    <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
                       <i class="bi bi-layers-fill text-[9px]"></i> TELA
                     </span>
                     <span class="text-[10px] text-blue-600 font-semibold block mt-0.5">
@@ -377,62 +377,41 @@
                           }">
                       {{ mat.tipo_material }}
                     </span>
-                    <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{ mat.grupo_insumo }}</span>
+                    <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal mt-0.5">{{ mat.grupo_insumo }}</span>
                   </div>
                 </td>
 
-                <!-- 3. Material & Especificación -->
-                <td class="p-2.5">
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="font-black text-slate-900 text-xs">{{ mat.nombre }}</span>
-                    <!-- Rol / Etiqueta de la tela -->
-                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'PRINCIPAL'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                      Tela Base
-                    </span>
-                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'COMBINACION'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                      Combinación
-                    </span>
-                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'FORRO'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      Forro
-                    </span>
-                    <!-- Prenda asociada si es exclusiva de una prenda -->
-                    <span *ngIf="mat.prendasCount === 1"
-                      class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center gap-1"
-                      [title]="'Asignado exclusivamente a: ' + (mat.prendasDesglose?.[0]?.prendaNombre || mat.prendaAsignada?.descripcion)">
-                      <i class="bi bi-tag-fill text-[9px] text-blue-500"></i> {{ mat.prendasDesglose?.[0]?.prendaNombre || mat.prendaAsignada?.descripcion }}
-                    </span>
-                    <span *ngIf="mat.prendasCount > 1 && mat.tipo_material === 'TELA'"
-                      class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1"
-                      title="Esta tela aplica a múltiples prendas de la muestra">
-                      <i class="bi bi-collection text-[8px] text-slate-400"></i> Compartida ({{ mat.prendasCount }} prendas)
-                    </span>
-                  </div>
+                <!-- 3. Material & Especificación (Limpio, sin repetir prendas ni roles) -->
+                <td class="p-2.5 align-middle">
+                  <div class="space-y-0.5">
+                    <span class="font-black text-slate-900 text-xs block truncate" [title]="mat.nombre">{{ mat.nombre }}</span>
 
-                  <!-- Detalle según estado de definición -->
-                  <div *ngIf="mat.estadoDefinicion === 'SIESA'"
-                    class="text-[11px] text-slate-600 flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span class="font-mono text-blue-900 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 text-[10px]">
-                      Ref: {{ mat.siesa_referencia }}
-                    </span>
-                    <span class="font-medium text-slate-800">{{ mat.siesa_descripcion }}</span>
-                    <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px]">· Color: {{ mat.siesa_color }}</span>
-                  </div>
+                    <!-- Detalle según estado de definición -->
+                    <div *ngIf="mat.estadoDefinicion === 'SIESA'"
+                      class="text-[11px] text-slate-600 flex items-center gap-1.5 flex-wrap">
+                      <span class="font-mono text-blue-900 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 text-[10px] shrink-0">
+                        Ref: {{ mat.siesa_referencia }}
+                      </span>
+                      <span class="font-medium text-slate-700 truncate max-w-[260px]" [title]="mat.siesa_descripcion">{{ mat.siesa_descripcion }}</span>
+                      <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px] shrink-0">· Color: {{ mat.siesa_color }}</span>
+                    </div>
 
-                  <div *ngIf="mat.estadoDefinicion === 'MANUAL'"
-                    class="text-[11px] text-slate-700 italic mt-0.5 flex items-center gap-1">
-                    <i class="bi bi-pencil-fill text-[9px] text-slate-400"></i>
-                    <span>{{ mat.descripcion_personalizada }}</span>
-                  </div>
+                    <div *ngIf="mat.estadoDefinicion === 'MANUAL'"
+                      class="text-[11px] text-slate-600 italic flex items-center gap-1">
+                      <i class="bi bi-pencil-fill text-[9px] text-slate-400 shrink-0"></i>
+                      <span class="truncate max-w-[260px]" [title]="mat.descripcion_personalizada">{{ mat.descripcion_personalizada }}</span>
+                    </div>
 
-                  <div *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
-                    class="inline-flex items-center gap-1 text-[11px] text-amber-700 font-medium mt-0.5 bg-amber-50/70 px-2 py-0.5 rounded-md border border-amber-200/80">
-                    <i class="bi bi-link-45deg text-amber-600 text-[11px]"></i>
-                    <span>Pendiente por vincular a ítem de catálogo SIESA</span>
+                    <div *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
+                      class="inline-flex items-center gap-1 text-[10px] text-amber-700 font-medium bg-amber-50/70 px-1.5 py-0.5 rounded border border-amber-200/80">
+                      <i class="bi bi-link-45deg text-amber-600 text-[10px]"></i>
+                      <span>Pendiente por vincular en SIESA</span>
+                    </div>
                   </div>
                 </td>
 
                 <!-- 4. Prendas -->
-                <td class="p-2.5 text-center">
+                <td class="p-2.5 text-center align-middle">
                   <div class="flex items-center justify-center">
                     <span *ngIf="mat.prendasCount === 1"
                       class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-blue-50/80 text-blue-900 border border-blue-200 max-w-[160px] shadow-2xs"
@@ -454,7 +433,7 @@
                 </td>
 
                 <!-- 5. Estado de Definición (Badge) -->
-                <td class="p-2.5 text-center">
+                <td class="p-2.5 text-center align-middle">
                   <span *ngIf="mat.estadoDefinicion === 'SIESA'"
                     class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
                     <i class="bi bi-check-circle-fill text-[8px] text-emerald-600"></i> SIESA
@@ -515,7 +494,7 @@
                 </td>
 
                 <!-- 7. Entregado -->
-                <td class="p-2.5 text-center font-bold font-mono" [ngClass]="{
+                <td class="p-2.5 text-center font-bold font-mono align-middle" [ngClass]="{
                   'text-emerald-700 font-black': (mat.cantidad_entregada_total || 0) >= (mat.cantidad_requerida_total || 0),
                   'text-amber-700': (mat.cantidad_entregada_total || 0) > 0 && (mat.cantidad_entregada_total || 0) < (mat.cantidad_requerida_total || 0),
                   'text-slate-400': (mat.cantidad_entregada_total || 0) === 0
@@ -554,7 +533,7 @@
                 </td>
 
                 <!-- 8. Estado Entrega -->
-                <td class="p-2.5 text-center">
+                <td class="p-2.5 text-center align-middle">
                   <span
                     class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border inline-flex items-center gap-1"
                     [ngClass]="{
@@ -572,7 +551,7 @@
                 </td>
 
                 <!-- 9. Acciones (Botones integrados como la fila) -->
-                <td class="p-2.5 text-right">
+                <td class="p-2.5 text-right align-middle pr-3">
                   <div class="flex items-center justify-end">
                     <!-- Botón Vincular si falta por definir (integrado estilo fila) -->
                     <button *ngIf="mat.estadoDefinicion === 'PENDIENTE'" (click)="abrirModalDefinirMaterial(mat)"
