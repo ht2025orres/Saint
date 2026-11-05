@@ -345,6 +345,8 @@
             <ng-container *ngFor="let mat of materialesFiltrados; trackBy: trackByMaterialKey">
               <!-- FILA PRINCIPAL DEL MATERIAL -->
               <tr class="transition-colors border-b border-slate-100" [ngClass]="{
+                'border-l-4 border-l-emerald-500': mat.estadoDefinicion !== 'PENDIENTE',
+                'border-l-4 border-l-transparent': mat.estadoDefinicion === 'PENDIENTE',
                 'bg-blue-50/70': isMaterialExpanded(mat.key),
                 'bg-emerald-50/30 hover:bg-emerald-50/60': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'ENTREGADO',
                 'bg-amber-50/25 hover:bg-amber-50/50': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'PARCIAL',
@@ -571,7 +573,7 @@
               </tr>
 
               <!-- FILA EXPANDIDA: DESGLOSE DE PRENDAS Y PARTES (ACORDEÓN CON TOQUES AZUL SAINT) -->
-              <tr *ngIf="isMaterialExpanded(mat.key)" class="bg-blue-50/20 border-b border-blue-100">
+              <tr *ngIf="isMaterialExpanded(mat.key)" class="bg-blue-50/20 border-b border-blue-100" [ngClass]="mat.estadoDefinicion !== 'PENDIENTE' ? 'border-l-4 border-l-emerald-500/50' : 'border-l-4 border-l-transparent'">
                 <td colspan="10" class="p-3 pl-8 pr-4">
                   <div class="space-y-2">
                     <div class="flex items-center justify-between flex-wrap gap-2">
