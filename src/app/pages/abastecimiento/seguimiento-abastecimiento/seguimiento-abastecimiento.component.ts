@@ -384,4 +384,103 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  // ==================== PLANO RQT Y ANCLAJE SIESA ====================
+
+  generarPlanoRqt(sol: any, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    Swal.fire({
+      title: 'Generando Plano RQT SIESA...',
+      text: 'Estructurando archivo de Requisición de Taller para importación en SIESA',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.comercialService.generarArchivoPlanoRqt(sol.id).subscribe({
+      next: (res) => {
+        Swal.close();
+        if (res.success && res.data) {
+          const blob = new Blob([res.data.contenido], { type: 'text/plain;charset=utf-8' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = res.data.nombre_archivo;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+
+          Swal.fire({
+            title: '¡Plano RQT Descargado!',
+            html: `
+              <div class="text-left text-xs space-y-2">
+                <p>Archivo: <strong>${res.data.nombre_archivo}</strong></p>
+                <p>Total registros: <strong>${res.data.total_lineas}</strong></p>
+                ${res.data.opm_asociada ? `<p class="text-emerald-700 font-bold">OPM vinculada: #${res.data.opm_asociada}</p>` : '<p class="text-amber-600 font-semibold">⚠️ Advertencia: No tiene OPM vinculada aún.</p>'}
+                <p class="text-slate-500 italic mt-2">Importa este archivo en SIESA para crear la Requisición de Taller (RQT) en Bodega MP001.</p>
+              </div>
+            `,
+            icon: 'success'
+          });
+        }
+      },
+      error: (err) => {
+        Swal.fire('Error', err.error?.message || 'No se pudo generar el plano RQT', 'error');
+      }
+    });
+  }
+
+  abrirModalAnclarRqt(sol: any, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    Swal.fire({
+      title: 'Anclar Consecutivo RQT de SIESA',
+      text: `Ingresa el número oficial de la Requisición de Taller generada en SIESA para la solicitud ${sol.codigo}:`,
+      input: 'text',
+      inputValue: sol.siesa_rqt_consecutivo || '',
+      inputPlaceholder: 'Ej: 00014523 o 14523',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar y Anclar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#059669',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'Debes ingresar un consecutivo válido';
+        }
+        return null;
+      }
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        const consecutivo = res.value.trim();
+        this.comercialService.anclarRqtSiesa(sol.id, consecutivo).subscribe({
+          next: () => {
+            sol.siesa_rqt_consecutivo = consecutivo;
+            const Toast = Swal.mixin({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 2500,
+              timerProgressBar: true
+            });
+            Toast.fire({
+              icon: 'success',
+              title: `RQT #${consecutivo} anclada exitosamente`
+            });
+          },
+          error: (err) => {
+            Swal.fire('Error', err.error?.message || 'No se pudo anclar la RQT', 'error');
+          }
+        });
+      }
+    });
+  }
 }

@@ -226,11 +226,6 @@
             title="Descargar archivo plano formateado para importar OPM en SIESA">
             <i class="bi bi-file-earmark-arrow-down-fill text-xs"></i> Plano SIESA
           </button>
-          <button (click)="despacharTodosLosMateriales()"
-            class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
-            title="Registrar entrega o despacho total de insumos">
-            <i class="bi bi-truck text-xs"></i> Despachar Insumos
-          </button>
           <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')"
             class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all">
             <i class="bi bi-plus-circle-fill"></i> + Agregar Insumo / Tela
@@ -242,7 +237,7 @@
       <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 flex items-center gap-4 flex-wrap">
         <div class="flex-1 min-w-[200px]">
           <div class="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
-            <span>Progreso de Preparación y Despacho en Bodega</span>
+            <span>Suministro y Alistamiento en Bodega (Logística)</span>
             <span class="font-mono text-blue-600 font-black">{{ materialesData.metricas?.porcentaje_entrega || 0
               }}%</span>
           </div>
@@ -394,6 +389,11 @@
                       </span>
                       <span class="font-medium text-slate-700 truncate max-w-[260px]" [title]="mat.siesa_descripcion">{{ mat.siesa_descripcion }}</span>
                       <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px] shrink-0">· Color: {{ mat.siesa_color }}</span>
+                      <span *ngIf="mat.ubicacion_principal"
+                        class="inline-flex items-center gap-1 text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 shrink-0"
+                        title="Ubicación física en bodega (módulo inventario)">
+                        <i class="bi bi-geo-alt-fill text-[8px] text-slate-400"></i> {{ mat.ubicacion_principal }}
+                      </span>
                     </div>
 
                     <div *ngIf="mat.estadoDefinicion === 'MANUAL'"

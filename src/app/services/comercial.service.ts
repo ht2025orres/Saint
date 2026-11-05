@@ -317,6 +317,17 @@ export class ComercialService {
     return this.http.get<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/consultar-opm-siesa`);
   }
 
+  generarArchivoPlanoRqt(solicitudId: number): Observable<{ success: boolean; data: { nombre_archivo: string; total_lineas: number; contenido: string; opm_asociada?: string; total_materiales: number } }> {
+    return this.http.post<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/siesa-rqt-plano`, {});
+  }
+
+  anclarRqtSiesa(solicitudId: number, siesaRqtConsecutivo: string): Observable<any> {
+    return this.http.put<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/anclar-rqt-siesa`, {
+      siesa_rqt_consecutivo: siesaRqtConsecutivo,
+      usuario_id: this.uid()
+    });
+  }
+
   listarSolicitudesAbastecimiento(filtros?: any): Observable<{ success: boolean; data: any[]; pagination: any }> {
     let params = new HttpParams();
     if (filtros) {

@@ -220,6 +220,12 @@
                 <span *ngIf="sol.fecha_entrega_muestra" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
                   <i class="bi bi-calendar3 mr-1 text-[9px]"></i>Entrega: {{ sol.fecha_entrega_muestra | date:'dd/MM/yyyy' }}
                 </span>
+                <span *ngIf="sol.siesa_opm_consecutivo" class="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 font-mono" title="OPM SIESA Oficial">
+                  <i class="bi bi-gear-fill mr-1 text-[9px] text-blue-600"></i>OPM: #{{ sol.siesa_opm_consecutivo }}
+                </span>
+                <span *ngIf="sol.siesa_rqt_consecutivo" class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono" title="Requisición SIESA Vinculada">
+                  <i class="bi bi-clipboard2-check-fill mr-1 text-[9px] text-emerald-600"></i>RQT: #{{ sol.siesa_rqt_consecutivo }}
+                </span>
               </div>
               <p class="text-xs text-slate-500 mt-0.5 font-medium">
                 {{ sol.items?.length || 0 }} prendas en solicitud ·
@@ -230,11 +236,11 @@
           </div>
 
           <!-- Barra de Progreso y Acciones -->
-          <div class="flex items-center gap-4 shrink-0">
+          <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
             <!-- Barra Semáforo -->
-            <div class="w-44 space-y-1">
+            <div class="w-36 space-y-1">
               <div class="flex justify-between text-[11px] font-bold">
-                <span class="text-slate-500">Progreso Entrega</span>
+                <span class="text-slate-500">Entrega</span>
                 <span [ngClass]="{
                   'text-rose-600': sol.metricas_abastecimiento?.semaforo === 'PENDIENTE',
                   'text-amber-600': sol.metricas_abastecimiento?.semaforo === 'PARCIAL',
@@ -252,17 +258,33 @@
               </div>
             </div>
 
+            <!-- Botón Plano RQT SIESA -->
+            <button (click)="generarPlanoRqt(sol, $event)"
+                    class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-2xs"
+                    title="Generar archivo plano RQT (Requisición de Taller) para SIESA">
+              <i class="bi bi-file-earmark-arrow-down text-xs"></i>
+              <span>Plano RQT</span>
+            </button>
+
+            <!-- Botón Anclar RQT SIESA -->
+            <button (click)="abrirModalAnclarRqt(sol, $event)"
+                    class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border border-slate-300 hover:bg-slate-100 text-slate-700 shadow-2xs"
+                    title="Anclar consecutivo oficial de RQT generado en SIESA">
+              <i class="bi bi-link-45deg text-sm"></i>
+              <span>{{ sol.siesa_rqt_consecutivo ? '#' + sol.siesa_rqt_consecutivo : 'Anclar RQT' }}</span>
+            </button>
+
             <!-- Botón desplegar materiales -->
             <button (click)="toggleExpand(sol.id)"
-                    class="px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                     [ngClass]="expandedSolicitudId === sol.id ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'">
               <i class="bi" [ngClass]="expandedSolicitudId === sol.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-              <span>{{ expandedSolicitudId === sol.id ? 'Ocultar Insumos' : 'Ver Insumos' }}</span>
+              <span>{{ expandedSolicitudId === sol.id ? 'Ocultar' : 'Ver Insumos' }}</span>
             </button>
 
             <!-- Botón ir a ficha técnica / muestra -->
             <button (click)="verDetalleMuestra(sol.id)"
-                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
+                    class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
                     title="Ver ficha técnica completa en Muestras">
               <i class="bi bi-arrow-up-right text-xs"></i>
             </button>
@@ -331,8 +353,16 @@
                       <span *ngIf="mat.siesa_referencia" class="font-mono text-indigo-700 mr-1">{{ mat.siesa_referencia }} -</span>
                       <span>{{ mat.siesa_descripcion || mat.descripcion_personalizada || 'Insumo sin descripción' }}</span>
                     </div>
-                    <div *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400 mt-0.5">
-                      Para prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
+                    <div class="flex items-center gap-2 flex-wrap mt-0.5">
+                      <span *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400">
+                        Para prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
+                      </span>
+                      <!-- Zona física en bodega para picking -->
+                      <span *ngIf="mat.ubicacion_principal"
+                            class="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-700 bg-indigo-50/80 px-1.5 py-0.2 rounded border border-indigo-200"
+                            title="Ubicación física en bodega para picking de materiales">
+                        <i class="bi bi-geo-alt-fill text-[8px] text-indigo-500"></i> {{ mat.ubicacion_principal }}
+                      </span>
                     </div>
                   </td>
 

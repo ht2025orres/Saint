@@ -1948,6 +1948,8 @@ export class MuestrasDetailComponent implements OnInit {
           antiguedad_dias: m.antiguedad_dias ?? null,
           estado_costo: m.estado_costo ?? 'SIN_MOVIMIENTO',
           fuente_costo: m.fuente_costo ?? 'SIESA',
+          ubicacion_principal: m.ubicacion_principal ?? null,
+          zonas_bodega: m.zonas_bodega ?? [],
           prendaAsignada: itemObj ? {
             id: itemObj.id,
             descripcion: itemObj.descripcion,
@@ -1965,6 +1967,10 @@ export class MuestrasDetailComponent implements OnInit {
         group.siesa_referencia = m.siesa_referencia;
         group.siesa_descripcion = m.siesa_descripcion;
         group.siesa_color = m.siesa_color;
+      }
+      if (m.ubicacion_principal && !group.ubicacion_principal) {
+        group.ubicacion_principal = m.ubicacion_principal;
+        group.zonas_bodega = m.zonas_bodega || [];
       }
       if (m.descripcion_personalizada && !group.descripcion_personalizada) {
         group.descripcion_personalizada = m.descripcion_personalizada;
