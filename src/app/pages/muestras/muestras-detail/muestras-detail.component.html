@@ -455,7 +455,7 @@
                     class="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-blue-50 hover:text-blue-900 border border-transparent hover:border-blue-200 transition-all cursor-pointer shadow-2xs"
                     title="Clic para editar directamente los metros o unidades requeridos">
                     <span class="font-black text-xs text-slate-900 group-hover:text-blue-900">
-                      {{ mat.cantidad_requerida_total }} {{ mat.unidad_medida }}
+                      {{ mat.cantidad_requerida_total }} {{ abreviarUnidad(mat.unidad_medida) }}
                     </span>
                     <i class="bi bi-pencil text-[10px] text-slate-400 group-hover:text-blue-600 transition-colors"></i>
                   </div>
@@ -499,7 +499,7 @@
                   'text-amber-700': (mat.cantidad_entregada_total || 0) > 0 && (mat.cantidad_entregada_total || 0) < (mat.cantidad_requerida_total || 0),
                   'text-slate-400': (mat.cantidad_entregada_total || 0) === 0
                 }">
-                  {{ mat.cantidad_entregada_total || 0 }} {{ mat.unidad_medida }}
+                  {{ mat.cantidad_entregada_total || 0 }} {{ abreviarUnidad(mat.unidad_medida) }}
                 </td>
 
                 <!-- 7.5 Costo Kardex / Logística -->
@@ -551,14 +551,14 @@
                     <button *ngIf="mat.estadoDefinicion === 'PENDIENTE'" (click)="abrirModalDefinirMaterial(mat)"
                       class="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
                       title="Vincular con ítem de SIESA o especificar">
-                      <i class="bi bi-link-45deg text-xs"></i> Vincular Ítem
+                      <i class="bi bi-link-45deg text-xs"></i> Vincular
                     </button>
 
                     <!-- Botón Editar Vínculo si ya está definido -->
                     <button *ngIf="mat.estadoDefinicion !== 'PENDIENTE'" (click)="abrirModalDefinirMaterial(mat)"
                       class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                       title="Modificar vinculación de SIESA o especificación">
-                      <i class="bi bi-pencil text-[10px] text-slate-500"></i> Editar Vínculo
+                      <i class="bi bi-pencil text-[10px] text-slate-500"></i> Editar
                     </button>
                   </div>
                 </td>

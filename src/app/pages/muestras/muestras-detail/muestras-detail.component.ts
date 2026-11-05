@@ -2062,6 +2062,15 @@ export class MuestrasDetailComponent implements OnInit {
 
   // ==================== EDICIÓN INLINE DE REQUERIDO ====================
 
+  abreviarUnidad(unidad?: string): string {
+    if (!unidad) return '';
+    const u = unidad.trim().toUpperCase();
+    if (u === 'METROS' || u === 'METRO') return 'MTR';
+    if (u === 'UNIDAD' || u === 'UNIDADES') return 'UND';
+    if (u === 'KILOGRAMOS' || u === 'KILOGRAMO' || u === 'KILOS') return 'KG';
+    return unidad;
+  }
+
   iniciarEdicionRequerido(mat: any, event?: Event): void {
     if (event) {
       event.preventDefault();
