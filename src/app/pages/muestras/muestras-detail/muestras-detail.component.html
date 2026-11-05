@@ -6,45 +6,56 @@
   </div>
 
   <div *ngIf="!isLoading && muestra" class="max-w-[1680px] w-full mx-auto space-y-3">
-    
+
     <!-- BARRA SUPERIOR / CABECERA COMPACTA -->
-    <div class="bg-white rounded-2xl px-4 py-2.5 sm:py-3 border border-slate-200/80 shadow-2xs flex justify-between items-center flex-wrap gap-2.5">
+    <div
+      class="bg-white rounded-2xl px-4 py-2.5 sm:py-3 border border-slate-200/80 shadow-2xs flex justify-between items-center flex-wrap gap-2.5">
       <div class="flex items-center gap-3 min-w-0">
-        <button (click)="goBack()" title="Volver al listado" class="w-8 h-8 rounded-xl bg-white hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 flex items-center justify-center transition-all shadow-2xs shrink-0 cursor-pointer">
+        <button (click)="goBack()" title="Volver al listado"
+          class="w-8 h-8 rounded-xl bg-white hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 flex items-center justify-center transition-all shadow-2xs shrink-0 cursor-pointer">
           <i class="bi bi-arrow-left text-base font-bold"></i>
         </button>
         <div class="min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-black rounded-full uppercase tracking-wider shrink-0">
+            <span
+              class="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-black rounded-full uppercase tracking-wider shrink-0">
               Muestras & Taller Técnico
             </span>
             <span class="text-xs font-bold text-slate-300">·</span>
-            <h1 class="text-base sm:text-lg font-black text-slate-900 tracking-tight mb-0 truncate">{{ muestra.codigo }}</h1>
+            <h1 class="text-base sm:text-lg font-black text-slate-900 tracking-tight mb-0 truncate">{{ muestra.codigo }}
+            </h1>
           </div>
           <p class="text-xs text-slate-500 font-medium mt-0.5 mb-0 flex items-center gap-2 flex-wrap">
             <span class="flex items-center gap-1 text-slate-800 font-bold">
               <i class="bi bi-building text-blue-600"></i>
               {{ muestra.cliente_nombre }}
             </span>
-            <span *ngIf="muestra.cliente_nit" class="text-slate-400 font-mono text-[11px]">(NIT: {{ muestra.cliente_nit }})</span>
-            
+            <span *ngIf="muestra.cliente_nit" class="text-slate-400 font-mono text-[11px]">(NIT: {{ muestra.cliente_nit
+              }})</span>
+
             <!-- Creador / Responsable de la carga -->
-            <span *ngIf="muestra.usuario_creacion_nombre || muestra.creador" class="text-slate-600 text-[11px] flex items-center gap-1 font-semibold bg-blue-50/60 px-2 py-0.5 rounded-md border border-blue-100">
+            <span *ngIf="muestra.usuario_creacion_nombre || muestra.creador"
+              class="text-slate-600 text-[11px] flex items-center gap-1 font-semibold bg-blue-50/60 px-2 py-0.5 rounded-md border border-blue-100">
               <i class="bi bi-person-badge-fill text-blue-600"></i>
               <span class="text-slate-500 font-normal">Creado por:</span>
-              <span class="text-blue-950 font-black">{{ muestra.usuario_creacion_nombre || muestra.creador?.name || (muestra.creador?.nombres ? (muestra.creador?.nombres + ' ' + (muestra.creador?.apellidos || '')) : '') }}</span>
-              <span *ngIf="muestra.creador?.cargo" class="text-blue-600/80 text-[10px] font-medium">· {{ muestra.creador.cargo }}</span>
+              <span class="text-blue-950 font-black">{{ muestra.usuario_creacion_nombre || muestra.creador?.name ||
+                (muestra.creador?.nombres ? (muestra.creador?.nombres + ' ' + (muestra.creador?.apellidos || '')) : '')
+                }}</span>
+              <span *ngIf="muestra.creador?.cargo" class="text-blue-600/80 text-[10px] font-medium">· {{
+                muestra.creador.cargo }}</span>
             </span>
 
-            <span *ngIf="muestra.created_at" class="text-slate-400 text-[11px]">· Creado: {{ muestra.created_at | date:'dd/MM/yyyy' }}</span>
+            <span *ngIf="muestra.created_at" class="text-slate-400 text-[11px]">· Creado: {{ muestra.created_at |
+              date:'dd/MM/yyyy' }}</span>
           </p>
         </div>
       </div>
 
       <!-- ESTADO Y ACCIONES DE FLUJO -->
       <div class="flex items-center gap-2 flex-wrap shrink-0">
-        <span class="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-2xs border flex items-center gap-1.5"
-              [ngClass]="{
+        <span
+          class="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-2xs border flex items-center gap-1.5"
+          [ngClass]="{
                 'bg-amber-50 text-amber-800 border-amber-200': !muestra.estado_muestra || muestra.estado_muestra === 'PENDIENTE',
                 'bg-blue-50 text-blue-800 border-blue-200': muestra.estado_muestra === 'EN_PROCESO',
                 'bg-emerald-50 text-emerald-800 border-emerald-200': muestra.estado_muestra === 'COMPLETADO'
@@ -58,14 +69,13 @@
         </span>
 
         <button *ngIf="!muestra.estado_muestra || muestra.estado_muestra === 'PENDIENTE'"
-                (click)="cambiarEstadoMuestra('EN_PROCESO')"
-                class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+          (click)="cambiarEstadoMuestra('EN_PROCESO')"
+          class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-play-circle-fill"></i> Iniciar Confección
         </button>
 
-        <button *ngIf="muestra.estado_muestra === 'EN_PROCESO'"
-                (click)="cambiarEstadoMuestra('COMPLETADO')"
-                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+        <button *ngIf="muestra.estado_muestra === 'EN_PROCESO'" (click)="cambiarEstadoMuestra('COMPLETADO')"
+          class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-check-circle-fill"></i> Completar Muestra
         </button>
       </div>
@@ -73,14 +83,15 @@
 
     <!-- TARJETAS DE INFORMACIÓN CLAVE (KPIS COMPACTAS CON AZUL SAINT) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
-      
+
       <!-- 1. Fecha Entrega -->
       <div class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
         <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs flex-shrink-0">
           <i class="bi bi-calendar-check"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Entrega</span>
+          <span
+            class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Entrega</span>
           <div class="text-xs font-black text-slate-800 truncate">
             {{ (muestra.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'No asignada' }}
           </div>
@@ -93,7 +104,8 @@
           <i class="bi bi-scissors"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Ítems</span>
+          <span
+            class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Ítems</span>
           <div class="text-xs font-black text-slate-800 truncate">
             {{ muestra.items?.length || 0 }} Prendas ({{ getTotalUnidades() }} Uds)
           </div>
@@ -106,7 +118,8 @@
           <i class="bi bi-stopwatch"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Tiempo SAM Est.</span>
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Tiempo
+            SAM Est.</span>
           <div class="text-xs font-black text-slate-800 truncate">
             {{ getSolicitudTotalTime() | number:'1.2-2' }} min
           </div>
@@ -119,8 +132,10 @@
           <i class="bi bi-box-seam"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Empaque / Despacho</span>
-          <div class="text-xs font-black text-slate-800 truncate" [title]="(muestra.material_empaque || 'Estándar') + ' / ' + (muestra.tipo_empaque || 'Bolsa Individual')">
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Empaque
+            / Despacho</span>
+          <div class="text-xs font-black text-slate-800 truncate"
+            [title]="(muestra.material_empaque || 'Estándar') + ' / ' + (muestra.tipo_empaque || 'Bolsa Individual')">
             {{ muestra.material_empaque || 'Estándar' }} / {{ muestra.tipo_empaque || 'Individual' }}
           </div>
         </div>
@@ -128,7 +143,8 @@
     </div>
 
     <!-- OBSERVACIONES GENERALES DE LA MUESTRA -->
-    <div *ngIf="muestra.observaciones" class="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 shadow-2xs flex items-start gap-2">
+    <div *ngIf="muestra.observaciones"
+      class="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 shadow-2xs flex items-start gap-2">
       <i class="bi bi-info-circle text-blue-600 text-xs mt-0.5 flex-shrink-0"></i>
       <div class="min-w-0 flex-1">
         <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500 mr-1.5">Observaciones:</span>
@@ -142,7 +158,8 @@
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 space-y-3.5">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-3">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg shadow-sm shadow-blue-500/20">
+          <div
+            class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg shadow-sm shadow-blue-500/20">
             <i class="bi bi-boxes"></i>
           </div>
           <div>
@@ -151,8 +168,7 @@
                 Insumos, Telas & Cadena de Abastecimiento
               </h3>
               <!-- BADGE SEMÁFORO -->
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border"
-                    [ngClass]="{
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border" [ngClass]="{
                       'bg-emerald-50 text-emerald-800 border-emerald-300': materialesData.metricas?.semaforo === 'ENTREGADO',
                       'bg-amber-50 text-amber-800 border-amber-300': materialesData.metricas?.semaforo === 'PARCIAL',
                       'bg-rose-50 text-rose-800 border-rose-300': materialesData.metricas?.semaforo === 'NO_DISPONIBLE',
@@ -168,25 +184,36 @@
               </span>
             </div>
             <p class="text-xs text-slate-500 font-medium mb-0 mt-0.5">
-              Control de materiales para taller: {{ materialesData.metricas?.entregados || 0 }} de {{ materialesData.metricas?.total || 0 }} insumos entregados
+              Control de materiales para taller: {{ materialesData.metricas?.entregados || 0 }} de {{
+              materialesData.metricas?.total || 0 }} insumos entregados
             </p>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
-          <button (click)="loadMateriales()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer" title="Recargar materiales">
+          <button (click)="loadMateriales()"
+            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+            title="Recargar materiales">
             <i class="bi bi-arrow-clockwise text-sm" [class.animate-spin]="isLoadingMateriales"></i>
           </button>
-          <button (click)="generarPlanoSiesa()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-500/20 flex items-center gap-1.5 cursor-pointer transition-all" title="Descargar archivo plano formateado para importar OPM en SIESA">
+          <button (click)="generarPlanoSiesa()"
+            class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-indigo-500/20 flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Descargar archivo plano formateado para importar OPM en SIESA">
             <i class="bi bi-file-earmark-arrow-down-fill text-xs"></i> Plano SIESA
           </button>
-          <button (click)="abrirModalAnclarOpm()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all" title="Anclar número de OPM generado por SIESA">
-            <i class="bi bi-link-45deg text-xs"></i> {{ muestra?.siesa_opm_consecutivo ? ('OPM: ' + muestra.siesa_opm_consecutivo) : 'Anclar OPM' }}
+          <button (click)="abrirModalAnclarOpm()"
+            class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Anclar número de OPM generado por SIESA">
+            <i class="bi bi-link-45deg text-xs"></i> {{ muestra?.siesa_opm_consecutivo ? ('OPM: ' +
+            muestra.siesa_opm_consecutivo) : 'Anclar OPM' }}
           </button>
-          <button (click)="despacharTodosLosMateriales()" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all" title="Registrar entrega o despacho total de insumos">
+          <button (click)="despacharTodosLosMateriales()"
+            class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Registrar entrega o despacho total de insumos">
             <i class="bi bi-truck text-xs"></i> Despachar Insumos
           </button>
-          <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all">
+          <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')"
+            class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer transition-all">
             <i class="bi bi-plus-circle-fill"></i> + Agregar Insumo / Tela
           </button>
         </div>
@@ -197,22 +224,27 @@
         <div class="flex-1 min-w-[200px]">
           <div class="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
             <span>Progreso de Preparación y Despacho en Bodega</span>
-            <span class="font-mono text-blue-600 font-black">{{ materialesData.metricas?.porcentaje_entrega || 0 }}%</span>
+            <span class="font-mono text-blue-600 font-black">{{ materialesData.metricas?.porcentaje_entrega || 0
+              }}%</span>
           </div>
           <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden flex">
-            <div class="bg-emerald-500 h-2.5 transition-all duration-500" [style.width.%]="materialesData.metricas?.porcentaje_entrega || 0"></div>
+            <div class="bg-emerald-500 h-2.5 transition-all duration-500"
+              [style.width.%]="materialesData.metricas?.porcentaje_entrega || 0"></div>
           </div>
         </div>
 
         <div class="flex items-center gap-3 text-xs flex-shrink-0">
           <span class="flex items-center gap-1 font-bold text-slate-600">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> {{ materialesData.metricas?.entregados || 0 }} Entregados
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> {{ materialesData.metricas?.entregados || 0 }}
+            Entregados
           </span>
           <span class="flex items-center gap-1 font-bold text-slate-600">
-            <span class="w-2 h-2 rounded-full bg-amber-500"></span> {{ materialesData.metricas?.parciales || 0 }} Parciales
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span> {{ materialesData.metricas?.parciales || 0 }}
+            Parciales
           </span>
           <span class="flex items-center gap-1 font-bold text-slate-600">
-            <span class="w-2 h-2 rounded-full bg-slate-400"></span> {{ materialesData.metricas?.pendientes || 0 }} Pendientes
+            <span class="w-2 h-2 rounded-full bg-slate-400"></span> {{ materialesData.metricas?.pendientes || 0 }}
+            Pendientes
           </span>
         </div>
       </div>
@@ -223,19 +255,24 @@
         <p class="text-xs text-slate-500 font-bold">Consultando materiales e inventario...</p>
       </div>
 
-      <div *ngIf="!isLoadingMateriales && (!materialesData.materiales || materialesData.materiales.length === 0)" class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+      <div *ngIf="!isLoadingMateriales && (!materialesData.materiales || materialesData.materiales.length === 0)"
+        class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
         <i class="bi bi-box-seam text-slate-300 text-3xl block mb-2"></i>
         <p class="text-xs font-bold text-slate-600 mb-1">No hay materiales ni insumos asignados a esta muestra.</p>
-        <p class="text-[11px] text-slate-400 mb-3">Comercial o Ingeniería pueden agregar telas, botones, hilos y cierres desde SIESA o de forma libre.</p>
-        <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm inline-flex items-center gap-1.5 cursor-pointer">
+        <p class="text-[11px] text-slate-400 mb-3">Comercial o Ingeniería pueden agregar telas, botones, hilos y cierres
+          desde SIESA o de forma libre.</p>
+        <button (click)="abrirModalAgregarMaterial(null, 'INSUMO')"
+          class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm inline-flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-plus-lg"></i> Asignar Insumo Ahora
         </button>
       </div>
 
-      <div *ngIf="!isLoadingMateriales && materialesAgrupados && materialesAgrupados.length > 0" class="overflow-x-auto">
+      <div *ngIf="!isLoadingMateriales && materialesAgrupados && materialesAgrupados.length > 0"
+        class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
-            <tr class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
+            <tr
+              class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
               <th class="p-2.5 w-7 text-center"></th>
               <th class="p-2.5">Tipo / Grupo</th>
               <th class="p-2.5">Material & Especificación</th>
@@ -254,26 +291,25 @@
               <tr class="hover:bg-blue-50/30 transition-colors" [ngClass]="{'bg-blue-50': isMaterialExpanded(mat.key)}">
                 <!-- 1. Botón expandir acordeón -->
                 <td class="p-2.5 text-center">
-                  <button type="button"
-                          (click)="toggleMaterialExpansion(mat.key, $event)"
-                          class="w-6 h-6 rounded-md hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-transform cursor-pointer"
-                          [class.rotate-90]="isMaterialExpanded(mat.key)"
-                          title="Ver en qué prendas y partes se usa este material">
+                  <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
+                    class="w-6 h-6 rounded-md hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-transform cursor-pointer"
+                    [class.rotate-90]="isMaterialExpanded(mat.key)"
+                    title="Ver en qué prendas y partes se usa este material">
                     <i class="bi bi-chevron-right text-xs"></i>
                   </button>
                 </td>
 
                 <!-- 2. Tipo / Grupo -->
                 <td class="p-2.5 font-bold">
-                  <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black"
-                        [ngClass]="{
+                  <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black" [ngClass]="{
                           'bg-blue-50 text-blue-700 border border-blue-200': mat.tipo_material === 'TELA',
                           'bg-slate-100 text-slate-700 border border-slate-200': mat.tipo_material === 'INSUMO',
                           'bg-slate-100 text-slate-600 border border-slate-200': mat.tipo_material === 'AVIO'
                         }">
                     {{ mat.tipo_material }}
                   </span>
-                  <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{ mat.grupo_insumo }}</span>
+                  <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{
+                    mat.grupo_insumo }}</span>
                 </td>
 
                 <!-- 3. Material & Especificación -->
@@ -282,32 +318,37 @@
                     <span class="font-black text-slate-900 text-xs">{{ mat.nombre }}</span>
                     <!-- Badge de prenda si es tela específica o asignación individual -->
                     <span *ngIf="mat.tipo_material === 'TELA' && mat.esPorPrenda && mat.prendaAsignada"
-                          class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1"
-                          [title]="'Tela asignada exclusivamente para: ' + mat.prendaAsignada.descripcion">
+                      class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1"
+                      [title]="'Tela asignada exclusivamente para: ' + mat.prendaAsignada.descripcion">
                       <i class="bi bi-tag-fill text-[9px] text-blue-500"></i> {{ mat.prendaAsignada.descripcion }}
                     </span>
                     <span *ngIf="mat.tipo_material === 'TELA' && !mat.esPorPrenda"
-                          class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1"
-                          title="Esta tela principal aplica para todas las prendas de la muestra">
+                      class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1"
+                      title="Esta tela principal aplica para todas las prendas de la muestra">
                       <i class="bi bi-collection text-[8px] text-slate-400"></i> Todas las prendas
                     </span>
                   </div>
 
                   <!-- Detalle según estado de definición -->
-                  <div *ngIf="mat.estadoDefinicion === 'SIESA'" class="text-[11px] text-slate-600 flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span class="font-mono text-blue-900 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 text-[10px]">
+                  <div *ngIf="mat.estadoDefinicion === 'SIESA'"
+                    class="text-[11px] text-slate-600 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span
+                      class="font-mono text-blue-900 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 text-[10px]">
                       Ref: {{ mat.siesa_referencia }}
                     </span>
                     <span class="font-medium text-slate-800">{{ mat.siesa_descripcion }}</span>
-                    <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px]">· Color: {{ mat.siesa_color }}</span>
+                    <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px]">· Color: {{ mat.siesa_color
+                      }}</span>
                   </div>
 
-                  <div *ngIf="mat.estadoDefinicion === 'MANUAL'" class="text-[11px] text-slate-700 italic mt-0.5 flex items-center gap-1">
+                  <div *ngIf="mat.estadoDefinicion === 'MANUAL'"
+                    class="text-[11px] text-slate-700 italic mt-0.5 flex items-center gap-1">
                     <i class="bi bi-pencil-fill text-[9px] text-slate-400"></i>
                     <span>{{ mat.descripcion_personalizada }}</span>
                   </div>
 
-                  <div *ngIf="mat.estadoDefinicion === 'PENDIENTE'" class="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-0.5">
+                  <div *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
+                    class="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-0.5">
                     <i class="bi bi-exclamation-triangle-fill text-amber-500 text-[10px]"></i>
                     <span>Falta definir qué ítem exacto será (vincular a SIESA o especificar)</span>
                   </div>
@@ -316,14 +357,15 @@
                 <!-- 4. Prendas -->
                 <td class="p-2.5 text-center">
                   <div class="flex items-center justify-center flex-col gap-0.5">
-                    <button type="button"
-                            (click)="toggleMaterialExpansion(mat.key, $event)"
-                            class="px-2.5 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 border border-blue-200 transition-all cursor-pointer"
-                            [title]="'Ver detalle de ' + mat.prendasCount + ' prenda(s). Clic para desplegar partes.'">
+                    <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
+                      class="px-2.5 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 border border-blue-200 transition-all cursor-pointer"
+                      [title]="'Ver detalle de ' + mat.prendasCount + ' prenda(s). Clic para desplegar partes.'">
                       <i class="bi bi-diagram-3 text-[10px] text-blue-500"></i>
                       <span>{{ mat.prendasCount }}</span>
                     </button>
-                    <span *ngIf="mat.esPorPrenda && mat.prendaAsignada" class="text-[9px] text-slate-400 font-medium truncate max-w-[90px]" [title]="mat.prendaAsignada.descripcion">
+                    <span *ngIf="mat.esPorPrenda && mat.prendaAsignada"
+                      class="text-[9px] text-slate-400 font-medium truncate max-w-[90px]"
+                      [title]="mat.prendaAsignada.descripcion">
                       {{ mat.prendaAsignada.descripcion }}
                     </span>
                   </div>
@@ -332,15 +374,15 @@
                 <!-- 5. Estado de Definición (Badge) -->
                 <td class="p-2.5 text-center">
                   <span *ngIf="mat.estadoDefinicion === 'SIESA'"
-                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
+                    class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">
                     <i class="bi bi-check-circle-fill text-[8px] text-emerald-600"></i> SIESA
                   </span>
                   <span *ngIf="mat.estadoDefinicion === 'MANUAL'"
-                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 inline-flex items-center gap-1">
+                    class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 inline-flex items-center gap-1">
                     <i class="bi bi-pencil-fill text-[8px] text-slate-500"></i> Manual
                   </span>
                   <span *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
-                        class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 inline-flex items-center gap-1">
+                    class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 inline-flex items-center gap-1">
                     <i class="bi bi-exclamation-triangle-fill text-[8px] text-amber-600"></i> Por Definir
                   </span>
                 </td>
@@ -348,10 +390,9 @@
                 <!-- 6. Requerido (EDICIÓN DIRECTA / INLINE) -->
                 <td class="p-2.5 text-center font-bold text-slate-800 font-mono">
                   <!-- Modo Visualización -->
-                  <div *ngIf="editingRequeridoKey !== mat.key"
-                       (click)="iniciarEdicionRequerido(mat, $event)"
-                       class="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-blue-50 hover:text-blue-900 border border-transparent hover:border-blue-200 transition-all cursor-pointer shadow-2xs"
-                       title="Clic para editar directamente los metros o unidades requeridos">
+                  <div *ngIf="editingRequeridoKey !== mat.key" (click)="iniciarEdicionRequerido(mat, $event)"
+                    class="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-blue-50 hover:text-blue-900 border border-transparent hover:border-blue-200 transition-all cursor-pointer shadow-2xs"
+                    title="Clic para editar directamente los metros o unidades requeridos">
                     <span class="font-black text-xs text-slate-900 group-hover:text-blue-900">
                       {{ mat.cantidad_requerida_total }} {{ mat.unidad_medida }}
                     </span>
@@ -359,38 +400,33 @@
                   </div>
 
                   <!-- Modo Edición Inline -->
-                  <div *ngIf="editingRequeridoKey === mat.key"
-                       (click)="$event.stopPropagation()"
-                       class="inline-flex items-center gap-1 bg-white p-1 rounded-xl shadow-lg border border-blue-400 ring-2 ring-blue-100 z-20 relative">
-                    <input type="number"
-                           [(ngModel)]="editingRequeridoValue"
-                           (keyup.enter)="guardarEdicionRequerido(mat, $event)"
-                           (keyup.escape)="cancelarEdicionRequerido($event)"
-                           min="1"
-                           step="1"
-                           class="w-16 px-1.5 py-1 text-xs font-black font-mono text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30">
-                    
+                  <div *ngIf="editingRequeridoKey === mat.key" (click)="$event.stopPropagation()"
+                    class="inline-flex items-center gap-1 bg-white p-1 rounded-xl shadow-lg border border-blue-400 ring-2 ring-blue-100 z-20 relative">
+                    <input type="number" [(ngModel)]="editingRequeridoValue"
+                      (keyup.enter)="guardarEdicionRequerido(mat, $event)"
+                      (keyup.escape)="cancelarEdicionRequerido($event)" min="1" step="1"
+                      class="w-16 px-1.5 py-1 text-xs font-black font-mono text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30">
+
                     <select [(ngModel)]="editingRequeridoUnidad"
-                            class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 rounded-lg px-1 py-1 focus:outline-none">
+                      class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 rounded-lg px-1 py-1 focus:outline-none">
                       <option value="METROS">MTR</option>
                       <option value="UND">UND</option>
                       <option value="KILOS">KG</option>
                       <option value="CONOS">CONOS</option>
                     </select>
 
-                    <button type="button"
-                            (click)="guardarEdicionRequerido(mat, $event)"
-                            [disabled]="isSavingInlineRequerido"
-                            class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-all cursor-pointer text-xs shadow-2xs"
-                            title="Guardar cambio">
-                      <i class="bi" [ngClass]="isSavingInlineRequerido ? 'bi-arrow-repeat animate-spin' : 'bi-check-lg'"></i>
+                    <button type="button" (click)="guardarEdicionRequerido(mat, $event)"
+                      [disabled]="isSavingInlineRequerido"
+                      class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-all cursor-pointer text-xs shadow-2xs"
+                      title="Guardar cambio">
+                      <i class="bi"
+                        [ngClass]="isSavingInlineRequerido ? 'bi-arrow-repeat animate-spin' : 'bi-check-lg'"></i>
                     </button>
-                    
-                    <button type="button"
-                            (click)="cancelarEdicionRequerido($event)"
-                            [disabled]="isSavingInlineRequerido"
-                            class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer text-xs"
-                            title="Cancelar">
+
+                    <button type="button" (click)="cancelarEdicionRequerido($event)"
+                      [disabled]="isSavingInlineRequerido"
+                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer text-xs"
+                      title="Cancelar">
                       <i class="bi bi-x-lg"></i>
                     </button>
                   </div>
@@ -418,31 +454,30 @@
                     <!-- Semáforo de antigüedad de costo -->
                     <div class="flex items-center gap-1 mt-0.5">
                       <span *ngIf="mat.fuente_costo === 'LOGISTICA'"
-                            class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-50 text-purple-700 border border-purple-200"
-                            title="Costo ajustado manualmente por Logística">
+                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-50 text-purple-700 border border-purple-200"
+                        title="Costo ajustado manualmente por Logística">
                         LOGÍSTICA
                       </span>
                       <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.estado_costo === 'VERDE'"
-                            class="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            title="Costo Kardex reciente (< 30 días)">
+                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        title="Costo Kardex reciente (< 30 días)">
                         KARDEX RECIENTE
                       </span>
                       <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.estado_costo === 'AMARILLO'"
-                            class="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200"
-                            title="Costo Kardex moderado (30 a 90 días)">
+                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200"
+                        title="Costo Kardex moderado (30 a 90 días)">
                         KARDEX {{ mat.antiguedad_dias }}d
                       </span>
                       <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.estado_costo === 'ROJO'"
-                            class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-50 text-rose-700 border border-rose-200"
-                            title="Costo Kardex desactualizado (> 90 días). Requiere revisión de logística">
+                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-50 text-rose-700 border border-rose-200"
+                        title="Costo Kardex desactualizado (> 90 días). Requiere revisión de logística">
                         DESACTUALIZADO
                       </span>
 
                       <!-- Botón para que Logística edite el costo -->
-                      <button type="button"
-                              (click)="editarCostoLogistica(mat, $event)"
-                              class="text-slate-400 hover:text-indigo-600 transition-colors p-0.5"
-                              title="Ajustar costo de logística">
+                      <button type="button" (click)="editarCostoLogistica(mat, $event)"
+                        class="text-slate-400 hover:text-indigo-600 transition-colors p-0.5"
+                        title="Ajustar costo de logística">
                         <i class="bi bi-pencil-square text-[10px]"></i>
                       </button>
                     </div>
@@ -451,8 +486,9 @@
 
                 <!-- 8. Estado Entrega -->
                 <td class="p-2.5 text-center">
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border inline-flex items-center gap-1"
-                        [ngClass]="{
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border inline-flex items-center gap-1"
+                    [ngClass]="{
                           'bg-emerald-50 text-emerald-800 border-emerald-300': mat.estadoEntrega === 'ENTREGADO',
                           'bg-amber-50 text-amber-800 border-amber-300': mat.estadoEntrega === 'PARCIAL',
                           'bg-slate-100 text-slate-600 border-slate-200': mat.estadoEntrega === 'PENDIENTE'
@@ -470,18 +506,16 @@
                 <td class="p-2.5 text-right">
                   <div class="flex items-center justify-end">
                     <!-- Botón Vincular si falta por definir (integrado estilo fila) -->
-                    <button *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
-                            (click)="abrirModalDefinirMaterial(mat)"
-                            class="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
-                            title="Vincular con ítem de SIESA o especificar">
+                    <button *ngIf="mat.estadoDefinicion === 'PENDIENTE'" (click)="abrirModalDefinirMaterial(mat)"
+                      class="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
+                      title="Vincular con ítem de SIESA o especificar">
                       <i class="bi bi-link-45deg text-xs"></i> Vincular Ítem
                     </button>
 
                     <!-- Botón Editar Vínculo si ya está definido -->
-                    <button *ngIf="mat.estadoDefinicion !== 'PENDIENTE'"
-                            (click)="abrirModalDefinirMaterial(mat)"
-                            class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
-                            title="Modificar vinculación de SIESA o especificación">
+                    <button *ngIf="mat.estadoDefinicion !== 'PENDIENTE'" (click)="abrirModalDefinirMaterial(mat)"
+                      class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      title="Modificar vinculación de SIESA o especificación">
                       <i class="bi bi-pencil text-[10px] text-slate-500"></i> Editar Vínculo
                     </button>
                   </div>
@@ -493,9 +527,11 @@
                 <td colspan="10" class="p-3 pl-8 pr-4">
                   <div class="space-y-2">
                     <div class="flex items-center justify-between flex-wrap gap-2">
-                      <span class="text-[11px] font-black text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
+                      <span
+                        class="text-[11px] font-black text-blue-950 uppercase tracking-wider flex items-center gap-1.5">
                         <i class="bi bi-diagram-3-fill text-blue-600"></i>
-                        Desglose de Uso en Prendas ({{ mat.prendasCount }} prenda{{ mat.prendasCount !== 1 ? 's' : '' }})
+                        Desglose de Uso en Prendas ({{ mat.prendasCount }} prenda{{ mat.prendasCount !== 1 ? 's' : ''
+                        }})
                       </span>
                       <span class="text-[10px] text-slate-400 italic font-medium">
                         Partes de corte y confección donde aplica este material
@@ -503,21 +539,25 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div *ngFor="let p of mat.prendasDesglose" class="p-2.5 bg-white rounded-xl border border-blue-100 shadow-2xs space-y-1.5">
+                      <div *ngFor="let p of mat.prendasDesglose"
+                        class="p-2.5 bg-white rounded-xl border border-blue-100 shadow-2xs space-y-1.5">
                         <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5 flex-wrap">
                           <div class="flex items-center gap-1.5 min-w-0">
                             <i class="bi bi-tag text-blue-600 text-xs"></i>
                             <span class="text-xs font-bold text-slate-800 truncate">{{ p.prendaNombre }}</span>
-                            <span *ngIf="p.prendaReferencia" class="text-[10px] text-slate-400 font-mono">({{ p.prendaReferencia }})</span>
+                            <span *ngIf="p.prendaReferencia" class="text-[10px] text-slate-400 font-mono">({{
+                              p.prendaReferencia }})</span>
                           </div>
-                          <span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md flex-shrink-0">
+                          <span
+                            class="px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md flex-shrink-0">
                             {{ p.cantidadPartes }} parte{{ p.cantidadPartes !== 1 ? 's' : '' }}
                           </span>
                         </div>
 
                         <!-- Lista de partes de la prenda -->
                         <div class="flex flex-wrap gap-1 pt-0.5">
-                          <span *ngFor="let part of p.partes" class="px-2 py-0.5 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-medium rounded-md border border-slate-200 hover:border-blue-200 flex items-center gap-1 transition-colors">
+                          <span *ngFor="let part of p.partes"
+                            class="px-2 py-0.5 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-medium rounded-md border border-slate-200 hover:border-blue-200 flex items-center gap-1 transition-colors">
                             <i class="bi bi-puzzle text-[9px] text-blue-500"></i> {{ part }}
                           </span>
                         </div>
@@ -541,22 +581,26 @@
             Prendas a Muestrear & Especificaciones Técnicas ({{ muestra.items?.length || 0 }})
           </h3>
         </div>
-        <span class="text-xs text-slate-400 font-medium">Revisa las operaciones, tiempos estándar y materiales para corte y confección</span>
+        <span class="text-xs text-slate-400 font-medium">Revisa las operaciones, tiempos estándar y materiales para
+          corte y confección</span>
       </div>
 
-      <div *ngIf="!muestra.items?.length" class="p-10 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+      <div *ngIf="!muestra.items?.length"
+        class="p-10 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
         <i class="bi bi-inboxes text-slate-300 text-3xl block mb-2"></i>
         <p class="text-xs font-bold text-slate-500 mb-0">No hay prendas registradas en esta solicitud.</p>
       </div>
 
       <div *ngIf="muestra.items?.length" class="space-y-4">
-        <div *ngFor="let item of muestra.items; let idx = index" class="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 transition-all space-y-3.5">
-          
+        <div *ngFor="let item of muestra.items; let idx = index"
+          class="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 transition-all space-y-3.5">
+
           <!-- Encabezado de la Prenda -->
           <div class="flex justify-between items-start flex-wrap gap-3">
             <div class="space-y-1 min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="w-5 h-5 rounded-md bg-blue-600 text-white font-black text-[10px] flex items-center justify-center">
+                <span
+                  class="w-5 h-5 rounded-md bg-blue-600 text-white font-black text-[10px] flex items-center justify-center">
                   {{ idx + 1 }}
                 </span>
                 <h4 class="text-base font-black text-slate-900 mb-0 truncate">{{ item.descripcion }}</h4>
@@ -584,7 +628,8 @@
               <i class="bi bi-rulers"></i> Tallas Solicitadas:
             </span>
             <div class="flex flex-wrap gap-2">
-              <span *ngFor="let t of item.tallas" class="px-2.5 py-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5">
+              <span *ngFor="let t of item.tallas"
+                class="px-2.5 py-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5">
                 <span>Talla <strong class="text-slate-900">{{ t.talla }}</strong>:</span>
                 <span class="text-blue-700 font-black">{{ t.cantidad }} uds</span>
               </span>
@@ -592,60 +637,70 @@
           </div>
 
           <!-- TELA PRINCIPAL ASIGNADA A ESTA PRENDA -->
-          <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between flex-wrap gap-2 shadow-2xs">
+          <div
+            class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between flex-wrap gap-2 shadow-2xs">
             <div class="flex items-center gap-2.5 flex-wrap min-w-0">
-              <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black shadow-2xs">
+              <div
+                class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black shadow-2xs">
                 <i class="bi bi-droplet-fill"></i>
               </div>
               <div class="min-w-0">
-                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Tela Principal de la Prenda</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Tela Principal de la
+                  Prenda</span>
                 <div *ngIf="item.ref_siesa_referencia" class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                  <span class="font-mono text-xs font-black text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                  <span
+                    class="font-mono text-xs font-black text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                     Ref: {{ item.ref_siesa_referencia }}
                   </span>
-                  <span class="text-xs font-bold text-slate-800 truncate">{{ item.ref_siesa_descripcion || 'Tela asignada' }}</span>
+                  <span class="text-xs font-bold text-slate-800 truncate">{{ item.ref_siesa_descripcion || 'Tela
+                    asignada' }}</span>
                 </div>
-                <div *ngIf="!item.ref_siesa_referencia" class="text-xs text-amber-700 font-medium flex items-center gap-1 mt-0.5">
+                <div *ngIf="!item.ref_siesa_referencia"
+                  class="text-xs text-amber-700 font-medium flex items-center gap-1 mt-0.5">
                   <i class="bi bi-exclamation-circle-fill text-amber-500 text-[11px]"></i>
                   <span>Sin tela principal asignada a esta prenda</span>
                 </div>
               </div>
             </div>
 
-            <button type="button"
-                    (click)="abrirModalAgregarMaterial(item.id, 'TELA')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
-                    [ngClass]="item.ref_siesa_referencia ? 'bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 hover:border-blue-200' : 'bg-blue-600 hover:bg-blue-700 text-white'">
+            <button type="button" (click)="abrirModalAgregarMaterial(item.id, 'TELA')"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs"
+              [ngClass]="item.ref_siesa_referencia ? 'bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 hover:border-blue-200' : 'bg-blue-600 hover:bg-blue-700 text-white'">
               <i class="bi" [ngClass]="item.ref_siesa_referencia ? 'bi-pencil' : 'bi-plus-circle-fill'"></i>
               <span>{{ item.ref_siesa_referencia ? 'Cambiar Tela' : 'Asignar Tela a esta Prenda' }}</span>
             </button>
           </div>
 
           <!-- TARJETA TÉCNICA OPM INTEGRADA (ESTILO DILIGENCIAMIENTO LIMPIO) -->
-          <div *ngIf="item.mold || item.technical_spec" class="p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between flex-wrap gap-3 shadow-2xs transition-all">
+          <div *ngIf="item.mold || item.technical_spec"
+            class="p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between flex-wrap gap-3 shadow-2xs transition-all">
             <div class="flex items-center gap-3 min-w-0 flex-1">
               <!-- Avatar moderno consistente -->
-              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center flex-shrink-0 text-base shadow-2xs">
+              <div
+                class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center flex-shrink-0 text-base shadow-2xs">
                 <i class="bi bi-scissors"></i>
               </div>
-              
+
               <div class="min-w-0 space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <!-- Tag Categoría -->
-                  <span *ngIf="item.mold?.category?.name" class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span *ngIf="item.mold?.category?.name"
+                    class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                     <i class="bi bi-tag-fill text-[9px] text-slate-400"></i>
                     {{ item.mold.category.name }}
                   </span>
 
                   <!-- Pastilla Tiempo SAM -->
-                  <span class="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-md text-[10px] font-bold flex items-center gap-1">
+                  <span
+                    class="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-md text-[10px] font-bold flex items-center gap-1">
                     <i class="bi bi-clock-history text-blue-500"></i>
                     {{ getItemTotalTime(item) | number:'1.2-2' }} min SAM
                   </span>
 
                   <!-- Badge Estado OPM -->
-                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border flex items-center gap-1 shadow-2xs"
-                        [ngClass]="getOpmBadgeInfo(item).bgClass">
+                  <span
+                    class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border flex items-center gap-1 shadow-2xs"
+                    [ngClass]="getOpmBadgeInfo(item).bgClass">
                     <i class="bi" [ngClass]="getOpmBadgeInfo(item).icon"></i>
                     {{ getOpmBadgeInfo(item).label }}
                   </span>
@@ -657,7 +712,8 @@
                     {{ item.mold?.name || 'Molde Base Asignado' }}
                   </h4>
                   <span class="text-xs text-slate-500 font-medium">
-                    · {{ getAllItemParts(item).length }} componente{{ getAllItemParts(item).length !== 1 ? 's' : '' }} configurados
+                    · {{ getAllItemParts(item).length }} componente{{ getAllItemParts(item).length !== 1 ? 's' : '' }}
+                    configurados
                   </span>
                   <span class="text-xs text-blue-700 font-mono font-semibold" *ngIf="item.technical_spec?.reference">
                     · Ficha: {{ item.technical_spec.reference }}
@@ -670,14 +726,14 @@
             <div class="flex items-center gap-2 flex-wrap flex-shrink-0">
               <!-- Botón Primario: Diligenciar / Modificar OPM -->
               <button (click)="openEditOpmModal(item); $event.stopPropagation()"
-                      class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
+                class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
                 <i class="bi bi-pencil-square text-sm"></i>
                 <span>Diligenciar / Modificar OPM</span>
               </button>
-              
+
               <!-- Botón Secundario: Ver Ficha OPM & Técnica -->
               <button (click)="openOpmModal(item)"
-                      class="px-3.5 py-2 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                class="px-3.5 py-2 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
                 <i class="bi bi-diagram-3 text-sm text-blue-600"></i>
                 <span>Ver Ficha OPM & Técnica</span>
               </button>
@@ -692,9 +748,9 @@
   </div>
 
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
-   <div *ngIf="selectedOpmItem" class="opm-modal-overlay" (click)="closeOpmModal()">
+  <div *ngIf="selectedOpmItem" class="opm-modal-overlay" (click)="closeOpmModal()">
     <div class="opm-modal-container" (click)="$event.stopPropagation()">
-      
+
       <!-- MODAL HEADER -->
       <div class="opm-modal-header">
         <div class="opm-header-left">
@@ -711,7 +767,8 @@
             </div>
             <h2 class="opm-header-title">
               {{ selectedOpmItem.descripcion || selectedOpmItem.mold?.name || 'Molde Asignado' }}
-              <span *ngIf="selectedOpmItem.mold?.name && selectedOpmItem.descripcion !== selectedOpmItem.mold?.name" class="opm-header-sub">
+              <span *ngIf="selectedOpmItem.mold?.name && selectedOpmItem.descripcion !== selectedOpmItem.mold?.name"
+                class="opm-header-sub">
                 · Molde: {{ selectedOpmItem.mold.name }}
               </span>
             </h2>
@@ -720,18 +777,16 @@
 
         <!-- PESTAÑAS DE NAVEGACIÓN MODAL (Figurín vs Paso a Paso Técnico) -->
         <div class="flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700/60 shadow-inner">
-          <button type="button" 
-                  (click)="setOpmModalTab('figurine')"
-                  class="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer"
-                  [ngClass]="opmModalTab === 'figurine' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'">
+          <button type="button" (click)="setOpmModalTab('figurine')"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer"
+            [ngClass]="opmModalTab === 'figurine' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'">
             <i class="bi bi-person-standing text-sm"></i>
             <span>Figurín Interactivo</span>
           </button>
 
-          <button type="button" 
-                  (click)="setOpmModalTab('step_by_step')"
-                  class="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer"
-                  [ngClass]="opmModalTab === 'step_by_step' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'">
+          <button type="button" (click)="setOpmModalTab('step_by_step')"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer"
+            [ngClass]="opmModalTab === 'step_by_step' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'">
             <i class="bi bi-card-checklist text-sm"></i>
             <span>Paso a Paso & Ficha Técnica</span>
             <span class="px-1.5 py-0.2 bg-white/20 text-white rounded text-[10px] font-mono font-black">
@@ -743,7 +798,7 @@
         <div class="flex items-center gap-3">
           <!-- Botón Editar Directo -->
           <button (click)="openEditOpmModal(selectedOpmItem); $event.stopPropagation()"
-                  class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
+            class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
             <i class="bi bi-pencil-square text-sm"></i> Modificar OPM
           </button>
 
@@ -776,16 +831,20 @@
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0 flex-1">
                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Molde / Prenda</span>
-                <span class="text-xs font-bold text-slate-800 truncate block">{{ selectedOpmItem.descripcion || selectedOpmItem.mold?.name }}</span>
+                <span class="text-xs font-bold text-slate-800 truncate block">{{ selectedOpmItem.descripcion ||
+                  selectedOpmItem.mold?.name }}</span>
               </div>
               <div *ngIf="selectedOpmItem.item_cliente" class="text-right flex-shrink-0">
                 <span class="text-[9px] font-bold text-slate-400 uppercase block">Ref. Cliente</span>
-                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-md border border-indigo-100">{{ selectedOpmItem.item_cliente }}</span>
+                <span
+                  class="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-md border border-indigo-100">{{
+                  selectedOpmItem.item_cliente }}</span>
               </div>
             </div>
 
             <!-- TIEMPO TOTAL SAM PRENDA -->
-            <div class="p-2.5 bg-gradient-to-r from-slate-50 to-amber-50/30 border border-slate-200 rounded-xl flex items-center justify-between">
+            <div
+              class="p-2.5 bg-gradient-to-r from-slate-50 to-amber-50/30 border border-slate-200 rounded-xl flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <i class="bi bi-stopwatch-fill text-amber-600 text-sm"></i>
                 <span class="text-xs font-black text-slate-900 uppercase tracking-wider">Tiempo SAM Total:</span>
@@ -796,9 +855,11 @@
             </div>
 
             <!-- Base SIESA if exists -->
-            <div *ngIf="selectedOpmItem.siesa_referencia || selectedOpmItem.ref_siesa_referencia" class="text-[11px] pt-1.5 border-t border-slate-100 flex items-center gap-1.5">
+            <div *ngIf="selectedOpmItem.siesa_referencia || selectedOpmItem.ref_siesa_referencia"
+              class="text-[11px] pt-1.5 border-t border-slate-100 flex items-center gap-1.5">
               <span class="text-slate-400 font-medium text-[10px]">Base SIESA:</span>
-              <span class="font-bold text-indigo-600 font-mono text-[11px]">{{ selectedOpmItem.siesa_referencia || selectedOpmItem.ref_siesa_referencia }}</span>
+              <span class="font-bold text-indigo-600 font-mono text-[11px]">{{ selectedOpmItem.siesa_referencia ||
+                selectedOpmItem.ref_siesa_referencia }}</span>
             </div>
 
             <!-- Descripción de la Prenda -->
@@ -806,19 +867,21 @@
               <label class="text-[9px] font-black text-amber-900 uppercase tracking-widest flex items-center gap-1">
                 <i class="bi bi-file-earmark-text text-amber-600"></i> Observaciones / Notas de Confección
               </label>
-              <div class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 leading-relaxed max-h-24 overflow-y-auto">
-                {{ selectedOpmItem.technical_spec?.description || getSolicitudObservaciones() || 'Sin observaciones técnicas adicionales.' }}
+              <div
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 leading-relaxed max-h-24 overflow-y-auto">
+                {{ selectedOpmItem.technical_spec?.description || getSolicitudObservaciones() || 'Sin observaciones
+                técnicas adicionales.' }}
               </div>
             </div>
 
             <!-- View Switch (Frente / Espalda) -->
             <div class="flex p-1 bg-slate-100 rounded-xl" *ngIf="hasOpmBackView">
               <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer"
-                      [ngClass]="opmActiveView === 'front' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'"
-                      (click)="toggleOpmView('front')">FRENTE</button>
+                [ngClass]="opmActiveView === 'front' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'"
+                (click)="toggleOpmView('front')">FRENTE</button>
               <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer"
-                      [ngClass]="opmActiveView === 'back' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'"
-                      (click)="toggleOpmView('back')">ESPALDA</button>
+                [ngClass]="opmActiveView === 'back' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'"
+                (click)="toggleOpmView('back')">ESPALDA</button>
             </div>
           </div>
 
@@ -829,7 +892,8 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-amber-500/20 shadow-sm animate-pulse"></span>
                 <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Zonas & Operaciones</h3>
               </div>
-              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border bg-slate-50 text-slate-600 border-slate-200">
+              <span
+                class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border bg-slate-50 text-slate-600 border-slate-200">
                 {{ getZonesWithParts().length }} ZONAS
               </span>
             </div>
@@ -837,71 +901,81 @@
             <!-- Tarjetas por Zona -->
             <div class="space-y-2">
               <div *ngFor="let zp of getZonesWithParts()"
-                   class="border rounded-xl transition-all shadow-2xs overflow-hidden"
-                   [ngClass]="isSidebarZoneExpanded(zp.zone) 
+                class="border rounded-xl transition-all shadow-2xs overflow-hidden"
+                [ngClass]="isSidebarZoneExpanded(zp.zone) 
                      ? 'border-slate-400 bg-slate-50 ring-2 ring-amber-400' 
                      : (isZoneConfigured(zp.zone) ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-200 bg-white')">
-                
+
                 <!-- Cabecera de la Zona -->
-                <div class="p-2.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-slate-50 transition"
-                     (click)="toggleSidebarZone(zp.zone, $event)">
+                <div
+                  class="p-2.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-slate-50 transition"
+                  (click)="toggleSidebarZone(zp.zone, $event)">
                   <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-2xs"
-                          [style.backgroundColor]="zp.zone.color || getZoneColor(zp.zone.zone_type)">
+                    <span
+                      class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-2xs"
+                      [style.backgroundColor]="zp.zone.color || getZoneColor(zp.zone.zone_type)">
                       <i class="bi" [ngClass]="getZoneIcon(zp.zone.zone_type)"></i>
                     </span>
                     <div class="min-w-0">
                       <h4 class="text-xs font-black text-slate-800 truncate uppercase mb-0">{{ zp.zone.name }}</h4>
-                      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0">{{ getZoneLabel(zp.zone.zone_type) }}</p>
+                      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0">{{
+                        getZoneLabel(zp.zone.zone_type) }}</p>
                     </div>
                   </div>
 
                   <div class="flex items-center gap-1.5 shrink-0">
                     <span class="text-[9px] px-2 py-0.5 rounded-full border font-bold"
-                          [ngClass]="getConfiguredPartsForZone(zp).length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
-                      ✓ {{ getConfiguredPartsForZone(zp).length }} {{ getConfiguredPartsForZone(zp).length === 1 ? 'Configurada' : 'Configuradas' }}
+                      [ngClass]="getConfiguredPartsForZone(zp).length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                      ✓ {{ getConfiguredPartsForZone(zp).length }} {{ getConfiguredPartsForZone(zp).length === 1 ?
+                      'Configurada' : 'Configuradas' }}
                     </span>
                     <span class="w-5 h-5 rounded flex items-center justify-center text-slate-400 transition">
-                      <i class="bi text-xs" [ngClass]="isSidebarZoneExpanded(zp.zone) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                      <i class="bi text-xs"
+                        [ngClass]="isSidebarZoneExpanded(zp.zone) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Contenido de la Zona (Desplegado) -->
-                <div class="p-2.5 pt-0 space-y-2 border-t border-slate-100 bg-white" *ngIf="isSidebarZoneExpanded(zp.zone)">
-                  <div *ngFor="let part of getConfiguredPartsForZone(zp)"
-                       class="p-2.5 rounded-xl border space-y-2"
-                       [ngClass]="!part.is_mandatory ? 'bg-slate-50 border-slate-200' : 'bg-emerald-50/40 border-emerald-200/80'">
-                    
+                <div class="p-2.5 pt-0 space-y-2 border-t border-slate-100 bg-white"
+                  *ngIf="isSidebarZoneExpanded(zp.zone)">
+                  <div *ngFor="let part of getConfiguredPartsForZone(zp)" class="p-2.5 rounded-xl border space-y-2"
+                    [ngClass]="!part.is_mandatory ? 'bg-slate-50 border-slate-200' : 'bg-emerald-50/40 border-emerald-200/80'">
+
                     <!-- Nombre y Tiempo de la Parte -->
                     <div class="flex items-center justify-between gap-1.5">
                       <div class="flex items-center gap-1.5 min-w-0">
-                        <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-slate-700 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
+                        <i class="bi text-xs"
+                          [ngClass]="!part.is_mandatory ? 'text-slate-700 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
                         <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
-                        <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-slate-100 text-slate-700 shrink-0">
+                        <span *ngIf="!part.is_mandatory"
+                          class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-slate-100 text-slate-700 shrink-0">
                           Opcional
                         </span>
                       </div>
                       <!-- TIEMPO SAM POR COMPONENTE -->
-                      <span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded text-[9px] font-mono font-black shrink-0" title="Tiempo SAM de la operación">
+                      <span
+                        class="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded text-[9px] font-mono font-black shrink-0"
+                        title="Tiempo SAM de la operación">
                         <i class="bi bi-clock"></i> {{ part.estimated_time || 0 }} min
                       </span>
                     </div>
 
                     <!-- Variante Seleccionada -->
-                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
-                         [ngClass]="!part.is_mandatory ? 'border border-slate-300' : 'border border-emerald-300'">
+                    <div
+                      class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
+                      [ngClass]="!part.is_mandatory ? 'border border-slate-300' : 'border border-emerald-300'">
                       <i class="bi bi-check-circle-fill text-xs shrink-0"
-                         [ngClass]="!part.is_mandatory ? 'text-amber-600' : 'text-emerald-600'"></i>
+                        [ngClass]="!part.is_mandatory ? 'text-amber-600' : 'text-emerald-600'"></i>
                       <span class="truncate font-black flex-1"
-                            [ngClass]="!part.is_mandatory ? 'text-slate-900' : 'text-emerald-950'">
+                        [ngClass]="!part.is_mandatory ? 'text-slate-900' : 'text-emerald-950'">
                         {{ extractVariantName(part) }}
                       </span>
                     </div>
 
                     <!-- Especificación Técnica de Confección -->
                     <div *ngIf="part.technical_spec && part.technical_spec !== extractVariantName(part)"
-                         class="p-2 bg-indigo-50/50 rounded-lg border border-indigo-200/80 text-[10px] space-y-0.5">
+                      class="p-2 bg-indigo-50/50 rounded-lg border border-indigo-200/80 text-[10px] space-y-0.5">
                       <span class="text-[8px] font-black text-indigo-700 uppercase tracking-wider block">
                         <i class="bi bi-gear-fill"></i> Especificación Técnica de Confección
                       </span>
@@ -910,22 +984,25 @@
 
                     <!-- Nota o Excepción Comercial -->
                     <div *ngIf="part.client_spec || part.exception_comment"
-                         class="flex items-center gap-1 bg-white p-1 rounded-lg border border-amber-300 shadow-2xs text-[10px]">
+                      class="flex items-center gap-1 bg-white p-1 rounded-lg border border-amber-300 shadow-2xs text-[10px]">
                       <i class="bi bi-chat-left-quote text-[10px] text-amber-600 ml-1 shrink-0"></i>
-                      <span class="text-amber-950 font-semibold px-1">{{ part.exception_comment || part.client_spec }}</span>
+                      <span class="text-amber-950 font-semibold px-1">{{ part.exception_comment || part.client_spec
+                        }}</span>
                     </div>
 
                     <!-- Material Asignado -->
                     <div *ngIf="part.material_exception || part.client_material_exception"
-                         class="flex items-center gap-1 bg-white p-1 rounded-lg border border-blue-300 shadow-2xs text-[10px]">
+                      class="flex items-center gap-1 bg-white p-1 rounded-lg border border-blue-300 shadow-2xs text-[10px]">
                       <i class="bi bi-palette text-[10px] text-blue-600 ml-1 shrink-0"></i>
                       <span class="text-blue-950 font-semibold px-1">
-                        {{ (part.material_exception || part.client_material_exception).descripcion || (part.material_exception || part.client_material_exception).referencia }}
+                        {{ (part.material_exception || part.client_material_exception).descripcion ||
+                        (part.material_exception || part.client_material_exception).referencia }}
                       </span>
                     </div>
                   </div>
 
-                  <div *ngIf="getConfiguredPartsForZone(zp).length === 0" class="py-2.5 text-center text-slate-400 text-[11px] font-medium">
+                  <div *ngIf="getConfiguredPartsForZone(zp).length === 0"
+                    class="py-2.5 text-center text-slate-400 text-[11px] font-medium">
                     Sin configuraciones en esta zona (Estándar)
                   </div>
                 </div>
@@ -935,17 +1012,21 @@
           </div>
 
           <!-- 3. Apliques y Opcionales -->
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0" *ngIf="getTransversalOptionals().length > 0">
-            <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 via-white to-slate-50">
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0"
+            *ngIf="getTransversalOptionals().length > 0">
+            <div
+              class="p-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 via-white to-slate-50">
               <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-amber-500/20 shadow-sm"></span>
-                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Apliques y Opcionales ({{ getTransversalOptionals().length }})</h3>
+                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Apliques y Opcionales ({{
+                  getTransversalOptionals().length }})</h3>
               </div>
             </div>
-            
+
             <div class="p-2.5 space-y-2">
-              <div *ngFor="let opt of getTransversalOptionals()" 
-                   class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-1.5">
+              <div *ngFor="let opt of getTransversalOptionals()"
+                class="p-2.5 rounded-xl border bg-slate-50 border-slate-200 space-y-1.5">
                 <div class="flex items-center justify-between gap-1.5">
                   <div class="flex items-center gap-1.5 min-w-0">
                     <i class="bi text-xs text-slate-700" [ngClass]="opt.icon"></i>
@@ -953,20 +1034,23 @@
                   </div>
                   <!-- Tooltip informativo indicando la zona -->
                   <div class="flex items-center gap-1.5 shrink-0">
-                    <span *ngIf="opt.estimated_time" class="px-1.5 py-0.2 bg-indigo-50 text-indigo-700 text-[9px] font-mono font-bold rounded">
+                    <span *ngIf="opt.estimated_time"
+                      class="px-1.5 py-0.2 bg-indigo-50 text-indigo-700 text-[9px] font-mono font-bold rounded">
                       {{ opt.estimated_time }} min
                     </span>
                     <span class="relative cursor-help text-amber-600 hover:text-slate-900 transition"
-                          [title]="'Cargado por parte de:\n• ' + opt.zoneName">
+                      [title]="'Cargado por parte de:\n• ' + opt.zoneName">
                       <i class="bi bi-exclamation-circle text-xs"></i>
                     </span>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-[11px] font-bold shadow-2xs">
+                <div
+                  class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-[11px] font-bold shadow-2xs">
                   <i class="bi bi-check-circle-fill text-xs text-amber-600 shrink-0"></i>
                   <span class="truncate text-slate-900 font-black">{{ opt.variant }}</span>
                 </div>
-                <div *ngIf="opt.exceptionComment || opt.clientSpec" class="text-[10px] text-slate-900 bg-white p-1 rounded-lg border border-slate-200">
+                <div *ngIf="opt.exceptionComment || opt.clientSpec"
+                  class="text-[10px] text-slate-900 bg-white p-1 rounded-lg border border-slate-200">
                   <span class="font-bold">Especificación:</span> {{ opt.exceptionComment || opt.clientSpec }}
                 </div>
               </div>
@@ -974,7 +1058,8 @@
           </div>
 
           <!-- 4. Materiales Requeridos -->
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0">
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0">
             <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
               <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
@@ -983,20 +1068,21 @@
                 </h3>
               </div>
             </div>
-            
+
             <div class="p-2.5 space-y-2">
-              <div *ngFor="let mat of getConsolidatedMaterials()" 
-                   class="bg-white rounded-xl border border-slate-200/80 p-2.5 hover:border-slate-300 hover:shadow-2xs transition-all">
+              <div *ngFor="let mat of getConsolidatedMaterials()"
+                class="bg-white rounded-xl border border-slate-200/80 p-2.5 hover:border-slate-300 hover:shadow-2xs transition-all">
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0 shadow-2xs"
-                          [ngClass]="mat.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+                      [ngClass]="mat.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
                       <i class="bi" [ngClass]="mat.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill'"></i>
                     </span>
                     <div class="min-w-0">
                       <span class="font-bold text-slate-800 text-xs block truncate">{{ mat.name }}</span>
-                      <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border inline-block"
-                            [ngClass]="mat.type === 'tela' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-100'">
+                      <span
+                        class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border inline-block"
+                        [ngClass]="mat.type === 'tela' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-100'">
                         {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
                       </span>
                     </div>
@@ -1013,9 +1099,12 @@
                 </div>
 
                 <!-- SIESA details -->
-                <div *ngIf="mat.siesaRef || mat.siesaDesc" class="mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] flex items-baseline gap-1">
+                <div *ngIf="mat.siesaRef || mat.siesaDesc"
+                  class="mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] flex items-baseline gap-1">
                   <span class="font-bold text-indigo-600 shrink-0">SIESA:</span>
-                  <span class="text-slate-700 truncate" [title]="(mat.siesaRef ? (mat.siesaRef + ' - ') : '') + (mat.siesaDesc || '')">{{ mat.siesaRef ? (mat.siesaRef + ' - ') : '' }}{{ mat.siesaDesc }}</span>
+                  <span class="text-slate-700 truncate"
+                    [title]="(mat.siesaRef ? (mat.siesaRef + ' - ') : '') + (mat.siesaDesc || '')">{{ mat.siesaRef ?
+                    (mat.siesaRef + ' - ') : '' }}{{ mat.siesaDesc }}</span>
                 </div>
                 <div *ngIf="mat.comment" class="mt-1 text-[10px] text-slate-500 italic">
                   <i class="bi bi-chat-left-dots text-[9px] text-slate-500 mr-1"></i>{{ mat.comment }}
@@ -1033,90 +1122,85 @@
         <!-- RIGHT CANVAS: Elevated Clean Garment Figurine with Hotspot Pins & SVG -->
         <div class="opm-canvas-area" (click)="clearSelectedZone($event)">
           <div class="opm-canvas-inner" *ngIf="getActiveOpmImage(); else noImageBlock">
-            
+
             <div class="relative inline-block max-w-full max-h-[78vh]">
-              <img [src]="getActiveOpmImage()"
-                   [alt]="selectedOpmItem.mold?.name || 'Figurín'"
-                   class="block max-w-full max-h-[78vh] object-contain drop-shadow-2xl select-none pointer-events-none" />
+              <img [src]="getActiveOpmImage()" [alt]="selectedOpmItem.mold?.name || 'Figurín'"
+                class="block max-w-full max-h-[78vh] object-contain drop-shadow-2xl select-none pointer-events-none" />
 
               <!-- ══════════ CAPA SVG: ZONAS ANATÓMICAS (z-10) ══════════ -->
               <svg class="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible"
-                   viewBox="0 0 100 100" preserveAspectRatio="none">
+                viewBox="0 0 100 100" preserveAspectRatio="none">
                 <ng-container *ngFor="let zone of getActiveZones()">
                   <!-- Polígono SVG -->
                   <polygon *ngIf="zone.path_data && getPolygonPoints(zone.path_data)"
-                           [attr.points]="getPolygonPoints(zone.path_data)"
-                           [attr.fill]="isZoneSelected(zone) ? 'rgba(139, 92, 246, 0.22)' : 'transparent'"
-                           [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#8b5cf6') : 'transparent'"
-                           [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'"
-                           stroke-linejoin="round"
-                           stroke-linecap="round"
-                           class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-amber-500/15 hover:stroke-amber-500/60"
-                           (click)="selectZone(zone, $event)" />
+                    [attr.points]="getPolygonPoints(zone.path_data)"
+                    [attr.fill]="isZoneSelected(zone) ? 'rgba(139, 92, 246, 0.22)' : 'transparent'"
+                    [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#8b5cf6') : 'transparent'"
+                    [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'" stroke-linejoin="round"
+                    stroke-linecap="round"
+                    class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-amber-500/15 hover:stroke-amber-500/60"
+                    (click)="selectZone(zone, $event)" />
 
                   <!-- Rectángulo Fallback -->
-                  <rect *ngIf="!zone.path_data || !getPolygonPoints(zone.path_data)"
-                        [attr.x]="zone.position_x"
-                        [attr.y]="zone.position_y"
-                        [attr.width]="zone.width || 20"
-                        [attr.height]="zone.height || 10"
-                        rx="2.5" ry="2.5"
-                        [attr.fill]="isZoneSelected(zone) ? 'rgba(139, 92, 246, 0.22)' : 'transparent'"
-                        [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#8b5cf6') : 'transparent'"
-                        [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'"
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                        class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-amber-500/15 hover:stroke-amber-500/60"
-                        (click)="selectZone(zone, $event)" />
+                  <rect *ngIf="!zone.path_data || !getPolygonPoints(zone.path_data)" [attr.x]="zone.position_x"
+                    [attr.y]="zone.position_y" [attr.width]="zone.width || 20" [attr.height]="zone.height || 10"
+                    rx="2.5" ry="2.5" [attr.fill]="isZoneSelected(zone) ? 'rgba(139, 92, 246, 0.22)' : 'transparent'"
+                    [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#8b5cf6') : 'transparent'"
+                    [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'" stroke-linejoin="round"
+                    stroke-linecap="round"
+                    class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-amber-500/15 hover:stroke-amber-500/60"
+                    (click)="selectZone(zone, $event)" />
                 </ng-container>
               </svg>
 
               <!-- ══════════ PUNTOS DE INTERÉS / HOTSPOTS INTERACTIVOS (z-20) ══════════ -->
               <ng-container *ngFor="let zone of getActiveZones()">
-                <div class="zone-hotspot-pin absolute z-20 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 cursor-pointer group/pin"
-                     [style.left.%]="getZoneCenter(zone).x"
-                     [style.top.%]="getZoneCenter(zone).y"
-                     (click)="selectZone(zone, $event)">
-                  
+                <div
+                  class="zone-hotspot-pin absolute z-20 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 cursor-pointer group/pin"
+                  [style.left.%]="getZoneCenter(zone).x" [style.top.%]="getZoneCenter(zone).y"
+                  (click)="selectZone(zone, $event)">
+
                   <!-- Hotspot Badge -->
-                  <div class="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-lg border backdrop-blur-md transition-all group-hover/pin:scale-110"
-                       [ngClass]="isZoneSelected(zone) 
+                  <div
+                    class="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-lg border backdrop-blur-md transition-all group-hover/pin:scale-110"
+                    [ngClass]="isZoneSelected(zone) 
                          ? 'bg-amber-500 text-white border-slate-300 ring-4 ring-amber-400 shadow-amber-500/20 scale-105' 
                          : 'bg-slate-900/85 text-white border-white/20 hover:bg-slate-900 shadow-slate-900/30'">
-                    
+
                     <i class="bi text-xs" [ngClass]="getZoneIcon(zone.zone_type)"></i>
-                    <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[120px]">{{ zone.name }}</span>
-                    
+                    <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[120px]">{{ zone.name
+                      }}</span>
+
                     <!-- Indicator dot -->
                     <span class="w-2 h-2 rounded-full shadow-2xs"
-                          [ngClass]="getConfiguredPartsForZoneObj(zone).length > 0 ? 'bg-emerald-400 shadow-emerald-400/80' : 'bg-slate-400'"></span>
+                      [ngClass]="getConfiguredPartsForZoneObj(zone).length > 0 ? 'bg-emerald-400 shadow-emerald-400/80' : 'bg-slate-400'"></span>
                   </div>
                 </div>
               </ng-container>
 
               <!-- ══════════ POPOVER FLOTANTE DE ZONA ACTIVA EN FIGURÍN (z-30) ══════════ -->
               <div *ngIf="selectedZone"
-                   class="zone-popover-container absolute z-30 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 max-w-[92vw] max-h-[75vh] overflow-y-auto custom-scrollbar bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-200 p-3.5 space-y-2.5 pointer-events-auto ring-1 ring-black/5 animate-in fade-in zoom-in-95"
-                   [style.left.%]="getZonePopoverLeft(selectedZone)"
-                   [style.top.%]="getZonePopoverTop(selectedZone)"
-                   (click)="$event.stopPropagation()">
+                class="zone-popover-container absolute z-30 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 max-w-[92vw] max-h-[75vh] overflow-y-auto custom-scrollbar bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-200 p-3.5 space-y-2.5 pointer-events-auto ring-1 ring-black/5 animate-in fade-in zoom-in-95"
+                [style.left.%]="getZonePopoverLeft(selectedZone)" [style.top.%]="getZonePopoverTop(selectedZone)"
+                (click)="$event.stopPropagation()">
 
                 <!-- Encabezado de la Zona -->
                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-sm shrink-0"
-                          [style.backgroundColor]="selectedZone.color || getZoneColor(selectedZone.zone_type)">
+                    <span
+                      class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-sm shrink-0"
+                      [style.backgroundColor]="selectedZone.color || getZoneColor(selectedZone.zone_type)">
                       <i class="bi" [ngClass]="getZoneIcon(selectedZone.zone_type)"></i>
                     </span>
                     <div class="min-w-0">
                       <h4 class="text-xs font-black text-slate-900 truncate uppercase mb-0">{{ selectedZone.name }}</h4>
-                      <p class="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-0">{{ getZoneLabel(selectedZone.zone_type) }}</p>
+                      <p class="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-0">{{
+                        getZoneLabel(selectedZone.zone_type) }}</p>
                     </div>
                   </div>
-                  <button type="button" 
-                          (click)="clearSelectedZone($event)"
-                          class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition cursor-pointer"
-                          title="Cerrar ventana emergente">
+                  <button type="button" (click)="clearSelectedZone($event)"
+                    class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition cursor-pointer"
+                    title="Cerrar ventana emergente">
                     <i class="bi bi-x-lg"></i>
                   </button>
                 </div>
@@ -1127,7 +1211,7 @@
                     Configuración de Zona ({{ getConfiguredPartsForZoneObj(selectedZone).length }})
                   </span>
                   <span class="px-2 py-0.5 rounded text-[9px] font-bold border"
-                        [ngClass]="getConfiguredPartsForZoneObj(selectedZone).length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                    [ngClass]="getConfiguredPartsForZoneObj(selectedZone).length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
                     {{ getConfiguredPartsForZoneObj(selectedZone).length > 0 ? '✓ Configurada' : 'Estándar' }}
                   </span>
                 </div>
@@ -1135,37 +1219,41 @@
                 <!-- Lista de partes configuradas en la zona -->
                 <div class="space-y-2">
                   <div *ngFor="let part of getConfiguredPartsForZoneObj(selectedZone)"
-                       class="p-2.5 rounded-xl border space-y-1.5"
-                       [ngClass]="!part.is_mandatory ? 'bg-slate-50 border-slate-200' : 'bg-emerald-50/40 border-emerald-200/80'">
-                    
+                    class="p-2.5 rounded-xl border space-y-1.5"
+                    [ngClass]="!part.is_mandatory ? 'bg-slate-50 border-slate-200' : 'bg-emerald-50/40 border-emerald-200/80'">
+
                     <!-- Nombre y Tiempo de la parte -->
                     <div class="flex items-center justify-between gap-1">
                       <div class="flex items-center gap-1.5 min-w-0">
-                        <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-slate-700 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
+                        <i class="bi text-xs"
+                          [ngClass]="!part.is_mandatory ? 'text-slate-700 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
                         <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
-                        <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-slate-100 text-slate-700 shrink-0">
+                        <span *ngIf="!part.is_mandatory"
+                          class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-slate-100 text-slate-700 shrink-0">
                           Opcional
                         </span>
                       </div>
-                      <span class="px-1.5 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded text-[9px] font-mono font-black shrink-0">
+                      <span
+                        class="px-1.5 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded text-[9px] font-mono font-black shrink-0">
                         {{ part.estimated_time || 0 }} min
                       </span>
                     </div>
 
                     <!-- Variante Seleccionada -->
-                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
-                         [ngClass]="!part.is_mandatory ? 'border border-slate-300' : 'border border-emerald-300'">
+                    <div
+                      class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
+                      [ngClass]="!part.is_mandatory ? 'border border-slate-300' : 'border border-emerald-300'">
                       <i class="bi bi-check-circle-fill text-xs shrink-0"
-                         [ngClass]="!part.is_mandatory ? 'text-amber-600' : 'text-emerald-600'"></i>
+                        [ngClass]="!part.is_mandatory ? 'text-amber-600' : 'text-emerald-600'"></i>
                       <span class="truncate font-black flex-1"
-                            [ngClass]="!part.is_mandatory ? 'text-slate-900' : 'text-emerald-950'">
+                        [ngClass]="!part.is_mandatory ? 'text-slate-900' : 'text-emerald-950'">
                         {{ extractVariantName(part) }}
                       </span>
                     </div>
 
                     <!-- Especificación Técnica de Confección -->
                     <div *ngIf="part.technical_spec && part.technical_spec !== extractVariantName(part)"
-                         class="p-2 bg-indigo-50/50 rounded-lg border border-indigo-200/80 text-[10px] space-y-0.5">
+                      class="p-2 bg-indigo-50/50 rounded-lg border border-indigo-200/80 text-[10px] space-y-0.5">
                       <span class="text-[8px] font-black text-indigo-700 uppercase tracking-wider block">
                         <i class="bi bi-gear-fill"></i> Especificación Técnica
                       </span>
@@ -1174,17 +1262,19 @@
 
                     <!-- Comentarios / Observaciones o Especificación Cliente -->
                     <div *ngIf="part.client_spec || part.exception_comment"
-                         class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-amber-300 shadow-2xs text-[10px]">
+                      class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-amber-300 shadow-2xs text-[10px]">
                       <i class="bi bi-chat-left-quote text-[10px] text-amber-600 ml-0.5 shrink-0"></i>
-                      <span class="text-amber-950 font-semibold px-1">{{ part.exception_comment || part.client_spec }}</span>
+                      <span class="text-amber-950 font-semibold px-1">{{ part.exception_comment || part.client_spec
+                        }}</span>
                     </div>
 
                     <!-- Excepción de Material / SIESA -->
                     <div *ngIf="part.material_exception || part.client_material_exception"
-                         class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-blue-300 shadow-2xs text-[10px]">
+                      class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-blue-300 shadow-2xs text-[10px]">
                       <i class="bi bi-palette text-[10px] text-blue-600 ml-0.5 shrink-0"></i>
                       <span class="text-blue-950 font-semibold px-1">
-                        {{ (part.material_exception || part.client_material_exception).descripcion || (part.material_exception || part.client_material_exception).referencia }}
+                        {{ (part.material_exception || part.client_material_exception).descripcion ||
+                        (part.material_exception || part.client_material_exception).referencia }}
                       </span>
                     </div>
 
@@ -1194,7 +1284,8 @@
                   <div *ngIf="getConfiguredPartsForZoneObj(selectedZone).length === 0" class="py-3 text-center px-2">
                     <i class="bi bi-check-circle text-slate-300 text-lg block mb-1"></i>
                     <p class="text-slate-500 text-[11px] font-bold mb-0">Sin configuraciones personalizadas</p>
-                    <p class="text-slate-400 text-[10px] mb-0">Esta zona aplicará la confección y corte base estándar del molde.</p>
+                    <p class="text-slate-400 text-[10px] mb-0">Esta zona aplicará la confección y corte base estándar
+                      del molde.</p>
                   </div>
                 </div>
 
@@ -1217,16 +1308,20 @@
       <!-- TAB 2: PASO A PASO TÉCNICO & FICHA DE CONFECCIÓN (Vista Taller)      -->
       <!-- ════════════════════════════════════════════════════════════════════ -->
       <div class="opm-step-view custom-scrollbar" *ngIf="opmModalTab === 'step_by_step'">
-        
+
         <!-- BANNER SUPERIOR DE RESUMEN TÉCNICO / KPI -->
-        <div class="p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl shadow-lg mb-4 flex items-center justify-between flex-wrap gap-4 border border-slate-700">
+        <div
+          class="p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl shadow-lg mb-4 flex items-center justify-between flex-wrap gap-4 border border-slate-700">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-blue-600 border border-blue-400/40 backdrop-blur-md text-white flex items-center justify-center text-2xl shadow-md">
+            <div
+              class="w-14 h-14 rounded-2xl bg-blue-600 border border-blue-400/40 backdrop-blur-md text-white flex items-center justify-center text-2xl shadow-md">
               <i class="bi bi-clipboard-data-fill"></i>
             </div>
             <div>
-              <span class="text-[10px] font-black uppercase tracking-widest text-blue-400 block">Hoja de Ruta Operacional Taller</span>
-              <h3 class="text-lg font-black text-white mb-0">{{ selectedOpmItem.descripcion || selectedOpmItem.mold?.name }}</h3>
+              <span class="text-[10px] font-black uppercase tracking-widest text-blue-400 block">Hoja de Ruta
+                Operacional Taller</span>
+              <h3 class="text-lg font-black text-white mb-0">{{ selectedOpmItem.descripcion ||
+                selectedOpmItem.mold?.name }}</h3>
               <p class="text-xs text-slate-300 font-medium mb-0">
                 Secuencia cronológica de operaciones, parámetros de ensamble y tiempos SAM de confección.
               </p>
@@ -1265,7 +1360,7 @@
 
           <!-- COLUMNA IZQUIERDA / PRINCIPAL: LISTADO PASO A PASO (8 Cols) -->
           <div class="lg:col-span-8 space-y-3.5">
-            
+
             <div class="flex items-center justify-between pb-1 flex-wrap gap-2">
               <div class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-full bg-blue-600 animate-pulse"></span>
@@ -1277,10 +1372,9 @@
                 <span class="text-xs font-bold text-slate-500 hidden sm:inline">
                   Desglose de operaciones por componente
                 </span>
-                <button type="button" 
-                        (click)="expandAllSteps(!areAllStepsExpanded())"
-                        class="px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 shadow-2xs"
-                        [ngClass]="areAllStepsExpanded() ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'">
+                <button type="button" (click)="expandAllSteps(!areAllStepsExpanded())"
+                  class="px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 shadow-2xs"
+                  [ngClass]="areAllStepsExpanded() ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'">
                   <i class="bi" [ngClass]="areAllStepsExpanded() ? 'bi-chevron-contract' : 'bi-chevron-expand'"></i>
                   <span>{{ areAllStepsExpanded() ? 'Colapsar Todo' : 'Expandir Todo' }}</span>
                 </button>
@@ -1288,35 +1382,38 @@
             </div>
 
             <!-- TARJETAS DE PASO A PASO (DESPLEGABLES / ACCORDION) -->
-            <div *ngFor="let step of getTechnicalSteps()" 
-                 class="bg-white rounded-2xl border transition-all overflow-hidden shadow-xs"
-                 [ngClass]="isStepExpanded(step.stepNumber) ? 'border-slate-400 ring-2 ring-slate-200 shadow-md' : 'border-slate-200 hover:border-slate-300'">
-              
+            <div *ngFor="let step of getTechnicalSteps()"
+              class="bg-white rounded-2xl border transition-all overflow-hidden shadow-xs"
+              [ngClass]="isStepExpanded(step.stepNumber) ? 'border-slate-400 ring-2 ring-slate-200 shadow-md' : 'border-slate-200 hover:border-slate-300'">
+
               <!-- Cabecera del Paso (Clickable Trigger) -->
               <div class="p-4 cursor-pointer select-none bg-white hover:bg-slate-50/70 transition-colors"
-                   (click)="toggleStepExpansion(step.stepNumber, $event)">
-                
+                (click)="toggleStepExpansion(step.stepNumber, $event)">
+
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-3 min-w-0">
                     <!-- Número de Paso en Grande -->
-                    <div class="w-10 h-10 rounded-xl bg-blue-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+                    <div
+                      class="w-10 h-10 rounded-xl bg-blue-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
                       {{ step.stepNumber }}
                     </div>
-                    
+
                     <div class="min-w-0">
                       <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-xs font-black text-slate-900 uppercase tracking-wide truncate">
                           {{ step.partName }}
                         </span>
-                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-black uppercase rounded-md border border-slate-200">
+                        <span
+                          class="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-black uppercase rounded-md border border-slate-200">
                           {{ step.zoneName }}
                         </span>
-                        <span *ngIf="!step.isMandatory" class="px-2 py-0.5 bg-slate-100 text-slate-800 text-[9px] font-black uppercase rounded-md">
+                        <span *ngIf="!step.isMandatory"
+                          class="px-2 py-0.5 bg-slate-100 text-slate-800 text-[9px] font-black uppercase rounded-md">
                           Opcional / Aplique
                         </span>
                         <!-- Badge de cantidad de sub-operaciones -->
-                        <span *ngIf="step.operations?.length > 0" 
-                              class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded-md flex items-center gap-1">
+                        <span *ngIf="step.operations?.length > 0"
+                          class="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold rounded-md flex items-center gap-1">
                           <i class="bi bi-list-task"></i>
                           {{ step.operations.length }} {{ step.operations.length === 1 ? 'operación' : 'operaciones' }}
                         </span>
@@ -1330,44 +1427,55 @@
 
                   <div class="flex items-center gap-2 shrink-0">
                     <!-- Badge de Tiempo SAM -->
-                    <div class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-900">
+                    <div
+                      class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-900">
                       <i class="bi bi-stopwatch text-indigo-600 text-sm"></i>
                       <div class="text-right">
-                        <span class="text-[8px] font-black uppercase tracking-wider block text-indigo-600 leading-none">Tiempo SAM</span>
-                        <span class="text-xs font-black font-mono leading-tight">{{ step.estimatedTime | number:'1.2-2' }} min</span>
+                        <span
+                          class="text-[8px] font-black uppercase tracking-wider block text-indigo-600 leading-none">Tiempo
+                          SAM</span>
+                        <span class="text-xs font-black font-mono leading-tight">{{ step.estimatedTime | number:'1.2-2'
+                          }} min</span>
                       </div>
                     </div>
 
                     <!-- Botón Indicador Chevron Toggle -->
-                    <div class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 bg-slate-100 group-hover:bg-slate-100 group-hover:text-amber-600 transition-all">
+                    <div
+                      class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 bg-slate-100 group-hover:bg-slate-100 group-hover:text-amber-600 transition-all">
                       <i class="bi bi-chevron-down text-sm transition-transform duration-200"
-                         [class.rotate-180]="isStepExpanded(step.stepNumber)"></i>
+                        [class.rotate-180]="isStepExpanded(step.stepNumber)"></i>
                     </div>
                   </div>
                 </div>
 
                 <!-- INSTRUCCIÓN TÉCNICA EN TEXTO GRANDE / LEGIBLE PARA OPERARIA / TALLER -->
-                <div class="mt-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-800 text-sm leading-relaxed font-medium">
+                <div
+                  class="mt-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-800 text-sm leading-relaxed font-medium">
                   {{ step.technicalInstruction }}
                 </div>
 
                 <!-- OBSERVACIÓN O REQUISITO DEL CLIENTE (Si existe) -->
-                <div *ngIf="step.clientRequirement" class="mt-2.5 p-2.5 bg-amber-50/80 border border-amber-300/90 rounded-xl flex items-start gap-2 text-xs">
+                <div *ngIf="step.clientRequirement"
+                  class="mt-2.5 p-2.5 bg-amber-50/80 border border-amber-300/90 rounded-xl flex items-start gap-2 text-xs">
                   <i class="bi bi-exclamation-triangle-fill text-amber-600 shrink-0 mt-0.5 text-sm"></i>
                   <div class="min-w-0">
-                    <span class="font-black text-amber-950 uppercase text-[10px] tracking-wider block">Observación / Excepción de Cliente:</span>
+                    <span class="font-black text-amber-950 uppercase text-[10px] tracking-wider block">Observación /
+                      Excepción de Cliente:</span>
                     <span class="font-semibold text-amber-900">{{ step.clientRequirement }}</span>
                   </div>
                 </div>
 
                 <!-- MATERIAL O INSUMO ESPECÍFICO (Si aplica) -->
-                <div *ngIf="step.material" class="mt-2.5 p-2 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                <div *ngIf="step.material"
+                  class="mt-2.5 p-2 bg-blue-50/80 border border-blue-200 rounded-xl flex items-center justify-between gap-2 text-xs">
                   <div class="flex items-center gap-2 min-w-0">
                     <i class="bi bi-palette-fill text-blue-600 shrink-0"></i>
                     <span class="text-slate-500 font-bold text-[10px] uppercase">Material:</span>
-                    <span class="font-bold text-blue-950 truncate">{{ step.material.descripcion || step.material.referencia }}</span>
+                    <span class="font-bold text-blue-950 truncate">{{ step.material.descripcion ||
+                      step.material.referencia }}</span>
                   </div>
-                  <span *ngIf="step.material.referencia" class="px-2 py-0.5 bg-white border border-blue-200 text-blue-700 font-mono font-bold text-[10px] rounded shrink-0">
+                  <span *ngIf="step.material.referencia"
+                    class="px-2 py-0.5 bg-white border border-blue-200 text-blue-700 font-mono font-bold text-[10px] rounded shrink-0">
                     Ref: {{ step.material.referencia }}
                   </span>
                 </div>
@@ -1375,9 +1483,9 @@
               </div>
 
               <!-- SECCIÓN DESPLEGABLE: DESGLOSE DE SUB-OPERACIONES -->
-              <div *ngIf="isStepExpanded(step.stepNumber)" 
-                   class="border-t border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100/50 p-4 space-y-3">
-                
+              <div *ngIf="isStepExpanded(step.stepNumber)"
+                class="border-t border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100/50 p-4 space-y-3">
+
                 <div class="flex items-center justify-between flex-wrap gap-2">
                   <div class="flex items-center gap-2">
                     <i class="bi bi-diagram-3-fill text-amber-600 text-sm"></i>
@@ -1391,10 +1499,12 @@
                 </div>
 
                 <!-- TABLA DE SUB-OPERACIONES -->
-                <div *ngIf="step.operations?.length > 0" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
+                <div *ngIf="step.operations?.length > 0"
+                  class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
                   <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider">
+                      <tr
+                        class="bg-slate-100/90 border-b border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider">
                         <th class="py-2.5 px-3 w-10 text-center">#</th>
                         <th class="py-2.5 px-3">Operación / Tarea de Confección</th>
                         <th class="py-2.5 px-3 w-40">Máquina / Puesto</th>
@@ -1409,16 +1519,19 @@
                         </td>
                         <td class="py-2 px-3">
                           <span class="font-bold text-slate-900 block leading-snug">{{ op.name }}</span>
-                          <span *ngIf="op.notes" class="text-[10px] text-slate-500 block italic mt-0.5">{{ op.notes }}</span>
+                          <span *ngIf="op.notes" class="text-[10px] text-slate-500 block italic mt-0.5">{{ op.notes
+                            }}</span>
                         </td>
                         <td class="py-2 px-3">
-                          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                          <span
+                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
                             <i class="bi bi-gear-fill text-slate-500 text-[9px]"></i>
                             {{ op.machine }}
                           </span>
                         </td>
                         <td class="py-2 px-3">
-                          <span class="text-[10px] font-bold uppercase text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                          <span
+                            class="text-[10px] font-bold uppercase text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                             {{ op.category }}
                           </span>
                         </td>
@@ -1429,7 +1542,8 @@
                     </tbody>
                     <tfoot>
                       <tr class="bg-slate-50 border-t border-slate-200 text-xs font-black">
-                        <td colspan="4" class="py-2 px-3 text-right text-slate-600 uppercase text-[10px] tracking-wider">
+                        <td colspan="4"
+                          class="py-2 px-3 text-right text-slate-600 uppercase text-[10px] tracking-wider">
                           Sumatoria de Operaciones:
                         </td>
                         <td class="py-2 px-3 text-right font-mono text-emerald-700">
@@ -1441,13 +1555,15 @@
                 </div>
 
                 <!-- Fallback cuando no hay operaciones detalladas individuales -->
-                <div *ngIf="!step.operations || step.operations.length === 0" 
-                     class="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs gap-3">
+                <div *ngIf="!step.operations || step.operations.length === 0"
+                  class="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs gap-3">
                   <div class="flex items-center gap-2 text-slate-600">
                     <i class="bi bi-info-circle-fill text-slate-500 text-sm shrink-0"></i>
-                    <span>Esta sección se ejecuta como una operación consolidada de ensamble para la variante <strong>{{ step.variantName }}</strong>.</span>
+                    <span>Esta sección se ejecuta como una operación consolidada de ensamble para la variante <strong>{{
+                        step.variantName }}</strong>.</span>
                   </div>
-                  <span class="font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 shrink-0">
+                  <span
+                    class="font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 shrink-0">
                     {{ step.estimatedTime | number:'1.2-2' }} min
                   </span>
                 </div>
@@ -1456,23 +1572,26 @@
 
             </div>
 
-            <div *ngIf="getTechnicalSteps().length === 0" class="p-8 text-center bg-white rounded-2xl border border-slate-200">
+            <div *ngIf="getTechnicalSteps().length === 0"
+              class="p-8 text-center bg-white rounded-2xl border border-slate-200">
               <i class="bi bi-card-checklist text-slate-300 text-4xl block mb-2"></i>
               <h5 class="text-sm font-black text-slate-700">Sin pasos técnicos configurados</h5>
-              <p class="text-xs text-slate-400 mb-0">Esta prenda utiliza el ensamble base estándar sin operaciones personalizadas.</p>
+              <p class="text-xs text-slate-400 mb-0">Esta prenda utiliza el ensamble base estándar sin operaciones
+                personalizadas.</p>
             </div>
 
           </div>
 
           <!-- COLUMNA DERECHA: MATRIZ DE ESPECIFICACIÓN TÉCNICA & PARÁMETROS (4 Cols) -->
           <div class="lg:col-span-4 space-y-4">
-            
+
             <!-- TARJETA: MATRIZ DE PARÁMETROS DE FICHA TÉCNICA -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
               <div class="p-3.5 bg-slate-900 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <i class="bi bi-sliders text-slate-400"></i>
-                  <h4 class="text-xs font-black uppercase tracking-wider mb-0 text-white">Parámetros de Ficha Técnica</h4>
+                  <h4 class="text-xs font-black uppercase tracking-wider mb-0 text-white">Parámetros de Ficha Técnica
+                  </h4>
                 </div>
                 <span class="px-2 py-0.5 bg-amber-500 text-white text-[9px] font-black uppercase rounded">
                   Estándar Saint
@@ -1486,7 +1605,7 @@
                     <span class="text-[10px] font-black uppercase text-slate-500 tracking-wider">{{ item.label }}</span>
                   </div>
                   <p class="text-xs font-bold text-slate-800 mb-0 leading-snug pl-4"
-                     [ngClass]="item.highlight ? 'text-slate-900 font-black' : ''">
+                    [ngClass]="item.highlight ? 'text-slate-900 font-black' : ''">
                     {{ item.value }}
                   </p>
                 </div>
@@ -1495,10 +1614,12 @@
 
             <!-- TARJETA: RESUMEN CONSOLIDADO DE INSUMOS & TELAS -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-              <div class="p-3.5 bg-gradient-to-r from-slate-50 to-amber-50/30 border-b border-slate-200 flex items-center justify-between">
+              <div
+                class="p-3.5 bg-gradient-to-r from-slate-50 to-amber-50/30 border-b border-slate-200 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <i class="bi bi-box-seam-fill text-slate-700"></i>
-                  <h4 class="text-xs font-black uppercase tracking-wider mb-0 text-slate-900">Insumos & Telas Requeridos</h4>
+                  <h4 class="text-xs font-black uppercase tracking-wider mb-0 text-slate-900">Insumos & Telas Requeridos
+                  </h4>
                 </div>
                 <span class="text-[10px] font-black font-mono text-slate-700">
                   {{ getConsolidatedMaterials().length }}
@@ -1506,17 +1627,19 @@
               </div>
 
               <div class="p-3 space-y-2">
-                <div *ngFor="let mat of getConsolidatedMaterials()" class="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                <div *ngFor="let mat of getConsolidatedMaterials()"
+                  class="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
                   <div class="flex items-center justify-between gap-1">
                     <span class="text-xs font-black text-slate-900 truncate">{{ mat.name }}</span>
                     <span class="text-[8px] font-black uppercase px-1.5 py-0.2 rounded"
-                          [ngClass]="mat.type === 'tela' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'">
+                      [ngClass]="mat.type === 'tela' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'">
                       {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
                     </span>
                   </div>
                   <div class="text-[10px] text-slate-500 flex items-center justify-between flex-wrap gap-1">
                     <span>Usado en: <strong>{{ mat.sourceParts.join(', ') }}</strong></span>
-                    <span *ngIf="mat.siesaRef" class="font-mono text-indigo-700 font-bold">SIESA: {{ mat.siesaRef }}</span>
+                    <span *ngIf="mat.siesaRef" class="font-mono text-indigo-700 font-bold">SIESA: {{ mat.siesaRef
+                      }}</span>
                   </div>
                   <div *ngIf="mat.siesaDesc" class="text-[10px] text-slate-600 truncate" [title]="mat.siesaDesc">
                     {{ mat.siesaDesc }}
@@ -1526,7 +1649,8 @@
                   </div>
                 </div>
 
-                <div *ngIf="getConsolidatedMaterials().length === 0" class="py-4 text-center text-xs text-slate-400 font-medium">
+                <div *ngIf="getConsolidatedMaterials().length === 0"
+                  class="py-4 text-center text-xs text-slate-400 font-medium">
                   Sin materiales especiales configurados
                 </div>
               </div>
@@ -1558,17 +1682,21 @@
   <!-- MODAL: DILIGENCIAR / MODIFICAR OPM (ESTRUCTURA IDÉNTICA A COMERCIALES)     -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <div *ngIf="isEditingOpmSpec && editingOpmItem" class="opm-modal-overlay" (click)="closeEditOpmModal()">
-    <div class="opm-modal-container bg-white p-4 sm:p-5 rounded-3xl flex flex-col overflow-hidden max-w-[1600px] w-[96vw] h-[94vh] shadow-2xl border border-slate-200" (click)="$event.stopPropagation()">
-      
+    <div
+      class="opm-modal-container bg-white p-4 sm:p-5 rounded-3xl flex flex-col overflow-hidden max-w-[1600px] w-[96vw] h-[94vh] shadow-2xl border border-slate-200"
+      (click)="$event.stopPropagation()">
+
       <!-- Cabecera del Editor OPM -->
       <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-200/80 flex-shrink-0">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center text-lg shadow-sm flex-shrink-0">
+          <div
+            class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center text-lg shadow-sm flex-shrink-0">
             <i class="bi bi-pencil-square"></i>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="px-2 py-0.5 bg-slate-100 text-slate-800 text-[10px] font-black uppercase rounded-md tracking-wider">
+              <span
+                class="px-2 py-0.5 bg-slate-100 text-slate-800 text-[10px] font-black uppercase rounded-md tracking-wider">
                 Diligenciamiento Técnico OPM
               </span>
               <span *ngIf="editingOpmItem.mold?.name" class="text-xs font-bold text-slate-500">
@@ -1580,17 +1708,16 @@
             </h2>
           </div>
         </div>
-        <button (click)="closeEditOpmModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs" title="Cerrar modal">
+        <button (click)="closeEditOpmModal()"
+          class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+          title="Cerrar modal">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
       <!-- Stepper OPM Idéntico a cuando se diligencia la prenda -->
       <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        <app-mold-opm-stepper
-          #stepperComponent
-          [item]="editingOpmItem"
-          [itemIndex]="0"
+        <app-mold-opm-stepper #stepperComponent [item]="editingOpmItem" [itemIndex]="0"
           (onOpmSaved)="onOpmSavedFromStepper($event)">
         </app-mold-opm-stepper>
       </div>
@@ -1602,20 +1729,27 @@
   <!-- MODAL: AGREGAR INSUMO / TELA (SIESA O MANUAL)                            -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <div *ngIf="showMaterialModal" class="opm-modal-overlay" (click)="cerrarModalMaterial()">
-    <div class="opm-modal-container bg-white rounded-[28px] flex flex-col overflow-hidden max-w-[1100px] w-[95%] max-h-[92vh] shadow-2xl border border-slate-100" (click)="$event.stopPropagation()">
-      
+    <div
+      class="opm-modal-container bg-white rounded-[28px] flex flex-col overflow-hidden max-w-[1100px] w-[95%] max-h-[92vh] shadow-2xl border border-slate-100"
+      (click)="$event.stopPropagation()">
+
       <!-- ═══ CABECERA OSCURA ═══ -->
-      <div class="p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 flex-shrink-0 rounded-t-[28px]">
+      <div
+        class="p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3 flex-shrink-0 rounded-t-[28px]">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
+          <div
+            class="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
             <i class="bi bi-boxes text-xl"></i>
           </div>
           <div>
             <h3 class="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2 mb-0">
               <span>Asignar Requerimiento de Material</span>
-              <span class="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 text-[9px] font-black rounded-full uppercase">Stock en Vivo</span>
+              <span
+                class="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 text-[9px] font-black rounded-full uppercase">Stock
+                en Vivo</span>
             </h3>
-            <p class="text-[11px] text-slate-400 font-medium mb-0">Selecciona desde el inventario SIESA o escribe una especificación libre para confección.</p>
+            <p class="text-[11px] text-slate-400 font-medium mb-0">Selecciona desde el inventario SIESA o escribe una
+              especificación libre para confección.</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -1624,11 +1758,14 @@
             <i class="bi bi-building text-slate-400"></i>
             <span class="text-[10px] font-bold text-slate-400 uppercase">Bodega:</span>
             <select [(ngModel)]="siesaSelectedBodega" (change)="buscarInsumosSiesa()"
-                    class="bg-transparent font-black text-white text-xs outline-none cursor-pointer">
-              <option *ngFor="let b of siesaBodegas" [value]="b.id" class="bg-slate-900 text-white">{{ b.id }} - {{ b.name }}</option>
+              class="bg-transparent font-black text-white text-xs outline-none cursor-pointer">
+              <option *ngFor="let b of siesaBodegas" [value]="b.id" class="bg-slate-900 text-white">{{ b.id }} - {{
+                b.name }}</option>
             </select>
           </div>
-          <button class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer" (click)="cerrarModalMaterial()">
+          <button
+            class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+            (click)="cerrarModalMaterial()">
             <i class="bi bi-x-lg text-sm"></i>
           </button>
         </div>
@@ -1637,13 +1774,13 @@
       <!-- ═══ TABS: SIESA vs MANUAL ═══ -->
       <div class="flex border-b border-slate-200 flex-shrink-0">
         <button (click)="setMaterialModalTab('siesa')"
-                class="pb-2.5 px-5 pt-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [ngClass]="materialModalTab === 'siesa' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+          class="pb-2.5 px-5 pt-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
+          [ngClass]="materialModalTab === 'siesa' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
           <i class="bi bi-database-check"></i> Catálogo SIESA
         </button>
         <button (click)="setMaterialModalTab('manual')"
-                class="pb-2.5 px-5 pt-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
-                [ngClass]="materialModalTab === 'manual' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
+          class="pb-2.5 px-5 pt-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer"
+          [ngClass]="materialModalTab === 'manual' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'">
           <i class="bi bi-pencil-square"></i> Especificación Libre
         </button>
       </div>
@@ -1655,31 +1792,32 @@
         <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-2.5 flex-shrink-0">
           <div class="flex-1 relative min-w-[200px]">
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <input type="text" [(ngModel)]="siesaSearchQuery" (input)="siesaFilterGroupedResults()" (keyup.enter)="buscarInsumosSiesa()"
-                   placeholder="Buscar por ID, referencia, nombre, color..."
-                   class="w-full pl-8 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-2xs" />
+            <input type="text" [(ngModel)]="siesaSearchQuery" (input)="siesaFilterGroupedResults()"
+              (keyup.enter)="buscarInsumosSiesa()" placeholder="Buscar por ID, referencia, nombre, color..."
+              class="w-full pl-8 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-2xs" />
             <button *ngIf="siesaSearchQuery" type="button" (click)="siesaSearchQuery = ''; buscarInsumosSiesa()"
-                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
               <i class="bi bi-x-circle-fill"></i>
             </button>
           </div>
-          <button (click)="buscarInsumosSiesa()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm shadow-blue-500/20 cursor-pointer flex items-center gap-1.5 transition-all">
+          <button (click)="buscarInsumosSiesa()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm shadow-blue-500/20 cursor-pointer flex items-center gap-1.5 transition-all">
             <i class="bi bi-search"></i> Buscar
           </button>
           <button (click)="toggleSiesaStock()"
-                  class="px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer"
-                  [ngClass]="siesaSoloConStock ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'">
+            class="px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer"
+            [ngClass]="siesaSoloConStock ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'">
             <i class="bi" [ngClass]="siesaSoloConStock ? 'bi-check2-circle' : 'bi-circle'"></i>
             <span>Solo con Stock</span>
           </button>
         </div>
 
         <!-- Tabs de Categorías -->
-        <div class="px-3 py-2 bg-white border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-          <button *ngFor="let g of siesaGruposDisponibles"
-                  (click)="siesaSetGroup(g.id)"
-                  class="px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 cursor-pointer"
-                  [ngClass]="(siesaSelectedCategory === g.label || (siesaSelectedCategory === 'TODOS' && g.id === '')) ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+        <div
+          class="px-3 py-2 bg-white border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
+          <button *ngFor="let g of siesaGruposDisponibles" (click)="siesaSetGroup(g.id)"
+            class="px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+            [ngClass]="(siesaSelectedCategory === g.label || (siesaSelectedCategory === 'TODOS' && g.id === '')) ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
             <i class="bi" [ngClass]="g.icon"></i>
             <span>{{ g.label }}</span>
           </button>
@@ -1687,9 +1825,10 @@
 
         <!-- Resumen de Material Seleccionado -->
         <div *ngIf="nuevoMaterial.siesa_referencia"
-             class="mx-3 mt-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 rounded-2xl flex items-center justify-between gap-3 shadow-2xs flex-shrink-0">
+          class="mx-3 mt-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 rounded-2xl flex items-center justify-between gap-3 shadow-2xs flex-shrink-0">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+            <div
+              class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
               <i class="bi bi-check-lg"></i>
             </div>
             <div class="min-w-0">
@@ -1697,15 +1836,17 @@
                 <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-200/80 text-emerald-900">
                   {{ nuevoMaterial.tipo_material }} SELECCIONADO
                 </span>
-                <span class="font-mono text-xs font-black text-emerald-950">Ref: {{ nuevoMaterial.siesa_referencia }}</span>
+                <span class="font-mono text-xs font-black text-emerald-950">Ref: {{ nuevoMaterial.siesa_referencia
+                  }}</span>
               </div>
               <p class="text-xs font-bold text-slate-800 truncate mb-0 mt-0.5">
-                {{ nuevoMaterial.siesa_descripcion }} <span *ngIf="nuevoMaterial.siesa_color" class="text-slate-500 font-normal">({{ nuevoMaterial.siesa_color }})</span>
+                {{ nuevoMaterial.siesa_descripcion }} <span *ngIf="nuevoMaterial.siesa_color"
+                  class="text-slate-500 font-normal">({{ nuevoMaterial.siesa_color }})</span>
               </p>
             </div>
           </div>
           <button type="button" (click)="deseleccionarItemSiesa()"
-                  class="px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-lg text-[10px] font-black border border-slate-200 transition-all cursor-pointer flex-shrink-0">
+            class="px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-lg text-[10px] font-black border border-slate-200 transition-all cursor-pointer flex-shrink-0">
             <i class="bi bi-x-lg mr-1"></i> Cambiar
           </button>
         </div>
@@ -1716,31 +1857,38 @@
           <!-- Estado de Carga -->
           <div *ngIf="isSearchingSiesa" class="flex flex-col items-center justify-center py-16">
             <div class="w-8 h-8 border-3 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
-            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-0">Consultando Inventario en SIESA...</p>
+            <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-0">Consultando Inventario en
+              SIESA...</p>
           </div>
 
           <!-- Sin Resultados -->
-          <div *ngIf="!isSearchingSiesa && siesaFilteredGroupedItems.length === 0 && siesaIsLoaded" class="flex flex-col items-center justify-center py-14 text-center">
-            <div class="w-14 h-14 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-300 text-2xl mb-3">
+          <div *ngIf="!isSearchingSiesa && siesaFilteredGroupedItems.length === 0 && siesaIsLoaded"
+            class="flex flex-col items-center justify-center py-14 text-center">
+            <div
+              class="w-14 h-14 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-300 text-2xl mb-3">
               <i class="bi bi-inboxes"></i>
             </div>
-            <p class="text-sm font-black text-slate-700 uppercase tracking-wider mb-0.5">No se encontraron materiales</p>
-            <p class="text-xs text-slate-400 mt-1 max-w-sm mb-0">Intenta buscar con otros términos o cambia la categoría.</p>
+            <p class="text-sm font-black text-slate-700 uppercase tracking-wider mb-0.5">No se encontraron materiales
+            </p>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mb-0">Intenta buscar con otros términos o cambia la
+              categoría.</p>
           </div>
 
           <!-- Grid de Tarjetas Agrupadas -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3" *ngIf="!isSearchingSiesa && siesaFilteredGroupedItems.length > 0">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3"
+            *ngIf="!isSearchingSiesa && siesaFilteredGroupedItems.length > 0">
             <div *ngFor="let item of siesaFilteredGroupedItems"
-                 class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between gap-2.5"
-                 [ngClass]="nuevoMaterial.siesa_referencia && item.selectedColor && nuevoMaterial.siesa_referencia === item.selectedColor.referencia && nuevoMaterial.siesa_id_color === item.selectedColor.id_color ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/30' : ''">
+              class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between gap-2.5"
+              [ngClass]="nuevoMaterial.siesa_referencia && item.selectedColor && nuevoMaterial.siesa_referencia === item.selectedColor.referencia && nuevoMaterial.siesa_id_color === item.selectedColor.id_color ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/30' : ''">
 
               <!-- Card Header -->
               <div>
                 <div class="flex items-start justify-between gap-2 mb-1">
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider"
-                          [ngClass]="item.es_tela ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-700 border border-slate-200'">
-                      <i class="bi" [ngClass]="item.es_tela ? 'bi-droplet-fill text-blue-600' : 'bi-box-seam text-slate-500'"></i>
+                      [ngClass]="item.es_tela ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-700 border border-slate-200'">
+                      <i class="bi"
+                        [ngClass]="item.es_tela ? 'bi-droplet-fill text-blue-600' : 'bi-box-seam text-slate-500'"></i>
                       {{ item.grupo || (item.es_tela ? 'TELA' : 'INSUMO') }}
                     </span>
                     <span class="text-[10px] font-mono font-bold text-slate-400">Ref: {{ item.referencia_base }}</span>
@@ -1754,20 +1902,24 @@
 
               <!-- Selector de Color & Stock -->
               <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5">
-                <div class="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                <div
+                  class="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-wider">
                   <span>Seleccionar Color:</span>
                   <span *ngIf="item.selectedColor"
-                        class="px-2 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1"
-                        [ngClass]="item.selectedColor.total_existencias > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
-                    <i class="bi" [ngClass]="item.selectedColor.total_existencias > 0 ? 'bi-check-circle-fill text-emerald-500' : 'bi-x-circle-fill text-rose-500'"></i>
-                    {{ item.selectedColor.total_existencias > 0 ? ('Disponible: ' + (item.selectedColor.total_existencias | number:'1.0-2') + (item.es_tela ? ' mts' : ' unds')) : 'Sin Existencias' }}
+                    class="px-2 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1"
+                    [ngClass]="item.selectedColor.total_existencias > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                    <i class="bi"
+                      [ngClass]="item.selectedColor.total_existencias > 0 ? 'bi-check-circle-fill text-emerald-500' : 'bi-x-circle-fill text-rose-500'"></i>
+                    {{ item.selectedColor.total_existencias > 0 ? ('Disponible: ' +
+                    (item.selectedColor.total_existencias | number:'1.0-2') + (item.es_tela ? ' mts' : ' unds')) : 'Sin
+                    Existencias' }}
                   </span>
                 </div>
-                <select [ngModel]="item.selectedColor"
-                        (ngModelChange)="onSiesaColorChange(item, $event)"
-                        class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer">
+                <select [ngModel]="item.selectedColor" (ngModelChange)="onSiesaColorChange(item, $event)"
+                  class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all cursor-pointer">
                   <option *ngFor="let col of item.colores" [ngValue]="col">
-                    {{ col.color || 'ÚNICO' }} — Stock: {{ col.total_existencias | number:'1.0-2' }} {{ item.es_tela ? 'mts' : 'unds' }} ({{ col.total_existencias > 0 ? 'DISPONIBLE' : 'AGOTADO' }})
+                    {{ col.color || 'ÚNICO' }} — Stock: {{ col.total_existencias | number:'1.0-2' }} {{ item.es_tela ?
+                    'mts' : 'unds' }} ({{ col.total_existencias > 0 ? 'DISPONIBLE' : 'AGOTADO' }})
                   </option>
                 </select>
               </div>
@@ -1778,7 +1930,7 @@
                   ID Item: <strong class="text-slate-700">{{ item.selectedColor.id_item }}</strong>
                 </div>
                 <button (click)="seleccionarMaterialGrouped(item)"
-                        class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm shadow-blue-500/20 transition-all flex items-center gap-1.5 ml-auto cursor-pointer">
+                  class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm shadow-blue-500/20 transition-all flex items-center gap-1.5 ml-auto cursor-pointer">
                   <i class="bi bi-check2"></i>
                   <span>Seleccionar Material</span>
                 </button>
@@ -1795,34 +1947,35 @@
         <div class="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar">
           <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
             <div>
-              <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1.5">Tipo de Material</label>
+              <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1.5">Tipo de
+                Material</label>
               <div class="grid grid-cols-3 gap-2">
                 <button type="button"
-                        (click)="nuevoMaterial.tipo_material = 'INSUMO'; nuevoMaterial.unidad_medida = 'UND'"
-                        class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
-                        [ngClass]="nuevoMaterial.tipo_material === 'INSUMO' ? 'bg-blue-50 border-blue-400 text-blue-800 shadow-xs ring-1 ring-blue-300' : 'bg-white border-slate-200 text-slate-600'">
+                  (click)="nuevoMaterial.tipo_material = 'INSUMO'; nuevoMaterial.unidad_medida = 'UND'"
+                  class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
+                  [ngClass]="nuevoMaterial.tipo_material === 'INSUMO' ? 'bg-blue-50 border-blue-400 text-blue-800 shadow-xs ring-1 ring-blue-300' : 'bg-white border-slate-200 text-slate-600'">
                   Insumo / Fornitura
                 </button>
                 <button type="button"
-                        (click)="nuevoMaterial.tipo_material = 'TELA'; nuevoMaterial.unidad_medida = 'METROS'"
-                        class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
-                        [ngClass]="nuevoMaterial.tipo_material === 'TELA' ? 'bg-blue-50 border-blue-400 text-blue-800 shadow-xs ring-1 ring-blue-300' : 'bg-white border-slate-200 text-slate-600'">
+                  (click)="nuevoMaterial.tipo_material = 'TELA'; nuevoMaterial.unidad_medida = 'METROS'"
+                  class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
+                  [ngClass]="nuevoMaterial.tipo_material === 'TELA' ? 'bg-blue-50 border-blue-400 text-blue-800 shadow-xs ring-1 ring-blue-300' : 'bg-white border-slate-200 text-slate-600'">
                   Tela Principal / Tejido
                 </button>
                 <button type="button"
-                        (click)="nuevoMaterial.tipo_material = 'AVIO'; nuevoMaterial.unidad_medida = 'UND'"
-                        class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
-                        [ngClass]="nuevoMaterial.tipo_material === 'AVIO' ? 'bg-slate-100 border-slate-400 text-slate-800 shadow-xs ring-1 ring-slate-300' : 'bg-white border-slate-200 text-slate-600'">
+                  (click)="nuevoMaterial.tipo_material = 'AVIO'; nuevoMaterial.unidad_medida = 'UND'"
+                  class="py-2 px-3 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer"
+                  [ngClass]="nuevoMaterial.tipo_material === 'AVIO' ? 'bg-slate-100 border-slate-400 text-slate-800 shadow-xs ring-1 ring-slate-300' : 'bg-white border-slate-200 text-slate-600'">
                   Avío / Etiqueta / Empaque
                 </button>
               </div>
             </div>
             <div>
-              <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">Descripción / Especificación Técnica</label>
-              <input type="text"
-                     [(ngModel)]="nuevoMaterial.descripcion_personalizada"
-                     placeholder="Ej: Botón pasta 4 huecos café, Dril Vulcano Azul Noche, Cremallera invisible..."
-                     class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-2xs">
+              <label class="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">Descripción /
+                Especificación Técnica</label>
+              <input type="text" [(ngModel)]="nuevoMaterial.descripcion_personalizada"
+                placeholder="Ej: Botón pasta 4 huecos café, Dril Vulcano Azul Noche, Cremallera invisible..."
+                class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-2xs">
             </div>
           </div>
         </div>
@@ -1838,13 +1991,13 @@
             <span class="text-[10px] font-black text-slate-500 uppercase">Destino:</span>
             <div class="flex bg-slate-100 rounded-lg p-0.5">
               <button type="button" (click)="seleccionarDestinoPrenda('all')"
-                      class="px-2.5 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer"
-                      [ngClass]="modalDestinoPrenda === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'">
+                class="px-2.5 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                [ngClass]="modalDestinoPrenda === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'">
                 🌐 Todas (Global)
               </button>
               <button type="button" (click)="seleccionarDestinoPrenda('specific')"
-                      class="px-2.5 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer"
-                      [ngClass]="modalDestinoPrenda === 'specific' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'">
+                class="px-2.5 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                [ngClass]="modalDestinoPrenda === 'specific' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'">
                 👕 Prenda Específica
               </button>
             </div>
@@ -1852,44 +2005,41 @@
 
           <!-- Selector Personalizado con Buscador de Prenda Específica -->
           <div *ngIf="modalDestinoPrenda === 'specific'" class="relative custom-prenda-dropdown-container">
-            
+
             <!-- Backdrop invisible para capturar cualquier clic fuera en toda la pantalla/modal -->
-            <div *ngIf="isPrendaDropdownOpen"
-                 class="fixed inset-0 z-40 bg-transparent"
-                 (click)="cerrarPrendaDropdown($event)"></div>
+            <div *ngIf="isPrendaDropdownOpen" class="fixed inset-0 z-40 bg-transparent"
+              (click)="cerrarPrendaDropdown($event)"></div>
 
             <!-- Botón Trigger Personalizado -->
-            <button type="button"
-                    (click)="togglePrendaDropdown($event)"
-                    class="relative z-50 px-3 py-1.5 bg-white hover:bg-blue-50/40 border border-blue-200 hover:border-blue-400 focus:border-blue-600 rounded-xl text-xs font-bold text-slate-800 transition-all flex items-center gap-2 shadow-2xs cursor-pointer select-none min-w-[220px] max-w-[340px] text-left">
-              <span class="w-4 h-4 rounded bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center shrink-0">
+            <button type="button" (click)="togglePrendaDropdown($event)"
+              class="relative z-50 px-3 py-1.5 bg-white hover:bg-blue-50/40 border border-blue-200 hover:border-blue-400 focus:border-blue-600 rounded-xl text-xs font-bold text-slate-800 transition-all flex items-center gap-2 shadow-2xs cursor-pointer select-none min-w-[220px] max-w-[340px] text-left">
+              <span
+                class="w-4 h-4 rounded bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center shrink-0">
                 #{{ getPrendaIndex(nuevoMaterial.solicitud_item_id) + 1 }}
               </span>
-              <span class="truncate flex-1 font-bold text-slate-800 text-[11px]" [title]="getPrendaSeleccionada()?.descripcion || 'Seleccionar prenda'">
-                {{ getPrendaSeleccionada()?.descripcion ? ('Prenda ' + (getPrendaIndex(nuevoMaterial.solicitud_item_id) + 1) + ': ' + getPrendaSeleccionada()?.descripcion) : 'Seleccionar prenda...' }}
+              <span class="truncate flex-1 font-bold text-slate-800 text-[11px]"
+                [title]="getPrendaSeleccionada()?.descripcion || 'Seleccionar prenda'">
+                {{ getPrendaSeleccionada()?.descripcion ? ('Prenda ' + (getPrendaIndex(nuevoMaterial.solicitud_item_id)
+                + 1) + ': ' + getPrendaSeleccionada()?.descripcion) : 'Seleccionar prenda...' }}
               </span>
-              <i class="bi bi-chevron-down text-[10px] text-slate-400 transition-transform shrink-0" [class.rotate-180]="isPrendaDropdownOpen"></i>
+              <i class="bi bi-chevron-down text-[10px] text-slate-400 transition-transform shrink-0"
+                [class.rotate-180]="isPrendaDropdownOpen"></i>
             </button>
 
             <!-- Menú Desplegable Flotante (Desplegado hacia arriba con buscador) -->
-            <div *ngIf="isPrendaDropdownOpen"
-                 (click)="$event.stopPropagation()"
-                 class="absolute bottom-full left-0 mb-2 w-[320px] sm:w-[360px] bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col">
-              
+            <div *ngIf="isPrendaDropdownOpen" (click)="$event.stopPropagation()"
+              class="absolute bottom-full left-0 mb-2 w-[320px] sm:w-[360px] bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col">
+
               <!-- Buscador Rápido de Prenda -->
               <div class="p-2.5 bg-slate-50 border-b border-slate-100">
                 <div class="relative">
                   <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                  <input type="text"
-                         id="prendaSearchInputId"
-                         [(ngModel)]="prendaSearchQuery"
-                         (click)="$event.stopPropagation()"
-                         placeholder="Buscar por nombre, ref..."
-                         class="w-full pl-7 pr-7 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs">
-                  <button *ngIf="prendaSearchQuery"
-                          type="button"
-                          (click)="prendaSearchQuery = ''; $event.stopPropagation()"
-                          class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                  <input type="text" id="prendaSearchInputId" [(ngModel)]="prendaSearchQuery"
+                    (click)="$event.stopPropagation()" placeholder="Buscar por nombre, ref..."
+                    class="w-full pl-7 pr-7 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs">
+                  <button *ngIf="prendaSearchQuery" type="button"
+                    (click)="prendaSearchQuery = ''; $event.stopPropagation()"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
                     <i class="bi bi-x-circle-fill"></i>
                   </button>
                 </div>
@@ -1897,23 +2047,26 @@
 
               <!-- Lista de Prendas Coincidentes -->
               <div class="max-h-56 overflow-y-auto p-1.5 custom-scrollbar space-y-1">
-                <button *ngFor="let it of prendasFiltradas"
-                        type="button"
-                        (click)="seleccionarPrendaDropdown(it, $event)"
-                        class="w-full text-left p-2 rounded-xl transition-all flex items-start gap-2 cursor-pointer"
-                        [ngClass]="nuevoMaterial.solicitud_item_id === it.id ? 'bg-blue-50 border border-blue-200 text-blue-900' : 'hover:bg-slate-50 text-slate-700 border border-transparent'">
-                  <span class="w-5 h-5 rounded-md bg-blue-100 text-blue-700 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                <button *ngFor="let it of prendasFiltradas" type="button"
+                  (click)="seleccionarPrendaDropdown(it, $event)"
+                  class="w-full text-left p-2 rounded-xl transition-all flex items-start gap-2 cursor-pointer"
+                  [ngClass]="nuevoMaterial.solicitud_item_id === it.id ? 'bg-blue-50 border border-blue-200 text-blue-900' : 'hover:bg-slate-50 text-slate-700 border border-transparent'">
+                  <span
+                    class="w-5 h-5 rounded-md bg-blue-100 text-blue-700 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
                     {{ getPrendaIndex(it.id) + 1 }}
                   </span>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-1">
-                      <span class="text-xs font-bold truncate" [ngClass]="nuevoMaterial.solicitud_item_id === it.id ? 'text-blue-950 font-black' : 'text-slate-900'">
+                      <span class="text-xs font-bold truncate"
+                        [ngClass]="nuevoMaterial.solicitud_item_id === it.id ? 'text-blue-950 font-black' : 'text-slate-900'">
                         {{ it.descripcion }}
                       </span>
-                      <i *ngIf="nuevoMaterial.solicitud_item_id === it.id" class="bi bi-check-lg text-blue-600 text-xs font-black shrink-0"></i>
+                      <i *ngIf="nuevoMaterial.solicitud_item_id === it.id"
+                        class="bi bi-check-lg text-blue-600 text-xs font-black shrink-0"></i>
                     </div>
                     <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 font-medium flex-wrap">
-                      <span *ngIf="it.siesa_referencia" class="font-mono text-blue-700 font-bold">Ref: {{ it.siesa_referencia }}</span>
+                      <span *ngIf="it.siesa_referencia" class="font-mono text-blue-700 font-bold">Ref: {{
+                        it.siesa_referencia }}</span>
                       <span *ngIf="it.cantidad_muestra">· {{ it.cantidad_muestra }} uds</span>
                       <span *ngIf="it.item_cliente">· {{ it.item_cliente }}</span>
                     </div>
@@ -1937,18 +2090,22 @@
           <div class="flex items-center gap-1.5">
             <span class="text-[10px] font-black text-slate-500 uppercase">Cantidad:</span>
             <div class="flex items-center gap-0.5">
-              <button type="button" (click)="ajustarCantidadRequeridaModal(-1)" class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer flex items-center justify-center">-1</button>
+              <button type="button" (click)="ajustarCantidadRequeridaModal(-1)"
+                class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer flex items-center justify-center">-1</button>
               <input type="number" [(ngModel)]="nuevoMaterial.cantidad_requerida" min="1" step="1"
-                     class="w-16 px-1.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-black font-mono text-center">
-              <button type="button" (click)="ajustarCantidadRequeridaModal(1)" class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer flex items-center justify-center">+1</button>
-              <button type="button" (click)="ajustarCantidadRequeridaModal(5)" class="w-5 h-5 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 text-[10px] font-black cursor-pointer flex items-center justify-center">+5</button>
-              <button type="button" (click)="ajustarCantidadRequeridaModal(10)" class="w-6 h-5 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 text-[10px] font-black cursor-pointer flex items-center justify-center">+10</button>
+                class="w-16 px-1.5 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-black font-mono text-center">
+              <button type="button" (click)="ajustarCantidadRequeridaModal(1)"
+                class="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-black cursor-pointer flex items-center justify-center">+1</button>
+              <button type="button" (click)="ajustarCantidadRequeridaModal(5)"
+                class="w-5 h-5 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 text-[10px] font-black cursor-pointer flex items-center justify-center">+5</button>
+              <button type="button" (click)="ajustarCantidadRequeridaModal(10)"
+                class="w-6 h-5 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 text-[10px] font-black cursor-pointer flex items-center justify-center">+10</button>
             </div>
           </div>
 
           <!-- Unidad -->
           <select [(ngModel)]="nuevoMaterial.unidad_medida"
-                  class="px-2 py-1 text-[11px] bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-800">
+            class="px-2 py-1 text-[11px] bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-800">
             <option value="METROS">Metros (MTR)</option>
             <option value="UND">Unidades (UND)</option>
             <option value="CONOS">Conos</option>
@@ -1960,10 +2117,12 @@
 
         <!-- Botones Cancelar / Guardar -->
         <div class="flex items-center justify-between">
-          <button (click)="cerrarModalMaterial()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
+          <button (click)="cerrarModalMaterial()"
+            class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
             Cancelar
           </button>
-          <button (click)="guardarNuevoMaterial()" class="px-7 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 cursor-pointer">
+          <button (click)="guardarNuevoMaterial()"
+            class="px-7 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 cursor-pointer">
             <i class="bi bi-check-circle-fill"></i> Guardar Requerimiento
           </button>
         </div>
@@ -1976,20 +2135,25 @@
   <!-- MODAL: REGISTRO DE DESPACHO / ENTREGA DE MATERIAL                        -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <div *ngIf="showDespachoModal && despachoItem" class="opm-modal-overlay" (click)="cerrarModalDespacho()">
-    <div class="opm-modal-container bg-white p-6 rounded-3xl flex flex-col overflow-hidden max-w-lg w-full" (click)="$event.stopPropagation()">
-      
+    <div class="opm-modal-container bg-white p-6 rounded-3xl flex flex-col overflow-hidden max-w-lg w-full"
+      (click)="$event.stopPropagation()">
+
       <!-- Cabecera -->
       <div class="flex items-center justify-between pb-3.5 mb-3 border-b border-slate-200 flex-shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md">
+          <div
+            class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md">
             <i class="bi bi-truck"></i>
           </div>
           <div>
-            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase rounded">Cadena de Abastecimiento</span>
-            <h2 class="text-sm font-black text-slate-900 uppercase tracking-wide mb-0">Registrar Entrega de Material</h2>
+            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase rounded">Cadena de
+              Abastecimiento</span>
+            <h2 class="text-sm font-black text-slate-900 uppercase tracking-wide mb-0">Registrar Entrega de Material
+            </h2>
           </div>
         </div>
-        <button (click)="cerrarModalDespacho()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer">
+        <button (click)="cerrarModalDespacho()"
+          class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
@@ -2002,42 +2166,45 @@
             {{ despachoItem.siesa_descripcion || despachoItem.descripcion_personalizada }}
           </p>
           <div class="flex items-center gap-3 text-[11px] text-slate-500 mt-1">
-            <span>Requerido: <strong>{{ despachoItem.cantidad_requerida }} {{ despachoItem.unidad_medida }}</strong></span>
-            <span>Entregado actual: <strong>{{ despachoItem.cantidad_entregada || 0 }} {{ despachoItem.unidad_medida }}</strong></span>
+            <span>Requerido: <strong>{{ despachoItem.cantidad_requerida }} {{ despachoItem.unidad_medida
+                }}</strong></span>
+            <span>Entregado actual: <strong>{{ despachoItem.cantidad_entregada || 0 }} {{ despachoItem.unidad_medida
+                }}</strong></span>
           </div>
         </div>
 
         <div>
-          <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Cantidad a Entregar Ahora</label>
-          <input type="number"
-                 [(ngModel)]="despachoCantidad"
-                 min="0.1"
-                 step="0.1"
-                 class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 font-bold font-mono text-emerald-800">
+          <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Cantidad a Entregar
+            Ahora</label>
+          <input type="number" [(ngModel)]="despachoCantidad" min="0.1" step="0.1"
+            class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 font-bold font-mono text-emerald-800">
         </div>
 
         <div class="flex items-center gap-2">
-          <input type="checkbox" id="chkEsTotal" [(ngModel)]="despachoEsTotal" class="rounded text-emerald-600 focus:ring-emerald-500">
+          <input type="checkbox" id="chkEsTotal" [(ngModel)]="despachoEsTotal"
+            class="rounded text-emerald-600 focus:ring-emerald-500">
           <label for="chkEsTotal" class="text-xs font-bold text-slate-700 cursor-pointer">
             Marcar como Entrega Total / Completa
           </label>
         </div>
 
         <div>
-          <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Observaciones / Lote / Rollo (Opcional)</label>
-          <input type="text"
-                 [(ngModel)]="despachoObservaciones"
-                 placeholder="Ej: Rollo #4032 entregado a taller de muestras..."
-                 class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 font-medium">
+          <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Observaciones / Lote /
+            Rollo (Opcional)</label>
+          <input type="text" [(ngModel)]="despachoObservaciones"
+            placeholder="Ej: Rollo #4032 entregado a taller de muestras..."
+            class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 font-medium">
         </div>
       </div>
 
       <!-- Pie -->
       <div class="flex items-center justify-between pt-3 mt-4 border-t border-slate-200 flex-shrink-0">
-        <button (click)="cerrarModalDespacho()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
+        <button (click)="cerrarModalDespacho()"
+          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
           Cancelar
         </button>
-        <button (click)="confirmarDespacho()" [disabled]="isSavingDespacho" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+        <button (click)="confirmarDespacho()" [disabled]="isSavingDespacho"
+          class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
           <i class="bi bi-check-circle-fill"></i>
           {{ isSavingDespacho ? 'Guardando...' : 'Confirmar Entrega' }}
         </button>
@@ -2047,6 +2214,3 @@
   </div>
 
 </div>
-
-
-

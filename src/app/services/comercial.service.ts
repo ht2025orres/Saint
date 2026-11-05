@@ -42,6 +42,9 @@ export interface SolicitudItem {
   ref_siesa_item_rowid?: number | null;
   ref_siesa_referencia?: string | null;
   ref_siesa_descripcion?: string | null;
+  requiere_costeo?: boolean;
+  requiere_muestra?: boolean;
+  siesa_opm_consecutivo?: string | null;
   tallas: SolicitudItemTalla[];
 }
 
@@ -96,6 +99,7 @@ export interface Solicitud {
   cantidad_anual: number;
   imagen_referencia_url?: string;
   estado?: string;
+  siesa_opm_consecutivo?: string | null;
   mold_id?: number | null;
   items?: SolicitudItem[];
   versiones?: SolicitudVersion[];
