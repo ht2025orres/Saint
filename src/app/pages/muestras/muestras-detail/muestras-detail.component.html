@@ -517,32 +517,13 @@
                       </button>
                     </div>
 
-                    <!-- Semáforo de antigüedad de costo -->
-                    <div class="flex items-center gap-1 mt-0.5">
-                      <span *ngIf="mat.fuente_costo === 'LOGISTICA'"
-                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-50 text-purple-700 border border-purple-200"
-                        title="Costo ajustado manualmente por Logística">
-                        LOGÍSTICA
-                      </span>
-                      <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.estado_costo === 'VERDE'"
-                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        title="Costo Kardex reciente (< 30 días)">
-                        KARDEX RECIENTE
-                      </span>
-                      <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.estado_costo === 'AMARILLO'"
-                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200"
-                        title="Costo Kardex moderado (30 a 90 días)">
-                        KARDEX {{ mat.antiguedad_dias }}d
-                      </span>
-                      <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.estado_costo === 'ROJO'"
-                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-50 text-rose-700 border border-rose-200"
-                        title="Costo Kardex desactualizado (> 90 días). Requiere revisión de logística">
-                        DESACTUALIZADO
-                      </span>
-                      <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.costo_vigente_final && mat.estado_costo !== 'VERDE' && mat.estado_costo !== 'AMARILLO' && mat.estado_costo !== 'ROJO'"
-                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-slate-100 text-slate-600 border border-slate-200"
-                        title="Costo registrado en SIESA">
-                        KARDEX SIESA
+                    <!-- Antigüedad y Semáforo del Costo -->
+                    <div *ngIf="mat.costo_vigente_final" class="flex items-center gap-1 mt-0.5">
+                      <span class="px-2 py-0.5 rounded text-[9px] font-bold tracking-wide border inline-flex items-center gap-1"
+                        [ngClass]="getClaseAntiguedadCosto(mat)"
+                        [title]="mat.fecha_ultimo_costo_siesa ? ('Fecha última compra / Kardex SIESA: ' + mat.fecha_ultimo_costo_siesa + (mat.antiguedad_dias !== null ? ' (' + mat.antiguedad_dias + ' días)' : '')) : (mat.fuente_costo === 'LOGISTICA' ? 'Costo vigente fijado por Logística' : 'Costo registrado')">
+                        <i class="bi bi-clock-history text-[8px]"></i>
+                        {{ getTextoAntiguedadCosto(mat) }}
                       </span>
                     </div>
                   </div>

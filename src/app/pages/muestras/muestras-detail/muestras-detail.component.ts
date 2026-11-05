@@ -1218,28 +1218,26 @@ export class MuestrasDetailComponent implements OnInit {
       // 1. Tela asignada directamente al ítem (ref_siesa_referencia o ref_siesa_descripcion)
       const itemTelaRef = (item.ref_siesa_referencia || '').trim();
       const itemTelaDesc = (item.ref_siesa_descripcion || '').trim();
-      if (itemTelaRef || itemTelaDesc) {
-        const telaKey1 = `${item.id || 'no-item'}_${itemTelaRef.toLowerCase()}`;
-        const telaKey2 = `${item.id || 'no-item'}_tela principal`;
-        if (!existingTrackingKeys.has(telaKey1) && !existingTrackingKeys.has(telaKey2)) {
-          existingTrackingKeys.add(telaKey1);
-          existingTrackingKeys.add(telaKey2);
-          pendingPayload.push({
-            solicitud_item_id: item.id,
-            technical_spec_id: item.technical_spec_id || item.technical_spec?.id || null,
-            nombre_material: 'Tela Principal',
-            tipo_material: 'TELA',
-            grupo_insumo: 'TELAS',
-            origen_asignacion: itemTelaRef ? 'SIESA' : 'MANUAL',
-            siesa_id_item: itemTelaRef || null,
-            siesa_referencia: itemTelaRef || null,
-            siesa_descripcion: itemTelaDesc || null,
-            descripcion_personalizada: `Tela Principal${itemTelaDesc ? ' - ' + itemTelaDesc : ''}`,
-            cantidad_requerida: Math.max(1, Math.round(units * 1.5 * 10) / 10),
-            unidad_medida: 'METROS',
-            creado_por_rol: 'INGENIERIA'
-          });
-        }
+      const telaKey1 = `${item.id || 'no-item'}_${itemTelaRef.toLowerCase()}`;
+      const telaKey2 = `${item.id || 'no-item'}_tela principal`;
+      if (!existingTrackingKeys.has(telaKey1) && !existingTrackingKeys.has(telaKey2)) {
+        existingTrackingKeys.add(telaKey1);
+        existingTrackingKeys.add(telaKey2);
+        pendingPayload.push({
+          solicitud_item_id: item.id,
+          technical_spec_id: item.technical_spec_id || item.technical_spec?.id || null,
+          nombre_material: 'Tela Principal',
+          tipo_material: 'TELA',
+          grupo_insumo: 'TELAS',
+          origen_asignacion: itemTelaRef ? 'SIESA' : 'MANUAL',
+          siesa_id_item: itemTelaRef || null,
+          siesa_referencia: itemTelaRef || null,
+          siesa_descripcion: itemTelaDesc || null,
+          descripcion_personalizada: itemTelaDesc ? `Tela Principal - ${itemTelaDesc}` : 'Tela Principal',
+          cantidad_requerida: Math.max(1, Math.round(units * 1.5 * 10) / 10),
+          unidad_medida: 'METROS',
+          creado_por_rol: 'INGENIERIA'
+        });
       }
 
       // 2. Materiales guardados en la ficha técnica / OPM
@@ -1530,7 +1528,7 @@ export class MuestrasDetailComponent implements OnInit {
       case 'PENDIENTES_SIESA':
         return this.materialesAgrupados.filter(m => m.estadoDefinicion === 'PENDIENTE');
       case 'PENDIENTES_COSTO':
-        return this.materialesAgrupados.filter(m => !m.costo_vigente_final || m.estado_costo === 'ROJO');
+        return this.materialesAgrupados.filter(m => !m.costo_vigente_final || m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'ROJO' || (m.antiguedad_dias !== null && m.antiguedad_dias > 90));
       default:
         return this.materialesAgrupados;
     }
@@ -1549,7 +1547,48 @@ export class MuestrasDetailComponent implements OnInit {
   }
 
   get conteoPendientesCosto(): number {
-    return (this.materialesAgrupados || []).filter(m => !m.costo_vigente_final || m.estado_costo === 'ROJO').length;
+    return (this.materialesAgrupados || []).filter(m => !m.costo_vigente_final || m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'ROJO' || (m.antiguedad_dias !== null && m.antiguedad_dias > 90)).length;
+  }
+
+  getTextoAntiguedadCosto(mat: any): string {
+    if (mat.fuente_costo === 'LOGISTICA') {
+      return 'Logística';
+    }
+    if (mat.antiguedad_dias !== null && mat.antiguedad_dias !== undefined) {
+      const d = Number(mat.antiguedad_dias);
+      if (d === 0) return 'Hoy';
+      if (d === 1) return 'Hace 1 día';
+      if (d < 30) return `Hace ${d} días`;
+      if (d < 60) return 'Hace 1 mes';
+      if (d < 365) {
+        const meses = Math.floor(d / 30);
+        return `Hace ${meses} meses`;
+      }
+      const anios = Math.floor(d / 365);
+      return anios === 1 ? 'Hace 1 año' : `Hace ${anios} años`;
+    }
+    if (mat.fecha_ultimo_costo_siesa) {
+      return `Kardex: ${mat.fecha_ultimo_costo_siesa}`;
+    }
+    return 'Sin fecha';
+  }
+
+  getClaseAntiguedadCosto(mat: any): string {
+    if (mat.fuente_costo === 'LOGISTICA') {
+      return 'bg-purple-50 text-purple-700 border-purple-200';
+    }
+    const d = mat.antiguedad_dias;
+    const est = mat.estado_costo;
+    if (est === 'VIGENTE' || est === 'VERDE' || (d !== null && d !== undefined && d <= 45)) {
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    }
+    if (est === 'ALERTA' || est === 'AMARILLO' || (d !== null && d !== undefined && d <= 90)) {
+      return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+    if (est === 'DESACTUALIZADO' || est === 'ROJO' || (d !== null && d !== undefined && d > 90)) {
+      return 'bg-rose-50 text-rose-700 border-rose-200';
+    }
+    return 'bg-slate-100 text-slate-600 border-slate-200';
   }
   showMaterialModal = false;
   materialModalTab: 'siesa' | 'manual' = 'siesa';
@@ -1837,18 +1876,16 @@ export class MuestrasDetailComponent implements OnInit {
       }
 
       // Clave de agrupación inteligente:
-      // - Si es TELA y tiene código SIESA: agrupa prendas que comparten la misma tela y rol
-      // - Si es TELA y está por definir: se mantiene separada por prenda para que cada prenda tenga su propia tela asignable
+      // - Si es TELA y pertenece a una prenda (solicitud_item_id): cada prenda gestiona su propia tela de forma independiente
+      // - Si es TELA global (sin solicitud_item_id): se agrupa por rol y referencia SIESA
       // - Si es INSUMO: se agrupa por nombre y código SIESA (o general)
       let key = rawName.toLowerCase().trim();
       if (tipoMaterial === 'TELA') {
         const siesaRef = (m.siesa_referencia || '').toLowerCase().trim();
-        if (siesaRef) {
-          key = `tela_${rolTela}_ref_${siesaRef}`;
-        } else if (m.solicitud_item_id) {
-          key = `tela_${rolTela}_item_${m.solicitud_item_id}_${rawName.toLowerCase().trim()}`;
+        if (m.solicitud_item_id) {
+          key = `tela_${rolTela}_item_${m.solicitud_item_id}_${siesaRef || rawName.toLowerCase().trim()}`;
         } else {
-          key = `tela_${rolTela}_global_${rawName.toLowerCase().trim()}`;
+          key = `tela_${rolTela}_global_${siesaRef || rawName.toLowerCase().trim()}`;
         }
       } else {
         key = `insumo_${rawName.toLowerCase().trim()}_${(m.siesa_referencia || '').toLowerCase().trim()}`;
