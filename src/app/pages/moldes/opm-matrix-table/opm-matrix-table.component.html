@@ -121,6 +121,17 @@
                 <th *ngIf="group.columns.length === 0" class="py-2 px-4 text-center text-slate-400 font-bold min-w-[280px]">
                   Partes Anatómicas & Variantes
                 </th>
+                <!-- COLUMNA REQUIERE COSTEO (Si aplica en la solicitud) -->
+                <th *ngIf="mode === 'solicitud' && requiereCosteo" class="py-2 px-2 text-center min-w-[90px]">
+                  <div class="flex flex-col items-center gap-0.5">
+                    <span>Costeo</span>
+                    <div class="inline-flex items-center gap-1">
+                      <button type="button" (click)="toggleAllCosteo(true, $event)" class="text-[8px] font-bold text-emerald-600 hover:underline cursor-pointer" title="Marcar todos para costeo">Todos</button>
+                      <span class="text-[8px] text-slate-300">|</span>
+                      <button type="button" (click)="toggleAllCosteo(false, $event)" class="text-[8px] font-bold text-slate-500 hover:underline cursor-pointer" title="Desmarcar todos de costeo">Ninguno</button>
+                    </div>
+                  </div>
+                </th>
                 <th class="py-2 px-2 text-center min-w-[110px]">Tallas</th>
                 <th class="py-2 px-2.5 w-24 text-right">Acciones</th>
               </tr>
@@ -306,15 +317,63 @@
                   </div>
                 </td>
 
+                <!-- Columna Requiere Costeo (si aplica) -->
+                <td *ngIf="mode === 'solicitud' && requiereCosteo" class="py-2 px-1.5 text-center">
+                  <button type="button" 
+                          (click)="toggleItemCosteo(entry.item, $event)" 
+                          class="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer inline-flex items-center gap-1 border"
+                          [ngClass]="entry.item.requiere_costeo 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs hover:bg-emerald-100' 
+                            : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'"
+                          [title]="entry.item.requiere_costeo ? 'Ítem incluido para costeo comercial' : 'Clic para incluir en costeo comercial'">
+                    <i class="bi" [ngClass]="entry.item.requiere_costeo ? 'bi-check-circle-fill text-emerald-600' : 'bi-circle text-slate-300'"></i>
+                    <span>{{ entry.item.requiere_costeo ? 'Cotizar' : 'No' }}</span>
+                  </button>
+                </td>
+
                 <!-- Tallas & Cantidad (Compacto) -->
                 <td class="py-2 px-1.5 text-center">
-                  <button type="button"
-                          (click)="openTallasQuickModal(entry.originalIndex)"
-                          class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5 text-xs font-black"
-                          title="Editar tallas y cantidades">
-                    <span>{{ getItemTotal(entry.item) | number }} uds</span>
-                    <span class="text-[9.5px] font-normal text-slate-500">({{ entry.item.tallas.length }}T)</span>
-                  </button>
+                  <div class="flex flex-col items-center gap-1">
+                    <!-- Si requiereMuestra es false -->
+                    <button *ngIf="!requiereMuestra"
+                            type="button"
+                            (click)="openTallasQuickModal(entry.originalIndex)"
+                            class="px-2 py-0.5 rounded-lg bg-slate-50 text-slate-400 border border-slate-200/80 cursor-pointer inline-flex items-center gap-1 text-[11px]"
+                            title="Sin muestra física requerida. Clic para más información">
+                      <i class="bi bi-lock-fill text-[9px] text-slate-300"></i>
+                      <span>0 uds</span>
+                    </button>
+
+                    <!-- Si requiereMuestra es true -->
+                    <button *ngIf="requiereMuestra"
+                            type="button"
+                            (click)="openTallasQuickModal(entry.originalIndex)"
+                            class="px-2 py-1 rounded-lg transition-all cursor-pointer shadow-2xs inline-flex items-center gap-1.5 text-xs font-black border"
+                            [ngClass]="getItemTotal(entry.item) > 0 
+                              ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border-indigo-200' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'"
+                            title="Editar tallas y cantidades a confeccionar">
+                      <span>{{ getItemTotal(entry.item) | number }} uds</span>
+                      <span class="text-[9.5px] font-normal text-slate-500">({{ entry.item.tallas.length }}T)</span>
+                    </button>
+
+                    <!-- Badge de clasificación del ítem (sutil) -->
+                    <span *ngIf="entry.item.requiere_costeo && getItemTotal(entry.item) > 0" 
+                          class="text-[7.5px] font-black px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-tight"
+                          title="Este ítem requiere confección de muestra y cotización">
+                      Muestra + Costeo
+                    </span>
+                    <span *ngIf="entry.item.requiere_costeo && (!requiereMuestra || getItemTotal(entry.item) === 0)" 
+                          class="text-[7.5px] font-black px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-tight"
+                          title="Este ítem solo requiere cálculo de cotización comercial">
+                      Solo Costeo
+                    </span>
+                    <span *ngIf="!entry.item.requiere_costeo && requiereMuestra && getItemTotal(entry.item) > 0" 
+                          class="text-[7.5px] font-black px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 uppercase tracking-tight"
+                          title="Este ítem solo requiere confección física de muestra">
+                      Solo Muestra
+                    </span>
+                  </div>
                 </td>
 
                 <!-- Acciones (Compacto: Notas/Archivos, Duplicar y Eliminar) -->

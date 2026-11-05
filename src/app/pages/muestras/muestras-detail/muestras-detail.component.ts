@@ -1807,6 +1807,14 @@ export class MuestrasDetailComponent implements OnInit {
           rawItems: [],
           prendasMap: new Map<number, any>(),
           esPorPrenda: !!m.solicitud_item_id,
+          firstId: m.id,
+          costo_vigente_final: m.costo_vigente_final ?? m.costo_vigente_logistica ?? m.ultimo_costo_siesa ?? null,
+          ultimo_costo_siesa: m.ultimo_costo_siesa ?? null,
+          fecha_ultimo_costo_siesa: m.fecha_ultimo_costo_siesa ?? null,
+          costo_vigente_logistica: m.costo_vigente_logistica ?? null,
+          antiguedad_dias: m.antiguedad_dias ?? null,
+          estado_costo: m.estado_costo ?? 'SIN_MOVIMIENTO',
+          fuente_costo: m.fuente_costo ?? 'SIESA',
           prendaAsignada: itemObj ? {
             id: itemObj.id,
             descripcion: itemObj.descripcion,
@@ -2087,6 +2095,132 @@ export class MuestrasDetailComponent implements OnInit {
       },
       error: () => {
         this.isLoadingMateriales = false;
+      }
+    });
+  }
+
+  // ==================== LOGÍSTICA & INTEGRACIÓN SIESA ====================
+
+  editarCostoLogistica(mat: any, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const currentVal = mat.costo_vigente_final || mat.costo_vigente_logistica || mat.ultimo_costo_siesa || 0;
+    const targetId = mat.firstTrackingId || mat.firstId;
+
+    if (!targetId) {
+      Swal.fire('Atención', 'No se encontró el registro de insumo para actualizar costo', 'warning');
+      return;
+    }
+
+    Swal.fire({
+      title: 'Actualizar Costo Vigente (Logística)',
+      html: `
+        <div class="text-left text-xs mb-3 text-slate-600">
+          <p class="mb-1"><strong>Material:</strong> ${mat.nombre}</p>
+          <p class="mb-1"><strong>Último Kardex SIESA:</strong> $${(mat.ultimo_costo_siesa || 0).toLocaleString('es-CO')} (${mat.antiguedad_dias !== null && mat.antiguedad_dias !== undefined ? mat.antiguedad_dias + ' días' : 'Sin fecha'})</p>
+          <p class="text-[11px] text-slate-400 mt-2">Si el precio en SIESA está desactualizado, ingrese el costo unitario vigente para precosteo e ingeniería.</p>
+        </div>
+      `,
+      input: 'number',
+      inputValue: currentVal > 0 ? currentVal : '',
+      inputLabel: 'Costo unitario vigente hoy ($ COP)',
+      inputPlaceholder: 'Ej: 14500.50',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar Costo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#4f46e5',
+      inputValidator: (val) => {
+        if (!val || Number(val) <= 0) {
+          return 'Debe ingresar un valor numérico mayor a 0';
+        }
+        return null;
+      }
+    }).then(result => {
+      if (result.isConfirmed && result.value) {
+        const nuevoCosto = Number(result.value);
+        this.comercialService.actualizarCostoLogistica(targetId, {
+          costo_vigente_logistica: nuevoCosto
+        }).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Costo actualizado',
+              text: `El costo vigente para ${mat.nombre} fue actualizado a $${nuevoCosto.toLocaleString('es-CO')}.`,
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.loadMateriales(false);
+          },
+          error: () => {
+            Swal.fire('Error', 'No se pudo actualizar el costo de logística', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  generarPlanoSiesa(): void {
+    if (!this.solicitudId) return;
+    this.comercialService.generarArchivoPlanoOpm(this.solicitudId).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          const blob = new Blob([res.data.contenido], { type: 'text/plain;charset=utf-8' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = res.data.nombre_archivo || `OPM_SIESA_SOL_${this.solicitudId}.txt`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Archivo plano generado',
+            text: `Se descargó "${res.data.nombre_archivo}" con ${res.data.total_lineas} registros formateados para el Conector SIESA.`,
+            confirmButtonColor: '#4f46e5'
+          });
+        }
+      },
+      error: () => {
+        Swal.fire('Error', 'No se pudo generar el archivo plano de la OPM para SIESA', 'error');
+      }
+    });
+  }
+
+  abrirModalAnclarOpm(): void {
+    if (!this.solicitudId) return;
+    Swal.fire({
+      title: 'Anclar Consecutivo OPM SIESA',
+      text: 'Ingrese el número oficial de la OPM generado en SIESA tras la importación:',
+      input: 'text',
+      inputPlaceholder: 'Ej: OPM-0010452 o 10452',
+      showCancelButton: true,
+      confirmButtonText: 'Anclar OPM',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#4f46e5',
+      inputValidator: (val) => {
+        if (!val || !val.trim()) {
+          return 'Debe ingresar el consecutivo devuelto por SIESA';
+        }
+        return null;
+      }
+    }).then(result => {
+      if (result.isConfirmed && result.value) {
+        this.comercialService.anclarOpmSiesa(this.solicitudId, result.value.trim()).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'OPM Anclada',
+              text: `La solicitud y sus prendas quedaron vinculadas a la OPM "${result.value.trim()}".`,
+              confirmButtonColor: '#4f46e5'
+            });
+            this.loadSolicitud();
+          },
+          error: () => {
+            Swal.fire('Error', 'No se pudo anclar el consecutivo OPM en Saint', 'error');
+          }
+        });
       }
     });
   }

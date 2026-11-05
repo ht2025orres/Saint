@@ -42,6 +42,9 @@ export interface LocalItem {
   archivos?: ItemArchivo[];
   archivos_urls?: string[];
   imagenReferenciaUrl?: string;
+  requiere_costeo?: boolean;
+  requiere_muestra?: boolean;
+  siesa_opm_consecutivo?: string | null;
 }
 
 export interface AnatomicalColumn {
@@ -79,6 +82,8 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
   @Input() clienteId: number | null = null;
   @Input() isSaving: boolean = false;
   @Input() isEditMode: boolean = false;
+  @Input() requiereCosteo: boolean = false;
+  @Input() requiereMuestra: boolean = false;
 
   @Input() preloadedMoldId: number | null = null;
   @Output() onBackToLibreria = new EventEmitter<void>();
@@ -321,7 +326,9 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       availableMolds: [],
       draftComponents: [],
       observaciones: '',
-      archivos: []
+      archivos: [],
+      requiere_costeo: this.requiereCosteo,
+      requiere_muestra: this.requiereMuestra,
     };
 
     this.items.push(newItem);
@@ -370,7 +377,9 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       availableMolds: [],
       draftComponents: [],
       observaciones: '',
-      archivos: []
+      archivos: [],
+      requiere_costeo: this.requiereCosteo,
+      requiere_muestra: this.requiereMuestra,
     };
 
     this.items.push(newItem);
@@ -405,13 +414,27 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       availableMolds: [],
       draftComponents: [],
       observaciones: '',
-      archivos: []
+      archivos: [],
+      requiere_costeo: this.requiereCosteo,
+      requiere_muestra: this.requiereMuestra,
     };
 
     this.items.push(newItem);
     this.showItemSearch = false;
     this.saveData();
     this.rebuildAnatomicalGroups();
+  }
+
+  toggleItemCosteo(item: LocalItem, event?: Event): void {
+    if (event) event.stopPropagation();
+    item.requiere_costeo = !item.requiere_costeo;
+    this.saveData();
+  }
+
+  toggleAllCosteo(state: boolean, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.items.forEach(it => it.requiere_costeo = state);
+    this.saveData();
   }
 
   duplicateItem(index: number): void {
@@ -569,6 +592,15 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
   // ==================== TALLAS RÁPIDAS ====================
 
   openTallasQuickModal(index: number): void {
+    if (this.mode === 'solicitud' && !this.requiereMuestra) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Muestra Física no solicitada',
+        text: 'Para asignar tallas y cantidades a confeccionar, active la casilla "Requiere Muestra Física" en la sección de datos generales de la solicitud.',
+        confirmButtonColor: '#4f46e5'
+      });
+      return;
+    }
     this.activeTallasItemIndex = index;
     this.showTallasQuickModal = true;
   }

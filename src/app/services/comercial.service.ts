@@ -291,6 +291,24 @@ export class ComercialService {
     });
   }
 
+  actualizarCostoLogistica(id: number, data: { costo_vigente_logistica: number; notas?: string }): Observable<any> {
+    return this.http.put<any>(`${this.api}/abastecimiento/materiales/${id}/costo-logistica`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
+  generarArchivoPlanoOpm(solicitudId: number): Observable<{ success: boolean; data: { nombre_archivo: string; total_lineas: number; contenido: string } }> {
+    return this.http.post<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/siesa-opm-plano`, {});
+  }
+
+  anclarOpmSiesa(solicitudId: number, siesaOpmConsecutivo: string): Observable<any> {
+    return this.http.put<any>(`${this.api}/abastecimiento/solicitudes/${solicitudId}/anclar-opm-siesa`, {
+      siesa_opm_consecutivo: siesaOpmConsecutivo,
+      usuario_id: this.uid()
+    });
+  }
+
   listarSolicitudesAbastecimiento(filtros?: any): Observable<{ success: boolean; data: any[]; pagination: any }> {
     let params = new HttpParams();
     if (filtros) {

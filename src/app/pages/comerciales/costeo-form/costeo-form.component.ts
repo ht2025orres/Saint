@@ -48,6 +48,9 @@ export interface LocalItem {
   // Observaciones y archivos por prenda
   observaciones?: string;
   archivos?: ItemArchivo[];
+  requiere_costeo?: boolean;
+  requiere_muestra?: boolean;
+  siesa_opm_consecutivo?: string | null;
 }
 
 export type AnatomicalFamily = 'SUPERIOR' | 'INFERIOR' | 'COMPLETA' | 'GENERAL' | 'SIN_MOLDE';
@@ -366,6 +369,9 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
             availableMolds: [],
             observaciones: it.observaciones || '',
             archivos: it.archivos_urls || it.archivos || [],
+            requiere_costeo: it.requiere_costeo !== undefined ? Boolean(it.requiere_costeo) : Boolean(s.requiere_costeo),
+            requiere_muestra: it.requiere_muestra !== undefined ? Boolean(it.requiere_muestra) : (Boolean(s.requiere_muestra) && (it.tallas && it.tallas.length > 0)),
+            siesa_opm_consecutivo: it.siesa_opm_consecutivo || null,
           };
         });
 
@@ -1999,6 +2005,9 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         ref_siesa_descripcion: it.ref_siesa_descripcion || null,
         mold_id: it.moldId || null,
         technical_spec_id: it.technicalSpecId || null,
+        requiere_costeo: it.requiere_costeo ?? (this.requiereCosteo || false),
+        requiere_muestra: it.requiere_muestra ?? (this.requiereMuestra && it.tallas && it.tallas.some(t => t.cantidad > 0)),
+        siesa_opm_consecutivo: it.siesa_opm_consecutivo || null,
         observaciones: it.observaciones || null,
         archivos: it.archivos && it.archivos.length > 0 ? it.archivos.map(a => ({
           nombre: a.nombre,
