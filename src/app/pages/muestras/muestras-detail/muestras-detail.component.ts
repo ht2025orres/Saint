@@ -1076,7 +1076,10 @@ export class MuestrasDetailComponent implements OnInit {
 
   private inferGrupoInsumo(name: string): string {
     const n = (name || '').toLowerCase();
-    if (n.includes('tela') || n.includes('forro') || n.includes('malla') || n.includes('denim') || n.includes('dril') || n.includes('entretela')) {
+    if (n.includes('entretela') || n.includes('fusionable')) {
+      return 'ENTRETELAS';
+    }
+    if (n.includes('tela') || n.includes('forro') || n.includes('malla') || n.includes('denim') || n.includes('dril')) {
       return 'TELAS';
     }
     if (n.includes('botón') || n.includes('boton') || n.includes('broche')) {
@@ -1249,10 +1252,9 @@ export class MuestrasDetailComponent implements OnInit {
         existingTrackingKeys.add(key);
 
         const isTela = (p.selected_type_name || '').toLowerCase() === 'tela' ||
-                       name.toLowerCase().includes('tela') ||
+                       (name.toLowerCase().includes('tela') && !name.toLowerCase().includes('entretela')) ||
                        name.toLowerCase().includes('forro') ||
-                       name.toLowerCase().includes('malla') ||
-                       name.toLowerCase().includes('entretela');
+                       name.toLowerCase().includes('malla');
 
         let customDesc = name;
         if (p.inventory_description) customDesc += ` - ${p.inventory_description}`;
@@ -1516,6 +1518,39 @@ export class MuestrasDetailComponent implements OnInit {
     materiales: []
   };
   isLoadingMateriales = false;
+  materialFiltroActivo: 'TODOS' | 'TELAS' | 'INSUMOS' | 'PENDIENTES_SIESA' | 'PENDIENTES_COSTO' = 'TODOS';
+
+  get materialesFiltrados(): any[] {
+    if (!this.materialesAgrupados?.length) return [];
+    switch (this.materialFiltroActivo) {
+      case 'TELAS':
+        return this.materialesAgrupados.filter(m => m.tipo_material === 'TELA');
+      case 'INSUMOS':
+        return this.materialesAgrupados.filter(m => m.tipo_material !== 'TELA');
+      case 'PENDIENTES_SIESA':
+        return this.materialesAgrupados.filter(m => m.estadoDefinicion === 'PENDIENTE');
+      case 'PENDIENTES_COSTO':
+        return this.materialesAgrupados.filter(m => !m.costo_vigente_final || m.estado_costo === 'ROJO');
+      default:
+        return this.materialesAgrupados;
+    }
+  }
+
+  get conteoTelas(): number {
+    return (this.materialesAgrupados || []).filter(m => m.tipo_material === 'TELA').length;
+  }
+
+  get conteoInsumos(): number {
+    return (this.materialesAgrupados || []).filter(m => m.tipo_material !== 'TELA').length;
+  }
+
+  get conteoPendientesSiesa(): number {
+    return (this.materialesAgrupados || []).filter(m => m.estadoDefinicion === 'PENDIENTE').length;
+  }
+
+  get conteoPendientesCosto(): number {
+    return (this.materialesAgrupados || []).filter(m => !m.costo_vigente_final || m.estado_costo === 'ROJO').length;
+  }
   showMaterialModal = false;
   materialModalTab: 'siesa' | 'manual' = 'siesa';
   siesaSoloConStock: boolean = true;
@@ -1765,28 +1800,58 @@ export class MuestrasDetailComponent implements OnInit {
 
     for (const m of rawList) {
       let rawName = (m.nombre_material || '').trim();
+      let tipoMaterial = m.tipo_material || 'INSUMO';
+      let grupoInsumo = m.grupo_insumo;
+
       if (!rawName && m.descripcion_personalizada) {
         const split = m.descripcion_personalizada.split(' - ');
         const candidate = split[0].split(' [')[0].trim();
-        if (m.tipo_material === 'TELA' && (candidate.toUpperCase().startsWith('TEL') || candidate === m.siesa_referencia)) {
+        if (tipoMaterial === 'TELA' && (candidate.toUpperCase().startsWith('TEL') || candidate === m.siesa_referencia)) {
           rawName = 'Tela Principal';
         } else {
           rawName = candidate;
         }
       }
-      if (!rawName && m.tipo_material === 'TELA') rawName = 'Tela Principal';
+
+      // Normalizar entretelas para que no sean TELA sino INSUMO
+      const lowerName = rawName.toLowerCase();
+      if (lowerName.includes('entretela') || lowerName.includes('fusionable')) {
+        tipoMaterial = 'INSUMO';
+        grupoInsumo = 'ENTRETELAS';
+      }
+
+      if (!rawName && tipoMaterial === 'TELA') rawName = 'Tela Principal';
       if (!rawName && m.siesa_descripcion) rawName = m.siesa_descripcion;
       if (!rawName) rawName = 'Insumo';
 
-      // Diferenciación de telas: Si una tela está asignada a una prenda específica,
-      // se agrupa por prenda para permitir telas principales distintas por cada prenda.
-      let key = rawName.toLowerCase().trim();
-      if (m.tipo_material === 'TELA') {
-        if (m.solicitud_item_id) {
-          key = `tela_item_${m.solicitud_item_id}`;
+      // Identificar rol de tela
+      let rolTela: 'PRINCIPAL' | 'COMBINACION' | 'FORRO' | null = null;
+      if (tipoMaterial === 'TELA') {
+        if (lowerName.includes('combinac') || lowerName.includes('contraste') || lowerName.includes('secundaria')) {
+          rolTela = 'COMBINACION';
+        } else if (lowerName.includes('forro') || lowerName.includes('malla')) {
+          rolTela = 'FORRO';
         } else {
-          key = `tela_global_${(m.siesa_referencia || 'general').toLowerCase().trim()}`;
+          rolTela = 'PRINCIPAL';
         }
+      }
+
+      // Clave de agrupación inteligente:
+      // - Si es TELA y tiene código SIESA: agrupa prendas que comparten la misma tela y rol
+      // - Si es TELA y está por definir: se mantiene separada por prenda para que cada prenda tenga su propia tela asignable
+      // - Si es INSUMO: se agrupa por nombre y código SIESA (o general)
+      let key = rawName.toLowerCase().trim();
+      if (tipoMaterial === 'TELA') {
+        const siesaRef = (m.siesa_referencia || '').toLowerCase().trim();
+        if (siesaRef) {
+          key = `tela_${rolTela}_ref_${siesaRef}`;
+        } else if (m.solicitud_item_id) {
+          key = `tela_${rolTela}_item_${m.solicitud_item_id}_${rawName.toLowerCase().trim()}`;
+        } else {
+          key = `tela_${rolTela}_global_${rawName.toLowerCase().trim()}`;
+        }
+      } else {
+        key = `insumo_${rawName.toLowerCase().trim()}_${(m.siesa_referencia || '').toLowerCase().trim()}`;
       }
 
       if (!map.has(key)) {
@@ -1794,9 +1859,10 @@ export class MuestrasDetailComponent implements OnInit {
         map.set(key, {
           key: key,
           nombre: rawName,
-          tipo_material: m.tipo_material,
-          grupo_insumo: m.grupo_insumo,
-          unidad_medida: m.unidad_medida || (m.tipo_material === 'TELA' ? 'METROS' : 'UND'),
+          tipo_material: tipoMaterial,
+          grupo_insumo: grupoInsumo,
+          rol_tela: rolTela,
+          unidad_medida: m.unidad_medida || (tipoMaterial === 'TELA' ? 'METROS' : 'UND'),
           cantidad_requerida_total: 0,
           cantidad_entregada_total: 0,
           siesa_referencia: m.siesa_referencia || null,
@@ -1905,6 +1971,25 @@ export class MuestrasDetailComponent implements OnInit {
         firstTrackingId: g.rawItems[0]?.id || null,
         firstTrackingItem: g.rawItems[0] || null
       };
+    }).sort((a, b) => {
+      // 1. Telas primero
+      if (a.tipo_material === 'TELA' && b.tipo_material !== 'TELA') return -1;
+      if (a.tipo_material !== 'TELA' && b.tipo_material === 'TELA') return 1;
+
+      if (a.tipo_material === 'TELA' && b.tipo_material === 'TELA') {
+        const order: Record<string, number> = { 'PRINCIPAL': 1, 'COMBINACION': 2, 'FORRO': 3 };
+        const oA = order[a.rol_tela || 'PRINCIPAL'] || 99;
+        const oB = order[b.rol_tela || 'PRINCIPAL'] || 99;
+        if (oA !== oB) return oA - oB;
+        return (a.nombre || '').localeCompare(b.nombre || '');
+      }
+
+      // 2. Insumos agrupados por grupo_insumo
+      const gA = a.grupo_insumo || 'OTROS';
+      const gB = b.grupo_insumo || 'OTROS';
+      if (gA !== gB) return gA.localeCompare(gB);
+
+      return (a.nombre || '').localeCompare(b.nombre || '');
     });
   }
 

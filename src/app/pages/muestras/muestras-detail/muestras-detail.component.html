@@ -267,6 +267,43 @@
         </button>
       </div>
 
+      <!-- PESTAÑAS / FILTROS RÁPIDOS DE MATERIALES -->
+      <div *ngIf="!isLoadingMateriales && materialesAgrupados && materialesAgrupados.length > 0"
+        class="flex items-center justify-between flex-wrap gap-2 pt-1 pb-1">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button type="button" (click)="materialFiltroActivo = 'TODOS'"
+            [ngClass]="materialFiltroActivo === 'TODOS' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-collection text-xs"></i> Todos
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'TODOS' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'">{{ materialesAgrupados.length }}</span>
+          </button>
+          <button type="button" (click)="materialFiltroActivo = 'TELAS'"
+            [ngClass]="materialFiltroActivo === 'TELAS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-indigo-50 border border-slate-200'"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-layers-fill text-xs"></i> Telas & Tejidos
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'TELAS' ? 'bg-white/20 text-white' : 'bg-indigo-50 text-indigo-700'">{{ conteoTelas }}</span>
+          </button>
+          <button type="button" (click)="materialFiltroActivo = 'INSUMOS'"
+            [ngClass]="materialFiltroActivo === 'INSUMOS' ? 'bg-slate-700 text-white shadow-xs' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-box-seam text-xs"></i> Insumos & Avíos
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'INSUMOS' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'">{{ conteoInsumos }}</span>
+          </button>
+          <button type="button" (click)="materialFiltroActivo = 'PENDIENTES_SIESA'"
+            [ngClass]="materialFiltroActivo === 'PENDIENTES_SIESA' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-amber-700 hover:bg-amber-50 border border-amber-200'"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-link-45deg text-xs"></i> Por Vincular SIESA
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'PENDIENTES_SIESA' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'">{{ conteoPendientesSiesa }}</span>
+          </button>
+          <button type="button" (click)="materialFiltroActivo = 'PENDIENTES_COSTO'"
+            [ngClass]="materialFiltroActivo === 'PENDIENTES_COSTO' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white text-rose-700 hover:bg-rose-50 border border-rose-200'"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-cash-stack text-xs"></i> Revisión de Costo
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'PENDIENTES_COSTO' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'">{{ conteoPendientesCosto }}</span>
+          </button>
+        </div>
+      </div>
+
       <div *ngIf="!isLoadingMateriales && materialesAgrupados && materialesAgrupados.length > 0"
         class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
@@ -286,9 +323,9 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <ng-container *ngFor="let mat of materialesAgrupados; trackBy: trackByMaterialKey">
+            <ng-container *ngFor="let mat of materialesFiltrados; trackBy: trackByMaterialKey">
               <!-- FILA PRINCIPAL DEL MATERIAL -->
-              <tr class="hover:bg-blue-50/30 transition-colors" [ngClass]="{'bg-blue-50': isMaterialExpanded(mat.key)}">
+              <tr class="hover:bg-blue-50/30 transition-colors" [ngClass]="{'bg-indigo-50/20 border-l-4 border-l-indigo-600': mat.tipo_material === 'TELA', 'bg-blue-50': isMaterialExpanded(mat.key)}">
                 <!-- 1. Botón expandir acordeón -->
                 <td class="p-2.5 text-center">
                   <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
@@ -301,44 +338,60 @@
 
                 <!-- 2. Tipo / Grupo -->
                 <td class="p-2.5 font-bold">
-                  <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black" [ngClass]="{
-                          'bg-blue-50 text-blue-700 border border-blue-200': mat.tipo_material === 'TELA',
-                          'bg-slate-100 text-slate-700 border border-slate-200': mat.tipo_material === 'INSUMO',
-                          'bg-slate-100 text-slate-600 border border-slate-200': mat.tipo_material === 'AVIO'
-                        }">
-                    {{ mat.tipo_material }}
-                  </span>
-                  <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{
-                    mat.grupo_insumo }}</span>
+                  <div *ngIf="mat.tipo_material === 'TELA'">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-black bg-indigo-50 text-indigo-700 border border-indigo-200 inline-flex items-center gap-1">
+                      <i class="bi bi-layers-fill text-[9px]"></i> TELA
+                    </span>
+                    <span class="text-[10px] text-indigo-600 font-bold block mt-0.5">
+                      {{ mat.rol_tela === 'COMBINACION' ? 'Combinación' : (mat.rol_tela === 'FORRO' ? 'Forro' : 'Tela Base') }}
+                    </span>
+                  </div>
+                  <div *ngIf="mat.tipo_material !== 'TELA'">
+                    <span class="px-2 py-0.5 rounded text-[10px] uppercase font-black" [ngClass]="{
+                            'bg-slate-100 text-slate-700 border border-slate-200': mat.tipo_material === 'INSUMO',
+                            'bg-slate-100 text-slate-600 border border-slate-200': mat.tipo_material === 'AVIO'
+                          }">
+                      {{ mat.tipo_material }}
+                    </span>
+                    <span *ngIf="mat.grupo_insumo" class="text-[10px] text-slate-400 block font-normal">{{ mat.grupo_insumo }}</span>
+                  </div>
                 </td>
 
                 <!-- 3. Material & Especificación -->
                 <td class="p-2.5">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="font-black text-slate-900 text-xs">{{ mat.nombre }}</span>
-                    <!-- Badge de prenda si es tela específica o asignación individual -->
-                    <span *ngIf="mat.tipo_material === 'TELA' && mat.esPorPrenda && mat.prendaAsignada"
-                      class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1"
-                      [title]="'Tela asignada exclusivamente para: ' + mat.prendaAsignada.descripcion">
-                      <i class="bi bi-tag-fill text-[9px] text-blue-500"></i> {{ mat.prendaAsignada.descripcion }}
+                    <!-- Rol / Etiqueta de la tela -->
+                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'PRINCIPAL'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      Tela Base
                     </span>
-                    <span *ngIf="mat.tipo_material === 'TELA' && !mat.esPorPrenda"
+                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'COMBINACION'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                      Combinación
+                    </span>
+                    <span *ngIf="mat.tipo_material === 'TELA' && mat.rol_tela === 'FORRO'" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      Forro
+                    </span>
+                    <!-- Prenda asociada si es exclusiva de una prenda -->
+                    <span *ngIf="mat.prendasCount === 1"
+                      class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center gap-1"
+                      [title]="'Asignado exclusivamente a: ' + (mat.prendasDesglose?.[0]?.prendaNombre || mat.prendaAsignada?.descripcion)">
+                      <i class="bi bi-tag-fill text-[9px] text-blue-500"></i> {{ mat.prendasDesglose?.[0]?.prendaNombre || mat.prendaAsignada?.descripcion }}
+                    </span>
+                    <span *ngIf="mat.prendasCount > 1 && mat.tipo_material === 'TELA'"
                       class="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-1"
-                      title="Esta tela principal aplica para todas las prendas de la muestra">
-                      <i class="bi bi-collection text-[8px] text-slate-400"></i> Todas las prendas
+                      title="Esta tela aplica a múltiples prendas de la muestra">
+                      <i class="bi bi-collection text-[8px] text-slate-400"></i> Compartida ({{ mat.prendasCount }} prendas)
                     </span>
                   </div>
 
                   <!-- Detalle según estado de definición -->
                   <div *ngIf="mat.estadoDefinicion === 'SIESA'"
                     class="text-[11px] text-slate-600 flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    <span
-                      class="font-mono text-blue-900 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 text-[10px]">
+                    <span class="font-mono text-blue-900 font-bold bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 text-[10px]">
                       Ref: {{ mat.siesa_referencia }}
                     </span>
                     <span class="font-medium text-slate-800">{{ mat.siesa_descripcion }}</span>
-                    <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px]">· Color: {{ mat.siesa_color
-                      }}</span>
+                    <span *ngIf="mat.siesa_color" class="text-slate-400 text-[10px]">· Color: {{ mat.siesa_color }}</span>
                   </div>
 
                   <div *ngIf="mat.estadoDefinicion === 'MANUAL'"
@@ -348,26 +401,31 @@
                   </div>
 
                   <div *ngIf="mat.estadoDefinicion === 'PENDIENTE'"
-                    class="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-0.5">
-                    <i class="bi bi-exclamation-triangle-fill text-amber-500 text-[10px]"></i>
-                    <span>Falta definir qué ítem exacto será (vincular a SIESA o especificar)</span>
+                    class="inline-flex items-center gap-1 text-[11px] text-amber-700 font-medium mt-0.5 bg-amber-50/70 px-2 py-0.5 rounded-md border border-amber-200/80">
+                    <i class="bi bi-link-45deg text-amber-600 text-[11px]"></i>
+                    <span>Pendiente por vincular a ítem de catálogo SIESA</span>
                   </div>
                 </td>
 
                 <!-- 4. Prendas -->
                 <td class="p-2.5 text-center">
-                  <div class="flex items-center justify-center flex-col gap-0.5">
-                    <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
-                      class="px-2.5 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 border border-blue-200 transition-all cursor-pointer"
-                      [title]="'Ver detalle de ' + mat.prendasCount + ' prenda(s). Clic para desplegar partes.'">
-                      <i class="bi bi-diagram-3 text-[10px] text-blue-500"></i>
-                      <span>{{ mat.prendasCount }}</span>
-                    </button>
-                    <span *ngIf="mat.esPorPrenda && mat.prendaAsignada"
-                      class="text-[9px] text-slate-400 font-medium truncate max-w-[90px]"
-                      [title]="mat.prendaAsignada.descripcion">
-                      {{ mat.prendaAsignada.descripcion }}
+                  <div class="flex items-center justify-center">
+                    <span *ngIf="mat.prendasCount === 1"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-blue-50/80 text-blue-900 border border-blue-200 max-w-[160px] shadow-2xs"
+                      [title]="mat.prendasDesglose?.[0]?.prendaNombre || mat.prendaAsignada?.descripcion || 'Prenda única'">
+                      <i class="bi bi-tag-fill text-blue-500 text-[9px] shrink-0"></i>
+                      <span class="truncate">{{ mat.prendasDesglose?.[0]?.prendaNombre || mat.prendaAsignada?.descripcion || 'Prenda' }}</span>
                     </span>
+
+                    <button *ngIf="mat.prendasCount > 1"
+                      type="button"
+                      (click)="toggleMaterialExpansion(mat.key, $event)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-800 border border-slate-200 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
+                      [title]="'Aplica a ' + mat.prendasCount + ' prendas. Clic para ver desglose.'">
+                      <i class="bi bi-collection text-blue-600 text-[10px]"></i>
+                      <span>{{ mat.prendasCount }} prendas</span>
+                      <i class="bi bi-chevron-down text-[8px] text-slate-400"></i>
+                    </button>
                   </div>
                 </td>
 
@@ -444,12 +502,20 @@
                 <!-- 7.5 Costo Kardex / Logística -->
                 <td class="p-2.5 text-center">
                   <div class="inline-flex flex-col items-center gap-0.5">
-                    <span *ngIf="mat.costo_vigente_final" class="font-bold font-mono text-xs text-slate-800">
-                      ${{ mat.costo_vigente_final | number:'1.0-2' }}
-                    </span>
-                    <span *ngIf="!mat.costo_vigente_final" class="text-[11px] text-slate-400 italic">
-                      Sin costo
-                    </span>
+                    <div class="flex items-center gap-1">
+                      <span *ngIf="mat.costo_vigente_final" class="font-bold font-mono text-xs text-slate-900">
+                        ${{ mat.costo_vigente_final | number:'1.0-2' }}
+                      </span>
+                      <span *ngIf="!mat.costo_vigente_final" class="text-[11px] text-slate-400 italic">
+                        Sin costo
+                      </span>
+                      <!-- Botón para que Logística edite el costo -->
+                      <button type="button" (click)="editarCostoLogistica(mat, $event)"
+                        class="w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Ajustar costo de logística">
+                        <i class="bi bi-pencil-square text-[10px]"></i>
+                      </button>
+                    </div>
 
                     <!-- Semáforo de antigüedad de costo -->
                     <div class="flex items-center gap-1 mt-0.5">
@@ -473,13 +539,11 @@
                         title="Costo Kardex desactualizado (> 90 días). Requiere revisión de logística">
                         DESACTUALIZADO
                       </span>
-
-                      <!-- Botón para que Logística edite el costo -->
-                      <button type="button" (click)="editarCostoLogistica(mat, $event)"
-                        class="text-slate-400 hover:text-indigo-600 transition-colors p-0.5"
-                        title="Ajustar costo de logística">
-                        <i class="bi bi-pencil-square text-[10px]"></i>
-                      </button>
+                      <span *ngIf="mat.fuente_costo !== 'LOGISTICA' && mat.costo_vigente_final && mat.estado_costo !== 'VERDE' && mat.estado_costo !== 'AMARILLO' && mat.estado_costo !== 'ROJO'"
+                        class="px-1.5 py-0.2 rounded text-[9px] font-black bg-slate-100 text-slate-600 border border-slate-200"
+                        title="Costo registrado en SIESA">
+                        KARDEX SIESA
+                      </span>
                     </div>
                   </div>
                 </td>
