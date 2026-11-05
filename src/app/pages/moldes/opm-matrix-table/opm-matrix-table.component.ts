@@ -38,7 +38,6 @@ export interface LocalItem {
   availableMolds: any[];
   activeTab?: 'tallas' | 'molde';
   draftComponents?: any[];
-  zoneObservations?: { [zoneKey: string]: string };
   observaciones?: string;
   archivos?: ItemArchivo[];
   archivos_urls?: string[];
@@ -122,7 +121,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
   activePartInModal: any = null;
   zoneModalStep: 'select-part' | 'select-variant' | 'select-optional' | 'select-optional-variant' = 'select-part';
   isLoadingZoneParts = false;
-  activeZoneObservation = '';
   activeZoneAnchoredParts: any[] = [];
 
   // Modal de Figurín OPM (2D Stepper)
@@ -322,7 +320,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       specExpanded: false,
       availableMolds: [],
       draftComponents: [],
-      zoneObservations: {},
       observaciones: '',
       archivos: []
     };
@@ -372,7 +369,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       specExpanded: false,
       availableMolds: [],
       draftComponents: [],
-      zoneObservations: {},
       observaciones: '',
       archivos: []
     };
@@ -408,7 +404,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       specExpanded: false,
       availableMolds: [],
       draftComponents: [],
-      zoneObservations: {},
       observaciones: '',
       archivos: []
     };
@@ -640,16 +635,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
     this.activeZoneCol = col;
     this.activeZoneTitle = col.label;
     this.activeZoneSubtitle = `Configura ${col.label.toLowerCase()} para "${item.descripcion}"`;
-    this.activeZoneObservation = (item.zoneObservations && item.zoneObservations[col.key]) || '';
-
-    if (!this.activeZoneObservation && item.draftComponents) {
-      const match = item.draftComponents.find((c: any) =>
-        (c.zone_name === col.key || (col.keywords && col.keywords.some(k => (c.name || '').toLowerCase().includes(k)))) && c.client_spec
-      );
-      if (match) {
-        this.activeZoneObservation = match.client_spec;
-      }
-    }
 
     this.refreshActiveZoneAnchoredParts(item, col);
 
@@ -749,31 +734,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
     }).length;
   }
 
-  updateActiveZoneObservation(obs: string): void {
-    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item) return;
-
-    if (!item.zoneObservations) {
-      item.zoneObservations = {};
-    }
-    item.zoneObservations[this.activeZoneCol.key] = obs;
-    this.activeZoneObservation = obs;
-
-    if (item.draftComponents && item.draftComponents.length > 0) {
-      const col = this.activeZoneCol;
-      item.draftComponents.forEach((c: any) => {
-        const matchesZone = c.zone_name === col.key ||
-          (col.keywords && col.keywords.some(k => (c.name || '').toLowerCase().includes(k)));
-        if (matchesZone) {
-          c.client_spec = obs;
-        }
-      });
-    }
-
-    this.saveData();
-  }
-
   addOptionalFromZoneModal(): void {
     this.zoneModalStep = 'select-optional';
   }
@@ -816,7 +776,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       zone_name: this.activeZoneCol.key,
       item_type: 'parte_general',
       technical_spec: event.type.technical_description || event.type.name,
-      client_spec: this.activeZoneObservation || '',
+      client_spec: null,
       estimated_time: event.type.total_time || 0,
       position_x: null,
       position_y: null
@@ -866,7 +826,7 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
       zone_name: this.activeZoneCol.key,
       item_type: 'parte_molde',
       technical_spec: type.technical_description || '',
-      client_spec: this.activeZoneObservation || '',
+      client_spec: null,
       estimated_time: type.estimated_time || type.total_time || 0,
       position_x: null,
       position_y: null
@@ -878,9 +838,6 @@ export class OpmMatrixTableComponent implements OnInit, OnDestroy, OnChanges {
     );
 
     if (existingIdx >= 0) {
-      if (!compObj.client_spec && item.draftComponents[existingIdx].client_spec) {
-        compObj.client_spec = item.draftComponents[existingIdx].client_spec;
-      }
       item.draftComponents[existingIdx] = compObj;
     } else {
       item.draftComponents.push(compObj);

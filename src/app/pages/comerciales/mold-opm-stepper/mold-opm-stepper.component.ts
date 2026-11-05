@@ -38,9 +38,6 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDe
   // Almacenamiento de selecciones: [partId] -> mold_part_type
   selectedTypes: { [partId: number]: any } = {};
 
-  // Observaciones por zona: [zoneId] -> string
-  zoneObservations: { [zoneId: string]: string } = {};
-
   // Toggle opcional para diferenciar manga izquierda de manga derecha
   diferenciarMangas = false;
 
@@ -150,7 +147,6 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDe
   cambiarAMolde(moldId: number): void {
     this.loadedMoldId = moldId;
     this.selectedTypes = {};
-    this.zoneObservations = {};
     this.activeFloatingZone = null;
     this.showFloatingZoneModal = false;
     this.showGeneralPartsModal = false;
@@ -749,22 +745,6 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDe
         const targetTypeName = (p.selected_type_name || '').toLowerCase().trim();
         const targetTech = (p.technical_spec || '').toLowerCase().trim();
         const partName = (p.name || '').toLowerCase().trim();
-
-        // Restaurar observación de zona si viene client_spec
-        if (p.client_spec && typeof p.client_spec === 'string' && p.client_spec.trim()) {
-          const obsText = p.client_spec.trim();
-          let matchedZone = this.zones.find(z =>
-            (p.zone_name && (z.title.toLowerCase().includes(p.zone_name.toLowerCase()) || p.zone_name.toLowerCase().includes(z.id))) ||
-            z.parts.some(pt => rawPartId && Number(pt.id) === rawPartId) ||
-            z.parts.some(pt => (pt.name || '').toLowerCase().trim() === partName)
-          );
-          if (!matchedZone) {
-            matchedZone = this.zones.find(z => this.matchZone({ name: partName, zone_name: p.zone_name }, z.id));
-          }
-          if (matchedZone) {
-            this.zoneObservations[matchedZone.id] = obsText;
-          }
-        }
 
         // Buscar la parte correspondiente en las zonas del molde
         let matchedPart: any = null;
@@ -1723,8 +1703,6 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDe
     const partsPayload: any[] = [];
 
     this.zones.forEach(zone => {
-      const zoneObs = this.zoneObservations[zone.id] || '';
-
       zone.parts.forEach(part => {
         const selType = this.selectedTypes[part.id];
         partsPayload.push({
@@ -1737,7 +1715,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDe
           technical_spec: selType
             ? (selType.technical_description || selType.name)
             : part.name,
-          client_spec: zoneObs,
+          client_spec: null,
           estimated_time: selType ? (selType.total_time || 0) : 0,
           position_x: part.position_x,
           position_y: part.position_y,
@@ -1763,7 +1741,7 @@ export class MoldOpmStepperComponent implements OnInit, OnChanges, DoCheck, OnDe
         zone_name: anchorZone,
         item_type: 'parte_general',
         technical_spec: selType.technical_description || selType.name,
-        client_spec: '',
+        client_spec: null,
         estimated_time: selType.total_time || 0,
         position_x: null,
         position_y: null,

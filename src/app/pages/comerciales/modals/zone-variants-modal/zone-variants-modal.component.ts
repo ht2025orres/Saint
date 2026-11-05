@@ -16,7 +16,6 @@ export class ZoneVariantsModalComponent {
   @Input() zoneModalStep: 'select-part' | 'select-variant' | 'select-optional' | 'select-optional-variant' = 'select-part';
   @Input() isLoadingZoneParts = false;
   @Input() item: LocalItem | null = null;
-  @Input() observation = '';
   @Input() anchoredGeneralParts: any[] = [];
 
   availableOptionalParts: OptionalPart[] = CANONICAL_OPTIONAL_PARTS;
@@ -27,7 +26,6 @@ export class ZoneVariantsModalComponent {
   @Output() onSelectVariant = new EventEmitter<{ part: any; type: any }>();
   @Output() onUnselectVariant = new EventEmitter<any>();
   @Output() onClose = new EventEmitter<void>();
-  @Output() onObservationChange = new EventEmitter<string>();
   @Output() onAddOptional = new EventEmitter<void>();
   @Output() onRemoveAnchor = new EventEmitter<any>();
   @Output() onSelectOptionalVariant = new EventEmitter<{ part: OptionalPart; type: OptionalPartType }>();
@@ -97,11 +95,6 @@ export class ZoneVariantsModalComponent {
 
   close(): void {
     this.onClose.emit();
-  }
-
-  onObsChange(val: string): void {
-    this.observation = val;
-    this.onObservationChange.emit(val);
   }
 
   addOptional(): void {

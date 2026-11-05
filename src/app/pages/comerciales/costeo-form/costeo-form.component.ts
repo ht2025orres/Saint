@@ -43,7 +43,6 @@ export interface LocalItem {
   availableMolds: any[];
   activeTab?: 'tallas' | 'molde';
   draftComponents?: any[]; // Store in-progress OPM components
-  zoneObservations?: { [zoneKey: string]: string };
   availableExtensions?: { talla: string; rawTalla?: string; siesa_item_ext_rowid?: number | null; color?: string }[];
   technical_spec?: any;
   // Observaciones y archivos por prenda
@@ -150,7 +149,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
   activePartInModal: any = null;
   zoneModalStep: 'select-part' | 'select-variant' | 'select-optional' | 'select-optional-variant' = 'select-part';
   isLoadingZoneParts = false;
-  activeZoneObservation = '';
   activeZoneAnchoredParts: any[] = [];
   private cachedMoldsMap: { [moldId: number]: any } = {};
 
@@ -334,15 +332,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
               }))
             : undefined;
 
-          const zoneObservations: { [zoneKey: string]: string } = {};
-          if (specParts.length > 0) {
-            specParts.forEach((p: any) => {
-              if (p.zone_name && p.client_spec) {
-                zoneObservations[p.zone_name] = p.client_spec;
-              }
-            });
-          }
-
           let totalSamTime: number | undefined = undefined;
           if (techSpec?.total_estimated_time !== undefined && techSpec.total_estimated_time !== null) {
             totalSamTime = Math.round(parseFloat(techSpec.total_estimated_time) * 100) / 100;
@@ -372,7 +361,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
             opmReference: techSpec?.reference || undefined,
             totalSamTime: totalSamTime,
             draftComponents: draftComponents,
-            zoneObservations: Object.keys(zoneObservations).length > 0 ? zoneObservations : undefined,
             technical_spec: techSpec,
             specExpanded: false,
             availableMolds: [],
@@ -455,12 +443,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
                   inventory_reference: p.inventory_reference || null,
                   inventory_description: p.inventory_description || null
                 }));
-                if (!item.zoneObservations) item.zoneObservations = {};
-                parts.forEach((p: any) => {
-                  if (p.zone_name && p.client_spec) {
-                    item.zoneObservations![p.zone_name] = p.client_spec;
-                  }
-                });
                 this.recalculateItemSam(item);
                 this.rebuildAnatomicalGroups();
               }
@@ -1528,20 +1510,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.showZoneVariantsModal = true;
     this.isLoadingZoneParts = true;
 
-    // Recuperar observación de la zona si existe
-    this.activeZoneObservation = (item.zoneObservations && item.zoneObservations[col.key]) || '';
-    if (!this.activeZoneObservation && item.draftComponents) {
-      const match = item.draftComponents.find((c: any) => {
-        const text = `${c.zone_name || ''} ${c.name || ''}`.toLowerCase();
-        return col.keywords.some(k => text.includes(k.toLowerCase())) && c.client_spec;
-      });
-      if (match) {
-        this.activeZoneObservation = match.client_spec;
-        if (!item.zoneObservations) item.zoneObservations = {};
-        item.zoneObservations[col.key] = match.client_spec;
-      }
-    }
-
     // Apliques anclados a esta zona
     this.refreshActiveZoneAnchoredParts(item, col);
 
@@ -1598,7 +1566,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
     this.activeZoneDisplayParts = [];
     this.activePartInModal = null;
     this.zoneModalStep = 'select-part';
-    this.activeZoneObservation = '';
     this.activeZoneAnchoredParts = [];
     this.saveToLocalStorage();
 
@@ -1642,31 +1609,6 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         (c.zone_name && c.zone_name.toLowerCase() === colLabel)
       )
     ).length;
-  }
-
-  updateActiveZoneObservation(obs: string): void {
-    this.activeZoneObservation = obs;
-    if (this.activeZoneItemIndex === null || !this.activeZoneCol) return;
-    const item = this.items[this.activeZoneItemIndex];
-    if (!item) return;
-
-    if (!item.zoneObservations) {
-      item.zoneObservations = {};
-    }
-    item.zoneObservations[this.activeZoneCol.key] = obs;
-
-    // Actualizar client_spec en draftComponents para partes que pertenezcan a esta zona
-    if (item.draftComponents && item.draftComponents.length > 0) {
-      const col = this.activeZoneCol;
-      item.draftComponents.forEach((c: any) => {
-        const text = `${c.zone_name || ''} ${c.name || ''}`.toLowerCase();
-        if (col.keywords.some(k => text.includes(k.toLowerCase()))) {
-          c.client_spec = obs;
-        }
-      });
-    }
-
-    this.saveToLocalStorage();
   }
 
   addOptionalFromZoneModal(): void {
@@ -1725,7 +1667,7 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
       zone_name: this.activeZoneCol!.key,
       item_type: 'parte_general',
       technical_spec: event.type.technical_description || event.type.name,
-      client_spec: '',
+      client_spec: null,
       estimated_time: event.type.total_time || 0,
       position_x: null,
       position_y: null,
@@ -1794,16 +1736,12 @@ export class CosteoFormComponent implements OnInit, OnDestroy {
         zone_name: this.activeZoneTitle,
         item_type: 'parte',
         technical_spec: type.technical_description || type.name,
-        client_spec: this.activeZoneObservation || '',
+        client_spec: null,
         estimated_time: Number(type.total_time || type.estimated_time) || 0,
         position_x: part.position_x || null,
         position_y: part.position_y || null
       };
       if (existingIdx >= 0) {
-        // Preservar client_spec previo si activeZoneObservation está vacío
-        if (!compObj.client_spec && item.draftComponents![existingIdx].client_spec) {
-          compObj.client_spec = item.draftComponents![existingIdx].client_spec;
-        }
         item.draftComponents![existingIdx] = compObj;
       } else {
         item.draftComponents!.push(compObj);
