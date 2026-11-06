@@ -96,7 +96,159 @@ export class CosteoDetailComponent implements OnInit {
   }
 
   get conteoCostosPendientes(): number {
-    return this.trackingMateriales.filter(m => m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'SIN_MOVIMIENTO').length;
+    return this.trackingMateriales.filter(m => this.esInsumoPendiente(m)).length;
+  }
+
+  get conteoConsultaProveedor(): number {
+    return this.trackingMateriales.filter(m => !!m.en_consulta_proveedor).length;
+  }
+
+  get conteoMaterialesRetrasados(): number {
+    return this.trackingMateriales.filter(m => this.esLlegadaPosterior(m.fecha_estimada_llegada)).length;
+  }
+
+  get totalCostoInsumosSolicitud(): number {
+    return this.trackingMateriales.reduce((acc, m) => acc + this.getCostoTotalInsumo(m), 0);
+  }
+
+  getMaterialesItem(itemId?: number): any[] {
+    if (!this.trackingMateriales || this.trackingMateriales.length === 0) return [];
+    if (!itemId) return [];
+    return this.trackingMateriales.filter((m: any) => m.solicitud_item_id === itemId);
+  }
+
+  getMaterialesGlobales(): any[] {
+    if (!this.trackingMateriales || this.trackingMateriales.length === 0) return [];
+    return this.trackingMateriales.filter((m: any) => !m.solicitud_item_id);
+  }
+
+  getCostoUnitarioInsumo(m: any): number {
+    if (!m) return 0;
+    return Number(m.costo_vigente_final ?? m.costo_vigente_logistica ?? m.ultimo_costo_siesa ?? 0);
+  }
+
+  getCostoTotalInsumo(m: any): number {
+    if (!m) return 0;
+    const cant = Number(m.cantidad_requerida ?? 0);
+    return cant * this.getCostoUnitarioInsumo(m);
+  }
+
+  getTotalCostoInsumosItem(itemId: number): number {
+    const mats = this.getMaterialesItem(itemId);
+    return mats.reduce((acc, m) => acc + this.getCostoTotalInsumo(m), 0);
+  }
+
+  esInsumoPendiente(m: any): boolean {
+    if (!m) return true;
+    const costo = this.getCostoUnitarioInsumo(m);
+    if (costo <= 0) return true;
+    return m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'SIN_MOVIMIENTO';
+  }
+
+  getFechaLimiteSolicitud(): string | null {
+    if (this.costeo?.fecha_entrega_muestra && this.costeo?.fecha_entrega_cotizacion) {
+      const dMuestra = this.parseDateOnly(this.costeo.fecha_entrega_muestra);
+      const dCotiz = this.parseDateOnly(this.costeo.fecha_entrega_cotizacion);
+      if (dMuestra && dCotiz) {
+        return dMuestra.getTime() <= dCotiz.getTime()
+          ? this.costeo.fecha_entrega_muestra
+          : this.costeo.fecha_entrega_cotizacion;
+      }
+    }
+    return this.costeo?.fecha_entrega_cotizacion || this.costeo?.fecha_entrega_muestra || null;
+  }
+
+  getFechaLimiteLabel(): string {
+    if (this.costeo?.fecha_entrega_muestra && this.costeo?.fecha_entrega_cotizacion) {
+      const dMuestra = this.parseDateOnly(this.costeo.fecha_entrega_muestra);
+      const dCotiz = this.parseDateOnly(this.costeo.fecha_entrega_cotizacion);
+      if (dMuestra && dCotiz) {
+        return dMuestra.getTime() <= dCotiz.getTime() ? 'Muestra' : 'Cotización';
+      }
+    }
+    if (this.costeo?.fecha_entrega_cotizacion) return 'Cotización';
+    if (this.costeo?.fecha_entrega_muestra) return 'Muestra';
+    return 'Compromiso';
+  }
+
+  parseDateOnly(str?: string | null): Date | null {
+    if (!str) return null;
+    const parts = str.split(/[-T ]/);
+    if (parts.length >= 3) {
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return null;
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  esLlegadaPosterior(fechaLlegada?: string | null): boolean {
+    if (!fechaLlegada) return false;
+    const limiteStr = this.getFechaLimiteSolicitud();
+    if (!limiteStr) return false;
+
+    const dLlegada = this.parseDateOnly(fechaLlegada);
+    const dLimite = this.parseDateOnly(limiteStr);
+    if (!dLlegada || !dLimite) return false;
+
+    return dLlegada.getTime() > dLimite.getTime();
+  }
+
+  getDiasRetrasoLlegada(fechaLlegada?: string | null): number {
+    if (!fechaLlegada) return 0;
+    const limiteStr = this.getFechaLimiteSolicitud();
+    if (!limiteStr) return 0;
+
+    const dLlegada = this.parseDateOnly(fechaLlegada);
+    const dLimite = this.parseDateOnly(limiteStr);
+    if (!dLlegada || !dLimite) return 0;
+
+    const diffMs = dLlegada.getTime() - dLimite.getTime();
+    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  }
+
+  getResumenItemInsumos(itemId: number) {
+    const mats = this.getMaterialesItem(itemId);
+    const total = mats.length;
+    const pendientes = mats.filter(m => this.esInsumoPendiente(m)).length;
+    const conCosto = total - pendientes;
+    const enConsulta = mats.filter(m => !!m.en_consulta_proveedor).length;
+    const retrasados = mats.filter(m => this.esLlegadaPosterior(m.fecha_estimada_llegada)).length;
+    const costoTotal = mats.reduce((acc, m) => acc + this.getCostoTotalInsumo(m), 0);
+
+    return { total, conCosto, pendientes, enConsulta, retrasados, costoTotal };
+  }
+
+  getFuenteCostoInfo(m: any): { label: string; badgeClass: string; icon: string } {
+    if (m.costo_vigente_logistica && m.costo_vigente_logistica > 0) {
+      return {
+        label: 'Logística',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        icon: 'bi-truck'
+      };
+    }
+    if (m.ultimo_costo_siesa && m.ultimo_costo_siesa > 0) {
+      return {
+        label: 'Kardex SIESA',
+        badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+        icon: 'bi-database-check'
+      };
+    }
+    if (m.costo_vigente_final && m.costo_vigente_final > 0) {
+      return {
+        label: 'Vigente',
+        badgeClass: 'bg-slate-50 text-slate-700 border-slate-200',
+        icon: 'bi-check2'
+      };
+    }
+    return {
+      label: 'Sin Costo',
+      badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+      icon: 'bi-clock-history'
+    };
   }
 
   toggleItem(item: any): void {
