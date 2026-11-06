@@ -152,12 +152,11 @@ export function getNavigationAreas(): AreaCategory[] {
           ]
         },
         {
-          label: 'Costeos y Muestras',
-          icon: 'bi bi-calculator',
+          label: 'Muestras y Confección',
+          icon: 'bi bi-scissors',
           permissions: [1],
           isOpen: false,
           subInterfaces: [
-            { label: 'Costeos y Cotizaciones', link: '/costeos', permissions: [1] },
             { label: 'Muestras y Confección', link: '/muestras', permissions: [1] },
           ]
         },

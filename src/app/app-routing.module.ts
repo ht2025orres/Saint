@@ -94,7 +94,6 @@ const routes: Routes = [
       { path: 'list-report', component: ReportListComponent, title: 'Listar reportes' },
       { path: 'mi-lista-report', component: MiReportListComponent, title: 'Mis reportes' },
       { path: 'report-dashboard', component: ReportDashboardComponent, title: 'Dashboard de reportes' },
-      { path: 'costeos', loadChildren: () => import('./pages/costeos/costeos.module').then(m => m.CosteosModule), title: 'Gestión de Costeos' },
       { path: 'muestras', loadChildren: () => import('./pages/muestras/muestras.module').then(m => m.MuestrasModule), title: 'Gestión de Muestras' },
       { path: 'comerciales', loadChildren: () => import('./pages/comerciales/comerciales.module').then(m => m.ComercialesModule), title: 'Comerciales' },
       { path: 'abastecimiento', loadChildren: () => import('./pages/abastecimiento/abastecimiento.module').then(m => m.AbastecimientoModule), title: 'Cadena de Abastecimiento y Materiales' },
