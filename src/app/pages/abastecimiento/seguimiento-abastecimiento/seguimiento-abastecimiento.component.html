@@ -328,67 +328,78 @@
               <thead class="bg-slate-100/70 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-500">
                 <tr>
                   <th class="py-2.5 px-3">Tipo / Grupo</th>
-                  <th class="py-2.5 px-3">Referencia / Descripción</th>
-                  <th class="py-2.5 px-3">Zona / Bodega</th>
-                  <th class="py-2.5 px-3 text-center">Req.</th>
+                  <th class="py-2.5 px-3">Referencia y Material</th>
+                  <th class="py-2.5 px-3">Zona / Ubicación</th>
+                  <th class="py-2.5 px-3 text-center">Cant. Req.</th>
                   <th class="py-2.5 px-3">Costo Unitario</th>
                   <th class="py-2.5 px-3 text-center">Estado</th>
                   <th class="py-2.5 px-3 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr *ngFor="let mat of sol.materiales" class="hover:bg-slate-50/80 transition-colors">
+                <tr *ngFor="let mat of sol.materiales"
+                    class="hover:bg-slate-50/80 transition-colors"
+                    [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-50' : ''">
                   
                   <!-- Tipo y Grupo -->
-                  <td class="py-2.5 px-3 font-semibold">
+                  <td class="py-3 px-3 align-top font-semibold whitespace-nowrap">
                     <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
                           [ngClass]="mat.tipo_material === 'TELA' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
                       {{ mat.tipo_material }}
                     </span>
-                    <span class="block text-[10px] text-slate-400 mt-0.5 font-bold uppercase">{{ mat.grupo_insumo || 'GENERAL' }}</span>
+                    <span class="block text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-wider">{{ mat.grupo_insumo || 'GENERAL' }}</span>
                   </td>
 
                   <!-- Referencia y Descripción -->
-                  <td class="py-2.5 px-3">
-                    <div class="font-bold text-slate-900">
-                      <span *ngIf="mat.siesa_referencia" class="font-mono text-indigo-700 mr-1">{{ mat.siesa_referencia }} -</span>
-                      <span>{{ mat.siesa_descripcion || mat.descripcion_personalizada || 'Insumo sin descripción' }}</span>
+                  <td class="py-3 px-3 align-top min-w-[220px]">
+                    <div class="font-bold text-slate-900 text-xs">
+                      {{ mat.siesa_descripcion || mat.nombre_material || mat.descripcion_personalizada || 'Insumo sin descripción' }}
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap mt-0.5">
-                      <span *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400">
-                        Prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
+                    <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                      <span *ngIf="mat.siesa_referencia" class="font-mono text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
+                        Ref: {{ mat.siesa_referencia }}
                       </span>
-                      <span *ngIf="mat.siesa_color" class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                      <span *ngIf="mat.siesa_color" class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                         {{ mat.siesa_color }}
                       </span>
                     </div>
+                    <div *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400 mt-1 truncate max-w-xs">
+                      Prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
+                    </div>
                   </td>
 
-                  <!-- Zona / Bodega -->
-                  <td class="py-2.5 px-3">
-                    <span *ngIf="mat.ubicacion_principal"
-                          class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs"
-                          title="Ubicación física en bodega para picking de materiales">
-                      <i class="bi bi-geo-alt-fill text-indigo-500 text-xs"></i>
-                      <span>{{ mat.ubicacion_principal }}</span>
-                    </span>
-                    <span *ngIf="!mat.ubicacion_principal" class="text-slate-400 text-[11px] italic">
-                      Sin zona
-                    </span>
+                  <!-- Zona / Ubicación Física (Módulo de Inventario) -->
+                  <td class="py-3 px-3 align-top whitespace-nowrap">
+                    <div *ngIf="mat.ubicacion_principal" class="flex flex-col items-start gap-0.5">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black text-indigo-700 bg-indigo-50/90 border border-indigo-200 shadow-2xs"
+                            [title]="'Ubicación física en inventario: ' + mat.ubicacion_principal">
+                        <i class="bi bi-geo-alt-fill text-indigo-500 text-[11px]"></i>
+                        <span>{{ getPartesUbicacion(mat.ubicacion_principal).zona }}</span>
+                      </span>
+                      <span *ngIf="getPartesUbicacion(mat.ubicacion_principal).bodega"
+                            class="text-[9px] font-bold text-slate-400 pl-1 uppercase tracking-wider">
+                        Bodega {{ getPartesUbicacion(mat.ubicacion_principal).bodega }}
+                      </span>
+                    </div>
+                    <div *ngIf="!mat.ubicacion_principal" class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 italic">
+                      <i class="bi bi-dash-circle text-slate-300"></i>
+                      <span>Sin asignar</span>
+                    </div>
                   </td>
 
                   <!-- Cant Requerida -->
-                  <td class="py-2.5 px-3 text-center font-bold text-slate-800">
-                    {{ mat.cantidad_requerida }} <span class="text-[10px] text-slate-400">{{ mat.unidad_medida }}</span>
+                  <td class="py-3 px-3 align-top text-center whitespace-nowrap">
+                    <span class="text-xs font-black text-slate-900">{{ mat.cantidad_requerida }}</span>
+                    <span class="text-[10px] font-bold text-slate-400 ml-1 uppercase">{{ abreviarUnidad(mat.unidad_medida) }}</span>
                   </td>
 
                   <!-- Costo Unitario con semáforo y ajuste manual -->
-                  <td class="py-2.5 px-3">
+                  <td class="py-3 px-3 align-top min-w-[140px]">
                     <div class="flex items-center justify-between gap-1.5">
                       <div>
-                        <div class="font-bold text-slate-900 text-xs">
-                          {{ mat.costo_vigente_final ? ('$' + (mat.costo_vigente_final | number:'1.0-2')) : 'Sin costo' }}
+                        <div class="font-extrabold text-slate-900 text-xs">
+                          {{ mat.costo_vigente_final ? ('$' + (mat.costo_vigente_final | number:'1.0-2')) : (mat.ultimo_costo_siesa ? ('$' + (mat.ultimo_costo_siesa | number:'1.0-2')) : 'Sin costo') }}
                         </div>
                         <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold border mt-0.5"
                               [ngClass]="getClaseAntiguedadCosto(mat)">
@@ -397,7 +408,7 @@
                         </span>
                       </div>
                       <button (click)="editarCostoManual(mat)"
-                              class="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
+                              class="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
                               title="Ajustar costo manualmente en Logística">
                         <i class="bi bi-pencil-square text-xs"></i>
                       </button>
@@ -405,25 +416,25 @@
                   </td>
 
                   <!-- Estado Listo para Recoger / Pendiente -->
-                  <td class="py-2.5 px-3 text-center">
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
-                          [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'">
+                  <td class="py-3 px-3 align-top text-center whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
+                          [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'">
                       <i class="bi" [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bi-check2-circle text-emerald-600' : 'bi-clock text-amber-600'"></i>
-                      {{ mat.estado_entrega === 'ENTREGADO' ? 'Listo' : 'Pendiente' }}
+                      {{ mat.estado_entrega === 'ENTREGADO' ? 'Listo en Bodega' : 'Pendiente' }}
                     </span>
                   </td>
 
                   <!-- Acciones -->
-                  <td class="py-2.5 px-3 text-right space-x-1 whitespace-nowrap">
+                  <td class="py-3 px-3 align-top text-right space-x-1 whitespace-nowrap">
                     <button (click)="toggleListoParaRecoger(mat, sol)"
-                            class="px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer shadow-2xs inline-flex items-center gap-1"
-                            [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'"
+                            class="px-2.5 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5"
+                            [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 hover:border-emerald-500 hover:text-emerald-700'"
                             [title]="mat.estado_entrega === 'ENTREGADO' ? 'Click para volver a pendiente' : 'Click para marcar listo para recoger'">
                       <i class="bi" [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bi-check2 text-xs' : 'bi-box-seam text-xs'"></i>
                       <span>{{ mat.estado_entrega === 'ENTREGADO' ? 'Listo' : 'Listo para recoger' }}</span>
                     </button>
                     <button (click)="eliminarMaterial(mat.id)"
-                            class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                            class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                             title="Eliminar este requerimiento">
                       <i class="bi bi-trash text-xs"></i>
                     </button>

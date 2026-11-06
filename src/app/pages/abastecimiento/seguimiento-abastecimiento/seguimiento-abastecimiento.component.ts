@@ -387,6 +387,25 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
     return `Hace ${meses} meses`;
   }
 
+  abreviarUnidad(unidad?: string): string {
+    if (!unidad) return '';
+    const u = unidad.trim().toUpperCase();
+    if (u === 'METROS' || u === 'METRO') return 'MTR';
+    if (u === 'UNIDAD' || u === 'UNIDADES') return 'UND';
+    if (u === 'KILOS' || u === 'KILOGRAMOS') return 'KG';
+    if (u === 'CONOS' || u === 'CONO') return 'CONO';
+    return u;
+  }
+
+  getPartesUbicacion(ubicacion?: string): { bodega: string | null; zona: string } {
+    if (!ubicacion) return { bodega: null, zona: 'Sin zona' };
+    if (ubicacion.includes(' · ')) {
+      const parts = ubicacion.split(' · ');
+      return { bodega: parts[0], zona: parts[1] };
+    }
+    return { bodega: null, zona: ubicacion };
+  }
+
   // ==================== DESPACHO DE MATERIALES ====================
 
   abrirModalDespacho(material: any, solicitud: any): void {
