@@ -595,7 +595,85 @@
           </div>
         </div>
 
-        <!-- 4. Materiales Requeridos -->
+        <!-- 4. Trazabilidad de Abastecimiento & Logística -->
+        <div *ngIf="trackingMateriales.length > 0" class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0">
+          <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-0">
+                Logística & Abastecimiento ({{ trackingMateriales.length }})
+              </h3>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
+                  [ngClass]="{
+                    'bg-emerald-100 text-emerald-800 border border-emerald-300': trackingMetricas.semaforo === 'COMPLETO',
+                    'bg-amber-100 text-amber-800 border border-amber-300': trackingMetricas.semaforo === 'PARCIAL',
+                    'bg-slate-100 text-slate-700 border border-slate-200': trackingMetricas.semaforo === 'PENDIENTE'
+                  }">
+              {{ trackingMetricas.semaforo === 'COMPLETO' ? 'Listo en Almacén' : (trackingMetricas.semaforo === 'PARCIAL' ? 'Despacho Parcial' : 'En Preparación') }}
+            </span>
+          </div>
+
+          <div class="p-3 space-y-3">
+            <!-- Avance Físico -->
+            <div>
+              <div class="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                <span>Insumos Preparados / Entregados</span>
+                <span class="font-extrabold text-indigo-700">{{ trackingMetricas.entregados }} / {{ trackingMetricas.total }} ({{ trackingMetricas.porcentaje_entrega }}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+                     [style.width.%]="trackingMetricas.porcentaje_entrega"></div>
+              </div>
+            </div>
+
+            <!-- Avance de Valoración / Costeo -->
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 text-xs">
+              <div class="flex justify-between items-center font-bold text-slate-800">
+                <span class="flex items-center gap-1.5">
+                  <i class="bi bi-cash-stack text-slate-500"></i>
+                  <span>Valoración de Costos</span>
+                </span>
+                <span class="px-2 py-0.2 rounded-full text-[10px] font-black"
+                      [ngClass]="conteoCostosPendientes === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                  {{ conteoCostosPendientes === 0 ? 'Costos Validados' : (conteoCostosPendientes + ' pendientes') }}
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-500 mb-0 leading-tight">
+                {{ conteoCostosValidados }} de {{ trackingMateriales.length }} materiales con costo vigente o actualizado por Logística.
+              </p>
+            </div>
+
+            <!-- Mini Listado de Materiales con Estado de Logística -->
+            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div *ngFor="let m of trackingMateriales"
+                   class="p-2 rounded-lg border text-xs flex items-center justify-between gap-2"
+                   [ngClass]="m.estado_entrega === 'ENTREGADO' ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-slate-100'">
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-800 truncate text-[11px]">
+                    {{ m.siesa_descripcion || m.nombre_material || m.descripcion_personalizada }}
+                  </div>
+                  <div class="flex items-center gap-1.5 text-[9px] text-slate-400">
+                    <span *ngIf="m.siesa_referencia" class="font-mono text-slate-600">Ref: {{ m.siesa_referencia }}</span>
+                    <span>· Cant: {{ m.cantidad_requerida }} {{ m.unidad_medida }}</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end shrink-0">
+                  <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded"
+                        [ngClass]="m.estado_entrega === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'">
+                    {{ m.estado_entrega === 'ENTREGADO' ? 'Listo' : 'Pendiente' }}
+                  </span>
+                  <span *ngIf="m.costo_vigente_final || m.ultimo_costo_siesa" class="text-[9px] font-bold text-slate-500 mt-0.5">
+                    ${{ (m.costo_vigente_final || m.ultimo_costo_siesa) | number:'1.0-0' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Materiales Requeridos -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0">
           <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
             <div class="flex items-center gap-2">

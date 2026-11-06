@@ -333,6 +333,13 @@
             <i class="bi bi-cash-stack text-xs"></i> Revisión de Costo
             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'PENDIENTES_COSTO' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'">{{ conteoPendientesCosto }}</span>
           </button>
+          <button type="button" (click)="materialFiltroActivo = 'COTIZACION'"
+            *ngIf="conteoCotizacion > 0"
+            [ngClass]="materialFiltroActivo === 'COTIZACION' ? 'bg-amber-500 text-white shadow-xs' : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-300'"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+            <i class="bi bi-tag-fill text-xs"></i> Para Cotización
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black" [ngClass]="materialFiltroActivo === 'COTIZACION' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'">{{ conteoCotizacion }}</span>
+          </button>
         </div>
       </div>
 
@@ -364,7 +371,7 @@
                 'hover:bg-slate-50/80': !isMaterialExpanded(mat.key) && mat.estadoEntrega === 'PENDIENTE'
               }">
                 <!-- 1. Botón expandir acordeón -->
-                <td class="p-2.5 text-center align-middle" [style.border-left]="mat.estadoDefinicion !== 'PENDIENTE' ? '4px solid #10b981' : '4px solid transparent'">
+                <td class="p-2.5 text-center align-middle" [style.border-left]="mat.paraCotizacion ? '4px solid #f59e0b' : (mat.estadoDefinicion !== 'PENDIENTE' ? '4px solid #10b981' : '4px solid transparent')">
                   <button type="button" (click)="toggleMaterialExpansion(mat.key, $event)"
                     class="w-6 h-6 rounded-md hover:bg-blue-50 text-slate-400 hover:text-blue-600 flex items-center justify-center transition-transform cursor-pointer mx-auto"
                     [class.rotate-90]="isMaterialExpanded(mat.key)"
@@ -397,7 +404,14 @@
                 <!-- 3. Material & Especificación (Limpio, sin repetir prendas ni roles) -->
                 <td class="p-2.5 align-middle">
                   <div class="space-y-0.5">
-                    <span class="font-black text-slate-900 text-xs block truncate" [title]="mat.nombre">{{ mat.nombre }}</span>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="font-black text-slate-900 text-xs truncate" [title]="mat.nombre">{{ mat.nombre }}</span>
+                      <span *ngIf="mat.paraCotizacion"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                        title="Este insumo es requerido para una prenda marcada para cotización">
+                        <i class="bi bi-tag-fill text-[8px] text-amber-600"></i> Cotización
+                      </span>
+                    </div>
 
                     <!-- Detalle según estado de definición -->
                     <div *ngIf="mat.estadoDefinicion === 'SIESA'"
@@ -653,14 +667,16 @@
 
       <div *ngIf="muestra.items?.length" class="space-y-4">
         <div *ngFor="let item of muestra.items; let idx = index"
-          class="bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 transition-all space-y-3.5">
+          class="border rounded-2xl p-4 sm:p-5 transition-all space-y-3.5"
+          [ngClass]="item.requiere_costeo ? 'bg-amber-50/30 border-amber-300 ring-1 ring-amber-200/80 shadow-xs' : 'bg-slate-50/70 hover:bg-slate-50 border-slate-200'">
 
           <!-- Encabezado de la Prenda -->
           <div class="flex justify-between items-start flex-wrap gap-3">
             <div class="space-y-1 min-w-0 flex-1">
               <div class="flex items-center gap-2 flex-wrap">
                 <span
-                  class="w-5 h-5 rounded-md bg-blue-600 text-white font-black text-[10px] flex items-center justify-center">
+                  class="w-5 h-5 rounded-md text-white font-black text-[10px] flex items-center justify-center"
+                  [ngClass]="item.requiere_costeo ? 'bg-amber-600' : 'bg-blue-600'">
                   {{ idx + 1 }}
                 </span>
                 <h4 class="text-base font-black text-slate-900 mb-0 truncate">{{ item.descripcion }}</h4>
@@ -675,7 +691,21 @@
               </div>
             </div>
 
-            <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
+              <span *ngIf="item.requiere_costeo"
+                class="px-2.5 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-black inline-flex items-center gap-1.5 shadow-2xs">
+                <i class="bi bi-tag-fill text-amber-600"></i> Requiere Cotización
+              </span>
+
+              <button type="button"
+                (click)="toggleItemCotizacion(item)"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                [ngClass]="item.requiere_costeo ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-800 border border-slate-200 hover:border-amber-300'"
+                [title]="item.requiere_costeo ? 'Clic para desmarcar prenda de cotización' : 'Clic para marcar que esta prenda requiere cotización'">
+                <i class="bi" [ngClass]="item.requiere_costeo ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                <span>{{ item.requiere_costeo ? 'En Cotización' : 'Marcar Cotización' }}</span>
+              </button>
+
               <span class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold">
                 Muestra: {{ item.cantidad_muestra }} uds
               </span>

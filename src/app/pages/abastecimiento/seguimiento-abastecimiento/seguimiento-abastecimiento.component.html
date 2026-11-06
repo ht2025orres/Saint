@@ -339,7 +339,10 @@
               <tbody class="divide-y divide-slate-100">
                 <tr *ngFor="let mat of sol.materiales"
                     class="hover:bg-slate-50/80 transition-colors"
-                    [ngClass]="mat.estado_entrega === 'ENTREGADO' ? 'bg-emerald-50' : ''">
+                    [ngClass]="{
+                      'bg-emerald-50': mat.estado_entrega === 'ENTREGADO',
+                      'border-l-4 border-l-amber-500 bg-amber-50/20': mat.solicitud_item?.requiere_costeo && mat.estado_entrega !== 'ENTREGADO'
+                    }">
                   
                   <!-- Tipo y Grupo -->
                   <td class="py-3 px-3 align-top font-semibold whitespace-nowrap">
@@ -352,8 +355,15 @@
 
                   <!-- Referencia y Descripción -->
                   <td class="py-3 px-3 align-top min-w-[220px]">
-                    <div class="font-bold text-slate-900 text-xs">
-                      {{ mat.siesa_descripcion || mat.nombre_material || mat.descripcion_personalizada || 'Insumo sin descripción' }}
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="font-bold text-slate-900 text-xs">
+                        {{ mat.siesa_descripcion || mat.nombre_material || mat.descripcion_personalizada || 'Insumo sin descripción' }}
+                      </span>
+                      <span *ngIf="mat.solicitud_item?.requiere_costeo"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs"
+                        title="Insumo para prenda que requiere cotización prioritaria">
+                        <i class="bi bi-exclamation-circle-fill text-amber-600 text-[9px]"></i> Cotización Prioritaria
+                      </span>
                     </div>
                     <div class="flex items-center gap-1.5 flex-wrap mt-1">
                       <span *ngIf="mat.siesa_referencia" class="font-mono text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
@@ -364,8 +374,10 @@
                         {{ mat.siesa_color }}
                       </span>
                     </div>
-                    <div *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400 mt-1 truncate max-w-xs">
-                      Prenda: <strong class="text-slate-600">{{ mat.solicitud_item.descripcion }}</strong>
+                    <div *ngIf="mat.solicitud_item" class="text-[10px] text-slate-400 mt-1 truncate max-w-xs flex items-center gap-1 flex-wrap">
+                      <span>Prenda:</span>
+                      <strong class="text-slate-700">{{ mat.solicitud_item.descripcion }}</strong>
+                      <span *ngIf="mat.solicitud_item.requiere_costeo" class="text-amber-700 font-bold">(Cotización)</span>
                     </div>
                   </td>
 

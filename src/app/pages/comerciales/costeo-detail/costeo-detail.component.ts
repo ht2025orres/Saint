@@ -14,6 +14,9 @@ export class CosteoDetailComponent implements OnInit {
   costeo: Solicitud | null = null;
   isLoading = false;
 
+  materialesTrackingData: any = null;
+  isLoadingMaterialesTracking = false;
+
   activeTab: 'items' | 'versiones' = 'items';
 
   // ─── Modal OPM (Consulta Ficha / Figurín) ───
@@ -47,12 +50,53 @@ export class CosteoDetailComponent implements OnInit {
           }));
         }
         this.isLoading = false;
+        this.loadMaterialesAbastecimiento();
       },
       error: () => {
         Swal.fire('Error', 'No se pudo cargar la solicitud', 'error');
         this.isLoading = false;
       }
     });
+  }
+
+  loadMaterialesAbastecimiento(): void {
+    if (!this.solicitudId) return;
+    this.isLoadingMaterialesTracking = true;
+    this.comercialService.listarMaterialesSolicitud(this.solicitudId).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.materialesTrackingData = res.data;
+        }
+        this.isLoadingMaterialesTracking = false;
+      },
+      error: () => {
+        this.isLoadingMaterialesTracking = false;
+      }
+    });
+  }
+
+  get trackingMetricas(): any {
+    return this.materialesTrackingData?.metricas || {
+      total: 0,
+      entregados: 0,
+      parciales: 0,
+      pendientes: 0,
+      no_disponibles: 0,
+      porcentaje_entrega: 0,
+      semaforo: 'PENDIENTE'
+    };
+  }
+
+  get trackingMateriales(): any[] {
+    return this.materialesTrackingData?.materiales || [];
+  }
+
+  get conteoCostosValidados(): number {
+    return this.trackingMateriales.filter(m => m.estado_costo === 'VIGENTE' || (m.costo_vigente_final && m.costo_vigente_final > 0)).length;
+  }
+
+  get conteoCostosPendientes(): number {
+    return this.trackingMateriales.filter(m => m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'SIN_MOVIMIENTO').length;
   }
 
   toggleItem(item: any): void {

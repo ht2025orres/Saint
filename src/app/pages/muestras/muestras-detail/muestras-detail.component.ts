@@ -1100,6 +1100,31 @@ export class MuestrasDetailComponent implements OnInit {
     }
   }
 
+  toggleItemCotizacion(item: any): void {
+    if (!item || !this.solicitudId) return;
+    const nuevoValor = !item.requiere_costeo;
+    this.comercialService.actualizarItem(this.solicitudId, item.id, { requiere_costeo: nuevoValor }).subscribe({
+      next: () => {
+        item.requiere_costeo = nuevoValor;
+        this.actualizarMaterialesAgrupados();
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2200,
+          timerProgressBar: true
+        });
+        Toast.fire({
+          icon: 'success',
+          title: nuevoValor ? 'Prenda marcada para Cotización' : 'Prenda desmarcada de Cotización'
+        });
+      },
+      error: (err: any) => {
+        Swal.fire('Error', err?.error?.message || 'No se pudo actualizar el estado de cotización de la prenda', 'error');
+      }
+    });
+  }
+
   // ==================== SINCRONIZACIÓN DE MATERIALES CON ALMACÉN ====================
 
   private isSyncingSpecMaterials = false;
@@ -1546,7 +1571,7 @@ export class MuestrasDetailComponent implements OnInit {
     materiales: []
   };
   isLoadingMateriales = false;
-  materialFiltroActivo: 'TODOS' | 'TELAS' | 'INSUMOS' | 'PENDIENTES_SIESA' | 'PENDIENTES_COSTO' = 'TODOS';
+  materialFiltroActivo: 'TODOS' | 'TELAS' | 'INSUMOS' | 'PENDIENTES_SIESA' | 'PENDIENTES_COSTO' | 'COTIZACION' = 'TODOS';
 
   get materialesFiltrados(): any[] {
     if (!this.materialesAgrupados?.length) return [];
@@ -1559,9 +1584,15 @@ export class MuestrasDetailComponent implements OnInit {
         return this.materialesAgrupados.filter(m => m.estadoDefinicion === 'PENDIENTE');
       case 'PENDIENTES_COSTO':
         return this.materialesAgrupados.filter(m => !m.costo_vigente_final || m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'ROJO' || (m.antiguedad_dias !== null && m.antiguedad_dias > 90));
+      case 'COTIZACION':
+        return this.materialesAgrupados.filter(m => m.paraCotizacion);
       default:
         return this.materialesAgrupados;
     }
+  }
+
+  get conteoCotizacion(): number {
+    return (this.materialesAgrupados || []).filter(m => m.paraCotizacion).length;
   }
 
   get conteoTelas(): number {
@@ -2028,6 +2059,16 @@ export class MuestrasDetailComponent implements OnInit {
       const prendasDesglose = Array.from(g.prendasMap.values());
       const prendasCount = prendasDesglose.length || (g.esPorPrenda ? 1 : (this.muestra?.items?.length || 1));
 
+      // Determinar si este material pertenece a una o más prendas marcadas para cotización
+      const prendaIds = Array.from(g.prendasMap.keys());
+      const prendaReqCot = prendaIds.some((id: any) => {
+        const itemObj = (this.muestra?.items || []).find((i: any) => i.id === id);
+        return !!itemObj?.requiere_costeo;
+      });
+      const rawReqCot = (g.rawItems || []).some((r: any) => !!r.solicitud_item?.requiere_costeo);
+      const asignadaReqCot = g.prendaAsignada ? !!(this.muestra?.items || []).find((i: any) => i.id === g.prendaAsignada.id)?.requiere_costeo : false;
+      const paraCotizacion = prendaReqCot || rawReqCot || asignadaReqCot;
+
       let estadoEntrega = 'PENDIENTE';
       if (g.cantidad_entregada_total >= g.cantidad_requerida_total && g.cantidad_requerida_total > 0) {
         estadoEntrega = 'ENTREGADO';
@@ -2041,6 +2082,7 @@ export class MuestrasDetailComponent implements OnInit {
         prendasCount,
         prendasDesglose,
         estadoEntrega,
+        paraCotizacion,
         firstTrackingId: g.rawItems[0]?.id || null,
         firstTrackingItem: g.rawItems[0] || null
       };
