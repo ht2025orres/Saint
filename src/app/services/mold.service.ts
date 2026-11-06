@@ -110,7 +110,16 @@ export class MoldService {
   }
 
   deleteMold(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/molds/${id}`);
+    const userStr = sessionStorage.getItem('user');
+    let userId: any = null;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        userId = u.id;
+      } catch (_) {}
+    }
+    const params = userId ? new HttpParams().set('usuario_id', userId.toString()) : undefined;
+    return this.http.delete(`${this.apiUrl}/molds/${id}`, { params });
   }
 
   // ==================== ANATOMICAL REGIONS ====================

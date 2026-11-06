@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { MoldService } from '../../../services/mold.service';
 import { AuthService } from '../../../services/auth.service';
 import { OpmMatrixTableComponent } from '../opm-matrix-table/opm-matrix-table.component';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-moldes-list',
@@ -41,7 +42,7 @@ export class MoldesListComponent implements OnInit {
   get esAdmin(): boolean { return this.authService.hasPermission(1); }
   get canCreate(): boolean { return this.authService.hasAnyPermission([1, 41]); }
   get canEdit(): boolean { return this.authService.hasAnyPermission([1, 42]); }
-  get canDelete(): boolean { return this.authService.hasAnyPermission([1, 43]); }
+  get canDelete(): boolean { return this.authService.hasPermission(1); }
   get canManageCategories(): boolean { return this.authService.hasAnyPermission([1, 45]); }
   get canCreateOpm(): boolean { return this.authService.hasAnyPermission([1, 46]); }
   get canCreateFicha(): boolean { return this.authService.hasAnyPermission([1, 48]); }
@@ -154,5 +155,40 @@ export class MoldesListComponent implements OnInit {
 
   goToGenerateFicha(moldId: number): void {
     this.router.navigate(['/moldes/ficha-generator', moldId]);
+  }
+
+  eliminarMolde(mold: any): void {
+    if (!this.canDelete) return;
+
+    Swal.fire({
+      title: '¿Inactivar molde?',
+      html: `El molde <strong>"${mold.name}"</strong> será inactivado.<br><small class="text-slate-500">Ya no estará disponible para visualizar, editar ni consumir en ninguna solicitud u OPM.</small>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, inactivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.moldService.deleteMold(mold.id).subscribe({
+          next: (res: any) => {
+            Swal.fire({
+              title: 'Molde inactivado',
+              text: res.message || 'El molde ha sido retirado de las interfaces.',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.loadMolds();
+            this.loadCategories();
+          },
+          error: (err: any) => {
+            const msg = err.error?.message || 'No se pudo inactivar el molde';
+            Swal.fire('Error', msg, 'error');
+          }
+        });
+      }
+    });
   }
 }

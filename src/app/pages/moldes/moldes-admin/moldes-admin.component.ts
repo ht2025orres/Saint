@@ -106,6 +106,7 @@ export class MoldesAdminComponent implements OnInit {
   get canCreate(): boolean { return this.authService.hasAnyPermission([1, 46]); }
   get canEdit(): boolean { return this.authService.hasAnyPermission([1, 47]); }
   get canUploadImage(): boolean { return this.authService.hasAnyPermission([1, 46, 47]); }
+  get canDelete(): boolean { return this.authService.hasPermission(1); }
 
   get hasBackView(): boolean {
     return !!this.backImageUrl || !!this.getFallbackBackImage();
@@ -212,6 +213,15 @@ export class MoldesAdminComponent implements OnInit {
     this.moldService.getMold(this.moldId!).subscribe({
       next: (res: any) => {
         const mold = res.data;
+        if (!mold || mold.is_active === false) {
+          Swal.fire({
+            title: 'Molde no disponible',
+            text: 'Este molde ha sido inactivado y no está disponible para visualización ni edición.',
+            icon: 'warning'
+          }).then(() => this.router.navigate(['/moldes']));
+          return;
+        }
+
         this.moldName = mold.name;
         this.moldDescription = mold.description || '';
         this.mold_category_id = mold.mold_category_id || null;
@@ -261,7 +271,47 @@ export class MoldesAdminComponent implements OnInit {
           this.currentTemplate = { image: this.customImageUrl };
         }
       },
-      error: () => Swal.fire('Error', 'No se pudo cargar la información del molde', 'error')
+      error: () => {
+        Swal.fire({
+          title: 'Molde no disponible',
+          text: 'No se pudo cargar la información del molde o ha sido inactivado.',
+          icon: 'warning'
+        }).then(() => this.router.navigate(['/moldes']));
+      }
+    });
+  }
+
+  eliminarMolde(): void {
+    if (!this.canDelete || !this.moldId) return;
+
+    Swal.fire({
+      title: '¿Inactivar molde?',
+      html: `El molde <strong>"${this.moldName}"</strong> será inactivado.<br><small class="text-slate-500">Ya no estará disponible para visualizar, editar ni consumir en ninguna solicitud u OPM.</small>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, inactivar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.moldService.deleteMold(this.moldId!).subscribe({
+          next: (res: any) => {
+            Swal.fire({
+              title: 'Molde inactivado',
+              text: res.message || 'El molde ha sido retirado de las interfaces.',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.router.navigate(['/moldes']);
+          },
+          error: (err: any) => {
+            const msg = err.error?.message || 'No se pudo inactivar el molde';
+            Swal.fire('Error', msg, 'error');
+          }
+        });
+      }
     });
   }
 
