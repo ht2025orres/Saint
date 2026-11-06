@@ -5,7 +5,7 @@
     <div class="bg-white rounded-2xl shadow-xs border border-slate-100 p-4 mb-3.5">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
             <i class="bi bi-briefcase-fill text-white text-lg"></i>
           </div>
           <div>
@@ -14,7 +14,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 transition-all duration-200"
+          <button class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all duration-200"
                   (click)="nuevaSolicitud()">
             <i class="bi bi-plus-lg"></i> Nueva OPM
           </button>
@@ -179,7 +179,7 @@
              style="animation: fadeInUp 0.3s ease forwards; opacity: 0;">
           <div class="flex items-center gap-4">
             <!-- Avatar -->
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-black text-base flex-shrink-0 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/30 transition-shadow">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-base flex-shrink-0 shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/30 transition-shadow">
               {{ cliente.razon_social?.charAt(0)?.toUpperCase() }}
             </div>
 
@@ -205,7 +205,7 @@
               </span>
               <span *ngIf="cliente.en_costeo > 0" 
                     (click)="goToCliente(cliente, 'solicitudes'); $event.stopPropagation()"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100 transition-colors">
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
                 <i class="bi bi-calculator"></i> {{ cliente.en_costeo }} Costeo
               </span>
             </div>
@@ -295,61 +295,93 @@
       </div>
 
       <!-- Solicitud Cards con Avance de Procesos Independientes -->
-      <div *ngIf="!isLoadingSolicitudes" class="space-y-2">
+      <div *ngIf="!isLoadingSolicitudes" class="space-y-2.5">
         <div *ngFor="let sol of pagedSolicitudes; let i = index"
-             class="group bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 cursor-pointer hover:shadow-lg hover:border-indigo-200 hover:-translate-y-0.5 transition-all duration-300"
+             class="group bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 cursor-pointer hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-200"
              (click)="goToSolicitud(sol)"
-             [style.animation-delay]="(i * 35) + 'ms'"
+             [style.animation-delay]="(i * 30) + 'ms'"
              style="animation: fadeInUp 0.3s ease forwards; opacity: 0;">
-          <div class="flex items-start justify-between mb-2.5">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
-                <i class="bi bi-receipt text-indigo-600 text-sm"></i>
+          
+          <!-- Encabezado de la Tarjeta -->
+          <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-blue-50 text-slate-700 group-hover:text-blue-600 flex items-center justify-center transition-colors shrink-0">
+                <i class="bi bi-file-earmark-text text-sm"></i>
               </div>
-              <span class="text-sm font-black text-indigo-600">{{ sol.codigo }}</span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-black text-slate-900 group-hover:text-blue-700 transition-colors">{{ sol.codigo }}</span>
+                  <span class="text-xs font-bold text-slate-700 truncate">
+                    <i class="bi bi-building text-slate-400 mr-1"></i>{{ sol.cliente_nombre }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
+
+            <div class="flex items-center gap-2 flex-shrink-0">
               <button *ngIf="!sol.estado || sol.estado === 'BORRADOR'"
                       (click)="cambiarEstadoGlobal(sol, 'ENVIADO', $event)"
-                      class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-extrabold transition-all shadow-xs flex items-center gap-1">
-                <i class="bi bi-send-fill"></i> Enviar Solicitud
+                      class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                <i class="bi bi-send-fill text-[11px]"></i> Enviar Solicitud
               </button>
               <button *ngIf="puedeVolverABorrador(sol)"
                       (click)="cambiarEstadoGlobal(sol, 'BORRADOR', $event)"
                       title="Devolver a borrador si aún no se ha iniciado el costeo ni la muestra"
-                      class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-extrabold transition-all shadow-xs flex items-center gap-1">
-                <i class="bi bi-arrow-counterclockwise"></i> Volver a Borrador
+                      class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer">
+                <i class="bi bi-arrow-counterclockwise"></i> Borrador
               </button>
-              <span class="text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-wider" [ngClass]="getEstadoBadgeClass(sol.estado || '')">
+              <span class="text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider" [ngClass]="getEstadoBadgeClass(sol.estado || '')">
                 {{ getEstadoLabel(sol.estado || '') }}
               </span>
             </div>
           </div>
-          <div class="text-sm text-slate-700 font-bold mb-2.5 pl-[42px]">
-            <i class="bi bi-building text-slate-300 mr-1.5"></i> {{ sol.cliente_nombre }}
-          </div>
-          <div class="flex flex-wrap items-center gap-2 text-[10px] pl-[42px]">
-            <span *ngIf="sol.items_count" class="inline-flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg font-bold">
-              <i class="bi bi-box"></i> {{ sol.items_count }} ítem{{ sol.items_count !== 1 ? 's' : '' }}
-            </span>
 
-            <!-- Badge Proceso de Costeo -->
-            <span *ngIf="sol.requiere_costeo"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-bold"
-                  [ngClass]="getProcesoBadgeClass(sol.estado_costeo)">
-              <i class="bi bi-calculator text-xs"></i>
-              <span>Costeo: {{ getProcesoLabel(sol.estado_costeo) }}</span>
-            </span>
+          <!-- Fila de Fechas Límite, Semáforos y Estados -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px]">
+            <div class="flex flex-wrap items-center gap-2">
+              <span *ngIf="sol.items_count" class="inline-flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg font-bold">
+                <i class="bi bi-box"></i> {{ sol.items_count }} ítem{{ sol.items_count !== 1 ? 's' : '' }}
+              </span>
 
-            <!-- Badge Proceso de Muestra -->
-            <span *ngIf="sol.requiere_muestra"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg font-bold"
-                  [ngClass]="getProcesoBadgeClass(sol.estado_muestra)">
-              <i class="bi bi-scissors text-xs"></i>
-              <span>Muestra: {{ getProcesoLabel(sol.estado_muestra) }}</span>
-            </span>
+              <!-- Fecha Límite Muestra con Semáforo -->
+              <div *ngIf="sol.requiere_muestra || sol.fecha_entrega_muestra"
+                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-semibold"
+                   [ngClass]="getSemaforoFecha(sol.fecha_entrega_muestra, sol.estado_muestra).badgeClass">
+                <i class="bi bi-scissors text-[10px]"></i>
+                <span>Muestra: <strong>{{ (sol.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'Sin fecha' }}</strong></span>
+                <span *ngIf="sol.fecha_entrega_muestra" class="font-black text-[9px] uppercase tracking-wider">
+                  ({{ getSemaforoFecha(sol.fecha_entrega_muestra, sol.estado_muestra).label }})
+                </span>
+              </div>
 
-            <span class="ml-auto text-slate-400 font-medium"><i class="bi bi-calendar3 mr-1"></i>{{ sol.created_at | date:'dd/MM/yyyy' }}</span>
+              <!-- Fecha Límite Cotización con Semáforo -->
+              <div *ngIf="sol.requiere_costeo || sol.fecha_entrega_cotizacion"
+                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border font-semibold"
+                   [ngClass]="getSemaforoFecha(sol.fecha_entrega_cotizacion, sol.estado_costeo).badgeClass">
+                <i class="bi bi-calculator text-[10px]"></i>
+                <span>Costeo: <strong>{{ (sol.fecha_entrega_cotizacion | date:'dd/MM/yyyy') || 'Sin fecha' }}</strong></span>
+                <span *ngIf="sol.fecha_entrega_cotizacion" class="font-black text-[9px] uppercase tracking-wider">
+                  ({{ getSemaforoFecha(sol.fecha_entrega_cotizacion, sol.estado_costeo).label }})
+                </span>
+              </div>
+
+              <!-- Badges de Avance -->
+              <span *ngIf="sol.requiere_costeo"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-bold text-[10px]"
+                    [ngClass]="getProcesoBadgeClass(sol.estado_costeo)">
+                <span>Costeo: {{ getProcesoLabel(sol.estado_costeo) }}</span>
+              </span>
+
+              <span *ngIf="sol.requiere_muestra"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg font-bold text-[10px]"
+                    [ngClass]="getProcesoBadgeClass(sol.estado_muestra)">
+                <span>Muestra: {{ getProcesoLabel(sol.estado_muestra) }}</span>
+              </span>
+            </div>
+
+            <div class="text-[10px] text-slate-400 font-medium ml-auto">
+              <i class="bi bi-calendar3 mr-1"></i>Creado {{ sol.created_at | date:'dd/MM/yyyy' }}
+            </div>
           </div>
         </div>
       </div>
@@ -634,7 +666,7 @@
   <div *ngIf="mostrarModalDetalleOC" class="fixed inset-0 flex items-center justify-center p-2 sm:p-4 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1051 !important;">
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white">
+      <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-900 text-white">
         <div class="flex items-center gap-2.5 min-w-0">
           <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shadow-inner shrink-0">
             <i class="bi bi-receipt text-white text-base"></i>

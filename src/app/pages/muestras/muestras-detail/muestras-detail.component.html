@@ -109,44 +109,74 @@
     <!-- TARJETAS DE INFORMACIÓN CLAVE (KPIS COMPACTAS CON AZUL SAINT) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
 
-      <!-- 1. Fecha Entrega -->
-      <div class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+      <!-- 1. Fecha Límite Muestra (si aplica) -->
+      <div *ngIf="muestra.requiere_muestra || muestra.fecha_entrega_muestra"
+           class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
         <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs flex-shrink-0">
           <i class="bi bi-calendar-check"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <span
-            class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Entrega</span>
-          <div class="text-xs font-black text-slate-800 truncate">
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Límite Muestra</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-xs font-black text-slate-800">
+              {{ (muestra.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'No asignada' }}
+            </span>
+            <span *ngIf="muestra.fecha_entrega_muestra"
+                  class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                  [ngClass]="getSemaforoFecha(muestra.fecha_entrega_muestra, muestra.estado_muestra).badgeClass">
+              <i class="bi" [ngClass]="getSemaforoFecha(muestra.fecha_entrega_muestra, muestra.estado_muestra).icon"></i>
+              {{ getSemaforoFecha(muestra.fecha_entrega_muestra, muestra.estado_muestra).label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Fecha Límite Cotización (si aplica) -->
+      <div *ngIf="muestra.requiere_costeo || muestra.fecha_entrega_cotizacion"
+           class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-xs flex-shrink-0">
+          <i class="bi bi-calculator"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Límite Cotización</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-xs font-black text-slate-800">
+              {{ (muestra.fecha_entrega_cotizacion | date:'dd/MM/yyyy') || 'No asignada' }}
+            </span>
+            <span *ngIf="muestra.fecha_entrega_cotizacion"
+                  class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                  [ngClass]="getSemaforoFecha(muestra.fecha_entrega_cotizacion, muestra.estado_costeo).badgeClass">
+              <i class="bi" [ngClass]="getSemaforoFecha(muestra.fecha_entrega_cotizacion, muestra.estado_costeo).icon"></i>
+              {{ getSemaforoFecha(muestra.fecha_entrega_cotizacion, muestra.estado_costeo).label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fallback Fecha Entrega General si no tiene ninguna de las dos marcadas -->
+      <div *ngIf="!muestra.requiere_muestra && !muestra.requiere_costeo && !muestra.fecha_entrega_muestra && !muestra.fecha_entrega_cotizacion"
+           class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center text-xs flex-shrink-0">
+          <i class="bi bi-calendar-event"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Entrega</span>
+          <div class="text-xs font-black text-slate-800">
             {{ (muestra.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'No asignada' }}
           </div>
         </div>
       </div>
 
-      <!-- 2. Cantidad / Prendas -->
+      <!-- 3. Cantidad / Prendas -->
       <div class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
         <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs flex-shrink-0">
-          <i class="bi bi-scissors"></i>
+          <i class="bi bi-stack"></i>
         </div>
         <div class="min-w-0 flex-1">
           <span
             class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Ítems</span>
           <div class="text-xs font-black text-slate-800 truncate">
             {{ muestra.items?.length || 0 }} Prendas ({{ getTotalUnidades() }} Uds)
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. TIEMPO TOTAL SAM -->
-      <div class="bg-white rounded-xl px-3 py-2 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs flex-shrink-0">
-          <i class="bi bi-stopwatch"></i>
-        </div>
-        <div class="min-w-0 flex-1">
-          <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-0.5">Tiempo
-            SAM Est.</span>
-          <div class="text-xs font-black text-slate-800 truncate">
-            {{ getSolicitudTotalTime() | number:'1.2-2' }} min
           </div>
         </div>
       </div>
@@ -696,15 +726,6 @@
                 class="px-2.5 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-black inline-flex items-center gap-1.5 shadow-2xs">
                 <i class="bi bi-tag-fill text-amber-600"></i> Requiere Cotización
               </span>
-
-              <button type="button"
-                (click)="toggleItemCotizacion(item)"
-                class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                [ngClass]="item.requiere_costeo ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-800 border border-slate-200 hover:border-amber-300'"
-                [title]="item.requiere_costeo ? 'Clic para desmarcar prenda de cotización' : 'Clic para marcar que esta prenda requiere cotización'">
-                <i class="bi" [ngClass]="item.requiere_costeo ? 'bi-check-circle-fill' : 'bi-circle'"></i>
-                <span>{{ item.requiere_costeo ? 'En Cotización' : 'Marcar Cotización' }}</span>
-              </button>
 
               <span class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold">
                 Muestra: {{ item.cantidad_muestra }} uds

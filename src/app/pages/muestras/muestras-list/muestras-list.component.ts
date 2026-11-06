@@ -135,4 +135,57 @@ export class MuestrasListComponent implements OnInit, OnDestroy {
   verDetalle(sol: Solicitud): void {
     this.router.navigate(['/muestras/detalle', sol.id]);
   }
+
+  getSemaforoFecha(fechaStr?: string | null, estado?: string | null): { label: string; badgeClass: string; icon: string; dias: number | null } {
+    if (!fechaStr) {
+      return { label: 'Sin fecha', badgeClass: 'bg-slate-100 text-slate-500 border-slate-200', icon: 'bi-dash', dias: null };
+    }
+    if (estado === 'COMPLETADO' || estado === 'FINALIZADO' || estado === 'COSTEADO' || estado === 'APROBADO') {
+      return { label: 'Completado', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'bi-check-circle-fill', dias: 0 };
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const parts = fechaStr.split(/[-T ]/);
+    let fecha: Date;
+    if (parts.length >= 3) {
+      fecha = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    } else {
+      fecha = new Date(fechaStr);
+    }
+    fecha.setHours(0, 0, 0, 0);
+
+    const diffMs = fecha.getTime() - hoy.getTime();
+    const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias < 0) {
+      return {
+        label: `Vencido (${Math.abs(diffDias)}d)`,
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
+        icon: 'bi-exclamation-triangle-fill',
+        dias: diffDias
+      };
+    } else if (diffDias === 0) {
+      return {
+        label: 'Vence hoy',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 font-bold',
+        icon: 'bi-clock-fill',
+        dias: diffDias
+      };
+    } else if (diffDias <= 2) {
+      return {
+        label: `En ${diffDias}d`,
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold',
+        icon: 'bi-clock-history',
+        dias: diffDias
+      };
+    } else {
+      return {
+        label: `En ${diffDias}d`,
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold',
+        icon: 'bi-calendar-check',
+        dias: diffDias
+      };
+    }
+  }
 }

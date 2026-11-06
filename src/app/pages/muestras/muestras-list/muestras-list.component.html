@@ -3,7 +3,7 @@
   <div class="mb-6 flex justify-between items-center flex-wrap gap-4">
     <div>
       <div class="flex items-center gap-2">
-        <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full uppercase tracking-wider">Producción</span>
+        <span class="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-full uppercase tracking-wider">Producción</span>
         <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Gestión de Muestras y Confección</h1>
       </div>
       <p class="text-sm text-slate-500 mt-1">Control independiente del desarrollo de muestras físicas, patrones y prototipos para producción.</p>
@@ -18,7 +18,7 @@
   <!-- TARJETAS DE MÉTRICAS / KPIS -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
     <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-      <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl font-bold">
+      <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
         <i class="bi bi-scissors"></i>
       </div>
       <div>
@@ -39,7 +39,7 @@
 
     <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
       <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">
-        <i class="bi bi-box-seam animate-bounce-slow"></i>
+        <i class="bi bi-box-seam"></i>
       </div>
       <div>
         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">En Desarrollo</span>
@@ -64,13 +64,13 @@
       <div class="relative flex-1">
         <i class="bi bi-search absolute left-3 top-2.5 text-slate-400 text-sm"></i>
         <input type="text" [(ngModel)]="muestraSearch" (input)="applyFilters()" placeholder="Buscar por código de solicitud o cliente..." 
-               class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+               class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
       </div>
     </div>
 
     <div class="flex items-center gap-2">
       <span class="text-xs font-bold text-slate-500">Estado:</span>
-      <select [(ngModel)]="muestraEstadoFilter" (change)="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+      <select [(ngModel)]="muestraEstadoFilter" (change)="applyFilters()" class="bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
         <option value="">Todos los Estados</option>
         <option value="PENDIENTE">Sin Iniciar (Pendiente)</option>
         <option value="EN_PROCESO">En Desarrollo</option>
@@ -83,7 +83,7 @@
   <!-- TABLA DE MUESTRAS -->
   <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
     <div *ngIf="isLoading" class="p-12 text-center">
-      <div class="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+      <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
       <p class="text-xs font-bold text-slate-500">Cargando solicitudes de muestra...</p>
     </div>
 
@@ -100,7 +100,7 @@
             <th class="py-3 px-4">Solicitud</th>
             <th class="py-3 px-4">Cliente</th>
             <th class="py-3 px-4">Ítems a Muestrear</th>
-            <th class="py-3 px-4">Fecha Entrega Compromiso</th>
+            <th class="py-3 px-4">Fechas Límite & Semáforos</th>
             <th class="py-3 px-4">Inicio / Fin Confección</th>
             <th class="py-3 px-4">Estado Muestra</th>
             <th class="py-3 px-4 text-right">Acción Rápida</th>
@@ -108,7 +108,7 @@
         </thead>
         <tbody class="divide-y divide-slate-100 text-slate-700">
           <tr *ngFor="let sol of pagedMuestras" class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4 font-bold text-purple-700 hover:underline cursor-pointer" (click)="verDetalle(sol)">
+            <td class="py-3 px-4 font-black text-slate-900 hover:text-blue-600 hover:underline cursor-pointer" (click)="verDetalle(sol)">
               {{ sol.codigo }}
             </td>
             <td class="py-3 px-4">
@@ -119,10 +119,43 @@
               {{ sol.items_count || sol.items?.length || 0 }} ítems
             </td>
             <td class="py-3 px-4">
-              <span *ngIf="sol.fecha_entrega_muestra" class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium text-[11px]">
-                📅 {{ sol.fecha_entrega_muestra | date:'dd/MM/yyyy' }}
-              </span>
-              <span *ngIf="!sol.fecha_entrega_muestra" class="text-slate-400 italic">No fijada</span>
+              <div class="space-y-1">
+                <!-- Fecha Muestra -->
+                <div *ngIf="sol.fecha_entrega_muestra || sol.requiere_muestra" class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                    <i class="bi bi-scissors text-blue-600"></i> Muestra:
+                  </span>
+                  <span class="font-semibold text-slate-800 text-[11px]">
+                    {{ (sol.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'Sin fecha' }}
+                  </span>
+                  <span *ngIf="sol.fecha_entrega_muestra"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                        [ngClass]="getSemaforoFecha(sol.fecha_entrega_muestra, sol.estado_muestra).badgeClass">
+                    <i class="bi" [ngClass]="getSemaforoFecha(sol.fecha_entrega_muestra, sol.estado_muestra).icon"></i>
+                    {{ getSemaforoFecha(sol.fecha_entrega_muestra, sol.estado_muestra).label }}
+                  </span>
+                </div>
+
+                <!-- Fecha Cotización -->
+                <div *ngIf="sol.fecha_entrega_cotizacion || sol.requiere_costeo" class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                    <i class="bi bi-calculator text-amber-600"></i> Costeo:
+                  </span>
+                  <span class="font-semibold text-slate-800 text-[11px]">
+                    {{ (sol.fecha_entrega_cotizacion | date:'dd/MM/yyyy') || 'Sin fecha' }}
+                  </span>
+                  <span *ngIf="sol.fecha_entrega_cotizacion"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                        [ngClass]="getSemaforoFecha(sol.fecha_entrega_cotizacion, sol.estado_costeo).badgeClass">
+                    <i class="bi" [ngClass]="getSemaforoFecha(sol.fecha_entrega_cotizacion, sol.estado_costeo).icon"></i>
+                    {{ getSemaforoFecha(sol.fecha_entrega_cotizacion, sol.estado_costeo).label }}
+                  </span>
+                </div>
+
+                <div *ngIf="!sol.fecha_entrega_muestra && !sol.fecha_entrega_cotizacion" class="text-slate-400 italic text-[11px]">
+                  Sin fechas asignadas
+                </div>
+              </div>
             </td>
             <td class="py-3 px-4 text-[11px]">
               <div *ngIf="sol.fecha_inicio_muestra" class="text-slate-600">
@@ -150,7 +183,7 @@
                         class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] transition-all flex items-center gap-1 shadow-xs">
                   <i class="bi bi-check-lg"></i> Finalizar
                 </button>
-                <button (click)="verDetalle(sol)" class="px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 rounded-lg font-bold text-[11px] transition-all">
+                <button (click)="verDetalle(sol)" class="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 rounded-lg font-bold text-[11px] transition-all">
                   Ver Detalle
                 </button>
               </div>
