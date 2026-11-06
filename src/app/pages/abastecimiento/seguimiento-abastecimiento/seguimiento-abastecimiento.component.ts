@@ -294,14 +294,16 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
     const fechaLlegadaActual = mat.fecha_estimada_llegada ? (mat.fecha_estimada_llegada.substring(0, 10)) : '';
     const proveedorActual = mat.proveedor_nombre || '';
     const notasActual = mat.notas_proveedor || '';
-    const enConsulta = mat.en_consulta_proveedor || false;
-    const esManual = !mat.siesa_referencia || mat.origen_asignacion === 'MANUAL';
+    const enConsulta = !!mat.en_consulta_proveedor;
+    const esManual = !mat.siesa_referencia;
+    const tieneDatosProveedor = enConsulta || !!proveedorActual || !!fechaLlegadaActual;
 
     Swal.fire({
-      title: 'Cotización & Gestión de Insumo',
-      width: '540px',
+      title: 'Ajustar Costo / Cotización',
+      width: '520px',
       html: `
         <div class="text-left text-xs space-y-3 pt-1">
+          <!-- Info del Insumo -->
           <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
             <div class="flex items-center justify-between gap-2">
               <span class="font-extrabold text-slate-900 text-sm truncate">${mat.nombre_material || mat.siesa_descripcion || 'Insumo'}</span>
@@ -316,51 +318,70 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
             </div>
           </div>
 
-          <!-- SECCIÓN: CONSULTA CON PROVEEDOR & FECHA DE LLEGADA -->
-          <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
-                <i class="bi bi-truck text-blue-600"></i> Consulta con Proveedor y Despacho
-              </span>
-              <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold text-blue-900">
-                <input type="checkbox" id="swal_en_consulta" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer" ${enConsulta ? 'checked' : ''}>
-                <span>En Consulta</span>
-              </label>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Proveedor / Fabricante:</label>
-              <input type="text" id="swal_proveedor" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Ej: Lafayette, Primatela, Distribuidor local..." value="${proveedorActual}">
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Fecha Estimada de Llegada del Insumo:</label>
-              <input type="date" id="swal_fecha_llegada" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white font-medium" value="${fechaLlegadaActual}">
-            </div>
-          </div>
-
-          <!-- SECCIÓN: COSTO UNITARIO VIGENTE -->
+          <!-- CAMPO PRINCIPAL: COSTO UNITARIO -->
           <div class="space-y-1">
-            <label class="block text-xs font-bold text-slate-800">
-              Costo Unitario ($ COP):
+            <label class="block text-xs font-black text-slate-900">
+              Costo Unitario ($ COP): <span class="text-rose-500">*</span>
             </label>
-            <input type="number" id="swal_costo" min="0" step="0.01" class="w-full text-sm font-black p-2.5 border border-slate-300 rounded-lg bg-white font-mono" placeholder="Ingresa el costo pactado (ej: 14500)" value="${costoActual}">
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-bold text-sm">$</span>
+              <input type="number" id="swal_costo" min="0" step="0.01"
+                     class="w-full text-base font-black pl-7 pr-3 py-2 border border-slate-300 rounded-xl bg-white font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                     placeholder="Ingresa el costo pactado" value="${costoActual}">
+            </div>
             <p class="text-[10px] text-slate-500 mb-0">
-              Al ingresar un precio, la cotización de la solicitud pasará a estar <strong>Iniciada / En Proceso</strong> automáticamente.
+              Al guardar un precio, la cotización de la solicitud pasará a estar <strong>Iniciada / En Proceso</strong> automáticamente.
             </p>
           </div>
 
-          <!-- NOTAS -->
+          <!-- SECCIÓN OPCIONAL (COLAPSABLE): CONSULTA A PROVEEDOR Y FECHA DE LLEGADA -->
+          <details class="group rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 transition" ${tieneDatosProveedor ? 'open' : ''}>
+            <summary class="flex items-center justify-between cursor-pointer list-none text-xs font-bold text-slate-700 select-none">
+              <span class="flex items-center gap-1.5">
+                <i class="bi bi-truck text-slate-500 group-open:text-blue-600"></i>
+                <span>Consulta a Proveedor y Fecha de Llegada</span>
+                <span class="text-[10px] font-normal text-slate-400">(Opcional)</span>
+              </span>
+              <span class="text-slate-400 text-xs">▼</span>
+            </summary>
+
+            <div class="mt-2.5 pt-2.5 border-t border-slate-200 space-y-2.5">
+              <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <input type="checkbox" id="swal_en_consulta" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" ${enConsulta ? 'checked' : ''}>
+                <span>Marcar como "En Consulta con Proveedor"</span>
+              </label>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Proveedor / Fabricante:</label>
+                  <input type="text" id="swal_proveedor" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Ej: Lafayette..." value="${proveedorActual}">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Fecha Llegada del Insumo:</label>
+                  <input type="date" id="swal_fecha_llegada" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" value="${fechaLlegadaActual}">
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <!-- NOTAS (OPCIONAL) -->
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">Notas u Observaciones del Costeo:</label>
-            <textarea id="swal_notas" rows="2" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Condiciones mínimas, flete, etc.">${notasActual}</textarea>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Notas u Observaciones (Opcional):</label>
+            <textarea id="swal_notas" rows="1" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Condiciones mínimas, flete, etc.">${notasActual}</textarea>
           </div>
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Guardar Cotización',
+      confirmButtonText: 'Guardar Costo',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#2563eb',
+      didOpen: () => {
+        const inputCosto = document.getElementById('swal_costo') as HTMLInputElement;
+        if (inputCosto) {
+          inputCosto.focus();
+          if (inputCosto.value) inputCosto.select();
+        }
+      },
       preConfirm: () => {
         const enConsultaElem = document.getElementById('swal_en_consulta') as HTMLInputElement;
         const proveedorElem = document.getElementById('swal_proveedor') as HTMLInputElement;
@@ -417,16 +438,16 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
               toast: true,
               position: 'top-end',
               showConfirmButton: false,
-              timer: 2200,
+              timer: 2000,
               timerProgressBar: true
             });
             Toast.fire({
               icon: 'success',
-              title: 'Cotización e información de insumo actualizada'
+              title: 'Costo actualizado correctamente'
             });
           },
           error: (err) => {
-            Swal.fire('Error', err.error?.message || 'No se pudo actualizar la cotización del insumo', 'error');
+            Swal.fire('Error', err.error?.message || 'No se pudo actualizar el costo del insumo', 'error');
           }
         });
       }
