@@ -309,7 +309,7 @@ export class TareasComponent implements OnInit, OnChanges, OnDestroy {
       vistaMes: this._proyectoService.getVistaMes(seguimientoId, mes, anio, this.usuarioId, this.vistaMode),
       consolidadas: this._proyectoService.getTareasConsolidadas(this.usuarioId, mes, anio, ['seguimiento', 'proyecto', 'glpi'], this.vistaMode),
       informes: this._proyectoService.getMisInformeTareas(this.usuarioId),
-      proyectos: this._proyectoService.getProyectos(this.usuarioId)
+      proyectos: this._proyectoService.getProyectos(this.usuarioId, undefined, this.vistaMode)
     }).subscribe({
       next: (res: any) => {
         this.vistaMes = res.vistaMes.data;
