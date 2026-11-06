@@ -356,6 +356,12 @@ export class ComercialService {
     });
   }
 
+  buscarProveedoresSiesa(query?: string): Observable<{ success: boolean; data: any[] }> {
+    return this.http.get<any>(`${this.api}/abastecimiento/proveedores-siesa`, {
+      params: query ? { q: query } : {}
+    });
+  }
+
   listarSolicitudesAbastecimiento(filtros?: any): Observable<{ success: boolean; data: any[]; pagination: any }> {
     let params = new HttpParams();
     if (filtros) {

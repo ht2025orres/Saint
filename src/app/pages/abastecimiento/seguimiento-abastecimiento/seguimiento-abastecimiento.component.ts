@@ -353,8 +353,16 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Proveedor / Fabricante:</label>
-                  <input type="text" id="swal_proveedor" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Ej: Lafayette..." value="${proveedorActual}">
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                    Proveedor / Fabricante:
+                    <span class="text-[9px] text-blue-600 font-normal">· Coincidencias SIESA</span>
+                  </label>
+                  <div class="relative">
+                    <input type="text" id="swal_proveedor" list="swal_proveedores_list" autocomplete="off"
+                           class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-1 focus:ring-blue-500 outline-none"
+                           placeholder="Escribe para buscar proveedor en SIESA..." value="${proveedorActual}">
+                    <datalist id="swal_proveedores_list"></datalist>
+                  </div>
                 </div>
                 <div>
                   <label class="block text-[11px] font-bold text-slate-600 mb-1">Fecha Llegada del Insumo:</label>
@@ -380,6 +388,37 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
         if (inputCosto) {
           inputCosto.focus();
           if (inputCosto.value) inputCosto.select();
+        }
+
+        const inputProv = document.getElementById('swal_proveedor') as HTMLInputElement;
+        const dataList = document.getElementById('swal_proveedores_list') as HTMLDataListElement;
+
+        if (inputProv && dataList) {
+          let timeoutId: any = null;
+
+          const cargarSugerencias = (term: string) => {
+            this.comercialService.buscarProveedoresSiesa(term).subscribe({
+              next: (res) => {
+                if (res.success && Array.isArray(res.data) && dataList) {
+                  dataList.innerHTML = res.data.map((p: any) =>
+                    `<option value="${p.razon_social}">${p.razon_social} (NIT: ${p.nit})</option>`
+                  ).join('');
+                }
+              }
+            });
+          };
+
+          // Cargar proveedores iniciales de SIESA
+          cargarSugerencias('');
+
+          // Búsqueda dinámica al escribir en el campo
+          inputProv.addEventListener('input', () => {
+            clearTimeout(timeoutId);
+            const val = inputProv.value.trim();
+            timeoutId = setTimeout(() => {
+              cargarSugerencias(val);
+            }, 250);
+          });
         }
       },
       preConfirm: () => {
