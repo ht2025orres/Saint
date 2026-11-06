@@ -40,13 +40,13 @@
     </div>
   </div>
 
-  <!-- Summary Cards (Sober & Clean) -->
+  <!-- Summary Cards (Sober & Clean con Fechas Límite y Semáforos) -->
   <div class="summary-grid">
     <div class="summary-card">
       <div class="summary-icon icon-neutral"><i class="bi bi-box-seam"></i></div>
       <div class="summary-data">
         <span class="summary-value">{{ costeo.items?.length || 0 }}</span>
-        <span class="summary-label">Ítems</span>
+        <span class="summary-label">Ítems / Prendas</span>
       </div>
     </div>
     <div class="summary-card">
@@ -56,22 +56,57 @@
         <span class="summary-label">Total Unidades</span>
       </div>
     </div>
-    <div class="summary-card">
-      <div class="summary-icon" [ngClass]="costeo.requiere_costeo ? 'icon-indigo' : 'icon-neutral'">
-        <i class="bi" [ngClass]="costeo.requiere_costeo ? 'bi-calculator' : 'bi-dash'"></i>
+
+    <!-- Fecha Límite Muestra (si aplica) -->
+    <div class="summary-card" *ngIf="costeo.requiere_muestra || costeo.fecha_entrega_muestra">
+      <div class="summary-icon icon-indigo">
+        <i class="bi bi-scissors"></i>
       </div>
-      <div class="summary-data">
-        <span class="summary-value">{{ costeo.requiere_costeo ? 'Sí' : 'No' }}</span>
-        <span class="summary-label">Requiere Costeo</span>
+      <div class="summary-data min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="summary-value text-sm sm:text-base">
+            {{ (costeo.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'Sin fecha' }}
+          </span>
+          <span *ngIf="costeo.fecha_entrega_muestra"
+                class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).badgeClass">
+            <i class="bi" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).icon"></i>
+            {{ getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).label }}
+          </span>
+        </div>
+        <span class="summary-label">Límite Muestra</span>
       </div>
     </div>
-    <div class="summary-card">
-      <div class="summary-icon" [ngClass]="costeo.requiere_muestra ? 'icon-amber' : 'icon-neutral'">
-        <i class="bi" [ngClass]="costeo.requiere_muestra ? 'bi-scissors' : 'bi-dash'"></i>
+
+    <!-- Fecha Límite Cotización (si aplica) -->
+    <div class="summary-card" *ngIf="costeo.requiere_costeo || costeo.fecha_entrega_cotizacion">
+      <div class="summary-icon icon-amber">
+        <i class="bi bi-calculator"></i>
+      </div>
+      <div class="summary-data min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="summary-value text-sm sm:text-base">
+            {{ (costeo.fecha_entrega_cotizacion | date:'dd/MM/yyyy') || 'Sin fecha' }}
+          </span>
+          <span *ngIf="costeo.fecha_entrega_cotizacion"
+                class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                [ngClass]="getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).badgeClass">
+            <i class="bi" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).icon"></i>
+            {{ getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).label }}
+          </span>
+        </div>
+        <span class="summary-label">Límite Cotización</span>
+      </div>
+    </div>
+
+    <!-- Fallback si no tiene ni muestra ni cotización especificada -->
+    <div class="summary-card" *ngIf="!costeo.requiere_muestra && !costeo.requiere_costeo && !costeo.fecha_entrega_muestra && !costeo.fecha_entrega_cotizacion">
+      <div class="summary-icon icon-neutral">
+        <i class="bi bi-check2-circle"></i>
       </div>
       <div class="summary-data">
-        <span class="summary-value">{{ costeo.requiere_muestra ? 'Sí' : 'No' }}</span>
-        <span class="summary-label">Requiere Muestra</span>
+        <span class="summary-value">Estándar</span>
+        <span class="summary-label">Tipo Solicitud</span>
       </div>
     </div>
   </div>
@@ -93,11 +128,25 @@
           </div>
           <div class="info-item" *ngIf="costeo.requiere_costeo && costeo.fecha_entrega_cotizacion">
             <span class="info-label">Entrega Cotización</span>
-            <span class="info-value">{{ costeo.fecha_entrega_cotizacion | date:'dd/MM/yyyy' }}</span>
+            <div class="flex items-center gap-1.5">
+              <span class="info-value font-black text-slate-800">{{ costeo.fecha_entrega_cotizacion | date:'dd/MM/yyyy' }}</span>
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                    [ngClass]="getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).badgeClass">
+                <i class="bi text-[8px]" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).icon"></i>
+                {{ getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).label }}
+              </span>
+            </div>
           </div>
           <div class="info-item" *ngIf="costeo.requiere_muestra && costeo.fecha_entrega_muestra">
             <span class="info-label">Entrega Muestra</span>
-            <span class="info-value">{{ costeo.fecha_entrega_muestra | date:'dd/MM/yyyy' }}</span>
+            <div class="flex items-center gap-1.5">
+              <span class="info-value font-black text-slate-800">{{ costeo.fecha_entrega_muestra | date:'dd/MM/yyyy' }}</span>
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                    [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).badgeClass">
+                <i class="bi text-[8px]" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).icon"></i>
+                {{ getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).label }}
+              </span>
+            </div>
           </div>
           <div class="info-item">
             <span class="info-label">Empaque</span>
@@ -509,14 +558,14 @@
               <div class="p-2.5 pt-0 space-y-2 border-t border-slate-100 bg-white" *ngIf="isSidebarZoneExpanded(zp.zone)">
                 <div *ngFor="let part of getConfiguredPartsForZone(zp)"
                      class="p-2 rounded-xl border space-y-1.5"
-                     [ngClass]="!part.is_mandatory ? 'bg-purple-50/40 border-purple-200/80' : 'bg-emerald-50/40 border-emerald-200/80'">
+                     [ngClass]="!part.is_mandatory ? 'bg-indigo-50/40 border-indigo-200/80' : 'bg-emerald-50/40 border-emerald-200/80'">
                   
                   <!-- Nombre de la parte -->
                   <div class="flex items-center justify-between gap-1">
                     <div class="flex items-center gap-1.5 min-w-0">
-                      <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-purple-700 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
+                      <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-indigo-600 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
                       <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
-                      <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-purple-100 text-purple-700 shrink-0">
+                      <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-indigo-100 text-indigo-700 shrink-0">
                         Opcional
                       </span>
                     </div>
@@ -524,11 +573,11 @@
 
                   <!-- Variante Seleccionada -->
                   <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
-                       [ngClass]="!part.is_mandatory ? 'border border-purple-300' : 'border border-emerald-300'">
+                       [ngClass]="!part.is_mandatory ? 'border border-indigo-300' : 'border border-emerald-300'">
                     <i class="bi bi-check-circle-fill text-xs shrink-0"
-                       [ngClass]="!part.is_mandatory ? 'text-purple-600' : 'text-emerald-600'"></i>
+                       [ngClass]="!part.is_mandatory ? 'text-indigo-600' : 'text-emerald-600'"></i>
                     <span class="truncate font-black flex-1"
-                          [ngClass]="!part.is_mandatory ? 'text-purple-950' : 'text-emerald-950'">
+                          [ngClass]="!part.is_mandatory ? 'text-indigo-950' : 'text-emerald-950'">
                       {{ extractVariantName(part) }}
                     </span>
                   </div>
@@ -561,34 +610,34 @@
 
         <!-- 3. Apliques y Opcionales (si existen) -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0" *ngIf="getTransversalOptionals().length > 0">
-          <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-purple-50/80 via-white to-slate-50">
+          <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 via-white to-slate-50">
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-purple-500/50 shadow-sm"></span>
-              <h3 class="text-xs font-black text-purple-950 uppercase tracking-wider mb-0">Apliques y Opcionales ({{ getTransversalOptionals().length }})</h3>
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-indigo-600/50 shadow-sm"></span>
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Apliques y Opcionales ({{ getTransversalOptionals().length }})</h3>
             </div>
           </div>
           
           <div class="p-2.5 space-y-2">
             <div *ngFor="let opt of getTransversalOptionals()" 
-                 class="p-2.5 rounded-xl border bg-purple-50/40 border-purple-200/80 space-y-1.5">
+                 class="p-2.5 rounded-xl border bg-indigo-50/40 border-indigo-200/80 space-y-1.5">
               <div class="flex items-center justify-between gap-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
-                  <i class="bi text-xs text-purple-700" [ngClass]="opt.icon"></i>
+                  <i class="bi text-xs text-indigo-700" [ngClass]="opt.icon"></i>
                   <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ opt.name }}</span>
                 </div>
                 <!-- Pequeño icono de exclamación con tooltip indicando la parte / zona -->
                 <div class="flex items-center gap-1 shrink-0">
-                  <span class="relative cursor-help text-purple-600 hover:text-purple-800 transition"
+                  <span class="relative cursor-help text-indigo-600 hover:text-indigo-800 transition"
                         [title]="'Cargado por parte de:\n• ' + opt.zoneName">
                     <i class="bi bi-exclamation-circle text-xs"></i>
                   </span>
                 </div>
               </div>
-              <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-purple-300 rounded-lg text-[11px] font-bold shadow-2xs">
-                <i class="bi bi-check-circle-fill text-xs text-purple-600 shrink-0"></i>
-                <span class="truncate text-purple-950 font-black">{{ opt.variant }}</span>
+              <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-indigo-300 rounded-lg text-[11px] font-bold shadow-2xs">
+                <i class="bi bi-check-circle-fill text-xs text-indigo-600 shrink-0"></i>
+                <span class="truncate text-indigo-950 font-black">{{ opt.variant }}</span>
               </div>
-              <div *ngIf="opt.exceptionComment || opt.clientSpec" class="text-[10px] text-purple-900 bg-white p-1 rounded-lg border border-purple-200">
+              <div *ngIf="opt.exceptionComment || opt.clientSpec" class="text-[10px] text-indigo-900 bg-white p-1 rounded-lg border border-indigo-200">
                 <span class="font-bold">Especificación:</span> {{ opt.exceptionComment || opt.clientSpec }}
               </div>
             </div>
@@ -743,12 +792,12 @@
                 <!-- Polígono SVG si existe path_data -->
                 <polygon *ngIf="zone.path_data && getPolygonPoints(zone.path_data)"
                          [attr.points]="getPolygonPoints(zone.path_data)"
-                         [attr.fill]="isZoneSelected(zone) ? 'rgba(139, 92, 246, 0.22)' : 'transparent'"
-                         [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#8b5cf6') : 'transparent'"
+                         [attr.fill]="isZoneSelected(zone) ? 'rgba(37, 99, 235, 0.22)' : 'transparent'"
+                         [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#2563eb') : 'transparent'"
                          [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'"
                          stroke-linejoin="round"
                          stroke-linecap="round"
-                         class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-purple-500/15 hover:stroke-purple-400/80"
+                         class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-blue-500/15 hover:stroke-blue-400/80"
                          (click)="selectZone(zone, $event)" />
 
                 <!-- Rectángulo Fallback -->
@@ -758,12 +807,12 @@
                       [attr.width]="zone.width || 20"
                       [attr.height]="zone.height || 10"
                       rx="2.5" ry="2.5"
-                      [attr.fill]="isZoneSelected(zone) ? 'rgba(139, 92, 246, 0.22)' : 'transparent'"
-                      [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#8b5cf6') : 'transparent'"
+                      [attr.fill]="isZoneSelected(zone) ? 'rgba(37, 99, 235, 0.22)' : 'transparent'"
+                      [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#2563eb') : 'transparent'"
                       [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'"
                       stroke-linejoin="round"
                       stroke-linecap="round"
-                      class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-purple-500/15 hover:stroke-purple-400/80"
+                      class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-blue-500/15 hover:stroke-blue-400/80"
                       (click)="selectZone(zone, $event)" />
               </ng-container>
             </svg>
@@ -778,7 +827,7 @@
                 <!-- Hotspot Badge (Exact Spec-Tab-Diseno Pill) -->
                 <div class="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-lg border backdrop-blur-md transition-all group-hover/pin:scale-110"
                      [ngClass]="isZoneSelected(zone) 
-                       ? 'bg-purple-600 text-white border-purple-300 ring-4 ring-purple-500/40 shadow-purple-500/50 scale-105' 
+                       ? 'bg-blue-600 text-white border-blue-300 ring-4 ring-blue-500/40 shadow-blue-500/50 scale-105' 
                        : 'bg-slate-900/85 text-white border-white/20 hover:bg-slate-900 shadow-slate-900/30'">
                   
                   <i class="bi text-xs" [ngClass]="getZoneIcon(zone.zone_type)"></i>
@@ -793,7 +842,7 @@
 
             <!-- ══════════ POPOVER FLOTANTE DE ZONA ACTIVA EN FIGURÍN (z-30) ══════════ -->
             <div *ngIf="selectedZone"
-                 class="zone-popover-container absolute z-30 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 max-w-[92vw] max-h-[75vh] overflow-y-auto custom-scrollbar bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-purple-200/90 p-3.5 space-y-2.5 pointer-events-auto ring-1 ring-black/5 animate-in fade-in zoom-in-95"
+                 class="zone-popover-container absolute z-30 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 max-w-[92vw] max-h-[75vh] overflow-y-auto custom-scrollbar bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-200 p-3.5 space-y-2.5 pointer-events-auto ring-1 ring-black/5 animate-in fade-in zoom-in-95"
                  [style.left.%]="getZonePopoverLeft(selectedZone)"
                  [style.top.%]="getZonePopoverTop(selectedZone)"
                  (click)="$event.stopPropagation()">
@@ -807,7 +856,7 @@
                   </span>
                   <div class="min-w-0">
                     <h4 class="text-xs font-black text-slate-900 truncate uppercase mb-0">{{ selectedZone.name }}</h4>
-                    <p class="text-[9px] font-bold text-purple-600 uppercase tracking-wider mb-0">{{ getZoneLabel(selectedZone.zone_type) }}</p>
+                    <p class="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-0">{{ getZoneLabel(selectedZone.zone_type) }}</p>
                   </div>
                 </div>
                 <button type="button" 
@@ -833,26 +882,26 @@
               <div class="space-y-2">
                 <div *ngFor="let part of getConfiguredPartsForZoneObj(selectedZone)"
                      class="p-2.5 rounded-xl border space-y-1.5"
-                     [ngClass]="!part.is_mandatory ? 'bg-purple-50/40 border-purple-200/80' : 'bg-emerald-50/40 border-emerald-200/80'">
+                     [ngClass]="!part.is_mandatory ? 'bg-indigo-50/40 border-indigo-200/80' : 'bg-emerald-50/40 border-emerald-200/80'">
                   
                   <!-- Nombre de la parte -->
                   <div class="flex items-center justify-between gap-1">
                     <div class="flex items-center gap-1.5 min-w-0">
-                      <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-purple-700 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
+                      <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-indigo-600 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
                       <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
                     </div>
-                    <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-purple-100 text-purple-700 shrink-0">
+                    <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-indigo-100 text-indigo-700 shrink-0">
                       Opcional
                     </span>
                   </div>
 
                   <!-- Variante Seleccionada -->
                   <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
-                       [ngClass]="!part.is_mandatory ? 'border border-purple-300' : 'border border-emerald-300'">
+                       [ngClass]="!part.is_mandatory ? 'border border-indigo-300' : 'border border-emerald-300'">
                     <i class="bi bi-check-circle-fill text-xs shrink-0"
-                       [ngClass]="!part.is_mandatory ? 'text-purple-600' : 'text-emerald-600'"></i>
+                       [ngClass]="!part.is_mandatory ? 'text-indigo-600' : 'text-emerald-600'"></i>
                     <span class="truncate font-black flex-1"
-                          [ngClass]="!part.is_mandatory ? 'text-purple-950' : 'text-emerald-950'">
+                          [ngClass]="!part.is_mandatory ? 'text-indigo-950' : 'text-emerald-950'">
                       {{ extractVariantName(part) }}
                     </span>
                   </div>

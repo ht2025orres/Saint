@@ -1153,31 +1153,6 @@ export class MuestrasDetailComponent implements OnInit {
     }
   }
 
-  toggleItemCotizacion(item: any): void {
-    if (!item || !this.solicitudId) return;
-    const nuevoValor = !item.requiere_costeo;
-    this.comercialService.actualizarItem(this.solicitudId, item.id, { requiere_costeo: nuevoValor }).subscribe({
-      next: () => {
-        item.requiere_costeo = nuevoValor;
-        this.actualizarMaterialesAgrupados();
-        const Toast = Swal.mixin({
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 2200,
-          timerProgressBar: true
-        });
-        Toast.fire({
-          icon: 'success',
-          title: nuevoValor ? 'Prenda marcada para Cotización' : 'Prenda desmarcada de Cotización'
-        });
-      },
-      error: (err: any) => {
-        Swal.fire('Error', err?.error?.message || 'No se pudo actualizar el estado de cotización de la prenda', 'error');
-      }
-    });
-  }
-
   // ==================== SINCRONIZACIÓN DE MATERIALES CON ALMACÉN ====================
 
   private isSyncingSpecMaterials = false;
