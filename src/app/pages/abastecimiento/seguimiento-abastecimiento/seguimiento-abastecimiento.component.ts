@@ -289,65 +289,144 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
     });
   }
 
-  editarCostoManual(mat: any): void {
-    const costoActual = mat.costo_vigente_final || mat.ultimo_costo_siesa || '';
+  editarCostoManual(mat: any, sol?: any): void {
+    const costoActual = mat.costo_vigente_final || mat.costo_vigente_logistica || mat.ultimo_costo_siesa || '';
+    const fechaLlegadaActual = mat.fecha_estimada_llegada ? (mat.fecha_estimada_llegada.substring(0, 10)) : '';
+    const proveedorActual = mat.proveedor_nombre || '';
+    const notasActual = mat.notas_proveedor || '';
+    const enConsulta = mat.en_consulta_proveedor || false;
+    const esManual = !mat.siesa_referencia || mat.origen_asignacion === 'MANUAL';
 
     Swal.fire({
-      title: 'Ajustar Costo Vigente (Logística)',
+      title: 'Cotización & Gestión de Insumo',
+      width: '540px',
       html: `
-        <div class="text-left text-xs space-y-2 mb-3">
-          <p class="font-bold text-slate-800 mb-0.5">Ítem: ${mat.nombre_material || mat.siesa_descripcion || 'Insumo'}</p>
-          <p class="text-slate-500 font-mono text-[11px] mb-1">Ref SIESA: ${mat.siesa_referencia || 'N/A'}</p>
-          <div class="text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
-            <i class="bi bi-info-circle-fill mr-1"></i>
-            Si el precio del sistema está sin movimientos o desactualizado, digita el costo unitario real.
+        <div class="text-left text-xs space-y-3 pt-1">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-extrabold text-slate-900 text-sm truncate">${mat.nombre_material || mat.siesa_descripcion || 'Insumo'}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${esManual ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}">
+                ${esManual ? 'Manual / Nuevo' : 'Catálogo SIESA'}
+              </span>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+              <span><strong>Ref:</strong> ${mat.siesa_referencia || 'Sin código SIESA'}</span>
+              <span>· <strong>Prenda:</strong> ${mat.solicitud_item?.descripcion || 'General'}</span>
+              ${mat.solicitud_item?.requiere_costeo ? '<span class="text-amber-700 font-black">(Requiere Cotización)</span>' : ''}
+            </div>
+          </div>
+
+          <!-- SECCIÓN: CONSULTA CON PROVEEDOR & FECHA DE LLEGADA -->
+          <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-200 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
+                <i class="bi bi-truck text-blue-600"></i> Consulta con Proveedor y Despacho
+              </span>
+              <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-bold text-blue-900">
+                <input type="checkbox" id="swal_en_consulta" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer" ${enConsulta ? 'checked' : ''}>
+                <span>En Consulta</span>
+              </label>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Proveedor / Fabricante:</label>
+              <input type="text" id="swal_proveedor" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Ej: Lafayette, Primatela, Distribuidor local..." value="${proveedorActual}">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Fecha Estimada de Llegada del Insumo:</label>
+              <input type="date" id="swal_fecha_llegada" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white font-medium" value="${fechaLlegadaActual}">
+            </div>
+          </div>
+
+          <!-- SECCIÓN: COSTO UNITARIO VIGENTE -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-800">
+              Costo Unitario ($ COP):
+            </label>
+            <input type="number" id="swal_costo" min="0" step="0.01" class="w-full text-sm font-black p-2.5 border border-slate-300 rounded-lg bg-white font-mono" placeholder="Ingresa el costo pactado (ej: 14500)" value="${costoActual}">
+            <p class="text-[10px] text-slate-500 mb-0">
+              Al ingresar un precio, la cotización de la solicitud pasará a estar <strong>Iniciada / En Proceso</strong> automáticamente.
+            </p>
+          </div>
+
+          <!-- NOTAS -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Notas u Observaciones del Costeo:</label>
+            <textarea id="swal_notas" rows="2" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" placeholder="Condiciones mínimas, flete, etc.">${notasActual}</textarea>
           </div>
         </div>
       `,
-      input: 'number',
-      inputValue: costoActual,
-      inputPlaceholder: 'Ingresa el costo unitario en COP',
-      inputAttributes: {
-        min: '0',
-        step: '0.01'
-      },
       showCancelButton: true,
-      confirmButtonText: 'Guardar Costo',
+      confirmButtonText: 'Guardar Cotización',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#2563eb',
-      inputValidator: (val) => {
-        if (!val || Number(val) < 0) {
-          return 'Ingresa un costo válido mayor o igual a 0';
+      preConfirm: () => {
+        const enConsultaElem = document.getElementById('swal_en_consulta') as HTMLInputElement;
+        const proveedorElem = document.getElementById('swal_proveedor') as HTMLInputElement;
+        const fechaLlegadaElem = document.getElementById('swal_fecha_llegada') as HTMLInputElement;
+        const costoElem = document.getElementById('swal_costo') as HTMLInputElement;
+        const notasElem = document.getElementById('swal_notas') as HTMLTextAreaElement;
+
+        const costoStr = costoElem ? costoElem.value.trim() : '';
+        const nuevoCosto = costoStr !== '' ? Number(costoStr) : null;
+        if (nuevoCosto !== null && (isNaN(nuevoCosto) || nuevoCosto < 0)) {
+          Swal.showValidationMessage('Ingresa un costo válido mayor o igual a 0');
+          return false;
         }
-        return null;
+
+        return {
+          en_consulta_proveedor: enConsultaElem ? enConsultaElem.checked : false,
+          proveedor_nombre: proveedorElem ? proveedorElem.value.trim() : '',
+          fecha_estimada_llegada: fechaLlegadaElem ? fechaLlegadaElem.value : null,
+          costo_vigente_logistica: nuevoCosto !== null ? nuevoCosto : (mat.costo_vigente_logistica || 0),
+          notas: notasElem ? notasElem.value.trim() : ''
+        };
       }
     }).then((res) => {
-      if (res.isConfirmed && res.value !== undefined) {
-        const nuevoCosto = Number(res.value);
+      if (res.isConfirmed && res.value) {
+        const val = res.value;
         this.comercialService.actualizarCostoLogistica(mat.id, {
-          costo_vigente_logistica: nuevoCosto,
-          notas: 'Ajustado manualmente por Logística'
+          costo_vigente_logistica: val.costo_vigente_logistica,
+          en_consulta_proveedor: val.en_consulta_proveedor,
+          proveedor_nombre: val.proveedor_nombre,
+          fecha_estimada_llegada: val.fecha_estimada_llegada || undefined,
+          notas: val.notas
         }).subscribe({
           next: () => {
-            mat.costo_vigente_final = nuevoCosto;
-            mat.costo_vigente_logistica = nuevoCosto;
-            mat.fuente_costo = 'LOGISTICA';
-            mat.estado_costo = 'VIGENTE';
+            if (val.costo_vigente_logistica > 0) {
+              mat.costo_vigente_final = val.costo_vigente_logistica;
+              mat.costo_vigente_logistica = val.costo_vigente_logistica;
+              mat.fuente_costo = 'LOGISTICA';
+              mat.estado_costo = 'VIGENTE';
+            }
+            mat.en_consulta_proveedor = val.en_consulta_proveedor;
+            mat.proveedor_nombre = val.proveedor_nombre;
+            mat.fecha_estimada_llegada = val.fecha_estimada_llegada;
+            mat.notas_proveedor = val.notas;
+
+            // Si la cotización no estaba iniciada y se ingresó costo o consulta, pasar a EN_PROCESO
+            if (sol && (val.costo_vigente_logistica > 0 || val.en_consulta_proveedor)) {
+              if (!sol.estado_costeo || sol.estado_costeo === 'PENDIENTE' || sol.estado_costeo === 'SIN_INICIAR' || sol.estado_costeo === 'NO_REQUERIDO') {
+                sol.estado_costeo = 'EN_PROCESO';
+                sol.requiere_costeo = true;
+              }
+            }
 
             const Toast = Swal.mixin({
               toast: true,
               position: 'top-end',
               showConfirmButton: false,
-              timer: 2000,
+              timer: 2200,
               timerProgressBar: true
             });
             Toast.fire({
               icon: 'success',
-              title: 'Costo actualizado correctamente'
+              title: 'Cotización e información de insumo actualizada'
             });
           },
           error: (err) => {
-            Swal.fire('Error', err.error?.message || 'No se pudo actualizar el costo', 'error');
+            Swal.fire('Error', err.error?.message || 'No se pudo actualizar la cotización del insumo', 'error');
           }
         });
       }
@@ -688,6 +767,7 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
         this.comercialService.anclarRqtSiesa(sol.id, consecutivo).subscribe({
           next: () => {
             sol.siesa_rqt_consecutivo = consecutivo;
+            sol.estado_costeo = 'COMPLETADO';
             const Toast = Swal.mixin({
               toast: true,
               position: 'top-end',
@@ -697,7 +777,7 @@ export class SeguimientoAbastecimientoComponent implements OnInit, OnDestroy {
             });
             Toast.fire({
               icon: 'success',
-              title: `RQT #${consecutivo} anclada exitosamente`
+              title: `RQT #${consecutivo} anclada. Cotización completada exitosamente`
             });
           },
           error: (err) => {

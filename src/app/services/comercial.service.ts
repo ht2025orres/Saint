@@ -297,8 +297,27 @@ export class ComercialService {
     });
   }
 
-  actualizarCostoLogistica(id: number, data: { costo_vigente_logistica: number; notas?: string }): Observable<any> {
+  actualizarCostoLogistica(id: number, data: {
+    costo_vigente_logistica: number;
+    notas?: string;
+    proveedor_nombre?: string;
+    fecha_estimada_llegada?: string;
+    en_consulta_proveedor?: boolean;
+  }): Observable<any> {
     return this.http.put<any>(`${this.api}/abastecimiento/materiales/${id}/costo-logistica`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
+  actualizarConsultaProveedor(id: number, data: {
+    en_consulta_proveedor: boolean;
+    proveedor_nombre?: string;
+    fecha_estimada_llegada?: string;
+    notas_proveedor?: string;
+    costo_vigente_logistica?: number;
+  }): Observable<any> {
+    return this.http.put<any>(`${this.api}/abastecimiento/materiales/${id}/consulta-proveedor`, {
       ...data,
       usuario_id: this.uid()
     });

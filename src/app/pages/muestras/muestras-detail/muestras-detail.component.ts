@@ -2004,6 +2004,11 @@ export class MuestrasDetailComponent implements OnInit {
           ultimo_costo_siesa: m.ultimo_costo_siesa ?? null,
           fecha_ultimo_costo_siesa: m.fecha_ultimo_costo_siesa ?? null,
           costo_vigente_logistica: m.costo_vigente_logistica ?? null,
+          en_consulta_proveedor: m.en_consulta_proveedor || false,
+          fecha_consulta_proveedor: m.fecha_consulta_proveedor || null,
+          proveedor_nombre: m.proveedor_nombre || null,
+          fecha_estimada_llegada: m.fecha_estimada_llegada || null,
+          notas_proveedor: m.notas_proveedor || null,
           antiguedad_dias: m.antiguedad_dias ?? null,
           estado_costo: m.estado_costo ?? 'SIN_MOVIMIENTO',
           fuente_costo: m.fuente_costo ?? 'SIESA',
@@ -2033,6 +2038,18 @@ export class MuestrasDetailComponent implements OnInit {
       }
       if (m.descripcion_personalizada && !group.descripcion_personalizada) {
         group.descripcion_personalizada = m.descripcion_personalizada;
+      }
+      if (m.en_consulta_proveedor) {
+        group.en_consulta_proveedor = true;
+      }
+      if (m.proveedor_nombre && !group.proveedor_nombre) {
+        group.proveedor_nombre = m.proveedor_nombre;
+      }
+      if (m.fecha_estimada_llegada && !group.fecha_estimada_llegada) {
+        group.fecha_estimada_llegada = m.fecha_estimada_llegada;
+      }
+      if (m.notas_proveedor && !group.notas_proveedor) {
+        group.notas_proveedor = m.notas_proveedor;
       }
 
       const itemId = m.solicitud_item_id;

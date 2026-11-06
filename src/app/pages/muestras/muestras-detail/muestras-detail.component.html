@@ -469,6 +469,22 @@
                       <i class="bi bi-link-45deg text-amber-600 text-[10px]"></i>
                       <span>Pendiente por vincular en SIESA</span>
                     </div>
+
+                    <!-- Consulta Proveedor & Fecha Llegada -->
+                    <div *ngIf="mat.en_consulta_proveedor || mat.fecha_estimada_llegada" class="flex items-center gap-1.5 flex-wrap mt-1">
+                      <span *ngIf="mat.en_consulta_proveedor"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300"
+                        [title]="'En consulta con proveedor' + (mat.proveedor_nombre ? (': ' + mat.proveedor_nombre) : '')">
+                        <i class="bi bi-chat-dots-fill text-amber-600 text-[8px]"></i> En Consulta Prov.
+                        <span *ngIf="mat.proveedor_nombre" class="font-normal text-slate-700">({{ mat.proveedor_nombre }})</span>
+                      </span>
+
+                      <span *ngIf="mat.fecha_estimada_llegada"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200"
+                        title="Fecha estimada en la que va a llegar el insumo">
+                        <i class="bi bi-truck text-blue-600 text-[8px]"></i> Llegada est.: {{ mat.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
+                      </span>
+                    </div>
                   </div>
                 </td>
 

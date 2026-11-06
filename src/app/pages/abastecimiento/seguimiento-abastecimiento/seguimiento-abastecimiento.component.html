@@ -226,6 +226,13 @@
                 <span *ngIf="sol.siesa_rqt_consecutivo" class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono" title="Requisición SIESA Vinculada">
                   <i class="bi bi-clipboard2-check-fill mr-1 text-[9px] text-emerald-600"></i>RQT: #{{ sol.siesa_rqt_consecutivo }}
                 </span>
+                <!-- Badge Estado de la Cotización -->
+                <span *ngIf="sol.requiere_costeo || sol.estado_costeo"
+                      class="text-[10px] font-black px-2 py-0.5 rounded-md border font-mono inline-flex items-center gap-1 shadow-2xs"
+                      [ngClass]="sol.estado_costeo === 'COMPLETADO' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : (sol.estado_costeo === 'EN_PROCESO' ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-amber-50 text-amber-800 border-amber-200')">
+                  <i class="bi text-[9px]" [ngClass]="sol.estado_costeo === 'COMPLETADO' ? 'bi-check-circle-fill text-emerald-600' : (sol.estado_costeo === 'EN_PROCESO' ? 'bi-hourglass-split text-blue-600' : 'bi-clock text-amber-600')"></i>
+                  Cotización: {{ sol.estado_costeo === 'COMPLETADO' ? 'Terminada' : (sol.estado_costeo === 'EN_PROCESO' ? 'Iniciada' : 'Sin Iniciar') }}
+                </span>
               </div>
               <p class="text-xs text-slate-500 mt-0.5 font-medium">
                 {{ sol.items?.length || 0 }} prendas en solicitud ·
@@ -365,9 +372,29 @@
                         <i class="bi bi-exclamation-circle-fill text-amber-600 text-[9px]"></i> Cotización Prioritaria
                       </span>
                     </div>
+
+                    <!-- Etiquetas de Proveedor y Llegada -->
+                    <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                      <span *ngIf="mat.en_consulta_proveedor"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300"
+                        [title]="'En consulta con proveedor' + (mat.proveedor_nombre ? (': ' + mat.proveedor_nombre) : '')">
+                        <i class="bi bi-chat-dots-fill text-amber-600 text-[8px]"></i> En Consulta Prov.
+                        <span *ngIf="mat.proveedor_nombre" class="font-normal text-slate-700">({{ mat.proveedor_nombre }})</span>
+                      </span>
+
+                      <span *ngIf="mat.fecha_estimada_llegada"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200"
+                        title="Fecha estimada en la que va a llegar el ítem">
+                        <i class="bi bi-truck text-blue-600 text-[8px]"></i> Llegada: {{ mat.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
+                      </span>
+                    </div>
+
                     <div class="flex items-center gap-1.5 flex-wrap mt-1">
                       <span *ngIf="mat.siesa_referencia" class="font-mono text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
                         Ref: {{ mat.siesa_referencia }}
+                      </span>
+                      <span *ngIf="!mat.siesa_referencia" class="inline-flex items-center gap-1 text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                        <i class="bi bi-pencil-fill text-[8px]"></i> Ítem Manual / Nuevo
                       </span>
                       <span *ngIf="mat.siesa_color" class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
@@ -390,7 +417,7 @@
                         <span>{{ getPartesUbicacion(mat.ubicacion_principal).zona }}</span>
                       </span>
                       <span *ngIf="getPartesUbicacion(mat.ubicacion_principal).bodega"
-                            class="text-[9px] font-bold text-slate-400 pl-1 uppercase tracking-wider">
+                             class="text-[9px] font-bold text-slate-400 pl-1 uppercase tracking-wider">
                         Bodega {{ getPartesUbicacion(mat.ubicacion_principal).bodega }}
                       </span>
                     </div>
@@ -411,7 +438,7 @@
                     <div class="flex items-center justify-between gap-1.5">
                       <div>
                         <div class="font-extrabold text-slate-900 text-xs">
-                          {{ mat.costo_vigente_final ? ('$' + (mat.costo_vigente_final | number:'1.0-2')) : (mat.ultimo_costo_siesa ? ('$' + (mat.ultimo_costo_siesa | number:'1.0-2')) : 'Sin costo') }}
+                          {{ (mat.costo_vigente_final || mat.costo_vigente_logistica) ? ('$' + ((mat.costo_vigente_final || mat.costo_vigente_logistica) | number:'1.0-2')) : (mat.ultimo_costo_siesa ? ('$' + (mat.ultimo_costo_siesa | number:'1.0-2')) : 'Sin costo') }}
                         </div>
                         <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold border mt-0.5"
                               [ngClass]="getClaseAntiguedadCosto(mat)">
@@ -419,9 +446,9 @@
                           {{ getTextoAntiguedadCosto(mat) }}
                         </span>
                       </div>
-                      <button (click)="editarCostoManual(mat)"
+                      <button (click)="editarCostoManual(mat, sol)"
                               class="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-                              title="Ajustar costo manualmente en Logística">
+                              title="Gestionar cotización, proveedor y fecha de llegada">
                         <i class="bi bi-pencil-square text-xs"></i>
                       </button>
                     </div>
