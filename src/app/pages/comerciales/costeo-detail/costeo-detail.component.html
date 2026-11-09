@@ -244,11 +244,14 @@
         <div class="flex items-center gap-2 flex-shrink-0" (click)="$event.stopPropagation()">
           <!-- Quick Insumos & Cost Summary Pills -->
           <div class="hidden sm:flex items-center gap-1.5" *ngIf="getResumenItemInsumos(item.id) as r">
-            <!-- Costo Insumos de la Prenda -->
+            <!-- Costo Insumos: Unitario por Prenda y Total Lote -->
             <div class="text-right px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Insumos Prenda</span>
+              <span class="text-[9px] font-bold text-blue-600 uppercase tracking-wider block">Insumos / Prenda</span>
               <span class="text-xs font-black text-slate-900">
-                {{ r.costoTotal > 0 ? (r.costoTotal | currency:'COP':'symbol-narrow':'1.0-0') : 'Pendiente' }}
+                {{ r.costoTotal > 0 ? (getCostoUnitarioInsumosPorPrenda(item.id) | currency:'COP':'symbol-narrow':'1.0-0') : 'Pendiente' }}
+              </span>
+              <span *ngIf="r.costoTotal > 0 && getItemTotal(item) > 1" class="text-[9px] text-slate-400 font-medium block">
+                Lote: {{ r.costoTotal | currency:'COP':'symbol-narrow':'1.0-0' }} ({{ getItemTotal(item) }} uds)
               </span>
             </div>
 
@@ -438,14 +441,22 @@
             </tbody>
             <tfoot>
               <tr class="bg-slate-50/90 font-bold border-t border-slate-200 text-slate-800">
-                <td colspan="3" class="py-2.5 px-3.5 text-xs text-slate-500">
-                  Total: {{ getMaterialesItem(item.id).length }} materiales requeridos para esta prenda
+                <td colspan="3" class="py-2.5 px-3.5 text-xs text-slate-600">
+                  <div class="font-bold">Total Insumos del Lote ({{ getItemTotal(item) }} unidades):</div>
+                  <div class="text-[11px] text-slate-400 font-normal">Consumo consolidado para fabricar las {{ getItemTotal(item) }} prendas de este pedido</div>
                 </td>
-                <td class="py-2.5 px-3 text-right text-xs font-black text-slate-900">
-                  {{ getTotalCostoInsumosItem(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                  <div class="text-xs font-black text-slate-900">
+                    {{ getTotalCostoInsumosItem(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </div>
+                  <div class="text-[10px] font-bold text-blue-700">
+                    = {{ getCostoUnitarioInsumosPorPrenda(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }} / prenda
+                  </div>
                 </td>
-                <td colspan="2" class="py-2.5 px-3.5 text-slate-400 text-[10px] font-normal">
-                  * Multiplicar por {{ getItemTotal(item) | number }} uds solicitadas para el lote completo.
+                <td colspan="2" class="py-2.5 px-3.5 text-slate-500 text-[10px]">
+                  <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold">
+                    Costo Insumos / Prenda: {{ getCostoUnitarioInsumosPorPrenda(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </span>
                 </td>
               </tr>
             </tfoot>
@@ -617,21 +628,29 @@
       </div>
 
       <div *ngIf="!isLoadingHistorialPrenda">
-        <!-- Current Insumos Status Banner -->
-        <div class="p-3 mb-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between flex-wrap gap-3" *ngIf="selectedPrendaForHistorial">
+        <!-- Current Insumos Status Banner (Desglose Unitario y Lote) -->
+        <div class="p-3.5 mb-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between flex-wrap gap-4" *ngIf="selectedPrendaForHistorial">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <i class="bi bi-calculator"></i>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
+              <i class="bi bi-tag-fill"></i>
             </div>
             <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400 block">Costo Actual de Insumos (Solicitud {{ costeo?.codigo }})</span>
-              <span class="text-base font-black text-slate-900">
-                {{ getTotalCostoInsumosItem(selectedPrendaForHistorial.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+              <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Costo Insumos Actual (Solicitud {{ costeo?.codigo }})</span>
+              <div class="flex items-baseline gap-2.5 flex-wrap mt-0.5">
+                <span class="text-xl font-black text-blue-700">
+                  {{ getCostoUnitarioInsumosPorPrenda(selectedPrendaForHistorial.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  <span class="text-xs font-bold text-slate-500">/ prenda</span>
+                </span>
+                <span class="text-xs font-semibold text-slate-600 bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
+                  Total Lote ({{ getItemTotal(selectedPrendaForHistorial) }} uds): <strong class="text-slate-900">{{ getTotalCostoInsumosItem(selectedPrendaForHistorial.id) | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+                </span>
+              </div>
+              <span class="text-[11px] text-slate-400 mt-0.5 block">
+                Calculado a partir de {{ getMaterialesItem(selectedPrendaForHistorial.id).length }} insumos requeridos para confeccionar el lote de {{ getItemTotal(selectedPrendaForHistorial) }} prendas.
               </span>
-              <span class="text-xs text-slate-500 ml-1.5 font-normal">({{ getMaterialesItem(selectedPrendaForHistorial.id).length }} materiales)</span>
             </div>
           </div>
-          <button (click)="guardarSnapshotPrenda()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center gap-1.5">
+          <button (click)="guardarSnapshotPrenda()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer flex-shrink-0">
             <i class="bi bi-bookmark-plus-fill"></i> Guardar Versión
           </button>
         </div>
@@ -665,9 +684,15 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                  <span class="text-sm font-black text-slate-900">
-                    {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }}
-                  </span>
+                  <div class="text-right">
+                    <span class="text-sm font-black text-blue-700 block">
+                      {{ (c.costo_unitario_insumos || (c.costo_total_insumos / (c.cantidad_prendas || 1))) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                      <span class="text-[10px] text-slate-500 font-bold">/ prenda</span>
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium block">
+                      Lote: {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }} ({{ c.cantidad_prendas || 1 }} uds)
+                    </span>
+                  </div>
                   <button class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
                           (click)="verDetalleSnapshot(c)">
                     <span>{{ selectedSnapshotDetalle?.id === c.id ? 'Ocultar Insumos' : 'Ver Insumos (' + (c.materiales_snapshot?.length || 0) + ')' }}</span>
@@ -679,16 +704,17 @@
               <!-- Detalle expandido de materiales en el snapshot -->
               <div *ngIf="selectedSnapshotDetalle?.id === c.id" class="mt-3 pt-3 border-t border-slate-200">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                  Materiales registrados en este snapshot:
+                  Materiales registrados en este snapshot (Base lote de {{ c.cantidad_prendas || 1 }} prendas):
                 </span>
                 <div class="overflow-x-auto rounded-lg border border-slate-200">
                   <table class="w-full text-left text-[11px]">
                     <thead class="bg-slate-100 text-[10px] font-black uppercase text-slate-600 border-b border-slate-200">
                       <tr>
                         <th class="py-1.5 px-2.5">Material</th>
-                        <th class="py-1.5 px-2">Consumo</th>
+                        <th class="py-1.5 px-2">Consumo Lote (Unitario)</th>
                         <th class="py-1.5 px-2 text-right">Costo Unit.</th>
-                        <th class="py-1.5 px-2 text-right">Subtotal</th>
+                        <th class="py-1.5 px-2 text-right">Subtotal Lote</th>
+                        <th class="py-1.5 px-2 text-right">Costo / Prenda</th>
                         <th class="py-1.5 px-2">Fuente</th>
                       </tr>
                     </thead>
@@ -698,9 +724,15 @@
                           {{ m.nombre_material }}
                           <span *ngIf="m.siesa_referencia" class="text-[9px] font-mono text-slate-400 block">Ref: {{ m.siesa_referencia }}</span>
                         </td>
-                        <td class="py-1.5 px-2 font-medium text-slate-700">{{ m.consumo | number:'1.1-2' }} {{ m.unidad_medida }}</td>
+                        <td class="py-1.5 px-2 font-medium text-slate-700">
+                          {{ m.consumo | number:'1.1-2' }} {{ m.unidad_medida }}
+                          <span class="text-[9px] text-slate-400 block font-normal">({{ (m.consumo / (c.cantidad_prendas || 1)) | number:'1.1-3' }} / prenda)</span>
+                        </td>
                         <td class="py-1.5 px-2 text-right font-semibold text-slate-700">{{ m.costo_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                         <td class="py-1.5 px-2 text-right font-black text-slate-900">{{ m.subtotal | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                        <td class="py-1.5 px-2 text-right font-bold text-blue-700">
+                          {{ (m.subtotal / (c.cantidad_prendas || 1)) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                        </td>
                         <td class="py-1.5 px-2 font-semibold">
                           <span class="text-[9px] px-1.5 py-0.2 rounded" [ngClass]="m.fuente_costo === 'LOGISTICA' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'">
                             {{ m.fuente_costo }}
@@ -708,6 +740,20 @@
                         </td>
                       </tr>
                     </tbody>
+                    <tfoot>
+                      <tr class="bg-slate-50 font-bold border-t border-slate-200 text-slate-800">
+                        <td colspan="3" class="py-1.5 px-2.5 text-[10px] text-slate-500">
+                          Total Insumos ({{ c.materiales_snapshot?.length || 0 }} materiales):
+                        </td>
+                        <td class="py-1.5 px-2 text-right font-black text-slate-900">
+                          {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }}
+                        </td>
+                        <td class="py-1.5 px-2 text-right font-black text-blue-700">
+                          {{ (c.costo_unitario_insumos || (c.costo_total_insumos / (c.cantidad_prendas || 1))) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>
@@ -734,9 +780,15 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                  <span class="text-sm font-black text-slate-800">
-                    {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }}
-                  </span>
+                  <div class="text-right">
+                    <span class="text-sm font-black text-slate-800 block">
+                      {{ (c.costo_unitario_insumos || (c.costo_total_insumos / (c.cantidad_prendas || 1))) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                      <span class="text-[10px] text-slate-500 font-bold">/ prenda</span>
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium block">
+                      Lote: {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }} ({{ c.cantidad_prendas || 1 }} uds)
+                    </span>
+                  </div>
                   <button class="text-xs font-bold text-slate-600 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
                           (click)="verDetalleSnapshot(c)">
                     <span>{{ selectedSnapshotDetalle?.id === c.id ? 'Ocultar' : 'Ver Insumos' }}</span>

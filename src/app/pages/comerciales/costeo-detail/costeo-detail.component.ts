@@ -138,6 +138,13 @@ export class CosteoDetailComponent implements OnInit {
     return mats.reduce((acc, m) => acc + this.getCostoTotalInsumo(m), 0);
   }
 
+  getCostoUnitarioInsumosPorPrenda(itemId: number): number {
+    const totalLote = this.getTotalCostoInsumosItem(itemId);
+    const item = this.costeo?.items?.find((i: any) => i.id === itemId);
+    const totalPrendas = item ? this.getItemTotal(item) : 1;
+    return totalPrendas > 0 ? (totalLote / totalPrendas) : totalLote;
+  }
+
   esInsumoPendiente(m: any): boolean {
     if (!m) return true;
     const costo = this.getCostoUnitarioInsumo(m);
@@ -369,19 +376,30 @@ export class CosteoDetailComponent implements OnInit {
   guardarSnapshotPrenda(): void {
     if (!this.selectedPrendaForHistorial) return;
     const item = this.selectedPrendaForHistorial;
-    const costoTotal = this.getTotalCostoInsumosItem(item.id);
+    const totalLote = this.getTotalCostoInsumosItem(item.id);
+    const totalUds = this.getItemTotal(item);
+    const costoUnit = this.getCostoUnitarioInsumosPorPrenda(item.id);
 
     Swal.fire({
       title: 'Capturar Versión de Cotización',
       html: `
         <div class="text-left text-xs text-slate-600 mb-2">
-          Se guardará una captura del costo actual de los insumos de esta prenda:
-          <div class="font-bold text-slate-800 text-sm mt-1">$ ${costoTotal.toLocaleString('es-CO')}</div>
+          Se guardará una captura del costeo de insumos para <strong>${totalUds} uds</strong> de esta prenda:
+          <div class="p-2.5 mt-2 rounded-lg bg-slate-50 border border-slate-200">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-slate-500 font-bold">Costo Insumos Unitario:</span>
+              <span class="font-extrabold text-blue-700 text-sm">$ ${costoUnit.toLocaleString('es-CO', { maximumFractionDigits: 0 })} / prenda</span>
+            </div>
+            <div class="flex justify-between items-center text-[11px] text-slate-400">
+              <span>Costo Total Lote (${totalUds} uds):</span>
+              <span class="font-bold text-slate-700">$ ${totalLote.toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span>
+            </div>
+          </div>
         </div>
       `,
       input: 'textarea',
       inputLabel: 'Notas / Observaciones de esta versión (opcional):',
-      inputPlaceholder: 'Ej: Cotización inicial lote 30 uds, tela dril...',
+      inputPlaceholder: 'Ej: Cotización lote 30 uds, tela dril...',
       showCancelButton: true,
       confirmButtonText: 'Guardar Captura',
       cancelButtonText: 'Cancelar',
