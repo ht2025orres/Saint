@@ -222,6 +222,15 @@ export class CosteoDetailComponent implements OnInit {
     return { total, conCosto, pendientes, enConsulta, retrasados, costoTotal };
   }
 
+  getInsumosRetrasadosItem(itemId: number): any[] {
+    return this.getMaterialesItem(itemId).filter(m => this.esLlegadaPosterior(m.fecha_estimada_llegada));
+  }
+
+  getInsumosRetrasadosNombres(itemId: number): string {
+    const list = this.getInsumosRetrasadosItem(itemId);
+    return list.map(m => m.nombre_material || m.siesa_descripcion || 'Insumo').join(', ');
+  }
+
   getFuenteCostoInfo(m: any): { label: string; badgeClass: string; icon: string } {
     if (m.costo_vigente_logistica && m.costo_vigente_logistica > 0) {
       return {

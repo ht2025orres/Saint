@@ -1,20 +1,44 @@
 <div class="detail-container" *ngIf="!isLoading && costeo">
-  <!-- Header -->
+  <!-- Header Banner (Unified, Clean, High Density) -->
   <div class="page-header">
-    <div class="header-row">
-      <button class="btn-back" (click)="goBack()" title="Volver"><i class="bi bi-arrow-left"></i></button>
-      <div class="header-info">
-        <div class="code-row">
-          <h1 class="costeo-code">{{ costeo.codigo }}</h1>
-          <span class="estado-badge" [ngClass]="getEstadoBadge(costeo.estado || '')">
-            {{ getEstadoLabel(costeo.estado || '') }}
-          </span>
+    <div class="header-main-row">
+      <div class="flex items-center gap-3.5 min-w-0 flex-1">
+        <button class="btn-back" (click)="goBack()" title="Volver a solicitudes">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h1 class="costeo-code">{{ costeo.codigo }}</h1>
+            <span class="estado-badge" [ngClass]="getEstadoBadge(costeo.estado || '')">
+              {{ getEstadoLabel(costeo.estado || '') }}
+            </span>
+            <!-- Client Link Pill -->
+            <button class="client-pill" (click)="goToClient()" title="Ver ficha del cliente">
+              <i class="bi bi-building text-blue-600"></i>
+              <span class="font-bold">{{ costeo.cliente_nombre }}</span>
+              <span *ngIf="costeo.cliente_nit" class="text-slate-400 font-normal">· NIT: {{ costeo.cliente_nit }}</span>
+            </button>
+          </div>
+
+          <!-- Subtitle Meta Strip: Despacho, Empaque, RQT, Observaciones -->
+          <div class="header-meta-strip">
+            <span class="meta-tag">
+              <i class="bi bi-truck text-slate-500"></i> Despacho: <strong>{{ costeo.tipo_despacho || 'LOCAL' }}</strong>
+            </span>
+            <span class="meta-tag">
+              <i class="bi bi-box-seam text-slate-500"></i> Empaque: <strong>{{ costeo.material_empaque || 'Estándar' }} ({{ costeo.tipo_empaque || 'Individual' }})</strong>
+            </span>
+            <span class="meta-tag" *ngIf="costeo.siesa_rqt_consecutivo">
+              <i class="bi bi-link-45deg text-emerald-600"></i> RQT SIESA: <strong class="text-emerald-700 font-mono">{{ costeo.siesa_rqt_consecutivo }}</strong>
+            </span>
+            <span class="meta-tag meta-obs" *ngIf="costeo.observaciones" [title]="costeo.observaciones">
+              <i class="bi bi-chat-left-text text-amber-600"></i> Obs: <span class="italic text-slate-600 truncate max-w-sm">{{ costeo.observaciones }}</span>
+            </span>
+          </div>
         </div>
-        <p class="client-link" (click)="goToClient()" title="Ver cliente">
-          <i class="bi bi-building text-indigo-500"></i> {{ costeo.cliente_nombre }}
-          <span *ngIf="costeo.cliente_nit" class="text-slate-400 font-normal"> · NIT: {{ costeo.cliente_nit }}</span>
-        </p>
       </div>
+
+      <!-- Action Buttons -->
       <div class="header-actions">
         <button *ngIf="!costeo.estado || costeo.estado === 'BORRADOR'" 
                 (click)="cambiarEstado('ENVIADO')" 
@@ -40,49 +64,22 @@
     </div>
   </div>
 
-  <!-- Summary Cards (Sober & Clean con Fechas Límite y Semáforos) -->
+  <!-- KPI Summary Cards (Compact, Non-redundant) -->
   <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-icon icon-neutral"><i class="bi bi-box-seam"></i></div>
-      <div class="summary-data">
-        <span class="summary-value">{{ costeo.items?.length || 0 }}</span>
-        <span class="summary-label">Ítems / Prendas</span>
-      </div>
-    </div>
+    <!-- Card 1: Volumen & Prendas -->
     <div class="summary-card">
       <div class="summary-icon icon-neutral"><i class="bi bi-stack"></i></div>
-      <div class="summary-data">
-        <span class="summary-value">{{ getTotalUnidades() | number }}</span>
-        <span class="summary-label">Total Unidades</span>
-      </div>
-    </div>
-
-    <!-- Fecha Límite Muestra (si aplica) -->
-    <div class="summary-card" *ngIf="costeo.requiere_muestra || costeo.fecha_entrega_muestra">
-      <div class="summary-icon icon-indigo">
-        <i class="bi bi-scissors"></i>
-      </div>
       <div class="summary-data min-w-0">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="summary-value text-sm sm:text-base">
-            {{ (costeo.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'Sin fecha' }}
-          </span>
-          <span *ngIf="costeo.fecha_entrega_muestra"
-                class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
-                [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).badgeClass">
-            <i class="bi" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).icon"></i>
-            {{ getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).label }}
-          </span>
-        </div>
-        <span class="summary-label">Límite Muestra</span>
+        <span class="summary-value">{{ costeo.items?.length || 0 }} {{ (costeo.items?.length === 1) ? 'Prenda' : 'Prendas' }} · {{ getTotalUnidades() | number }} uds</span>
+        <span class="summary-label">
+          Volumen Solicitado <span *ngIf="costeo.cantidad_anual" class="text-slate-400 font-normal">· Proy. {{ costeo.cantidad_anual | number }} uds/año</span>
+        </span>
       </div>
     </div>
 
-    <!-- Fecha Límite Cotización (si aplica) -->
+    <!-- Card 2: Límite Cotización (si aplica) -->
     <div class="summary-card" *ngIf="costeo.requiere_costeo || costeo.fecha_entrega_cotizacion">
-      <div class="summary-icon icon-amber">
-        <i class="bi bi-calculator"></i>
-      </div>
+      <div class="summary-icon icon-blue"><i class="bi bi-calculator"></i></div>
       <div class="summary-data min-w-0">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="summary-value text-sm sm:text-base">
@@ -95,11 +92,30 @@
             {{ getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).label }}
           </span>
         </div>
-        <span class="summary-label">Límite Cotización</span>
+        <span class="summary-label">Cotización · {{ getProcesoLabel(costeo.estado_costeo, costeo.requiere_costeo) }}</span>
       </div>
     </div>
 
-    <!-- Resumen Insumos / Costeo (siempre relevante para comerciales) -->
+    <!-- Card 3: Límite Muestra (si aplica) -->
+    <div class="summary-card" *ngIf="costeo.requiere_muestra || costeo.fecha_entrega_muestra">
+      <div class="summary-icon icon-amber"><i class="bi bi-scissors"></i></div>
+      <div class="summary-data min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="summary-value text-sm sm:text-base">
+            {{ (costeo.fecha_entrega_muestra | date:'dd/MM/yyyy') || 'Sin fecha' }}
+          </span>
+          <span *ngIf="costeo.fecha_entrega_muestra"
+                class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
+                [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).badgeClass">
+            <i class="bi" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).icon"></i>
+            {{ getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).label }}
+          </span>
+        </div>
+        <span class="summary-label">Muestra · {{ getProcesoLabel(costeo.estado_muestra, costeo.requiere_muestra) }}</span>
+      </div>
+    </div>
+
+    <!-- Card 4: Costeo Insumos (Logística) -->
     <div class="summary-card" *ngIf="trackingMateriales.length > 0">
       <div class="summary-icon" [ngClass]="conteoMaterialesRetrasados > 0 ? 'bg-rose-50 text-rose-600' : 'icon-neutral'">
         <i class="bi" [ngClass]="conteoMaterialesRetrasados > 0 ? 'bi-exclamation-triangle-fill' : 'bi-boxes'"></i>
@@ -119,681 +135,490 @@
             ✓ 100%
           </span>
         </div>
-        <span class="summary-label">Costo Insumos ({{ trackingMateriales.length }})</span>
-      </div>
-    </div>
-
-    <!-- Fallback si no tiene ni muestra ni cotización especificada -->
-    <div class="summary-card" *ngIf="!costeo.requiere_muestra && !costeo.requiere_costeo && !costeo.fecha_entrega_muestra && !costeo.fecha_entrega_cotizacion">
-      <div class="summary-icon icon-neutral">
-        <i class="bi bi-check2-circle"></i>
-      </div>
-      <div class="summary-data">
-        <span class="summary-value">Estándar</span>
-        <span class="summary-label">Tipo Solicitud</span>
+        <span class="summary-label">Costo Insumos ({{ trackingMateriales.length }} materiales)</span>
       </div>
     </div>
   </div>
 
-  <!-- Main Grid Wrapper (2-Column on large screens) -->
-  <div class="detail-grid-wrapper">
-    <!-- Left Main Column -->
-    <div class="main-content-col">
-
-      <!-- General Specs Card (Sober) -->
-      <div class="info-card">
-        <div class="info-card-header">
-          <i class="bi bi-sliders text-slate-500"></i> Especificaciones de la Solicitud
-        </div>
-        <div class="info-grid">
-          <div class="info-item">
-            <span class="info-label">Despacho</span>
-            <span class="info-value">{{ costeo.tipo_despacho || 'LOCAL' }}</span>
-          </div>
-          <div class="info-item" *ngIf="costeo.requiere_costeo && costeo.fecha_entrega_cotizacion">
-            <span class="info-label">Entrega Cotización</span>
-            <div class="flex items-center gap-1.5">
-              <span class="info-value font-black text-slate-800">{{ costeo.fecha_entrega_cotizacion | date:'dd/MM/yyyy' }}</span>
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
-                    [ngClass]="getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).badgeClass">
-                <i class="bi text-[8px]" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).icon"></i>
-                {{ getSemaforoFecha(costeo.fecha_entrega_cotizacion, costeo.estado_costeo).label }}
-              </span>
-            </div>
-          </div>
-          <div class="info-item" *ngIf="costeo.requiere_muestra && costeo.fecha_entrega_muestra">
-            <span class="info-label">Entrega Muestra</span>
-            <div class="flex items-center gap-1.5">
-              <span class="info-value font-black text-slate-800">{{ costeo.fecha_entrega_muestra | date:'dd/MM/yyyy' }}</span>
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border"
-                    [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).badgeClass">
-                <i class="bi text-[8px]" [ngClass]="getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).icon"></i>
-                {{ getSemaforoFecha(costeo.fecha_entrega_muestra, costeo.estado_muestra).label }}
-              </span>
-            </div>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Empaque</span>
-            <span class="info-value">{{ costeo.material_empaque || '—' }} / {{ costeo.tipo_empaque || '—' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Cantidad por Entrega</span>
-            <span class="info-value">{{ costeo.cantidad_por_entrega ? (costeo.cantidad_por_entrega | number) + ' uds' : '—' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Proyección Anual</span>
-            <span class="info-value">{{ costeo.cantidad_anual ? (costeo.cantidad_anual | number) + ' uds (' + (costeo.entregas_anual || 1) + ' entregas)' : '—' }}</span>
-          </div>
-        </div>
-
-        <div *ngIf="costeo.observaciones" class="mt-4 pt-3 border-t border-slate-100">
-          <span class="info-label mb-1.5 block">Observaciones Comerciales</span>
-          <div class="obs-clean-box">
-            {{ costeo.observaciones }}
-          </div>
-        </div>
+  <!-- Pipeline Operativo / Trazabilidad Strip -->
+  <div class="pipeline-strip">
+    <div class="pipeline-item">
+      <div class="pipeline-icon icon-blue"><i class="bi bi-file-earmark-check"></i></div>
+      <div class="pipeline-info">
+        <span class="pipeline-label">Comercial</span>
+        <span class="pipeline-val">{{ getEstadoLabel(costeo.estado || '') }}</span>
       </div>
-
-      <!-- Tabs Bar -->
-      <div class="tabs-bar">
-        <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="activeTab = 'items'">
-          <i class="bi bi-box-seam"></i> Ítems ({{ costeo.items?.length || 0 }})
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'versiones'" (click)="activeTab = 'versiones'">
-          <i class="bi bi-layers"></i> Versiones del Costeo ({{ costeo.versiones?.length || 0 }})
-        </button>
-      </div>
-
-      <!-- Items Tab -->
-      <div *ngIf="activeTab === 'items'" class="tab-content">
-        <!-- Control Bar for Multiple Items -->
-        <div *ngIf="costeo.items && costeo.items.length > 1" class="items-control-bar">
-          <span class="text-xs font-semibold text-slate-500">Listado de ítems ({{ costeo.items.length }})</span>
-          <div class="flex items-center gap-2">
-            <button (click)="toggleAllItems(true)" class="btn-control-clean">
-              <i class="bi bi-arrows-expand"></i> Expandir todos
-            </button>
-            <button (click)="toggleAllItems(false)" class="btn-control-clean">
-              <i class="bi bi-arrows-collapse"></i> Colapsar todos
-            </button>
-          </div>
-        </div>
-
-        <div *ngFor="let item of costeo.items; let i = index" class="item-clean-card" [class.is-expanded]="item.expanded">
-          <!-- Accordion Header -->
-          <div class="item-clean-header" (click)="toggleItem(item)">
-            <div class="flex items-center gap-3.5 min-w-0 flex-1">
-              <span class="item-clean-index">{{ i + 1 }}</span>
-
-              <!-- Small Mold Image Thumbnail -->
-              <div class="item-clean-thumb-box" *ngIf="item.mold?.image_signed_url || item.mold?.image_url || getFallbackFrontImage(item.mold)">
-                <img [src]="item.mold?.image_signed_url || item.mold?.image_url || getFallbackFrontImage(item.mold)" alt="Molde" class="item-clean-thumb-img" />
-              </div>
-
-              <!-- Title & Mold Name -->
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="item-clean-title">{{ item.descripcion }}</h3>
-                  <span *ngIf="item.siesa_referencia" class="tag-clean tag-siesa">
-                    Ref: {{ item.siesa_referencia }}
-                  </span>
-                  <span *ngIf="!item.siesa_referencia" class="tag-clean tag-local">
-                    Ítem Local
-                  </span>
-                </div>
-                
-                <div class="item-clean-meta-line" *ngIf="item.mold?.name">
-                  <span class="meta-item-mold">
-                    <i class="bi bi-diagram-3"></i> Molde: {{ item.mold.name }}
-                  </span>
-                  <span *ngIf="item.mold?.category?.name" class="text-[10px] text-slate-400 font-medium">({{ item.mold.category.name }})</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Actions and Summary Pills -->
-            <div class="flex items-center gap-2 flex-shrink-0" (click)="$event.stopPropagation()">
-              <!-- Quick Insumos & Cost Summary Pills -->
-              <div class="hidden sm:flex items-center gap-1.5" *ngIf="getResumenItemInsumos(item.id) as r">
-                <!-- Total Costo Insumos de la Prenda -->
-                <div class="text-right px-2 py-0.5 bg-slate-50 border border-slate-200/90 rounded-md">
-                  <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Insumos Est.</span>
-                  <span class="text-[11px] font-extrabold text-slate-800">
-                    {{ r.costoTotal > 0 ? (r.costoTotal | currency:'COP':'symbol-narrow':'1.0-0') : 'Pendiente' }}
-                  </span>
-                </div>
-
-                <!-- Late delivery warning badge -->
-                <span *ngIf="r.retrasados > 0" 
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-300"
-                      title="Hay insumos con fecha de llegada posterior a la fecha compromiso">
-                  <i class="bi bi-exclamation-triangle-fill text-rose-600"></i> Retraso Prov. ({{ r.retrasados }})
-                </span>
-
-                <!-- Pending cost badge -->
-                <span *ngIf="r.pendientes > 0" 
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-300"
-                      title="Insumos pendientes de cotización o precio">
-                  <i class="bi bi-clock-history"></i> {{ r.pendientes }} sin costear
-                </span>
-
-                <!-- In supplier consultation badge -->
-                <span *ngIf="r.enConsulta > 0" 
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
-                      title="Insumos en consulta con proveedor">
-                  <i class="bi bi-truck"></i> {{ r.enConsulta }} en consulta
-                </span>
-
-                <!-- Ready badge -->
-                <span *ngIf="r.total > 0 && r.pendientes === 0 && r.retrasados === 0" 
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
-                      title="Todos los insumos tienen costo vigente y entrega oportuna">
-                  <i class="bi bi-check-circle-fill"></i> Insumos OK
-                </span>
-              </div>
-
-              <button *ngIf="item.mold || item.technical_spec"
-                      (click)="openOpmModal(item)"
-                      class="btn-clean-opm"
-                      title="Ver Ficha OPM y Figurín">
-                <i class="bi bi-diagram-3"></i>
-                <span>Ver Ficha OPM</span>
-              </button>
-              
-              <button class="btn-clean-chevron" (click)="toggleItem(item)" title="Expandir/Colapsar">
-                <i class="bi" [ngClass]="item.expanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Accordion Body (Expanded View - Clean & Zero Redundancy) -->
-          <div *ngIf="item.expanded" class="item-clean-body">
-            
-            <!-- Distribución por Tallas (Clean minimalist chip list) -->
-            <div *ngIf="item.tallas && item.tallas.length > 0" class="item-tallas-container">
-              <span class="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
-                <i class="bi bi-rulers text-slate-400"></i> Tallas solicitadas:
-              </span>
-              <div class="flex flex-wrap gap-1.5">
-                <div *ngFor="let t of item.tallas" class="talla-badge-clean">
-                  <span class="tb-name">{{ t.talla }}</span>
-                  <span class="tb-val">{{ t.cantidad | number }} uds</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Commercial Details Tiles (Only shown if defined) -->
-            <div class="item-meta-grid" *ngIf="item.item_cliente || item.cantidad_muestra || item.ref_siesa_referencia">
-              <div *ngIf="item.item_cliente" class="meta-tile">
-                <span class="meta-tile-label">Ref. Cliente</span>
-                <span class="meta-tile-value">{{ item.item_cliente }}</span>
-              </div>
-              <div *ngIf="item.cantidad_muestra" class="meta-tile sample">
-                <span class="meta-tile-label"><i class="bi bi-scissors text-amber-600"></i> Muestra para Aprobación</span>
-                <span class="meta-tile-value text-amber-900">{{ item.cantidad_muestra }} unidades</span>
-              </div>
-              <div *ngIf="item.ref_siesa_referencia" class="meta-tile">
-                <span class="meta-tile-label">Base SIESA</span>
-                <span class="meta-tile-value font-mono">{{ item.ref_siesa_referencia }} {{ item.ref_siesa_descripcion ? (' - ' + item.ref_siesa_descripcion) : '' }}</span>
-              </div>
-            </div>
-
-            <!-- Insumos & Valoración de Costos de la Prenda -->
-            <div class="item-insumos-section mt-4 pt-3.5 border-t border-slate-100">
-              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-md bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
-                    <i class="bi bi-boxes"></i>
-                  </div>
-                  <div>
-                    <h4 class="text-xs font-black text-slate-800 uppercase tracking-tight mb-0">Insumos & Costeo de Materiales</h4>
-                    <p class="text-[10px] text-slate-400 mb-0">Detalle de insumos requeridos y costos para esta prenda</p>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold text-slate-500">
-                    Costo Total Insumos Prenda:
-                  </span>
-                  <span class="text-sm font-black text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                    {{ getTotalCostoInsumosItem(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Late delivery notice banner if this item has delayed materials -->
-              <div *ngIf="getResumenItemInsumos(item.id).retrasados > 0" class="p-2.5 mb-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill text-rose-600 text-sm flex-shrink-0"></i>
-                <div>
-                  <strong class="font-bold">Alerta de Entrega:</strong>
-                  Uno o más insumos tienen fecha de llegada estimada posterior a la fecha compromiso de la solicitud ({{ (getFechaLimiteSolicitud() | date:'dd/MM/yyyy') || 'Sin fecha' }}).
-                </div>
-              </div>
-
-              <!-- Insumos Table -->
-              <div class="overflow-x-auto rounded-lg border border-slate-200/90 shadow-sm" *ngIf="getMaterialesItem(item.id).length > 0; else noInsumosItem">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr class="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                      <th class="py-2.5 px-3">Material / Insumo</th>
-                      <th class="py-2.5 px-3">Consumo</th>
-                      <th class="py-2.5 px-3 text-right">Costo Unit.</th>
-                      <th class="py-2.5 px-3 text-right">Subtotal</th>
-                      <th class="py-2.5 px-3">Estado Costo</th>
-                      <th class="py-2.5 px-3">Llegada / Proveedor</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100 bg-white">
-                    <tr *ngFor="let m of getMaterialesItem(item.id)" class="hover:bg-slate-50/70 transition-colors">
-                      <!-- Material -->
-                      <td class="py-2.5 px-3">
-                        <div class="font-bold text-slate-800">
-                          {{ m.nombre_material || m.siesa_descripcion || 'Insumo sin nombre' }}
-                        </div>
-                        <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span *ngIf="m.siesa_referencia" class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
-                            Ref: {{ m.siesa_referencia }}
-                          </span>
-                          <span *ngIf="!m.siesa_referencia" class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                            Manual / Nuevo
-                          </span>
-                          <span class="text-[10px] text-slate-400 font-medium">
-                            · {{ m.grupo_insumo || m.tipo_material || 'INSUMO' }}
-                          </span>
-                        </div>
-                      </td>
-
-                      <!-- Consumo -->
-                      <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">
-                        {{ m.cantidad_requerida ? (m.cantidad_requerida | number:'1.1-2') : '1' }} 
-                        <span class="text-[10px] text-slate-400 font-normal">{{ m.unidad_medida || 'UND' }}</span>
-                      </td>
-
-                      <!-- Costo Unitario -->
-                      <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                        <div class="font-bold text-slate-800">
-                          {{ getCostoUnitarioInsumo(m) > 0 ? (getCostoUnitarioInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
-                        </div>
-                        <div class="mt-0.5">
-                          <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded border"
-                                [ngClass]="getFuenteCostoInfo(m).badgeClass">
-                            <i class="bi" [ngClass]="getFuenteCostoInfo(m).icon"></i>
-                            {{ getFuenteCostoInfo(m).label }}
-                          </span>
-                        </div>
-                      </td>
-
-                      <!-- Subtotal -->
-                      <td class="py-2.5 px-3 text-right font-black text-slate-900 whitespace-nowrap">
-                        {{ getCostoTotalInsumo(m) > 0 ? (getCostoTotalInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
-                      </td>
-
-                      <!-- Estado Costo -->
-                      <td class="py-2.5 px-3 whitespace-nowrap">
-                        <span *ngIf="!esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <i class="bi bi-check-circle-fill text-[9px]"></i> Vigente
-                        </span>
-                        <span *ngIf="esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300">
-                          <i class="bi bi-clock-history text-[9px]"></i> Pendiente
-                        </span>
-                      </td>
-
-                      <!-- Llegada / Proveedor con alerta de retraso -->
-                      <td class="py-2.5 px-3 min-w-[170px]">
-                        <!-- Alerta retraso si fecha_estimada_llegada > fecha límite -->
-                        <div *ngIf="m.fecha_estimada_llegada && esLlegadaPosterior(m.fecha_estimada_llegada)" 
-                             class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-300"
-                             [title]="'Fecha estimada de llegada (' + (m.fecha_estimada_llegada | date:'dd/MM/yyyy') + ') es posterior a la fecha límite (' + (getFechaLimiteSolicitud() | date:'dd/MM/yyyy') + ')'">
-                          <i class="bi bi-exclamation-triangle-fill text-rose-600"></i>
-                          Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }} (+{{ getDiasRetrasoLlegada(m.fecha_estimada_llegada) }}d)
-                        </div>
-
-                        <!-- Llegada a tiempo -->
-                        <div *ngIf="m.fecha_estimada_llegada && !esLlegadaPosterior(m.fecha_estimada_llegada)" 
-                             class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50/70 px-1.5 py-0.5 rounded border border-emerald-200">
-                          <i class="bi bi-calendar-check"></i>
-                          Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
-                        </div>
-
-                        <!-- En consulta con proveedor sin fecha aún -->
-                        <div *ngIf="!m.fecha_estimada_llegada && m.en_consulta_proveedor" class="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                          <i class="bi bi-truck"></i> En Consulta Proveedor
-                        </div>
-
-                        <!-- Proveedor name tag if specified -->
-                        <div *ngIf="m.proveedor_nombre" class="text-[10px] font-semibold text-slate-500 mt-0.5 truncate max-w-[200px]" [title]="m.proveedor_nombre">
-                          Prov: {{ m.proveedor_nombre }}
-                        </div>
-
-                        <!-- Sin seguimiento de llegada -->
-                        <div *ngIf="!m.fecha_estimada_llegada && !m.en_consulta_proveedor" class="text-[10px] text-slate-400">
-                          —
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr class="bg-slate-50/90 font-bold border-t border-slate-200 text-slate-800">
-                      <td colspan="3" class="py-2 px-3 text-right text-[11px] uppercase tracking-wider text-slate-500">
-                        Subtotal Insumos de la Prenda:
-                      </td>
-                      <td class="py-2 px-3 text-right text-xs font-black text-slate-900">
-                        {{ getTotalCostoInsumosItem(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
-                      </td>
-                      <td colspan="2" class="py-2 px-3 text-slate-400 text-[10px] font-normal">
-                        * Multiplicar por {{ getItemTotal(item) | number }} uds solicitadas para el lote completo.
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              <ng-template #noInsumosItem>
-                <div class="py-3 px-4 rounded-lg bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                  <i class="bi bi-inbox text-slate-300 text-base mb-1 block"></i>
-                  No hay insumos específicos asignados a esta prenda aún.
-                </div>
-              </ng-template>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Insumos Generales / Compartidos de la Solicitud (si existen) -->
-        <div *ngIf="getMaterialesGlobales().length > 0" class="item-clean-card mt-3">
-          <div class="item-clean-header" style="cursor: default;">
-            <div class="flex items-center gap-3">
-              <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold">
-                <i class="bi bi-collection"></i>
-              </div>
-              <div>
-                <h3 class="item-clean-title">Insumos Generales / Compartidos</h3>
-                <span class="text-[10px] text-slate-400">Materiales transversales a toda la solicitud</span>
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total Insumos</span>
-              <span class="text-xs font-extrabold text-slate-800">
-                {{ getMaterialesGlobales().length }} ítems
-              </span>
-            </div>
-          </div>
-          <div class="item-clean-body border-t border-slate-100">
-            <div class="overflow-x-auto rounded-lg border border-slate-200/90 shadow-sm">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr class="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                    <th class="py-2.5 px-3">Material / Insumo</th>
-                    <th class="py-2.5 px-3">Consumo</th>
-                    <th class="py-2.5 px-3 text-right">Costo Unit.</th>
-                    <th class="py-2.5 px-3 text-right">Subtotal</th>
-                    <th class="py-2.5 px-3">Estado Costo</th>
-                    <th class="py-2.5 px-3">Llegada / Proveedor</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                  <tr *ngFor="let m of getMaterialesGlobales()" class="hover:bg-slate-50/70 transition-colors">
-                    <td class="py-2.5 px-3">
-                      <div class="font-bold text-slate-800">
-                        {{ m.nombre_material || m.siesa_descripcion || 'Insumo sin nombre' }}
-                      </div>
-                      <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span *ngIf="m.siesa_referencia" class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
-                          Ref: {{ m.siesa_referencia }}
-                        </span>
-                        <span *ngIf="!m.siesa_referencia" class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                          Manual / Nuevo
-                        </span>
-                        <span class="text-[10px] text-slate-400 font-medium">
-                          · {{ m.grupo_insumo || m.tipo_material || 'INSUMO' }}
-                        </span>
-                      </div>
-                    </td>
-                    <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">
-                      {{ m.cantidad_requerida ? (m.cantidad_requerida | number:'1.1-2') : '1' }} 
-                      <span class="text-[10px] text-slate-400 font-normal">{{ m.unidad_medida || 'UND' }}</span>
-                    </td>
-                    <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                      <div class="font-bold text-slate-800">
-                        {{ getCostoUnitarioInsumo(m) > 0 ? (getCostoUnitarioInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
-                      </div>
-                      <div class="mt-0.5">
-                        <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded border"
-                              [ngClass]="getFuenteCostoInfo(m).badgeClass">
-                          <i class="bi" [ngClass]="getFuenteCostoInfo(m).icon"></i>
-                          {{ getFuenteCostoInfo(m).label }}
-                        </span>
-                      </div>
-                    </td>
-                    <td class="py-2.5 px-3 text-right font-black text-slate-900 whitespace-nowrap">
-                      {{ getCostoTotalInsumo(m) > 0 ? (getCostoTotalInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
-                    </td>
-                    <td class="py-2.5 px-3 whitespace-nowrap">
-                      <span *ngIf="!esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <i class="bi bi-check-circle-fill text-[9px]"></i> Vigente
-                      </span>
-                      <span *ngIf="esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300">
-                        <i class="bi bi-clock-history text-[9px]"></i> Pendiente
-                      </span>
-                    </td>
-                    <td class="py-2.5 px-3 min-w-[170px]">
-                      <div *ngIf="m.fecha_estimada_llegada && esLlegadaPosterior(m.fecha_estimada_llegada)" 
-                           class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-300"
-                           [title]="'Fecha estimada de llegada (' + (m.fecha_estimada_llegada | date:'dd/MM/yyyy') + ') es posterior a la fecha compromiso'">
-                        <i class="bi bi-exclamation-triangle-fill text-rose-600"></i>
-                        Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }} (+{{ getDiasRetrasoLlegada(m.fecha_estimada_llegada) }}d)
-                      </div>
-                      <div *ngIf="m.fecha_estimada_llegada && !esLlegadaPosterior(m.fecha_estimada_llegada)" 
-                           class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50/70 px-1.5 py-0.5 rounded border border-emerald-200">
-                        <i class="bi bi-calendar-check"></i>
-                        Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
-                      </div>
-                      <div *ngIf="!m.fecha_estimada_llegada && m.en_consulta_proveedor" class="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                        <i class="bi bi-truck"></i> En Consulta Proveedor
-                      </div>
-                      <div *ngIf="m.proveedor_nombre" class="text-[10px] font-semibold text-slate-500 mt-0.5 truncate max-w-[200px]" [title]="m.proveedor_nombre">
-                        Prov: {{ m.proveedor_nombre }}
-                      </div>
-                      <div *ngIf="!m.fecha_estimada_llegada && !m.en_consulta_proveedor" class="text-[10px] text-slate-400">
-                        —
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="!costeo.items || costeo.items.length === 0" class="empty-tab">
-          <p>No hay ítems registrados en este costeo</p>
-        </div>
-      </div>
-
-      <!-- Versions Tab -->
-      <div *ngIf="activeTab === 'versiones'" class="tab-content">
-        <div class="version-actions">
-          <button class="btn-new-version" (click)="crearVersion()">
-            <i class="bi bi-plus-lg"></i> Crear Nueva Versión
-          </button>
-        </div>
-        <div *ngFor="let v of costeo.versiones" class="version-card">
-          <div class="version-header">
-            <span class="version-num">Versión {{ v.version }}</span>
-            <span class="version-estado" [ngClass]="'v-' + v.estado?.toLowerCase()">{{ v.estado }}</span>
-            <span class="version-date">{{ v.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
-          <div class="version-body">
-            <div class="version-grid">
-              <div class="version-field">
-                <span class="vf-label">Precio Tela</span>
-                <span class="vf-value">{{ v.precio_tela ? ('$' + v.precio_tela) : 'Pendiente' }}</span>
-              </div>
-              <div class="version-field">
-                <span class="vf-label">Ancho Útil</span>
-                <span class="vf-value">{{ v.ancho_util_tela || 'Pendiente' }}</span>
-              </div>
-              <div class="version-field">
-                <span class="vf-label">Promedio Trazo</span>
-                <span class="vf-value">{{ v.promedio_trazo || 'Pendiente' }}</span>
-              </div>
-              <div class="version-field">
-                <span class="vf-label">Tiempo Prod.</span>
-                <span class="vf-value">{{ v.tiempo_produccion || 'Pendiente' }}</span>
-              </div>
-              <div class="version-field">
-                <span class="vf-label">Costo Unitario</span>
-                <span class="vf-value font-bold text-slate-800">{{ v.costo_total_unitario ? ('$' + v.costo_total_unitario) : 'Pendiente' }}</span>
-              </div>
-              <div class="version-field">
-                <span class="vf-label">Precio Venta</span>
-                <span class="vf-value font-bold text-slate-800">{{ v.precio_venta_unitario ? ('$' + v.precio_venta_unitario) : 'Pendiente' }}</span>
-              </div>
-            </div>
-            <p *ngIf="v.notas" class="version-notes"><i class="bi bi-chat-left-text text-slate-400"></i> {{ v.notas }}</p>
-          </div>
-        </div>
-        <div *ngIf="!costeo.versiones || costeo.versiones.length === 0" class="empty-tab">
-          <p>No hay versiones creadas aún para esta solicitud.</p>
-        </div>
-      </div>
-
     </div>
 
-    <!-- Right Sidebar Column (Process tracking & Meta - Sober Style) -->
-    <div class="sidebar-panel">
+    <div class="pipeline-divider"></div>
 
-      <!-- Process Tracking Card: Costeo -->
-      <div *ngIf="costeo.requiere_costeo" class="process-card">
-        <div class="flex items-center justify-between mb-2.5">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-              <i class="bi bi-calculator text-sm"></i>
+    <div class="pipeline-item" *ngIf="costeo.requiere_costeo">
+      <div class="pipeline-icon icon-blue"><i class="bi bi-calculator"></i></div>
+      <div class="pipeline-info">
+        <span class="pipeline-label">Cotización</span>
+        <span class="pipeline-val">{{ getProcesoLabel(costeo.estado_costeo, costeo.requiere_costeo) }}</span>
+        <span class="pipeline-sub" *ngIf="costeo.fecha_inicio_costeo">Inicio: {{ costeo.fecha_inicio_costeo | date:'dd/MM HH:mm' }}</span>
+      </div>
+    </div>
+
+    <div class="pipeline-divider" *ngIf="costeo.requiere_costeo && costeo.requiere_muestra"></div>
+
+    <div class="pipeline-item" *ngIf="costeo.requiere_muestra">
+      <div class="pipeline-icon icon-amber"><i class="bi bi-scissors"></i></div>
+      <div class="pipeline-info">
+        <span class="pipeline-label">Muestra</span>
+        <span class="pipeline-val">{{ getProcesoLabel(costeo.estado_muestra, costeo.requiere_muestra) }}</span>
+        <span class="pipeline-sub" *ngIf="costeo.fecha_inicio_muestra">Inicio: {{ costeo.fecha_inicio_muestra | date:'dd/MM HH:mm' }}</span>
+      </div>
+    </div>
+
+    <div class="pipeline-divider"></div>
+
+    <div class="pipeline-item">
+      <div class="pipeline-icon icon-emerald"><i class="bi bi-boxes"></i></div>
+      <div class="pipeline-info">
+        <span class="pipeline-label">Abastecimiento</span>
+        <span class="pipeline-val">{{ conteoCostosValidados }} / {{ trackingMateriales.length }} costeados</span>
+        <span class="pipeline-sub text-emerald-700 font-mono font-bold" *ngIf="costeo.siesa_rqt_consecutivo">RQT: {{ costeo.siesa_rqt_consecutivo }}</span>
+      </div>
+    </div>
+
+    <div class="pipeline-divider"></div>
+
+    <div class="pipeline-item pipeline-audit">
+      <div class="pipeline-info text-right">
+        <span class="pipeline-label">Registro: {{ costeo.created_at | date:'dd/MM/yyyy' }}</span>
+        <span class="pipeline-sub" *ngIf="costeo.updated_at">Modif: {{ costeo.updated_at | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Bar -->
+  <div class="tabs-bar">
+    <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="activeTab = 'items'">
+      <i class="bi bi-box-seam"></i> Ítems & Insumos ({{ costeo.items?.length || 0 }})
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'versiones'" (click)="activeTab = 'versiones'">
+      <i class="bi bi-layers"></i> Versiones del Costeo ({{ costeo.versiones?.length || 0 }})
+    </button>
+  </div>
+
+  <!-- Items Tab Content (Full Width) -->
+  <div *ngIf="activeTab === 'items'" class="tab-content">
+    <!-- Control Bar for Multiple Items -->
+    <div *ngIf="costeo.items && costeo.items.length > 1" class="items-control-bar">
+      <span class="text-xs font-semibold text-slate-500">Listado de prendas ({{ costeo.items.length }})</span>
+      <div class="flex items-center gap-2">
+        <button (click)="toggleAllItems(true)" class="btn-control-clean">
+          <i class="bi bi-arrows-expand"></i> Expandir todos
+        </button>
+        <button (click)="toggleAllItems(false)" class="btn-control-clean">
+          <i class="bi bi-arrows-collapse"></i> Colapsar todos
+        </button>
+      </div>
+    </div>
+
+    <div *ngFor="let item of costeo.items; let i = index" class="item-clean-card" [class.is-expanded]="item.expanded">
+      <!-- Accordion Header -->
+      <div class="item-clean-header" (click)="toggleItem(item)">
+        <div class="flex items-center gap-3.5 min-w-0 flex-1">
+          <span class="item-clean-index">{{ i + 1 }}</span>
+
+          <!-- Small Mold Image Thumbnail -->
+          <div class="item-clean-thumb-box" *ngIf="item.mold?.image_signed_url || item.mold?.image_url || getFallbackFrontImage(item.mold)">
+            <img [src]="item.mold?.image_signed_url || item.mold?.image_url || getFallbackFrontImage(item.mold)" alt="Molde" class="item-clean-thumb-img" />
+          </div>
+
+          <!-- Title & Mold Name -->
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="item-clean-title">{{ item.descripcion }}</h3>
+              <span *ngIf="item.siesa_referencia" class="tag-clean tag-siesa">
+                Ref: {{ item.siesa_referencia }}
+              </span>
+              <span *ngIf="!item.siesa_referencia" class="tag-clean tag-local">
+                Ítem Local
+              </span>
             </div>
-            <div>
-              <h3 class="text-xs font-bold text-slate-800 uppercase tracking-tight mb-0">Proceso de Costeo</h3>
-              <p class="text-[10px] text-slate-400 mb-0">Producción & Costes</p>
+            
+            <div class="item-clean-meta-line" *ngIf="item.mold?.name">
+              <span class="meta-item-mold">
+                <i class="bi bi-diagram-3"></i> Molde: {{ item.mold.name }}
+              </span>
+              <span *ngIf="item.mold?.category?.name" class="text-[10px] text-slate-400 font-medium">({{ item.mold.category.name }})</span>
             </div>
           </div>
-          <span class="estado-badge" [ngClass]="getProcesoBadgeClass(costeo.estado_costeo, costeo.requiere_costeo)">
-            {{ getProcesoLabel(costeo.estado_costeo, costeo.requiere_costeo) }}
-          </span>
         </div>
-        <div class="text-xs text-slate-600 space-y-1 bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-          <div class="flex justify-between">
-            <span class="text-slate-400 font-medium">Inicio:</span>
-            <span class="font-semibold text-slate-700">{{ costeo.fecha_inicio_costeo ? (costeo.fecha_inicio_costeo | date:'dd/MM/yyyy HH:mm') : 'Sin iniciar' }}</span>
+
+        <!-- Actions and Summary Pills -->
+        <div class="flex items-center gap-2 flex-shrink-0" (click)="$event.stopPropagation()">
+          <!-- Quick Insumos & Cost Summary Pills -->
+          <div class="hidden sm:flex items-center gap-1.5" *ngIf="getResumenItemInsumos(item.id) as r">
+            <!-- Costo Insumos de la Prenda -->
+            <div class="text-right px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Insumos Prenda</span>
+              <span class="text-xs font-black text-slate-900">
+                {{ r.costoTotal > 0 ? (r.costoTotal | currency:'COP':'symbol-narrow':'1.0-0') : 'Pendiente' }}
+              </span>
+            </div>
+
+            <!-- Late delivery warning badge -->
+            <span *ngIf="r.retrasados > 0" 
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-300"
+                  title="Hay insumos con fecha de llegada posterior a la fecha compromiso">
+              <i class="bi bi-exclamation-triangle-fill text-rose-600"></i> {{ r.retrasados }} Retraso Prov.
+            </span>
+
+            <!-- Pending cost badge -->
+            <span *ngIf="r.pendientes > 0" 
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-300"
+                  title="Insumos pendientes de cotización o precio">
+              <i class="bi bi-clock-history"></i> {{ r.pendientes }} sin costear
+            </span>
+
+            <!-- In supplier consultation badge -->
+            <span *ngIf="r.enConsulta > 0" 
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
+                  title="Insumos en consulta con proveedor">
+              <i class="bi bi-truck"></i> {{ r.enConsulta }} en consulta
+            </span>
+
+            <!-- Ready badge -->
+            <span *ngIf="r.total > 0 && r.pendientes === 0 && r.retrasados === 0" 
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  title="Todos los insumos tienen costo vigente y entrega oportuna">
+              <i class="bi bi-check-circle-fill"></i> Insumos OK
+            </span>
           </div>
-          <div class="flex justify-between" *ngIf="costeo.fecha_fin_costeo">
-            <span class="text-slate-400 font-medium">Fin:</span>
-            <span class="font-semibold text-slate-700">{{ costeo.fecha_fin_costeo | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
+
+          <button *ngIf="item.mold || item.technical_spec"
+                  (click)="openOpmModal(item)"
+                  class="btn-clean-opm"
+                  title="Ver Ficha OPM y Figurín">
+            <i class="bi bi-diagram-3"></i>
+            <span>Ver Ficha OPM</span>
+          </button>
+          
+          <button class="btn-clean-chevron" (click)="toggleItem(item)" title="Expandir/Colapsar">
+            <i class="bi" [ngClass]="item.expanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
         </div>
       </div>
 
-      <!-- Process Tracking Card: Muestra -->
-      <div *ngIf="costeo.requiere_muestra" class="process-card">
-        <div class="flex items-center justify-between mb-2.5">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-              <i class="bi bi-scissors text-sm"></i>
-            </div>
-            <div>
-              <h3 class="text-xs font-bold text-slate-800 uppercase tracking-tight mb-0">Proceso de Muestra</h3>
-              <p class="text-[10px] text-slate-400 mb-0">Confección & Muestreo</p>
-            </div>
+      <!-- Accordion Body (Expanded View - Clean & Zero Redundancy) -->
+      <div *ngIf="item.expanded" class="item-clean-body">
+        
+        <!-- Prenda Specs Strip (Compact single row) -->
+        <div class="prenda-specs-bar">
+          <div class="spec-chip" *ngIf="item.tallas && item.tallas.length > 0">
+            <span class="spec-label"><i class="bi bi-rulers"></i> Tallas solicitadas:</span>
+            <span class="spec-value" *ngFor="let t of item.tallas">{{ t.talla }} ({{ t.cantidad | number }} uds)</span>
           </div>
-          <span class="estado-badge" [ngClass]="getProcesoBadgeClass(costeo.estado_muestra, costeo.requiere_muestra)">
-            {{ getProcesoLabel(costeo.estado_muestra, costeo.requiere_muestra) }}
+          <div class="spec-chip" *ngIf="item.item_cliente">
+            <span class="spec-label"><i class="bi bi-tag"></i> Ref. Cliente:</span>
+            <span class="spec-value">{{ item.item_cliente }}</span>
+          </div>
+          <div class="spec-chip" *ngIf="item.cantidad_muestra">
+            <span class="spec-label"><i class="bi bi-scissors text-amber-600"></i> Muestra Aprobación:</span>
+            <span class="spec-value text-amber-800 font-bold">{{ item.cantidad_muestra }} uds</span>
+          </div>
+          <div class="spec-chip" *ngIf="item.ref_siesa_referencia">
+            <span class="spec-label"><i class="bi bi-database"></i> Base SIESA:</span>
+            <span class="spec-value font-mono">{{ item.ref_siesa_referencia }} <span *ngIf="item.ref_siesa_descripcion" class="text-slate-400 font-normal">({{ item.ref_siesa_descripcion }})</span></span>
+          </div>
+        </div>
+
+        <!-- Late delivery notice banner if this item has delayed materials -->
+        <div *ngIf="getResumenItemInsumos(item.id).retrasados > 0" class="p-2.5 mb-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-rose-600 text-sm flex-shrink-0"></i>
+          <div>
+            <strong class="font-bold">Alerta de Entrega:</strong>
+            El insumo <strong>"{{ getInsumosRetrasadosNombres(item.id) }}"</strong> tiene fecha de llegada estimada posterior a la fecha límite ({{ (getFechaLimiteSolicitud() | date:'dd/MM/yyyy') || 'Sin fecha' }}).
+          </div>
+        </div>
+
+        <!-- Insumos Table (Full Width) -->
+        <div class="overflow-x-auto rounded-lg border border-slate-200/90 shadow-2xs" *ngIf="getMaterialesItem(item.id).length > 0; else noInsumosItem">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <th class="py-2.5 px-3.5">Material / Insumo</th>
+                <th class="py-2.5 px-3">Consumo</th>
+                <th class="py-2.5 px-3 text-right">Costo Unit.</th>
+                <th class="py-2.5 px-3 text-right">Subtotal</th>
+                <th class="py-2.5 px-3">Estado Costo</th>
+                <th class="py-2.5 px-3.5">Llegada / Proveedor</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr *ngFor="let m of getMaterialesItem(item.id)" class="hover:bg-slate-50/70 transition-colors">
+                <!-- Material -->
+                <td class="py-2.5 px-3.5">
+                  <div class="font-bold text-slate-800">
+                    {{ m.nombre_material || m.siesa_descripcion || 'Insumo sin nombre' }}
+                  </div>
+                  <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span *ngIf="m.siesa_referencia" class="text-[10px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                      Ref: {{ m.siesa_referencia }}
+                    </span>
+                    <span *ngIf="!m.siesa_referencia" class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                      Manual / Nuevo
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium">
+                      · {{ m.grupo_insumo || m.tipo_material || 'INSUMO' }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Consumo -->
+                <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">
+                  {{ m.cantidad_requerida ? (m.cantidad_requerida | number:'1.1-2') : '1' }} 
+                  <span class="text-[10px] text-slate-400 font-normal">{{ m.unidad_medida || 'UND' }}</span>
+                </td>
+
+                <!-- Costo Unitario -->
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                  <div class="font-bold text-slate-800">
+                    {{ getCostoUnitarioInsumo(m) > 0 ? (getCostoUnitarioInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
+                  </div>
+                  <div class="mt-0.5">
+                    <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded border"
+                          [ngClass]="getFuenteCostoInfo(m).badgeClass">
+                      <i class="bi" [ngClass]="getFuenteCostoInfo(m).icon"></i>
+                      {{ getFuenteCostoInfo(m).label }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Subtotal -->
+                <td class="py-2.5 px-3 text-right font-black text-slate-900 whitespace-nowrap">
+                  {{ getCostoTotalInsumo(m) > 0 ? (getCostoTotalInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
+                </td>
+
+                <!-- Estado Costo -->
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                  <span *ngIf="!esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <i class="bi bi-check-circle-fill text-[9px]"></i> Vigente
+                  </span>
+                  <span *ngIf="esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300">
+                    <i class="bi bi-clock-history text-[9px]"></i> Pendiente
+                  </span>
+                </td>
+
+                <!-- Llegada / Proveedor con alerta de retraso -->
+                <td class="py-2.5 px-3.5">
+                  <!-- Alerta retraso si fecha_estimada_llegada > fecha límite -->
+                  <div *ngIf="m.fecha_estimada_llegada && esLlegadaPosterior(m.fecha_estimada_llegada)" 
+                       class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-300"
+                       [title]="'Fecha estimada de llegada (' + (m.fecha_estimada_llegada | date:'dd/MM/yyyy') + ') es posterior a la fecha límite (' + (getFechaLimiteSolicitud() | date:'dd/MM/yyyy') + ')'">
+                    <i class="bi bi-exclamation-triangle-fill text-rose-600"></i>
+                    Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }} (+{{ getDiasRetrasoLlegada(m.fecha_estimada_llegada) }}d)
+                  </div>
+
+                  <!-- Llegada a tiempo -->
+                  <div *ngIf="m.fecha_estimada_llegada && !esLlegadaPosterior(m.fecha_estimada_llegada)" 
+                       class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50/70 px-1.5 py-0.5 rounded border border-emerald-200">
+                    <i class="bi bi-calendar-check"></i>
+                    Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
+                  </div>
+
+                  <!-- En consulta con proveedor sin fecha aún -->
+                  <div *ngIf="!m.fecha_estimada_llegada && m.en_consulta_proveedor" class="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    <i class="bi bi-truck"></i> En Consulta Proveedor
+                  </div>
+
+                  <!-- Proveedor name tag if specified -->
+                  <div *ngIf="m.proveedor_nombre" class="text-[10px] font-semibold text-slate-500 mt-0.5 truncate max-w-[260px]" [title]="m.proveedor_nombre">
+                    Prov: {{ m.proveedor_nombre }}
+                  </div>
+
+                  <!-- Sin seguimiento de llegada -->
+                  <div *ngIf="!m.fecha_estimada_llegada && !m.en_consulta_proveedor" class="text-[10px] text-slate-400">
+                    —
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="bg-slate-50/90 font-bold border-t border-slate-200 text-slate-800">
+                <td colspan="3" class="py-2.5 px-3.5 text-xs text-slate-500">
+                  Total: {{ getMaterialesItem(item.id).length }} materiales requeridos para esta prenda
+                </td>
+                <td class="py-2.5 px-3 text-right text-xs font-black text-slate-900">
+                  {{ getTotalCostoInsumosItem(item.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </td>
+                <td colspan="2" class="py-2.5 px-3.5 text-slate-400 text-[10px] font-normal">
+                  * Multiplicar por {{ getItemTotal(item) | number }} uds solicitadas para el lote completo.
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <ng-template #noInsumosItem>
+          <div class="py-3 px-4 rounded-lg bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+            <i class="bi bi-inbox text-slate-300 text-base mb-1 block"></i>
+            No hay insumos específicos asignados a esta prenda aún.
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Insumos Generales / Compartidos de la Solicitud (si existen) -->
+    <div *ngIf="getMaterialesGlobales().length > 0" class="item-clean-card mt-3">
+      <div class="item-clean-header" style="cursor: default;">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold">
+            <i class="bi bi-collection"></i>
+          </div>
+          <div>
+            <h3 class="item-clean-title">Insumos Generales / Compartidos</h3>
+            <span class="text-[10px] text-slate-400">Materiales transversales a toda la solicitud</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total Insumos</span>
+          <span class="text-xs font-extrabold text-slate-800">
+            {{ getMaterialesGlobales().length }} ítems
           </span>
         </div>
-        <div class="text-xs text-slate-600 space-y-1 bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-          <div class="flex justify-between">
-            <span class="text-slate-400 font-medium">Inicio:</span>
-            <span class="font-semibold text-slate-700">{{ costeo.fecha_inicio_muestra ? (costeo.fecha_inicio_muestra | date:'dd/MM/yyyy HH:mm') : 'Sin iniciar' }}</span>
-          </div>
-          <div class="flex justify-between" *ngIf="costeo.fecha_fin_muestra">
-            <span class="text-slate-400 font-medium">Fin:</span>
-            <span class="font-semibold text-slate-700">{{ costeo.fecha_fin_muestra | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
+      </div>
+      <div class="item-clean-body border-t border-slate-100">
+        <div class="overflow-x-auto rounded-lg border border-slate-200/90 shadow-2xs">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <th class="py-2.5 px-3.5">Material / Insumo</th>
+                <th class="py-2.5 px-3">Consumo</th>
+                <th class="py-2.5 px-3 text-right">Costo Unit.</th>
+                <th class="py-2.5 px-3 text-right">Subtotal</th>
+                <th class="py-2.5 px-3">Estado Costo</th>
+                <th class="py-2.5 px-3.5">Llegada / Proveedor</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr *ngFor="let m of getMaterialesGlobales()" class="hover:bg-slate-50/70 transition-colors">
+                <td class="py-2.5 px-3.5">
+                  <div class="font-bold text-slate-800">
+                    {{ m.nombre_material || m.siesa_descripcion || 'Insumo sin nombre' }}
+                  </div>
+                  <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span *ngIf="m.siesa_referencia" class="text-[10px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                      Ref: {{ m.siesa_referencia }}
+                    </span>
+                    <span *ngIf="!m.siesa_referencia" class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                      Manual / Nuevo
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium">
+                      · {{ m.grupo_insumo || m.tipo_material || 'INSUMO' }}
+                    </span>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">
+                  {{ m.cantidad_requerida ? (m.cantidad_requerida | number:'1.1-2') : '1' }} 
+                  <span class="text-[10px] text-slate-400 font-normal">{{ m.unidad_medida || 'UND' }}</span>
+                </td>
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                  <div class="font-bold text-slate-800">
+                    {{ getCostoUnitarioInsumo(m) > 0 ? (getCostoUnitarioInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
+                  </div>
+                  <div class="mt-0.5">
+                    <span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.2 rounded border"
+                          [ngClass]="getFuenteCostoInfo(m).badgeClass">
+                      <i class="bi" [ngClass]="getFuenteCostoInfo(m).icon"></i>
+                      {{ getFuenteCostoInfo(m).label }}
+                    </span>
+                  </div>
+                </td>
+                <td class="py-2.5 px-3 text-right font-black text-slate-900 whitespace-nowrap">
+                  {{ getCostoTotalInsumo(m) > 0 ? (getCostoTotalInsumo(m) | currency:'COP':'symbol-narrow':'1.0-0') : '—' }}
+                </td>
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                  <span *ngIf="!esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <i class="bi bi-check-circle-fill text-[9px]"></i> Vigente
+                  </span>
+                  <span *ngIf="esInsumoPendiente(m)" class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300">
+                    <i class="bi bi-clock-history text-[9px]"></i> Pendiente
+                  </span>
+                </td>
+                <td class="py-2.5 px-3.5">
+                  <div *ngIf="m.fecha_estimada_llegada && esLlegadaPosterior(m.fecha_estimada_llegada)" 
+                       class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-300">
+                    <i class="bi bi-exclamation-triangle-fill text-rose-600"></i>
+                    Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }} (+{{ getDiasRetrasoLlegada(m.fecha_estimada_llegada) }}d)
+                  </div>
+                  <div *ngIf="m.fecha_estimada_llegada && !esLlegadaPosterior(m.fecha_estimada_llegada)" 
+                       class="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50/70 px-1.5 py-0.5 rounded border border-emerald-200">
+                    <i class="bi bi-calendar-check"></i>
+                    Llega: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
+                  </div>
+                  <div *ngIf="!m.fecha_estimada_llegada && m.en_consulta_proveedor" class="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    <i class="bi bi-truck"></i> En Consulta Proveedor
+                  </div>
+                  <div *ngIf="m.proveedor_nombre" class="text-[10px] font-semibold text-slate-500 mt-0.5 truncate max-w-[260px]" [title]="m.proveedor_nombre">
+                    Prov: {{ m.proveedor_nombre }}
+                  </div>
+                  <div *ngIf="!m.fecha_estimada_llegada && !m.en_consulta_proveedor" class="text-[10px] text-slate-400">
+                    —
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
 
-      <!-- Process Tracking Card: Abastecimiento & Costos de Insumos -->
-      <div class="process-card">
-        <div class="flex items-center justify-between mb-2.5">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <i class="bi bi-boxes text-sm"></i>
-            </div>
-            <div>
-              <h3 class="text-xs font-bold text-slate-800 uppercase tracking-tight mb-0">Costeo de Insumos</h3>
-              <p class="text-[10px] text-slate-400 mb-0">Logística & Abastecimiento</p>
-            </div>
-          </div>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border"
-                [ngClass]="conteoCostosPendientes === 0 && trackingMateriales.length > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
-            {{ trackingMateriales.length === 0 ? 'Sin Insumos' : (conteoCostosPendientes === 0 ? 'Costeado 100%' : conteoCostosPendientes + ' Pendientes') }}
-          </span>
-        </div>
+    <div *ngIf="!costeo.items || costeo.items.length === 0" class="empty-tab">
+      <p>No hay ítems registrados en este costeo</p>
+    </div>
+  </div>
 
-        <!-- Alert if any late delivery -->
-        <div *ngIf="conteoMaterialesRetrasados > 0" class="mb-2.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-center gap-1.5">
-          <i class="bi bi-exclamation-triangle-fill text-rose-600 text-xs flex-shrink-0"></i>
-          <span><strong>{{ conteoMaterialesRetrasados }} insumo(s)</strong> con llegada posterior a fecha límite.</span>
-        </div>
-
-        <div class="text-xs text-slate-600 space-y-1.5 bg-slate-50/80 p-2.5 rounded-lg border border-slate-100">
-          <div class="flex justify-between">
-            <span class="text-slate-400 font-medium">Total Insumos:</span>
-            <span class="font-bold text-slate-700">{{ trackingMateriales.length }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-400 font-medium">Con Costo Vigente:</span>
-            <span class="font-bold text-emerald-700">{{ conteoCostosValidados }}</span>
-          </div>
-          <div class="flex justify-between" *ngIf="conteoCostosPendientes > 0">
-            <span class="text-slate-400 font-medium">Pendientes de Cotizar:</span>
-            <span class="font-bold text-amber-600">{{ conteoCostosPendientes }}</span>
-          </div>
-          <div class="flex justify-between" *ngIf="conteoConsultaProveedor > 0">
-            <span class="text-slate-400 font-medium">En Consulta Proveedor:</span>
-            <span class="font-bold text-blue-600">{{ conteoConsultaProveedor }}</span>
-          </div>
-          <div class="flex justify-between pt-1.5 border-t border-slate-200/80">
-            <span class="text-slate-500 font-bold">Valor Total Insumos:</span>
-            <span class="font-black text-slate-900 text-sm">{{ totalCostoInsumosSolicitud | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </div>
-        </div>
-
-        <!-- RQT Status Link if present -->
-        <div *ngIf="costeo.siesa_rqt_consecutivo" class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-          <span class="text-slate-500 font-medium">RQT SIESA:</span>
-          <span class="font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-            <i class="bi bi-check2"></i> {{ costeo.siesa_rqt_consecutivo }}
-          </span>
-        </div>
+  <!-- Versions Tab (Full Width) -->
+  <div *ngIf="activeTab === 'versiones'" class="tab-content">
+    <div class="version-actions">
+      <button class="btn-new-version" (click)="crearVersion()">
+        <i class="bi bi-plus-lg"></i> Crear Nueva Versión
+      </button>
+    </div>
+    <div *ngFor="let v of costeo.versiones" class="version-card">
+      <div class="version-header">
+        <span class="version-num">Versión {{ v.version }}</span>
+        <span class="version-estado" [ngClass]="'v-' + v.estado?.toLowerCase()">{{ v.estado }}</span>
+        <span class="version-date">{{ v.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
       </div>
-
-      <!-- Metadata Card -->
-      <div class="process-card">
-        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Información del Registro</h4>
-        <div class="space-y-1.5 text-xs">
-          <div class="flex justify-between py-1 border-b border-slate-100">
-            <span class="text-slate-400">Fecha Registro:</span>
-            <span class="font-medium text-slate-700">{{ costeo.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+      <div class="version-body">
+        <div class="version-grid">
+          <div class="version-field">
+            <span class="vf-label">Precio Tela</span>
+            <span class="vf-value">{{ v.precio_tela ? ('$' + v.precio_tela) : 'Pendiente' }}</span>
           </div>
-          <div class="flex justify-between py-1 border-b border-slate-100" *ngIf="costeo.updated_at">
-            <span class="text-slate-400">Última Modificación:</span>
-            <span class="font-medium text-slate-700">{{ costeo.updated_at | date:'dd/MM/yyyy HH:mm' }}</span>
+          <div class="version-field">
+            <span class="vf-label">Ancho Útil</span>
+            <span class="vf-value">{{ v.ancho_util_tela || 'Pendiente' }}</span>
           </div>
-          <div class="flex justify-between py-1">
-            <span class="text-slate-400">Estado Comercial:</span>
-            <span class="font-bold text-indigo-600">{{ getEstadoLabel(costeo.estado || '') }}</span>
+          <div class="version-field">
+            <span class="vf-label">Promedio Trazo</span>
+            <span class="vf-value">{{ v.promedio_trazo || 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Tiempo Prod.</span>
+            <span class="vf-value">{{ v.tiempo_produccion || 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Costo Unitario</span>
+            <span class="vf-value font-bold text-slate-800">{{ v.costo_total_unitario ? ('$' + v.costo_total_unitario) : 'Pendiente' }}</span>
+          </div>
+          <div class="version-field">
+            <span class="vf-label">Precio Venta</span>
+            <span class="vf-value font-bold text-slate-800">{{ v.precio_venta_unitario ? ('$' + v.precio_venta_unitario) : 'Pendiente' }}</span>
           </div>
         </div>
+        <p *ngIf="v.notas" class="version-notes"><i class="bi bi-chat-left-text text-slate-400"></i> {{ v.notas }}</p>
       </div>
-
+    </div>
+    <div *ngIf="!costeo.versiones || costeo.versiones.length === 0" class="empty-tab">
+      <p>No hay versiones creadas aún para esta solicitud.</p>
     </div>
   </div>
 </div>
