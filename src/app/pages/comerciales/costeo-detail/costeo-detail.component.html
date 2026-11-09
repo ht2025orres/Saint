@@ -193,18 +193,8 @@
     </div>
   </div>
 
-  <!-- Tabs Bar -->
-  <div class="tabs-bar">
-    <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="activeTab = 'items'">
-      <i class="bi bi-box-seam"></i> Ítems & Insumos ({{ costeo.items?.length || 0 }})
-    </button>
-    <button class="tab-btn" [class.active]="activeTab === 'versiones'" (click)="activeTab = 'versiones'">
-      <i class="bi bi-layers"></i> Versiones del Costeo ({{ costeo.versiones?.length || 0 }})
-    </button>
-  </div>
-
-  <!-- Items Tab Content (Full Width) -->
-  <div *ngIf="activeTab === 'items'" class="tab-content">
+  <!-- Items Section (Full Width, Direct & Clean) -->
+  <div class="items-section">
     <!-- Control Bar for Multiple Items -->
     <div *ngIf="costeo.items && costeo.items.length > 1" class="items-control-bar">
       <span class="text-xs font-semibold text-slate-500">Listado de prendas ({{ costeo.items.length }})</span>
@@ -297,6 +287,13 @@
                   title="Ver Ficha OPM y Figurín">
             <i class="bi bi-diagram-3"></i>
             <span>Ver Ficha OPM</span>
+          </button>
+
+          <button (click)="abrirHistorialPrenda(item)"
+                  class="btn-clean-history"
+                  title="Historial y captura de cotizaciones de esta prenda">
+            <i class="bi bi-clock-history"></i>
+            <span>Cotizaciones</span>
           </button>
           
           <button class="btn-clean-chevron" (click)="toggleItem(item)" title="Expandir/Colapsar">
@@ -573,52 +570,207 @@
       <p>No hay ítems registrados en este costeo</p>
     </div>
   </div>
+</div>
 
-  <!-- Versions Tab (Full Width) -->
-  <div *ngIf="activeTab === 'versiones'" class="tab-content">
-    <div class="version-actions">
-      <button class="btn-new-version" (click)="crearVersion()">
-        <i class="bi bi-plus-lg"></i> Crear Nueva Versión
-      </button>
-    </div>
-    <div *ngFor="let v of costeo.versiones" class="version-card">
-      <div class="version-header">
-        <span class="version-num">Versión {{ v.version }}</span>
-        <span class="version-estado" [ngClass]="'v-' + v.estado?.toLowerCase()">{{ v.estado }}</span>
-        <span class="version-date">{{ v.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
-      </div>
-      <div class="version-body">
-        <div class="version-grid">
-          <div class="version-field">
-            <span class="vf-label">Precio Tela</span>
-            <span class="vf-value">{{ v.precio_tela ? ('$' + v.precio_tela) : 'Pendiente' }}</span>
-          </div>
-          <div class="version-field">
-            <span class="vf-label">Ancho Útil</span>
-            <span class="vf-value">{{ v.ancho_util_tela || 'Pendiente' }}</span>
-          </div>
-          <div class="version-field">
-            <span class="vf-label">Promedio Trazo</span>
-            <span class="vf-value">{{ v.promedio_trazo || 'Pendiente' }}</span>
-          </div>
-          <div class="version-field">
-            <span class="vf-label">Tiempo Prod.</span>
-            <span class="vf-value">{{ v.tiempo_produccion || 'Pendiente' }}</span>
-          </div>
-          <div class="version-field">
-            <span class="vf-label">Costo Unitario</span>
-            <span class="vf-value font-bold text-slate-800">{{ v.costo_total_unitario ? ('$' + v.costo_total_unitario) : 'Pendiente' }}</span>
-          </div>
-          <div class="version-field">
-            <span class="vf-label">Precio Venta</span>
-            <span class="vf-value font-bold text-slate-800">{{ v.precio_venta_unitario ? ('$' + v.precio_venta_unitario) : 'Pendiente' }}</span>
+<!-- Modal Historial y Captura de Cotizaciones por Prenda -->
+<div class="modal-overlay-clean" *ngIf="isModalHistorialPrendaOpen" (click)="cerrarHistorialPrenda()">
+  <div class="modal-content-clean" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="modal-header-clean">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg flex-shrink-0">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <div class="min-w-0">
+          <span class="text-[10px] font-black uppercase text-blue-600 tracking-wider block">Historial de Cotizaciones por Prenda</span>
+          <h2 class="text-base font-extrabold text-slate-800 truncate m-0">
+            {{ selectedPrendaForHistorial?.descripcion }}
+          </h2>
+          <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+            <span>Cliente: <strong class="text-slate-700">{{ costeo?.cliente_nombre }}</strong></span>
+            <span *ngIf="selectedPrendaForHistorial?.siesa_referencia">· Ref: <span class="font-mono text-slate-600 font-bold">{{ selectedPrendaForHistorial.siesa_referencia }}</span></span>
           </div>
         </div>
-        <p *ngIf="v.notas" class="version-notes"><i class="bi bi-chat-left-text text-slate-400"></i> {{ v.notas }}</p>
+      </div>
+
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button (click)="guardarSnapshotPrenda()" 
+                class="btn-action-primary text-xs" 
+                [disabled]="isSavingSnapshotPrenda"
+                title="Capturar y guardar el costeo actual de insumos">
+          <i class="bi bi-camera-fill" *ngIf="!isSavingSnapshotPrenda"></i>
+          <span *ngIf="isSavingSnapshotPrenda">Guardando...</span>
+          <span *ngIf="!isSavingSnapshotPrenda">Capturar Cotización</span>
+        </button>
+        <button class="btn-close-clean" (click)="cerrarHistorialPrenda()" title="Cerrar">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
     </div>
-    <div *ngIf="!costeo.versiones || costeo.versiones.length === 0" class="empty-tab">
-      <p>No hay versiones creadas aún para esta solicitud.</p>
+
+    <!-- Modal Body -->
+    <div class="modal-body-clean">
+      <!-- Spinner while loading -->
+      <div *ngIf="isLoadingHistorialPrenda" class="text-center py-12 text-slate-400 text-sm">
+        <div class="loader-spinner mb-2"></div>
+        Cargando historial de cotizaciones...
+      </div>
+
+      <div *ngIf="!isLoadingHistorialPrenda">
+        <!-- Current Insumos Status Banner -->
+        <div class="p-3 mb-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between flex-wrap gap-3" *ngIf="selectedPrendaForHistorial">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <i class="bi bi-calculator"></i>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Costo Actual de Insumos (Solicitud {{ costeo?.codigo }})</span>
+              <span class="text-base font-black text-slate-900">
+                {{ getTotalCostoInsumosItem(selectedPrendaForHistorial.id) | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </span>
+              <span class="text-xs text-slate-500 ml-1.5 font-normal">({{ getMaterialesItem(selectedPrendaForHistorial.id).length }} materiales)</span>
+            </div>
+          </div>
+          <button (click)="guardarSnapshotPrenda()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center gap-1.5">
+            <i class="bi bi-bookmark-plus-fill"></i> Guardar Versión
+          </button>
+        </div>
+
+        <!-- Section 1: Cotizaciones de esta Solicitud -->
+        <div class="mb-5">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-600 mb-2.5 flex items-center gap-2">
+            <i class="bi bi-layers-fill text-blue-600"></i>
+            Versiones Guardadas en esta Solicitud ({{ historialCotizacionesPrenda.length }})
+          </h4>
+
+          <div *ngIf="historialCotizacionesPrenda.length === 0" class="text-center py-6 px-4 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+            <i class="bi bi-inbox text-2xl block mb-1 text-slate-300"></i>
+            Aún no se ha capturado ninguna versión de cotización para esta prenda en esta solicitud.
+            <br>Haz clic en <strong>"Guardar Versión"</strong> para registrar una captura con los costos de insumos vigentes.
+          </div>
+
+          <div *ngIf="historialCotizacionesPrenda.length > 0" class="space-y-2">
+            <div *ngFor="let c of historialCotizacionesPrenda" 
+                 class="p-3 rounded-xl border transition-all"
+                 [ngClass]="selectedSnapshotDetalle?.id === c.id ? 'border-blue-500 bg-blue-50/20 shadow-xs' : 'border-slate-200 bg-white hover:border-slate-300'">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2.5">
+                  <span class="px-2 py-0.5 rounded-md font-black text-xs bg-blue-50 text-blue-700 border border-blue-200">
+                    Versión {{ c.version }}
+                  </span>
+                  <span class="text-xs text-slate-400">{{ c.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  <span *ngIf="c.notas" class="text-xs italic text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                    "{{ c.notas }}"
+                  </span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-black text-slate-900">
+                    {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </span>
+                  <button class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                          (click)="verDetalleSnapshot(c)">
+                    <span>{{ selectedSnapshotDetalle?.id === c.id ? 'Ocultar Insumos' : 'Ver Insumos (' + (c.materiales_snapshot?.length || 0) + ')' }}</span>
+                    <i class="bi" [ngClass]="selectedSnapshotDetalle?.id === c.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Detalle expandido de materiales en el snapshot -->
+              <div *ngIf="selectedSnapshotDetalle?.id === c.id" class="mt-3 pt-3 border-t border-slate-200">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Materiales registrados en este snapshot:
+                </span>
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                  <table class="w-full text-left text-[11px]">
+                    <thead class="bg-slate-100 text-[10px] font-black uppercase text-slate-600 border-b border-slate-200">
+                      <tr>
+                        <th class="py-1.5 px-2.5">Material</th>
+                        <th class="py-1.5 px-2">Consumo</th>
+                        <th class="py-1.5 px-2 text-right">Costo Unit.</th>
+                        <th class="py-1.5 px-2 text-right">Subtotal</th>
+                        <th class="py-1.5 px-2">Fuente</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                      <tr *ngFor="let m of c.materiales_snapshot">
+                        <td class="py-1.5 px-2.5 font-bold text-slate-800">
+                          {{ m.nombre_material }}
+                          <span *ngIf="m.siesa_referencia" class="text-[9px] font-mono text-slate-400 block">Ref: {{ m.siesa_referencia }}</span>
+                        </td>
+                        <td class="py-1.5 px-2 font-medium text-slate-700">{{ m.consumo | number:'1.1-2' }} {{ m.unidad_medida }}</td>
+                        <td class="py-1.5 px-2 text-right font-semibold text-slate-700">{{ m.costo_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                        <td class="py-1.5 px-2 text-right font-black text-slate-900">{{ m.subtotal | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                        <td class="py-1.5 px-2 font-semibold">
+                          <span class="text-[9px] px-1.5 py-0.2 rounded" [ngClass]="m.fuente_costo === 'LOGISTICA' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'">
+                            {{ m.fuente_costo }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Histórico de esta Prenda para este Cliente en OTRAS Solicitudes -->
+        <div *ngIf="historialOtrasSolicitudes.length > 0">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-600 mb-2.5 flex items-center gap-2">
+            <i class="bi bi-clock-history text-slate-500"></i>
+            Cotizaciones Anteriores para este Cliente en Otras Solicitudes ({{ historialOtrasSolicitudes.length }})
+          </h4>
+
+          <div class="space-y-2">
+            <div *ngFor="let c of historialOtrasSolicitudes" class="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2.5">
+                  <span class="px-2 py-0.5 rounded-md font-bold text-xs bg-slate-200 text-slate-800">
+                    {{ c.solicitud?.codigo || 'Solicitud anterior' }}
+                  </span>
+                  <span class="text-xs text-slate-500">Versión {{ c.version }} · {{ c.created_at | date:'dd/MM/yyyy' }}</span>
+                  <span *ngIf="c.notas" class="text-xs italic text-slate-500">"{{ c.notas }}"</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-black text-slate-800">
+                    {{ c.costo_total_insumos | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </span>
+                  <button class="text-xs font-bold text-slate-600 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+                          (click)="verDetalleSnapshot(c)">
+                    <span>{{ selectedSnapshotDetalle?.id === c.id ? 'Ocultar' : 'Ver Insumos' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Detalle expandido -->
+              <div *ngIf="selectedSnapshotDetalle?.id === c.id" class="mt-3 pt-3 border-t border-slate-200">
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                  <table class="w-full text-left text-[11px]">
+                    <thead class="bg-slate-100 text-[10px] font-black uppercase text-slate-600">
+                      <tr>
+                        <th class="py-1 px-2">Material</th>
+                        <th class="py-1 px-2">Consumo</th>
+                        <th class="py-1 px-2 text-right">Unitario</th>
+                        <th class="py-1 px-2 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                      <tr *ngFor="let m of c.materiales_snapshot">
+                        <td class="py-1 px-2 font-bold">{{ m.nombre_material }}</td>
+                        <td class="py-1 px-2">{{ m.consumo }} {{ m.unidad_medida }}</td>
+                        <td class="py-1 px-2 text-right">{{ m.costo_unitario | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                        <td class="py-1 px-2 text-right font-black">{{ m.subtotal | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

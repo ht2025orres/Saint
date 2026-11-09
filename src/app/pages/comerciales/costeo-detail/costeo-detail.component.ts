@@ -141,7 +141,12 @@ export class CosteoDetailComponent implements OnInit {
   esInsumoPendiente(m: any): boolean {
     if (!m) return true;
     const costo = this.getCostoUnitarioInsumo(m);
+    // Si no tiene costo ingresado ni en Siesa ni en Logística, está sin costear
     if (costo <= 0) return true;
+    // Si logística ya definió el costo, está totalmente vigente
+    if (m.costo_vigente_logistica !== null && Number(m.costo_vigente_logistica) > 0) return false;
+    // Si viene de Siesa y está vigente o en alerta
+    if (m.estado_costo === 'VIGENTE' || m.estado_costo === 'ALERTA') return false;
     return m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'SIN_MOVIMIENTO';
   }
 
@@ -241,7 +246,7 @@ export class CosteoDetailComponent implements OnInit {
     }
     if (m.ultimo_costo_siesa && m.ultimo_costo_siesa > 0) {
       return {
-        label: 'Kardex SIESA',
+        label: 'SIESA',
         badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
         icon: 'bi-database-check'
       };
@@ -321,6 +326,96 @@ export class CosteoDetailComponent implements OnInit {
         });
       }
     });
+  }
+
+  // ─── Modal Historial de Cotizaciones por Prenda ───
+  isModalHistorialPrendaOpen = false;
+  selectedPrendaForHistorial: any = null;
+  isLoadingHistorialPrenda = false;
+  isSavingSnapshotPrenda = false;
+  historialCotizacionesPrenda: any[] = [];
+  historialOtrasSolicitudes: any[] = [];
+  selectedSnapshotDetalle: any = null;
+
+  abrirHistorialPrenda(item: any): void {
+    this.selectedPrendaForHistorial = item;
+    this.selectedSnapshotDetalle = null;
+    this.isModalHistorialPrendaOpen = true;
+    this.cargarHistorialPrenda(item.id);
+  }
+
+  cerrarHistorialPrenda(): void {
+    this.isModalHistorialPrendaOpen = false;
+    this.selectedPrendaForHistorial = null;
+    this.selectedSnapshotDetalle = null;
+  }
+
+  cargarHistorialPrenda(itemId: number): void {
+    this.isLoadingHistorialPrenda = true;
+    this.comercialService.listarCotizacionesPrenda(itemId).subscribe({
+      next: (res) => {
+        this.isLoadingHistorialPrenda = false;
+        if (res.success && res.data) {
+          this.historialCotizacionesPrenda = res.data.cotizaciones_item || [];
+          this.historialOtrasSolicitudes = res.data.historial_otras_solicitudes || [];
+        }
+      },
+      error: () => {
+        this.isLoadingHistorialPrenda = false;
+      }
+    });
+  }
+
+  guardarSnapshotPrenda(): void {
+    if (!this.selectedPrendaForHistorial) return;
+    const item = this.selectedPrendaForHistorial;
+    const costoTotal = this.getTotalCostoInsumosItem(item.id);
+
+    Swal.fire({
+      title: 'Capturar Versión de Cotización',
+      html: `
+        <div class="text-left text-xs text-slate-600 mb-2">
+          Se guardará una captura del costo actual de los insumos de esta prenda:
+          <div class="font-bold text-slate-800 text-sm mt-1">$ ${costoTotal.toLocaleString('es-CO')}</div>
+        </div>
+      `,
+      input: 'textarea',
+      inputLabel: 'Notas / Observaciones de esta versión (opcional):',
+      inputPlaceholder: 'Ej: Cotización inicial lote 30 uds, tela dril...',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar Captura',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.isSavingSnapshotPrenda = true;
+        this.comercialService.guardarCotizacionPrenda(item.id, { notas: result.value || '' }).subscribe({
+          next: (res) => {
+            this.isSavingSnapshotPrenda = false;
+            Swal.fire({
+              title: '¡Cotización Guardada!',
+              text: `Versión ${res.data?.version || ''} registrada correctamente`,
+              icon: 'success',
+              timer: 1600,
+              showConfirmButton: false,
+            });
+            this.cargarHistorialPrenda(item.id);
+          },
+          error: (err) => {
+            this.isSavingSnapshotPrenda = false;
+            Swal.fire('Error', err.error?.message || 'No se pudo guardar la cotización', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  verDetalleSnapshot(cotiz: any): void {
+    if (this.selectedSnapshotDetalle?.id === cotiz.id) {
+      this.selectedSnapshotDetalle = null;
+    } else {
+      this.selectedSnapshotDetalle = cotiz;
+    }
   }
 
   crearVersion(): void {

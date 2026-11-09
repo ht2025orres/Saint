@@ -259,6 +259,19 @@ export class ComercialService {
     );
   }
 
+  // ==================== COTIZACIONES POR PRENDA (SNAPSHOTS & HISTORIAL) ====================
+
+  listarCotizacionesPrenda(itemId: number): Observable<any> {
+    return this.http.get<any>(`${this.api}/comerciales/items/${itemId}/cotizaciones`);
+  }
+
+  guardarCotizacionPrenda(itemId: number, data: { notas?: string }): Observable<any> {
+    return this.http.post<any>(`${this.api}/comerciales/items/${itemId}/cotizaciones`, {
+      ...data,
+      usuario_id: this.uid()
+    });
+  }
+
   // ==================== TRAZABILIDAD DE MATERIALES Y ABASTECIMIENTO ====================
 
   listarMaterialesSolicitud(solicitudId: number): Observable<{ success: boolean; data: any }> {
