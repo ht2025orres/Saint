@@ -194,9 +194,9 @@
                 </span>
               </div>
 
-              <!-- Descripción o notas -->
-              <p *ngIf="e.description" class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                {{ e.description }}
+              <!-- Descripción o notas limpias de etiquetas HTML -->
+              <p *ngIf="e.description" class="text-[11px] text-slate-500 line-clamp-1 mt-0.5" [title]="stripHtml(e.description)">
+                {{ stripHtml(e.description) }}
               </p>
 
               <!-- Ubicación si tiene -->
@@ -206,7 +206,7 @@
             </div>
           </div>
 
-          <!-- Controles de la tarea: Fecha y Responsable (Click aquí no altera la selección) -->
+          <!-- Controles de la tarea: Fecha, Responsable y Botón Ver Detalle -->
           <div class="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0" (click)="$event.stopPropagation()">
             <!-- Fecha de entrega -->
             <div class="flex flex-col">
@@ -226,6 +226,18 @@
                 <option [ngValue]="undefined">-- Seleccionar --</option>
                 <option *ngFor="let u of usuarios" [value]="u.id">{{ u.nombre }}</option>
               </select>
+            </div>
+
+            <!-- Botón Ver Detalle -->
+            <div class="flex flex-col justify-end">
+              <span class="text-[10px] font-bold text-transparent select-none hidden sm:inline">.</span>
+              <button type="button"
+                      (click)="abrirDetalle(e, $event)"
+                      class="h-[29px] px-2.5 rounded-lg border border-slate-200 hover:border-indigo-300 bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      title="Ver detalle completo de la tarea">
+                <i class="bi bi-eye text-sm text-indigo-500"></i>
+                <span class="hidden md:inline text-[11px]">Detalle</span>
+              </button>
             </div>
           </div>
         </div>
@@ -255,4 +267,238 @@
     </div>
 
   </div>
-</div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════════
+       MODAL SECUNDARIO: DETALLE DE TAREA / EVENTO DE GOOGLE CALENDAR
+  ═══════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="eventoSeleccionadoDetalle"
+       class="fixed inset-0 z-[10020] flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-150">
+    <!-- Backdrop del modal de detalle -->
+    <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+         (click)="cerrarDetalle()"></div>
+
+    <!-- Contenedor del Modal de Detalle -->
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden z-10 animate-in zoom-in-95 duration-200"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header del Detalle -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-start justify-between bg-gradient-to-r from-slate-50 via-indigo-50/30 to-white">
+        <div class="flex items-start gap-3 min-w-0 pr-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0 mt-0.5">
+            <i class="bi bi-card-checklist text-lg"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                <i class="bi bi-google text-rose-500"></i> Evento de Google
+              </span>
+              <span *ngIf="eventoSeleccionadoDetalle.ya_importado"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                <i class="bi bi-check-circle-fill"></i> Ya en Saint ({{ eventoSeleccionadoDetalle.tarea_estado || 'Registrada' }})
+              </span>
+              <span *ngIf="!eventoSeleccionadoDetalle.ya_importado"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                <i class="bi bi-clock"></i> Pendiente por importar
+              </span>
+            </div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-800 leading-snug break-words">
+              {{ eventoSeleccionadoDetalle.summary || '(Sin título de evento)' }}
+            </h3>
+          </div>
+        </div>
+        <button (click)="cerrarDetalle()"
+                type="button"
+                class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors shrink-0 cursor-pointer">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Cuerpo del Detalle con Scroll -->
+      <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+
+        <!-- Ficha de información Google Calendar (Grid) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Horario en Google Calendar -->
+          <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <i class="bi bi-clock-history mr-1 text-slate-500"></i> Horario Google Calendar
+            </span>
+            <div class="text-xs font-bold text-slate-700">
+              Inicio: <span class="font-semibold text-slate-600">{{ formatearFechaHora(eventoSeleccionadoDetalle.start) }}</span>
+            </div>
+            <div *ngIf="eventoSeleccionadoDetalle.end" class="text-xs font-bold text-slate-700 mt-1">
+              Fin: <span class="font-semibold text-slate-600">{{ formatearFechaHora(eventoSeleccionadoDetalle.end) }}</span>
+            </div>
+          </div>
+
+          <!-- Ubicación / Enlace de reunión -->
+          <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <i class="bi bi-geo-alt mr-1 text-slate-500"></i> Ubicación / Reunión
+              </span>
+              <div *ngIf="eventoSeleccionadoDetalle.location" class="text-xs font-semibold text-slate-700 break-words">
+                <ng-container *ngIf="esUrl(eventoSeleccionadoDetalle.location)">
+                  <a [href]="eventoSeleccionadoDetalle.location" target="_blank" rel="noopener noreferrer"
+                     class="text-indigo-600 hover:underline flex items-center gap-1 font-bold">
+                    <i class="bi bi-box-arrow-up-right"></i> Abrir enlace de reunión
+                  </a>
+                </ng-container>
+                <ng-container *ngIf="!esUrl(eventoSeleccionadoDetalle.location)">
+                  {{ eventoSeleccionadoDetalle.location }}
+                </ng-container>
+              </div>
+              <div *ngIf="!eventoSeleccionadoDetalle.location" class="text-xs text-slate-400 italic">
+                Sin ubicación especificada
+              </div>
+            </div>
+
+            <div *ngIf="eventoSeleccionadoDetalle.htmlLink" class="mt-2 pt-2 border-t border-slate-200/60">
+              <a [href]="eventoSeleccionadoDetalle.htmlLink" target="_blank" rel="noopener noreferrer"
+                 class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold inline-flex items-center gap-1">
+                <i class="bi bi-google text-rose-500"></i> Ver evento en Google Calendar
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración para la tarea en Saint -->
+        <div class="p-4 bg-indigo-50/40 rounded-2xl border border-indigo-100 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="bi bi-sliders text-indigo-600"></i> Configuración de la tarea en Saint
+            </span>
+            <span *ngIf="eventoSeleccionadoDetalle.ya_importado" class="text-[11px] text-slate-500 font-medium">
+              (Tarea ya existente, datos sincronizados)
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Fecha límite de entrega -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                Fecha de entrega
+              </label>
+              <input type="datetime-local"
+                     [(ngModel)]="eventoSeleccionadoDetalle.fecha_limite"
+                     [disabled]="eventoSeleccionadoDetalle.ya_importado"
+                     class="w-full text-xs font-semibold px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 disabled:bg-slate-100 focus:outline-none focus:border-indigo-500 shadow-xs">
+            </div>
+
+            <!-- Responsable -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">
+                Responsable asignado
+              </label>
+              <select [(ngModel)]="eventoSeleccionadoDetalle.responsable_id"
+                      [disabled]="eventoSeleccionadoDetalle.ya_importado"
+                      class="w-full text-xs font-semibold px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 disabled:bg-slate-100 focus:outline-none focus:border-indigo-500 shadow-xs">
+                <option [ngValue]="undefined">-- Seleccionar responsable --</option>
+                <option *ngFor="let u of usuarios" [value]="u.id">{{ u.nombre }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Notas adicionales -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">
+              Notas de la tarea (Saint)
+            </label>
+            <input type="text"
+                   [(ngModel)]="eventoSeleccionadoDetalle.notas"
+                   [disabled]="eventoSeleccionadoDetalle.ya_importado"
+                   placeholder="Ej: Importado desde Google Calendar - Prioridad alta"
+                   class="w-full text-xs font-semibold px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 disabled:bg-slate-100 focus:outline-none focus:border-indigo-500 shadow-xs">
+          </div>
+        </div>
+
+        <!-- Sección de Descripción de la Tarea / Minuta -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <i class="bi bi-text-paragraph text-indigo-600"></i> Descripción / Minuta del evento
+            </label>
+
+            <!-- Toggle de modo de visualización -->
+            <div *ngIf="eventoSeleccionadoDetalle.description" class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px]">
+              <button type="button"
+                      (click)="vistaDetalleTab = 'formato'"
+                      [ngClass]="vistaDetalleTab === 'formato' ? 'bg-white text-indigo-600 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-700 font-medium'"
+                      class="px-2.5 py-1 rounded-md transition-all cursor-pointer">
+                Con formato
+              </button>
+              <button type="button"
+                      (click)="vistaDetalleTab = 'plano'"
+                      [ngClass]="vistaDetalleTab === 'plano' ? 'bg-white text-indigo-600 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-700 font-medium'"
+                      class="px-2.5 py-1 rounded-md transition-all cursor-pointer">
+                Texto plano
+              </button>
+            </div>
+          </div>
+
+          <!-- Contenedor con la descripción renderizada -->
+          <div *ngIf="eventoSeleccionadoDetalle.description"
+               class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 max-h-72 overflow-y-auto leading-relaxed select-text">
+            <!-- Vista con formato HTML seguro -->
+            <div *ngIf="vistaDetalleTab === 'formato'"
+                 class="text-xs text-slate-700 space-y-2 rich-html-content"
+                 [innerHTML]="eventoSeleccionadoDetalle.description | safe:'html'">
+            </div>
+
+            <!-- Vista de Texto plano sin tags -->
+            <div *ngIf="vistaDetalleTab === 'plano'"
+                 class="text-xs text-slate-700 whitespace-pre-wrap font-sans">
+              {{ cleanHtmlToText(eventoSeleccionadoDetalle.description) }}
+            </div>
+          </div>
+
+          <!-- Si no tiene descripción -->
+          <div *ngIf="!eventoSeleccionadoDetalle.description"
+               class="p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center text-slate-400 text-xs italic">
+            <i class="bi bi-file-earmark-text text-2xl block mb-1 text-slate-300"></i>
+            Este evento no contiene descripción o notas adicionales en Google Calendar.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer de Acciones del Detalle -->
+      <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between flex-wrap gap-3">
+        <!-- Checkbox de selección rápida -->
+        <label *ngIf="!eventoSeleccionadoDetalle.ya_importado"
+               class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-700 select-none py-1 px-2 rounded-lg hover:bg-slate-100 transition-colors">
+          <div class="relative flex items-center justify-center shrink-0">
+            <input type="checkbox"
+                   [(ngModel)]="eventoSeleccionadoDetalle.seleccionado"
+                   (change)="actualizarEstadoTodos()"
+                   class="peer appearance-none w-5 h-5 rounded-md border-2 border-slate-300 bg-white checked:bg-indigo-600 checked:border-indigo-600 transition-all cursor-pointer">
+            <i class="bi bi-check-lg text-white absolute scale-0 peer-checked:scale-100 transition-transform pointer-events-none text-xs font-black"></i>
+          </div>
+          <span>Marcar para importar</span>
+        </label>
+
+        <span *ngIf="eventoSeleccionadoDetalle.ya_importado" class="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+          <i class="bi bi-check2-circle text-base"></i> Ya fue registrada como tarea
+        </span>
+
+        <!-- Botones -->
+        <div class="flex items-center gap-2 ml-auto">
+          <button (click)="cerrarDetalle()"
+                  type="button"
+                  class="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer">
+            Cerrar
+          </button>
+
+          <button *ngIf="!eventoSeleccionadoDetalle.ya_importado"
+                  type="button"
+                  (click)="importarEventoIndividual(eventoSeleccionadoDetalle)"
+                  [disabled]="guardando"
+                  class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 rounded-xl shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer">
+            <i class="bi" [ngClass]="guardando ? 'bi-arrow-repeat animate-spin' : 'bi-cloud-arrow-down-fill'"></i>
+            <span>{{ guardando ? 'Importando...' : 'Importar a Saint' }}</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>

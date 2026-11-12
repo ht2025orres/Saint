@@ -35,6 +35,10 @@ export class ModalImportarGoogleComponent implements OnChanges {
   responsableMasivoId: number | null = null;
   todosSeleccionados: boolean = false;
 
+  // Modal de Detalle
+  eventoSeleccionadoDetalle: GoogleCalendarEventoImport | null = null;
+  vistaDetalleTab: 'formato' | 'plano' = 'formato';
+
   constructor(
     private proyectoService: ProyectoService,
     private cdr: ChangeDetectorRef
@@ -51,6 +55,8 @@ export class ModalImportarGoogleComponent implements OnChanges {
     this.busquedaTexto = '';
     this.responsableMasivoId = null;
     this.todosSeleccionados = false;
+    this.eventoSeleccionadoDetalle = null;
+    this.vistaDetalleTab = 'formato';
 
     // Email por defecto: el corporativo del usuario actual o el primero disponible
     if (!this.selectedEmail) {
@@ -129,7 +135,8 @@ export class ModalImportarGoogleComponent implements OnChanges {
     const q = this.busquedaTexto.toLowerCase();
     return this.eventos.filter(e =>
       (e.summary && e.summary.toLowerCase().includes(q)) ||
-      (e.description && e.description.toLowerCase().includes(q))
+      (e.description && this.stripHtml(e.description).toLowerCase().includes(q)) ||
+      (e.location && e.location.toLowerCase().includes(q))
     );
   }
 
@@ -219,7 +226,7 @@ export class ModalImportarGoogleComponent implements OnChanges {
     const payload = paraImportar.map(e => ({
       google_event_id: e.id,
       titulo: e.summary || '(Sin título de evento)',
-      descripcion: e.description || undefined,
+      descripcion: this.cleanHtmlToText(e.description) || undefined,
       fecha_limite_entrega: e.fecha_limite || undefined,
       responsable_id: Number(e.responsable_id),
       notas: e.notas || 'Importado desde Google Calendar'
@@ -257,7 +264,145 @@ export class ModalImportarGoogleComponent implements OnChanges {
     });
   }
 
+  // ── DETALLE DEL EVENTO ─────────────────────────────────────────────────────
+
+  abrirDetalle(evento: GoogleCalendarEventoImport, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.eventoSeleccionadoDetalle = evento;
+    this.vistaDetalleTab = 'formato';
+    this.cdr.markForCheck();
+  }
+
+  cerrarDetalle(): void {
+    this.eventoSeleccionadoDetalle = null;
+    this.cdr.markForCheck();
+  }
+
+  importarEventoIndividual(evento: GoogleCalendarEventoImport): void {
+    if (evento.ya_importado) return;
+
+    if (!evento.responsable_id) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta responsable asignado',
+        text: 'Por favor asigna un responsable para esta tarea antes de importarla.',
+        confirmButtonColor: '#4f46e5',
+      });
+      return;
+    }
+
+    const payload = [{
+      google_event_id: evento.id,
+      titulo: evento.summary || '(Sin título de evento)',
+      descripcion: this.cleanHtmlToText(evento.description) || undefined,
+      fecha_limite_entrega: evento.fecha_limite || undefined,
+      responsable_id: Number(evento.responsable_id),
+      notas: evento.notas || 'Importado desde Google Calendar'
+    }];
+
+    this.guardando = true;
+    this.cdr.markForCheck();
+
+    this.proyectoService.importarTareasGoogle(payload).subscribe({
+      next: (res) => {
+        this.guardando = false;
+        evento.ya_importado = true;
+        evento.seleccionado = false;
+        if (res?.data && res.data[0]?.id) {
+          evento.tarea_id = res.data[0].id;
+          evento.tarea_estado = res.data[0].estado || 'pendiente';
+        }
+        this.actualizarEstadoTodos();
+        this.cdr.markForCheck();
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Tarea Importada!',
+          text: `La tarea "${evento.summary || 'Sin título'}" se importó correctamente.`,
+          timer: 2200,
+          showConfirmButton: false
+        });
+
+        this.onImportado.emit(1);
+      },
+      error: (err) => {
+        this.guardando = false;
+        this.cdr.markForCheck();
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al importar',
+          text: err?.error?.message || 'Ocurrió un error al guardar la tarea en Saint.',
+          confirmButtonColor: '#4f46e5',
+        });
+      }
+    });
+  }
+
+  // ── HELPERS DE TEXTO Y FECHAS ──────────────────────────────────────────────
+
+  stripHtml(html: string | null | undefined): string {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*[\/]?>/gi, ' ')
+      .replace(/<\/(p|div|li|tr|h[1-6])>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  cleanHtmlToText(html: string | null | undefined): string {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*[\/]?>/gi, '\n')
+      .replace(/<\/(p|div|tr|h[1-6])>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '• ')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  formatearFechaHora(val?: string | null): string {
+    if (!val) return 'No especificada';
+    try {
+      const raw = val.includes('T') ? val : `${val}T00:00:00`;
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return val;
+      return d.toLocaleString('es-CO', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: val.includes('T') ? '2-digit' : undefined,
+        minute: val.includes('T') ? '2-digit' : undefined,
+      });
+    } catch {
+      return val;
+    }
+  }
+
+  esUrl(str?: string | null): boolean {
+    if (!str) return false;
+    const s = str.trim().toLowerCase();
+    return s.startsWith('http://') || s.startsWith('https://');
+  }
+
   cerrar(): void {
+    this.eventoSeleccionadoDetalle = null;
     this.onCerrar.emit();
   }
 }

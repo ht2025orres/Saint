@@ -53,6 +53,8 @@ export interface GoogleCalendarEventoImport {
   location?: string | null;
   start: string;
   end?: string;
+  htmlLink?: string | null;
+  status?: string | null;
   ya_importado: boolean;
   tarea_id?: number | null;
   tarea_estado?: string | null;
