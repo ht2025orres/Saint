@@ -24,12 +24,15 @@
             </span>
           </ng-container>
 
-          <ng-container *ngIf="!selectedFolderKey && filtroParticipacion">
+          <ng-container *ngIf="filtroParticipacion">
             <i class="bi bi-chevron-right text-slate-400 text-[10px]"></i>
             <span
-              class="px-3 py-1.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-xl flex items-center gap-1.5">
-              <i class="bi bi-funnel-fill text-blue-600"></i>
+              class="px-3 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl flex items-center gap-1.5">
+              <i class="bi bi-funnel-fill text-amber-600"></i>
               {{ getParticipacionLabel() }}
+              <button (click)="filtrarParticipacion('')" type="button" title="Quitar filtro de participación" class="ml-1 text-amber-600 hover:text-amber-800 cursor-pointer">
+                <i class="bi bi-x-circle-fill text-[11px]"></i>
+              </button>
             </span>
           </ng-container>
         </div>
@@ -431,53 +434,69 @@
 
         <!-- CABECERA DE LA TARJETA -->
         <div>
-          <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider" [ngClass]="{
-                      'bg-emerald-100 text-emerald-800 border border-emerald-300': doc.estado === 'COMPLETADO',
-                      'bg-amber-100 text-amber-800 border border-amber-300': doc.estado === 'EN_PROCESO',
-                      'bg-slate-100 text-slate-700 border border-slate-300': doc.estado === 'PENDIENTE',
-                      'bg-rose-100 text-rose-800 border border-rose-300': doc.estado === 'RECHAZADO'
-                    }">
-                {{ doc.estado }}
-              </span>
+          <!-- Fila 1: Estado a la izquierda, Fecha a la derecha -->
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider" [ngClass]="{
+                    'bg-emerald-100 text-emerald-800 border border-emerald-300': doc.estado === 'COMPLETADO',
+                    'bg-amber-100 text-amber-800 border border-amber-300': doc.estado === 'EN_PROCESO',
+                    'bg-slate-100 text-slate-700 border border-slate-300': doc.estado === 'PENDIENTE',
+                    'bg-rose-100 text-rose-800 border border-rose-300': doc.estado === 'RECHAZADO'
+                  }">
+              {{ doc.estado }}
+            </span>
 
-              <!-- Badge de mi participación como firmante -->
-              <ng-container *ngIf="getMiParticipacion(doc) as miPart">
-                <span *ngIf="miPart.esFirmante && miPart.estado === 'FIRMADO'"
-                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
-                  <i class="bi bi-patch-check-fill text-emerald-600"></i> Firmado por mí
-                </span>
-                <span *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'"
-                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 animate-pulse shadow-2xs">
-                  <i class="bi bi-pen-fill text-amber-600"></i> Pendiente mi firma
-                </span>
-              </ng-container>
-
-              <button *ngIf="puedeGestionarDoc(doc)" (click)="cambiarEtiquetaDocumento(doc)" type="button"
-                title="Cambiar etiqueta / categoría del documento"
-                class="text-[10px] font-bold px-2.5 py-0.5 rounded-full transition-all flex items-center gap-1 cursor-pointer hover:scale-105 border border-transparent shadow-2xs"
-                [ngClass]="doc.etiqueta ? 'text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300'"
-                [style.backgroundColor]="doc.etiqueta ? (doc.etiqueta.color || '#2563eb') : null">
-                🏷️ {{ doc.etiqueta ? doc.etiqueta.nombre : '+ Asignar Etiqueta' }}
-                <i class="bi bi-pencil-fill text-[8px] ms-0.5"></i>
-              </button>
-              <span *ngIf="!puedeGestionarDoc(doc) && doc.etiqueta"
-                class="text-[10px] font-bold px-2.5 py-0.5 rounded-full text-white shadow-2xs flex items-center gap-1"
-                [style.backgroundColor]="doc.etiqueta.color || '#2563eb'">
-                🏷️ {{ doc.etiqueta.nombre }}
-              </span>
-            </div>
-
-            <span class="text-[10px] text-slate-400 font-bold">
-              📅 {{ doc.created_at | date:'shortDate' }}
+            <span class="text-[11px] text-slate-400 font-semibold flex items-center gap-1 shrink-0">
+              <i class="bi bi-calendar3 text-[10px]"></i>
+              {{ doc.created_at | date:'dd/MM/yy' }}
             </span>
           </div>
 
-          <h3 class="text-base font-bold text-slate-800 leading-tight mb-1">{{ doc.titulo }}</h3>
+          <!-- Fila 2: Etiquetas y Participación -->
+          <div class="flex items-center gap-1.5 flex-wrap mb-2">
+            <!-- Botón de Etiqueta con estilo refinado -->
+            <button *ngIf="puedeGestionarDoc(doc)" (click)="cambiarEtiquetaDocumento(doc)" type="button"
+              title="Cambiar etiqueta del documento"
+              class="group text-[10px] font-bold px-2.5 py-0.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer hover:shadow-xs border"
+              [ngClass]="doc.etiqueta ? 'text-white border-transparent' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200'"
+              [style.backgroundColor]="doc.etiqueta ? (doc.etiqueta.color || '#2563eb') : null">
+              <i class="bi bi-tag-fill text-[9px]"></i>
+              <span class="truncate max-w-[150px]">{{ doc.etiqueta ? doc.etiqueta.nombre : '+ Etiqueta' }}</span>
+              <i class="bi bi-pencil-fill text-[8px] opacity-75 group-hover:opacity-100 ms-0.5"></i>
+            </button>
+            <span *ngIf="!puedeGestionarDoc(doc) && doc.etiqueta"
+              class="text-[10px] font-bold px-2.5 py-0.5 rounded-lg text-white shadow-2xs flex items-center gap-1"
+              [style.backgroundColor]="doc.etiqueta.color || '#2563eb'">
+              <i class="bi bi-tag-fill text-[9px]"></i>
+              <span class="truncate max-w-[150px]">{{ doc.etiqueta.nombre }}</span>
+            </span>
+
+            <!-- Badge de mi participación como firmante -->
+            <ng-container *ngIf="getMiParticipacion(doc) as miPart">
+              <span *ngIf="miPart.esFirmante && miPart.estado === 'FIRMADO'"
+                class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                <i class="bi bi-patch-check-fill text-emerald-600"></i> Firmado por mí
+              </span>
+              <span *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'"
+                class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-300 flex items-center gap-1 animate-pulse">
+                <i class="bi bi-pen-fill text-amber-600"></i> Pendiente mi firma
+              </span>
+            </ng-container>
+          </div>
+
+          <!-- Fila 3: Título con botón de edición -->
+          <div class="flex items-start justify-between gap-1.5 mb-1 group/title">
+            <h3 class="text-sm sm:text-base font-bold text-slate-800 leading-snug line-clamp-2" [title]="doc.titulo">
+              {{ doc.titulo }}
+            </h3>
+            <button *ngIf="puedeGestionarDoc(doc)" (click)="editarTituloDocumento(doc, $event)" type="button"
+              title="Editar nombre del documento"
+              class="text-slate-400 hover:text-blue-600 p-1 rounded-lg hover:bg-slate-100 transition-colors shrink-0">
+              <i class="bi bi-pencil-square text-xs"></i>
+            </button>
+          </div>
+
           <p *ngIf="doc.descripcion" class="text-xs text-slate-500 line-clamp-2 mb-2">{{ doc.descripcion }}</p>
-          <span class="text-[11px] text-slate-400 font-medium">Solicitado por: <strong>{{ doc.nombre_creador
-              }}</strong></span>
+          <span class="text-[11px] text-slate-400 font-medium">Solicitado por: <strong class="text-slate-600">{{ doc.nombre_creador }}</strong></span>
         </div>
 
         <!-- BARRA DE PROGRESO DE FIRMAS -->
@@ -494,12 +513,12 @@
         </div>
 
         <!-- LISTA DE DESTINATARIOS AGRUPADOS POR PERSONA -->
-        <div class="grid grid-cols-1 gap-2.5 max-h-56 overflow-y-auto custom-scrollbar">
-          <div *ngFor="let group of getGroupedDestinatarios(doc.destinatarios)"
-            class="p-3 rounded-xl border flex flex-col gap-2 transition-all shadow-xs" [ngClass]="{
-                 'bg-emerald-50/70 border-emerald-200': group.estado === 'FIRMADO',
+        <div class="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto custom-scrollbar">
+          <div *ngFor="let group of getGroupedDestinatarios(doc.destinatarios, doc.id)"
+            class="p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all shadow-2xs" [ngClass]="{
+                 'bg-emerald-50/60 border-emerald-200': group.estado === 'FIRMADO',
                  'bg-amber-50/60 border-amber-200': group.estado === 'PENDIENTE',
-                 'bg-rose-50/70 border-rose-200': group.estado === 'RECHAZADO',
+                 'bg-rose-50/60 border-rose-200': group.estado === 'RECHAZADO',
                  'bg-slate-100/80 border-slate-300 opacity-70': group.estado === 'DESHABILITADO'
                }">
             
@@ -507,8 +526,8 @@
             <div class="flex items-center justify-between gap-2">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="font-bold text-slate-800 text-xs truncate">{{ group.nombre_firmante }}</span>
-                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded border" [ngClass]="group.tipo_correo === 'corporativo' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'" [title]="group.tipo_correo === 'corporativo' ? 'Correo Corporativo' : 'Correo Personal'">
+                  <span class="font-bold text-slate-800 text-xs truncate max-w-[150px]">{{ group.nombre_firmante }}</span>
+                  <span class="text-[9px] font-bold px-1 py-0.2 rounded border" [ngClass]="group.tipo_correo === 'corporativo' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200'" [title]="group.tipo_correo === 'corporativo' ? 'Correo Corporativo' : 'Correo Personal'">
                     {{ group.tipo_correo === 'corporativo' ? 'Corp' : 'Pers' }}
                   </span>
                 </div>
@@ -525,87 +544,97 @@
                   {{ group.estado }}
                 </span>
 
-                <button (click)="toggleCollapseGroup(group.key, $event)" type="button" class="p-1 hover:bg-slate-200/60 rounded-lg text-slate-600 text-xs transition-colors" [title]="isGroupCollapsed(group.key) ? 'Expandir firmas' : 'Colapsar firmas'">
-                  <i class="bi" [ngClass]="isGroupCollapsed(group.key) ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
+                <button (click)="toggleCollapseGroup(group, $event)" type="button"
+                  class="p-1 hover:bg-slate-200/70 rounded-lg text-slate-600 text-xs transition-colors cursor-pointer"
+                  [title]="isGroupCollapsed(group) ? 'Expandir detalles' : 'Colapsar detalles'">
+                  <i class="bi" [ngClass]="isGroupCollapsed(group) ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
                 </button>
               </div>
             </div>
 
-            <!-- BOTONES ACCIONES GLOBALES DEL FIRMANTE -->
-            <div class="flex items-center justify-between gap-1 text-[10px] border-t border-slate-200/60 pt-1.5 flex-wrap">
-              <div class="flex items-center gap-2 flex-wrap">
-                <!-- Botón directo para que el firmante actual firme su propio recuadro -->
-                <button *ngIf="group.estado === 'PENDIENTE' && isMiUsuarioGroup(group)" (click)="abrirFirmarDocumento(group.boxes[0].token_firma)" type="button" class="text-emerald-700 font-extrabold hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  <i class="bi bi-pen-fill"></i> Firmar mi recuadro
-                </button>
+            <!-- DETALLES EXTENDIDOS (SÓLO SI NO ESTÁ COLAPSADO) -->
+            <div *ngIf="!isGroupCollapsed(group)" class="flex flex-col gap-1.5 border-t border-slate-200/60 pt-1.5">
+              <!-- BOTONES ACCIONES GLOBALES DEL FIRMANTE -->
+              <div class="flex items-center justify-between gap-1 text-[10px] flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <!-- Botón directo para que el firmante actual firme su propio recuadro -->
+                  <button *ngIf="group.estado === 'PENDIENTE' && isMiUsuarioGroup(group)" (click)="abrirFirmarDocumento(group.boxes[0].token_firma)" type="button" class="text-emerald-700 font-extrabold hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <i class="bi bi-pen-fill"></i> Firmar mi recuadro
+                  </button>
 
-                <ng-container *ngIf="puedeGestionarDoc(doc)">
-                  <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button" class="text-blue-600 font-bold hover:underline flex items-center gap-0.5">
-                    <i class="bi bi-send-fill"></i> Reenviar
-                  </button>
-                  <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button" class="text-indigo-600 font-bold hover:underline flex items-center gap-0.5">
-                    <i class="bi bi-pencil-square"></i> Editar ({{ group.boxes.length }})
-                  </button>
-                  <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button" class="text-rose-600 font-bold hover:underline flex items-center gap-0.5" title="Eliminar a este firmante con todos sus recuadros">
-                    <i class="bi bi-trash-fill"></i> Eliminar Firmante
-                  </button>
-                </ng-container>
+                  <ng-container *ngIf="puedeGestionarDoc(doc)">
+                    <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button" class="text-blue-600 font-bold hover:underline flex items-center gap-0.5">
+                      <i class="bi bi-send-fill"></i> Reenviar
+                    </button>
+                    <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button" class="text-indigo-600 font-bold hover:underline flex items-center gap-0.5">
+                      <i class="bi bi-pencil-square"></i> Editar ({{ group.boxes.length }})
+                    </button>
+                    <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button" class="text-rose-600 font-bold hover:underline flex items-center gap-0.5" title="Eliminar a este firmante con todos sus recuadros">
+                      <i class="bi bi-trash-fill"></i> Eliminar Firmante
+                    </button>
+                  </ng-container>
+                </div>
               </div>
+
+              <!-- BADGES DE PAGINAS Y RECUADROS INDIVIDUALES -->
+              <div class="flex flex-wrap gap-1.5">
+                <div *ngFor="let box of group.boxes" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all" [ngClass]="{
+                       'bg-emerald-100/90 text-emerald-800 border-emerald-300': box.estado === 'FIRMADO',
+                       'bg-white text-slate-700 border-slate-300 shadow-2xs': box.estado === 'PENDIENTE',
+                       'bg-rose-100/90 text-rose-800 border-rose-300': box.estado === 'RECHAZADO'
+                     }">
+                  <span (click)="puedeGestionarDoc(doc) && abrirModalEditarFirmante(box)" class="flex items-center gap-1" [class.cursor-pointer]="puedeGestionarDoc(doc)" [class.hover:underline]="puedeGestionarDoc(doc)">
+                    <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill text-emerald-600' : 'bi-geo-alt-fill text-indigo-500'"></i>
+                    <span>Pág {{ box.pagina || 1 }}</span>
+                  </span>
+                  <!-- Botón Reiniciar sólo este recuadro -->
+                  <button *ngIf="puedeGestionarDoc(doc)" (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                  </button>
+                  <!-- Botón X para eliminar sólo este recuadro -->
+                  <button *ngIf="puedeGestionarDoc(doc) && box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              <!-- MOTIVOS DE RECHAZO (SI HUBIERA) -->
+              <ng-container *ngFor="let box of group.boxes">
+                <div *ngIf="box.estado === 'RECHAZADO' && box.motivo_rechazo" class="p-2 bg-rose-100/90 border border-rose-200 rounded-lg text-rose-900 text-[11px] font-medium leading-tight">
+                  <span class="font-bold text-rose-700 block"><i class="bi bi-x-circle-fill me-1"></i> Motivo (Pág {{ box.pagina }}):</span>
+                  {{ box.motivo_rechazo }}
+                </div>
+              </ng-container>
             </div>
-
-            <!-- BADGES DE PAGINAS Y RECUADROS INDIVIDUALES (EXTENDIDO POR DEFECTO) -->
-            <div *ngIf="!isGroupCollapsed(group.key)" class="flex flex-wrap gap-1.5 pt-1">
-              <div *ngFor="let box of group.boxes" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all" [ngClass]="{
-                     'bg-emerald-100/90 text-emerald-800 border-emerald-300': box.estado === 'FIRMADO',
-                     'bg-white text-slate-700 border-slate-300 shadow-2xs': box.estado === 'PENDIENTE',
-                     'bg-rose-100/90 text-rose-800 border-rose-300': box.estado === 'RECHAZADO'
-                   }">
-                <span (click)="puedeGestionarDoc(doc) && abrirModalEditarFirmante(box)" class="flex items-center gap-1" [class.cursor-pointer]="puedeGestionarDoc(doc)" [class.hover:underline]="puedeGestionarDoc(doc)">
-                  <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill text-emerald-600' : 'bi-geo-alt-fill text-indigo-500'"></i>
-                  <span>Pág {{ box.pagina || 1 }}</span>
-                </span>
-                <!-- Botón Reiniciar sólo este recuadro -->
-                <button *ngIf="puedeGestionarDoc(doc)" (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
-                  <i class="bi bi-arrow-counterclockwise"></i>
-                </button>
-                <!-- Botón X para eliminar sólo este recuadro -->
-                <button *ngIf="puedeGestionarDoc(doc) && box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
-                  &times;
-                </button>
-              </div>
-            </div>
-
-            <!-- MOTIVOS DE RECHAZO (SI HUBIERA) -->
-            <ng-container *ngFor="let box of group.boxes">
-              <div *ngIf="box.estado === 'RECHAZADO' && box.motivo_rechazo" class="p-2 bg-rose-100/90 border border-rose-200 rounded-lg text-rose-900 text-[11px] font-medium leading-tight mt-1">
-                <span class="font-bold text-rose-700 block"><i class="bi bi-x-circle-fill me-1"></i> Motivo (Pág {{ box.pagina }}):</span>
-                {{ box.motivo_rechazo }}
-              </div>
-            </ng-container>
           </div>
         </div>
 
         <!-- FOOTER TARJETA -->
-        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-          <button *ngIf="!verPapelera && puedeGestionarDoc(doc)" (click)="abrirModalAgregarFirmante(doc)" type="button"
-            class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1">
-            <i class="bi bi-person-plus-fill"></i> + Firmante
-          </button>
-
-          <!-- Si el usuario tiene firma pendiente en este documento, botón destacado Firmar Ahora -->
-          <ng-container *ngIf="getMiParticipacion(doc) as miPart">
-            <button *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'" (click)="abrirFirmarDocumento(miPart.token)"
-              type="button"
-              class="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1">
-              <i class="bi bi-pen-fill"></i> Firmar Ahora
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5">
+            <button *ngIf="!verPapelera && puedeGestionarDoc(doc) && doc.estado !== 'COMPLETADO'" (click)="abrirModalAgregarFirmante(doc)" type="button"
+              class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1">
+              <i class="bi bi-person-plus-fill"></i>
+              <span>+ Firmante</span>
             </button>
-          </ng-container>
-
-          <div class="flex items-center gap-2 ms-auto">
             <button (click)="verDetalle(doc)" type="button"
-              class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">Detalle</button>
-            <button (click)="descargarPdf(doc)" type="button"
-              class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1">
+              class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+              Detalle
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <!-- Si el usuario tiene firma pendiente en este documento, botón destacado Firmar Ahora -->
+            <ng-container *ngIf="getMiParticipacion(doc) as miPart">
+              <button *ngIf="miPart.esFirmante && miPart.estado === 'PENDIENTE'" (click)="abrirFirmarDocumento(miPart.token)"
+                type="button"
+                class="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1">
+                <i class="bi bi-pen-fill"></i> Firmar
+              </button>
+            </ng-container>
+
+            <button (click)="descargarPdf(doc)" type="button" title="Descargar PDF"
+              class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1">
               <i class="bi bi-download"></i> PDF
             </button>
           </div>
@@ -648,6 +677,11 @@
               <td class="p-3.5">
                 <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5 flex-wrap">
                   <span>{{ doc.titulo }}</span>
+                  <button *ngIf="puedeGestionarDoc(doc)" (click)="editarTituloDocumento(doc, $event)" type="button"
+                    title="Editar nombre del documento"
+                    class="text-slate-400 hover:text-blue-600 p-0.5 rounded hover:bg-slate-100 transition-colors cursor-pointer">
+                    <i class="bi bi-pencil-square text-xs"></i>
+                  </button>
                   <ng-container *ngIf="getMiParticipacion(doc) as miPart">
                     <span *ngIf="miPart.esFirmante && miPart.estado === 'FIRMADO'" class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                       ✓ Firmado por mí
@@ -962,7 +996,14 @@
               🏷️ {{ selectedDocDetail.etiqueta.nombre }}
             </span>
           </div>
-          <h4 class="text-base font-bold text-slate-800 leading-snug">{{ selectedDocDetail.titulo }}</h4>
+          <div class="flex items-start justify-between gap-2">
+            <h4 class="text-base font-bold text-slate-800 leading-snug">{{ selectedDocDetail.titulo }}</h4>
+            <button *ngIf="puedeGestionarDoc(selectedDocDetail)" (click)="editarTituloDocumento(selectedDocDetail, $event)"
+              type="button" title="Editar nombre del documento"
+              class="text-slate-400 hover:text-blue-600 p-1 rounded-lg hover:bg-slate-200 transition-colors shrink-0 cursor-pointer">
+              <i class="bi bi-pencil-square text-sm"></i>
+            </button>
+          </div>
           <p *ngIf="selectedDocDetail.descripcion" class="text-xs text-slate-500">{{ selectedDocDetail.descripcion }}
           </p>
 
@@ -1001,9 +1042,9 @@
           </div>
 
           <div class="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar flex-1 pr-1">
-            <div *ngFor="let group of getGroupedDestinatarios(selectedDocDetail.destinatarios)"
+            <div *ngFor="let group of getGroupedDestinatarios(selectedDocDetail.destinatarios, selectedDocDetail.id)"
               class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex flex-col gap-2">
-              <div class="flex justify-between items-start gap-2 flex-wrap">
+              <div class="flex justify-between items-start gap-2 flex-wrap cursor-pointer" (click)="toggleCollapseGroup(group, $event)">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="font-bold text-slate-800 text-sm truncate">{{ group.nombre_firmante }}</span>
@@ -1014,7 +1055,7 @@
                   <span class="text-[10px] text-slate-500 block truncate">{{ group.email_destinatario }}</span>
                 </div>
 
-                <div class="flex flex-col items-end gap-1.5 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0">
                   <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black text-white uppercase" [ngClass]="{
                           'bg-emerald-600': group.estado === 'FIRMADO',
                           'bg-amber-500': group.estado === 'PENDIENTE',
@@ -1023,59 +1064,63 @@
                         }">
                     {{ group.estado }}
                   </span>
+                  <i class="bi text-slate-500 text-xs" [ngClass]="isGroupCollapsed(group) ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
+                </div>
+              </div>
 
-                  <!-- ACCIONES INTERACTIVAS DEL FIRMANTE DENTRO DEL MODAL -->
-                  <div class="flex items-center gap-1.5 flex-wrap justify-end">
-                    <!-- Botón directo de firma para el usuario si es su turno -->
-                    <button *ngIf="group.estado === 'PENDIENTE' && isMiUsuarioGroup(group)" (click)="abrirFirmarDocumento(group.boxes[0].token_firma)" type="button"
-                      class="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1">
-                      <i class="bi bi-pen-fill"></i> Firmar Ahora
+              <!-- CONTENIDO EXPANDIBLE -->
+              <div *ngIf="!isGroupCollapsed(group)" class="flex flex-col gap-2 border-t border-slate-200/60 pt-2">
+                <!-- ACCIONES INTERACTIVAS DEL FIRMANTE DENTRO DEL MODAL -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <!-- Botón directo de firma para el usuario si es su turno -->
+                  <button *ngIf="group.estado === 'PENDIENTE' && isMiUsuarioGroup(group)" (click)="abrirFirmarDocumento(group.boxes[0].token_firma); $event.stopPropagation()" type="button"
+                    class="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1">
+                    <i class="bi bi-pen-fill"></i> Firmar Ahora
+                  </button>
+
+                  <ng-container *ngIf="puedeGestionarDoc(selectedDocDetail)">
+                    <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id); $event.stopPropagation()" type="button"
+                      class="text-[10px] text-blue-600 font-bold hover:underline">Reenviar</button>
+                    <button (click)="abrirModalEditarFirmante(group.boxes[0]); $event.stopPropagation()" type="button"
+                      class="text-[10px] text-indigo-600 font-bold hover:underline">Editar ({{ group.boxes.length }})</button>
+                    <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button"
+                      class="text-[10px] text-rose-600 font-bold hover:underline">Eliminar</button>
+                  </ng-container>
+                </div>
+
+                <!-- RECUADROS INDIVIDUALES POR PÁGINA -->
+                <div class="flex flex-wrap gap-1.5">
+                  <div *ngFor="let box of group.boxes" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all" [ngClass]="{
+                         'bg-emerald-100/90 text-emerald-800 border-emerald-300': box.estado === 'FIRMADO',
+                         'bg-white text-slate-700 border-slate-300 shadow-2xs': box.estado === 'PENDIENTE',
+                         'bg-rose-100/90 text-rose-800 border-rose-300': box.estado === 'RECHAZADO'
+                       }">
+                    <span (click)="puedeGestionarDoc(selectedDocDetail) && abrirModalEditarFirmante(box); $event.stopPropagation()" class="flex items-center gap-1" [class.cursor-pointer]="puedeGestionarDoc(selectedDocDetail)" [class.hover:underline]="puedeGestionarDoc(selectedDocDetail)">
+                      <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill text-emerald-600' : 'bi-geo-alt-fill text-indigo-500'"></i>
+                      <span>Pág {{ box.pagina || 1 }}</span>
+                    </span>
+                    <!-- Botón Reiniciar sólo este recuadro -->
+                    <button *ngIf="puedeGestionarDoc(selectedDocDetail)" (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
+                      <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
-
-                    <ng-container *ngIf="puedeGestionarDoc(selectedDocDetail)">
-                      <button *ngIf="group.estado === 'PENDIENTE'" (click)="reenviarInvitacion(group.boxes[0].id)" type="button"
-                        class="text-[10px] text-blue-600 font-bold hover:underline">Reenviar</button>
-                      <button (click)="abrirModalEditarFirmante(group.boxes[0])" type="button"
-                        class="text-[10px] text-indigo-600 font-bold hover:underline">Editar ({{ group.boxes.length }})</button>
-                      <button *ngIf="group.estado !== 'FIRMADO'" (click)="eliminarFirmanteCompletoGroup(group, $event)" type="button"
-                        class="text-[10px] text-rose-600 font-bold hover:underline">Eliminar</button>
-                    </ng-container>
+                    <!-- Botón X para eliminar sólo este recuadro -->
+                    <button *ngIf="puedeGestionarDoc(selectedDocDetail) && box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
+                      &times;
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              <!-- RECUADROS INDIVIDUALES POR PÁGINA -->
-              <div class="flex flex-wrap gap-1.5 pt-1">
-                <div *ngFor="let box of group.boxes" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all" [ngClass]="{
-                       'bg-emerald-100/90 text-emerald-800 border-emerald-300': box.estado === 'FIRMADO',
-                       'bg-white text-slate-700 border-slate-300 shadow-2xs': box.estado === 'PENDIENTE',
-                       'bg-rose-100/90 text-rose-800 border-rose-300': box.estado === 'RECHAZADO'
-                     }">
-                  <span (click)="puedeGestionarDoc(selectedDocDetail) && abrirModalEditarFirmante(box)" class="flex items-center gap-1" [class.cursor-pointer]="puedeGestionarDoc(selectedDocDetail)" [class.hover:underline]="puedeGestionarDoc(selectedDocDetail)">
-                    <i class="bi" [ngClass]="box.estado === 'FIRMADO' ? 'bi-check-circle-fill text-emerald-600' : 'bi-geo-alt-fill text-indigo-500'"></i>
-                    <span>Pág {{ box.pagina || 1 }}</span>
-                  </span>
-                  <!-- Botón Reiniciar sólo este recuadro -->
-                  <button *ngIf="puedeGestionarDoc(selectedDocDetail)" (click)="reiniciarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold" title="Reiniciar sólo esta firma en Pág {{ box.pagina || 1 }}">
-                    <i class="bi bi-arrow-counterclockwise"></i>
-                  </button>
-                  <!-- Botón X para eliminar sólo este recuadro -->
-                  <button *ngIf="puedeGestionarDoc(selectedDocDetail) && box.estado !== 'FIRMADO'" (click)="eliminarRecuadroIndividual(box, $event)" type="button" class="ms-0.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-extrabold" title="Eliminar solo esta firma en Pág {{ box.pagina || 1 }}">
-                    &times;
-                  </button>
-                </div>
+                <!-- MOTIVOS DE RECHAZO EN MODAL DETALLE -->
+                <ng-container *ngFor="let box of group.boxes">
+                  <div *ngIf="box.estado === 'RECHAZADO' && box.motivo_rechazo"
+                    class="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-900 text-xs font-medium">
+                    <span class="font-bold text-rose-700 flex items-center gap-1 mb-0.5">
+                      <i class="bi bi-x-circle-fill text-rose-600"></i> Motivo de Rechazo (Pág {{ box.pagina }}):
+                    </span>
+                    <p class="text-xs text-rose-900 italic font-normal leading-relaxed m-0">{{ box.motivo_rechazo }}</p>
+                  </div>
+                </ng-container>
               </div>
-
-              <!-- MOTIVOS DE RECHAZO EN MODAL DETALLE -->
-              <ng-container *ngFor="let box of group.boxes">
-                <div *ngIf="box.estado === 'RECHAZADO' && box.motivo_rechazo"
-                  class="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-900 text-xs font-medium">
-                  <span class="font-bold text-rose-700 flex items-center gap-1 mb-0.5">
-                    <i class="bi bi-x-circle-fill text-rose-600"></i> Motivo de Rechazo (Pág {{ box.pagina }}):
-                  </span>
-                  <p class="text-xs text-rose-900 italic font-normal leading-relaxed m-0">{{ box.motivo_rechazo }}</p>
-                </div>
-              </ng-container>
             </div>
           </div>
         </div>
@@ -1543,7 +1588,10 @@
     <div class="flex-1 overflow-y-auto space-y-4 pe-1">
       <!-- Input de búsqueda y selector de rol -->
       <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-        <label class="block text-xs font-bold text-slate-700">Agregar colaboradores a la carpeta</label>
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-bold text-slate-700">Agregar colaboradores a la carpeta</label>
+          <span class="text-[10px] font-medium text-slate-400">Puedes buscar y seleccionar varios</span>
+        </div>
         
         <div class="relative">
           <div class="flex items-center gap-2">
@@ -1553,7 +1601,7 @@
                 [(ngModel)]="busquedaColaboradorCompartir"
                 (input)="onBusquedaColaboradorCompartirChange()"
                 (focus)="onBusquedaColaboradorCompartirChange()"
-                placeholder="Buscar por nombre o correo corporativo..."
+                placeholder="Buscar por nombre, correo, cargo o cédula..."
                 class="w-full ps-8 pe-8 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20" />
               <button *ngIf="busquedaColaboradorCompartir" (click)="limpiarColaboradorCompartir()" type="button"
                 class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
@@ -1561,50 +1609,98 @@
               </button>
             </div>
 
-            <!-- Selector de Rol -->
+            <!-- Selector de Rol por defecto -->
             <select [(ngModel)]="rolSeleccionadoParaCompartir"
+              title="Rol inicial para los colaboradores seleccionados"
               class="py-2.5 px-3 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-purple-500 shrink-0">
               <option value="EDITOR">Editor (Colaborador)</option>
               <option value="LECTOR">Lector (Solo vista)</option>
             </select>
           </div>
 
-          <!-- Dropdown sugerencias -->
+          <!-- Dropdown sugerencias inteligente multitérmino -->
           <div *ngIf="mostrarDropdownCompartir && colaboradoresFiltradosCompartir.length > 0"
-            class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-48 overflow-y-auto z-20 divide-y divide-slate-100">
+            class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-56 overflow-y-auto z-30 divide-y divide-slate-100">
             <div *ngFor="let colab of colaboradoresFiltradosCompartir"
               (click)="seleccionarColaboradorCompartir(colab)"
-              class="p-2.5 hover:bg-purple-50/70 cursor-pointer flex items-center gap-3 transition-colors">
-              <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0">
-                {{ (colab.nombres || colab.firstName || 'C')[0] }}{{ (colab.apellidos || colab.lastName || '')[0] }}
+              class="p-2.5 hover:bg-purple-50/70 cursor-pointer flex items-center justify-between gap-3 transition-colors">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0">
+                  {{ (colab.nombres || colab.firstName || 'C')[0] }}{{ (colab.apellidos || colab.lastName || '')[0] }}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-slate-800 truncate">
+                    {{ colab.nombres || colab.firstName }} {{ colab.apellidos || colab.lastName }}
+                  </div>
+                  <div class="text-[10px] text-slate-500 truncate flex items-center gap-1.5 flex-wrap">
+                    <span>{{ colab.correo_corporativo || colab.correo_personal || colab.email }}</span>
+                    <span *ngIf="colab.cargo" class="text-purple-600 font-medium">• {{ colab.cargo }}</span>
+                    <span *ngIf="colab.cedula" class="text-slate-400">• C.C. {{ colab.cedula }}</span>
+                  </div>
+                </div>
               </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-xs font-bold text-slate-800 truncate">{{ colab.nombres || colab.firstName }} {{ colab.apellidos || colab.lastName }}</div>
-                <div class="text-[10px] text-slate-500 truncate">{{ colab.correo_corporativo || colab.correo_personal || colab.email }}</div>
-              </div>
-              <i class="bi bi-plus-circle-fill text-purple-600 text-sm shrink-0"></i>
+              <button type="button" class="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 transition-colors">
+                <i class="bi bi-plus-lg"></i>
+                <span>Agregar</span>
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Colaborador seleccionado preview & Botón Agregar -->
-        <div *ngIf="colaboradorSeleccionadoParaCompartir" class="flex items-center justify-between p-2.5 bg-purple-50/70 border border-purple-200 rounded-xl">
-          <div class="flex items-center gap-2 min-w-0">
-            <i class="bi bi-check-circle-fill text-purple-600 text-sm"></i>
-            <span class="text-xs font-bold text-purple-900 truncate">
-              {{ colaboradorSeleccionadoParaCompartir.nombres || colaboradorSeleccionadoParaCompartir.firstName }}
-              {{ colaboradorSeleccionadoParaCompartir.apellidos || colaboradorSeleccionadoParaCompartir.lastName }}
+        <!-- Lista de colaboradores seleccionados pendientes por guardar -->
+        <div *ngIf="colaboradoresPendientesCompartir.length > 0" class="space-y-2 pt-1 border-t border-slate-200/60 mt-3">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+            <span class="flex items-center gap-1.5">
+              <i class="bi bi-person-check text-purple-600"></i>
+              Colaboradores a invitar ({{ colaboradoresPendientesCompartir.length }}):
             </span>
-            <span class="text-[10px] font-semibold text-purple-700 bg-purple-200/60 px-2 py-0.5 rounded-full shrink-0">
-              {{ rolSeleccionadoParaCompartir === 'EDITOR' ? 'Editor' : 'Lector' }}
-            </span>
+            <button (click)="colaboradoresPendientesCompartir = []" type="button"
+              class="text-rose-500 hover:text-rose-700 text-[10px] font-semibold transition-colors">
+              Limpiar lista
+            </button>
           </div>
 
-          <button (click)="agregarColaboradorCarpeta()" [disabled]="guardandoCompartir" type="button"
-            class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 shrink-0">
-            <i class="bi bi-person-check-fill"></i>
-            <span>{{ guardandoCompartir ? 'Guardando...' : 'Compartir' }}</span>
-          </button>
+          <div class="max-h-44 overflow-y-auto space-y-1.5 pe-1">
+            <div *ngFor="let item of colaboradoresPendientesCompartir; let i = index"
+              class="flex items-center justify-between p-2 bg-purple-50/70 border border-purple-200/80 rounded-xl gap-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-7 h-7 rounded-full bg-purple-200 text-purple-800 font-bold text-[10px] flex items-center justify-center shrink-0">
+                  {{ (item.colaborador.nombres || item.colaborador.firstName || 'C')[0] }}{{ (item.colaborador.apellidos || item.colaborador.lastName || '')[0] }}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-purple-950 truncate">
+                    {{ item.colaborador.nombres || item.colaborador.firstName }} {{ item.colaborador.apellidos || item.colaborador.lastName }}
+                  </div>
+                  <div class="text-[10px] text-purple-700/80 truncate">
+                    {{ item.colaborador.correo_corporativo || item.colaborador.correo_personal || item.colaborador.email }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <select [(ngModel)]="item.rol"
+                  class="py-1 px-2 bg-white border border-purple-200 rounded-lg text-[10px] font-bold text-purple-900 outline-none focus:border-purple-500">
+                  <option value="EDITOR">Editor</option>
+                  <option value="LECTOR">Lector</option>
+                </select>
+
+                <button (click)="removerColaboradorPendiente(i)" type="button" title="Quitar de la lista"
+                  class="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors">
+                  <i class="bi bi-x-lg text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón Confirmar y Compartir todo el lote -->
+          <div class="pt-2 flex justify-end">
+            <button (click)="agregarColaboradorCarpeta()" [disabled]="guardandoCompartir" type="button"
+              class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2">
+              <i *ngIf="!guardandoCompartir" class="bi bi-person-check-fill"></i>
+              <i *ngIf="guardandoCompartir" class="bi bi-arrow-repeat animate-spin"></i>
+              <span>{{ guardandoCompartir ? 'Guardando...' : ('Compartir con ' + colaboradoresPendientesCompartir.length + (colaboradoresPendientesCompartir.length === 1 ? ' persona' : ' personas')) }}</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -15,6 +15,8 @@
  * @module shared/templates/detalles-popup.template
  */
 
+import { TIPOS_INCONSISTENCIA, getNombreInconsistencia } from '../constants/inconsistencias.constants';
+
 // ─── INTERFACES ────────────────────────────────────────────────────────────
 
 /**
@@ -183,6 +185,80 @@ function getSeccionAnulacionHtml(inconsistencia: any): string {
 }
 
 /**
+ * Genera la tabla detallada de ítems cuando la inconsistencia maneja múltiples materiales
+ * (ej. Devolución de Materiales o Cancelación de Pedido).
+ */
+function getItemsDetalleHtml(items: any[]): string {
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return '';
+  }
+
+  const filas = items.map((it, idx) => {
+    const codigo = it.codigo || it.id_material || it.nombre_item || 'N/A';
+    const descripcion = it.descripcion || it.item || it.nombre_material || 'Sin descripción';
+    const cantSol = Number(it.cantidad_solicitada || it.cantidad_solicitada_op || 0);
+    const cantInc = Number(it.cantidad_inco || it.cantidad_inconsistencia || 0);
+    const unidad = it.unidad_medida || 'unidades';
+    const pUnit = Number(it.precio_unitario || 0);
+    const subtotal = Number(it.precio_total || (cantInc * pUnit));
+
+    return `
+      <tr style="border-bottom:1px solid #E2E8F0; font-size:11px;">
+        <td style="padding:6px; text-align:center; color:#64748B;">${idx + 1}</td>
+        <td style="padding:6px; font-weight:600; color:#0F172A;">${escapeHtml(codigo)}</td>
+        <td style="padding:6px; color:#334155;">${escapeHtml(descripcion)}</td>
+        <td style="padding:6px; text-align:right;">${cantSol.toLocaleString('es-CO')}</td>
+        <td style="padding:6px; text-align:right; font-weight:bold; color:#DC2626;">${cantInc.toLocaleString('es-CO')}</td>
+        <td style="padding:6px; text-align:center; color:#64748B;">${escapeHtml(unidad)}</td>
+        <td style="padding:6px; text-align:right;">${formatCurrency(pUnit)}</td>
+        <td style="padding:6px; text-align:right; font-weight:bold; color:#0F172A;">${formatCurrency(subtotal)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const totalCantSol = items.reduce((acc, it) => acc + Number(it.cantidad_solicitada || it.cantidad_solicitada_op || 0), 0);
+  const totalCantInc = items.reduce((acc, it) => acc + Number(it.cantidad_inco || it.cantidad_inconsistencia || 0), 0);
+  const totalValor = items.reduce((acc, it) => acc + Number(it.precio_total || (Number(it.cantidad_inco || it.cantidad_inconsistencia || 0) * Number(it.precio_unitario || 0))), 0);
+
+  return `
+    <div style="margin-bottom:20px;">
+      <div style="display:inline-block;border-left:3px solid #3B82F6;padding:4px 10px;margin-bottom:10px;">
+        <span style="font-size:11px;font-weight:600;color:#1E3A8A;letter-spacing:0.07em;text-transform:uppercase;">
+          📋 Desglose de Ítems / Materiales (${items.length} ítems)
+        </span>
+      </div>
+      <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse; border-color:#CBD5E1; font-size:11px; width:100%;">
+        <thead style="background:#F1F5F9; color:#334155; font-weight:700;">
+          <tr>
+            <th style="padding:6px; width:4%;">#</th>
+            <th style="padding:6px; width:18%; text-align:left;">Código Ítem</th>
+            <th style="padding:6px; text-align:left;">Descripción</th>
+            <th style="padding:6px; width:10%; text-align:right;">Cant. Sol.</th>
+            <th style="padding:6px; width:10%; text-align:right;">Cant. Dev/Canc</th>
+            <th style="padding:6px; width:8%; text-align:center;">Unidad</th>
+            <th style="padding:6px; width:13%; text-align:right;">Precio Unit.</th>
+            <th style="padding:6px; width:15%; text-align:right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+        <tfoot style="background:#F8FAFC; font-weight:bold; border-top:2px solid #CBD5E1;">
+          <tr>
+            <td colspan="3" style="padding:8px; text-align:right; color:#0F172A;">TOTALES:</td>
+            <td style="padding:8px; text-align:right;">${totalCantSol.toLocaleString('es-CO')}</td>
+            <td style="padding:8px; text-align:right; color:#DC2626;">${totalCantInc.toLocaleString('es-CO')}</td>
+            <td></td>
+            <td></td>
+            <td style="padding:8px; text-align:right; font-size:12px; color:#047857;">${formatCurrency(totalValor)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+}
+
+/**
  * Genera el footer institucional del documento.
  */
 function getFooterHtml(): string {
@@ -223,7 +299,7 @@ export function getDetallesHtml(
   tiemposHtml: string,
   evidenciasHtml: string,
   botonesAccionHtml: string,
-  tipos_inco: any,
+  tipos_inco: any = TIPOS_INCONSISTENCIA,
   traducirEtapa: (etapa: string) => string,
   opciones: DetallesPopupOpciones = {}
 ): string {
@@ -304,6 +380,19 @@ export function getDetallesHtml(
 
   // ── Sección: Anulación (opcional) ──
   const anulacionHtml = mostrarSeccionAnulacion ? getSeccionAnulacionHtml(inconsistencia) : '';
+
+  // ── Sección: Desglose de múltiples ítems (si aplica) ──
+  let itemsMultiples: any[] = [];
+  if (inconsistencia.items_detalle) {
+    try {
+      itemsMultiples = typeof inconsistencia.items_detalle === 'string'
+        ? JSON.parse(inconsistencia.items_detalle)
+        : inconsistencia.items_detalle;
+    } catch (e) {
+      itemsMultiples = [];
+    }
+  }
+  const itemsDetalleHtml = getItemsDetalleHtml(itemsMultiples);
 
   // ── Sección: Footer (opcional) ──
   const footerHtml = mostrarFooter ? getFooterHtml() : '';
@@ -386,7 +475,7 @@ export function getDetallesHtml(
               </thead>
               <tbody>
                 <tr>
-                  <td style="padding:8px;">${tipos_inco[inconsistencia.tipo_inconsistencia] || inconsistencia.tipo_inconsistencia || 'N/A'}</td>
+                  <td style="padding:8px;">${(tipos_inco && tipos_inco[inconsistencia.tipo_inconsistencia]) || getNombreInconsistencia(inconsistencia.tipo_inconsistencia) || 'N/A'}</td>
                   <td style="padding:8px;">${inconsistencia.cantidad_solicitada_op || '0'}</td>
                   <td style="padding:8px; color:#d32f2f; font-weight:bold;">${inconsistencia.cantidad_inconsistencia || '0'}</td>
                   <td style="padding:8px;">
@@ -396,6 +485,9 @@ export function getDetallesHtml(
                 </tr>
               </tbody>
             </table>
+
+            <!-- Sección: Desglose de Ítems cuando hay múltiples -->
+            ${itemsDetalleHtml}
 
             <!-- Sección: Descripción de la Situación -->
             <div style="display:inline-block;border-left:3px solid #72BE44;padding:4px 10px;margin-bottom:14px;">

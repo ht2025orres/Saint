@@ -6,6 +6,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2';
 import { getDetallesHtml } from '../../../shared/templates/detalles-popup.template';
+import { TIPOS_INCONSISTENCIA } from '../../../shared/constants/inconsistencias.constants';
 
 @Component({
   selector: 'app-aprobacion-inconsistencias',
@@ -15,7 +16,7 @@ import { getDetallesHtml } from '../../../shared/templates/detalles-popup.templa
 export class AprobacionComponent implements OnInit {
   title = 'Inconsistencias Pendientes de Aprobación';
   paginatorId = 'inconsistencias-aprobar-paginator';
-  tipos_inco: { [key: string]: string } = {};
+  tipos_inco: { [key: string]: string } = { ...TIPOS_INCONSISTENCIA };
 
   inconsistencias: any[] = [];
   currentData: any[] = [];
@@ -61,11 +62,11 @@ export class AprobacionComponent implements OnInit {
 
     // Registrar callbacks globales llamados desde el popup.
     // Reciben todos los valores ya recolectados en el popup, sin abrir Swal adicional.
-    (window as any).aprobarDesdePopup = (id: number, accion: string, estadoOrden: string) => {
+    (window as any).aprobarDesdePopup = (id: number, accion: string, estadoOrden: string, reclasificacion: string | null = null) => {
       const inco = this.inconsistencias.find(i => i.id === id);
       if (!inco) return;
       this.loading = true;
-      this.inconsistenciasService.aprobarInconsistencia(inco.id, accion || null, estadoOrden || null).subscribe({
+      this.inconsistenciasService.aprobarInconsistencia(inco.id, accion || null, estadoOrden || null, reclasificacion || null).subscribe({
         next: (res: any) => {
           this.loading = false;
           if (res.success) {
@@ -147,9 +148,7 @@ export class AprobacionComponent implements OnInit {
   }
 
   obtenerTipos() {
-    fetch('/assets/config/config.json')
-      .then(r => r.json())
-      .then(json => this.tipos_inco = json);
+    this.tipos_inco = { ...TIPOS_INCONSISTENCIA };
   }
 
 cargarInconsistencias(): void {
@@ -358,6 +357,7 @@ abrirModalDetalles(inconsistencia: any): void {
             </div>
           `;
         } else if (etapaLower === 'logistica' || etapaLower === 'logística') {
+          const esImperfeccionTela = inconsistencia.tipo_inconsistencia === 'imperfeccion_tela';
           camposAprobar = `
             <div style="margin-bottom:12px; text-align:left;">
               <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:4px;">Observación de Logística</label>
@@ -365,6 +365,16 @@ abrirModalDetalles(inconsistencia: any): void {
                 style="width:100%; border:1px solid #D1D5DB; border-radius:6px; padding:8px; font-size:12px; resize:vertical; box-sizing:border-box;"
                 placeholder="Escribe alguna observación o comentario de logística (opcional)...">${inconsistencia.observacion_logistica || ''}</textarea>
             </div>
+            ${esImperfeccionTela ? `
+            <div style="margin-bottom:12px; text-align:left; background:#FEF3C7; padding:10px 12px; border-radius:6px; border:1px solid #FCD34D;">
+              <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#92400E; cursor:pointer;">
+                <input type="checkbox" id="pop-reclasificar-dano" value="insumo_dano_tela" ${inconsistencia.reclasificacion_logistica === 'insumo_dano_tela' ? 'checked' : ''} style="width:16px; height:16px; accent-color:#D97706;">
+                <span>¿Corregir/Clasificar como <strong>Insumo por Daño en Tela</strong>?</span>
+              </label>
+              <p style="margin:4px 0 0 24px; font-size:11px; color:#78350F; line-height:1.3;">
+                Marca si la revisión logística determina daño en tela. El tipo original cargado se conserva en base de datos y en el dashboard se reflejará la corrección.
+              </p>
+            </div>` : ''}
           `;
         }
 
@@ -415,7 +425,9 @@ abrirModalDetalles(inconsistencia: any): void {
                   }
                   ${esEtapaCalidad ? `if (!accion) { alert('La acción a tomar es obligatoria.'); return; }
                   if (!estadoOrden) { alert('El estado de la OP es obligatorio.'); return; }` : ''}
-                  window.opener.aprobarDesdePopup(${inconsistencia.id}, accion, estadoOrden);
+                  var elReclasif = document.getElementById('pop-reclasificar-dano');
+                  var reclasificacion = (elReclasif && elReclasif.checked) ? 'insumo_dano_tela' : '';
+                  window.opener.aprobarDesdePopup(${inconsistencia.id}, accion, estadoOrden, reclasificacion);
                   window.close();
                 " style="background:#16a34a; color:white; border:none; padding:8px 20px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Confirmar Aprobación</button>
               </div>

@@ -1,0 +1,248 @@
+<!-- ==================== MODAL DETALLE Y CONSUMO DE INCONSISTENCIAS (TAILWIND ONLY) ==================== -->
+<div *ngIf="visible"
+  class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
+  (click)="close()">
+
+  <div
+    class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200/80 animate-scaleUp"
+    (click)="$event.stopPropagation()">
+
+    <!-- ─── HEADER ────────────────────────────────────────────────────────── -->
+    <div
+      class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white">
+      <div class="flex items-center gap-3 min-w-0">
+        <div
+          class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 shadow-inner shrink-0">
+          <i class="bi bi-layers-half text-white text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-base sm:text-lg font-bold text-white tracking-tight truncate">{{ titulo }}</h2>
+          <p class="text-xs text-slate-300 font-medium truncate mt-0.5">
+            Total registros: <span class="text-white font-bold">{{ itemsFiltrados.length }}</span> ·
+            Monto acumulado: <span class="text-emerald-300 font-bold">{{ formatCurrency(sumaTotal) }}</span>
+          </p>
+        </div>
+      </div>
+      <button (click)="close()"
+        class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center shrink-0 cursor-pointer">
+        <i class="bi bi-x-lg text-sm"></i>
+      </button>
+    </div>
+
+    <!-- ─── TOOLBAR / FILTRO DE BÚSQUEDA ───────────────────────────────────── -->
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between px-5 sm:px-6 py-3.5 bg-slate-50 border-b border-slate-200 gap-3">
+      <div class="relative w-full sm:max-w-md">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <i class="bi bi-search text-sm"></i>
+        </div>
+        <input type="text" [(ngModel)]="busqueda" (ngModelChange)="paginaActual = 1"
+          placeholder="Buscar por OP, consecutivo #, cliente, ítem, motivo..."
+          class="w-full bg-white border border-slate-300 rounded-xl py-2 pl-9 pr-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all shadow-sm" />
+      </div>
+
+      <!-- Filtro Corregidas y Paginación -->
+      <div class="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+        <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-white shadow-2xs">
+          <button 
+            type="button" 
+            (click)="setFiltroCorregidas(false)"
+            [ngClass]="!filtroCorregidas ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+            class="px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer">
+            <span>Todas</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-black/15 font-bold">{{ items.length }}</span>
+          </button>
+          <button 
+            type="button" 
+            (click)="setFiltroCorregidas(true)"
+            [ngClass]="filtroCorregidas ? 'bg-amber-600 text-white shadow-xs' : 'text-amber-800 hover:text-amber-950'"
+            class="px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+            title="Ver solo inconsistencias que fueron reclasificadas por Logística (ej. Imperfecto en Tela corregido a Daño en Tela)">
+            <span>🏷️ Corregidas</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-200/60 text-amber-900 font-bold">{{ cantidadCorregidas }}</span>
+          </button>
+        </div>
+
+        <span
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <i class="bi bi-collection text-xs"></i>
+          Pág. {{ paginaActual }}/{{ totalPaginas }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ─── BODY ───────────────────────────────────────────────────────────── -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+
+      <!-- Loading State (Tailwind Spinner) -->
+      <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <p class="text-sm font-medium text-slate-600 mt-3">Cargando inconsistencias y órdenes de producción...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading && itemsFiltrados.length === 0"
+        class="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+          <i class="bi bi-inbox text-3xl"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-700">No se encontraron inconsistencias</h3>
+        <p class="text-xs text-slate-500 max-w-sm mt-1">No hay registros que coincidan con la búsqueda o el período
+          seleccionado.</p>
+      </div>
+
+      <!-- Data Table -->
+      <div *ngIf="!isLoading && itemsFiltrados.length > 0"
+        class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr
+                class="bg-slate-100/80 text-slate-600 uppercase tracking-wider text-[11px] font-bold border-b border-slate-200">
+                <th class="py-3 px-3.5"># / Fecha</th>
+                <th class="py-3 px-3.5">OP / Orden</th>
+                <th class="py-3 px-3.5">Cliente</th>
+                <th class="py-3 px-3.5">Tipo de Inconsistencia</th>
+                <th class="py-3 px-3.5">Ítem / Insumo</th>
+                <th class="py-3 px-3.5 text-right">Cant.</th>
+                <th class="py-3 px-3.5 text-right">Costo Total</th>
+                <th class="py-3 px-3.5 text-center">Etapa Saint</th>
+                <th class="py-3 px-3.5 text-center">Estado OP</th>
+                <th class="py-3 px-3.5 text-center">Consumo</th>
+                <th class="py-3 px-3.5 text-center">Detalle</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr *ngFor="let item of itemsPaginados" class="hover:bg-slate-50/80 transition-colors">
+                <!-- Consecutivo y Fecha -->
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                  <span class="font-bold text-slate-900 block">#{{ item.id_inconsistencia }}</span>
+                  <span class="text-[10px] text-slate-400 block font-normal">{{ item.fecha_inconsistencia |
+                    date:'yyyy-MM-dd HH:mm' }}</span>
+                </td>
+
+                <!-- OP -->
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                  <span
+                    class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {{ item.op || 'Sin OP' }}
+                  </span>
+                </td>
+
+                <!-- Cliente -->
+                <td class="py-3 px-3.5">
+                  <span class="block max-w-[160px] truncate font-medium text-slate-800" title="{{ item.Cliente }}">
+                    {{ item.Cliente || 'No asignado' }}
+                  </span>
+                </td>
+
+                <!-- Tipo -->
+                <td class="py-3 px-3.5">
+                  <div class="flex flex-col gap-1 items-start">
+                    <span class="text-xs text-slate-800 font-semibold block max-w-[170px] truncate"
+                      title="Tipo clasificado: {{ getNombreInconsistencia(item.reclasificacion_logistica || item.tipo_inconsistencia) }}">
+                      {{ getNombreInconsistencia(item.reclasificacion_logistica || item.tipo_inconsistencia) }}
+                    </span>
+                    <span *ngIf="item.reclasificacion_logistica" 
+                      class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-900 border border-amber-300"
+                      title="Originalmente cargado como: {{ getNombreInconsistencia(item.tipo_inconsistencia) }}">
+                      <span>🏷️ Reclasificada (Orig: {{ getNombreInconsistencia(item.tipo_inconsistencia) }})</span>
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Ítem -->
+                <td class="py-3 px-3.5">
+                  <strong class="text-slate-900 block max-w-[180px] truncate font-semibold"
+                    title="{{ item.nombre_item || item.item }}">
+                    {{ item.nombre_item || item.item }}
+                  </strong>
+                  <span class="text-[10px] text-slate-400 block max-w-[180px] truncate font-normal"
+                    title="{{ item.item }}">
+                    {{ item.item }}
+                  </span>
+                </td>
+
+                <!-- Cantidad -->
+                <td class="py-3 px-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
+                  {{ formatNumber(item.cantidad_inconsistencia) }}
+                </td>
+
+                <!-- Costo Total -->
+                <td class="py-3 px-3.5 text-right font-bold text-slate-900 whitespace-nowrap">
+                  {{ formatCurrency(item.precio_total_inconsistencia) }}
+                </td>
+
+                <!-- Etapa -->
+                <td class="py-3 px-3.5 text-center whitespace-nowrap">
+                  <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize" [ngClass]="{
+                      'bg-emerald-100 text-emerald-800 border border-emerald-200': (item.etapa || '').toLowerCase() === 'terminada',
+                      'bg-amber-100 text-amber-800 border border-amber-200': (item.etapa || '').toLowerCase() === 'espera',
+                      'bg-blue-100 text-blue-800 border border-blue-200': ['lider', 'calidad', 'logistica'].includes((item.etapa || '').toLowerCase()),
+                      'bg-slate-100 text-slate-700 border border-slate-200': !['terminada', 'espera', 'lider', 'calidad', 'logistica'].includes((item.etapa || '').toLowerCase())
+                    }">
+                    {{ item.etapa || 'N/A' }}
+                  </span>
+                </td>
+
+                <!-- Estado OP -->
+                <td class="py-3 px-3.5 text-center whitespace-nowrap">
+                  <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold" [ngClass]="{
+                      'bg-rose-100 text-rose-800 border border-rose-200': (item.estado_inconsistencia || '').toLowerCase() === 'cerrada',
+                      'bg-amber-100 text-amber-800 border border-amber-200': (item.estado_inconsistencia || '').toLowerCase() !== 'cerrada'
+                    }">
+                    {{ (item.estado_inconsistencia || 'Abierta') | titlecase }}
+                  </span>
+                </td>
+
+                <!-- Consumo -->
+                <td class="py-3 px-3.5 text-center whitespace-nowrap">
+                  <span *ngIf="item.estado_consumo === 'CONSUMIDO'"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <i class="bi bi-check-circle-fill text-[10px]"></i>
+                    CONSUMIDO
+                  </span>
+                  <span *ngIf="item.estado_consumo !== 'CONSUMIDO'"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    POR CONSUMIR
+                  </span>
+                </td>
+
+                <!-- Detalle -->
+                <td class="py-3 px-3.5 text-center whitespace-nowrap">
+                  <button (click)="verDetallesInconsistencia(item)"
+                    class="inline-flex items-center justify-center w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                    title="Ver trazabilidad completa y evidencias">
+                    <i class="bi bi-eye text-xs"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FOOTER CON PAGINACIÓN ─────────────────────────────────────────── -->
+    <div
+      class="flex flex-col sm:flex-row items-center justify-between px-5 sm:px-6 py-3.5 bg-white border-t border-slate-200 gap-3">
+      <span class="text-xs text-slate-500 font-medium">
+        Mostrando <strong class="text-slate-800">{{ itemsPaginados.length }}</strong> de <strong
+          class="text-slate-800">{{ itemsFiltrados.length }}</strong> inconsistencias
+      </span>
+
+      <div class="flex items-center gap-2">
+        <button (click)="cambiarPagina(-1)" [disabled]="paginaActual <= 1"
+          class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">
+          <i class="bi bi-chevron-left mr-1"></i> Anterior
+        </button>
+        <span class="text-xs font-bold text-slate-700 px-2">{{ paginaActual }} / {{ totalPaginas }}</span>
+        <button (click)="cambiarPagina(1)" [disabled]="paginaActual >= totalPaginas"
+          class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer">
+          Siguiente <i class="bi bi-chevron-right ml-1"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

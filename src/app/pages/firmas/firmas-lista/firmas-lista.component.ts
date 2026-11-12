@@ -53,6 +53,7 @@ export class FirmasListaComponent implements OnInit {
   colaboradorSeleccionadoParaCompartir: any = null;
   rolSeleccionadoParaCompartir: string = 'EDITOR';
   guardandoCompartir: boolean = false;
+  colaboradoresPendientesCompartir: Array<{ colaborador: any; rol: string }> = [];
 
   // Modal Agregar / Editar firmante
   showModalFirmante: boolean = false;
@@ -434,6 +435,64 @@ export class FirmasListaComponent implements OnInit {
           },
           error: (err: any) => {
             Swal.fire('Error', err.error?.message || 'No fue posible actualizar la etiqueta', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Modificar el título o nombre del documento con SweetAlert2
+   */
+  editarTituloDocumento(doc: DocumentoFirma, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (!this.puedeGestionarDoc(doc)) {
+      Swal.fire('Atención', 'No tienes permisos para modificar el nombre de este documento.', 'warning');
+      return;
+    }
+
+    Swal.fire({
+      title: 'Editar Nombre del Documento',
+      input: 'text',
+      inputValue: doc.titulo || '',
+      inputLabel: 'Nombre del Documento',
+      inputPlaceholder: 'Ingresa el nuevo nombre...',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'El nombre del documento no puede estar vacío';
+        }
+        if (value.trim().length > 255) {
+          return 'El nombre no puede superar los 255 caracteres';
+        }
+        return null;
+      }
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        const nuevoTitulo = res.value.trim();
+        if (nuevoTitulo === doc.titulo) return;
+
+        this.docFirmaService.updateDocumento(doc.id!, { titulo: nuevoTitulo }).subscribe({
+          next: (resp: any) => {
+            doc.titulo = nuevoTitulo;
+            if (this.selectedDocDetail && this.selectedDocDetail.id === doc.id) {
+              this.selectedDocDetail.titulo = nuevoTitulo;
+            }
+            Swal.fire({
+              icon: 'success',
+              title: 'Nombre actualizado',
+              text: 'El nombre del documento ha sido actualizado correctamente.',
+              timer: 1600,
+              showConfirmButton: false
+            });
+          },
+          error: (err: any) => {
+            Swal.fire('Error', err.error?.message || 'No fue posible actualizar el nombre del documento', 'error');
           }
         });
       }
@@ -1341,24 +1400,36 @@ export class FirmasListaComponent implements OnInit {
   // ============================
   groupCollapseState: { [key: string]: boolean } = {};
 
-  toggleCollapseGroup(groupKey: string, event?: MouseEvent): void {
+  toggleCollapseGroup(group: any, event?: MouseEvent): void {
     if (event) event.stopPropagation();
-    this.groupCollapseState[groupKey] = !this.groupCollapseState[groupKey];
+    const key = typeof group === 'string' ? group : group.key;
+    const current = this.isGroupCollapsed(group);
+    this.groupCollapseState[key] = !current;
   }
 
-  isGroupCollapsed(groupKey: string): boolean {
-    return !!this.groupCollapseState[groupKey];
+  isGroupCollapsed(group: any): boolean {
+    if (!group) return false;
+    const key = typeof group === 'string' ? group : group.key;
+    if (this.groupCollapseState[key] !== undefined) {
+      return this.groupCollapseState[key];
+    }
+    // Si ya completó sus firmas o está deshabilitado, colapsar por defecto para aligerar la vista
+    if (typeof group === 'object' && (group.estado === 'FIRMADO' || group.estado === 'DESHABILITADO')) {
+      return true;
+    }
+    return false;
   }
 
-  getGroupedDestinatarios(destinatarios: any[]): any[] {
+  getGroupedDestinatarios(destinatarios: any[], docId?: number): any[] {
     if (!destinatarios || destinatarios.length === 0) return [];
     
     const groupsMap = new Map<string, any>();
 
     for (const dest of destinatarios) {
+      const docPrefix = docId ? `doc_${docId}_` : (dest.documento_firma_id ? `doc_${dest.documento_firma_id}_` : '');
       const key = dest.colaborador_id 
-        ? `colab_${dest.colaborador_id}` 
-        : `email_${(dest.email_destinatario || dest.nombre_firmante || dest.id).toLowerCase()}`;
+        ? `${docPrefix}colab_${dest.colaborador_id}` 
+        : `${docPrefix}email_${(dest.email_destinatario || dest.nombre_firmante || dest.id).toLowerCase()}`;
         
       if (!groupsMap.has(key)) {
         groupsMap.set(key, {
@@ -1800,7 +1871,11 @@ export class FirmasListaComponent implements OnInit {
    * Filtrar por tipo de participación (Todos, Firmados por mí, Por firmar, Creados por mí)
    */
   filtrarParticipacion(tipo: string): void {
-    this.filtroParticipacion = tipo;
+    if (tipo === '' || this.filtroParticipacion === tipo) {
+      this.filtroParticipacion = '';
+    } else {
+      this.filtroParticipacion = tipo;
+    }
     this.currentPage = 1;
     if (this.viewMode === 'folders') {
       this.viewMode = 'grid';
@@ -1843,6 +1918,7 @@ export class FirmasListaComponent implements OnInit {
     }
     this.etiquetaParaCompartir = folder;
     this.miembrosCompartidosEtiqueta = [];
+    this.colaboradoresPendientesCompartir = [];
     this.colaboradorSeleccionadoParaCompartir = null;
     this.busquedaColaboradorCompartir = '';
     this.rolSeleccionadoParaCompartir = 'EDITOR';
@@ -1855,8 +1931,10 @@ export class FirmasListaComponent implements OnInit {
     this.mostrarModalCompartirCarpeta = false;
     this.etiquetaParaCompartir = null;
     this.miembrosCompartidosEtiqueta = [];
+    this.colaboradoresPendientesCompartir = [];
     this.colaboradorSeleccionadoParaCompartir = null;
     this.busquedaColaboradorCompartir = '';
+    this.colaboradoresFiltradosCompartir = [];
     this.mostrarDropdownCompartir = false;
   }
 
@@ -1875,30 +1953,71 @@ export class FirmasListaComponent implements OnInit {
   }
 
   onBusquedaColaboradorCompartirChange(): void {
-    const q = (this.busquedaColaboradorCompartir || '').toLowerCase().trim();
-    if (!q) {
+    const raw = (this.busquedaColaboradorCompartir || '').trim();
+    if (!raw) {
       this.colaboradoresFiltradosCompartir = [];
       this.mostrarDropdownCompartir = false;
       return;
     }
+
+    // Normalizador de acentos y caracteres diacríticos para búsqueda aproximada
+    const normalize = (str: string) => (str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    const words = normalize(raw).split(/\s+/).filter(Boolean);
     const currentUserId = this.authService.user?.id;
-    const yaMiembrosIds = this.miembrosCompartidosEtiqueta.map((m: any) => m.id);
+    const yaMiembrosIds = this.miembrosCompartidosEtiqueta.map((m: any) => Number(m.id));
+    const pendientesIds = this.colaboradoresPendientesCompartir.map((p: any) => Number(p.colaborador?.id));
 
     this.colaboradoresFiltradosCompartir = this.colaboradoresList.filter((c: any) => {
-      if (currentUserId && Number(c.id) === Number(currentUserId)) return false;
-      if (yaMiembrosIds.includes(c.id)) return false;
-      const full = `${c.nombres || c.firstName || ''} ${c.apellidos || c.lastName || ''}`.toLowerCase();
-      const email = (c.correo_corporativo || c.correo_personal || c.email || '').toLowerCase();
-      return full.includes(q) || email.includes(q);
-    }).slice(0, 8);
+      const colabId = Number(c.id);
+      // Excluir al usuario autenticado
+      if (currentUserId && colabId === Number(currentUserId)) return false;
+      // Excluir quienes ya son miembros de la carpeta
+      if (yaMiembrosIds.includes(colabId)) return false;
+      // Excluir quienes ya están en la lista de pendientes por agregar
+      if (pendientesIds.includes(colabId)) return false;
+
+      // Buscar por nombre, apellido, correos, cédula, cargo e ID
+      const full = normalize(`
+        ${c.nombres || c.firstName || ''} 
+        ${c.apellidos || c.lastName || ''} 
+        ${c.correo_corporativo || ''} 
+        ${c.correo_personal || ''} 
+        ${c.email || ''} 
+        ${c.cargo || ''} 
+        ${c.cedula || ''} 
+        ${c.id || ''}
+      `);
+
+      return words.every(w => full.includes(w));
+    }).slice(0, 20);
 
     this.mostrarDropdownCompartir = this.colaboradoresFiltradosCompartir.length > 0;
   }
 
   seleccionarColaboradorCompartir(colab: any): void {
-    this.colaboradorSeleccionadoParaCompartir = colab;
-    this.busquedaColaboradorCompartir = `${colab.nombres || colab.firstName} ${colab.apellidos || colab.lastName}`;
+    if (!colab) return;
+    const yaExiste = this.colaboradoresPendientesCompartir.some(
+      p => Number(p.colaborador.id) === Number(colab.id)
+    );
+    if (!yaExiste) {
+      this.colaboradoresPendientesCompartir.push({
+        colaborador: colab,
+        rol: this.rolSeleccionadoParaCompartir || 'EDITOR'
+      });
+    }
+    this.busquedaColaboradorCompartir = '';
+    this.colaboradoresFiltradosCompartir = [];
     this.mostrarDropdownCompartir = false;
+  }
+
+  removerColaboradorPendiente(index: number): void {
+    if (index >= 0 && index < this.colaboradoresPendientesCompartir.length) {
+      this.colaboradoresPendientesCompartir.splice(index, 1);
+    }
   }
 
   limpiarColaboradorCompartir(): void {
@@ -1910,27 +2029,34 @@ export class FirmasListaComponent implements OnInit {
 
   agregarColaboradorCarpeta(): void {
     if (!this.etiquetaParaCompartir?.id) return;
-    if (!this.colaboradorSeleccionadoParaCompartir) {
-      Swal.fire('Atención', 'Por favor busca y selecciona un colaborador de la lista desplegable.', 'warning');
+
+    if (this.colaboradoresPendientesCompartir.length === 0) {
+      Swal.fire({
+        title: 'Atención',
+        text: 'Por favor busca y selecciona al menos un colaborador de la lista para compartir.',
+        icon: 'warning'
+      });
       return;
     }
 
     this.guardandoCompartir = true;
-    const payload = [{
-      colaborador_id: this.colaboradorSeleccionadoParaCompartir.id,
-      rol: this.rolSeleccionadoParaCompartir || 'EDITOR'
-    }];
+    const payload = this.colaboradoresPendientesCompartir.map(item => ({
+      colaborador_id: Number(item.colaborador.id),
+      rol: item.rol || 'EDITOR'
+    }));
 
     this.docFirmaService.compartirEtiqueta(this.etiquetaParaCompartir.id, payload).subscribe({
       next: (res: any) => {
+        const total = payload.length;
         Swal.fire({
           icon: 'success',
           title: '¡Carpeta compartida!',
-          text: `Se ha otorgado acceso a ${this.colaboradorSeleccionadoParaCompartir.nombres || this.colaboradorSeleccionadoParaCompartir.firstName}`,
+          text: `Se ha otorgado acceso a ${total} colaborador${total > 1 ? 'es' : ''} exitosamente.`,
           timer: 2000,
           showConfirmButton: false
         });
         this.guardandoCompartir = false;
+        this.colaboradoresPendientesCompartir = [];
         this.limpiarColaboradorCompartir();
         this.cargarMiembrosEtiqueta(this.etiquetaParaCompartir.id);
         this.cargarEtiquetas();

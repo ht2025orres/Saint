@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { PaginationService } from '../../../shared/pagination/pagination.service';
 import Swal from 'sweetalert2';
 import { getDetallesHtml, generarTiemposHtml, generarEvidenciasSwalHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
+import { TIPOS_INCONSISTENCIA, getNombreInconsistencia } from '../../../shared/constants/inconsistencias.constants';
 interface Inconsistencia {
   id: number;
   id_inconsistencia: string;
@@ -297,7 +298,7 @@ export class MisInconsistenciasComponent implements OnInit {
           tiemposHtml,
           evidenciasHtml,
           '', // Mis inconsistencias no tiene botones de acción aquí
-          this.tiposInconsistencia, // Asegurarse que se le pasen los tipos
+          TIPOS_INCONSISTENCIA,
           this.traducirEtapa.bind(this),
           {
             mostrarSeccionAnulacion: true,
@@ -379,15 +380,7 @@ export class MisInconsistenciasComponent implements OnInit {
   }
 
   traducirTipoInconsistencia(tipo: string): string {
-    const traducciones: { [key: string]: string } = {
-      'error_operario': 'Error de Operario',
-      'error_patronaje': 'Error de Patronaje',
-      'error_corte': 'Error de Corte',
-      'documental_contabilidad': 'Documental Contabilidad',
-      'documental_calidad': 'Documental Calidad',
-      'ajuste_promedio': 'Ajuste de Promedio'
-    };
-    return traducciones[tipo] || tipo;
+    return getNombreInconsistencia(tipo);
   }
 
   traducirEtapa(etapa: string): string {

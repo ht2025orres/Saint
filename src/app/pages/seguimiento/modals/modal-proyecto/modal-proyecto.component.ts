@@ -7,6 +7,7 @@ export interface ProyectoForm {
   titulo:               string;
   descripcion:          string;
   estado:               string;
+  fecha_inicio:         string;
   fecha_limite_entrega: string;
   es_plantilla:         boolean;
 }
@@ -50,6 +51,7 @@ export class ModalProyectoComponent implements OnChanges {
       titulo:               ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
       descripcion:          [''],
       estado:               ['pendiente'],
+      fecha_inicio:         [''],
       fecha_limite_entrega: [''],
       es_plantilla:         [false],
     });
@@ -67,6 +69,7 @@ export class ModalProyectoComponent implements OnChanges {
         titulo:               this.proyecto.titulo ?? '',
         descripcion:          this.proyecto.descripcion ?? '',
         estado:               this.proyecto.estado ?? 'pendiente',
+        fecha_inicio:         this._toLocal(this.proyecto.fecha_inicio),
         fecha_limite_entrega: this._toLocal(this.proyecto.fecha_limite_entrega),
         es_plantilla:         this.proyecto.es_plantilla ?? false,
       });
@@ -75,6 +78,7 @@ export class ModalProyectoComponent implements OnChanges {
         titulo: '', 
         descripcion: '', 
         estado: 'pendiente', 
+        fecha_inicio: '',
         fecha_limite_entrega: '',
         es_plantilla: false 
       });

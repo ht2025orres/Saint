@@ -162,10 +162,56 @@
   color: #f1f5f9;
 }
 
+.df-date-input {
+  background: rgba(255, 255, 255, 0.12) !important;
+  background-image: none !important;
+  padding: 6px 10px !important;
+  color-scheme: dark;
+  color: #ffffff !important;
+  min-width: 135px;
+}
+
+/* ─── Badge e Indicador de Reclasificación por Logística ──────── */
+.df-tipo-inconsistencia-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.df-badge-corregida {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.df-badge-corregida:hover {
+  background: #fde68a;
+  color: #78350f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.15);
+}
+
+.df-tag--reclasificada {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+
 /* ─── GRID KPIs ──────────────────────────────────────────────── */
 .df-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 16px;
 }
 
@@ -202,10 +248,12 @@
 .df-kpi-card--featured {
   grid-column: span 1;
   border-width: 4px;
-  background: linear-gradient(135deg, #f8f7ff 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, #fff7f7 0%, #fee2e2 100%);
 }
 
 /* Colores de borde por tipo */
+.df-kpi-card--azul { border-left-color: var(--color-azul-oscuro); }
+.df-kpi-card--azul::before { background: var(--color-azul-oscuro); }
 .df-kpi-card--rojo { border-left-color: var(--color-rojo); }
 .df-kpi-card--rojo::before { background: var(--color-rojo); }
 .df-kpi-card--naranja { border-left-color: var(--color-naranja); }
@@ -230,6 +278,7 @@
   flex-shrink: 0;
 }
 
+.df-kpi-icon--azul { background: #e0f2fe; color: var(--color-azul-oscuro); }
 .df-kpi-icon--rojo { background: #fef2f2; color: var(--color-rojo); }
 .df-kpi-icon--naranja { background: #fffbeb; color: var(--color-naranja); }
 .df-kpi-icon--verde { background: #ecfdf5; color: var(--color-verde); }
@@ -358,6 +407,7 @@
 .df-dot--rojo { background: var(--color-rojo); }
 .df-dot--naranja { background: var(--color-naranja); }
 .df-dot--verde { background: var(--color-verde); }
+.df-dot--azul-oscuro { background: var(--color-azul-oscuro); }
 
 /* ─── Chart Containers ───────────────────────────────────────── */
 .df-chart-container {
@@ -534,34 +584,6 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: #374151;
-}
-
-/* ─── Footer ─────────────────────────────────────────────────── */
-.df-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: var(--radius-sm);
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.df-footer__text {
-  font-size: 0.78rem;
-  color: #92400e;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.df-footer__version {
-  font-size: 0.72rem;
-  color: #b45309;
-  font-weight: 400;
 }
 
 /* ─── Tablas Analíticas (Vista 5) ──────────────────────────────── */
@@ -915,3 +937,55 @@
   .df-row--60-40, .df-row--50-50 { grid-template-columns: 1fr; }
   .df-item-list { grid-template-columns: 1fr; }
 }
+
+/* ─── Interactive Cards & Cues ─────────────────────────────────── */
+.df-kpi-card--interactive {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+}
+
+.df-kpi-card--interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+.df-kpi-action {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-top: 6px;
+  transition: transform 0.15s ease;
+}
+
+.df-kpi-card--interactive:hover .df-kpi-action {
+  transform: translateX(3px);
+}
+
+.df-summary-card--interactive {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+}
+
+.df-summary-card--interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.08);
+}
+
+.df-card-click-hint {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.df-summary-card--interactive:hover .df-card-click-hint {
+  transform: translateX(3px);
+}
+
+

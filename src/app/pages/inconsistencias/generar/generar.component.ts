@@ -30,6 +30,7 @@ export class GenerarComponent implements OnInit, OnDestroy {
     'dano_maquina',
     'retal_incompleto',
     'imperfeccion_tela',
+    'insumo_dano_tela',
     'insumo_imperfecto',
     'empate_tendido',
     'faltante_rollo',
@@ -45,9 +46,25 @@ export class GenerarComponent implements OnInit, OnDestroy {
   accionObligatoria = false;
   nombresArchivos: string[] = [];
 
+  // ─── Multi-Ítem (Devolución a OP y Cancelación de Pedido) ─────────────────
+  esMultiItem: boolean = false;
+  itemsSeleccionados: any[] = [];
+  filtroMaterialesSiesa: string = '';
+  mostrarModalManual: boolean = false;
+  nuevoItemManual = {
+    codigo: '',
+    descripcion: '',
+    cantidad_solicitada: 0,
+    cantidad_inco: 0,
+    unidad_medida: 'unidades',
+    precio_unitario: 0
+  };
 
   cantidadInconsistenciaValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
+    if (this.esMultiItem) {
+      return null;
+    }
     if (!control.parent) {
       return null;
     }
@@ -125,8 +142,35 @@ export class GenerarComponent implements OnInit, OnDestroy {
       this.mostrarTablaAccion = false;
       this.accionObligatoria = false;
 
+      this.esMultiItem = (tipo === 'devolucion_materiales' || tipo === 'cancelacion_pedido');
+
       const tipoCtrl = this.inconsistenciaForm.get('inconsistencia');
       const accionCtrl = this.inconsistenciaForm.get('accion');
+      const itemCtrl = this.inconsistenciaForm.get('item');
+      const nombreItemCtrl = this.inconsistenciaForm.get('nombre_item');
+      const cantSolCtrl = this.inconsistenciaForm.get('cantidad_solicitada_op');
+      const cantIncoCtrl = this.inconsistenciaForm.get('cantidad_inco');
+      const precioUnitCtrl = this.inconsistenciaForm.get('precio_unitario');
+
+      if (this.esMultiItem) {
+        itemCtrl?.clearValidators();
+        nombreItemCtrl?.clearValidators();
+        cantSolCtrl?.clearValidators();
+        cantIncoCtrl?.clearValidators();
+        precioUnitCtrl?.clearValidators();
+        this.recalcularTotalesMultiItem();
+      } else {
+        itemCtrl?.setValidators([Validators.required]);
+        nombreItemCtrl?.setValidators([Validators.required]);
+        cantSolCtrl?.setValidators([Validators.required]);
+        cantIncoCtrl?.setValidators([Validators.required, this.cantidadInconsistenciaValidator()]);
+        precioUnitCtrl?.setValidators([Validators.required]);
+      }
+      itemCtrl?.updateValueAndValidity({ emitEvent: false });
+      nombreItemCtrl?.updateValueAndValidity({ emitEvent: false });
+      cantSolCtrl?.updateValueAndValidity({ emitEvent: false });
+      cantIncoCtrl?.updateValueAndValidity({ emitEvent: false });
+      precioUnitCtrl?.updateValueAndValidity({ emitEvent: false });
 
       if (this.tiposQueRequierenImagen.includes(tipo)) {
         this.mostrarGrupoImagenes = true;
@@ -184,6 +228,7 @@ export class GenerarComponent implements OnInit, OnDestroy {
   // ===========================
 
   isPrecioVacioOCero(): boolean {
+    if (this.esMultiItem) return false;
     const precioValue = this.inconsistenciaForm.get('precio_unitario')?.value;
     
     // Si es null, undefined o string vacío
@@ -286,6 +331,12 @@ export class GenerarComponent implements OnInit, OnDestroy {
         if (res.success && res.data && res.data.items) {
           this.itemsDisponibles = res.data.items;
 
+          if (this.itemsDisponibles.length > 0 && this.itemsDisponibles[0].estado_op) {
+            this.inconsistenciaForm.patchValue({
+              estado_op: this.itemsDisponibles[0].estado_op
+            });
+          }
+
           Swal.fire({
             icon: 'success',
             title: 'Éxito',
@@ -303,6 +354,196 @@ export class GenerarComponent implements OnInit, OnDestroy {
         Swal.fire('Error', 'Error al consultar los items', 'error');
       }
     });
+  }
+
+  // ==========================================
+  // 🔹 MÉTODOS GESTIÓN MULTI-ÍTEM (OP COMPLETA)
+  // ==========================================
+
+  get itemsDisponiblesFiltrados(): any[] {
+    if (!this.filtroMaterialesSiesa || !this.filtroMaterialesSiesa.trim()) {
+      return this.itemsDisponibles;
+    }
+    const term = this.filtroMaterialesSiesa.toLowerCase().trim();
+    return this.itemsDisponibles.filter(mat => {
+      const cod = (mat.codigo_completo || mat.id_material || mat.f120_id || '').toLowerCase();
+      const desc = (mat.descripcion_material || mat.descripcion || '').toLowerCase();
+      const col = (mat.color_material || mat.color || '').toLowerCase();
+      return cod.includes(term) || desc.includes(term) || col.includes(term);
+    });
+  }
+
+  isItemSeleccionado(mat: any): boolean {
+    const cod = mat.codigo_completo || mat.id_material || mat.f120_id;
+    return this.itemsSeleccionados.some(it => it.codigo === cod);
+  }
+
+  toggleItemSeleccion(mat: any): void {
+    const cod = mat.codigo_completo || mat.id_material || mat.f120_id;
+    const index = this.itemsSeleccionados.findIndex(it => it.codigo === cod);
+
+    if (index >= 0) {
+      this.itemsSeleccionados.splice(index, 1);
+    } else {
+      const cant = parseFloat(mat.cantidad_requerida || mat.cantidad || 0) || 0;
+      const precio = parseFloat(mat.precio_unitario_material || mat.precio_unitario || 0) || 0;
+
+      let unidad = 'unidades';
+      const unidadSiesa = (mat.unidad_medida_material || mat.unidad_medida || '').trim().toUpperCase();
+      if (unidadSiesa === 'MTS' || unidadSiesa === 'MT') unidad = 'metros';
+      else if (unidadSiesa === 'CM' || unidadSiesa === 'CMS') unidad = 'centimetros';
+
+      const desc = [mat.descripcion_material || mat.descripcion, mat.color_material || mat.color, mat.talla_material || mat.talla]
+        .filter(Boolean)
+        .join(' - ');
+
+      this.itemsSeleccionados.push({
+        codigo: cod,
+        descripcion: desc,
+        cantidad_solicitada: cant,
+        cantidad_inco: cant,
+        unidad_medida: unidad,
+        precio_unitario: precio,
+        precio_total: cant * precio,
+        es_manual: false
+      });
+    }
+    this.recalcularTotalesMultiItem();
+  }
+
+  seleccionarTodosLosItems(): void {
+    this.itemsDisponibles.forEach(mat => {
+      const cod = mat.codigo_completo || mat.id_material || mat.f120_id;
+      const yaExiste = this.itemsSeleccionados.some(it => it.codigo === cod);
+      if (!yaExiste) {
+        const cant = parseFloat(mat.cantidad_requerida || mat.cantidad || 0) || 0;
+        const precio = parseFloat(mat.precio_unitario_material || mat.precio_unitario || 0) || 0;
+        let unidad = 'unidades';
+        const unidadSiesa = (mat.unidad_medida_material || mat.unidad_medida || '').trim().toUpperCase();
+        if (unidadSiesa === 'MTS' || unidadSiesa === 'MT') unidad = 'metros';
+        else if (unidadSiesa === 'CM' || unidadSiesa === 'CMS') unidad = 'centimetros';
+
+        const desc = [mat.descripcion_material || mat.descripcion, mat.color_material || mat.color, mat.talla_material || mat.talla]
+          .filter(Boolean)
+          .join(' - ');
+
+        this.itemsSeleccionados.push({
+          codigo: cod,
+          descripcion: desc,
+          cantidad_solicitada: cant,
+          cantidad_inco: cant,
+          unidad_medida: unidad,
+          precio_unitario: precio,
+          precio_total: cant * precio,
+          es_manual: false
+        });
+      }
+    });
+    this.recalcularTotalesMultiItem();
+  }
+
+  deseleccionarTodosLosItems(): void {
+    this.itemsSeleccionados = [];
+    this.recalcularTotalesMultiItem();
+  }
+
+  eliminarItemSeleccionado(index: number): void {
+    this.itemsSeleccionados.splice(index, 1);
+    this.recalcularTotalesMultiItem();
+  }
+
+  actualizarItemCantidad(item: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseFloat(input.value.replace(/,/g, '')) || 0;
+    item.cantidad_inco = val;
+    item.precio_total = val * (parseFloat(item.precio_unitario) || 0);
+    this.recalcularTotalesMultiItem();
+  }
+
+  actualizarItemPrecio(item: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = parseFloat(input.value.replace(/,/g, '')) || 0;
+    item.precio_unitario = val;
+    item.precio_total = (parseFloat(item.cantidad_inco) || 0) * val;
+    this.recalcularTotalesMultiItem();
+  }
+
+  actualizarItemUnidad(item: any, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    item.unidad_medida = select.value;
+  }
+
+  abrirModalManual(): void {
+    this.nuevoItemManual = {
+      codigo: '',
+      descripcion: '',
+      cantidad_solicitada: 0,
+      cantidad_inco: 0,
+      unidad_medida: 'unidades',
+      precio_unitario: 0
+    };
+    this.mostrarModalManual = true;
+  }
+
+  cerrarModalManual(): void {
+    this.mostrarModalManual = false;
+  }
+
+  guardarItemManual(): void {
+    if (!this.nuevoItemManual.codigo || !this.nuevoItemManual.codigo.trim()) {
+      Swal.fire('Advertencia', 'Por favor ingrese el código o referencia del ítem', 'warning');
+      return;
+    }
+    if (!this.nuevoItemManual.descripcion || !this.nuevoItemManual.descripcion.trim()) {
+      Swal.fire('Advertencia', 'Por favor ingrese la descripción del ítem', 'warning');
+      return;
+    }
+    const cantInc = parseFloat(this.nuevoItemManual.cantidad_inco as any) || 0;
+    if (cantInc <= 0) {
+      Swal.fire('Advertencia', 'La cantidad a devolver o cancelar debe ser mayor a 0', 'warning');
+      return;
+    }
+
+    const cantSol = parseFloat(this.nuevoItemManual.cantidad_solicitada as any) || cantInc;
+    const precio = parseFloat(this.nuevoItemManual.precio_unitario as any) || 0;
+
+    this.itemsSeleccionados.push({
+      codigo: this.nuevoItemManual.codigo.trim(),
+      descripcion: this.nuevoItemManual.descripcion.trim(),
+      cantidad_solicitada: cantSol,
+      cantidad_inco: cantInc,
+      unidad_medida: this.nuevoItemManual.unidad_medida,
+      precio_unitario: precio,
+      precio_total: cantInc * precio,
+      es_manual: true
+    });
+
+    this.recalcularTotalesMultiItem();
+    this.cerrarModalManual();
+  }
+
+  recalcularTotalesMultiItem(): void {
+    const totalValor = this.itemsSeleccionados.reduce((acc, it) => acc + (parseFloat(it.precio_total) || 0), 0);
+    const totalCantInco = this.itemsSeleccionados.reduce((acc, it) => acc + (parseFloat(it.cantidad_inco) || 0), 0);
+    const totalCantSol = this.itemsSeleccionados.reduce((acc, it) => acc + (parseFloat(it.cantidad_solicitada) || 0), 0);
+
+    this.inconsistenciaForm.patchValue({
+      precio_total: totalValor.toLocaleString('en-US', { maximumFractionDigits: 2 }),
+      cantidad_inco: totalCantInco.toString(),
+      cantidad_solicitada_op: totalCantSol.toString()
+    });
+  }
+
+  get totalMontoMultiItem(): number {
+    return this.itemsSeleccionados.reduce((acc, it) => acc + (parseFloat(it.precio_total) || 0), 0);
+  }
+
+  get totalCantidadMultiItem(): number {
+    return this.itemsSeleccionados.reduce((acc, it) => acc + (parseFloat(it.cantidad_inco) || 0), 0);
+  }
+
+  formatCurrencyView(val: number): string {
+    return (val || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
 
 
@@ -433,6 +674,19 @@ export class GenerarComponent implements OnInit, OnDestroy {
 
   /** Valida y envía el formulario de inconsistencia */
   enviar(): void {
+    // Validar ítems en modo multi-ítem
+    if (this.esMultiItem) {
+      if (this.itemsSeleccionados.length === 0) {
+        Swal.fire('Advertencia', 'Debe seleccionar o agregar al menos un ítem para la devolución o cancelación', 'warning');
+        return;
+      }
+      const itemInvalido = this.itemsSeleccionados.find(it => (parseFloat(it.cantidad_inco) || 0) <= 0);
+      if (itemInvalido) {
+        Swal.fire('Advertencia', `El ítem "${itemInvalido.codigo}" tiene una cantidad a devolver o cancelar menor o igual a cero`, 'warning');
+        return;
+      }
+    }
+
     // Verificar formulario
     if (this.inconsistenciaForm.invalid) {
       const camposInvalidos = Object.entries(this.inconsistenciaForm.controls)
@@ -464,6 +718,11 @@ export class GenerarComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Agregar desglose de múltiples ítems si aplica
+    if (this.esMultiItem && this.itemsSeleccionados.length > 0) {
+      formData.append('items_detalle', JSON.stringify(this.itemsSeleccionados));
+    }
+
     // Agregar imágenes si existen
     if (imagenes && imagenes instanceof FileList && imagenes.length > 0) {
       Array.from(imagenes).forEach((file: File) => {
@@ -478,6 +737,9 @@ export class GenerarComponent implements OnInit, OnDestroy {
         Swal.fire({ icon: 'success', title: 'Éxito', text: 'Inconsistencia registrada correctamente', confirmButtonText: 'Aceptar' });
         this.inconsistenciaForm.reset();
         this.itemsDisponibles = [];
+        this.itemsSeleccionados = [];
+        this.filtroMaterialesSiesa = '';
+        this.mostrarModalManual = false;
         this.ordenesDisponibles = [];
         this.nombresArchivos = [];
         this.inicializarValoresPorDefecto();
@@ -518,5 +780,9 @@ export class GenerarComponent implements OnInit, OnDestroy {
     this.mostrarTablaAccion = false;
     this.accionObligatoria = false;
     this.nombresArchivos = [];
+    this.itemsSeleccionados = [];
+    this.itemsDisponibles = [];
+    this.filtroMaterialesSiesa = '';
+    this.mostrarModalManual = false;
   }
 }

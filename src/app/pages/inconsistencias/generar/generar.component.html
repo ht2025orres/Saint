@@ -122,84 +122,263 @@
               </datalist>
             </div>
 
-            <!-- 9. Ítem (4/12) -->
-            <div class="col-span-1 md:col-span-4 flex flex-col gap-0.5">
-              <label for="nombre_item" class="text-[9px] font-bold text-black uppercase tracking-wide">
-                Ítem <span class="text-rose-500">*</span>
-              </label>
-              <input type="text" id="nombre_item" formControlName="nombre_item" list="items-disponibles" autocomplete="off"
-                     placeholder="Seleccione un ítem..." (change)="onItemSelect($event)"
-                     class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
-                     [class.border-rose-400]="inconsistenciaForm.get('nombre_item')?.invalid && inconsistenciaForm.get('nombre_item')?.touched">
-              <datalist id="items-disponibles">
-                <option *ngFor="let mat of itemsDisponibles" [value]="mat.codigo_completo || mat.id_material || mat.f120_id">
-                  {{ mat.codigo_completo || mat.id_material || mat.f120_id }} - {{ mat.descripcion_material || mat.descripcion }}{{ mat.color_material || mat.color ? ' | ' + (mat.color_material || mat.color) : '' }}{{ mat.talla_material || mat.talla ? ' | ' + (mat.talla_material || mat.talla) : '' }}
-                </option>
-              </datalist>
-            </div>
-
-            <!-- 10. Cantidad Solicitada (2/12) -->
-            <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
-              <label for="cantidad_solicitada_op" class="text-[9px] font-bold text-black uppercase tracking-wide">Cant. Solicitada</label>
-              <input type="text" id="cantidad_solicitada_op" formControlName="cantidad_solicitada_op" (input)="formatearMiles($event)" inputmode="numeric"
-                     class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium">
-            </div>
-
-            <!-- 11. Cantidad Inconsistencia (2/12) -->
-            <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
-              <label for="cantidad_inco" class="text-[9px] font-bold text-black uppercase tracking-wide flex items-center justify-between">
-                <span>Cant. Inconsistencia <span class="text-rose-500">*</span></span>
-                <span *ngIf="inconsistenciaForm.get('cantidad_inco')?.hasError('cantidadExcedida') && inconsistenciaForm.get('cantidad_inco')?.touched" class="text-[8px] text-rose-500 font-bold lowercase tracking-normal">Excede solic.</span>
-              </label>
-              <div class="flex items-stretch gap-1">
-                <input type="text" id="cantidad_inco" formControlName="cantidad_inco" (input)="formatearMiles($event)" inputmode="numeric"
-                       class="flex-1 min-w-0 px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
-                       [class.border-rose-400]="inconsistenciaForm.get('cantidad_inco')?.invalid && inconsistenciaForm.get('cantidad_inco')?.touched">
-                <select id="unidad_medida" formControlName="unidad_medida"
-                        class="w-14 px-1 py-1 bg-white border border-slate-300 rounded text-[10px] text-black focus:border-indigo-500 outline-none font-medium cursor-pointer shrink-0 text-center">
-                  <option value="unidades">Uds</option>
-                  <option value="metros">Mts</option>
-                  <option value="centimetros">Cms</option>
-                </select>
+            <!-- SECCIÓN MONO-ÍTEM (cuando no es Devolución a OP ni Cancelación de Pedido) -->
+            <ng-container *ngIf="!esMultiItem">
+              <!-- 9. Ítem (4/12) -->
+              <div class="col-span-1 md:col-span-4 flex flex-col gap-0.5">
+                <label for="nombre_item" class="text-[9px] font-bold text-black uppercase tracking-wide">
+                  Ítem <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="nombre_item" formControlName="nombre_item" list="items-disponibles" autocomplete="off"
+                       placeholder="Seleccione un ítem..." (change)="onItemSelect($event)"
+                       class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
+                       [class.border-rose-400]="inconsistenciaForm.get('nombre_item')?.invalid && inconsistenciaForm.get('nombre_item')?.touched">
+                <datalist id="items-disponibles">
+                  <option *ngFor="let mat of itemsDisponibles" [value]="mat.codigo_completo || mat.id_material || mat.f120_id">
+                    {{ mat.codigo_completo || mat.id_material || mat.f120_id }} - {{ mat.descripcion_material || mat.descripcion }}{{ mat.color_material || mat.color ? ' | ' + (mat.color_material || mat.color) : '' }}{{ mat.talla_material || mat.talla ? ' | ' + (mat.talla_material || mat.talla) : '' }}
+                  </option>
+                </datalist>
               </div>
-            </div>
 
-            <!-- 12. Precio Unitario (2/12) -->
-            <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
-              <label for="precio_unitario" class="text-[9px] font-bold text-black uppercase tracking-wide flex items-center justify-between">
-                <span>Precio Unid. <span class="text-rose-500">*</span></span>
-                <span *ngIf="isPrecioVacioOCero()" class="text-[8px] text-amber-600 font-bold lowercase tracking-normal">Requerido</span>
-              </label>
-              <div class="relative">
-                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-medium">$</span>
-                <input type="text" id="precio_unitario" formControlName="precio_unitario" (input)="formatearMiles($event)" inputmode="decimal"
-                       placeholder="0"
-                       class="w-full pl-5 pr-6 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
-                       [class.border-rose-400]="inconsistenciaForm.get('precio_unitario')?.invalid && inconsistenciaForm.get('precio_unitario')?.touched">
-                <span *ngIf="isPrecioVacioOCero()" class="absolute right-2 top-1/2 -translate-y-1/2">
-                  <i class="fas fa-exclamation-triangle text-amber-500 text-[9px]"></i>
-                </span>
+              <!-- 10. Cantidad Solicitada (2/12) -->
+              <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
+                <label for="cantidad_solicitada_op" class="text-[9px] font-bold text-black uppercase tracking-wide">Cant. Solicitada</label>
+                <input type="text" id="cantidad_solicitada_op" formControlName="cantidad_solicitada_op" (input)="formatearMiles($event)" inputmode="numeric"
+                       class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium">
               </div>
-            </div>
 
-            <!-- 13. Precio Total (2/12) -->
-            <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
-              <label for="precio_total" class="text-[9px] font-bold text-black uppercase tracking-wide">Precio Total</label>
-              <div class="relative">
-                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-medium">$</span>
-                <input type="text" id="precio_total" formControlName="precio_total" readonly
-                       class="w-full pl-5 pr-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 cursor-not-allowed outline-none">
+              <!-- 11. Cantidad Inconsistencia (2/12) -->
+              <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
+                <label for="cantidad_inco" class="text-[9px] font-bold text-black uppercase tracking-wide flex items-center justify-between">
+                  <span>Cant. Inconsistencia <span class="text-rose-500">*</span></span>
+                  <span *ngIf="inconsistenciaForm.get('cantidad_inco')?.hasError('cantidadExcedida') && inconsistenciaForm.get('cantidad_inco')?.touched" class="text-[8px] text-rose-500 font-bold lowercase tracking-normal">Excede solic.</span>
+                </label>
+                <div class="flex items-stretch gap-1">
+                  <input type="text" id="cantidad_inco" formControlName="cantidad_inco" (input)="formatearMiles($event)" inputmode="numeric"
+                         class="flex-1 min-w-0 px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
+                         [class.border-rose-400]="inconsistenciaForm.get('cantidad_inco')?.invalid && inconsistenciaForm.get('cantidad_inco')?.touched">
+                  <select id="unidad_medida" formControlName="unidad_medida"
+                          class="w-14 px-1 py-1 bg-white border border-slate-300 rounded text-[10px] text-black focus:border-indigo-500 outline-none font-medium cursor-pointer shrink-0 text-center">
+                    <option value="unidades">Uds</option>
+                    <option value="metros">Mts</option>
+                    <option value="centimetros">Cms</option>
+                  </select>
+                </div>
               </div>
-            </div>
 
-            <!-- 14. Descripción Ítem (12/12) -->
-            <div class="col-span-1 md:col-span-12 flex flex-col gap-0.5">
-              <label for="item" class="text-[9px] font-bold text-black uppercase tracking-wide">
-                Descripción Ítem <span class="text-rose-500">*</span>
-              </label>
-              <input type="text" id="item" formControlName="item" placeholder="Descripción extendida del ítem..."
-                     class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
-                     [class.border-rose-400]="inconsistenciaForm.get('item')?.invalid && inconsistenciaForm.get('item')?.touched">
+              <!-- 12. Precio Unitario (2/12) -->
+              <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
+                <label for="precio_unitario" class="text-[9px] font-bold text-black uppercase tracking-wide flex items-center justify-between">
+                  <span>Precio Unid. <span class="text-rose-500">*</span></span>
+                  <span *ngIf="isPrecioVacioOCero()" class="text-[8px] text-amber-600 font-bold lowercase tracking-normal">Requerido</span>
+                </label>
+                <div class="relative">
+                  <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-medium">$</span>
+                  <input type="text" id="precio_unitario" formControlName="precio_unitario" (input)="formatearMiles($event)" inputmode="decimal"
+                         placeholder="0"
+                         class="w-full pl-5 pr-6 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
+                         [class.border-rose-400]="inconsistenciaForm.get('precio_unitario')?.invalid && inconsistenciaForm.get('precio_unitario')?.touched">
+                  <span *ngIf="isPrecioVacioOCero()" class="absolute right-2 top-1/2 -translate-y-1/2">
+                    <i class="fas fa-exclamation-triangle text-amber-500 text-[9px]"></i>
+                  </span>
+                </div>
+              </div>
+
+              <!-- 13. Precio Total (2/12) -->
+              <div class="col-span-1 md:col-span-2 flex flex-col gap-0.5">
+                <label for="precio_total" class="text-[9px] font-bold text-black uppercase tracking-wide">Precio Total</label>
+                <div class="relative">
+                  <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-medium">$</span>
+                  <input type="text" id="precio_total" formControlName="precio_total" readonly
+                         class="w-full pl-5 pr-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-600 cursor-not-allowed outline-none">
+                </div>
+              </div>
+
+              <!-- 14. Descripción Ítem (12/12) -->
+              <div class="col-span-1 md:col-span-12 flex flex-col gap-0.5">
+                <label for="item" class="text-[9px] font-bold text-black uppercase tracking-wide">
+                  Descripción Ítem <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="item" formControlName="item" placeholder="Descripción extendida del ítem..."
+                       class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] text-black focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none font-medium"
+                       [class.border-rose-400]="inconsistenciaForm.get('item')?.invalid && inconsistenciaForm.get('item')?.touched">
+              </div>
+            </ng-container>
+
+            <!-- SECCIÓN MULTI-ÍTEM (Devolución a OP / Cancelación de Pedido) -->
+            <div *ngIf="esMultiItem" class="col-span-1 md:col-span-12 flex flex-col gap-2 p-3 bg-slate-50/90 rounded-xl border border-indigo-200 shadow-2xs">
+              
+              <!-- Encabezado y Acciones -->
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
+                <div>
+                  <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 m-0">
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-indigo-600 text-white text-[10px] font-extrabold shadow-xs">
+                      <i class="fas fa-boxes"></i>
+                    </span>
+                    Asignación de Ítems / Materiales de la Orden
+                  </h3>
+                  <p class="text-[10px] text-slate-500 m-0">
+                    Selecciona los ítems a afectar en la orden, o agrega ítems manualmente si la lista de Siesa no responde o faltan insumos.
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <button type="button" *ngIf="itemsDisponibles.length > 0" (click)="seleccionarTodosLosItems()"
+                          class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer">
+                    <i class="fas fa-check-double text-[9px]"></i>
+                    Seleccionar todos ({{ itemsDisponibles.length }})
+                  </button>
+                  <button type="button" *ngIf="itemsSeleccionados.length > 0" (click)="deseleccionarTodosLosItems()"
+                          class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                    <i class="fas fa-times text-[9px]"></i>
+                    Deseleccionar todos
+                  </button>
+                  <button type="button" (click)="abrirModalManual()"
+                          class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-xs transition-all flex items-center gap-1 cursor-pointer">
+                    <i class="fas fa-plus text-[9px]"></i>
+                    + Agregar ítem manual
+                  </button>
+                </div>
+              </div>
+
+              <!-- Selector de Materiales Siesa (si hay materiales disponibles) -->
+              <div *ngIf="itemsDisponibles.length > 0" class="flex flex-col gap-1.5">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wide">
+                    Materiales disponibles en la OP ({{ itemsDisponibles.length }} encontrados):
+                  </span>
+                  <input type="text" [(ngModel)]="filtroMaterialesSiesa" [ngModelOptions]="{standalone: true}"
+                         placeholder="Buscar por código o descripción..."
+                         class="max-w-xs px-2 py-0.5 bg-white border border-slate-300 rounded text-[10px] text-slate-800 placeholder-slate-400 outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="max-h-36 overflow-y-auto border border-slate-200 rounded-lg bg-white divide-y divide-slate-100">
+                  <div *ngFor="let mat of itemsDisponiblesFiltrados" 
+                       (click)="toggleItemSeleccion(mat)"
+                       [class.bg-indigo-50]="isItemSeleccionado(mat)"
+                       class="px-2.5 py-1.5 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors cursor-pointer text-[11px]">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <input type="checkbox" [checked]="isItemSeleccionado(mat)" (click)="$event.stopPropagation(); toggleItemSeleccion(mat)"
+                             class="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                      <div class="min-w-0">
+                        <span class="font-bold text-slate-900">{{ mat.codigo_completo || mat.id_material || mat.f120_id }}</span>
+                        <span class="text-slate-600 ml-1.5">{{ mat.descripcion_material || mat.descripcion }}</span>
+                        <span *ngIf="mat.color_material || mat.color" class="text-slate-400 text-[10px] ml-1">({{ mat.color_material || mat.color }})</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0 text-[10px] text-slate-500">
+                      <span>Cant OP: <strong class="text-slate-800">{{ mat.cantidad_requerida || mat.cantidad || 0 }} {{ mat.unidad_medida_material || mat.unidad_medida }}</strong></span>
+                      <span>Precio: <strong class="text-emerald-700">{{ formatCurrencyView(mat.precio_unitario_material || mat.precio_unitario || 0) }}</strong></span>
+                      <span *ngIf="isItemSeleccionado(mat)" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-100 text-indigo-800">Seleccionado</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mensaje informativo si no se cargaron materiales de Siesa -->
+              <div *ngIf="itemsDisponibles.length === 0" class="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg flex items-center justify-between gap-2 text-[11px] text-amber-900">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-info-circle text-amber-600 text-sm"></i>
+                  <span>No hay materiales cargados desde Siesa aún. Ingrese el código de orden y presione la lupa, o agregue los materiales directamente con <strong>"+ Agregar ítem manual"</strong>.</span>
+                </div>
+                <button type="button" (click)="abrirModalManual()"
+                        class="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold shrink-0 cursor-pointer">
+                  + Agregar manual
+                </button>
+              </div>
+
+              <!-- TABLA DE ÍTEMS SELECCIONADOS (a devolver / cancelar) -->
+              <div class="mt-1 flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-wide">
+                    Ítems Seleccionados para la Inconsistencia ({{ itemsSeleccionados.length }})
+                  </span>
+                  <span *ngIf="itemsSeleccionados.length === 0" class="text-[10px] text-rose-500 font-bold">
+                    ⚠️ Debe seleccionar o agregar al menos un ítem
+                  </span>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">
+                  <table class="w-full text-left border-collapse text-[11px]">
+                    <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                      <tr>
+                        <th class="py-1 px-2 w-8 text-center">#</th>
+                        <th class="py-1 px-2">Código</th>
+                        <th class="py-1 px-2">Descripción</th>
+                        <th class="py-1 px-2 text-right w-24">Cant. OP</th>
+                        <th class="py-1 px-2 text-right w-28">Cant. Inco *</th>
+                        <th class="py-1 px-2 text-center w-20">Unidad</th>
+                        <th class="py-1 px-2 text-right w-28">Precio Unit. *</th>
+                        <th class="py-1 px-2 text-right w-28">Subtotal</th>
+                        <th class="py-1 px-2 text-center w-12">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      <tr *ngFor="let item of itemsSeleccionados; let idx = index" class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-1 px-2 text-center text-slate-400 font-semibold">{{ idx + 1 }}</td>
+                        <td class="py-1 px-2 font-bold text-slate-900 whitespace-nowrap">
+                          {{ item.codigo }}
+                          <span *ngIf="item.es_manual" class="ml-1 px-1 py-0.2 rounded text-[8px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Manual</span>
+                        </td>
+                        <td class="py-1 px-2 text-slate-700 truncate max-w-[200px]" title="{{ item.descripcion }}">{{ item.descripcion }}</td>
+                        <td class="py-1 px-2 text-right text-slate-500">{{ item.cantidad_solicitada | number }}</td>
+                        <td class="py-1 px-2 text-right">
+                          <input type="text" [value]="item.cantidad_inco" (input)="actualizarItemCantidad(item, $event)" inputmode="decimal"
+                                 class="w-full text-right px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-bold text-rose-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none">
+                        </td>
+                        <td class="py-1 px-2 text-center">
+                          <select [value]="item.unidad_medida" (change)="actualizarItemUnidad(item, $event)"
+                                  class="w-full text-center px-1 py-0.5 bg-white border border-slate-300 rounded text-[10px] text-slate-700 outline-none focus:border-indigo-500">
+                            <option value="unidades">Uds</option>
+                            <option value="metros">Mts</option>
+                            <option value="centimetros">Cms</option>
+                          </select>
+                        </td>
+                        <td class="py-1 px-2 text-right">
+                          <div class="relative">
+                            <span class="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">$</span>
+                            <input type="text" [value]="item.precio_unitario" (input)="actualizarItemPrecio(item, $event)" inputmode="decimal"
+                                   class="w-full pl-3.5 pr-1 py-0.5 text-right bg-white border border-slate-300 rounded text-[11px] font-medium text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none">
+                          </div>
+                        </td>
+                        <td class="py-1 px-2 text-right font-bold text-slate-900 whitespace-nowrap">
+                          {{ formatCurrencyView(item.precio_total) }}
+                        </td>
+                        <td class="py-1 px-2 text-center">
+                          <button type="button" (click)="eliminarItemSeleccionado(idx)"
+                                  class="w-6 h-6 inline-flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                  title="Quitar ítem">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <tr *ngIf="itemsSeleccionados.length === 0">
+                        <td colspan="9" class="py-6 text-center text-slate-400 italic">
+                          No has seleccionado ítems para esta inconsistencia. Marca los materiales arriba o haz clic en "+ Agregar ítem manual".
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot *ngIf="itemsSeleccionados.length > 0" class="bg-indigo-50/70 border-t-2 border-indigo-200 font-bold text-slate-900">
+                      <tr>
+                        <td colspan="3" class="py-2 px-3 text-right uppercase tracking-wider text-[10px]">
+                          Totales ({{ itemsSeleccionados.length }} ítems):
+                        </td>
+                        <td colspan="2" class="py-2 px-2 text-right text-rose-600 font-extrabold text-xs">
+                          {{ totalCantidadMultiItem | number }} uds
+                        </td>
+                        <td colspan="2" class="py-2 px-2 text-right uppercase tracking-wider text-[10px] text-slate-600">
+                          Valor Total:
+                        </td>
+                        <td class="py-2 px-2 text-right text-emerald-700 font-extrabold text-xs whitespace-nowrap">
+                          {{ formatCurrencyView(totalMontoMultiItem) }}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
             </div>
 
             <!-- SEPARADOR -->
@@ -268,6 +447,95 @@
         </div>
 
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL AGREGAR ÍTEM MANUAL -->
+  <div *ngIf="mostrarModalManual" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-scaleUp">
+      <div class="px-4 py-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+        <h4 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 m-0 text-white">
+          <i class="fas fa-plus-circle text-emerald-400"></i>
+          Agregar Ítem Manualmente
+        </h4>
+        <button type="button" (click)="cerrarModalManual()" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="p-4 flex flex-col gap-3 text-[11px]">
+        <div>
+          <label class="block text-[9px] font-bold text-slate-700 uppercase tracking-wide mb-1">
+            Código / Referencia <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" [(ngModel)]="nuevoItemManual.codigo" [ngModelOptions]="{standalone: true}"
+                 placeholder="Ej: 16937-008-4-9999 o HILO-001"
+                 class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-slate-900 outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-[9px] font-bold text-slate-700 uppercase tracking-wide mb-1">
+            Descripción del Material <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" [(ngModel)]="nuevoItemManual.descripcion" [ngModelOptions]="{standalone: true}"
+                 placeholder="Ej: CIERRE NYLON GRIS o TELA POLIESTER"
+                 class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-slate-900 outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[9px] font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Cant. Solicitada OP
+            </label>
+            <input type="number" [(ngModel)]="nuevoItemManual.cantidad_solicitada" [ngModelOptions]="{standalone: true}"
+                   placeholder="0"
+                   class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-slate-900 outline-none focus:border-indigo-500">
+          </div>
+
+          <div>
+            <label class="block text-[9px] font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Cant. Inconsistencia <span class="text-rose-500">*</span>
+            </label>
+            <input type="number" [(ngModel)]="nuevoItemManual.cantidad_inco" [ngModelOptions]="{standalone: true}"
+                   placeholder="0"
+                   class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-slate-900 outline-none focus:border-indigo-500 font-bold text-rose-600">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[9px] font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Unidad de Medida
+            </label>
+            <select [(ngModel)]="nuevoItemManual.unidad_medida" [ngModelOptions]="{standalone: true}"
+                    class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-slate-900 outline-none focus:border-indigo-500">
+              <option value="unidades">Unidades</option>
+              <option value="metros">Metros</option>
+              <option value="centimetros">Centímetros</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[9px] font-bold text-slate-700 uppercase tracking-wide mb-1">
+              Precio Unitario ($) <span class="text-rose-500">*</span>
+            </label>
+            <input type="number" [(ngModel)]="nuevoItemManual.precio_unitario" [ngModelOptions]="{standalone: true}"
+                   placeholder="0"
+                   class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-slate-900 outline-none focus:border-indigo-500">
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button type="button" (click)="cerrarModalManual()"
+                class="px-3 py-1 bg-white border border-slate-300 text-slate-700 rounded text-[11px] font-semibold hover:bg-slate-100 cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" (click)="guardarItemManual()"
+                class="px-4 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold shadow-xs cursor-pointer">
+          ✓ Agregar a la lista
+        </button>
+      </div>
     </div>
   </div>
 </div>

@@ -4,6 +4,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AuthService } from '../../../services/auth.service';
 import { Subscription, tap, switchMap, finalize } from 'rxjs';
 import { getDetallesHtml, generarTiemposHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
+import { TIPOS_INCONSISTENCIA } from '../../../shared/constants/inconsistencias.constants';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -17,8 +18,9 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
 
   inconsistencias: any[] = [];
   currentData: any[] = [];
-  tipos: any = {};
+  tipos: any = { ...TIPOS_INCONSISTENCIA };
   loading = false;
+  esLogistica = false;
 
   // Filtros
   filters = {
@@ -73,30 +75,14 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
   }
 
   private inicializarComponente(): void {
+    this.esLogistica = this.authService.hasAnyPermission([1, 11]);
     this.loadColumnSettings();
     this.cargarTipos();
     this.cargarDatos();
   }
 
   cargarTipos(): void {
-    this.loading = true;
-    fetch('/assets/config/config.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Error al cargar configuración');
-        }
-        return response.json();
-      })
-      .then(json => {
-        this.tipos = json || {};
-      })
-      .catch(error => {
-        this.tipos = {};
-        Swal.fire('Error', 'No se pudo cargar la configuración de tipos', 'warning');
-      })
-      .finally(() => {
-        this.loading = false;
-      });
+    this.tipos = { ...TIPOS_INCONSISTENCIA };
   }
 
   cargarDatos(): void {
@@ -110,37 +96,37 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
     }
 
     this.subscription.add(
-      this.inconsistenciasService.obtenerInconsistenciasListasParaConsumir() // CAMBIO AQUÍ
-        .pipe(
-          tap(res => {
-            this.inconsistencias = Array.isArray(res) ? res : [];
-          }),
-          switchMap(() => {
-            if (this.inconsistencias.length === 0) {
-              this.currentData = [];
-              return [];
-            }
-            return this.paginationService.initializePaginator(
+      this.inconsistenciasService.obtenerInconsistenciasListasParaConsumir().subscribe({
+        next: (res) => {
+          this.inconsistencias = Array.isArray(res) ? res : [];
+          this.loading = false;
+
+          if (this.inconsistencias.length === 0) {
+            this.currentData = [];
+            return;
+          }
+
+          this.subscription.add(
+            this.paginationService.initializePaginator(
               this.paginatorId,
               this.inconsistencias,
               10
-            );
-          }),
-          finalize(() => {
-            this.loading = false;
-          })
-        ).subscribe({
-          next: (state) => {
-            if (state && state.currentData) {
-              this.currentData = state.currentData;
-            }
-          },
-          error: (error) => {
-            this.inconsistencias = [];
-            this.currentData = [];
-            Swal.fire('Error', 'No se pudieron cargar las inconsistencias', 'error');
-          }
-        })
+            ).subscribe({
+              next: (state) => {
+                if (state && state.currentData) {
+                  this.currentData = state.currentData;
+                }
+              }
+            })
+          );
+        },
+        error: (error) => {
+          this.loading = false;
+          this.inconsistencias = [];
+          this.currentData = [];
+          Swal.fire('Error', 'No se pudieron cargar las inconsistencias', 'error');
+        }
+      })
     );
   }
   filtrarDatos(): void {
@@ -243,6 +229,11 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
       archivos = item.evidencias_urls;
     } else if (Array.isArray(item.evidencias) && item.evidencias.length > 0) {
       archivos = item.evidencias;
+    } else if (typeof item.evidencias === 'string' && item.evidencias.trim() !== '') {
+      try {
+        const parsed = JSON.parse(item.evidencias);
+        if (Array.isArray(parsed)) archivos = parsed;
+      } catch (e) {}
     }
 
     // Abrir ventana nativa (pop-up) de inmediato para evitar bloqueos del navegador
@@ -299,6 +290,58 @@ export class RevisionConsumoComponent implements OnInit, OnDestroy {
         if (win) {
           win.document.body.innerHTML = '<p style="color:red; text-align:center; padding:20px;">Error al cargar los tiempos de proceso.</p>';
         }
+      }
+    });
+  }
+
+  puedeReclasificar(item: any): boolean {
+    if (!this.esLogistica || !item) return false;
+    return item.tipo_inconsistencia === 'imperfeccion_tela' || item.reclasificacion_logistica === 'insumo_dano_tela';
+  }
+
+  cambiarReclasificacion(item: any): void {
+    const yaReclasificada = item.reclasificacion_logistica === 'insumo_dano_tela';
+    const nuevoValor = yaReclasificada ? null : 'insumo_dano_tela';
+    const titulo = yaReclasificada 
+      ? '¿Revertir a Imperfecto en Tela?' 
+      : '¿Reclasificar como Insumo por Daño en Tela?';
+    const texto = yaReclasificada
+      ? 'Se eliminará la marca de corrección logística. El tipo volverá a ser visualizado como Imperfecto en Tela.'
+      : 'Se registrará que Logística determinó daño en tela. El tipo original cargado (Imperfecto) se conservará en base de datos y el dashboard reflejará la corrección.';
+
+    Swal.fire({
+      title: titulo,
+      text: texto,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: yaReclasificada ? '#6B7280' : '#D97706',
+      cancelButtonColor: '#9CA3AF',
+      confirmButtonText: yaReclasificada ? 'Sí, revertir' : 'Sí, reclasificar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.loading = true;
+        this.inconsistenciasService.reclasificarInconsistencia(item.id_inconsistencia || item.id, nuevoValor).subscribe({
+          next: (res: any) => {
+            this.loading = false;
+            if (res.success) {
+              item.reclasificacion_logistica = nuevoValor;
+              Swal.fire({
+                title: 'Actualizado ✅',
+                text: 'La clasificación ha sido actualizada.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+              });
+            } else {
+              Swal.fire('Error', res.message || 'No se pudo actualizar.', 'error');
+            }
+          },
+          error: () => {
+            this.loading = false;
+            Swal.fire('Error', 'Ocurrió un error al reclasificar.', 'error');
+          }
+        });
       }
     });
   }

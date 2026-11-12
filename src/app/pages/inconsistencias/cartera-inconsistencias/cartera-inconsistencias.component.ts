@@ -7,6 +7,7 @@ import { SharedModule } from '../../../shared/shared.module';
 import { PaginationService } from '../../../shared/pagination/pagination.service';
 import Swal from 'sweetalert2';
 import { getDetallesHtml, generarTiemposHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
+import { TIPOS_INCONSISTENCIA } from '../../../shared/constants/inconsistencias.constants';
 
 interface InconsistenciaCartera {
   id: number;
@@ -45,7 +46,7 @@ export class CarteraInconsistenciasComponent implements OnInit {
     public paginationService: PaginationService
   ) { }
 
-  tipos_inco: { [key: string]: string } = {};
+  tipos_inco: { [key: string]: string } = { ...TIPOS_INCONSISTENCIA };
 
   ngOnInit(): void {
     this.cargarInconsistencias();
@@ -58,9 +59,7 @@ export class CarteraInconsistenciasComponent implements OnInit {
   }
 
   obtenerTipos() {
-    fetch('/assets/config/config.json')
-      .then(r => r.json())
-      .then(json => this.tipos_inco = json);
+    this.tipos_inco = { ...TIPOS_INCONSISTENCIA };
   }
 
   cargarInconsistencias(): void {

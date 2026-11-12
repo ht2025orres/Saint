@@ -8,6 +8,7 @@ export interface ActividadForm {
   titulo:               string;
   descripcion:          string;
   estado:               string;
+  fecha_inicio:         string;
   fecha_limite_entrega: string;
   responsables:         number[];
   titulo_reapertura?:    string;
@@ -62,6 +63,7 @@ export class ModalActividadComponent implements OnChanges {
       titulo:               ['', [Validators.required, Validators.maxLength(200)]],
       descripcion:          [''],
       estado:               ['pendiente'],
+      fecha_inicio:         [''],
       fecha_limite_entrega: [''],
       titulo_reapertura:    [''],
       descripcion_reapertura: [''],
@@ -151,6 +153,7 @@ export class ModalActividadComponent implements OnChanges {
         titulo:               this.actividad.titulo ?? '',
         descripcion:          this.actividad.descripcion ?? '',
         estado:               this.actividad.estado ?? 'pendiente',
+        fecha_inicio:         this._toLocal(this.actividad.fecha_inicio),
         fecha_limite_entrega: this._toLocal(this.actividad.fecha_limite_entrega),
         titulo_reapertura:    '',
         descripcion_reapertura: '',
@@ -160,7 +163,7 @@ export class ModalActividadComponent implements OnChanges {
     } else {
       this.form.reset({
         proyecto_id: this.proyecto?.id ?? null,
-        titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '',
+        titulo: '', descripcion: '', estado: 'pendiente', fecha_inicio: '', fecha_limite_entrega: '',
         titulo_reapertura: '',
         descripcion_reapertura: '',
       });

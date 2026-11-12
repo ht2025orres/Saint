@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { InconsistenciaService  } from '../../../services/inconsistencia.service';
 import { finalize } from 'rxjs/operators';
+import { getNombreInconsistencia } from '../../../shared/constants/inconsistencias.constants';
 
 @Component({
   selector: 'app-reporte-inconsistencias',
@@ -8,6 +9,10 @@ import { finalize } from 'rxjs/operators';
   styleUrls: ['./reporte-inconsistencias.component.css']
 })
 export class ReporteInconsistenciasComponent implements OnInit {
+
+  getNombreInconsistencia(tipo: string): string {
+    return getNombreInconsistencia(tipo);
+  }
 
   // ==================== VARIABLES DE ESTADO ====================
   

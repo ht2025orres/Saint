@@ -3,6 +3,10 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Role } from '../models/Role';
+import { TIPOS_INCONSISTENCIA, getNombreInconsistencia, getTiposInconsistenciaOpciones } from '../shared/constants/inconsistencias.constants';
+
+// Re-exportar para acceso conveniente desde cualquier importador del servicio
+export { TIPOS_INCONSISTENCIA, getNombreInconsistencia, getTiposInconsistenciaOpciones };
 
 
 @Injectable({
@@ -16,6 +20,11 @@ export class InconsistenciaService {
     private baseURllocal = 'http://127.0.0.1:8000/api/inconsistencias';
     private BaseUrlDashboard = 'http://127.0.0.1:8000/api/dashboardInc';
     public sdpProxyUrl = `${environment.URL_API_LARAVEL}/sdp-files/stream?path=`;
+    public readonly tiposInconsistenciaMap = TIPOS_INCONSISTENCIA;
+
+    getNombreInconsistencia(key: string | null | undefined): string {
+        return getNombreInconsistencia(key);
+    }
 
     constructor(
         private http: HttpClient
@@ -107,7 +116,7 @@ export class InconsistenciaService {
         return this.http.get(`${this.baseUrlCpanel}/listar_inconsistencias_cartera`);
     }
 
-    aprobarInconsistencia(id_inconsistencia: string, motivo: string = '', estado_orden: string | null = null): Observable<any> {
+    aprobarInconsistencia(id_inconsistencia: string | number, motivo: string = '', estado_orden: string | null = null, reclasificacion_logistica: string | null = null): Observable<any> {
         const body: any = {
             id_inconsistencia,
             accion: 'aprobar',
@@ -116,7 +125,17 @@ export class InconsistenciaService {
         if (estado_orden) {
             body.estado_orden = estado_orden;
         }
+        if (reclasificacion_logistica) {
+            body.reclasificacion_logistica = reclasificacion_logistica;
+        }
         return this.http.post(`${this.baseUrlCpanel}/accion_inconsistencia`, body);
+    }
+
+    reclasificarInconsistencia(id_inconsistencia: number, reclasificacion: string | null): Observable<any> {
+        return this.http.post(`${this.baseUrlCpanel}/reclasificar`, {
+            id_inconsistencia,
+            reclasificacion
+        });
     }
 
     denegarInconsistencia(id_inconsistencia: number, motivo: string): Observable<any> {
@@ -328,6 +347,18 @@ export class InconsistenciaService {
             });
         }
         return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/drilldown/motivos`, { params });
+    }
+
+    getDetalleInconsistencias(origen: string, filtros?: any): Observable<any> {
+        let params = new HttpParams().set('origen', origen);
+        if (filtros) {
+            Object.keys(filtros).forEach(key => {
+                if (filtros[key] !== null && filtros[key] !== undefined && filtros[key] !== '') {
+                    params = params.set(key, filtros[key]);
+                }
+            });
+        }
+        return this.http.get(`${this.baseUrlCpanelDashboard}/metricas/detalles`, { params });
     }
 
     // ==================== GESTIÓN DE DEPARTAMENTOS / PROCESOS ====================

@@ -430,13 +430,49 @@ export class ProyectosComponent implements OnInit, OnChanges, OnDestroy {
     this.savingProyecto = true;
     this.cdr.markForCheck();
 
-    const body = { 
+    if (this.proyectoParaEditar && form.fecha_limite_entrega) {
+      this.proyServ.verificarConflictosFechas({
+        tipo: 'proyecto',
+        id: this.proyectoParaEditar.id,
+        fecha_inicio: form.fecha_inicio || undefined,
+        fecha_limite_entrega: form.fecha_limite_entrega,
+      }).subscribe({
+        next: (res) => {
+          const c = res.data;
+          if (c?.recorta_hijos) {
+            Swal.fire({
+              title: '¿Ajustar elementos secundarios?',
+              text: c.mensaje || 'La fecha límite es anterior a algunos elementos secundarios. ¿Desea ajustarlos automáticamente?',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, ajustar hijos',
+              cancelButtonText: 'No, mantener como están',
+              confirmButtonColor: '#3b82f6',
+              cancelButtonColor: '#94a3b8'
+            }).then(dialogResult => {
+              this._ejecutarGuardarProyecto(form, dialogResult.isConfirmed);
+            });
+          } else {
+            this._ejecutarGuardarProyecto(form, false);
+          }
+        },
+        error: () => this._ejecutarGuardarProyecto(form, false)
+      });
+    } else {
+      this._ejecutarGuardarProyecto(form, false);
+    }
+  }
+
+  private _ejecutarGuardarProyecto(form: ProyectoForm, ajustarHijos = false): void {
+    const body: any = { 
       titulo:               form.titulo,
       descripcion:          form.descripcion,
       estado:               form.estado as EstadoProyecto,
-      fecha_limite_entrega: form.fecha_limite_entrega,
+      fecha_inicio:         form.fecha_inicio || null,
+      fecha_limite_entrega: form.fecha_limite_entrega || null,
       es_plantilla:         form.es_plantilla,
-      usuario_id:           this.usuarioId 
+      usuario_id:           this.usuarioId,
+      ajustar_hijos:        ajustarHijos,
     };
 
     const req$ = this.proyectoParaEditar
@@ -547,16 +583,72 @@ export class ProyectosComponent implements OnInit, OnChanges, OnDestroy {
     this.savingActividad = true;
     this.cdr.markForCheck();
 
-    const body = { 
+    this.proyServ.verificarConflictosFechas({
+      tipo: 'actividad',
+      id: this.actividadParaEditar?.id,
+      fecha_inicio: form.fecha_inicio || undefined,
+      fecha_limite_entrega: form.fecha_limite_entrega || undefined,
+      padre_id: this.detalle?.id,
+    }).subscribe({
+      next: (res) => {
+        const c = res.data;
+        if (c?.supera_padre) {
+          Swal.fire({
+            title: '¿Extender fecha límite del proyecto?',
+            text: c.mensaje || 'La fecha límite de la actividad supera a la del proyecto. ¿Desea extender la fecha del proyecto automáticamente?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, extender proyecto',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#94a3b8'
+          }).then((r) => {
+            if (r.isConfirmed) {
+              this._ejecutarGuardarActividad(form, true, false);
+            } else {
+              this.savingActividad = false;
+              this.cdr.markForCheck();
+            }
+          });
+          return;
+        }
+
+        if (c?.recorta_hijos) {
+          Swal.fire({
+            title: '¿Ajustar tareas secundarias?',
+            text: c.mensaje || 'La fecha límite de la actividad es anterior a algunas tareas. ¿Desea ajustarlas automáticamente?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, ajustar tareas',
+            cancelButtonText: 'No, mantener como están',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#94a3b8'
+          }).then((r) => {
+            this._ejecutarGuardarActividad(form, false, r.isConfirmed);
+          });
+          return;
+        }
+
+        this._ejecutarGuardarActividad(form, false, false);
+      },
+      error: () => this._ejecutarGuardarActividad(form, false, false)
+    });
+  }
+
+  private _ejecutarGuardarActividad(form: ActividadForm, extenderPadre = false, ajustarHijos = false): void {
+    const body: any = { 
       proyecto_id:          this.detalle!.id,
       titulo:               form.titulo,
       descripcion:          form.descripcion,
       estado:               form.estado as EstadoActividad,
-      fecha_limite_entrega: form.fecha_limite_entrega,
+      fecha_inicio:         form.fecha_inicio || null,
+      fecha_limite_entrega: form.fecha_limite_entrega || null,
       responsables:         form.responsables,
       usuario_id:           this.usuarioId,
       titulo_reapertura:      form.titulo_reapertura,
-      descripcion_reapertura: form.descripcion_reapertura
+      descripcion_reapertura: form.descripcion_reapertura,
+      extender_padre:       extenderPadre,
+      ajustar_hijos:        ajustarHijos,
     };
 
     const req$ = this.actividadParaEditar
@@ -601,18 +693,58 @@ export class ProyectosComponent implements OnInit, OnChanges, OnDestroy {
     this.savingTarea = true;
     this.cdr.markForCheck();
 
-    const body = { 
+    const padreId = form.actividad_id || form.proyecto_id || this.detalle?.id;
+    this.proyServ.verificarConflictosFechas({
+      tipo: 'tarea',
+      id: this.tareaParaEditar?.id,
+      fecha_inicio: form.fecha_inicio || undefined,
+      fecha_limite_entrega: form.fecha_limite_entrega || undefined,
+      padre_id: padreId || undefined,
+    }).subscribe({
+      next: (res) => {
+        const c = res.data;
+        if (c?.supera_padre) {
+          Swal.fire({
+            title: '¿Extender fecha superior?',
+            text: c.mensaje || 'La fecha límite de la tarea supera a su actividad o proyecto superior. ¿Desea extender la fecha superior automáticamente?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, extender',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#94a3b8'
+          }).then((r) => {
+            if (r.isConfirmed) {
+              this._ejecutarGuardarTarea(form, true);
+            } else {
+              this.savingTarea = false;
+              this.cdr.markForCheck();
+            }
+          });
+          return;
+        }
+
+        this._ejecutarGuardarTarea(form, false);
+      },
+      error: () => this._ejecutarGuardarTarea(form, false)
+    });
+  }
+
+  private _ejecutarGuardarTarea(form: TareaForm, extenderPadre = false): void {
+    const body: any = { 
       actividad_id:         form.actividad_id,
       proyecto_id:          form.proyecto_id,
       titulo:               form.titulo,
       descripcion:          form.descripcion,
       estado:               form.estado as EstadoTarea,
       notas:                form.notas,
-      fecha_limite_entrega: form.fecha_limite_entrega,
+      fecha_inicio:         form.fecha_inicio || null,
+      fecha_limite_entrega: form.fecha_limite_entrega || null,
       responsables:         form.responsables,
       usuario_id:           this.usuarioId,
       titulo_reapertura:      form.titulo_reapertura,
-      descripcion_reapertura: form.descripcion_reapertura
+      descripcion_reapertura: form.descripcion_reapertura,
+      extender_padre:       extenderPadre,
     };
 
     const req$ = this.tareaParaEditar

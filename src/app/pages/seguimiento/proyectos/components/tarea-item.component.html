@@ -41,12 +41,16 @@
       </div>
     </div>
 
-    <!-- Fecha -->
-    <div class="flex items-center gap-2 flex-shrink-0">
+    <!-- Fechas -->
+    <div class="flex items-center gap-1.5 flex-shrink-0">
       <div *ngIf="tarea.created_at" class="text-[9px] font-bold text-slate-400 whitespace-nowrap hidden sm:block" title="Fecha de creación">
         <i class="mdi mdi-calendar-plus mr-0.5"></i>Creada: {{ tarea.created_at | date:'dd/MM/yy' }}
       </div>
-      <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega"
+      <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_inicio" title="Fecha de inicio (ejecución)"
+        class="text-[10px] font-bold text-slate-600 border-2 border-slate-50 rounded-lg px-2 py-1.5 outline-none
+               focus:border-emerald-400 bg-slate-50/50 focus:bg-white transition-all shadow-xs">
+      <span class="text-slate-400 text-[10px] font-bold">→</span>
+      <input type="datetime-local" [(ngModel)]="inlineEditForm.fecha_limite_entrega" title="Fecha límite de entrega"
         class="text-[10px] font-bold text-slate-600 border-2 border-slate-50 rounded-lg px-2 py-1.5 outline-none
                focus:border-amber-400 bg-slate-50/50 focus:bg-white transition-all shadow-xs">
     </div>
@@ -183,9 +187,13 @@
           <i class="mdi mdi-calendar-plus text-slate-400"></i>
           Creada: {{ tarea.created_at | date:'dd MMM, yyyy' }}
         </div>
-        <div *ngIf="tarea.fecha_limite_entrega" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100 text-[9px] font-bold">
+        <div *ngIf="tarea.fecha_inicio" class="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 rounded-lg text-emerald-700 border border-emerald-100 text-[9px] font-bold" title="Fecha de inicio de ejecución">
+          <i class="mdi mdi-calendar-start text-emerald-500"></i>
+          Inicio: {{ tarea.fecha_inicio | date:'dd MMM, HH:mm':'UTC' }}
+        </div>
+        <div *ngIf="tarea.fecha_limite_entrega" class="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100 text-[9px] font-bold" title="Fecha límite de entrega">
           <i class="mdi mdi-calendar-clock text-blue-500"></i>
-          {{ tarea.fecha_limite_entrega | date:'dd MMM, HH:mm':'UTC' }}
+          Fin: {{ tarea.fecha_limite_entrega | date:'dd MMM, HH:mm':'UTC' }}
         </div>
       </div>
 

@@ -13,6 +13,7 @@ export interface TareaForm {
   descripcion:          string;
   estado:               string;
   notas:                string;
+  fecha_inicio:         string;
   fecha_limite_entrega: string;
   responsables:         number[];
   titulo_reapertura?:    string;
@@ -155,6 +156,7 @@ export class ModalTareaComponent implements OnChanges {
       descripcion:          [''],
       estado:               ['pendiente'],
       notas:                [''],
+      fecha_inicio:         [''],
       fecha_limite_entrega: [''],
       titulo_reapertura:    [''],
       descripcion_reapertura: [''],
@@ -256,6 +258,7 @@ export class ModalTareaComponent implements OnChanges {
         descripcion:          this.tarea.descripcion ?? '',
         estado:               this.tarea.estado ?? 'pendiente',
         notas:                this.tarea.notas ?? '',
+        fecha_inicio:         this._toLocal(this.tarea.fecha_inicio),
         fecha_limite_entrega: this._toLocal(this.tarea.fecha_limite_entrega),
         titulo_reapertura:    '',
         descripcion_reapertura: '',
@@ -266,7 +269,7 @@ export class ModalTareaComponent implements OnChanges {
       this.form.reset({
         proyecto_id:  this.proyectoId ?? null,
         actividad_id: this.actividadId ?? null,
-        titulo: '', descripcion: '', estado: 'pendiente', notas: '', fecha_limite_entrega: '',
+        titulo: '', descripcion: '', estado: 'pendiente', notas: '', fecha_inicio: '', fecha_limite_entrega: '',
         titulo_reapertura: '',
         descripcion_reapertura: '',
       });

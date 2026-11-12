@@ -5,6 +5,7 @@ import { PaginationService } from '../../../shared/pagination/pagination.service
 import { AuthService } from '../../../services/auth.service';
 import Swal from 'sweetalert2';
 import { getDetallesHtml, generarTiemposHtml, generarEvidenciasHtml } from '../../../shared/templates/detalles-popup.template';
+import { TIPOS_INCONSISTENCIA } from '../../../shared/constants/inconsistencias.constants';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 @Component({
@@ -17,7 +18,7 @@ export class HistoricoInconsistenciasComponent implements OnInit {
   inconsistencias: any[] = [];
   inconsistenciasFiltradas: any[] = [];
   currentData: any[] = [];
-  tipos_inco: any = {};
+  tipos_inco: any = { ...TIPOS_INCONSISTENCIA };
   paginatorId = 'historicoPaginator';
   modalRef?: BsModalRef;
 
@@ -70,9 +71,7 @@ mostrandoEvidencias = false;
   }
 
   cargarTiposInconsistencias(): void {
-    fetch('/assets/config/config.json')
-      .then(r => r.json())
-      .then(json => this.tipos_inco = json);
+    this.tipos_inco = { ...TIPOS_INCONSISTENCIA };
   }
 
   cargarInconsistencias(): void {

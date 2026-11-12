@@ -7,6 +7,7 @@ interface InlineEditForm {
   titulo:               string;
   descripcion:          string;
   estado:               EstadoTarea;
+  fecha_inicio:         string;
   fecha_limite_entrega: string;
   responsables_ids:     number[];
 }
@@ -107,6 +108,7 @@ export class TareaItemComponent {
       titulo:               this.tarea.titulo,
       descripcion:          this.tarea.descripcion ?? '',
       estado:               this.tarea.estado ?? 'pendiente',
+      fecha_inicio:         this._toLocal(this.tarea.fecha_inicio),
       fecha_limite_entrega: this._toLocal(this.tarea.fecha_limite_entrega),
       responsables_ids:     (this.tarea.responsables ?? []).map((r: any) => Number(r)),
     };
@@ -141,6 +143,7 @@ export class TareaItemComponent {
     this.tarea.titulo = this.inlineEditForm.titulo;
     this.tarea.descripcion = this.inlineEditForm.descripcion;
     this.tarea.estado = this.inlineEditForm.estado;
+    this.tarea.fecha_inicio = this.inlineEditForm.fecha_inicio;
     this.tarea.fecha_limite_entrega = this.inlineEditForm.fecha_limite_entrega;
     this.tarea.responsables = [...this.inlineEditForm.responsables_ids];
 
@@ -152,7 +155,8 @@ export class TareaItemComponent {
       titulo:               this.inlineEditForm.titulo,
       descripcion:          this.inlineEditForm.descripcion,
       estado:               this.inlineEditForm.estado as EstadoTarea,
-      fecha_limite_entrega: this.inlineEditForm.fecha_limite_entrega,
+      fecha_inicio:         this.inlineEditForm.fecha_inicio || null,
+      fecha_limite_entrega: this.inlineEditForm.fecha_limite_entrega || null,
       usuario_id:           this.usuarioId,
       responsables:         [...this.inlineEditForm.responsables_ids],
     };
@@ -497,7 +501,7 @@ export class TareaItemComponent {
   }
 
   private _emptyInlineEditForm(): InlineEditForm {
-    return { titulo: '', descripcion: '', estado: 'pendiente', fecha_limite_entrega: '', responsables_ids: [] };
+    return { titulo: '', descripcion: '', estado: 'pendiente', fecha_inicio: '', fecha_limite_entrega: '', responsables_ids: [] };
   }
 
   private _toLocal(v?: string | null): string {

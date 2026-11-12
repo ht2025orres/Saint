@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
 import { InconsistenciaService } from '../../../services/inconsistencia.service';
+import { getNombreInconsistencia } from '../../../shared/constants/inconsistencias.constants';
 
 @Component({
   selector: 'app-dashboard-financiero-inconsistencias',
@@ -13,32 +14,26 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
   selectedPeriodo: string = 'mes';
   selectedTipo: string = 'todos';
   selectedGrupo: string = 'todos';
+  usarReclasificacion: boolean = true;
+
+  fechaInicioPersonalizada: string = '';
+  fechaFinPersonalizada: string = '';
 
   periodos = [
     { value: 'mes', label: 'Mes actual' },
     { value: 'trimestre', label: 'Trimestre actual' },
     { value: 'semestre', label: 'Semestre actual' },
-    { value: 'anio', label: 'Año completo' },
-    { value: 'anio_anterior', label: 'Año anterior completo' }
+    { value: 'anio', label: 'Año actual completo' },
+    { value: 'anio_anterior', label: 'Año anterior completo' },
+    { value: 'personalizado', label: 'Rango personalizado' }
   ];
 
-  tipos = [
-    { value: 'todos', label: 'Todos los tipos' },
-    { value: 'error_operario', label: 'Error de Operario' },
-    { value: 'prenda_imperfectos', label: 'Prenda con Imperfectos' },
-    { value: 'dano_maquina', label: 'Daño por Máquina' },
-    { value: 'faltante_materiales', label: 'Faltante Materiales' },
-    { value: 'perdida_insumos', label: 'Pérdida de Insumos' },
-    { value: 'error_patronaje', label: 'Error en Patronaje' },
-    { value: 'imperfeccion_tela', label: 'Imperfecto en Tela' }
+  tipos: { value: string, label: string }[] = [
+    { value: 'todos', label: 'Todos los tipos' }
   ];
 
-  grupos = [
-    { value: 'todos', label: 'Todos los grupos' },
-    { value: 'produccion', label: 'Producción' },
-    { value: 'calidad', label: 'Calidad' },
-    { value: 'logistica', label: 'Logística' },
-    { value: 'patronaje', label: 'Patronaje' }
+  grupos: { value: any, label: string }[] = [
+    { value: 'todos', label: 'Todos los procesos' }
   ];
 
   // ─── KPIs ───────────────────────────────────────────────────────────────────
@@ -54,8 +49,12 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
   valorPendienteConsumo: number = 0;
   tasaConsumo: number = 0;
   tiempoPromedioResolucion: number = 0;
-  costoTiempoTotal: number = 0;
-  tarifaHora: number = 8_000;
+
+  // ─── Modal de Detalles y Consumo ─────────────────────────────────────────────
+  modalDetalleAbierto: boolean = false;
+  modalDetalleTitulo: string = '';
+  modalDetalleOrigen: string = '';
+  modalDetalleFiltros: any = {};
 
   // ─── Vista 5: Tablas Analíticas ─────────────────────────────────────────────
   tablaGeneral: any[] = [];
@@ -81,32 +80,43 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
       {
         label: 'Costo Bruto',
         data: [],
+        borderColor: '#002A3F',
+        backgroundColor: 'rgba(0,42,63,0.06)',
+        fill: false,
+        tension: 0.3,
+        pointBackgroundColor: '#002A3F',
+        pointRadius: 4,
+        pointHoverRadius: 6
+      },
+      {
+        label: 'Pérdida Real (Al Gasto)',
+        data: [],
         borderColor: '#ef4444',
         backgroundColor: 'rgba(239,68,68,0.08)',
-        fill: true,
-        tension: 0.4,
+        fill: false,
+        tension: 0.3,
         pointBackgroundColor: '#ef4444',
         pointRadius: 4,
         pointHoverRadius: 6
       },
       {
-        label: 'Costo Neto',
+        label: 'Asumido por OP',
         data: [],
         borderColor: '#f59e0b',
         backgroundColor: 'rgba(245,158,11,0.08)',
-        fill: true,
-        tension: 0.4,
+        fill: false,
+        tension: 0.3,
         pointBackgroundColor: '#f59e0b',
         pointRadius: 4,
         pointHoverRadius: 6
       },
       {
-        label: 'Material Recuperado',
+        label: 'Devoluciones y Aprovechamiento',
         data: [],
         borderColor: '#10b981',
         backgroundColor: 'rgba(16,185,129,0.08)',
-        fill: true,
-        tension: 0.4,
+        fill: false,
+        tension: 0.3,
         pointBackgroundColor: '#10b981',
         pointRadius: 4,
         pointHoverRadius: 6
@@ -121,7 +131,7 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
     plugins: {
       legend: {
         position: 'top',
-        labels: { color: '#374151', font: { size: 12, family: 'Inter, sans-serif' }, padding: 20 }
+        labels: { color: '#374151', font: { size: 12, family: 'Inter, sans-serif' }, padding: 16 }
       },
       tooltip: {
         callbacks: {
@@ -169,7 +179,7 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
         callbacks: {
           label: (ctx) => {
             const total = (ctx.dataset.data as number[]).reduce((a, b) => a + b, 0);
-            const pct = ((ctx.parsed / total) * 100).toFixed(1);
+            const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : '0.0';
             return ` ${ctx.label}: ${this.formatCurrency(ctx.parsed)} (${pct}%)`;
           }
         }
@@ -179,7 +189,7 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
 
   // ─── Chart 2b: Doughnut — Clasificación del Impacto (4 categorías) ───────────
   clasificacionImpactoChartData: ChartData<'doughnut'> = {
-    labels: ['Sobrecosto (Al Gasto)', 'Asumido por OP', 'Dinero en Devoluciones', 'Dinero en Aprovechamiento'],
+    labels: ['Pérdida Real (Al Gasto)', 'Asumido por OP', 'Dinero en Devoluciones', 'Dinero en Aprovechamiento'],
     datasets: [{
       data: [0, 0, 0, 0],
       backgroundColor: ['#ef4444', '#f97316', '#10b981', '#6366f1'],
@@ -251,49 +261,6 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
     }
   };
 
-  // ─── Chart 4: Barras apiladas — Costo de tiempo por etapa ───────────────────
-  costoTiempoChartData: ChartData<'bar'> = {
-    labels: [],
-    datasets: [
-      {
-        label: 'Costo por Hora (×8000)',
-        data: [],
-        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#6366f1', '#ef4444'],
-        borderRadius: 6,
-        borderSkipped: false
-      }
-    ]
-  };
-
-  costoTiempoChartOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const horas = ctx.parsed.y / this.tarifaHora;
-            return [
-              ` Costo: ${this.formatCurrency(ctx.parsed.y)}`,
-              ` Horas: ${horas}h × $${this.formatNumber(this.tarifaHora)}/h`
-            ];
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: '#374151', font: { size: 12 } }
-      },
-      y: {
-        grid: { color: 'rgba(0,0,0,0.05)' },
-        ticks: { color: '#6b7280', font: { size: 11 }, callback: (v) => this.formatCurrencyShort(+v) }
-      }
-    }
-  };
-
   // ─── Chart 5: Barras agrupadas — Consumo por mes ────────────────────────────
   consumoChartData: ChartData<'bar'> = {
     labels: [],
@@ -352,11 +319,67 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
   constructor(private inconsistenciaService: InconsistenciaService) {}
 
   ngOnInit(): void {
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dd = String(hoy.getDate()).padStart(2, '0');
+    this.fechaInicioPersonalizada = `${yyyy}-${mm}-01`;
+    this.fechaFinPersonalizada = `${yyyy}-${mm}-${dd}`;
+
+    this.cargarFiltrosDisponibles();
     this.cargarDatos();
   }
 
+  cargarFiltrosDisponibles(): void {
+    this.inconsistenciaService.getDepartamentos().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.grupos = [
+            { value: 'todos', label: 'Todos los procesos' },
+            ...res.data.map((d: any) => ({
+              value: d.id,
+              label: d.nombre || d.nombre_departamento || `Proceso ${d.id}`
+            }))
+          ];
+        }
+      },
+      error: (err) => console.error('Error cargando departamentos', err)
+    });
+
+    this.inconsistenciaService.getTiposInconsistencia().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.tipos = [
+            { value: 'todos', label: 'Todos los tipos' },
+            ...res.data.map((t: string) => ({
+              value: t,
+              label: this.getNombreInconsistencia(t)
+            }))
+          ];
+        }
+      },
+      error: (err) => console.error('Error cargando tipos de inconsistencia', err)
+    });
+  }
+
   onFiltroChange() {
+    if (this.selectedPeriodo === 'personalizado') {
+      if (!this.fechaInicioPersonalizada || !this.fechaFinPersonalizada) {
+        const hoy = new Date();
+        const yyyy = hoy.getFullYear();
+        const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dd = String(hoy.getDate()).padStart(2, '0');
+        this.fechaInicioPersonalizada = this.fechaInicioPersonalizada || `${yyyy}-${mm}-01`;
+        this.fechaFinPersonalizada = this.fechaFinPersonalizada || `${yyyy}-${mm}-${dd}`;
+      }
+    }
     this.cargarDatos();
+  }
+
+  onFechaPersonalizadaChange() {
+    if (this.selectedPeriodo === 'personalizado' && this.fechaInicioPersonalizada && this.fechaFinPersonalizada) {
+      this.cargarDatos();
+    }
   }
 
   getFiltrosActuales() {
@@ -367,9 +390,18 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
       filtros.tipo_inconsistencia = this.selectedTipo;
     }
 
-    // Filtro de grupo (etapa)
+    // Filtro de grupo (departamento/proceso)
     if (this.selectedGrupo !== 'todos') {
-      filtros.etapa = this.selectedGrupo;
+      filtros.departamento = this.selectedGrupo;
+    }
+
+    // Si el período es personalizado, tomar las fechas seleccionadas directamente
+    if (this.selectedPeriodo === 'personalizado') {
+      if (this.fechaInicioPersonalizada && this.fechaFinPersonalizada) {
+        filtros.fecha_inicio = this.fechaInicioPersonalizada;
+        filtros.fecha_fin = this.fechaFinPersonalizada;
+        return filtros;
+      }
     }
 
     // Calcular fechas según el periodo
@@ -405,6 +437,7 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
 
     filtros.fecha_inicio = formatearFecha(fechaInicio);
     filtros.fecha_fin = formatearFecha(fechaFin);
+    filtros.usar_reclasificacion = this.usarReclasificacion;
 
     return filtros;
   }
@@ -432,36 +465,42 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
           this.valorPendienteConsumo = kpis.valorPendienteConsumo || 0;
           this.tasaConsumo = kpis.tasaConsumo || 0;
           this.tiempoPromedioResolucion = kpis.tiempoPromedioResolucion || 0;
-          this.costoTiempoTotal = kpis.costoTiempoTotal || 0;
 
-          // Charts
+          // Chart 1: Evolución mensual
           if (res.data.charts.costoMensual) {
             this.costoMensualChartData.labels = res.data.charts.costoMensual.labels;
             this.costoMensualChartData.datasets[0].data = res.data.charts.costoMensual.bruto;
-            this.costoMensualChartData.datasets[1].data = res.data.charts.costoMensual.neto;
-            this.costoMensualChartData.datasets[2].data = res.data.charts.costoMensual.recuperado;
+            this.costoMensualChartData.datasets[1].data = res.data.charts.costoMensual.gasto || [];
+            
+            // Asumido por OP = Neto - Gasto
+            const opData = (res.data.charts.costoMensual.neto || []).map((val: number, idx: number) => {
+              const gastoVal = (res.data.charts.costoMensual.gasto && res.data.charts.costoMensual.gasto[idx]) || 0;
+              return Math.max(0, val - gastoVal);
+            });
+            this.costoMensualChartData.datasets[2].data = opData;
+            this.costoMensualChartData.datasets[3].data = res.data.charts.costoMensual.recuperado;
           }
 
+          // Chart 2: Top tipos
           if (res.data.charts.tipos) {
-            this.distribucionTiposChartData.labels = res.data.charts.tipos.labels;
+            const rawLabels = res.data.charts.tipos.labels || [];
+            const formattedLabels = rawLabels.map((l: string) => this.getNombreInconsistencia(l));
+
+            this.distribucionTiposChartData.labels = formattedLabels;
             this.distribucionTiposChartData.datasets[0].data = res.data.charts.tipos.data;
             
-            this.costoPorTipoChartData.labels = res.data.charts.tipos.labels;
+            this.costoPorTipoChartData.labels = formattedLabels;
             this.costoPorTipoChartData.datasets[0].data = res.data.charts.tipos.data;
           }
 
-          if (res.data.charts.tiempo) {
-            this.costoTiempoChartData.labels = res.data.charts.tiempo.labels;
-            this.costoTiempoChartData.datasets[0].data = res.data.charts.tiempo.data;
-          }
-
+          // Chart 3: Consumo por mes
           if (res.data.charts.consumo) {
             this.consumoChartData.labels = res.data.charts.consumo.labels;
             this.consumoChartData.datasets[0].data = res.data.charts.consumo.consumidas;
             this.consumoChartData.datasets[1].data = res.data.charts.consumo.pendientes;
           }
           
-          // Clasificación de impacto (4 categorías desde KPIs)
+          // Clasificación de impacto (4 categorías desde KPIs: Gasto, OP, Devolución, Aprovechamiento)
           this.clasificacionImpactoChartData.datasets[0].data = [
             kpis.costoNetoGasto || 0,
             kpis.costoNetoOP || 0,
@@ -474,7 +513,6 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
           this.costoMensualChartData = { ...this.costoMensualChartData };
           this.distribucionTiposChartData = { ...this.distribucionTiposChartData };
           this.costoPorTipoChartData = { ...this.costoPorTipoChartData };
-          this.costoTiempoChartData = { ...this.costoTiempoChartData };
           this.consumoChartData = { ...this.consumoChartData };
         }
         this.loading = false;
@@ -567,32 +605,7 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
   }
 
   getNombreInconsistencia(key: string): string {
-    const mapping: any = {
-      'ajuste_promedio': 'Ajuste de Promedio',
-      'aprovechamiento_insumos': 'Aprovechamiento de Insumos',
-      'cancelacion_pedido': 'Cancelación de Pedido',
-      'dano_maquina': 'Daño por Máquina',
-      'devolucion_materiales': 'Devolución a la OP',
-      'documental_calidad': 'Documental Calidad',
-      'documental_contabilidad': 'Documental Contabilidad',
-      'empate_tendido': 'Empate de Tendido en Corte',
-      'error_bordado': 'Error de Bordado',
-      'error_corte': 'Error de Corte',
-      'error_operario': 'Error de Operario',
-      'error_patronaje': 'Error en Patronaje',
-      'faltante_lista_materiales': 'Faltante en Lista de Materiales',
-      'faltante_materiales': 'Faltante en Cantidad',
-      'faltante_rollo': 'Faltante en Rollo de Tela',
-      'imperfeccion_tela': 'Imperfecto en Tela',
-      'insumo_imperfecto': 'Insumo Imperfecto',
-      'montaje_modulo': 'Montaje de Módulo',
-      'perdida_insumos': 'Pérdida de Insumo en Planta',
-      'perdida_piezas': 'Pérdida de Piezas en Corte',
-      'prenda_imperfectos': 'Prenda con Imperfectos',
-      'reposicion_produccion': 'Reposición por Producción',
-      'sobrante_tela': 'Sobrante en Rollo de Tela'
-    };
-    return mapping[key] || key;
+    return getNombreInconsistencia(key);
   }
 
   // ─── Utilidades de formato ───────────────────────────────────────────────────
@@ -618,5 +631,17 @@ export class DashboardFinancieroInconsistenciasComponent implements OnInit {
   getProgressCircleStyle(pct: number): string {
     const deg = (pct / 100) * 360;
     return `conic-gradient(#10b981 ${deg}deg, #e5e7eb ${deg}deg)`;
+  }
+
+  // ─── Modal de Detalles (delegated to sub-component) ────────────────────────
+  abrirModalDetalle(origen: string, titulo: string, filtroExtra: any = {}): void {
+    this.modalDetalleOrigen = origen;
+    this.modalDetalleTitulo = titulo;
+    this.modalDetalleFiltros = { ...this.getFiltrosActuales(), ...filtroExtra };
+    this.modalDetalleAbierto = true;
+  }
+
+  cerrarModalDetalle(): void {
+    this.modalDetalleAbierto = false;
   }
 }

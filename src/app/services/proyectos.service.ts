@@ -136,7 +136,7 @@ export interface ConfiguracionSemaforo {
 
 export interface Proyecto {
   id: number; titulo: string; descripcion?: string;
-  estado: EstadoProyecto; fecha_limite_entrega?: string;
+  estado: EstadoProyecto; fecha_inicio?: string; fecha_limite_entrega?: string;
   usuario_creador_id: number;
   creador_nombre?: string;
   proceso_id?: number; proceso_nombre?: string;
@@ -154,7 +154,7 @@ export interface Proyecto {
 
 export interface Actividad {
   id: number; proyecto_id: number; titulo: string; descripcion?: string;
-  estado: EstadoActividad; orden: number; fecha_limite_entrega?: string;
+  estado: EstadoActividad; orden: number; fecha_inicio?: string; fecha_limite_entrega?: string;
   total_tareas?: number; tareas_completadas?: number; tareas_vencidas?: number;
   progreso?: number; semaforo?: Semaforo;
   mis_permisos?: MisPermisos;
@@ -165,12 +165,31 @@ export interface Actividad {
 
 export interface Tarea {
   id: number; actividad_id?: number; proyecto_id?: number; titulo: string; descripcion?: string;
-  estado: EstadoTarea; fecha_limite_entrega?: string; fecha_completado?: string;
+  estado: EstadoTarea; fecha_inicio?: string; fecha_limite_entrega?: string; fecha_completado?: string;
   notas?: string; responsables?: number[]; creado_por: number;
   semaforo?: Semaforo;
   origen?: string;
   evidencias_count?: number;
   created_at: string; updated_at: string;
+}
+
+export interface ConflictoFechas {
+  tiene_conflictos: boolean;
+  supera_padre: boolean;
+  adelanta_padre: boolean;
+  recorta_hijos: boolean;
+  mensaje?: string | null;
+  padre?: {
+    tipo: 'proyecto' | 'actividad';
+    id: number;
+    titulo: string;
+    fecha_inicio?: string;
+    fecha_limite_entrega?: string;
+  } | null;
+  hijos_afectados?: {
+    actividades?: Array<{ id: number; titulo: string; fecha_limite_entrega: string }>;
+    tareas?: Array<{ id: number; titulo: string; fecha_limite_entrega: string }>;
+  };
 }
 
 export interface Informe {
@@ -489,12 +508,22 @@ export class ProyectoService {
     });
   }
 
-  crearProyecto(data: Partial<Proyecto> & { usuario_id: number }): Observable<ApiResponse<Proyecto> & ApiMessage> {
+  crearProyecto(data: Partial<Proyecto> & { usuario_id: number; ajustar_hijos?: boolean }): Observable<ApiResponse<Proyecto> & ApiMessage> {
     return this.http.post<any>(`${this.api}/proyectos`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
-  actualizarProyecto(id: number, data: Partial<Proyecto> & { usuario_id: number }): Observable<ApiMessage> {
+  actualizarProyecto(id: number, data: Partial<Proyecto> & { usuario_id: number; ajustar_hijos?: boolean }): Observable<ApiMessage> {
     return this.http.put<ApiMessage>(`${this.api}/proyectos/${id}`, data).pipe(tap(() => this.notifyRefresh()));
+  }
+
+  verificarConflictosFechas(payload: {
+    tipo: 'proyecto' | 'actividad' | 'tarea';
+    id?: number;
+    fecha_inicio?: string;
+    fecha_limite_entrega?: string;
+    padre_id?: number;
+  }): Observable<ApiResponse<ConflictoFechas>> {
+    return this.http.post<ApiResponse<ConflictoFechas>>(`${this.api}/proyectos/conflictos-fechas`, payload);
   }
 
   eliminarProyecto(id: number, usuarioId: number): Observable<ApiMessage> {
@@ -519,11 +548,11 @@ export class ProyectoService {
 
   // ── ACTIVIDADES ───────────────────────────────────────────────────────────
 
-  crearActividad(data: Partial<Actividad> & { usuario_id: number }): Observable<ApiResponse<Actividad> & ApiMessage> {
+  crearActividad(data: Partial<Actividad> & { usuario_id: number; extender_padre?: boolean; ajustar_hijos?: boolean }): Observable<ApiResponse<Actividad> & ApiMessage> {
     return this.http.post<any>(`${this.api}/actividades`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
-  actualizarActividad(id: number, data: Partial<Actividad> & { usuario_id: number }): Observable<ApiMessage> {
+  actualizarActividad(id: number, data: Partial<Actividad> & { usuario_id: number; extender_padre?: boolean; ajustar_hijos?: boolean }): Observable<ApiMessage> {
     return this.http.put<ApiMessage>(`${this.api}/actividades/${id}`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
@@ -545,11 +574,11 @@ export class ProyectoService {
 
   // ── TAREAS ────────────────────────────────────────────────────────────────
 
-  crearTarea(data: Partial<Tarea> & { usuario_id: number; proyecto_id?: number }): Observable<ApiResponse<Tarea>> {
+  crearTarea(data: Partial<Tarea> & { usuario_id: number; proyecto_id?: number; extender_padre?: boolean }): Observable<ApiResponse<Tarea>> {
     return this.http.post<ApiResponse<Tarea>>(`${this.api}/tareas`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
-  actualizarTarea(id: number, data: Partial<Tarea> & { usuario_id: number }): Observable<ApiResponse<Tarea>> {
+  actualizarTarea(id: number, data: Partial<Tarea> & { usuario_id: number; extender_padre?: boolean }): Observable<ApiResponse<Tarea>> {
     return this.http.put<ApiResponse<Tarea>>(`${this.api}/tareas/${id}`, data).pipe(tap(() => this.notifyRefresh()));
   }
 
