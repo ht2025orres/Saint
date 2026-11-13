@@ -666,29 +666,101 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Cálculos Automáticos
+  // Cálculos Automáticos y Verificación de Conteos
+  tieneReconteoRealizado(v: any): boolean {
+    if (!v) return false;
+    if (v.estado_validacion === 'sin_conteo') return false;
+    if (v.cantidad_conteo === null || v.cantidad_conteo === undefined || isNaN(Number(v.cantidad_conteo))) {
+      return false;
+    }
+    return true;
+  }
+
+  obtenerPrimerConteo(v: any): number | null {
+    if (!v) return null;
+
+    // 1. Buscar en el historial de conteos del propio ítem
+    if (v.historial && Array.isArray(v.historial)) {
+      const h = v.historial.find((itemH: any) => this.normalizeModo(itemH.tipo_conteo) === 'conteo');
+      if (h && h.cantidad !== null && h.cantidad !== undefined && !isNaN(Number(h.cantidad))) {
+        return Number(h.cantidad);
+      }
+    }
+
+    // 2. Si no viene en el historial, buscar en el universo de validaciones
+    if (this.validaciones && Array.isArray(this.validaciones)) {
+      const vConteo = this.validaciones.find((val: any) =>
+        this.normalizeModo(val.tipo_conteo) === 'conteo' &&
+        String(val.id_item).trim() === String(v.id_item).trim() &&
+        String(val.referencia || '').trim() === String(v.referencia || '').trim() &&
+        String(val.id_talla ?? '').trim() === String(v.id_talla ?? '').trim() &&
+        String(val.id_color ?? '').trim() === String(v.id_color ?? '').trim() &&
+        String(val.zona || '').trim() === String(v.zona || '').trim()
+      );
+      if (vConteo && vConteo.cantidad_conteo !== null && vConteo.cantidad_conteo !== undefined && !isNaN(Number(vConteo.cantidad_conteo))) {
+        return Number(vConteo.cantidad_conteo);
+      }
+    }
+
+    return null;
+  }
+
+  primerConteoEsIgualAReconteo(v: any): boolean {
+    const primerConteo = this.obtenerPrimerConteo(v);
+    if (primerConteo === null) return false;
+    const reconteoActual = Number(v.cantidad_conteo);
+    return Math.abs(primerConteo - reconteoActual) < 0.0001;
+  }
+
   marcarPorUmbral(tipo: 'unidades' | 'precio') {
-    const idsParaReconteo: number[] = [];
+    const idsSeleccionados: number[] = [];
+    const esReconteo = this.modoActual === 'reconteo1' || this.modoActual === 'reconteo2';
 
     this.validacionesFiltradas.forEach(v => {
-      if (tipo === 'unidades') {
-        if (Math.abs(v.diferencia) >= this.umbralUnidades) {
-          idsParaReconteo.push(v.id);
+      if (esReconteo) {
+        // En reconteo: sólo para ítems que lleven un reconteo realizado
+        if (!this.tieneReconteoRealizado(v)) return;
+
+        // No seleccionar si su primer conteo y su reconteo son el mismo
+        if (this.primerConteoEsIgualAReconteo(v)) return;
+
+        // Validar que esté en el rango de cantidad o precio indicado (diferencia dentro del rango aceptable para validar)
+        if (tipo === 'unidades') {
+          if (Math.abs(v.diferencia) <= this.umbralUnidades) {
+            idsSeleccionados.push(v.id);
+          }
+        } else {
+          if (v.diferencia_valor <= this.umbralPrecio) {
+            idsSeleccionados.push(v.id);
+          }
         }
       } else {
-        if (v.diferencia_valor >= this.umbralPrecio) {
-          idsParaReconteo.push(v.id);
+        // En primer conteo: marcar para reconteo los que superen o alcancen el umbral
+        if (tipo === 'unidades') {
+          if (Math.abs(v.diferencia) >= this.umbralUnidades) {
+            idsSeleccionados.push(v.id);
+          }
+        } else {
+          if (v.diferencia_valor >= this.umbralPrecio) {
+            idsSeleccionados.push(v.id);
+          }
         }
       }
     });
 
-    if (idsParaReconteo.length === 0) {
-      Swal.fire('Info', 'No se encontraron ítems que superen el umbral', 'info');
+    if (idsSeleccionados.length === 0) {
+      const msg = esReconteo
+        ? `No se encontraron ítems en reconteo dentro del rango de ${tipo} para validar (o sus conteos son idénticos al 1° conteo)`
+        : `No se encontraron ítems que superen el umbral de ${tipo}`;
+      Swal.fire('Info', msg, 'info');
       return;
     }
 
-    this.itemsSeleccionados = new Set(idsParaReconteo);
-    Swal.fire('Seleccionados', `${idsParaReconteo.length} ítems seleccionados por umbral de ${tipo}`, 'success');
+    this.itemsSeleccionados = new Set(idsSeleccionados);
+    const mensajeExito = esReconteo
+      ? `${idsSeleccionados.length} ítems en reconteo seleccionados dentro del rango de ${tipo} para validar (excluidos con primer conteo igual a reconteo)`
+      : `${idsSeleccionados.length} ítems seleccionados por umbral de ${tipo}`;
+    Swal.fire('Seleccionados', mensajeExito, 'success');
   }
 
   // --- NUEVAS FUNCIONALIDADES PARA JUSTIFICACIÓN Y EXPORTACIÓN ---

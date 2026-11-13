@@ -338,6 +338,11 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
     }
 
     if (itemsUniverso.length === 0) {
+      // En modo conteo, tratar zonas sin validaciones como "totalmente_sin_asignar"
+      // para que aparezcan disponibles para asignar (no ocultar como sin_items)
+      if (modo === 'conteo') {
+        return { total: 0, asignados: 0, sinAsignar: 0, estado: 'totalmente_sin_asignar' };
+      }
       return { total: 0, asignados: 0, sinAsignar: 0, estado: 'sin_items' };
     }
 
@@ -386,8 +391,15 @@ export class AsignacionInventarioComponent implements OnInit, AfterViewInit, OnD
   }
 
   get zonasDisponiblesAsignacion() {
+    const modo = this.normalizeModo(this.modoActual);
     let filtradas = this.zonas.filter(z => {
       const stats = this.getZonasEstadoAsignacion(z.nombre);
+      // En modo conteo, mostrar todas las zonas activas aunque no tengan
+      // validaciones cargadas aún (pueden no haberse cargado porque el backend
+      // aún no tenía asignaciones para esa bodega → dependencia circular)
+      if (modo === 'conteo' && stats.estado === 'sin_items') {
+        return true; // La zona es activa; se mostrará como "totalmente_sin_asignar"
+      }
       return stats.estado !== 'sin_items';
     });
 
