@@ -373,25 +373,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
 
   normalizarConteo(conteo: number | null, siesa: number): number | null {
     if (conteo === null || conteo === undefined || isNaN(conteo)) return null;
-    if (siesa <= 0 || conteo === 0) return conteo;
-
-    const factores = [1, 10, 100, 1000, 10000, 0.1, 0.01, 0.001];
-    let mejorValor = conteo;
-    let menorDiff = Math.abs(conteo - siesa);
-
-    for (const f of factores) {
-      const candidato = conteo / f;
-      const diff = Math.abs(candidato - siesa);
-      if (Math.abs(candidato - siesa) < 0.0001) {
-        return candidato;
-      }
-      if (diff < menorDiff) {
-        menorDiff = diff;
-        mejorValor = candidato;
-      }
-    }
-
-    return mejorValor;
+    return Number(conteo);
   }
 
   obtenerConteoMasCercano(conteo: number | null, reconteo1: number | null, reconteo2: number | null, siesa: number): number {
