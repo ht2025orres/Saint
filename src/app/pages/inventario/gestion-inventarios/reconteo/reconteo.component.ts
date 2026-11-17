@@ -524,7 +524,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
 
       const valorFinalConteo = this.obtenerUltimoConteoRealizado(c1Norm, r1Norm, r2Norm);
       const diferencia = valorFinalConteo - item.cantidad_siesa;
-      const diferencia_valor = Math.abs(diferencia * item.costo_unitario);
+      const diferencia_valor = diferencia * item.costo_unitario;
 
       return {
         ...item,
@@ -574,7 +574,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     if (this.filtroUmbral === 'unidades') {
       itemsList = itemsList.filter(i => Math.abs(i.diferencia) >= this.umbralUnidades);
     } else if (this.filtroUmbral === 'precio') {
-      itemsList = itemsList.filter(i => i.diferencia_valor >= this.umbralPrecio);
+      itemsList = itemsList.filter(i => Math.abs(i.diferencia_valor) >= this.umbralPrecio);
     }
 
     this.itemsAgrupadosJustificacion = itemsList;
@@ -747,7 +747,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
             idsSeleccionados.push(v.id);
           }
         } else {
-          if (v.diferencia_valor <= this.umbralPrecio) {
+          if (Math.abs(v.diferencia_valor) <= this.umbralPrecio) {
             idsSeleccionados.push(v.id);
           }
         }
@@ -758,7 +758,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
             idsSeleccionados.push(v.id);
           }
         } else {
-          if (v.diferencia_valor >= this.umbralPrecio) {
+          if (Math.abs(v.diferencia_valor) >= this.umbralPrecio) {
             idsSeleccionados.push(v.id);
           }
         }
@@ -923,7 +923,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
 
         const valorFinal = this.obtenerUltimoConteoRealizado(c1Norm, r1Norm, r2Norm);
         const diferencia = valorFinal - i.cantidad_siesa;
-        const diferenciaValor = Math.abs(diferencia * i.costo_unitario);
+        const diferenciaValor = diferencia * i.costo_unitario;
 
         return {
           'Bodega': i.codigo_bodega,
