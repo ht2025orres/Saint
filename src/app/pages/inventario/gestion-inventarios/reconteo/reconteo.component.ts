@@ -376,32 +376,21 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     return Number(conteo);
   }
 
-  obtenerConteoMasCercano(conteo: number | null, reconteo1: number | null, reconteo2: number | null, siesa: number): number {
-    const conteosDisponibles: number[] = [];
-
-    const c1 = this.normalizarConteo(conteo, siesa);
-    const r1 = this.normalizarConteo(reconteo1, siesa);
-    const r2 = this.normalizarConteo(reconteo2, siesa);
-
-    if (c1 !== null) conteosDisponibles.push(c1);
-    if (r1 !== null) conteosDisponibles.push(r1);
-    if (r2 !== null) conteosDisponibles.push(r2);
-
-    if (conteosDisponibles.length === 0) return 0;
-
-    let mejorConteo = conteosDisponibles[0];
-    let menorDiferencia = Math.abs(mejorConteo - siesa);
-
-    for (let i = 1; i < conteosDisponibles.length; i++) {
-      const val = conteosDisponibles[i];
-      const diff = Math.abs(val - siesa);
-      if (diff < menorDiferencia) {
-        menorDiferencia = diff;
-        mejorConteo = val;
-      }
+  obtenerUltimoConteoRealizado(conteo: number | null, reconteo1: number | null, reconteo2: number | null): number {
+    if (reconteo2 !== null && reconteo2 !== undefined && !isNaN(Number(reconteo2))) {
+      return Number(reconteo2);
     }
+    if (reconteo1 !== null && reconteo1 !== undefined && !isNaN(Number(reconteo1))) {
+      return Number(reconteo1);
+    }
+    if (conteo !== null && conteo !== undefined && !isNaN(Number(conteo))) {
+      return Number(conteo);
+    }
+    return 0;
+  }
 
-    return mejorConteo;
+  obtenerConteoMasCercano(conteo: number | null, reconteo1: number | null, reconteo2: number | null, siesa?: number): number {
+    return this.obtenerUltimoConteoRealizado(conteo, reconteo1, reconteo2);
   }
 
   agruparParaJustificacion(preservePage = false) {
@@ -487,7 +476,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       const r1Norm = this.normalizarConteo(item.reconteo1, item.cantidad_siesa);
       const r2Norm = this.normalizarConteo(item.reconteo2, item.cantidad_siesa);
 
-      const valorFinalConteo = this.obtenerConteoMasCercano(c1Norm, r1Norm, r2Norm, item.cantidad_siesa);
+      const valorFinalConteo = this.obtenerUltimoConteoRealizado(c1Norm, r1Norm, r2Norm);
       const diferencia = valorFinalConteo - item.cantidad_siesa;
       const diferencia_valor = Math.abs(diferencia * item.costo_unitario);
 
@@ -886,7 +875,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
         const r1Norm = this.normalizarConteo(i.reconteo1, i.cantidad_siesa);
         const r2Norm = this.normalizarConteo(i.reconteo2, i.cantidad_siesa);
 
-        const valorFinal = this.obtenerConteoMasCercano(c1Norm, r1Norm, r2Norm, i.cantidad_siesa);
+        const valorFinal = this.obtenerUltimoConteoRealizado(c1Norm, r1Norm, r2Norm);
         const diferencia = valorFinal - i.cantidad_siesa;
         const diferenciaValor = Math.abs(diferencia * i.costo_unitario);
 
