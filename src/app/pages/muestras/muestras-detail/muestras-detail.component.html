@@ -17,24 +17,34 @@
         </button>
         <div class="min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-              Muestras & Taller Técnico
-            </span>
-            <span class="text-slate-300">·</span>
             <h1 class="text-lg font-black text-slate-900 tracking-tight mb-0 truncate">{{ muestra.codigo }}</h1>
             <span class="text-slate-300">·</span>
             <span class="text-sm text-slate-700 font-semibold truncate">{{ muestra.cliente_nombre }}</span>
             <span *ngIf="muestra.cliente_nit" class="text-slate-400 font-mono text-xs">(NIT: {{ muestra.cliente_nit }})</span>
-          </div>
 
-          <div class="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2 flex-wrap">
-            <span *ngIf="muestra.created_at">Creado: {{ muestra.created_at | date:'dd/MM/yyyy' }}</span>
-            <span *ngIf="muestra.usuario_creacion_nombre || muestra.creador" class="flex items-center gap-1">
-              <span>· por</span>
-              <strong class="text-slate-700 font-semibold">{{ muestra.usuario_creacion_nombre || muestra.creador?.name ||
-                (muestra.creador?.nombres ? (muestra.creador?.nombres + ' ' + (muestra.creador?.apellidos || '')) : '') }}</strong>
-              <span *ngIf="muestra.creador?.cargo" class="text-slate-400">({{ muestra.creador.cargo }})</span>
-            </span>
+            <!-- ICONO INFO DETALLES DE CREACIÓN (HOVER) -->
+            <div class="relative group inline-flex items-center ml-1">
+              <button type="button"
+                class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                [title]="'Creado: ' + (muestra.created_at ? (muestra.created_at | date:'dd/MM/yyyy') : 'N/A') + (muestra.usuario_creacion_nombre || muestra.creador ? (' · por ' + (muestra.usuario_creacion_nombre || muestra.creador?.name || (muestra.creador?.nombres ? (muestra.creador?.nombres + ' ' + (muestra.creador?.apellidos || '')) : '')) + (muestra.creador?.cargo ? ' (' + muestra.creador.cargo + ')' : '')) : '')">
+                <i class="bi bi-info-circle text-xs"></i>
+              </button>
+              <div
+                class="absolute left-0 top-full mt-2 hidden group-hover:flex flex-col z-50 bg-slate-900/95 backdrop-blur-xs text-white text-[11px] rounded-xl px-3.5 py-2.5 shadow-xl border border-slate-800 whitespace-nowrap min-w-[220px] pointer-events-none transition-all">
+                <div class="flex items-center gap-2 text-slate-300 mb-1" *ngIf="muestra.created_at">
+                  <i class="bi bi-calendar-event text-blue-400"></i>
+                  <span>Creado: <strong class="text-white">{{ muestra.created_at | date:'dd/MM/yyyy' }}</strong></span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300" *ngIf="muestra.usuario_creacion_nombre || muestra.creador">
+                  <i class="bi bi-person-badge text-emerald-400"></i>
+                  <span>Por: <strong class="text-white">{{ muestra.usuario_creacion_nombre || muestra.creador?.name ||
+                    (muestra.creador?.nombres ? (muestra.creador?.nombres + ' ' + (muestra.creador?.apellidos || '')) : '') }}</strong></span>
+                </div>
+                <div class="text-[10px] text-slate-400 pl-5 font-medium" *ngIf="muestra.creador?.cargo">
+                  {{ muestra.creador.cargo }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -214,9 +224,6 @@
                 {{ materialesData.metricas?.porcentaje_entrega || 0 }}% Despachado
               </span>
             </div>
-            <p class="text-xs text-slate-500 font-normal mb-0 mt-0.5">
-              Control de materiales: {{ materialesData.metricas?.entregados || 0 }} de {{ materialesData.metricas?.total || 0 }} insumos entregados
-            </p>
           </div>
         </div>
 
