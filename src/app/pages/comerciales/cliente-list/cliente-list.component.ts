@@ -14,6 +14,26 @@ interface ClienteConPendientes extends ClienteSiesa {
   solicitudes_pendientes: number;
   oc_pendientes: number;
   en_costeo: number;
+  solicitudes_vencidas: number;
+  solicitudes_por_vencer: number;
+  solicitudes_al_dia: number;
+}
+
+export interface MetricasUrgencia {
+  vencidas: number;
+  porVencer: number;
+  enPlazo: number;
+  sinFecha: number;
+  totalActivas: number;
+}
+
+export interface MetricasMes {
+  nombreMes: string;
+  totalSolicitudesMes: number;
+  totalAprobadasMes: number;
+  totalEnProcesoMes: number;
+  totalOCMes: number;
+  tasaEfectividad: number;
 }
 
 @Component({
@@ -25,10 +45,29 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   // Tabs: solicitudes | clientes | ordenes
   viewMode: 'solicitudes' | 'clientes' | 'ordenes' = 'clientes';
   showAllClientes = false;
-  filtroClientesTipo: 'todos' | 'pendientes' = 'todos';
+  filtroClientesTipo: 'todos' | 'pendientes' | 'vencidas' | 'por_vencer' = 'todos';
+  modoVisualizacionClientes: 'grid' | 'lista' = 'grid';
+  solicitudUrgenciaFilter: '' | 'vencidas' | 'por_vencer' | 'en_plazo' | 'completadas' = '';
   periodoActividadAnios: number = 1;
   totalClientesConPendientes = 0;
   todosClientesConPendientes: ClienteConPendientes[] = [];
+
+  metricasUrgencia: MetricasUrgencia = {
+    vencidas: 0,
+    porVencer: 0,
+    enPlazo: 0,
+    sinFecha: 0,
+    totalActivas: 0,
+  };
+
+  metricasMes: MetricasMes = {
+    nombreMes: '',
+    totalSolicitudesMes: 0,
+    totalAprobadasMes: 0,
+    totalEnProcesoMes: 0,
+    totalOCMes: 0,
+    tasaEfectividad: 0,
+  };
 
   // Clientes
   clientes: ClienteSiesa[] = [];
@@ -233,15 +272,21 @@ export class ClienteListComponent implements OnInit, OnDestroy {
         solicitudes_pendientes: 0,
         oc_pendientes: 0,
         en_costeo: 0,
+        solicitudes_vencidas: 0,
+        solicitudes_por_vencer: 0,
+        solicitudes_al_dia: 0,
       };
       if (c.id) clienteIdMap.set(c.id, item);
       if (c.razon_social) clienteMap.set(c.razon_social.trim().toLowerCase(), item);
     }
 
-    // 2. Contar solicitudes pendientes por cliente
+    // 2. Contar solicitudes pendientes y evaluar urgencia por cliente
     const pendientesEstados = ['BORRADOR', 'ENVIADO'];
     for (const sol of this.solicitudes) {
-      if (pendientesEstados.includes(sol.estado || '') || sol.estado_costeo === 'EN_PROCESO' || sol.estado_muestra === 'EN_PROCESO') {
+      const urg = this.evaluarUrgenciaSolicitud(sol);
+      const esPendiente = pendientesEstados.includes(sol.estado || '') || sol.estado_costeo === 'EN_PROCESO' || sol.estado_muestra === 'EN_PROCESO';
+
+      if (esPendiente || urg.tipo === 'VENCIDA' || urg.tipo === 'POR_VENCER') {
         const nameKey = (sol.cliente_nombre || '').trim().toLowerCase();
         let target = sol.cliente_id ? clienteIdMap.get(sol.cliente_id) : undefined;
         if (!target && nameKey) target = clienteMap.get(nameKey);
@@ -254,14 +299,27 @@ export class ClienteListComponent implements OnInit, OnDestroy {
             solicitudes_pendientes: 0,
             oc_pendientes: 0,
             en_costeo: 0,
+            solicitudes_vencidas: 0,
+            solicitudes_por_vencer: 0,
+            solicitudes_al_dia: 0,
           };
           if (sol.cliente_id) clienteIdMap.set(sol.cliente_id, target);
           if (nameKey) clienteMap.set(nameKey, target);
         }
 
-        target.solicitudes_pendientes++;
-        if (sol.estado_costeo === 'EN_PROCESO') {
-          target.en_costeo++;
+        if (esPendiente) {
+          target.solicitudes_pendientes++;
+          if (sol.estado_costeo === 'EN_PROCESO') {
+            target.en_costeo++;
+          }
+        }
+
+        if (urg.tipo === 'VENCIDA') {
+          target.solicitudes_vencidas++;
+        } else if (urg.tipo === 'POR_VENCER') {
+          target.solicitudes_por_vencer++;
+        } else if (urg.tipo === 'EN_PLAZO') {
+          target.solicitudes_al_dia++;
         }
       }
     }
@@ -279,6 +337,9 @@ export class ClienteListComponent implements OnInit, OnDestroy {
             solicitudes_pendientes: 0,
             oc_pendientes: 0,
             en_costeo: 0,
+            solicitudes_vencidas: 0,
+            solicitudes_por_vencer: 0,
+            solicitudes_al_dia: 0,
           };
           if (nameKey) clienteMap.set(nameKey, target);
         }
@@ -289,8 +350,14 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     // 4. Lista consolidada
     const list = Array.from(new Set([...clienteIdMap.values(), ...clienteMap.values()]));
 
-    // Ordenar: primero aquellos con trámites pendientes, luego alfabéticamente
+    // Ordenar: primero aquellos con vencidas, luego por vencer, luego pendientes, luego alfabéticamente
     list.sort((a, b) => {
+      if (b.solicitudes_vencidas !== a.solicitudes_vencidas) {
+        return b.solicitudes_vencidas - a.solicitudes_vencidas;
+      }
+      if (b.solicitudes_por_vencer !== a.solicitudes_por_vencer) {
+        return b.solicitudes_por_vencer - a.solicitudes_por_vencer;
+      }
       const pendA = a.solicitudes_pendientes + a.oc_pendientes;
       const pendB = b.solicitudes_pendientes + b.oc_pendientes;
       if (pendB !== pendA) return pendB - pendA;
@@ -326,6 +393,176 @@ export class ClienteListComponent implements OnInit, OnDestroy {
 
     this.totalSolicitudesPendientes = this.solicitudes.filter(s => ['BORRADOR', 'ENVIADO'].includes(s.estado || '')).length;
     this.totalOCPendientes = this.ordenes.filter(o => o.estado === 'PENDIENTE').length;
+
+    // Métricas de Urgencia y Comportamiento del Mes
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const ahora = new Date();
+    const anioActual = ahora.getFullYear();
+    const mesIdx = ahora.getMonth();
+    const mesPrefijo = `${anioActual}-${String(mesIdx + 1).padStart(2, '0')}`;
+    const nombreMes = `${meses[mesIdx]} ${anioActual}`;
+
+    let vencidas = 0;
+    let porVencer = 0;
+    let enPlazo = 0;
+    let sinFecha = 0;
+    let totalActivas = 0;
+
+    let totalSolicitudesMes = 0;
+    let totalAprobadasMes = 0;
+    let totalEnProcesoMes = 0;
+
+    for (const sol of this.solicitudes) {
+      const urg = this.evaluarUrgenciaSolicitud(sol);
+      if (urg.tipo !== 'COMPLETADA') {
+        totalActivas++;
+        if (urg.tipo === 'VENCIDA') vencidas++;
+        else if (urg.tipo === 'POR_VENCER') porVencer++;
+        else if (urg.tipo === 'EN_PLAZO') enPlazo++;
+        else if (urg.tipo === 'SIN_FECHA') sinFecha++;
+      }
+
+      const fReg = (sol.created_at || '').substring(0, 7);
+      if (fReg === mesPrefijo) {
+        totalSolicitudesMes++;
+        if (['APROBADO', 'COSTEADO'].includes(sol.estado || '')) {
+          totalAprobadasMes++;
+        } else {
+          totalEnProcesoMes++;
+        }
+      }
+    }
+
+    const totalOCMes = this.estadisticasOC?.ordenes_mes_actual ?? this.ordenes.filter(o => {
+      const f = (o.fecha_recepcion || o.fecha_registro || o.created_at || '').substring(0, 7);
+      return f === mesPrefijo;
+    }).length;
+
+    const tasaEfectividad = totalSolicitudesMes > 0
+      ? Math.round((totalAprobadasMes / totalSolicitudesMes) * 100)
+      : (totalAprobadasMes > 0 ? 100 : 0);
+
+    this.metricasUrgencia = { vencidas, porVencer, enPlazo, sinFecha, totalActivas };
+    this.metricasMes = {
+      nombreMes,
+      totalSolicitudesMes,
+      totalAprobadasMes,
+      totalEnProcesoMes,
+      totalOCMes,
+      tasaEfectividad,
+    };
+  }
+
+  evaluarUrgenciaSolicitud(sol: Solicitud): {
+    tipo: 'VENCIDA' | 'POR_VENCER' | 'EN_PLAZO' | 'COMPLETADA' | 'SIN_FECHA';
+    diasDiferencia: number | null;
+    diasTexto: string;
+    badgeClass: string;
+  } {
+    const estado = sol.estado || '';
+    if (['APROBADO', 'RECHAZADO'].includes(estado)) {
+      return { tipo: 'COMPLETADA', diasDiferencia: null, diasTexto: 'Completada', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    }
+
+    const costeoListo = !sol.requiere_costeo || sol.estado_costeo === 'COMPLETADO';
+    const muestraLista = !sol.requiere_muestra || sol.estado_muestra === 'COMPLETADO';
+    if (costeoListo && muestraLista && estado === 'COSTEADO') {
+      return { tipo: 'COMPLETADA', diasDiferencia: null, diasTexto: 'Completada', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    let menorDiffDias: number | null = null;
+
+    const parseFechaDiff = (fechaStr: string): number => {
+      const parts = fechaStr.split(/[-T ]/);
+      let d: Date;
+      if (parts.length >= 3) {
+        d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      } else {
+        d = new Date(fechaStr);
+      }
+      d.setHours(0, 0, 0, 0);
+      return Math.ceil((d.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+    };
+
+    if (sol.requiere_costeo && sol.estado_costeo !== 'COMPLETADO' && sol.fecha_entrega_cotizacion) {
+      const diff = parseFechaDiff(sol.fecha_entrega_cotizacion);
+      menorDiffDias = (menorDiffDias === null) ? diff : Math.min(menorDiffDias, diff);
+    }
+
+    if (sol.requiere_muestra && sol.estado_muestra !== 'COMPLETADO' && sol.fecha_entrega_muestra) {
+      const diff = parseFechaDiff(sol.fecha_entrega_muestra);
+      menorDiffDias = (menorDiffDias === null) ? diff : Math.min(menorDiffDias, diff);
+    }
+
+    if (menorDiffDias === null) {
+      return { tipo: 'SIN_FECHA', diasDiferencia: null, diasTexto: 'Sin fecha límite', badgeClass: 'bg-slate-50 text-slate-400 border-slate-200' };
+    }
+
+    if (menorDiffDias < 0) {
+      const dias = Math.abs(menorDiffDias);
+      return {
+        tipo: 'VENCIDA',
+        diasDiferencia: menorDiffDias,
+        diasTexto: `Vencida hace ${dias}d`,
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
+      };
+    } else if (menorDiffDias === 0) {
+      return {
+        tipo: 'POR_VENCER',
+        diasDiferencia: 0,
+        diasTexto: 'Vence hoy',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 font-bold'
+      };
+    } else if (menorDiffDias <= 3) {
+      return {
+        tipo: 'POR_VENCER',
+        diasDiferencia: menorDiffDias,
+        diasTexto: `Vence en ${menorDiffDias}d`,
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 font-bold'
+      };
+    } else {
+      return {
+        tipo: 'EN_PLAZO',
+        diasDiferencia: menorDiffDias,
+        diasTexto: `En plazo (${menorDiffDias}d)`,
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium'
+      };
+    }
+  }
+
+  getClientesConVencidasCount(): number {
+    return this.todosClientesConPendientes.filter(c => c.solicitudes_vencidas > 0).length;
+  }
+
+  getClientesConPorVencerCount(): number {
+    return this.todosClientesConPendientes.filter(c => c.solicitudes_por_vencer > 0).length;
+  }
+
+  setModoVisualizacion(modo: 'grid' | 'lista'): void {
+    this.modoVisualizacionClientes = modo;
+  }
+
+  setFiltroClientesTipo(tipo: 'todos' | 'pendientes' | 'vencidas' | 'por_vencer'): void {
+    this.filtroClientesTipo = tipo;
+    this.applyClienteFilters();
+  }
+
+  setFiltroUrgenciaSolicitudes(filtro: '' | 'vencidas' | 'por_vencer' | 'en_plazo' | 'completadas'): void {
+    this.solicitudUrgenciaFilter = filtro;
+    this.applySolicitudFilters();
+  }
+
+  filtrarPorUrgencia(urgencia: 'vencidas' | 'por_vencer' | 'todos'): void {
+    if (this.viewMode === 'solicitudes') {
+      this.solicitudUrgenciaFilter = urgencia === 'todos' ? '' : urgencia;
+      this.applySolicitudFilters();
+    } else {
+      this.filtroClientesTipo = urgencia;
+      this.applyClienteFilters();
+    }
   }
 
   // ==================== TABS ====================
@@ -399,15 +636,14 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.loadClientes();
   }
 
-  setFiltroClientesTipo(tipo: 'todos' | 'pendientes'): void {
-    this.filtroClientesTipo = tipo;
-    this.applyClienteFilters();
-  }
-
   applyClienteFilters(): void {
     let result = [...this.todosClientesConPendientes];
 
-    if (this.filtroClientesTipo === 'pendientes') {
+    if (this.filtroClientesTipo === 'vencidas') {
+      result = result.filter(c => c.solicitudes_vencidas > 0);
+    } else if (this.filtroClientesTipo === 'por_vencer') {
+      result = result.filter(c => c.solicitudes_por_vencer > 0);
+    } else if (this.filtroClientesTipo === 'pendientes') {
       result = result.filter(c => (c.solicitudes_pendientes > 0 || c.oc_pendientes > 0 || c.en_costeo > 0));
     }
 
@@ -472,6 +708,16 @@ export class ClienteListComponent implements OnInit, OnDestroy {
       result = result.filter(c => c.requiere_costeo);
     } else if (this.solicitudTipoFilter === 'muestra') {
       result = result.filter(c => c.requiere_muestra);
+    }
+    if (this.solicitudUrgenciaFilter) {
+      result = result.filter(s => {
+        const urg = this.evaluarUrgenciaSolicitud(s);
+        if (this.solicitudUrgenciaFilter === 'vencidas') return urg.tipo === 'VENCIDA';
+        if (this.solicitudUrgenciaFilter === 'por_vencer') return urg.tipo === 'POR_VENCER';
+        if (this.solicitudUrgenciaFilter === 'en_plazo') return urg.tipo === 'EN_PLAZO';
+        if (this.solicitudUrgenciaFilter === 'completadas') return urg.tipo === 'COMPLETADA';
+        return true;
+      });
     }
     this.filteredSolicitudes = result;
     this.initSolicitudesPaginator();
