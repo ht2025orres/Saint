@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -27,6 +28,7 @@ export interface Cliente {
 })
 export class OrdenCompraService {
   private apiLaravelUrl = environment.URL_API_LARAVEL;
+  private ordenesCache = new Map<string, { data: any; timestamp: number }>();
 
   constructor(
     private http: HttpClient,
@@ -37,7 +39,17 @@ export class OrdenCompraService {
     return this.authService.user?.id || 0;
   }
 
-  obtenerOrdenes(params?: any): Observable<{ success: boolean; data: OrdenCompra[] }> {
+  clearOrdenesCache(): void {
+    this.ordenesCache.clear();
+  }
+
+  obtenerOrdenes(params?: any, forceRefresh = false): Observable<{ success: boolean; data: OrdenCompra[] }> {
+    const cacheKey = JSON.stringify(params || {});
+    const cached = this.ordenesCache.get(cacheKey);
+    const ahora = Date.now();
+    if (!forceRefresh && cached && (ahora - cached.timestamp < 60 * 1000)) { // 1 minuto
+      return of(cached.data);
+    }
     return this.http.get<{ success: boolean; data: OrdenCompra[] }>(
       `${this.apiLaravelUrl}/ordenes-compra`,
       {
@@ -46,6 +58,12 @@ export class OrdenCompraService {
           usuario_id: this.getUsuarioActual()
         }
       }
+    ).pipe(
+      tap(res => {
+        if (res && res.success) {
+          this.ordenesCache.set(cacheKey, { data: res, timestamp: Date.now() });
+        }
+      })
     );
   }
 

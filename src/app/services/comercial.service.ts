@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -127,6 +128,11 @@ export interface Solicitud {
 export class ComercialService {
   private api = environment.URL_API_LARAVEL;
 
+  // Cache en memoria para navegación instantánea
+  private clientesCache = new Map<string, { data: any; timestamp: number }>();
+  private solicitudesCache = new Map<string, { data: any; timestamp: number }>();
+  private itemsClienteCache = new Map<string, { data: any; timestamp: number }>();
+
   constructor(
     private http: HttpClient,
     private authService: AuthService
@@ -136,23 +142,65 @@ export class ComercialService {
     return this.authService.user?.id || 0;
   }
 
+  clearClientesCache(): void {
+    this.clientesCache.clear();
+  }
+
+  clearSolicitudesCache(): void {
+    this.solicitudesCache.clear();
+  }
+
+  clearItemsCache(clienteId?: number): void {
+    if (clienteId) {
+      for (const k of this.itemsClienteCache.keys()) {
+        if (k.startsWith(`${clienteId}_`)) this.itemsClienteCache.delete(k);
+      }
+    } else {
+      this.itemsClienteCache.clear();
+    }
+  }
+
   // ==================== CLIENTES ====================
 
-  listarClientes(filtros?: { anios?: number; todos?: boolean }): Observable<{ success: boolean; data: ClienteSiesa[] }> {
+  listarClientes(filtros?: { anios?: number; todos?: boolean }, forceRefresh = false): Observable<{ success: boolean; data: ClienteSiesa[] }> {
+    const cacheKey = JSON.stringify(filtros || {});
+    const cached = this.clientesCache.get(cacheKey);
+    const ahora = Date.now();
+    if (!forceRefresh && cached && (ahora - cached.timestamp < 3 * 60 * 1000)) { // 3 minutos
+      return of(cached.data);
+    }
     let params = new HttpParams();
     if (filtros?.anios !== undefined) params = params.set('anios', filtros.anios.toString());
     if (filtros?.todos) params = params.set('todos', '1');
-    return this.http.get<any>(`${this.api}/comerciales/clientes`, { params });
+    return this.http.get<any>(`${this.api}/comerciales/clientes`, { params }).pipe(
+      tap(res => {
+        if (res && res.success) {
+          this.clientesCache.set(cacheKey, { data: res, timestamp: Date.now() });
+        }
+      })
+    );
   }
 
   buscarClientes(word: string): Observable<{ success: boolean; data: ClienteSiesa[] }> {
     return this.http.get<any>(`${this.api}/comerciales/clientes/buscar/${encodeURIComponent(word)}`);
   }
 
-  itemsCliente(clienteId: number, deep: boolean = false): Observable<{ success: boolean; data: ItemSiesa[] }> {
+  itemsCliente(clienteId: number, deep: boolean = false, forceRefresh = false): Observable<{ success: boolean; data: ItemSiesa[] }> {
+    const cacheKey = `${clienteId}_${deep}`;
+    const cached = this.itemsClienteCache.get(cacheKey);
+    const ahora = Date.now();
+    if (!forceRefresh && cached && (ahora - cached.timestamp < 5 * 60 * 1000)) { // 5 minutos
+      return of(cached.data);
+    }
     let params = new HttpParams();
     if (deep) params = params.set('deep', 'true');
-    return this.http.get<any>(`${this.api}/comerciales/clientes/${clienteId}/items`, { params });
+    return this.http.get<any>(`${this.api}/comerciales/clientes/${clienteId}/items`, { params }).pipe(
+      tap(res => {
+        if (res && res.success) {
+          this.itemsClienteCache.set(cacheKey, { data: res, timestamp: Date.now() });
+        }
+      })
+    );
   }
 
   buscarItemsCliente(clienteId: number, word: string, deep: boolean = false): Observable<{ success: boolean; data: ItemSiesa[] }> {
@@ -171,7 +219,13 @@ export class ComercialService {
 
   // ==================== SOLICITUDES ====================
 
-  listarSolicitudes(filtros?: any): Observable<{ success: boolean; data: Solicitud[] }> {
+  listarSolicitudes(filtros?: any, forceRefresh = false): Observable<{ success: boolean; data: Solicitud[] }> {
+    const cacheKey = JSON.stringify(filtros || {});
+    const cached = this.solicitudesCache.get(cacheKey);
+    const ahora = Date.now();
+    if (!forceRefresh && cached && (ahora - cached.timestamp < 60 * 1000)) { // 1 minuto
+      return of(cached.data);
+    }
     let params = new HttpParams();
     if (filtros) {
       Object.keys(filtros).forEach(k => {
@@ -180,10 +234,17 @@ export class ComercialService {
         }
       });
     }
-    return this.http.get<any>(`${this.api}/comerciales/solicitudes`, { params });
+    return this.http.get<any>(`${this.api}/comerciales/solicitudes`, { params }).pipe(
+      tap(res => {
+        if (res && res.success) {
+          this.solicitudesCache.set(cacheKey, { data: res, timestamp: Date.now() });
+        }
+      })
+    );
   }
 
   crearSolicitud(data: any): Observable<{ success: boolean; data: Solicitud; message: string }> {
+    this.clearSolicitudesCache();
     return this.http.post<any>(`${this.api}/comerciales/solicitudes`, {
       ...data,
       usuario_id: this.uid()
@@ -195,6 +256,7 @@ export class ComercialService {
   }
 
   actualizarSolicitud(id: number, data: any): Observable<{ success: boolean; data: Solicitud }> {
+    this.clearSolicitudesCache();
     return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}`, {
       ...data,
       usuario_id: this.uid()
@@ -202,6 +264,7 @@ export class ComercialService {
   }
 
   cambiarEstado(id: number, estado: string): Observable<any> {
+    this.clearSolicitudesCache();
     return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}/estado`, {
       estado,
       usuario_id: this.uid()
@@ -209,6 +272,7 @@ export class ComercialService {
   }
 
   cambiarEstadoCosteo(id: number, estado_costeo: string): Observable<any> {
+    this.clearSolicitudesCache();
     return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}/estado-costeo`, {
       estado_costeo,
       usuario_id: this.uid()
@@ -216,6 +280,7 @@ export class ComercialService {
   }
 
   cambiarEstadoMuestra(id: number, estado_muestra: string): Observable<any> {
+    this.clearSolicitudesCache();
     return this.http.put<any>(`${this.api}/comerciales/solicitudes/${id}/estado-muestra`, {
       estado_muestra,
       usuario_id: this.uid()

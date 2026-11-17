@@ -27,7 +27,11 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
 
   // Solicitudes del cliente
   solicitudes: Solicitud[] = [];
+  filteredSolicitudes: Solicitud[] = [];
   pagedSolicitudes: Solicitud[] = [];
+  solicitudSearch = '';
+  solicitudEstadoFilter = '';
+  solicitudUrgenciaFilter: '' | 'vencidas' | 'por_vencer' | 'en_plazo' = '';
   isLoadingSolicitudes = false;
 
   // Órdenes del cliente
@@ -36,6 +40,17 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   isLoadingOrdenes = false;
 
   activeTab: 'solicitudes' | 'items' | 'ordenes' = 'solicitudes';
+
+  // Métricas del cliente
+  metricasCliente = {
+    vencidas: 0,
+    porVencer: 0,
+    enPlazo: 0,
+    totalActivas: 0,
+    totalItems: 0,
+    totalOC: 0,
+    ocPendientes: 0
+  };
 
   // Pagination
   readonly itemsPaginatorId = 'comerciales-items';
@@ -65,9 +80,16 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
       this.activeTab = 'solicitudes';
     }
 
-    this.loadItems();
+    // Carga rápida: solicitudes y órdenes primero
     this.loadSolicitudes();
     this.loadOrdenes();
+
+    // Si la pestaña inicial es items, cargar items de inmediato; si no, diferirlo
+    if (this.activeTab === 'items') {
+      this.loadItems();
+    } else {
+      setTimeout(() => this.loadItemsSilencioso(), 400);
+    }
   }
 
   private loadTailwind(): void {
@@ -94,6 +116,19 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     this.paginationService.destroyPaginator(this.ordenesPaginatorId);
   }
 
+  switchTab(tab: 'solicitudes' | 'items' | 'ordenes'): void {
+    this.activeTab = tab;
+    if (tab === 'items' && this.items.length === 0 && !this.isLoading) {
+      this.loadItems();
+    }
+    if (tab === 'ordenes' && this.ordenes.length === 0 && !this.isLoadingOrdenes) {
+      this.loadOrdenes();
+    }
+    if (tab === 'solicitudes' && this.solicitudes.length === 0 && !this.isLoadingSolicitudes) {
+      this.loadSolicitudes();
+    }
+  }
+
   // ==================== ITEMS ====================
   loadItems(): void {
     this.isLoading = true;
@@ -101,12 +136,25 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.items = res.data || [];
         this.applyFilters();
+        this.metricasCliente.totalItems = this.items.length;
         this.isLoading = false;
       },
       error: () => {
         Swal.fire('Error', 'No se pudieron cargar los ítems del cliente', 'error');
         this.isLoading = false;
       }
+    });
+  }
+
+  private loadItemsSilencioso(): void {
+    if (this.items.length > 0 || this.isLoading) return;
+    this.comercialService.itemsCliente(this.clienteId).subscribe({
+      next: (res) => {
+        this.items = res.data || [];
+        this.filteredItems = [...this.items];
+        this.metricasCliente.totalItems = this.items.length;
+      },
+      error: () => {}
     });
   }
 
@@ -164,20 +212,237 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         this.solicitudes = res.data || [];
-        this.initSolicitudesPaginator();
+        this.computeMetricasCliente();
+        this.applySolicitudFilters();
         this.isLoadingSolicitudes = false;
       },
       error: () => { this.isLoadingSolicitudes = false; }
     });
   }
 
+  applySolicitudFilters(): void {
+    let result = [...this.solicitudes];
+    if (this.solicitudSearch.trim()) {
+      const term = this.solicitudSearch.toLowerCase();
+      result = result.filter(s =>
+        s.codigo?.toLowerCase().includes(term) ||
+        s.cliente_nombre?.toLowerCase().includes(term)
+      );
+    }
+    if (this.solicitudEstadoFilter) {
+      result = result.filter(s => s.estado === this.solicitudEstadoFilter);
+    }
+    if (this.solicitudUrgenciaFilter) {
+      result = result.filter(s => {
+        const urg = this.evaluarUrgenciaSolicitud(s);
+        if (this.solicitudUrgenciaFilter === 'vencidas') return urg.tipo === 'VENCIDA';
+        if (this.solicitudUrgenciaFilter === 'por_vencer') return urg.tipo === 'POR_VENCER';
+        if (this.solicitudUrgenciaFilter === 'en_plazo') return urg.tipo === 'EN_PLAZO';
+        return true;
+      });
+    }
+    this.filteredSolicitudes = result;
+    this.initSolicitudesPaginator();
+  }
+
+  setFiltroUrgenciaSolicitudes(filtro: '' | 'vencidas' | 'por_vencer' | 'en_plazo'): void {
+    this.solicitudUrgenciaFilter = filtro;
+    this.applySolicitudFilters();
+  }
+
   private initSolicitudesPaginator(): void {
     const sub = this.paginationService
-      .initializePaginator(this.solicitudesPaginatorId, this.solicitudes, 10)
+      .initializePaginator(this.solicitudesPaginatorId, this.filteredSolicitudes, 10)
       .subscribe((state: PaginationState) => {
         this.pagedSolicitudes = state.currentData;
       });
     this.paginationSubs.push(sub);
+  }
+
+  computeMetricasCliente(): void {
+    let vencidas = 0;
+    let porVencer = 0;
+    let enPlazo = 0;
+    let totalActivas = 0;
+
+    for (const sol of this.solicitudes) {
+      const urg = this.evaluarUrgenciaSolicitud(sol);
+      if (urg.tipo !== 'COMPLETADA') {
+        totalActivas++;
+        if (urg.tipo === 'VENCIDA') vencidas++;
+        else if (urg.tipo === 'POR_VENCER') porVencer++;
+        else if (urg.tipo === 'EN_PLAZO') enPlazo++;
+      }
+    }
+
+    this.metricasCliente.vencidas = vencidas;
+    this.metricasCliente.porVencer = porVencer;
+    this.metricasCliente.enPlazo = enPlazo;
+    this.metricasCliente.totalActivas = totalActivas;
+  }
+
+  evaluarUrgenciaSolicitud(sol: Solicitud): {
+    tipo: 'VENCIDA' | 'POR_VENCER' | 'EN_PLAZO' | 'COMPLETADA' | 'SIN_FECHA';
+    diasDiferencia: number | null;
+    diasTexto: string;
+    badgeClass: string;
+  } {
+    const estado = sol.estado || '';
+    if (['APROBADO', 'RECHAZADO'].includes(estado)) {
+      return { tipo: 'COMPLETADA', diasDiferencia: null, diasTexto: 'Completada', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    }
+
+    const costeoListo = !sol.requiere_costeo || sol.estado_costeo === 'COMPLETADO';
+    const muestraLista = !sol.requiere_muestra || sol.estado_muestra === 'COMPLETADO';
+    if (costeoListo && muestraLista && estado === 'COSTEADO') {
+      return { tipo: 'COMPLETADA', diasDiferencia: null, diasTexto: 'Completada', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    let menorDiffDias: number | null = null;
+
+    const parseFechaDiff = (fechaStr: string): number => {
+      const parts = fechaStr.split(/[-T ]/);
+      let d: Date;
+      if (parts.length >= 3) {
+        d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      } else {
+        d = new Date(fechaStr);
+      }
+      d.setHours(0, 0, 0, 0);
+      return Math.ceil((d.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+    };
+
+    if (sol.requiere_costeo && sol.estado_costeo !== 'COMPLETADO' && sol.fecha_entrega_cotizacion) {
+      const diff = parseFechaDiff(sol.fecha_entrega_cotizacion);
+      menorDiffDias = (menorDiffDias === null) ? diff : Math.min(menorDiffDias, diff);
+    }
+
+    if (sol.requiere_muestra && sol.estado_muestra !== 'COMPLETADO' && sol.fecha_entrega_muestra) {
+      const diff = parseFechaDiff(sol.fecha_entrega_muestra);
+      menorDiffDias = (menorDiffDias === null) ? diff : Math.min(menorDiffDias, diff);
+    }
+
+    if (menorDiffDias === null) {
+      return { tipo: 'SIN_FECHA', diasDiferencia: null, diasTexto: 'Sin fecha límite', badgeClass: 'bg-slate-50 text-slate-400 border-slate-200' };
+    }
+
+    if (menorDiffDias < 0) {
+      const dias = Math.abs(menorDiffDias);
+      return {
+        tipo: 'VENCIDA',
+        diasDiferencia: menorDiffDias,
+        diasTexto: `Vencida hace ${dias}d`,
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
+      };
+    } else if (menorDiffDias === 0) {
+      return {
+        tipo: 'POR_VENCER',
+        diasDiferencia: 0,
+        diasTexto: 'Vence hoy',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 font-bold'
+      };
+    } else if (menorDiffDias <= 3) {
+      return {
+        tipo: 'POR_VENCER',
+        diasDiferencia: menorDiffDias,
+        diasTexto: `Vence en ${menorDiffDias}d`,
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 font-bold'
+      };
+    } else {
+      return {
+        tipo: 'EN_PLAZO',
+        diasDiferencia: menorDiffDias,
+        diasTexto: `En plazo (${menorDiffDias}d)`,
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium'
+      };
+    }
+  }
+
+  getSemaforoFecha(fechaStr?: string | null, estado?: string | null): { label: string; badgeClass: string; icon: string; dias: number | null } {
+    if (!fechaStr) {
+      return { label: 'Sin fecha', badgeClass: 'bg-slate-50 text-slate-400 border-slate-200', icon: 'bi-dash', dias: null };
+    }
+    if (estado === 'COMPLETADO' || estado === 'FINALIZADO' || estado === 'COSTEADO' || estado === 'APROBADO') {
+      return { label: 'Completado', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'bi-check-circle-fill', dias: 0 };
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const parts = fechaStr.split(/[-T ]/);
+    let fecha: Date;
+    if (parts.length >= 3) {
+      fecha = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    } else {
+      fecha = new Date(fechaStr);
+    }
+    fecha.setHours(0, 0, 0, 0);
+
+    const diffMs = fecha.getTime() - hoy.getTime();
+    const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDias < 0) {
+      return {
+        label: `Vencido (${Math.abs(diffDias)}d)`,
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
+        icon: 'bi-exclamation-triangle-fill',
+        dias: diffDias
+      };
+    } else if (diffDias === 0) {
+      return {
+        label: 'Vence hoy',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-300 font-bold',
+        icon: 'bi-clock-fill',
+        dias: diffDias
+      };
+    } else if (diffDias <= 2) {
+      return {
+        label: `En ${diffDias}d`,
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold',
+        icon: 'bi-clock-history',
+        dias: diffDias
+      };
+    } else {
+      return {
+        label: `En ${diffDias}d`,
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold',
+        icon: 'bi-calendar-check',
+        dias: diffDias
+      };
+    }
+  }
+
+  puedeVolverABorrador(sol: any): boolean {
+    if (!sol || sol.estado === 'BORRADOR') return false;
+    const costeoIniciado = !!sol.fecha_inicio_costeo || ['EN_PROCESO', 'COMPLETADO'].includes(sol.estado_costeo);
+    const muestraIniciada = !!sol.fecha_inicio_muestra || ['EN_PROCESO', 'COMPLETADO'].includes(sol.estado_muestra);
+    return !costeoIniciado && !muestraIniciada;
+  }
+
+  cambiarEstadoGlobal(sol: Solicitud, nuevoEstado: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!sol.id) return;
+    this.comercialService.cambiarEstado(sol.id, nuevoEstado).subscribe({
+      next: () => {
+        sol.estado = nuevoEstado;
+        if (nuevoEstado === 'BORRADOR') {
+          if (sol.requiere_costeo) sol.estado_costeo = 'PENDIENTE';
+          if (sol.requiere_muestra) sol.estado_muestra = 'PENDIENTE';
+        }
+        this.computeMetricasCliente();
+        this.applySolicitudFilters();
+        const textMsg = nuevoEstado === 'BORRADOR'
+          ? `La solicitud ${sol.codigo} regresó a estado BORRADOR`
+          : `La solicitud ${sol.codigo} pasó a estado ${nuevoEstado}`;
+        Swal.fire({ title: 'Estado Actualizado', text: textMsg, icon: 'success', timer: 1500, showConfirmButton: false });
+      },
+      error: (err) => {
+        const errorMsg = err.error?.message || 'No se pudo cambiar el estado de la solicitud';
+        Swal.fire('Atención', errorMsg, 'error');
+      }
+    });
   }
 
   // ==================== ORDENES ====================
@@ -188,6 +453,8 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
         this.ordenes = (res.data || []).filter((o: any) =>
           o.cliente?.toLowerCase().includes(this.clienteNombre.toLowerCase())
         );
+        this.metricasCliente.totalOC = this.ordenes.length;
+        this.metricasCliente.ocPendientes = this.ordenes.filter((o: any) => o.estado === 'PENDIENTE').length;
         this.initOrdenesPaginator();
         this.isLoadingOrdenes = false;
       },
@@ -225,7 +492,7 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/comerciales']);
+    this.router.navigate(['/comerciales'], { queryParams: { tab: 'clientes' } });
   }
 
   irACaptura(): void {
@@ -249,17 +516,17 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
 
   getEstadoBadgeClass(estado: string): string {
     const map: Record<string, string> = {
-      'BORRADOR': 'bg-gray-100 text-gray-700',
-      'ENVIADO': 'bg-blue-100 text-blue-700',
-      'EN_COSTEO': 'bg-yellow-100 text-yellow-800',
-      'COSTEADO': 'bg-blue-100 text-blue-800',
-      'APROBADO': 'bg-green-100 text-green-700',
-      'RECHAZADO': 'bg-red-100 text-red-700',
-      'PENDIENTE': 'bg-yellow-100 text-yellow-800',
-      'PROCESADA': 'bg-green-100 text-green-700',
-      'RECHAZADA': 'bg-red-100 text-red-700',
+      'BORRADOR': 'bg-slate-100 text-slate-600',
+      'ENVIADO': 'bg-blue-50 text-blue-700 border border-blue-100',
+      'EN_COSTEO': 'bg-amber-50 text-amber-700 border border-amber-100',
+      'COSTEADO': 'bg-violet-50 text-violet-700 border border-violet-100',
+      'APROBADO': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+      'RECHAZADO': 'bg-rose-50 text-rose-700 border border-rose-100',
+      'PENDIENTE': 'bg-amber-50 text-amber-700 border border-amber-100',
+      'PROCESADA': 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+      'RECHAZADA': 'bg-rose-50 text-rose-700 border border-rose-100',
     };
-    return map[estado] || 'bg-gray-100 text-gray-700';
+    return map[estado] || 'bg-slate-100 text-slate-600';
   }
 
   getEstadoLabel(estado: string): string {
