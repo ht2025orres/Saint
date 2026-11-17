@@ -861,6 +861,22 @@ export class TareasComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  stripHtml(html: string | null | undefined): string {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*[\/]?>/gi, ' ')
+      .replace(/<\/(p|div|li|tr|h[1-6])>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   verEvidenciaRapida(t: any, event: MouseEvent): void {
     event.stopPropagation();
     // Simulación de visualización de evidencia (podría abrir un carrusel o galería)

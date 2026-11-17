@@ -314,6 +314,22 @@ export class TaskPanelComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cargarDatos();
   }
 
+  stripHtml(html: string | null | undefined): string {
+    if (!html) return '';
+    return html
+      .replace(/<br\s*[\/]?>/gi, ' ')
+      .replace(/<\/(p|div|li|tr|h[1-6])>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   abrirNuevaTarea(): void {
     this.showNuevaTarea     = true;
     this.nuevaTareaForm     = this._emptyNuevaForm();
