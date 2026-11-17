@@ -267,7 +267,37 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
   // Métodos de actualización de listas cacheadas
   actualizarListasFiltradas(preservePage: boolean = false) {
     const modo = this.modoActual;
-    const base = this.validaciones || [];
+    const baseRaw = this.validaciones || [];
+
+    // Pre-procesar base para que ítems mapeados en varias zonas no generen registros redundantes "sin_conteo":
+    // 1. Identificar qué ítems ya tienen al menos un conteo real registrado en alguna zona
+    const itemsConConteoReal = new Set<string>();
+    baseRaw.forEach(v => {
+      if (v.cantidad_conteo !== null && v.cantidad_conteo !== undefined) {
+        itemsConConteoReal.add(`${v.codigo_bodega || ''}|${v.id_item}|${v.id_talla ?? ''}|${v.id_color ?? ''}`);
+        itemsConConteoReal.add(`${v.id_item}|${v.id_talla ?? ''}|${v.id_color ?? ''}`);
+      }
+    });
+
+    // 2. Excluir registros sin conteo que pertenezcan a ítems ya contados en otra zona, o duplicados por zona
+    const itemsSinConteoVistos = new Set<string>();
+    const base = baseRaw.filter(v => {
+      const esSinConteo = v.estado_validacion === 'sin_conteo' || v.cantidad_conteo === null;
+      if (!esSinConteo) return true;
+
+      const keyBodega = `${v.codigo_bodega || ''}|${v.id_item}|${v.id_talla ?? ''}|${v.id_color ?? ''}`;
+      const keyGeneral = `${v.id_item}|${v.id_talla ?? ''}|${v.id_color ?? ''}`;
+
+      if (itemsConConteoReal.has(keyBodega) || itemsConConteoReal.has(keyGeneral)) {
+        return false;
+      }
+
+      if (itemsSinConteoVistos.has(keyBodega)) {
+        return false;
+      }
+      itemsSinConteoVistos.add(keyBodega);
+      return true;
+    });
 
     // --- 1. Filtrar validaciones para la vista de listado regular ---
     let filtrados = base;
@@ -418,7 +448,8 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
     }
 
     baseJustificacion.forEach(v => {
-      const key = `${v.id_item}|${v.referencia}|${v.id_talla ?? ''}|${v.id_color ?? ''}|${v.zona}`;
+      // Clave consolidada por item, referencia, talla, color y bodega (sin zona para no crear fila por cada zona)
+      const key = `${v.codigo_bodega || ''}|${v.id_item}|${v.referencia}|${v.id_talla ?? ''}|${v.id_color ?? ''}`;
       if (!mapa.has(key)) {
         mapa.set(key, {
           id_item: v.id_item,
@@ -428,6 +459,7 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
           id_talla: v.id_talla,
           id_color: v.id_color,
           zona: v.zona,
+          zonas: new Set<string>(),
           codigo_bodega: v.codigo_bodega,
           costo_unitario: v.costo_unitario || 0,
           cantidad_siesa: v.cantidad_siesa || 0,
@@ -445,13 +477,27 @@ export class ReconteoInventarioComponent implements OnInit, OnDestroy {
       }
 
       const item = mapa.get(key);
+      if (v.zona) {
+        item.zonas.add(v.zona);
+        item.zona = Array.from(item.zonas).join(' | ');
+      }
+      if (v.responsable && v.responsable !== 'Sin Asignar') {
+        item.responsable = v.responsable;
+      }
+
       const modoReg = this.normalizeModo(v.tipo_conteo);
       if (modoReg === 'conteo') {
-        item.conteo = v.cantidad_conteo;
+        if (v.cantidad_conteo !== null && v.cantidad_conteo !== undefined) {
+          item.conteo = (item.conteo !== null && item.conteo !== undefined) ? (Number(item.conteo) + Number(v.cantidad_conteo)) : Number(v.cantidad_conteo);
+        }
       } else if (modoReg === 'reconteo1') {
-        item.reconteo1 = v.cantidad_conteo;
+        if (v.cantidad_conteo !== null && v.cantidad_conteo !== undefined) {
+          item.reconteo1 = (item.reconteo1 !== null && item.reconteo1 !== undefined) ? (Number(item.reconteo1) + Number(v.cantidad_conteo)) : Number(v.cantidad_conteo);
+        }
       } else if (modoReg === 'reconteo2') {
-        item.reconteo2 = v.cantidad_conteo;
+        if (v.cantidad_conteo !== null && v.cantidad_conteo !== undefined) {
+          item.reconteo2 = (item.reconteo2 !== null && item.reconteo2 !== undefined) ? (Number(item.reconteo2) + Number(v.cantidad_conteo)) : Number(v.cantidad_conteo);
+        }
       }
 
       if (v.id) item.conteoIds.push(v.id);
