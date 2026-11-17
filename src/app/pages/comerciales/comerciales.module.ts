@@ -13,6 +13,8 @@ import { OrdenCompraComponent } from './ordenes-compra/orden-compra.component';
 import { DetalleOcModalComponent } from './ordenes-compra/modals/detalle-oc-modal/detalle-oc-modal.component';
 import { VincularPvModalComponent } from './ordenes-compra/modals/vincular-pv-modal/vincular-pv-modal.component';
 import { RechazoOcModalComponent } from './ordenes-compra/modals/rechazo-oc-modal/rechazo-oc-modal.component';
+import { MaterialesTrackingModalComponent } from './modals/materiales-tracking-modal/materiales-tracking-modal.component';
+import { CotizacionPrendaModalComponent } from './modals/cotizacion-prenda-modal/cotizacion-prenda-modal.component';
 import { SharedModule } from '../../shared/shared.module';
 import { MoldesModule } from '../moldes/moldes.module';
 
@@ -28,6 +30,8 @@ import { MoldesModule } from '../moldes/moldes.module';
     DetalleOcModalComponent,
     VincularPvModalComponent,
     RechazoOcModalComponent,
+    MaterialesTrackingModalComponent,
+    CotizacionPrendaModalComponent,
   ],
   imports: [
     CommonModule,

@@ -49,8 +49,19 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     totalActivas: 0,
     totalItems: 0,
     totalOC: 0,
-    ocPendientes: 0
+    ocPendientes: 0,
+    totalMateriales: 0,
+    materialesEntregados: 0,
+    materialesPendientes: 0,
+    materialesParciales: 0,
+    porcentajeMateriales: 0
   };
+
+  // Modal Tracking de Materiales
+  mostrarModalMateriales = false;
+  materialesSolicitudId: number | null = null;
+  materialesSolicitudCodigo = '';
+  materialesClienteNombre = '';
 
   // Pagination
   readonly itemsPaginatorId = 'comerciales-items';
@@ -264,6 +275,10 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     let porVencer = 0;
     let enPlazo = 0;
     let totalActivas = 0;
+    let totalMateriales = 0;
+    let materialesEntregados = 0;
+    let materialesPendientes = 0;
+    let materialesParciales = 0;
 
     for (const sol of this.solicitudes) {
       const urg = this.evaluarUrgenciaSolicitud(sol);
@@ -273,12 +288,38 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
         else if (urg.tipo === 'POR_VENCER') porVencer++;
         else if (urg.tipo === 'EN_PLAZO') enPlazo++;
       }
+      totalMateriales += (sol.total_materiales || 0);
+      materialesEntregados += (sol.materiales_entregados || 0);
+      materialesPendientes += (sol.materiales_pendientes || 0);
+      materialesParciales += (sol.materiales_parciales || 0);
     }
 
     this.metricasCliente.vencidas = vencidas;
     this.metricasCliente.porVencer = porVencer;
     this.metricasCliente.enPlazo = enPlazo;
     this.metricasCliente.totalActivas = totalActivas;
+    this.metricasCliente.totalMateriales = totalMateriales;
+    this.metricasCliente.materialesEntregados = materialesEntregados;
+    this.metricasCliente.materialesPendientes = materialesPendientes;
+    this.metricasCliente.materialesParciales = materialesParciales;
+    this.metricasCliente.porcentajeMateriales = totalMateriales > 0
+      ? Math.round((materialesEntregados / totalMateriales) * 100)
+      : 0;
+  }
+
+  abrirModalMateriales(sol: Solicitud, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.materialesSolicitudId = sol.id || null;
+    this.materialesSolicitudCodigo = sol.codigo || '';
+    this.materialesClienteNombre = sol.cliente_nombre || this.clienteNombre || '';
+    this.mostrarModalMateriales = true;
+  }
+
+  cerrarModalMateriales(): void {
+    this.mostrarModalMateriales = false;
+    this.materialesSolicitudId = null;
+    this.materialesSolicitudCodigo = '';
+    this.materialesClienteNombre = '';
   }
 
   evaluarUrgenciaSolicitud(sol: Solicitud): {

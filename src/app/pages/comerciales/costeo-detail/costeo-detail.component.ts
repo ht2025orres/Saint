@@ -367,105 +367,18 @@ export class CosteoDetailComponent implements OnInit {
     });
   }
 
-  // ─── Modal Historial de Cotizaciones por Prenda ───
+  // ─── Modal Historial de Cotizaciones por Prenda (Aislado en Componente) ───
   isModalHistorialPrendaOpen = false;
   selectedPrendaForHistorial: any = null;
-  isLoadingHistorialPrenda = false;
-  isSavingSnapshotPrenda = false;
-  historialCotizacionesPrenda: any[] = [];
-  historialOtrasSolicitudes: any[] = [];
-  selectedSnapshotDetalle: any = null;
 
   abrirHistorialPrenda(item: any): void {
     this.selectedPrendaForHistorial = item;
-    this.selectedSnapshotDetalle = null;
     this.isModalHistorialPrendaOpen = true;
-    this.cargarHistorialPrenda(item.id);
   }
 
   cerrarHistorialPrenda(): void {
     this.isModalHistorialPrendaOpen = false;
     this.selectedPrendaForHistorial = null;
-    this.selectedSnapshotDetalle = null;
-  }
-
-  cargarHistorialPrenda(itemId: number): void {
-    this.isLoadingHistorialPrenda = true;
-    this.comercialService.listarCotizacionesPrenda(itemId).subscribe({
-      next: (res) => {
-        this.isLoadingHistorialPrenda = false;
-        if (res.success && res.data) {
-          this.historialCotizacionesPrenda = res.data.cotizaciones_item || [];
-          this.historialOtrasSolicitudes = res.data.historial_otras_solicitudes || [];
-        }
-      },
-      error: () => {
-        this.isLoadingHistorialPrenda = false;
-      }
-    });
-  }
-
-  guardarSnapshotPrenda(): void {
-    if (!this.selectedPrendaForHistorial) return;
-    const item = this.selectedPrendaForHistorial;
-    const totalLote = this.getTotalCostoInsumosItem(item.id);
-    const totalUds = this.getItemTotal(item);
-    const costoUnit = this.getCostoUnitarioInsumosPorPrenda(item.id);
-
-    Swal.fire({
-      title: 'Capturar Versión de Cotización',
-      html: `
-        <div class="text-left text-xs text-slate-600 mb-2">
-          Se guardará una captura del costeo de insumos para <strong>${totalUds} uds</strong> de esta prenda:
-          <div class="p-2.5 mt-2 rounded-lg bg-slate-50 border border-slate-200">
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-slate-500 font-bold">Costo Insumos Unitario:</span>
-              <span class="font-extrabold text-blue-700 text-sm">$ ${costoUnit.toLocaleString('es-CO', { maximumFractionDigits: 0 })} / prenda</span>
-            </div>
-            <div class="flex justify-between items-center text-[11px] text-slate-400">
-              <span>Costo Total Lote (${totalUds} uds):</span>
-              <span class="font-bold text-slate-700">$ ${totalLote.toLocaleString('es-CO', { maximumFractionDigits: 0 })}</span>
-            </div>
-          </div>
-        </div>
-      `,
-      input: 'textarea',
-      inputLabel: 'Notas / Observaciones de esta versión (opcional):',
-      inputPlaceholder: 'Ej: Cotización lote 30 uds, tela dril...',
-      showCancelButton: true,
-      confirmButtonText: 'Guardar Captura',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#2563eb',
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.isSavingSnapshotPrenda = true;
-        this.comercialService.guardarCotizacionPrenda(item.id, { notas: result.value || '' }).subscribe({
-          next: (res) => {
-            this.isSavingSnapshotPrenda = false;
-            Swal.fire({
-              title: '¡Cotización Guardada!',
-              text: `Versión ${res.data?.version || ''} registrada correctamente`,
-              icon: 'success',
-              timer: 1600,
-              showConfirmButton: false,
-            });
-            this.cargarHistorialPrenda(item.id);
-          },
-          error: (err) => {
-            this.isSavingSnapshotPrenda = false;
-            Swal.fire('Error', err.error?.message || 'No se pudo guardar la cotización', 'error');
-          }
-        });
-      }
-    });
-  }
-
-  verDetalleSnapshot(cotiz: any): void {
-    if (this.selectedSnapshotDetalle?.id === cotiz.id) {
-      this.selectedSnapshotDetalle = null;
-    } else {
-      this.selectedSnapshotDetalle = cotiz;
-    }
   }
 
   crearVersion(): void {

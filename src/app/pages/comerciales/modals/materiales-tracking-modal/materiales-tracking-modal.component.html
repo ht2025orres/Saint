@@ -1,0 +1,185 @@
+<div *ngIf="visible" class="fixed inset-0 flex items-center justify-center p-2 sm:p-4 animate-fadeIn" style="background-color: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); z-index: 1050 !important;" (click)="cerrar()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-fadeIn" style="z-index: 1051 !important;" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="px-4 sm:px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white flex items-center justify-between flex-shrink-0">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-box-seam-fill text-lg"></i>
+          <span class="text-[10px] font-black uppercase tracking-widest opacity-80">Tracking de Materiales</span>
+        </div>
+        <h2 class="text-sm sm:text-base font-extrabold truncate mt-0.5">{{ solicitudCodigo }}</h2>
+        <p class="text-[11px] text-white/70 truncate" *ngIf="clienteNombre">{{ clienteNombre }}</p>
+      </div>
+      <button (click)="cerrar()" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center shrink-0">
+        <i class="bi bi-x-lg text-xs"></i>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="flex-1 flex items-center justify-center py-16">
+      <div class="text-center text-slate-400 text-sm">
+        <div class="w-6 h-6 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
+        Cargando materiales...
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="!isLoading && errorMessage" class="flex-1 flex items-center justify-center py-16">
+      <div class="text-center text-rose-500 text-sm">
+        <i class="bi bi-exclamation-triangle-fill text-2xl mb-2 block"></i>
+        {{ errorMessage }}
+      </div>
+    </div>
+
+    <!-- Content -->
+    <ng-container *ngIf="!isLoading && !errorMessage && materialesData">
+      <!-- Métricas resumidas -->
+      <div class="px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex-shrink-0">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <!-- Total -->
+          <div class="bg-white rounded-xl p-2.5 border border-slate-200/80 text-center">
+            <span class="text-lg font-black text-slate-800">{{ metricas.total }}</span>
+            <span class="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Total</span>
+          </div>
+          <!-- Entregados -->
+          <div class="rounded-xl p-2.5 border text-center"
+               [ngClass]="metricas.entregados === metricas.total && metricas.total > 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200/80'">
+            <span class="text-lg font-black" [ngClass]="metricas.entregados > 0 ? 'text-emerald-600' : 'text-slate-400'">{{ metricas.entregados }}</span>
+            <span class="block text-[9px] font-bold uppercase tracking-wider text-emerald-600 mt-0.5">Entregados</span>
+          </div>
+          <!-- Parciales -->
+          <div class="bg-white rounded-xl p-2.5 border border-slate-200/80 text-center">
+            <span class="text-lg font-black" [ngClass]="metricas.parciales > 0 ? 'text-amber-600' : 'text-slate-400'">{{ metricas.parciales }}</span>
+            <span class="block text-[9px] font-bold uppercase tracking-wider text-amber-600 mt-0.5">Parciales</span>
+          </div>
+          <!-- Pendientes -->
+          <div class="rounded-xl p-2.5 border text-center"
+               [ngClass]="metricas.pendientes > 0 ? 'bg-rose-50 border-rose-200' : 'bg-white border-slate-200/80'">
+            <span class="text-lg font-black" [ngClass]="metricas.pendientes > 0 ? 'text-rose-600' : 'text-slate-400'">{{ metricas.pendientes }}</span>
+            <span class="block text-[9px] font-bold uppercase tracking-wider text-rose-600 mt-0.5">Pendientes</span>
+          </div>
+        </div>
+
+        <!-- Barra progreso -->
+        <div class="mt-2.5" *ngIf="metricas.total > 0">
+          <div class="flex items-center justify-between text-[10px] font-bold mb-1">
+            <span class="text-slate-500">Avance de entrega</span>
+            <span class="text-indigo-700">{{ metricas.porcentaje_entrega }}%</span>
+          </div>
+          <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500"
+                 [ngClass]="metricas.porcentaje_entrega === 100 ? 'bg-emerald-500' : metricas.porcentaje_entrega > 50 ? 'bg-indigo-500' : metricas.porcentaje_entrega > 0 ? 'bg-amber-500' : 'bg-slate-300'"
+                 [style.width.%]="metricas.porcentaje_entrega"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="px-4 sm:px-6 py-2 border-b border-slate-100 flex items-center gap-1.5 flex-wrap flex-shrink-0">
+        <button *ngFor="let f of [
+          {key: 'TODOS', label: 'Todos', icon: 'bi-grid-3x3-gap'},
+          {key: 'TELA', label: 'Telas', icon: 'bi-scissors'},
+          {key: 'INSUMO', label: 'Insumos', icon: 'bi-boxes'},
+          {key: 'PENDIENTES', label: 'Pendientes', icon: 'bi-clock'},
+          {key: 'ENTREGADOS', label: 'Entregados', icon: 'bi-check-circle'}
+        ]"
+                (click)="filtroTipo = f.key"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border"
+                [ngClass]="filtroTipo === f.key
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">
+          <i class="bi {{ f.icon }} mr-1"></i>{{ f.label }}
+        </button>
+      </div>
+
+      <!-- Lista de materiales -->
+      <div class="flex-1 overflow-y-auto p-4 sm:px-6 space-y-1.5 custom-scrollbar">
+        <div *ngIf="materiales.length === 0" class="text-center text-slate-400 text-xs py-8">
+          <i class="bi bi-inbox text-3xl mb-2 block"></i>
+          Sin materiales para este filtro
+        </div>
+
+        <div *ngFor="let m of materiales; trackBy: trackById"
+             class="p-2.5 rounded-xl border text-xs flex items-start gap-3 transition-all hover:shadow-sm"
+             [ngClass]="{
+               'bg-emerald-50/50 border-emerald-200': m.estado_entrega === 'ENTREGADO',
+               'bg-amber-50/50 border-amber-200': m.estado_entrega === 'PARCIAL',
+               'bg-rose-50/40 border-rose-200': m.estado_entrega === 'PENDIENTE' && esLlegadaRetrasada(m.fecha_estimada_llegada),
+               'bg-white border-slate-200/80': m.estado_entrega === 'PENDIENTE' && !esLlegadaRetrasada(m.fecha_estimada_llegada),
+               'bg-slate-50 border-slate-200': m.estado_entrega === 'NO_DISPONIBLE'
+             }">
+
+          <!-- Icono tipo -->
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
+               [ngClass]="m.tipo_material === 'TELA' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'">
+            <i class="bi" [ngClass]="m.tipo_material === 'TELA' ? 'bi-scissors' : 'bi-box-fill'"></i>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-slate-800 truncate text-[11px]">
+              {{ m.nombre_material || m.siesa_descripcion || 'Material sin nombre' }}
+            </div>
+            <div class="flex items-center gap-2 mt-0.5 text-slate-500 flex-wrap">
+              <span *ngIf="m.siesa_referencia" class="font-mono text-[10px]">{{ m.siesa_referencia }}</span>
+              <span *ngIf="m.grupo_insumo" class="text-[10px]">· {{ m.grupo_insumo }}</span>
+              <span *ngIf="m.solicitud_item" class="text-[10px] text-indigo-500">· {{ m.solicitud_item.descripcion }}</span>
+            </div>
+            <!-- Cantidad -->
+            <div class="flex items-center gap-3 mt-1 text-[10px]" *ngIf="m.cantidad_requerida > 0">
+              <span class="text-slate-500">
+                Req: <strong class="text-slate-700">{{ m.cantidad_requerida }} {{ m.unidad_medida || 'UND' }}</strong>
+              </span>
+              <span *ngIf="m.cantidad_entregada > 0" class="text-emerald-600 font-bold">
+                Entregado: {{ m.cantidad_entregada }}
+              </span>
+            </div>
+            <!-- Proveedor / Fecha estimada -->
+            <div class="flex items-center gap-3 mt-0.5 text-[10px]" *ngIf="m.en_consulta_proveedor || m.fecha_estimada_llegada">
+              <span *ngIf="m.en_consulta_proveedor" class="text-violet-600 font-bold">
+                <i class="bi bi-telephone-fill mr-0.5"></i>En consulta{{ m.proveedor_nombre ? ': ' + m.proveedor_nombre : '' }}
+              </span>
+              <span *ngIf="m.fecha_estimada_llegada" class="font-bold"
+                    [ngClass]="esLlegadaRetrasada(m.fecha_estimada_llegada) ? 'text-rose-600' : 'text-slate-500'">
+                <i class="bi bi-calendar3 mr-0.5"></i>{{ m.fecha_estimada_llegada | date:'dd/MM/yy' }}
+                <span *ngIf="esLlegadaRetrasada(m.fecha_estimada_llegada)" class="text-rose-700"> ⚠️ Retrasado</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Badge estado -->
+          <div class="flex-shrink-0 text-right">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider"
+                  [ngClass]="{
+                    'bg-emerald-100 text-emerald-700': m.estado_entrega === 'ENTREGADO',
+                    'bg-amber-100 text-amber-700': m.estado_entrega === 'PARCIAL',
+                    'bg-rose-100 text-rose-700': m.estado_entrega === 'PENDIENTE',
+                    'bg-slate-200 text-slate-500': m.estado_entrega === 'NO_DISPONIBLE'
+                  }">
+              <i class="bi mr-0.5" [ngClass]="{
+                'bi-check-circle-fill': m.estado_entrega === 'ENTREGADO',
+                'bi-dash-circle-fill': m.estado_entrega === 'PARCIAL',
+                'bi-clock-fill': m.estado_entrega === 'PENDIENTE',
+                'bi-x-circle-fill': m.estado_entrega === 'NO_DISPONIBLE'
+              }"></i>
+              {{ m.estado_entrega }}
+            </span>
+            <!-- Costo si existe -->
+            <div *ngIf="m.costo_vigente_final > 0" class="text-[10px] font-bold text-slate-600 mt-1">
+              ${{ m.costo_vigente_final | number:'1.0-0' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Footer -->
+    <div class="px-4 sm:px-6 py-2.5 border-t border-slate-100 bg-white flex items-center justify-end flex-shrink-0">
+      <button (click)="cerrar()" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+

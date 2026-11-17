@@ -133,6 +133,12 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   ordenARechazar: any = null;
   motivoRechazo = '';
 
+  // Modal Tracking de Materiales
+  mostrarModalMateriales = false;
+  materialesSolicitudId: number | null = null;
+  materialesSolicitudCodigo = '';
+  materialesClienteNombre = '';
+
   // KPI computed
   totalSolicitudesPendientes = 0;
   totalOCPendientes = 0;
@@ -1158,7 +1164,10 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     this.motivoRechazo = '';
   }
 
-  confirmarRechazoOC(): void {
+  confirmarRechazoOC(motivo?: string): void {
+    if (motivo) {
+      this.motivoRechazo = motivo;
+    }
     if (!this.ordenARechazar || !this.motivoRechazo.trim() || this.motivoRechazo.trim().length < 10) {
       Swal.fire('Atención', 'El motivo de rechazo debe contener al menos 10 caracteres', 'warning');
       return;
@@ -1174,6 +1183,21 @@ export class ClienteListComponent implements OnInit, OnDestroy {
         Swal.fire('Error', err.error?.message || 'No se pudo rechazar la orden', 'error');
       }
     });
+  }
+
+  abrirModalMateriales(sol: Solicitud, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.materialesSolicitudId = sol.id || null;
+    this.materialesSolicitudCodigo = sol.codigo || '';
+    this.materialesClienteNombre = sol.cliente_nombre || '';
+    this.mostrarModalMateriales = true;
+  }
+
+  cerrarModalMateriales(): void {
+    this.mostrarModalMateriales = false;
+    this.materialesSolicitudId = null;
+    this.materialesSolicitudCodigo = '';
+    this.materialesClienteNombre = '';
   }
 
   eliminarOC(orden: any, event?: Event): void {

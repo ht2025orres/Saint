@@ -50,7 +50,7 @@
     </div>
 
     <!-- ========== KPI CARDS DASHBOARD (CLIENTE ESPECÍFICO) ========== -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
       <!-- 1. Total Solicitudes del Cliente -->
       <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between">
         <div class="flex items-center justify-between">
@@ -112,17 +112,48 @@
         </div>
       </div>
 
-      <!-- 3. Ítems SIESA Facturados -->
+      <!-- 3. Llegada de Materiales (Abastecimiento) -->
       <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between">
         <div class="flex items-center justify-between">
-          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ítems SIESA Históricos</span>
-          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Llegada Materiales</span>
+          <div class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
             <i class="bi bi-box-seam-fill text-sm"></i>
           </div>
         </div>
         <div class="mt-2 flex items-baseline gap-2">
+          <span class="text-2xl font-black text-slate-900">
+            {{ metricasCliente.materialesEntregados }}/{{ metricasCliente.totalMateriales }}
+          </span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded-full border"
+                [ngClass]="metricasCliente.porcentajeMateriales === 100 && metricasCliente.totalMateriales > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (metricasCliente.porcentajeMateriales > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200')">
+            {{ metricasCliente.porcentajeMateriales }}% en planta
+          </span>
+        </div>
+        <!-- Barra de progreso -->
+        <div class="mt-2">
+          <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500"
+                 [ngClass]="metricasCliente.porcentajeMateriales === 100 ? 'bg-emerald-500' : 'bg-violet-500'"
+                 [style.width.%]="metricasCliente.porcentajeMateriales"></div>
+          </div>
+          <div class="mt-1 text-[9px] text-slate-400 font-medium flex items-center justify-between">
+            <span>{{ metricasCliente.materialesPendientes }} pendientes</span>
+            <span *ngIf="metricasCliente.materialesParciales > 0" class="text-amber-600 font-bold">{{ metricasCliente.materialesParciales }} parciales</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Ítems SIESA Facturados -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ítems SIESA Históricos</span>
+          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <i class="bi bi-tag-fill text-sm"></i>
+          </div>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
           <span class="text-2xl font-black text-slate-900">{{ items.length || metricasCliente.totalItems }}</span>
-          <span class="text-xs font-semibold text-slate-500">referencias facturadas</span>
+          <span class="text-xs font-semibold text-slate-500">referencias</span>
         </div>
         <div class="mt-2 text-[10px] text-slate-400 font-medium flex items-center gap-1">
           <i class="bi bi-check2-circle text-emerald-500"></i>
@@ -130,7 +161,7 @@
         </div>
       </div>
 
-      <!-- 4. Órdenes de Compra del Cliente -->
+      <!-- 5. Órdenes de Compra del Cliente -->
       <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between">
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Órdenes de Compra</span>
@@ -148,6 +179,7 @@
           {{ metricasCliente.totalOC - metricasCliente.ocPendientes }} procesadas con PV
         </div>
       </div>
+    </div>
     </div>
 
     <!-- ========== TABS DE NAVEGACIÓN LOCAL ========== -->
@@ -329,6 +361,23 @@
                 <span *ngIf="sol.fecha_entrega_cotizacion" class="font-extrabold uppercase text-[9px]">
                   ({{ getSemaforoFecha(sol.fecha_entrega_cotizacion, sol.estado_costeo).label }})
                 </span>
+              </div>
+
+              <!-- Indicador Materiales -->
+              <div *ngIf="sol.total_materiales && sol.total_materiales > 0"
+                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold cursor-pointer hover:shadow-sm transition-all"
+                   [ngClass]="{
+                     'bg-emerald-50 border-emerald-200 text-emerald-700': sol.materiales_entregados === sol.total_materiales,
+                     'bg-amber-50 border-amber-200 text-amber-700': sol.materiales_entregados! > 0 && sol.materiales_entregados !== sol.total_materiales,
+                     'bg-slate-50 border-slate-200 text-slate-600': !sol.materiales_entregados || sol.materiales_entregados === 0
+                   }"
+                   (click)="abrirModalMateriales(sol, $event)"
+                   title="Ver detalle de llegada de materiales">
+                <i class="bi bi-box-seam text-[9px]"></i>
+                <span>📦 {{ sol.materiales_entregados || 0 }}/{{ sol.total_materiales }}</span>
+                <span *ngIf="sol.materiales_entregados === sol.total_materiales" class="text-emerald-700 font-black">✓</span>
+                <span *ngIf="sol.materiales_pendientes && sol.materiales_pendientes > 0 && sol.materiales_entregados !== sol.total_materiales"
+                      class="text-amber-700 font-black text-[9px]">({{ sol.materiales_pendientes }} pend.)</span>
               </div>
             </div>
 
@@ -559,4 +608,13 @@
     </div>
 
   </div>
+
+  <!-- ==================== MODAL: MATERIALES TRACKING ==================== -->
+  <app-materiales-tracking-modal
+    [visible]="mostrarModalMateriales"
+    [solicitudId]="materialesSolicitudId"
+    [solicitudCodigo]="materialesSolicitudCodigo"
+    [clienteNombre]="materialesClienteNombre"
+    (onClose)="cerrarModalMateriales()">
+  </app-materiales-tracking-modal>
 </div>

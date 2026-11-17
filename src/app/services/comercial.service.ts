@@ -108,6 +108,15 @@ export interface Solicitud {
   versiones?: SolicitudVersion[];
   items_count?: number;
   versiones_count?: number;
+  total_materiales?: number;
+  materiales_entregados?: number;
+  materiales_parciales?: number;
+  materiales_pendientes?: number;
+  materiales_en_consulta?: number;
+  telas_totales?: number;
+  telas_entregadas?: number;
+  insumos_totales?: number;
+  insumos_entregados?: number;
   usuario_creacion?: number;
   usuario_creacion_nombre?: string;
   creador?: {
