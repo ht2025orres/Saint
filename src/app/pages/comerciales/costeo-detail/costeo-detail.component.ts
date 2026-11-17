@@ -287,14 +287,46 @@ export class CosteoDetailComponent implements OnInit {
   }
 
   goToClient(): void {
-    if (this.costeo) {
+    if (this.costeo && this.costeo.cliente_id) {
       this.router.navigate(['/comerciales/cliente', this.costeo.cliente_id], {
-        queryParams: { nombre: this.costeo.cliente_nombre, nit: this.costeo.cliente_nit }
+        queryParams: {
+          nombre: this.costeo.cliente_nombre || '',
+          nit: this.costeo.cliente_nit || '',
+          tab: 'solicitudes'
+        }
       });
     }
   }
 
   goBack(): void {
+    const from = this.route.snapshot.queryParamMap.get('from');
+
+    // Si viene explícitamente desde la pestaña global de solicitudes
+    if (from === 'solicitudes') {
+      this.router.navigate(['/comerciales'], { queryParams: { tab: 'solicitudes' } });
+      return;
+    }
+
+    // Por defecto: Regresar al detalle del cliente al que pertenece esta solicitud
+    if (this.costeo && this.costeo.cliente_id) {
+      this.goToClient();
+      return;
+    }
+
+    // Fallback: Si no ha cargado costeo pero viene con queryParams
+    const qClienteId = this.route.snapshot.queryParamMap.get('clienteId');
+    if (qClienteId) {
+      this.router.navigate(['/comerciales/cliente', qClienteId], {
+        queryParams: {
+          nombre: this.route.snapshot.queryParamMap.get('nombre') || '',
+          nit: this.route.snapshot.queryParamMap.get('nit') || '',
+          tab: 'solicitudes'
+        }
+      });
+      return;
+    }
+
+    // Si no tiene cliente asociado, regresar al directorio general
     this.router.navigate(['/comerciales']);
   }
 
@@ -471,7 +503,7 @@ export class CosteoDetailComponent implements OnInit {
         this.comercialService.eliminarSolicitud(this.solicitudId).subscribe({
           next: () => {
             Swal.fire({ title: 'Eliminado', icon: 'success', timer: 1500, showConfirmButton: false });
-            setTimeout(() => this.router.navigate(['/comerciales']), 1200);
+            setTimeout(() => this.goBack(), 1200);
           },
           error: () => Swal.fire('Error', 'No se pudo eliminar', 'error')
         });

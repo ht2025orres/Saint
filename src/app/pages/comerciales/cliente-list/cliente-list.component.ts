@@ -852,7 +852,14 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   }
 
   goToSolicitud(solicitud: Solicitud): void {
-    this.router.navigate(['/comerciales/solicitud', solicitud.id]);
+    this.router.navigate(['/comerciales/solicitud', solicitud.id], {
+      queryParams: {
+        from: 'solicitudes',
+        clienteId: solicitud.cliente_id,
+        nombre: solicitud.cliente_nombre,
+        nit: solicitud.cliente_nit
+      }
+    });
   }
 
   nuevaSolicitud(): void {
