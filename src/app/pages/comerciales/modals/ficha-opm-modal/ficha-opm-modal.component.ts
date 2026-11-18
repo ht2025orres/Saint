@@ -19,6 +19,42 @@ export class FichaOpmModalComponent implements OnChanges {
   expandedSidebarZoneKey: string | null = null;
   activeItem: any = null;
 
+  get trackingMetricas(): any {
+    const mats = this.trackingMateriales || [];
+    const total = mats.length;
+    const entregados = mats.filter((m: any) => m.estado_entrega === 'ENTREGADO').length;
+    const parciales = mats.filter((m: any) => m.estado_entrega === 'PARCIAL').length;
+    const pendientes = mats.filter((m: any) => m.estado_entrega === 'PENDIENTE' || !m.estado_entrega).length;
+    const pct = total > 0 ? Math.round((entregados / total) * 100) : 0;
+    const semaforo = pct === 100 && total > 0 ? 'COMPLETO' : (entregados > 0 || parciales > 0 ? 'PARCIAL' : 'PENDIENTE');
+
+    return {
+      total,
+      entregados,
+      parciales,
+      pendientes,
+      porcentaje_entrega: pct,
+      semaforo
+    };
+  }
+
+  get conteoCostosValidados(): number {
+    return (this.trackingMateriales || []).filter(m => m.estado_costo === 'VIGENTE' || (m.costo_vigente_final && m.costo_vigente_final > 0)).length;
+  }
+
+  get conteoCostosPendientes(): number {
+    return (this.trackingMateriales || []).filter(m => this.esInsumoPendiente(m)).length;
+  }
+
+  esInsumoPendiente(m: any): boolean {
+    if (!m) return true;
+    const costo = Number(m.costo_vigente_final || m.costo_vigente_logistica || m.ultimo_costo_siesa || 0);
+    if (costo <= 0) return true;
+    if (m.costo_vigente_logistica !== null && Number(m.costo_vigente_logistica) > 0) return false;
+    if (m.estado_costo === 'VIGENTE' || m.estado_costo === 'ALERTA') return false;
+    return m.estado_costo === 'DESACTUALIZADO' || m.estado_costo === 'SIN_MOVIMIENTO';
+  }
+
   private readonly ZONE_METADATA: Record<string, { label: string; icon: string; bgClass: string; color: string }> = {
     'cuello': { label: 'Cuello / Solapa', icon: 'bi-border-outer', bgClass: 'bg-blue-500', color: '#3b82f6' },
     'manga': { label: 'Mangas y Puños', icon: 'bi-layers-fill', bgClass: 'bg-indigo-500', color: '#6366f1' },
