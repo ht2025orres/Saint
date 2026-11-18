@@ -1,0 +1,542 @@
+﻿<div *ngIf="visible && activeItem" class="opm-modal-overlay" (click)="close()">
+  <div class="opm-modal-container" (click)="$event.stopPropagation()">
+    
+    <!-- MODAL HEADER -->
+    <div class="opm-modal-header">
+      <div class="opm-header-left">
+        <div class="opm-header-icon">
+          <i class="bi bi-diagram-3-fill"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="opm-header-label">Ficha OPM & ConfiguraciÃ³n Comercial</span>
+            <span class="opm-header-badge" [ngClass]="getOpmBadgeInfo(activeItem).bgClass">
+              <i class="bi" [ngClass]="getOpmBadgeInfo(activeItem).icon"></i>
+              {{ getOpmBadgeInfo(activeItem).label }}
+            </span>
+          </div>
+          <h2 class="opm-header-title">
+            {{ activeItem.descripcion || activeItem.mold?.name || 'Molde Asignado' }}
+            <span *ngIf="activeItem.mold?.name && activeItem.descripcion !== activeItem.mold?.name" class="opm-header-sub">Â· Molde: {{ activeItem.mold.name }}</span>
+          </h2>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- View Toggle Buttons if back view exists -->
+        <div *ngIf="hasOpmBackView" class="opm-header-view-toggle">
+          <button class="opm-toggle-btn" [class.active]="opmActiveView === 'front'" (click)="toggleOpmView('front')">
+            <i class="bi bi-front"></i> FRENTE
+          </button>
+          <button class="opm-toggle-btn" [class.active]="opmActiveView === 'back'" (click)="toggleOpmView('back')">
+            <i class="bi bi-back"></i> ESPALDA
+          </button>
+        </div>
+
+        <button (click)="close()" class="opm-close-btn" title="Cerrar modal">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL BODY â€” Exact Spec-Generator Diseno Mirror -->
+    <div class="opm-modal-body">
+
+      <!-- LEFT SIDEBAR: Side Panel (Status & Quick List) -->
+      <div class="opm-sidebar custom-scrollbar">
+
+        <!-- 1. Molde / Prenda Header Card -->
+        <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 space-y-2.5 flex-shrink-0">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Molde / Prenda</span>
+              <span class="text-xs font-bold text-slate-800 truncate block">{{ activeItem.descripcion || activeItem.mold?.name }}</span>
+            </div>
+            <div *ngIf="activeItem.item_cliente" class="text-right flex-shrink-0">
+              <span class="text-[9px] font-bold text-slate-400 uppercase block">Ref. Cliente</span>
+              <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-[10px] rounded-md border border-indigo-100">{{ activeItem.item_cliente }}</span>
+            </div>
+          </div>
+
+          <!-- Base SIESA if exists -->
+          <div *ngIf="activeItem.siesa_referencia || activeItem.ref_siesa_referencia" class="text-[11px] pt-1.5 border-t border-slate-100 flex items-center gap-1.5">
+            <span class="text-slate-400 font-medium text-[10px]">Base SIESA:</span>
+            <span class="font-bold text-indigo-600 font-mono text-[11px]">{{ activeItem.siesa_referencia || activeItem.ref_siesa_referencia }}</span>
+          </div>
+
+          <!-- DescripciÃ³n General de la Prenda -->
+          <div class="space-y-1">
+            <label class="text-[9px] font-black text-amber-900 uppercase tracking-widest flex items-center gap-1">
+              <i class="bi bi-file-earmark-text text-amber-600"></i> DescripciÃ³n General de la Prenda
+            </label>
+            <div class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 leading-relaxed max-h-24 overflow-y-auto">
+              {{ activeItem.technical_spec?.description || observaciones || 'Observaciones o notas generales de la prenda entregadas por el cliente...' }}
+            </div>
+          </div>
+
+          <!-- View Switch (Frente / Espalda) -->
+          <div class="flex p-1 bg-slate-100 rounded-xl" *ngIf="hasOpmBackView">
+            <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
+                    [ngClass]="opmActiveView === 'front' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
+                    (click)="toggleOpmView('front')">FRENTE</button>
+            <button class="flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all"
+                    [ngClass]="opmActiveView === 'back' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'"
+                    (click)="toggleOpmView('back')">ESPALDA</button>
+          </div>
+        </div>
+
+        <!-- 2. Zonas del Molde -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3 space-y-2.5 flex-shrink-0">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-indigo-500/50 shadow-sm animate-pulse"></span>
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Zonas del Molde</h3>
+            </div>
+            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border bg-slate-50 text-slate-600 border-slate-200">
+              {{ getZonesWithParts().length }} ZONAS
+            </span>
+          </div>
+
+          <!-- Tarjetas por Zona -->
+          <div class="space-y-2">
+            <div *ngFor="let zp of getZonesWithParts()"
+                 class="border rounded-xl transition-all shadow-2xs overflow-hidden"
+                 [ngClass]="selectedZone === zp.zone 
+                   ? 'border-indigo-400 bg-indigo-50/30 ring-2 ring-indigo-500/20' 
+                   : (isZoneConfigured(zp.zone) ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-200 bg-white')">
+              
+              <!-- Cabecera de la Zona (Click despliega partes y enfoca en lienzo) -->
+              <div class="p-2.5 flex items-center justify-between gap-2 cursor-pointer select-none hover:bg-slate-50 transition"
+                   (click)="toggleSidebarZone(zp.zone, $event)">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0 shadow-2xs"
+                        [style.backgroundColor]="zp.zone.color || getZoneColor(zp.zone.zone_type)">
+                    <i class="bi" [ngClass]="getZoneIcon(zp.zone.zone_type)"></i>
+                  </span>
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-black text-slate-800 truncate uppercase mb-0">{{ zp.zone.name }}</h4>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0">{{ getZoneLabel(zp.zone.zone_type) }}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-[9px] px-2 py-0.5 rounded-full border font-bold"
+                        [ngClass]="getConfiguredPartsForZone(zp).length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                    âœ“ {{ getConfiguredPartsForZone(zp).length }} {{ getConfiguredPartsForZone(zp).length === 1 ? 'Configurada' : 'Configuradas' }}
+                  </span>
+                  <span class="w-5 h-5 rounded flex items-center justify-center text-slate-400 transition">
+                    <i class="bi text-xs" [ngClass]="isSidebarZoneExpanded(zp.zone) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Contenido de la Zona (Desplegado) -->
+              <div class="p-2.5 pt-0 space-y-2 border-t border-slate-100 bg-white" *ngIf="isSidebarZoneExpanded(zp.zone)">
+                <div *ngFor="let part of getConfiguredPartsForZone(zp)"
+                     class="p-2 rounded-xl border space-y-1.5"
+                     [ngClass]="!part.is_mandatory ? 'bg-indigo-50/40 border-indigo-200/80' : 'bg-emerald-50/40 border-emerald-200/80'">
+                  
+                  <!-- Nombre de la parte -->
+                  <div class="flex items-center justify-between gap-1">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-indigo-600 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
+                      <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
+                      <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-indigo-100 text-indigo-700 shrink-0">
+                        Opcional
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Variante Seleccionada -->
+                  <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
+                       [ngClass]="!part.is_mandatory ? 'border border-indigo-300' : 'border border-emerald-300'">
+                    <i class="bi bi-check-circle-fill text-xs shrink-0"
+                       [ngClass]="!part.is_mandatory ? 'text-indigo-600' : 'text-emerald-600'"></i>
+                    <span class="truncate font-black flex-1"
+                          [ngClass]="!part.is_mandatory ? 'text-indigo-950' : 'text-emerald-950'">
+                      {{ extractVariantName(part) }}
+                    </span>
+                  </div>
+
+                  <!-- Nota o ExcepciÃ³n Comercial -->
+                  <div *ngIf="part.client_spec || part.exception_comment"
+                       class="flex items-center gap-1 bg-white p-1 rounded-lg border border-amber-300 shadow-2xs text-[10px]">
+                    <i class="bi bi-chat-left-quote text-[10px] text-amber-600 ml-1 shrink-0"></i>
+                    <span class="text-amber-950 font-semibold px-1">{{ part.exception_comment || part.client_spec }}</span>
+                  </div>
+
+                  <!-- Material Asignado -->
+                  <div *ngIf="part.material_exception || part.client_material_exception"
+                       class="flex items-center gap-1 bg-white p-1 rounded-lg border border-blue-300 shadow-2xs text-[10px]">
+                    <i class="bi bi-palette text-[10px] text-blue-600 ml-1 shrink-0"></i>
+                    <span class="text-blue-950 font-semibold px-1">
+                      {{ (part.material_exception || part.client_material_exception).descripcion || (part.material_exception || part.client_material_exception).referencia }}
+                    </span>
+                  </div>
+                </div>
+
+                <div *ngIf="getConfiguredPartsForZone(zp).length === 0" class="py-2.5 text-center text-slate-400 text-[11px] font-medium">
+                  Sin configuraciones en esta zona (EstÃ¡ndar)
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Apliques y Opcionales (si existen) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0" *ngIf="getTransversalOptionals().length > 0">
+          <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50/80 via-white to-slate-50">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shadow-indigo-600/50 shadow-sm"></span>
+              <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-0">Apliques y Opcionales ({{ getTransversalOptionals().length }})</h3>
+            </div>
+          </div>
+          
+          <div class="p-2.5 space-y-2">
+            <div *ngFor="let opt of getTransversalOptionals()" 
+                 class="p-2.5 rounded-xl border bg-indigo-50/40 border-indigo-200/80 space-y-1.5">
+              <div class="flex items-center justify-between gap-1.5">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <i class="bi text-xs text-indigo-700" [ngClass]="opt.icon"></i>
+                  <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ opt.name }}</span>
+                </div>
+                <!-- PequeÃ±o icono de exclamaciÃ³n con tooltip indicando la parte / zona -->
+                <div class="flex items-center gap-1 shrink-0">
+                  <span class="relative cursor-help text-indigo-600 hover:text-indigo-800 transition"
+                        [title]="'Cargado por parte de:\nâ€¢ ' + opt.zoneName">
+                    <i class="bi bi-exclamation-circle text-xs"></i>
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-indigo-300 rounded-lg text-[11px] font-bold shadow-2xs">
+                <i class="bi bi-check-circle-fill text-xs text-indigo-600 shrink-0"></i>
+                <span class="truncate text-indigo-950 font-black">{{ opt.variant }}</span>
+              </div>
+              <div *ngIf="opt.exceptionComment || opt.clientSpec" class="text-[10px] text-indigo-900 bg-white p-1 rounded-lg border border-indigo-200">
+                <span class="font-bold">EspecificaciÃ³n:</span> {{ opt.exceptionComment || opt.clientSpec }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Trazabilidad de Abastecimiento & LogÃ­stica -->
+        <div *ngIf="trackingMateriales.length > 0" class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0">
+          <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-0">
+                LogÃ­stica & Abastecimiento ({{ trackingMateriales.length }})
+              </h3>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider"
+                  [ngClass]="{
+                    'bg-emerald-100 text-emerald-800 border border-emerald-300': trackingMetricas.semaforo === 'COMPLETO',
+                    'bg-amber-100 text-amber-800 border border-amber-300': trackingMetricas.semaforo === 'PARCIAL',
+                    'bg-slate-100 text-slate-700 border border-slate-200': trackingMetricas.semaforo === 'PENDIENTE'
+                  }">
+              {{ trackingMetricas.semaforo === 'COMPLETO' ? 'Listo en AlmacÃ©n' : (trackingMetricas.semaforo === 'PARCIAL' ? 'Despacho Parcial' : 'En PreparaciÃ³n') }}
+            </span>
+          </div>
+
+          <div class="p-3 space-y-3">
+            <!-- Avance FÃ­sico -->
+            <div>
+              <div class="flex justify-between items-center text-xs font-bold text-slate-700 mb-1">
+                <span>Insumos Preparados / Entregados</span>
+                <span class="font-extrabold text-indigo-700">{{ trackingMetricas.entregados }} / {{ trackingMetricas.total }} ({{ trackingMetricas.porcentaje_entrega }}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+                     [style.width.%]="trackingMetricas.porcentaje_entrega"></div>
+              </div>
+            </div>
+
+            <!-- Avance de ValoraciÃ³n / Costeo -->
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 text-xs">
+              <div class="flex justify-between items-center font-bold text-slate-800">
+                <span class="flex items-center gap-1.5">
+                  <i class="bi bi-cash-stack text-slate-500"></i>
+                  <span>ValoraciÃ³n de Costos</span>
+                </span>
+                <span class="px-2 py-0.2 rounded-full text-[10px] font-black"
+                      [ngClass]="conteoCostosPendientes === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                  {{ conteoCostosPendientes === 0 ? 'Costos Validados' : (conteoCostosPendientes + ' pendientes') }}
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-500 mb-0 leading-tight">
+                {{ conteoCostosValidados }} de {{ trackingMateriales.length }} materiales con costo vigente o actualizado por LogÃ­stica.
+              </p>
+            </div>
+
+            <!-- Mini Listado de Materiales con Estado de LogÃ­stica -->
+            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div *ngFor="let m of trackingMateriales"
+                   class="p-2 rounded-lg border text-xs flex items-center justify-between gap-2"
+                   [ngClass]="m.estado_entrega === 'ENTREGADO' ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-slate-100'">
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-800 truncate text-[11px]">
+                    {{ m.siesa_descripcion || m.nombre_material || m.descripcion_personalizada }}
+                  </div>
+                  <div class="flex items-center gap-1.5 text-[9px] text-slate-400 flex-wrap">
+                    <span *ngIf="m.siesa_referencia" class="font-mono text-slate-600">Ref: {{ m.siesa_referencia }}</span>
+                    <span>Â· Cant: {{ m.cantidad_requerida }} {{ m.unidad_medida }}</span>
+                    <span *ngIf="m.en_consulta_proveedor" class="font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
+                      En Consulta Prov.
+                    </span>
+                    <span *ngIf="m.fecha_estimada_llegada" class="font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">
+                      Llegada: {{ m.fecha_estimada_llegada | date:'dd/MM/yyyy' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end shrink-0">
+                  <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded"
+                        [ngClass]="m.estado_entrega === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'">
+                    {{ m.estado_entrega === 'ENTREGADO' ? 'Listo' : 'Pendiente' }}
+                  </span>
+                  <span *ngIf="m.costo_vigente_final || m.ultimo_costo_siesa" class="text-[9px] font-bold text-slate-500 mt-0.5">
+                    ${{ (m.costo_vigente_final || m.ultimo_costo_siesa) | number:'1.0-0' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Materiales Requeridos -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col flex-shrink-0">
+          <div class="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+              <h3 class="text-[11px] font-black text-slate-800 uppercase tracking-wider mb-0">
+                Materiales Requeridos ({{ getConsolidatedMaterials().length }})
+              </h3>
+            </div>
+          </div>
+          
+          <div class="p-2.5 space-y-2">
+            <div *ngFor="let mat of getConsolidatedMaterials()" 
+                 class="bg-white rounded-xl border border-slate-200/80 p-2.5 hover:border-indigo-300 hover:shadow-2xs transition-all">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0 shadow-2xs"
+                        [ngClass]="mat.type === 'tela' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'">
+                    <i class="bi" [ngClass]="mat.type === 'tela' ? 'bi-droplet-fill' : 'bi-box-seam-fill'"></i>
+                  </span>
+                  <div class="min-w-0">
+                    <span class="font-bold text-slate-800 text-xs block truncate">{{ mat.name }}</span>
+                    <span class="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border inline-block"
+                          [ngClass]="mat.type === 'tela' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-100'">
+                      {{ mat.type === 'tela' ? 'Tela' : 'Insumo' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-[9px] text-slate-400 font-bold">
+                    {{ mat.sourceParts.length }} {{ mat.sourceParts.length === 1 ? 'parte' : 'partes' }}
+                  </span>
+                  <span class="relative cursor-help" [title]="'Usado en:\nâ€¢ ' + mat.sourceParts.join('\nâ€¢ ')">
+                    <i class="bi bi-info-circle text-[10px] text-slate-400 hover:text-indigo-600 transition"></i>
+                  </span>
+                </div>
+              </div>
+
+              <!-- SIESA / Color / Comment details if present -->
+              <div *ngIf="mat.siesaRef || mat.siesaDesc" class="mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] flex items-baseline gap-1">
+                <span class="font-bold text-indigo-600">SIESA:</span>
+                <span class="text-slate-700 truncate">{{ mat.siesaRef ? (mat.siesaRef + ' - ') : '' }}{{ mat.siesaDesc }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="getConsolidatedMaterials().length === 0" class="py-4 text-center text-slate-400 text-xs">
+              Sin materiales configurados
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT CANVAS: Elevated Clean Garment Figurine with Hotspot Pins & SVG -->
+      <div class="opm-canvas-area" (click)="clearSelectedZone($event)">
+        <div class="opm-canvas-inner" *ngIf="getActiveOpmImage(); else noImageBlock">
+          
+          <div class="relative inline-block max-w-full max-h-[78vh]">
+            <img [src]="getActiveOpmImage()"
+                 [alt]="activeItem.mold?.name || 'FigurÃ­n'"
+                 class="block max-w-full max-h-[78vh] object-contain drop-shadow-2xl select-none pointer-events-none" />
+
+            <!-- â•â•â•â•â•â•â•â•â•â• CAPA SVG: ZONAS ANATÃ“MICAS (z-10) â•â•â•â•â•â•â•â•â•â• -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible"
+                 viewBox="0 0 100 100" preserveAspectRatio="none">
+              <ng-container *ngFor="let zone of getActiveZones()">
+                <!-- PolÃ­gono SVG si existe path_data -->
+                <polygon *ngIf="zone.path_data && getPolygonPoints(zone.path_data)"
+                         [attr.points]="getPolygonPoints(zone.path_data)"
+                         [attr.fill]="isZoneSelected(zone) ? 'rgba(37, 99, 235, 0.22)' : 'transparent'"
+                         [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#2563eb') : 'transparent'"
+                         [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'"
+                         stroke-linejoin="round"
+                         stroke-linecap="round"
+                         class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-blue-500/15 hover:stroke-blue-400/80"
+                         (click)="selectZone(zone, $event)" />
+
+                <!-- RectÃ¡ngulo Fallback -->
+                <rect *ngIf="!zone.path_data || !getPolygonPoints(zone.path_data)"
+                      [attr.x]="zone.position_x"
+                      [attr.y]="zone.position_y"
+                      [attr.width]="zone.width || 20"
+                      [attr.height]="zone.height || 10"
+                      rx="2.5" ry="2.5"
+                      [attr.fill]="isZoneSelected(zone) ? 'rgba(37, 99, 235, 0.22)' : 'transparent'"
+                      [attr.stroke]="isZoneSelected(zone) ? (zone.color || '#2563eb') : 'transparent'"
+                      [attr.stroke-width]="isZoneSelected(zone) ? '0.8' : '0'"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="transition-all duration-200 pointer-events-auto cursor-pointer hover:fill-blue-500/15 hover:stroke-blue-400/80"
+                      (click)="selectZone(zone, $event)" />
+              </ng-container>
+            </svg>
+
+            <!-- â•â•â•â•â•â•â•â•â•â• PUNTOS DE INTERÃ‰S / HOTSPOTS INTERACTIVOS (z-20) â•â•â•â•â•â•â•â•â•â• -->
+            <ng-container *ngFor="let zone of getActiveZones()">
+              <div class="zone-hotspot-pin absolute z-20 -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 cursor-pointer group/pin"
+                   [style.left.%]="getZoneCenter(zone).x"
+                   [style.top.%]="getZoneCenter(zone).y"
+                   (click)="selectZone(zone, $event)">
+                
+                <!-- Hotspot Badge (Exact Spec-Tab-Diseno Pill) -->
+                <div class="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-lg border backdrop-blur-md transition-all group-hover/pin:scale-110"
+                     [ngClass]="isZoneSelected(zone) 
+                       ? 'bg-blue-600 text-white border-blue-300 ring-4 ring-blue-500/40 shadow-blue-500/50 scale-105' 
+                       : 'bg-slate-900/85 text-white border-white/20 hover:bg-slate-900 shadow-slate-900/30'">
+                  
+                  <i class="bi text-xs" [ngClass]="getZoneIcon(zone.zone_type)"></i>
+                  <span class="text-[9px] font-black uppercase tracking-wider truncate max-w-[120px]">{{ zone.name }}</span>
+                  
+                  <!-- Indicator dot -->
+                  <span class="w-2 h-2 rounded-full shadow-2xs"
+                        [ngClass]="getConfiguredPartsForZoneObj(zone).length > 0 ? 'bg-emerald-400 shadow-emerald-400/80' : 'bg-slate-400'"></span>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- â•â•â•â•â•â•â•â•â•â• POPOVER FLOTANTE DE ZONA ACTIVA EN FIGURÃN (z-30) â•â•â•â•â•â•â•â•â•â• -->
+            <div *ngIf="selectedZone"
+                 class="zone-popover-container absolute z-30 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 max-w-[92vw] max-h-[75vh] overflow-y-auto custom-scrollbar bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-200 p-3.5 space-y-2.5 pointer-events-auto ring-1 ring-black/5 animate-in fade-in zoom-in-95"
+                 [style.left.%]="getZonePopoverLeft(selectedZone)"
+                 [style.top.%]="getZonePopoverTop(selectedZone)"
+                 (click)="$event.stopPropagation()">
+
+              <!-- Encabezado de la Zona -->
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-sm shrink-0"
+                        [style.backgroundColor]="selectedZone.color || getZoneColor(selectedZone.zone_type)">
+                    <i class="bi" [ngClass]="getZoneIcon(selectedZone.zone_type)"></i>
+                  </span>
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-black text-slate-900 truncate uppercase mb-0">{{ selectedZone.name }}</h4>
+                    <p class="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-0">{{ getZoneLabel(selectedZone.zone_type) }}</p>
+                  </div>
+                </div>
+                <button type="button" 
+                        (click)="clearSelectedZone($event)"
+                        class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition cursor-pointer"
+                        title="Cerrar ventana emergente">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+
+              <!-- SubtÃ­tulo con contador de partes configuradas -->
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  ConfiguraciÃ³n de Zona ({{ getConfiguredPartsForZoneObj(selectedZone).length }})
+                </span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-bold border"
+                      [ngClass]="getConfiguredPartsForZoneObj(selectedZone).length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'">
+                  {{ getConfiguredPartsForZoneObj(selectedZone).length > 0 ? 'âœ“ Configurada' : 'EstÃ¡ndar' }}
+                </span>
+              </div>
+
+              <!-- Lista de partes configuradas en la zona -->
+              <div class="space-y-2">
+                <div *ngFor="let part of getConfiguredPartsForZoneObj(selectedZone)"
+                     class="p-2.5 rounded-xl border space-y-1.5"
+                     [ngClass]="!part.is_mandatory ? 'bg-indigo-50/40 border-indigo-200/80' : 'bg-emerald-50/40 border-emerald-200/80'">
+                  
+                  <!-- Nombre de la parte -->
+                  <div class="flex items-center justify-between gap-1">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <i class="bi text-xs" [ngClass]="!part.is_mandatory ? 'text-indigo-600 bi-stars' : (part.icon || 'bi-puzzle-fill text-emerald-700')"></i>
+                      <span class="text-[11px] font-black text-slate-800 truncate capitalize">{{ part.name }}</span>
+                    </div>
+                    <span *ngIf="!part.is_mandatory" class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-indigo-100 text-indigo-700 shrink-0">
+                      Opcional
+                    </span>
+                  </div>
+
+                  <!-- Variante Seleccionada -->
+                  <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-white rounded-lg text-[11px] font-bold shadow-2xs"
+                       [ngClass]="!part.is_mandatory ? 'border border-indigo-300' : 'border border-emerald-300'">
+                    <i class="bi bi-check-circle-fill text-xs shrink-0"
+                       [ngClass]="!part.is_mandatory ? 'text-indigo-600' : 'text-emerald-600'"></i>
+                    <span class="truncate font-black flex-1"
+                          [ngClass]="!part.is_mandatory ? 'text-indigo-950' : 'text-emerald-950'">
+                      {{ extractVariantName(part) }}
+                    </span>
+                  </div>
+
+                  <!-- Comentarios / Observaciones o EspecificaciÃ³n Cliente -->
+                  <div *ngIf="part.client_spec || part.exception_comment"
+                       class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-amber-300 shadow-2xs text-[10px]">
+                    <i class="bi bi-chat-left-quote text-[10px] text-amber-600 ml-0.5 shrink-0"></i>
+                    <span class="text-amber-950 font-semibold px-1">{{ part.exception_comment || part.client_spec }}</span>
+                  </div>
+
+                  <!-- EspecificaciÃ³n TÃ©cnica (si tiene y difiere de variante) -->
+                  <div *ngIf="part.technical_spec && part.technical_spec !== extractVariantName(part)"
+                       class="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 text-[10px] text-slate-700">
+                    <i class="bi bi-gear-fill text-[9px] text-slate-400 ml-0.5 shrink-0"></i>
+                    <span class="truncate px-1"><strong class="text-slate-900">TÃ©cnica:</strong> {{ part.technical_spec }}</span>
+                  </div>
+
+                  <!-- ExcepciÃ³n de Material / SIESA -->
+                  <div *ngIf="part.material_exception || part.client_material_exception"
+                       class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-blue-300 shadow-2xs text-[10px]">
+                    <i class="bi bi-palette text-[10px] text-blue-600 ml-0.5 shrink-0"></i>
+                    <span class="text-blue-950 font-semibold px-1">
+                      {{ (part.material_exception || part.client_material_exception).descripcion || (part.material_exception || part.client_material_exception).referencia }}
+                    </span>
+                  </div>
+
+                </div>
+
+                <!-- Empty State si no hay partes configuradas -->
+                <div *ngIf="getConfiguredPartsForZoneObj(selectedZone).length === 0" class="py-3 text-center px-2">
+                  <i class="bi bi-check-circle text-slate-300 text-lg block mb-1"></i>
+                  <p class="text-slate-500 text-[11px] font-bold mb-0">Sin configuraciones personalizadas</p>
+                  <p class="text-slate-400 text-[10px] mb-0">Esta zona aplicarÃ¡ la confecciÃ³n y corte base estÃ¡ndar del molde.</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <ng-template #noImageBlock>
+          <div class="opm-no-image">
+            <i class="bi bi-image text-slate-300" style="font-size: 48px;"></i>
+            <p class="text-slate-400 font-semibold mt-3">Sin imagen de figurÃ­n disponible para este molde</p>
+          </div>
+        </ng-template>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+

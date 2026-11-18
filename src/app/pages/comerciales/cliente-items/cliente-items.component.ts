@@ -54,6 +54,11 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     materialesEntregados: 0,
     materialesPendientes: 0,
     materialesParciales: 0,
+    materialesEnConsulta: 0,
+    telasTotales: 0,
+    telasEntregadas: 0,
+    insumosTotales: 0,
+    insumosEntregados: 0,
     porcentajeMateriales: 0
   };
 
@@ -62,6 +67,7 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
   materialesSolicitudId: number | null = null;
   materialesSolicitudCodigo = '';
   materialesClienteNombre = '';
+  materialesFiltroInicial: 'TODOS' | 'TELA' | 'INSUMO' | 'PENDIENTES' | 'ENTREGADOS' = 'TODOS';
 
   // Pagination
   readonly itemsPaginatorId = 'comerciales-items';
@@ -279,6 +285,11 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     let materialesEntregados = 0;
     let materialesPendientes = 0;
     let materialesParciales = 0;
+    let materialesEnConsulta = 0;
+    let telasTotales = 0;
+    let telasEntregadas = 0;
+    let insumosTotales = 0;
+    let insumosEntregados = 0;
 
     for (const sol of this.solicitudes) {
       const urg = this.evaluarUrgenciaSolicitud(sol);
@@ -292,6 +303,11 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
       materialesEntregados += (sol.materiales_entregados || 0);
       materialesPendientes += (sol.materiales_pendientes || 0);
       materialesParciales += (sol.materiales_parciales || 0);
+      materialesEnConsulta += (sol.materiales_en_consulta || 0);
+      telasTotales += (sol.telas_totales || 0);
+      telasEntregadas += (sol.telas_entregadas || 0);
+      insumosTotales += (sol.insumos_totales || 0);
+      insumosEntregados += (sol.insumos_entregados || 0);
     }
 
     this.metricasCliente.vencidas = vencidas;
@@ -302,16 +318,22 @@ export class ClienteItemsComponent implements OnInit, OnDestroy {
     this.metricasCliente.materialesEntregados = materialesEntregados;
     this.metricasCliente.materialesPendientes = materialesPendientes;
     this.metricasCliente.materialesParciales = materialesParciales;
+    this.metricasCliente.materialesEnConsulta = materialesEnConsulta;
+    this.metricasCliente.telasTotales = telasTotales;
+    this.metricasCliente.telasEntregadas = telasEntregadas;
+    this.metricasCliente.insumosTotales = insumosTotales;
+    this.metricasCliente.insumosEntregados = insumosEntregados;
     this.metricasCliente.porcentajeMateriales = totalMateriales > 0
       ? Math.round((materialesEntregados / totalMateriales) * 100)
       : 0;
   }
 
-  abrirModalMateriales(sol: Solicitud, event?: Event): void {
+  abrirModalMateriales(sol: Solicitud, event?: Event, filtro: 'TODOS' | 'TELA' | 'INSUMO' | 'PENDIENTES' | 'ENTREGADOS' = 'TODOS'): void {
     if (event) event.stopPropagation();
     this.materialesSolicitudId = sol.id || null;
     this.materialesSolicitudCodigo = sol.codigo || '';
     this.materialesClienteNombre = sol.cliente_nombre || this.clienteNombre || '';
+    this.materialesFiltroInicial = filtro;
     this.mostrarModalMateriales = true;
   }
 

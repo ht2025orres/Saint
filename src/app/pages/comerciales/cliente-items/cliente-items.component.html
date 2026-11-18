@@ -136,9 +136,14 @@
                  [ngClass]="metricasCliente.porcentajeMateriales === 100 ? 'bg-emerald-500' : 'bg-violet-500'"
                  [style.width.%]="metricasCliente.porcentajeMateriales"></div>
           </div>
-          <div class="mt-1 text-[9px] text-slate-400 font-medium flex items-center justify-between">
+          <div class="mt-1 text-[9px] text-slate-400 font-medium flex items-center justify-between" *ngIf="!metricasCliente.totalMateriales">
             <span>{{ metricasCliente.materialesPendientes }} pendientes</span>
             <span *ngIf="metricasCliente.materialesParciales > 0" class="text-amber-600 font-bold">{{ metricasCliente.materialesParciales }} parciales</span>
+          </div>
+          <div class="mt-1 text-[9px] font-medium flex items-center justify-between gap-1 flex-wrap" *ngIf="metricasCliente.totalMateriales > 0">
+            <span class="text-indigo-600 font-bold">✂️ Telas: {{ metricasCliente.telasEntregadas }}/{{ metricasCliente.telasTotales }}</span>
+            <span class="text-emerald-700 font-bold">📦 Insumos: {{ metricasCliente.insumosEntregados }}/{{ metricasCliente.insumosTotales }}</span>
+            <span *ngIf="metricasCliente.materialesEnConsulta > 0" class="text-purple-600 font-bold">📞 {{ metricasCliente.materialesEnConsulta }} en consulta</span>
           </div>
         </div>
       </div>
@@ -362,21 +367,59 @@
                 </span>
               </div>
 
-              <!-- Indicador Materiales -->
-              <div *ngIf="sol.total_materiales && sol.total_materiales > 0"
-                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold cursor-pointer hover:shadow-sm transition-all"
-                   [ngClass]="{
-                     'bg-emerald-50 border-emerald-200 text-emerald-700': sol.materiales_entregados === sol.total_materiales,
-                     'bg-amber-50 border-amber-200 text-amber-700': sol.materiales_entregados! > 0 && sol.materiales_entregados !== sol.total_materiales,
-                     'bg-slate-50 border-slate-200 text-slate-600': !sol.materiales_entregados || sol.materiales_entregados === 0
-                   }"
-                   (click)="abrirModalMateriales(sol, $event)"
-                   title="Ver detalle de llegada de materiales">
-                <i class="bi bi-box-seam text-[9px]"></i>
-                <span>📦 {{ sol.materiales_entregados || 0 }}/{{ sol.total_materiales }}</span>
-                <span *ngIf="sol.materiales_entregados === sol.total_materiales" class="text-emerald-700 font-black">✓</span>
-                <span *ngIf="sol.materiales_pendientes && sol.materiales_pendientes > 0 && sol.materiales_entregados !== sol.total_materiales"
-                      class="text-amber-700 font-black text-[9px]">({{ sol.materiales_pendientes }} pend.)</span>
+              <!-- Indicadores Individuales de Llegada de Materiales -->
+              <div *ngIf="sol.total_materiales && sol.total_materiales > 0" class="inline-flex items-center gap-1 flex-wrap">
+                <!-- Telas -->
+                <button type="button"
+                        *ngIf="sol.telas_totales && sol.telas_totales > 0"
+                        (click)="abrirModalMateriales(sol, $event, 'TELA')"
+                        [title]="'Telas: ' + (sol.telas_entregadas || 0) + ' de ' + sol.telas_totales + ' recibidas. Clic para ver.'"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold transition-all hover:scale-105 cursor-pointer shadow-2xs"
+                        [ngClass]="sol.telas_entregadas === sol.telas_totales
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                          : (sol.telas_entregadas! > 0 ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-rose-50 border-rose-200 text-rose-700')">
+                  <i class="bi bi-scissors text-[9px]"></i>
+                  <span>Telas: {{ sol.telas_entregadas || 0 }}/{{ sol.telas_totales }}</span>
+                  <i *ngIf="sol.telas_entregadas === sol.telas_totales" class="bi bi-check-circle-fill text-[9px] text-emerald-600"></i>
+                  <i *ngIf="sol.telas_entregadas! > 0 && sol.telas_entregadas !== sol.telas_totales" class="bi bi-clock-history text-[9px] text-amber-600"></i>
+                </button>
+
+                <!-- Insumos -->
+                <button type="button"
+                        *ngIf="sol.insumos_totales && sol.insumos_totales > 0"
+                        (click)="abrirModalMateriales(sol, $event, 'INSUMO')"
+                        [title]="'Insumos: ' + (sol.insumos_entregados || 0) + ' de ' + sol.insumos_totales + ' recibidos. Clic para ver.'"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold transition-all hover:scale-105 cursor-pointer shadow-2xs"
+                        [ngClass]="sol.insumos_entregados === sol.insumos_totales
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                          : (sol.insumos_entregados! > 0 ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-rose-50 border-rose-200 text-rose-700')">
+                  <i class="bi bi-boxes text-[9px]"></i>
+                  <span>Insumos: {{ sol.insumos_entregados || 0 }}/{{ sol.insumos_totales }}</span>
+                  <i *ngIf="sol.insumos_entregados === sol.insumos_totales" class="bi bi-check-circle-fill text-[9px] text-emerald-600"></i>
+                  <i *ngIf="sol.insumos_entregados! > 0 && sol.insumos_entregados !== sol.insumos_totales" class="bi bi-clock-history text-[9px] text-amber-600"></i>
+                </button>
+
+                <!-- En Consulta Proveedor -->
+                <button type="button"
+                        *ngIf="sol.materiales_en_consulta && sol.materiales_en_consulta > 0"
+                        (click)="abrirModalMateriales(sol, $event, 'PENDIENTES')"
+                        [title]="sol.materiales_en_consulta + ' material(es) en consulta con proveedor. Clic para ver.'"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-purple-300 bg-purple-50 text-purple-800 text-[10px] font-bold transition-all hover:scale-105 cursor-pointer shadow-2xs">
+                  <i class="bi bi-telephone-outbound text-[9px] text-purple-600"></i>
+                  <span>{{ sol.materiales_en_consulta }} en consulta</span>
+                </button>
+
+                <!-- Fallback si no está tipificado aún -->
+                <button type="button"
+                        *ngIf="(!sol.telas_totales || sol.telas_totales === 0) && (!sol.insumos_totales || sol.insumos_totales === 0)"
+                        (click)="abrirModalMateriales(sol, $event, 'TODOS')"
+                        [title]="'Materiales: ' + (sol.materiales_entregados || 0) + ' de ' + sol.total_materiales + '. Clic para ver.'"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold transition-all hover:scale-105 cursor-pointer shadow-2xs"
+                        [ngClass]="sol.materiales_entregados === sol.total_materiales ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-amber-50 border-amber-300 text-amber-800'">
+                  <i class="bi bi-box-seam text-[9px]"></i>
+                  <span>Materiales: {{ sol.materiales_entregados || 0 }}/{{ sol.total_materiales }}</span>
+                  <span *ngIf="sol.materiales_entregados === sol.total_materiales" class="text-emerald-700 font-black">✓</span>
+                </button>
               </div>
             </div>
 
@@ -614,6 +657,7 @@
     [solicitudId]="materialesSolicitudId"
     [solicitudCodigo]="materialesSolicitudCodigo"
     [clienteNombre]="materialesClienteNombre"
+    [filtroInicial]="materialesFiltroInicial"
     (onClose)="cerrarModalMateriales()">
   </app-materiales-tracking-modal>
 </div>

@@ -138,6 +138,7 @@ export class ClienteListComponent implements OnInit, OnDestroy {
   materialesSolicitudId: number | null = null;
   materialesSolicitudCodigo = '';
   materialesClienteNombre = '';
+  materialesFiltroInicial: 'TODOS' | 'TELA' | 'INSUMO' | 'PENDIENTES' | 'ENTREGADOS' = 'TODOS';
 
   // KPI computed
   totalSolicitudesPendientes = 0;
@@ -1185,11 +1186,12 @@ export class ClienteListComponent implements OnInit, OnDestroy {
     });
   }
 
-  abrirModalMateriales(sol: Solicitud, event?: Event): void {
+  abrirModalMateriales(sol: Solicitud, event?: Event, filtro: 'TODOS' | 'TELA' | 'INSUMO' | 'PENDIENTES' | 'ENTREGADOS' = 'TODOS'): void {
     if (event) event.stopPropagation();
     this.materialesSolicitudId = sol.id || null;
     this.materialesSolicitudCodigo = sol.codigo || '';
     this.materialesClienteNombre = sol.cliente_nombre || '';
+    this.materialesFiltroInicial = filtro;
     this.mostrarModalMateriales = true;
   }
 

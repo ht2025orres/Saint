@@ -78,14 +78,14 @@
       <!-- Filtros -->
       <div class="px-4 sm:px-6 py-2 border-b border-slate-100 flex items-center gap-1.5 flex-wrap flex-shrink-0">
         <button *ngFor="let f of [
-          {key: 'TODOS', label: 'Todos', icon: 'bi-grid-3x3-gap'},
-          {key: 'TELA', label: 'Telas', icon: 'bi-scissors'},
-          {key: 'INSUMO', label: 'Insumos', icon: 'bi-boxes'},
-          {key: 'PENDIENTES', label: 'Pendientes', icon: 'bi-clock'},
-          {key: 'ENTREGADOS', label: 'Entregados', icon: 'bi-check-circle'}
+          {key: 'TODOS', label: 'Todos (' + (metricas.total || 0) + ')', icon: 'bi-grid-3x3-gap'},
+          {key: 'TELA', label: 'Telas (' + conteoTelas + ')', icon: 'bi-scissors'},
+          {key: 'INSUMO', label: 'Insumos (' + conteoInsumos + ')', icon: 'bi-boxes'},
+          {key: 'PENDIENTES', label: 'Pendientes (' + (metricas.pendientes || 0) + ')', icon: 'bi-clock'},
+          {key: 'ENTREGADOS', label: 'Entregados (' + (metricas.entregados || 0) + ')', icon: 'bi-check-circle'}
         ]"
                 (click)="filtroTipo = f.key"
-                class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer"
                 [ngClass]="filtroTipo === f.key
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'">

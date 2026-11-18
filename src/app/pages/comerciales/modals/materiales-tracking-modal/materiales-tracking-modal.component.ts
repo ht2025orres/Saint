@@ -11,6 +11,7 @@ export class MaterialesTrackingModalComponent implements OnChanges {
   @Input() solicitudId: number | null = null;
   @Input() solicitudCodigo = '';
   @Input() clienteNombre = '';
+  @Input() filtroInicial: 'TODOS' | 'TELA' | 'INSUMO' | 'PENDIENTES' | 'ENTREGADOS' = 'TODOS';
 
   @Output() onClose = new EventEmitter<void>();
 
@@ -22,8 +23,16 @@ export class MaterialesTrackingModalComponent implements OnChanges {
   constructor(private comercialService: ComercialService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['visible'] && this.visible && this.solicitudId) {
-      this.cargarMateriales();
+    if (changes['filtroInicial'] && this.filtroInicial) {
+      this.filtroTipo = this.filtroInicial;
+    }
+    if (changes['visible'] && this.visible) {
+      if (this.filtroInicial) {
+        this.filtroTipo = this.filtroInicial;
+      }
+      if (this.solicitudId) {
+        this.cargarMateriales();
+      }
     }
   }
 
@@ -47,6 +56,14 @@ export class MaterialesTrackingModalComponent implements OnChanges {
         this.isLoading = false;
       }
     });
+  }
+
+  get conteoTelas(): number {
+    return (this.materialesData?.materiales || []).filter((m: any) => m.tipo_material === 'TELA').length;
+  }
+
+  get conteoInsumos(): number {
+    return (this.materialesData?.materiales || []).filter((m: any) => m.tipo_material !== 'TELA').length;
   }
 
   get metricas(): any {
